@@ -1,8 +1,8 @@
 {
 	"schemaVersion": 1,
-	"id": "testmod",
+	"id": "slimefunhelper",
 	"version": "${version}",
-	"name": "TestMod",
+	"name": "SlimefunHelper",
 	"description": "This is an example description! Tell everyone what your mod is about!",
 	"authors": [
 		"Me!"
@@ -12,21 +12,20 @@
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/testmod/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.example.TestMod"
+			"me.matl114.SlimefunHelper"
 		],
 		"fabric-datagen": [
-			"com.example.TestModDataGenerator"
+			"me.matl114.SlimefunHelperDataGenerator"
 		]
 	},
 	"mixins": [
-		"testmod.mixins.json"
+		"slimefunhelper.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.15.10",
+		"fabricloader": ">=0.15.1",
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*"
