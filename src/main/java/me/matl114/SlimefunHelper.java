@@ -1,27 +1,24 @@
 package me.matl114;
 
+import com.mojang.authlib.properties.Property;
+import me.matl114.BukkitUtiils.BukkitMock;
+import me.matl114.BukkitUtiils.ItemStackHelper;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunItemModelManager;
 import me.matl114.SlimefunUtils.SlimefunUtils;
 import net.fabricmc.api.ModInitializer;
 
-import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
-import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.model.ModelLoader;
+
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
-import net.minecraft.resource.SynchronousResourceReloader;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.profiler.Profiler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.Arrays;
+
 
 public class SlimefunHelper implements ModInitializer {
 	// This logger is used to write text to the console and the log file.
@@ -52,6 +49,15 @@ public class SlimefunHelper implements ModInitializer {
 				SlimefunItemModelManager.loadCustomModelDatas();
 			}
 		});
+		BukkitMock.init();
+		LOGGER.info("loading bukkitMock!");
+		ItemStackHelper.init();
+		try{
+			Debug.info( Arrays.stream(Property.class.getDeclaredFields()).toList());
+			Debug.info(Arrays.stream(Property.class.getDeclaredMethods()).toList());
+		}catch (Throwable e){
+
+		}
 
 	}
 }

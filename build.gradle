@@ -11,28 +11,53 @@ base {
 }
 
 repositories {
+	gradlePluginPortal()
+	mavenLocal()
+	mavenCentral()
 	maven {
 		url 'https://maven.aliyun.com/nexus/content/groups/public'
 	}
 	maven {
 		url 'https://repository.hanbings.io/proxy'
 	}
+	maven {
+		url 'https://jitpack.io'
+	}
+	maven {
+		url 'https://repo.destroystokyo.com/repository/maven-public'
+	}
+	maven {
+		url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots'
+	}
+
 }
+//apply plugin: 'com.gradleup.shadow'
+//apply plugin: 'java'
 
 
 fabricApi {
 	configureDataGeneration()
 }
+configurations {
+	//buildtoolsImplementation.extendsFrom(compileClasspath)
+	// Dependencies only used for the guide export, but not shipped
+
+	runtimeClasspath.extendsFrom implementation
+}
 
 dependencies {
 	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	minecraft ("com.mojang:minecraft:${project.minecraft_version}"){
+		transitive = false
+	}
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	implementation 'org.yaml:snakeyaml:1.30'
+	modImplementation 'org.yaml:snakeyaml:1.30'
+	modImplementation "org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT"
+	include "org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT"
+
 }
 
 processResources {
@@ -61,7 +86,9 @@ jar {
 	from("LICENSE") {
 		rename { "${it}_${project.base.archivesName.get()}"}
 	}
+
 }
+
 
 // configure the maven publication
 publishing {
