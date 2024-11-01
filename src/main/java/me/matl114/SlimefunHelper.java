@@ -1,8 +1,8 @@
 package me.matl114;
 
-import com.mojang.authlib.properties.Property;
 import me.matl114.BukkitUtiils.BukkitMock;
 import me.matl114.BukkitUtiils.ItemStackHelper;
+import me.matl114.HotKeyUtils.HotKeys;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunItemModelManager;
 import me.matl114.SlimefunUtils.SlimefunUtils;
@@ -16,8 +16,6 @@ import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 
 public class SlimefunHelper implements ModInitializer {
@@ -52,12 +50,7 @@ public class SlimefunHelper implements ModInitializer {
 		BukkitMock.init();
 		LOGGER.info("loading bukkitMock!");
 		ItemStackHelper.init();
-		try{
-			Debug.info( Arrays.stream(Property.class.getDeclaredFields()).toList());
-			Debug.info(Arrays.stream(Property.class.getDeclaredMethods()).toList());
-		}catch (Throwable e){
-
-		}
+		HotKeys.init();
 
 	}
 }

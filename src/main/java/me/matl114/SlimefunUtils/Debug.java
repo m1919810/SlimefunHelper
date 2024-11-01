@@ -1,6 +1,8 @@
 package me.matl114.SlimefunUtils;
 
 
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +12,9 @@ public class Debug {
     private static Logger logger= LoggerFactory.getLogger("SlimefunHelper");
     public static void info(String string){
         logger.info(string);
+    }
+    public static void chat(String string){
+        MinecraftClient.getInstance().player.sendMessage(Text.of(string));
     }
     public static void info(Throwable throwable){
         throwable.printStackTrace();

@@ -7,23 +7,16 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
-import javax.naming.Name;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -56,20 +49,11 @@ public class ItemStackHelper {
             }
         }
     }
-    public static BukkitItemStack serializeFromString(String string){
-        YamlConfiguration config = new YamlConfiguration();
-        try {
-            config.loadFromString(string);
-        } catch (InvalidConfigurationException var3) {
-            return new BukkitItemStack(Material.STONE,1);
-        }
-        BukkitItemStack item = config.getObject("item",BukkitItemStack.class);
-        return (item != null ? item :new BukkitItemStack(Material.STONE,1));
-    }
+
     public static Identifier fromNamespace(NamespacedKey key) {
         return new Identifier(key.getNamespace(), key.getKey());
     }
-    public static ItemStack getAsDisplay(BukkitItemStack itemStack){
+    public static ItemStack getAsNMItem(BukkitItemStack itemStack){
         try{
             ItemStack stack=new ItemStack(MATERIAL_ITEM.get(itemStack.getType()));
             stack.setCount(itemStack.getAmount());
@@ -214,7 +198,7 @@ public class ItemStackHelper {
 
         return list;
     }
-    public static ItemStack getAsDisplay(org.bukkit.inventory.ItemStack itemStack){
+    public static ItemStack getAsNMItem(org.bukkit.inventory.ItemStack itemStack){
         try{
             ItemStack stack=new ItemStack(MATERIAL_ITEM.get(itemStack.getType()));
             stack.setCount(itemStack.getAmount());
