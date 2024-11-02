@@ -57,6 +57,7 @@ dependencies {
 	modImplementation 'org.yaml:snakeyaml:1.30'
 	modImplementation "org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT"
 	include "org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT"
+	include 'org.yaml:snakeyaml:1.30'
 
 }
 

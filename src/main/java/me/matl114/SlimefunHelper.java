@@ -1,5 +1,6 @@
 package me.matl114;
 
+import me.matl114.BukkitUtiils.BukkitItemStack;
 import me.matl114.BukkitUtiils.BukkitMock;
 import me.matl114.BukkitUtiils.ItemStackHelper;
 import me.matl114.HotKeyUtils.HotKeys;
@@ -51,6 +52,5 @@ public class SlimefunHelper implements ModInitializer {
 		LOGGER.info("loading bukkitMock!");
 		ItemStackHelper.init();
 		HotKeys.init();
-
 	}
 }

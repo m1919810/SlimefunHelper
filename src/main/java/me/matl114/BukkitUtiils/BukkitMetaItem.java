@@ -74,7 +74,7 @@ public class BukkitMetaItem implements ItemMeta ,Cloneable {
     }
 
     public int getCustomModelData(){
-        return (Integer) this.attributes.getOrDefault("custom-model-data",0);
+        return  (Integer) this.attributes.getOrDefault("custom-model-data",0);
     }
 
     public void setCustomModelData(@Nullable Integer var1){
@@ -229,7 +229,7 @@ public class BukkitMetaItem implements ItemMeta ,Cloneable {
     }
     public PersistentDataContainer getPersistentDataContainer(){
         if(this.attributes.containsKey("PublicBukkitValues")){
-            Map nbtMap = (Map) this.attributes.get("PublicBukkitValues");
+            Object nbtMap =  this.attributes.get("PublicBukkitValues");
             if (nbtMap != null) {
                 BukkitPersistentDataContainer container= new BukkitPersistentDataContainer();
                 container.putData((NbtCompound)BukkitConfigDeserializor.deserializeObject(nbtMap));

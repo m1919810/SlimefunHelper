@@ -56,34 +56,43 @@ public class SlimefunItemModelManager {
         LOADED_SLIMEFUNITEMS.clear();
     }
     public static void loadCustomModelDatas(){
-        final File configFile = FabricLoader.getInstance().getConfigDir().resolve("slimefun-item-model.yml").toFile();
-        if(!configFile.exists()){
-            try{
-                Files.copy(SlimefunHelper.getInstance().getClass().getResourceAsStream("/slimefun-item-model.yml"), configFile.toPath());
-            }catch (Throwable e){
-                Debug.info("AN INTERNAL ERROR WHILE LOADING DEFAULT CONFIG");
-                Debug.info(e);
-                return;
-            }
-        }
-        Yaml yaml=new Yaml();
-        try (FileReader inputStream = new FileReader(configFile)) {
-            // 将 YAML 文件内容加载到 Map 中
-            Map<String, Object> data = yaml.load(inputStream);
-            for (Map.Entry<String, Object> entry : data.entrySet()) {
+        try{
+            final File configFile = FabricLoader.getInstance().getConfigDir().resolve("slimefun-item-model.yml").toFile();
+            if(!configFile.exists()){
                 try{
-                    int cmd=(Integer) entry.getValue();
-                    SLIMEFUNITEMS_CUSTOMMODELDATAS.put(entry.getKey(),cmd);
-                }catch(ClassCastException e){
-                    Debug.info("Custom Model data could not be loaded :",entry.getKey());
+                    if(!configFile.toPath().getParent().toFile().exists()) {
+                        Files.createDirectories(configFile.toPath().getParent());
+                    }
+                    Files.copy(SlimefunHelper.getInstance().getClass().getResourceAsStream("/slimefun-item-model.yml"), configFile.toPath());
+                }catch (Throwable e){
+                    Debug.info("AN INTERNAL ERROR WHILE LOADING DEFAULT CONFIG");
+                    Debug.info(e);
+                    return;
                 }
             }
-            // 获取具体数据
-        } catch (Exception e) {
-            Debug.info("AN INTERNAL ERROR WHILE READING CONFIG ITEM-MODEL");
+            Yaml yaml=new Yaml();
+            try (FileReader inputStream = new FileReader(configFile)) {
+                // 将 YAML 文件内容加载到 Map 中
+                Map<String, Object> data = yaml.load(inputStream);
+                for (Map.Entry<String, Object> entry : data.entrySet()) {
+                    try{
+                        int cmd=(Integer) entry.getValue();
+                        SLIMEFUNITEMS_CUSTOMMODELDATAS.put(entry.getKey(),cmd);
+                    }catch(ClassCastException e){
+                        Debug.info("Custom Model data could not be loaded :",entry.getKey());
+                    }
+                }
+                // 获取具体数据
+            } catch (Exception e) {
+                Debug.info("AN INTERNAL ERROR WHILE READING CONFIG ITEM-MODEL");
+                Debug.info(e);
+            }
+            Debug.info("Slimefun Custom Model Data load successfully");
+
+        }catch (Throwable e){
+            Debug.info("error while loading CustomModelDatas");
             Debug.info(e);
         }
-        Debug.info("Slimefun Custom Model Data load successfully");
     }
     public static int getCustomModelData(String id){
         return SLIMEFUNITEMS_CUSTOMMODELDATAS.getOrDefault(id,0);

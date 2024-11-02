@@ -18,8 +18,19 @@ public class BukkitConfigDeserializor {
     private static final Pattern INTEGER = Pattern.compile("[-+]?(?:0|[1-9][0-9]*)?i", Pattern.CASE_INSENSITIVE);
     private static final Pattern DOUBLE = Pattern.compile("[-+]?(?:[0-9]+[.]?|[0-9]*[.][0-9]+)(?:e[-+]?[0-9]+)?d", Pattern.CASE_INSENSITIVE);
     private static final StringNbtReader MOJANGSON_PARSER = new StringNbtReader(new StringReader(""));
-
-    public static NbtElement deserializeObject(Object object) {
+    public static NbtElement deserializeObject(final Object object) {
+        // The new logic expects the top level object to be a single string, holding the entire nbt tag as SNBT.
+        if (object instanceof final String snbtString) {
+            try {
+                return StringNbtReader.parse(snbtString);
+            } catch (final CommandSyntaxException e) {
+                throw new RuntimeException("Failed to deserialise nbt", e);
+            }
+        } else { // Legacy logic is passed to the internal legacy deserialization that attempts to read the old format that *unsuccessfully* attempted to read/write nbt to a full yml tree.
+            return deserializeObjectLegacy(object);
+        }
+    }
+    public static NbtElement deserializeObjectLegacy(Object object) {
         if (object instanceof Map) {
             NbtCompound compound = new NbtCompound();
             for (Map.Entry<String, Object> entry : ((Map<String, Object>) object).entrySet()) {

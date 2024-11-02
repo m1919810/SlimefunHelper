@@ -1,9 +1,10 @@
 package me.matl114.SlimefunMixin;
 
 import me.matl114.HotKeyUtils.SimpleInputManager;
-import me.matl114.SlimefunUtils.Debug;
+import me.matl114.Utils.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.util.Pair;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -12,7 +13,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
-import net.minecraft.client.util.Window;
 
 @Environment(EnvType.CLIENT)
 @Mixin(Mouse.class)
@@ -40,11 +40,8 @@ public abstract class MouseMixin
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;IS_SYSTEM_MAC:Z", ordinal = 0))
     private void onMouseClick(long handle, final int button, final int action, int mods, CallbackInfo ci)
     {
-        Window window = this.client.getWindow();
-        int mouseX = (int) (this.getX() * (double) window.getScaledWidth() / (double) window.getWidth());
-        int mouseY = (int) (this.getY() * (double) window.getScaledHeight() / (double) window.getHeight());
-
-        if (SimpleInputManager.getInstance().onMouseClick(mouseX, mouseY, button, action))
+        Pair<Integer,Integer> coord= ScreenUtils.getMouseCoord(this.client,(Mouse)(Object)this);
+        if (SimpleInputManager.getInstance().onMouseClick(coord.getLeft(),coord.getRight(), button, action))
         {
             ci.cancel();
         }

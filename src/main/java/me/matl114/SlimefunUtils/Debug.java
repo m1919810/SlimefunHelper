@@ -23,6 +23,6 @@ public class Debug {
         info(String.join(" ", Arrays.stream(objs).map(Object::toString).toArray(String[]::new)));
     }
     public static void info(Object object){
-        logger.info(object.toString());
+        logger.info(object!=null? object.toString():"_null_");
     }
 }

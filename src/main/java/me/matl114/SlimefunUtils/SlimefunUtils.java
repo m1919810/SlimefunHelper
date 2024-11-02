@@ -1,19 +1,24 @@
 package me.matl114.SlimefunUtils;
 
+import me.matl114.Access.HandledScreenAccess;
 import me.matl114.BukkitUtiils.BukkitConfigDeserializor;
 import me.matl114.BukkitUtiils.BukkitItemStack;
 import me.matl114.BukkitUtiils.ItemStackHelper;
 import me.matl114.SlimefunHelper;
+import me.matl114.Utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import org.bukkit.NamespacedKey;
 import org.bukkit.persistence.PersistentDataContainer;
 
@@ -220,16 +225,26 @@ public class SlimefunUtils {
     }
     public static boolean copySfIdInHand(ClientPlayerEntity player,MinecraftClient client){
         if(player==null||client==null)return false;
-        ItemStack heldItem=player.getStackInHand(Hand.MAIN_HAND);
+        ItemStack heldItem=null;
+        if(client.currentScreen instanceof HandledScreen<?> s){
+            Pair<Integer,Integer> mouseCoord= ScreenUtils.getMouseCoord(client);
+            Slot slot=HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.getLeft(),mouseCoord.getRight());
+            if(slot!=null){
+                heldItem=slot.getStack();
+            }
+        }else{
+            heldItem=player.getStackInHand(Hand.MAIN_HAND);
+        }
         if(heldItem!=null){
             String sfid=getSfId(heldItem);
+
             if(sfid!=null){
                 client.keyboard.setClipboard(sfid);
                 player.sendMessage(Text.literal("成功将Slimefun ID拷贝至你的剪切板! 值: ").formatted(Formatting.GREEN).append(Text.literal(sfid).formatted(Formatting.WHITE)));
                 return true;
             }else{
                 player.sendMessage(Text.literal("该物品不是Slimefun物品,不能获取对应粘液ID!").formatted(Formatting.RED));
-                return false;
+                return true;
             }
         }
         return false;

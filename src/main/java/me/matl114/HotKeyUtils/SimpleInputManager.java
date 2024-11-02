@@ -17,7 +17,6 @@ public class SimpleInputManager implements IInputManager{
     protected final Multimap<Integer, IHotKey> keyBindings= ArrayListMultimap.<Integer, IHotKey>create();
     public void registerHotKeys(IHotKey key){
         for (Integer i:key.getRelatedKeyCode()){
-            Debug.info("register ",i);
             keyBindings.put(i,key);
         }
     }
