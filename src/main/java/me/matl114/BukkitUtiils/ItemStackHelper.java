@@ -91,6 +91,7 @@ public class ItemStackHelper {
 
         }catch (Throwable e) {
             Debug.info("error in ItemConvertion");
+            Debug.info(e);
             return null;
         }
     }

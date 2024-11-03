@@ -34,7 +34,7 @@ public class BukkitConfigDeserializor {
         if (object instanceof Map) {
             NbtCompound compound = new NbtCompound();
             for (Map.Entry<String, Object> entry : ((Map<String, Object>) object).entrySet()) {
-                compound.put(entry.getKey(), deserializeObject(entry.getValue()));
+                compound.put(entry.getKey(), deserializeObjectLegacy(entry.getValue()));
             }
 
             return compound;
@@ -46,7 +46,7 @@ public class BukkitConfigDeserializor {
 
             NbtList tagList = new NbtList();
             for (Object tag : list) {
-                tagList.add(deserializeObject(tag));
+                tagList.add(deserializeObjectLegacy(tag));
             }
 
             return tagList;
