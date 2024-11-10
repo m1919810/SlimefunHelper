@@ -9,7 +9,6 @@ import me.matl114.SlimefunUtils.SlimefunUtils;
 import me.matl114.Utils.RenderUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.model.ModelResourceProvider;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -23,7 +22,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
-import org.checkerframework.checker.units.qual.A;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,13 +32,12 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Collections;
 import java.util.Optional;
 import java.util.Random;
 
 @Environment(value= EnvType.CLIENT)
 @Mixin(ItemRenderer.class)
-public abstract class CustomNbtTextureRenderer implements ItemRendererAccess {
+public abstract class CustomNbtTextureRendererMixin implements ItemRendererAccess {
     @Shadow
     @Final
     private ItemModels models;
@@ -50,25 +47,6 @@ public abstract class CustomNbtTextureRenderer implements ItemRendererAccess {
 
     @Shadow @Final private MinecraftClient client;
 
-    //    @Inject(method = "getModel", at = @At(value = "HEAD"), cancellable = true)
-//    public void onGetModel(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity, int seed, CallbackInfoReturnable<BakedModel> ci){
-//        String sfid= SlimefunUtils.getSfId(stack);
-//        if(sfid==null) return;
-//        Debug.info("SFID: "+sfid);
-//        int cmd= SlimefunItemModelManager.getCustomModelData(sfid);
-//        if(cmd==0) return;
-//        Debug.info("itemiD: "+cmd);
-//        ItemStack cloned=stack.copy();
-//        cloned.getOrCreateNbt().putInt("CustomModelData",cmd);
-//        ci.cancel();
-//        ci.setReturnValue(getModel(cloned, world, entity, seed));
-
-////
-////        if(model1==null||model1==this.getModels().getModelManager().getMissingModel()) return;
-//        //Debug.info("model1: not null");
-////        ci.cancel();
-////        ci.setReturnValue(model1);
-//    }
     public void printInfo(){
         ObjectCollection<ModelIdentifier> mod= models.modelIds.values();
         for(ModelIdentifier id:mod){
@@ -95,21 +73,21 @@ public abstract class CustomNbtTextureRenderer implements ItemRendererAccess {
             return stack;
         }
     }
-    @Inject(method = "getModel",at=@At("HEAD"), cancellable = true)
-    public void onCustomModelReplace(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity, int seed, CallbackInfoReturnable<BakedModel> ci){
-        Optional<ModelIdentifier> data= RenderUtils.getCustomItemModel(stack);
-        if(data.isPresent()&&!ci.isCancelled()){
-            BakedModelManagerAccess access= BakedModelManagerAccess.of(this.getModels().getModelManager());
-            BakedModel model=access.getBakedModel(data.get());
-            if(model==access.getThisMissingModel()){
-                Identifier id=new Identifier(data.get().getNamespace(),data.get().getPath());
-                model=access.getBakedModel(id);
-            }
-
-            ci.setReturnValue(model);
-            ci.cancel();
-        }
-    }
+//    @Inject(method = "getModel",at=@At("HEAD"), cancellable = true)
+//    public void onCustomModelReplace(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity, int seed, CallbackInfoReturnable<BakedModel> ci){
+//        Optional<ModelIdentifier> data= RenderUtils.getCustomItemModel(stack);
+//        if(data.isPresent()&&!ci.isCancelled()){
+//            BakedModelManagerAccess access= BakedModelManagerAccess.of(this.getModels().getModelManager());
+//            BakedModel model=access.getBakedModel(data.get());
+//            if(model==access.getThisMissingModel()){
+//                Identifier id=new Identifier(data.get().getNamespace(),data.get().getPath());
+//                model=access.getBakedModel(id);
+//            }
+//
+//            ci.setReturnValue(model);
+//            ci.cancel();
+//        }
+//    }
 
     @Inject(method = "renderItem",at = @At("RETURN"))
     public void onItemRender(ItemStack item, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model,CallbackInfo ci){

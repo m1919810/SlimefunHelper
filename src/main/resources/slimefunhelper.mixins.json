@@ -5,13 +5,14 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "BakedModelManagerMixin",
-    "CustomNbtTextureRenderer",
+    "CustomNbtItemModelMixin",
+    "CustomNbtTextureRendererMixin",
     "DrawContextMixin",
     "HandledScreenMixin",
     "ItemStackMixin",
     "KeyBoardMixin",
-    "MouseMixin",
     "ModelOverrideListMixin",
+    "MouseMixin",
     "StorageItemDrawMixin",
     "StringNbtReaderMixin"
   ],
