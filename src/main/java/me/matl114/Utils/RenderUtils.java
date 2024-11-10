@@ -6,14 +6,18 @@ import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
+import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+
+import java.util.Optional;
 
 public class RenderUtils {
     public static void drawItem(DrawContext context, @Nullable LivingEntity entity, @Nullable World world, ItemStack stack,float scale, int x, int y, int seed, int z,int dz) {
@@ -47,5 +51,29 @@ public class RenderUtils {
             throw new CrashException(crashReport);
         }
         access.getMatrixStack().pop();
+    }
+    public static Optional<ModelIdentifier> getCustomItemModel(ItemStack stack) {
+        if(stack.hasNbt()){
+            try{
+                NbtCompound nbt=stack.getNbt();
+                String model=null;
+                if(nbt.contains("item_model")){
+                    model=nbt.getString("item_model");
+                }else if(nbt.contains("minecraft:item_model")){
+                    model=nbt.getString("minecraft:item_model");
+                }
+                if(model!=null){
+                    String[] namespaceCheck=model.split(":");
+                    String namespace="minecraft";
+                    String itemModel=namespaceCheck[namespaceCheck.length-1];
+                    if(namespaceCheck.length>=2){
+                        namespace=namespaceCheck[0];
+                    }
+                    return Optional.of( new ModelIdentifier(namespace,itemModel,"inventory"));
+
+                }
+            }catch(Throwable e){}
+        }
+        return Optional.empty();
     }
 }

@@ -30,6 +30,7 @@
 		"java": ">=17",
 		"fabric-api": "*"
 	},
+	"accessWidener":"overrideList.accesswidener",
 	"suggests": {
 		"another-mod": "*"
 	}

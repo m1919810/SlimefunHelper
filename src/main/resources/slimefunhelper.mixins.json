@@ -11,6 +11,7 @@
     "ItemStackMixin",
     "KeyBoardMixin",
     "MouseMixin",
+    "ModelOverrideListMixin",
     "StorageItemDrawMixin",
     "StringNbtReaderMixin"
   ],

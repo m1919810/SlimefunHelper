@@ -9,9 +9,16 @@ import me.matl114.SlimefunUtils.SlimefunItemModelManager;
 import me.matl114.SlimefunUtils.SlimefunUtils;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.client.model.ModelLoadingRegistry;
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 
+import net.fabricmc.fabric.impl.client.model.loading.ModelLoadingPluginManager;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
@@ -48,9 +55,19 @@ public class SlimefunHelper implements ModInitializer {
 				SlimefunItemModelManager.loadCustomModelDatas();
 			}
 		});
+		ModelLoadingPluginManager.registerPlugin(new ModelLoadingPlugin() {
+			@Override
+			public void onInitializeModelLoader(Context pluginContext) {
+
+				//pluginContext.addModels(new Identifier("networks","ntw_grid"));
+				pluginContext.addModels(SlimefunItemModelManager.walkThroughResourcePacks(MinecraftClient.getInstance().getResourceManager()));
+				Debug.info("on ModelPlugin load");
+			}
+		});
 		BukkitMock.init();
 		LOGGER.info("loading bukkitMock!");
 		ItemStackHelper.init();
 		HotKeys.init();
+
 	}
 }
