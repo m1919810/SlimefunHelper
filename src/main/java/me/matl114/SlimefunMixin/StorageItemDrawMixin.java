@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+@Deprecated
 @Environment(value= EnvType.CLIENT)
 @Mixin(DrawContext.class)
 public abstract class StorageItemDrawMixin {

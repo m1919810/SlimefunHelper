@@ -4,6 +4,7 @@ import com.google.gson.*;
 import me.matl114.Access.BakedModelManagerAccess;
 import me.matl114.Access.ItemRendererAccess;
 import me.matl114.Access.ModelOverrideListAccess;
+import me.matl114.ModConfig;
 import me.matl114.SlimefunHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
@@ -55,19 +56,7 @@ public class SlimefunItemModelManager {
     }
     public static void loadCustomModelDatas(){
         try{
-            final File configFile = FabricLoader.getInstance().getConfigDir().resolve("slimefun-item-model.yml").toFile();
-            if(!configFile.exists()){
-                try{
-                    if(!configFile.toPath().getParent().toFile().exists()) {
-                        Files.createDirectories(configFile.toPath().getParent());
-                    }
-                    Files.copy(SlimefunHelper.getInstance().getClass().getResourceAsStream("/slimefun-item-model.yml"), configFile.toPath());
-                }catch (Throwable e){
-                    Debug.info("AN INTERNAL ERROR WHILE LOADING DEFAULT CONFIG");
-                    Debug.info(e);
-                    return;
-                }
-            }
+            final File configFile= ModConfig.loadOrUseInternal("slimefun-item-model.yml");
             Yaml yaml=new Yaml();
             try (FileReader inputStream = new FileReader(configFile)) {
                 // 将 YAML 文件内容加载到 Map 中

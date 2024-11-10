@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
 import me.matl114.Access.BakedModelManagerAccess;
 import me.matl114.SlimefunUtils.Debug;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedModelManager;
@@ -34,6 +36,7 @@ import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Environment(EnvType.CLIENT)
 @Mixin(BakedModelManager.class)
 public abstract class BakedModelManagerMixin implements BakedModelManagerAccess {
     @Shadow

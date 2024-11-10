@@ -43,6 +43,7 @@ public class SlimefunHelper implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 		LOGGER.info("Slimefun, start!");
+		ModConfig.reloadModConfig();
 		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
 			@Override
 			public Identifier getFabricId() {
@@ -50,18 +51,23 @@ public class SlimefunHelper implements ModInitializer {
 			}
 			@Override
 			public void reload(ResourceManager manager) {
-				Debug.info("Reloading SlimefunHelper resources");
+				ModConfig.reloadModConfig();
 				SlimefunItemModelManager.init();
-				SlimefunItemModelManager.loadCustomModelDatas();
+				if(ModConfig.isEnableSlimefunCmdOverride()){
+					Debug.info("Reloading SlimefunHelper resources");
+					SlimefunItemModelManager.loadCustomModelDatas();
+				}
 			}
 		});
 		ModelLoadingPluginManager.registerPlugin(new ModelLoadingPlugin() {
 			@Override
 			public void onInitializeModelLoader(Context pluginContext) {
-
-				//pluginContext.addModels(new Identifier("networks","ntw_grid"));
-				pluginContext.addModels(SlimefunItemModelManager.walkThroughResourcePacks(MinecraftClient.getInstance().getResourceManager()));
-				Debug.info("on ModelPlugin load");
+				ModConfig.reloadModConfig();
+				if(ModConfig.isEnableItemModelOvevrride()) {
+					Debug.info("Force Load Model enabled");
+					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
+					pluginContext.addModels(SlimefunItemModelManager.walkThroughResourcePacks(MinecraftClient.getInstance().getResourceManager()));
+				}
 			}
 		});
 		BukkitMock.init();

@@ -1,7 +1,10 @@
 package me.matl114.SlimefunMixin;
 
 import me.matl114.Access.BakedModelManagerAccess;
+import me.matl114.ModConfig;
 import me.matl114.Utils.RenderUtils;
+import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
+import net.fabricmc.fabric.impl.client.indigo.renderer.render.BlockRenderContext;
 import net.minecraft.client.render.item.ItemModels;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedModelManager;
@@ -20,17 +23,20 @@ public abstract class CustomNbtItemModelMixin {
 
     @Inject(method = "getModel(Lnet/minecraft/item/ItemStack;)Lnet/minecraft/client/render/model/BakedModel;",at=@At("HEAD"), cancellable = true)
     public void getCustomItemModel(ItemStack stack, CallbackInfoReturnable<BakedModel> cir) {
-        var re= RenderUtils.getCustomItemModel(stack);
-        if(re.isPresent()){
-            BakedModelManagerAccess access= BakedModelManagerAccess.of(this.modelManager);
-            BakedModel model=access.getBakedModel(re.get());
-            if(model==access.getThisMissingModel()){
-                Identifier id=new Identifier(re.get().getNamespace(),re.get().getPath());
-                model=access.getBakedModel(id);
-            }
+        if(ModConfig.isEnableItemModelOvevrride()){
+            var re= RenderUtils.getCustomItemModel(stack);
+            if(re.isPresent()){
 
-            cir.setReturnValue(model);
-            cir.cancel();
+                BakedModelManagerAccess access= BakedModelManagerAccess.of(this.modelManager);
+                BakedModel model=access.getBakedModel(re.get());
+                if(model==access.getThisMissingModel()){
+                    Identifier id=new Identifier(re.get().getNamespace(),re.get().getPath());
+                    model=access.getBakedModel(id);
+                }
+
+                cir.setReturnValue(model);
+                cir.cancel();
+            }
         }
     }
 }

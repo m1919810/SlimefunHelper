@@ -10,6 +10,7 @@
     "DrawContextMixin",
     "HandledScreenMixin",
     "ItemStackMixin",
+    "JsonUnbakedModelMixin",
     "KeyBoardMixin",
     "ModelOverrideListMixin",
     "MouseMixin",
@@ -19,5 +20,5 @@
   "server": [],
   "injectors": {
     "defaultRequire": 1
-	}
+  }
 }

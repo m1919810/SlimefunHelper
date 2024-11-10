@@ -3,6 +3,7 @@ package me.matl114.SlimefunMixin;
 import it.unimi.dsi.fastutil.objects.ObjectCollection;
 import me.matl114.Access.BakedModelManagerAccess;
 import me.matl114.Access.ItemRendererAccess;
+import me.matl114.ModConfig;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunItemModelManager;
 import me.matl114.SlimefunUtils.SlimefunUtils;
@@ -59,19 +60,18 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
             "getModel"
             , at = @At("HEAD"), index = 1, argsOnly = true)
     public ItemStack onItemModelLoad(ItemStack stack){
-        String sfid= SlimefunUtils.getSfId(stack);
-        if(sfid!=null){
-            int cmd= SlimefunItemModelManager.getCustomModelData(sfid);
-            if(cmd==0) return stack;
-            ItemStack cloned=stack.copy();
-            SlimefunUtils.setCustomModelData(cloned, cmd);
+        if(ModConfig.isEnableSlimefunCmdOverride()){
+            String sfid= SlimefunUtils.getSfId(stack);
+            if(sfid!=null){
+                int cmd= SlimefunItemModelManager.getCustomModelData(sfid);
+                if(cmd==0) return stack;
+                ItemStack cloned=stack.copy();
+                SlimefunUtils.setCustomModelData(cloned, cmd);
 
-            return cloned;
-        }else{
-
-//                   BakedModel model1= BakedModelManagerAccess.of( this.getModels().getModelManager()).getBakedModel(new ModelIdentifier("minecraft","light_blue_wool","inventory"));
-            return stack;
+                return cloned;
+            }
         }
+        return stack;
     }
 //    @Inject(method = "getModel",at=@At("HEAD"), cancellable = true)
 //    public void onCustomModelReplace(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity, int seed, CallbackInfoReturnable<BakedModel> ci){
@@ -91,50 +91,52 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
 
     @Inject(method = "renderItem",at = @At("RETURN"))
     public void onItemRender(ItemStack item, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model,CallbackInfo ci){
-        ItemStack stack=null;
-        try{
-            stack= SlimefunUtils.getStorageContent(item);
-        }catch (Throwable e){
-            Debug.info("An Error occurred while deserialization");
-            return;
-        }
-        if(stack!=null){
-            matrices.push();
+        if(ModConfig.isEnableStorageItemDisplay()){
+            ItemStack stack=null;
             try{
-                final float scale=0.54f;
-                final float scale_ground=0.8f;
-                switch(renderMode){
-                    case GUI -> {
-                        matrices.translate(0.26,-0.26,1f);
-                        matrices. scale(scale, scale, scale);
-                    }case HEAD -> {
-                        return;
-                    }case FIRST_PERSON_LEFT_HAND -> {
-                        return;
-                    }case FIRST_PERSON_RIGHT_HAND -> {
-                        return;
-                    }case THIRD_PERSON_LEFT_HAND -> {
-                        return;
-                    }case THIRD_PERSON_RIGHT_HAND -> {
-                        return;
-                    }case GROUND -> {
-                        matrices.translate(0.15,-0.15,0);
-                        matrices. scale(scale_ground, scale_ground, scale_ground);
-                    }case FIXED -> {
-                        matrices.translate(-0.25,-0.25,-0.05);
-                        matrices. scale(scale_ground, scale_ground, scale_ground);
-                    }case NONE -> {
-                        return;
+                stack= SlimefunUtils.getStorageContent(item);
+            }catch (Throwable e){
+                Debug.info("An Error occurred while deserialization");
+                return;
+            }
+            if(stack!=null){
+                matrices.push();
+                try{
+                    final float scale=0.54f;
+                    final float scale_ground=0.8f;
+                    switch(renderMode){
+                        case GUI -> {
+                            matrices.translate(0.26,-0.26,1f);
+                            matrices. scale(scale, scale, scale);
+                        }case HEAD -> {
+                            return;
+                        }case FIRST_PERSON_LEFT_HAND -> {
+                            return;
+                        }case FIRST_PERSON_RIGHT_HAND -> {
+                            return;
+                        }case THIRD_PERSON_LEFT_HAND -> {
+                            return;
+                        }case THIRD_PERSON_RIGHT_HAND -> {
+                            return;
+                        }case GROUND -> {
+                            matrices.translate(0.15,-0.15,0);
+                            matrices. scale(scale_ground, scale_ground, scale_ground);
+                        }case FIXED -> {
+                            matrices.translate(-0.25,-0.25,-0.05);
+                            matrices. scale(scale_ground, scale_ground, scale_ground);
+                        }case NONE -> {
+                            return;
+                        }
                     }
+
+                    BakedModel bakedModel=this.getModel(stack,client.world, client.player, 0);
+
+                    DiffuseLighting.enableGuiDepthLighting();
+                    this.renderItem(stack,renderMode,leftHanded,matrices,vertexConsumers,0xF000F0,overlay,bakedModel);
+                    DiffuseLighting.disableGuiDepthLighting();
+                }finally {
+                    matrices.pop();
                 }
-
-                BakedModel bakedModel=this.getModel(stack,client.world, client.player, 0);
-
-                DiffuseLighting.enableGuiDepthLighting();
-                this.renderItem(stack,renderMode,leftHanded,matrices,vertexConsumers,0xF000F0,overlay,bakedModel);
-                DiffuseLighting.disableGuiDepthLighting();
-            }finally {
-                matrices.pop();
             }
         }
 
@@ -142,12 +144,11 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
     Random random=new Random();
     @Inject(method = "renderItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;push()V", shift = At.Shift.AFTER))
     public void onObfuscatedItemRender(ItemStack item, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model,CallbackInfo ci){
-        if(item.hasNbt()){
+        if( item.hasNbt()){
             if(item.getNbt().contains("obfuscated")){
                 matrices.translate(random.nextFloat(-3.0f,3.0f),random.nextFloat(-3.0f,3.0f),random.nextFloat(-3.0f,3.0f));
             }
         }
-
     }
 
 }

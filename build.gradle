@@ -17,6 +17,7 @@ repositories {
 	gradlePluginPortal()
 	mavenLocal()
 	mavenCentral()
+
 	maven {
 		url 'https://maven.aliyun.com/nexus/content/groups/public'
 	}
@@ -61,7 +62,8 @@ dependencies {
 	modImplementation "org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT"
 	include "org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT"
 	include 'org.yaml:snakeyaml:1.30'
-
+	compileOnly 'org.projectlombok:lombok:1.18.24'  // 最新的 Lombok 版本
+	annotationProcessor 'org.projectlombok:lombok:1.18.24'  // 注解处理器
 }
 
 processResources {
@@ -74,6 +76,7 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 17
+	options.annotationProcessorPath = configurations.annotationProcessor
 }
 
 java {
