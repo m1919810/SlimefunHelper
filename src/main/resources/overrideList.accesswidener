@@ -1,0 +1,22 @@
+accessWidener	v1	named
+accessible class net/minecraft/client/render/model/json/ModelOverrideList$BakedOverride
+accessible field net/minecraft/client/render/model/json/ModelOverrideList overrides [Lnet/minecraft/client/render/model/json/ModelOverrideList$BakedOverride;
+accessible class net/minecraft/client/render/model/BakedModelManager$BakingResult
+accessible field net/minecraft/client/render/model/BakedModelManager$BakingResult readyForUpload Ljava/util/concurrent/CompletableFuture;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

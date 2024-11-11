@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "slimefunhelper",
+	"version": "${version}",
+	"name": "SlimefunHelper",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"me.matl114.SlimefunHelper"
+		],
+		"fabric-datagen": [
+			"me.matl114.SlimefunHelperDataGenerator"
+		]
+	},
+	"mixins": [
+		"slimefunhelper.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.15.1",
+		"minecraft": "~1.20",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"accessWidener":"overrideList.accesswidener",
+	"suggests": {
+		"another-mod": "*"
+	}
+}
