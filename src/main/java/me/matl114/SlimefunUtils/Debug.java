@@ -25,4 +25,10 @@ public class Debug {
     public static void info(Object object){
         logger.info(object!=null? object.toString():"_null_");
     }
+    public static void stackTrace(){
+        StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+        for(StackTraceElement stackTraceElement : stackTraceElements) {
+            Debug.info(stackTraceElement.toString());
+        }
+    }
 }

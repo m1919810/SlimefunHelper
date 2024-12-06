@@ -1,4 +1,4 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.RenderMixin;
 
 import me.matl114.Access.DrawContextAccess;
 import net.minecraft.client.MinecraftClient;

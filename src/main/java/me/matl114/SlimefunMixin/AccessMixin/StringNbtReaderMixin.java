@@ -1,11 +1,10 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.AccessMixin;
 
 import me.matl114.Access.StringNbtReaderAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.nbt.visitor.StringNbtWriter;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 

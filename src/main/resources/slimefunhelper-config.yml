@@ -15,3 +15,7 @@ options:
 hotkeys:
   #复制粘液id的热键
   slimefunid-copy: LEFT_CONTROL,C,BUTTON_1
+
+hotkeys-toggle:
+  quick-mine: LEFT_CONTROL,M
+  reach: LEFT_CONTROL,R

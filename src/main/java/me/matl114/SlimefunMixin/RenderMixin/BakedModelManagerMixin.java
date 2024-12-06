@@ -1,6 +1,5 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.RenderMixin;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
 import me.matl114.Access.BakedModelManagerAccess;
@@ -24,10 +23,6 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import oshi.annotation.concurrent.Immutable;
 
 import java.io.Reader;
 import java.util.*;

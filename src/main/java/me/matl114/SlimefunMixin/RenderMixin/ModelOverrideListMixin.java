@@ -1,9 +1,8 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.RenderMixin;
 
 import me.matl114.Access.ModelOverrideListAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.render.model.json.ModelOverride;
 import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;

@@ -1,13 +1,11 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.RenderMixin;
 
 import me.matl114.ModConfig;
-import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;

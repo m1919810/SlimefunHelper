@@ -1,4 +1,4 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.HotkeyMixin;
 
 import me.matl114.HotKeyUtils.SimpleInputManager;
 import me.matl114.Utils.ScreenUtils;

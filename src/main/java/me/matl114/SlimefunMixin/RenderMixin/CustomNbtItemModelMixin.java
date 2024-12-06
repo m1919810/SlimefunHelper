@@ -1,10 +1,8 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.RenderMixin;
 
 import me.matl114.Access.BakedModelManagerAccess;
 import me.matl114.ModConfig;
 import me.matl114.Utils.RenderUtils;
-import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
-import net.fabricmc.fabric.impl.client.indigo.renderer.render.BlockRenderContext;
 import net.minecraft.client.render.item.ItemModels;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedModelManager;

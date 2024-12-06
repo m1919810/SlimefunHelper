@@ -1,13 +1,11 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.RenderMixin;
 
 import it.unimi.dsi.fastutil.objects.ObjectCollection;
-import me.matl114.Access.BakedModelManagerAccess;
 import me.matl114.Access.ItemRendererAccess;
 import me.matl114.ModConfig;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunItemModelManager;
 import me.matl114.SlimefunUtils.SlimefunUtils;
-import me.matl114.Utils.RenderUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -21,7 +19,6 @@ import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -31,9 +28,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Optional;
 import java.util.Random;
 
 @Environment(value= EnvType.CLIENT)

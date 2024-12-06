@@ -1,12 +1,9 @@
-package me.matl114.SlimefunMixin;
+package me.matl114.SlimefunMixin.HotkeyMixin;
 
 import me.matl114.HotKeyUtils.SimpleInputManager;
-import me.matl114.SlimefunUtils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Keyboard;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
