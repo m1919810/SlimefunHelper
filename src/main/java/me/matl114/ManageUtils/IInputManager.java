@@ -1,4 +1,4 @@
-package me.matl114.HotKeyUtils;
+package me.matl114.ManageUtils;
 
 import net.minecraft.client.MinecraftClient;
 

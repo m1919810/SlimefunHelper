@@ -2,16 +2,13 @@ package me.matl114.SlimefunMixin.HackMixin;
 
 import lombok.Getter;
 import me.matl114.Access.ClientPlayerAccess;
-import me.matl114.HotKeyUtils.HotKeys;
-import me.matl114.SlimefunUtils.Debug;
+import me.matl114.ManageUtils.HotKeys;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -42,28 +39,34 @@ public abstract class PlayerMixin implements ClientPlayerAccess {
     public HandledScreen keepedInv=null;
     @Getter
     public ScreenHandler keepedInvHandler=null;
-
+    @Unique boolean forceCloseInv=false;
     @Unique
     public void clearKeepedInventory(boolean closeInv){
         keepedInv=null;
         ScreenHandler handler=keepedInvHandler;
         keepedInvHandler=null;
         if(closeInv){
-            this.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(((ClientPlayerEntity)(Object)this).currentScreenHandler.syncId));
-            this.closeScreen();
+            forceCloseInv=true;
+            try{
+                ((ClientPlayerEntity)(Object)this).closeHandledScreen();
+            }catch (Throwable e){
+                e.printStackTrace();
+            }
+            finally {
+                forceCloseInv=false;
+            }
         }
 
     }
     @Inject(method="closeHandledScreen",at=@At(value = "HEAD"),cancellable = true)
     public void closeHandledScreen(CallbackInfo ci) {
-        if(HotKeys.getButtonToggleManager().get(HotKeys.KEEP_INV).get()) {
+        if(!this.forceCloseInv&& HotKeys.getButtonToggleManager().get(HotKeys.KEEP_INV).get()) {
             if(this.client.currentScreen instanceof HandledScreen handled) {
                 keepedInv= handled;
                 this.keepedInvHandler=((ClientPlayerEntity)(Object)this).currentScreenHandler;
                 this.closeScreen();
                 ci.cancel();
             }
-
         }
     }
 

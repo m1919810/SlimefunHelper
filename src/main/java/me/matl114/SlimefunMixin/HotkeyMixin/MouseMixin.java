@@ -1,6 +1,6 @@
 package me.matl114.SlimefunMixin.HotkeyMixin;
 
-import me.matl114.HotKeyUtils.SimpleInputManager;
+import me.matl114.ManageUtils.SimpleInputManager;
 import me.matl114.Utils.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -15,7 +15,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 
 @Environment(EnvType.CLIENT)
-@Mixin(Mouse.class)
+@Mixin(value = Mouse.class,priority = 1)
 public abstract class MouseMixin
 {
     @Shadow @Final private MinecraftClient client;

@@ -11,11 +11,26 @@ options:
   #启用物品粘液信息显示
   enable-tooltips-display: true
 
+
 #暂时不能重载这部分功能
+
 hotkeys:
   #复制粘液id的热键
   slimefunid-copy: LEFT_CONTROL,C,BUTTON_1
+  test-func: LEFT_CONTROL,T
 
 hotkeys-toggle:
   quick-mine: LEFT_CONTROL,M
   reach: LEFT_CONTROL,R
+  mine-bot: LEFT_CONTROL,B
+
+#可以重载这部分功能
+configOption:
+  mine-bot-only-mine-above: true
+configValue:
+  mine-bot-max-per-tick: 30
+
+
+
+
+

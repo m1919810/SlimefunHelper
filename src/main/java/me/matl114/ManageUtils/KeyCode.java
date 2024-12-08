@@ -1,4 +1,4 @@
-package me.matl114.HotKeyUtils;
+package me.matl114.ManageUtils;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;

@@ -2,6 +2,7 @@ package me.matl114;
 
 import lombok.Getter;
 import me.matl114.SlimefunUtils.Debug;
+import me.matl114.Utils.Utils;
 import net.fabricmc.loader.api.FabricLoader;
 import org.yaml.snakeyaml.Yaml;
 
@@ -11,6 +12,8 @@ import java.io.FileWriter;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ModConfig {
 
@@ -80,6 +83,18 @@ public class ModConfig {
     public static String getToggleHotkeys(String key){
         return toggleHotKeys.get(key);
     }
+    private static HashMap<String,String> funcHotKeys=new HashMap<>();
+    public static String getFuncHotKeys(String key){
+        return funcHotKeys.get(key);
+    }
+    private static HashMap<String, AtomicInteger> configValues=new HashMap<>();
+    private static HashMap<String, AtomicBoolean> configOptions=new HashMap<>();
+    public static AtomicInteger getConfigValue(String value){
+        return configValues.computeIfAbsent(value,k->new AtomicInteger(0));
+    }
+    public static AtomicBoolean getConfigOption(String value){
+        return configOptions.computeIfAbsent(value,k->new AtomicBoolean(false));
+    }
 
     public static void reloadModConfig(){
         Debug.info("Reloading Mod Config");
@@ -105,8 +120,9 @@ public class ModConfig {
             hotkey_load:{
                 Map<String,Object> modConfig=(Map<String, Object>) data.get("hotkeys");
                 if(modConfig==null)break hotkey_load;
-                slimefunIdCopyHotkey=getOrSetDefault(modConfig,"slimefunid-copy","LEFT_CONTROL,C,BUTTON_1");
-                Debug.info("load keybind slimefunid-copy :",slimefunIdCopyHotkey);
+                for(Map.Entry<String,Object> entry:modConfig.entrySet()){
+                    funcHotKeys.put(entry.getKey(),entry.getValue().toString());
+                }
             }
             hotkey_toggle:{
                 Map<String,Object> modConfig=(Map<String, Object>) data.get("hotkeys-toggle");
@@ -115,7 +131,30 @@ public class ModConfig {
                     toggleHotKeys.put(entry.getKey(),entry.getValue().toString());
                 }
             }
-
+            configsValues:{
+                Map<String,Object> modConfig=(Map<String, Object>) data.get("configValue");
+                if(modConfig==null)break configsValues;
+                for(Map.Entry<String,Object> entry:modConfig.entrySet()){
+                    int value=Utils.parseIntOrDefault(entry.getValue().toString(),0);
+                    if(configValues.containsKey(entry.getKey())){
+                        configValues.get(entry.getKey()).set(value);
+                    }else {
+                        configValues.put(entry.getKey(),new AtomicInteger() );
+                    }
+                }
+            }
+            configsOptions:{
+                Map<String,Object> modConfig=(Map<String, Object>) data.get("configOption");
+                if(modConfig==null)break configsOptions;
+                for(Map.Entry<String,Object> entry:modConfig.entrySet()){
+                    boolean value=Boolean.parseBoolean(entry.getValue().toString());
+                    if(configOptions.containsKey(entry.getKey())){
+                        configOptions.get(entry.getKey()).set(value);
+                    }else {
+                        configOptions.put(entry.getKey(),new AtomicBoolean(value) );
+                    }
+                }
+            }
         }catch (Throwable e){
             Debug.info("AN INTERNAL ERROR WHILE RELOADING CONFIG");
             Debug.info(e);
@@ -127,6 +166,7 @@ public class ModConfig {
             Debug.info(e);
         }
     }
+
     public static <T extends Object> T getOrSetDefault(Map<String,Object> config,String key,T defaultValue){
 
         Object value=config.get(key);

@@ -1,13 +1,10 @@
-package me.matl114.HotKeyUtils;
+package me.matl114.ManageUtils;
 
 import com.google.common.base.Preconditions;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface TaskManager {
     public static TaskManager of(){

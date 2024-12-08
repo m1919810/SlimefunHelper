@@ -1,8 +1,4 @@
-package me.matl114.HotKeyUtils;
-
-import me.matl114.SlimefunUtils.Debug;
-import me.matl114.SlimefunUtils.SlimefunUtils;
-import net.minecraft.client.network.ClientPlayerEntity;
+package me.matl114.ManageUtils;
 
 import java.util.*;
 

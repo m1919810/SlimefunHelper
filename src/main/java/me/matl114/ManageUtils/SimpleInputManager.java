@@ -1,8 +1,7 @@
-package me.matl114.HotKeyUtils;
+package me.matl114.ManageUtils;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import me.matl114.SlimefunUtils.Debug;
 import net.minecraft.client.MinecraftClient;
 import org.lwjgl.glfw.GLFW;
 

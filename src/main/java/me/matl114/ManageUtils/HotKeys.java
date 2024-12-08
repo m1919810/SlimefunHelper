@@ -1,9 +1,8 @@
-package me.matl114.HotKeyUtils;
+package me.matl114.ManageUtils;
 
 import lombok.Getter;
 import me.matl114.HackUtils.Tasks;
 import me.matl114.ModConfig;
-import me.matl114.SlimefunHelper;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -13,14 +12,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 public class HotKeys {
     public static void init(){
         KeyCode.init();
         initToggleSaves();
+        initHotkeyTasks();
         initButtonToggles();
         initHotkeyToggles();
         initButtonTasks();
@@ -37,6 +36,24 @@ public class HotKeys {
             return true;
         })).register(SimpleInputManager.getInstance());
     }
+    private static SimpleHotKey getTaskHotKey(String key,Runnable task){
+        return new SimpleHotKey(key,ModConfig.getFuncHotKeys(key),(manager -> {
+            ClientPlayerEntity player= manager.getClient().player;
+            if(player!=null){
+                task.run();
+            }
+            return true;
+        })).register(SimpleInputManager.getInstance());
+    }
+    private static SimpleHotKey getTaskHotKey(String key, Predicate<IInputManager> task){
+        return new SimpleHotKey(key,ModConfig.getFuncHotKeys(key),(manager -> {
+            ClientPlayerEntity player= manager.getClient().player;
+            if(player!=null){
+                return task.test(manager);
+            }
+            return true;
+        })).register(SimpleInputManager.getInstance());
+    }
     private static HashMap<String,Boolean> defaultToggles=new HashMap<>();
     @Getter
     private static ToggleManager buttonToggleManager=ToggleManager.of();
@@ -44,17 +61,12 @@ public class HotKeys {
     private static ToggleManager hotkeyToggleManager=ToggleManager.of();
     @Getter
     private static TaskManager buttonTaskManager=TaskManager.of();
+    public static final String SLIMEFUNID_COPY="slimefunid-copy";
     public static final String CLEAR_KEEPED="clear-keep";
     public static final String KEEP_INV="keep-inv";
     public static final String QUICK_MINE="quick-mine";
     public static final String REACH="reach";
-    public static final IHotKey COPY_SFID_KEY=new SimpleHotKey("copy-sfId", ModConfig.getSlimefunIdCopyHotkey(),(manager -> {
-        ClientPlayerEntity player= manager.getClient().player;
-        if(player!=null){
-            return SlimefunUtils.copySfIdInHand(player,manager.getClient());
-        }
-        return false;
-    })).register(SimpleInputManager.getInstance());
+    public static final String MINEBOT="mine-bot";
     private static void initButtonToggles(){
         buttonToggleManager.register(KEEP_INV,false);
         buttonToggleManager.register("test1",false);
@@ -64,9 +76,23 @@ public class HotKeys {
     private static void initHotkeyToggles(){
         getToggleHotKey(QUICK_MINE,false);
         getToggleHotKey(REACH,false);
+        getToggleHotKey(MINEBOT,false);
     }
     private static void initButtonTasks(){
         buttonTaskManager.register(CLEAR_KEEPED, Tasks::clearKeepedInv);
+    }
+    private static void initHotkeyTasks(){
+        getTaskHotKey(SLIMEFUNID_COPY,(manager)->{
+            ClientPlayerEntity player= manager.getClient().player;
+            if(player!=null){
+                return SlimefunUtils.copySfIdInHand(player,manager.getClient());
+            }
+            return false;
+        });
+        getTaskHotKey("test-func",(manager -> {
+            Debug.info(manager.getClient().player.currentScreenHandler);
+            return true;
+        }));
     }
     static File toggleSave;
     private static void save(){
