@@ -2,24 +2,24 @@ package me.matl114;
 
 import me.matl114.BukkitUtiils.BukkitMock;
 import me.matl114.BukkitUtiils.ItemStackHelper;
-import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunItemModelManager;
 import me.matl114.SlimefunUtils.SlimefunUtils;
 import net.fabricmc.api.ModInitializer;
 
-import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.model.ExtraModelProvider;
+import net.fabricmc.fabric.api.client.model.ModelLoadingRegistry;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 
-import net.fabricmc.fabric.impl.client.model.loading.ModelLoadingPluginManager;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Consumer;
 
 
 public class SlimefunHelper implements ModInitializer {
@@ -55,14 +55,25 @@ public class SlimefunHelper implements ModInitializer {
 				}
 			}
 		});
-		ModelLoadingPluginManager.registerPlugin(new ModelLoadingPlugin() {
+//		ModelLoadingPluginManager.registerPlugin(new ModelLoadingPlugin() {
+//			@Override
+//			public void onInitializeModelLoader(Context pluginContext) {
+//				ModConfig.reloadModConfig();
+//				if(ModConfig.isEnableItemModelOvevrride()) {
+//					Debug.info("Force Load Model enabled");
+//					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
+//					pluginContext.addModels(SlimefunItemModelManager.walkThroughResourcePacks(MinecraftClient.getInstance().getResourceManager()));
+//				}
+//			}
+//		});
+		ModelLoadingRegistry.INSTANCE.registerModelProvider (new ExtraModelProvider() {
 			@Override
-			public void onInitializeModelLoader(Context pluginContext) {
+			public void provideExtraModels(ResourceManager manager, Consumer<Identifier> out) {
 				ModConfig.reloadModConfig();
 				if(ModConfig.isEnableItemModelOvevrride()) {
 					Debug.info("Force Load Model enabled");
 					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
-					pluginContext.addModels(SlimefunItemModelManager.walkThroughResourcePacks(MinecraftClient.getInstance().getResourceManager()));
+					SlimefunItemModelManager.walkThroughResourcePacks(manager).forEach(out);
 				}
 			}
 		});
