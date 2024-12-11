@@ -54,6 +54,11 @@ public abstract class ClientInputMixin {
             }else{
                 Tasks.onMineBotStop();
             }
+            if(HotKeys.getHotkeyToggleManager().getState(HotKeys.MINE_ONEBLOCK)){
+                Tasks.onMineOneBlockStart(player,interactionManager);
+            }else {
+                Tasks.onMineOneBlockStop();
+            }
         }
     }
 

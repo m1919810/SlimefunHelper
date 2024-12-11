@@ -2,6 +2,7 @@ package me.matl114;
 
 import me.matl114.BukkitUtiils.BukkitMock;
 import me.matl114.BukkitUtiils.ItemStackHelper;
+import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunItemModelManager;

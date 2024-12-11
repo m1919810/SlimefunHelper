@@ -67,6 +67,8 @@ public class HotKeys {
     public static final String QUICK_MINE="quick-mine";
     public static final String REACH="reach";
     public static final String MINEBOT="mine-bot";
+    public static final String MINE_ONEBLOCK="mine-oneblock";
+    public static final String OPEN_MENU="open-menu";
     private static void initButtonToggles(){
         buttonToggleManager.register(KEEP_INV,false);
         buttonToggleManager.register("test1",false);
@@ -77,6 +79,7 @@ public class HotKeys {
         getToggleHotKey(QUICK_MINE,false);
         getToggleHotKey(REACH,false);
         getToggleHotKey(MINEBOT,false);
+        getToggleHotKey(MINE_ONEBLOCK,false);
     }
     private static void initButtonTasks(){
         buttonTaskManager.register(CLEAR_KEEPED, Tasks::clearKeepedInv);
@@ -91,6 +94,10 @@ public class HotKeys {
         });
         getTaskHotKey("test-func",(manager -> {
             Debug.info(manager.getClient().player.currentScreenHandler);
+            return true;
+        }));
+        getTaskHotKey(OPEN_MENU,(manager->{
+            Tasks.openSelectScreen();
             return true;
         }));
     }
