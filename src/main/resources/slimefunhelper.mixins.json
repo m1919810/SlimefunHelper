@@ -6,6 +6,9 @@
   "client": [
     "AccessMixin.HandledScreenMixin",
     "AccessMixin.StringNbtReaderMixin",
+    "FixMixin.ConstantModifyMixin",
+    "FixMixin.ParentElementButtonFixMixin",
+    "HackMixin.ChatScreenMixin",
     "HackMixin.ClientConnectionMixin",
     "HackMixin.ClientInputMixin",
     "HackMixin.ClientPacketListenerMixin",
@@ -14,6 +17,7 @@
     "HotkeyMixin.KeyBoardMixin",
     "HotkeyMixin.MouseMixin",
     "HotkeyMixin.ScreenButtonMixin",
+    "HotkeyMixin.ScreenMixin",
     "RenderMixin.BakedModelManagerMixin",
     "RenderMixin.CustomNbtItemModelMixin",
     "RenderMixin.CustomNbtTextureRendererMixin",
@@ -25,5 +29,8 @@
   "server": [],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "mixins": [
+    "FixMixin.LoginHelloNameFixC2SPacketMixin"
+  ]
 }

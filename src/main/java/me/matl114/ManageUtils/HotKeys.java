@@ -1,7 +1,8 @@
 package me.matl114.ManageUtils;
 
 import lombok.Getter;
-import me.matl114.HackUtils.Tasks;
+import me.matl114.HackUtils.InvTasks;
+import me.matl114.HackUtils.MineTasks;
 import me.matl114.ModConfig;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunUtils;
@@ -60,6 +61,8 @@ public class HotKeys {
     @Getter
     private static ToggleManager hotkeyToggleManager=ToggleManager.of();
     @Getter
+    private static ToggleManager simpleToggleManager=ToggleManager.of();
+    @Getter
     private static TaskManager buttonTaskManager=TaskManager.of();
     public static final String SLIMEFUNID_COPY="slimefunid-copy";
     public static final String CLEAR_KEEPED="clear-keep";
@@ -69,6 +72,8 @@ public class HotKeys {
     public static final String MINEBOT="mine-bot";
     public static final String MINE_ONEBLOCK="mine-oneblock";
     public static final String OPEN_MENU="open-menu";
+    public static final String AUTO_CHAT="auto-chat";
+    public static final String KEEP_CHATINV="keep-chat-inv";
     private static void initButtonToggles(){
         buttonToggleManager.register(KEEP_INV,false);
         buttonToggleManager.register("test1",false);
@@ -81,8 +86,13 @@ public class HotKeys {
         getToggleHotKey(MINEBOT,false);
         getToggleHotKey(MINE_ONEBLOCK,false);
     }
+    private static void initSimpleToggles(){
+        simpleToggleManager.register(AUTO_CHAT,false);
+        simpleToggleManager.register(KEEP_CHATINV,false);
+    }
+
     private static void initButtonTasks(){
-        buttonTaskManager.register(CLEAR_KEEPED, Tasks::clearKeepedInv);
+        buttonTaskManager.register(CLEAR_KEEPED, InvTasks::clearKeepedInv);
     }
     private static void initHotkeyTasks(){
         getTaskHotKey(SLIMEFUNID_COPY,(manager)->{
@@ -97,7 +107,7 @@ public class HotKeys {
             return true;
         }));
         getTaskHotKey(OPEN_MENU,(manager->{
-            Tasks.openSelectScreen();
+            InvTasks.openSelectScreen();
             return true;
         }));
     }

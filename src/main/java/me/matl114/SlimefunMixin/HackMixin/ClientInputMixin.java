@@ -2,7 +2,8 @@ package me.matl114.SlimefunMixin.HackMixin;
 
 
 import me.matl114.Access.ClientPlayerAccess;
-import me.matl114.HackUtils.Tasks;
+import me.matl114.HackUtils.ChatTasks;
+import me.matl114.HackUtils.MineTasks;
 import me.matl114.ManageUtils.HotKeys;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -12,6 +13,7 @@ import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.util.profiler.Profiler;
+import org.bukkit.block.data.type.Piston;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -50,15 +52,21 @@ public abstract class ClientInputMixin {
         this.profiler.swap("slimefun-helper-tasks");
         if(this.player!=null){
             if(HotKeys.getHotkeyToggleManager().getState(HotKeys.MINEBOT)){
-                Tasks.onMineBotStart(player,interactionManager);
+                MineTasks.onMineBotStart(player,interactionManager);
             }else{
-                Tasks.onMineBotStop();
+                MineTasks.onMineBotStop();
             }
             if(HotKeys.getHotkeyToggleManager().getState(HotKeys.MINE_ONEBLOCK)){
-                Tasks.onMineOneBlockStart(player,interactionManager);
+                MineTasks.onMineOneBlockStart(player,interactionManager);
             }else {
-                Tasks.onMineOneBlockStop();
+                MineTasks.onMineOneBlockStop();
             }
+            if(HotKeys.getSimpleToggleManager().getState(HotKeys.AUTO_CHAT)){
+                ChatTasks.onAutoChatStart();
+            }else {
+                ChatTasks.onAutoChatStop();
+            }
+
         }
     }
 

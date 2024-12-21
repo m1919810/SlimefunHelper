@@ -1,9 +1,11 @@
 package me.matl114.SlimefunMixin.HotkeyMixin;
 
+import me.matl114.Access.ButtonNotFocusedScreenAccess;
 import me.matl114.ManageUtils.HotKeys;
 import me.matl114.SlimefunUtils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -78,4 +80,5 @@ public abstract class ScreenButtonMixin extends Screen {
         }
 
     }
+
 }

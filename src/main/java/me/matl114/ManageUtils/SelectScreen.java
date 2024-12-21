@@ -1,14 +1,17 @@
 package me.matl114.ManageUtils;
 
+import me.matl114.Access.ButtonNotFocusedScreenAccess;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SelectScreen extends Screen {
+public class SelectScreen extends Screen implements ButtonNotFocusedScreenAccess {
     private HashMap<String,Runnable> selectors;
     private static final int Width=420;
     private static final int buttonHeight=20;
@@ -35,5 +38,13 @@ public class SelectScreen extends Screen {
                 y.addAndGet(buttonHeight);
             }
         });
+    }
+    @Unique
+    public Element getDefaultElement(){
+        return null;
+    }
+    @Unique
+    public boolean doKeepButtonAfterClicked(){
+        return false;
     }
 }
