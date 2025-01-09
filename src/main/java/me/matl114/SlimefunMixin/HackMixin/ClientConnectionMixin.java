@@ -39,11 +39,17 @@ public class ClientConnectionMixin {
             ci.cancel();
         }
     }
-    @Inject(method = "sendInternal",at=@At("HEAD"),cancellable = true)
-    private void sendPacket(Packet<?> packet, PacketCallbacks callbacks, NetworkState packetState, NetworkState currentState, CallbackInfo ci) {
+    @Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V",at=@At("HEAD"),cancellable = true)
+    private void sendPacket(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
         if(!Listener.sendC2SPacket(packet)){
             ci.cancel();
         }
     }
+//    @Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;)V",at=@At("HEAD"),cancellable = true)
+//    private void sendPacket(Packet<?> packet, PacketCallbacks callbacks, CallbackInfo ci){
+//        if(!Listener.sendC2SPacket(packet)){
+//            ci.cancel();
+//        }
+//    }
 
 }
