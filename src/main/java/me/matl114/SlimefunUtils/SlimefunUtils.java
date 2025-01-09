@@ -4,6 +4,7 @@ import me.matl114.Access.HandledScreenAccess;
 import me.matl114.BukkitUtiils.BukkitConfigDeserializor;
 import me.matl114.BukkitUtiils.BukkitItemStack;
 import me.matl114.BukkitUtiils.ItemStackHelper;
+import me.matl114.ManageUtils.HotKeys;
 import me.matl114.SlimefunHelper;
 import me.matl114.Utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
@@ -240,7 +241,9 @@ public class SlimefunUtils {
 
             if(sfid!=null){
                 client.keyboard.setClipboard(sfid);
-                player.sendMessage(Text.literal("成功将Slimefun ID拷贝至你的剪切板! 值: ").formatted(Formatting.GREEN).append(Text.literal(sfid).formatted(Formatting.WHITE)));
+                HotKeys.SHARED_ARGUMENT.set(sfid);
+                player.sendMessage(Text.literal("成功将Slimefun ID拷贝至你的剪切板和公共参数! 值: ").formatted(Formatting.GREEN).append(Text.literal(sfid).formatted(Formatting.WHITE)));
+
                 return true;
             }else{
                 player.sendMessage(Text.literal("该物品不是Slimefun物品,不能获取对应粘液ID!").formatted(Formatting.RED));

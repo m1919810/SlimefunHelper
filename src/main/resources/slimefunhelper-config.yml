@@ -11,7 +11,32 @@ options:
   #启用物品粘液信息显示
   enable-tooltips-display: true
 
+
 #暂时不能重载这部分功能
+
 hotkeys:
   #复制粘液id的热键
   slimefunid-copy: LEFT_CONTROL,C,BUTTON_1
+  test-func: LEFT_CONTROL,T
+  open-menu: LEFT_CONTROL,G
+  quick-drop: LEFT_CONTROL,LEFT_SHIFT,Q,BUTTON_1
+
+hotkeys-toggle:
+  quick-mine: LEFT_CONTROL,M
+  reach: LEFT_CONTROL,R
+  mine-bot: LEFT_CONTROL,B
+  mine-oneblock: LEFT_CONTROL,O
+  detect-entity: LEFT_CONTROL,P
+  always-att: LEFT_CONTROL,K
+  hktest1: LEFT_CONTROL,T,1
+  hktest2: LEFT_CONTROL,T,2
+  hktest3: LEFT_CONTROL,T,3
+  hktest4: LEFT_CONTROL,T,4
+
+#可以重载这部分功能
+
+
+
+
+
+
