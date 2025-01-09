@@ -29,7 +29,8 @@ public class ConnectionListener {
                 Debug.info(particleS2CPacket.getCount(),particleS2CPacket.getParameters());
             }
         }
-        if(packet instanceof ScoreboardPlayerUpdateS2CPacket ||packet instanceof WorldTimeUpdateS2CPacket ||packet instanceof ChunkDataS2CPacket) {
+
+        if(packet instanceof WorldTimeUpdateS2CPacket ||packet instanceof ChunkDataS2CPacket||packet.getClass().getSimpleName().startsWith("ScoreBoard")) {
             return;
         }
 

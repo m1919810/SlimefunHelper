@@ -8,6 +8,6 @@ public interface PropertyAccess {
     public String safeGetSiginature();
     public boolean reallyHasSignature();
     static PropertyAccess of(Property property) {
-        return (PropertyAccess) property;
+        return (PropertyAccess)(Object) property;
     }
 }

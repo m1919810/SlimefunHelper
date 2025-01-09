@@ -16,9 +16,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerSpawnS2CPacket;
-import net.minecraft.registry.Registries;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
@@ -60,21 +57,23 @@ public class RenderTasks {
                 }
             }
             if(!noPlayerSpawnPacket){
-                try{
-                    if(packet instanceof PlayerSpawnS2CPacket spawn){
-                        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.DETECT_ENTITY)){
-                            RenderTasks.detectPlayerSpawn(spawn);
-                        }
-                    }
-                }catch (NoClassDefFoundError e){
-                    noPlayerSpawnPacket=true;
-                }
+                //todo add this to EntityListener
+                //todo or change to world.addEntity()
+//                try{
+//                    if(packet instanceof PlayerSpawnS2CPacket spawn){
+//                        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.DETECT_ENTITY)){
+//                            RenderTasks.detectPlayerSpawn(spawn);
+//                        }
+//                    }
+//                }catch (NoClassDefFoundError e){
+//                    noPlayerSpawnPacket=true;
+//                }
             }
         });
     }
     public static Text getDisplayedLocation(double x,double y ,double z){
         return Text.literal("[%d,%d,%d]".formatted((int)x, (int)y, (int)z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
-     }
+    }
     public static void detectEntitySpawn(EntitySpawnS2CPacket packet){
         HashSet<EntityType<?>> whitelisted=getWhitelisted();
         if(whitelisted.contains(packet.getEntityType())){
@@ -94,20 +93,20 @@ public class RenderTasks {
             //Debug.info(packet.getEntityData(),packet.getUuid());
         }
     }
-    public static void detectPlayerSpawn(PlayerSpawnS2CPacket packet){
-        HashSet<EntityType<?>> whitelisted=getWhitelisted();
-        if(whitelisted.contains(EntityType.PLAYER)){
-            Text name=null;
-            if(MinecraftClient.getInstance().world!=null){
-                PlayerListEntry entry= MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(packet.getPlayerUuid());
-                if(entry!=null){
-                    name=Text.literal( entry.getProfile().getName()).formatted(Formatting.GREEN);
-                }
-            }
-
-            Debug.chat("Player",name==null?"":name,"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
-        }
-    }
+//    public static void detectPlayerSpawn(PlayerSpawnS2CPacket packet){
+//        HashSet<EntityType<?>> whitelisted=getWhitelisted();
+//        if(whitelisted.contains(EntityType.PLAYER)){
+//            Text name=null;
+//            if(MinecraftClient.getInstance().world!=null){
+//                PlayerListEntry entry= MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(packet.getPlayerUuid());
+//                if(entry!=null){
+//                    name=Text.literal( entry.getProfile().getName()).formatted(Formatting.GREEN);
+//                }
+//            }
+//
+//            Debug.chat("Player",name==null?"":name,"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
+//        }
+//    }
 
 
     public static void detectEntityDestory(EntitiesDestroyS2CPacket packet){

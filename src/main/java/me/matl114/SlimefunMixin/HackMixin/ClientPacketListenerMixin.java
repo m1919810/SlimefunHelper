@@ -38,7 +38,7 @@ public abstract class ClientPacketListenerMixin {
         if(MinecraftClient.getInstance().player!=null){
             ClientPlayerAccess access=ClientPlayerAccess.of(MinecraftClient.getInstance().player);
             if (access.getKeepedInvHandler()!=null&& packet.getSyncId() == access.getKeepedInvHandler().syncId ) {
-                access.getKeepedInvHandler().setStackInSlot(packet.getSlot(), packet.getRevision(), packet.getItemStack());
+                access.getKeepedInvHandler().setStackInSlot(packet.getSlot(), packet.getRevision(), packet.getStack());
             }
         }
     }
