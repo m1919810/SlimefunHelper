@@ -2,13 +2,11 @@ package me.matl114.HackUtils;
 
 import lombok.Getter;
 import me.matl114.Access.ClientPlayerAccess;
-import me.matl114.BukkitUtiils.ItemStackHelper;
 import me.matl114.ManageUtils.Config;
 import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.ConfigureScreen;
 import me.matl114.ManageUtils.SelectScreen;
-import me.matl114.SlimefunUtils.Debug;
-import me.matl114.Utils.Classes.LimitedSpeedExecutor;
+import me.matl114.Utils.UtilClass.LimitedSpeedExecutor;
 import me.matl114.Utils.ItemStackUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
