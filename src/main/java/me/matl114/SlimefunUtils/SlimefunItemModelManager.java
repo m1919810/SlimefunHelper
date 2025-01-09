@@ -36,15 +36,6 @@ public class SlimefunItemModelManager {
             return new JsonObject();
         }
     }
-    //public static UnbakedModel readModelFromJson()
-    public static BakedModel loadModel(Identifier id){
-       //ModelLoader loader;
-        //loader.
-        return MinecraftClient.getInstance().getBakedModelManager().getModel(id);
-    }
-    public static BakedModel getModel(Identifier id){
-        return null;
-    }
     public static void loadResourcePacks(){
         // 注册自定义资源包
         //JsonUnbakedModel.deserialize()
