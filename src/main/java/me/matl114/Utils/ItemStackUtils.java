@@ -48,4 +48,42 @@ public class ItemStackUtils {
     public static void setStoredEnchantment(ItemStack stack, NbtList enchantments){
         stack.getOrCreateNbt().put("StoredEnchantments", enchantments);
     }
+    public static ItemStack getCleanedItem(ItemStack stack){
+        return getCleanedItem(stack, true);
+    }
+    public static ItemStack getCleanedItem(ItemStack stack,boolean keepDur){
+        return getCleanedItem(stack,keepDur,true);
+    }
+    public static ItemStack getCleanedItem(ItemStack stack,boolean keepDur,boolean keepEnchant){
+        return getCleanedItem(stack,true,keepDur,keepEnchant);
+    }
+    public static ItemStack getCleanedItem(ItemStack stack,boolean keepNBT,boolean keepDur,boolean keepEnchant){
+        return getCleanedItem(stack, -999, keepNBT, keepDur, keepEnchant);
+    }
+    public static ItemStack getCleanedItem(ItemStack stack,int setAmount,boolean keepNBT,boolean keepDur,boolean keepEnchant){
+        ItemStack cleaned=stack.getItem().getDefaultStack();
+
+        if(!keepNBT){
+            if(setAmount!=-999){
+                cleaned.setCount(setAmount);
+            }
+            return cleaned;
+        }
+        ItemStack stackCopy=stack.copy();
+        if(setAmount!=-999){
+            stack.setCount(setAmount);
+        }
+        if(!keepDur){
+            stackCopy.setDamage(cleaned.getDamage());
+        }
+        if(!keepEnchant){
+            stackCopy.removeSubNbt("Enchantments");
+            stackCopy.removeSubNbt("StoredEnchantments");
+        }
+
+        return stackCopy;
+    }
+    public static boolean isSimilarItemStack(ItemStack stack1,ItemStack stack2){
+        return ItemStack.canCombine(stack1,stack2);
+    }
 }

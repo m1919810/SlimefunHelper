@@ -1,11 +1,11 @@
 package me.matl114.SlimefunMixin.HackMixin;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import me.matl114.Access.ButtonNotFocusedScreenAccess;
 import me.matl114.ManageUtils.Config;
 import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
 import me.matl114.SlimefunUtils.Debug;
+import me.matl114.Utils.ChatUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -17,6 +17,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.checkerframework.checker.units.qual.A;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -36,6 +37,8 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     @Shadow protected TextFieldWidget chatField;
     @Unique
     private static Config.StringRef stored=Configs.CHAT_CONFIG.getString(Configs.CHAT_HELPER_CACHE);
+    @Unique
+    private static Config.StringRef specialChars=Configs.CHAT_CONFIG.getString(Configs.CHAT_HELPER_SPECIALCHARS);
     @Unique
     private TextFieldWidget helperInputField;
     @Unique
@@ -77,6 +80,13 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
                     toggle2.run();
                 })
                 .dimensions(this.width - 70 ,this.height-80 , 70, 20).build());
+        addDrawableChild(ButtonWidget
+                .builder(Text.literal("sel-to-unicode"), b ->{
+                    if(getFocused() instanceof TextFieldWidget text) {
+                        text.setText(ChatUtils.toUnicodedString(text.getText()));
+                    }
+                })
+                .dimensions(this.width - 140 ,this.height-80 , 70, 20).build());
         this.int2CharInputField = new TextFieldWidget(this.textRenderer, this.width - 250, this.height - 80, 50, 20, Text.of(""));
         this.int2CharInputField .setMaxLength(256);  // 设置最大输入字符数
         this.int2CharInputField .setEditable(true);  // 设置为可编辑
@@ -86,12 +96,39 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
                 .builder(Text.literal("int<->char"), b ->{
                     tranlateInt2char();
                 })
-                .dimensions(this.width - 120 ,this.height-80 , 50, 20).build());
+                .dimensions(this.width - 200 ,this.height-80 , 50, 20).build());
+        String specialChar= specialChars.get();
+        int len=specialChar.length();
+        int x=0,xm=4;
+        int y=0;
+        for(int i=0;i<len;i++){
+            x+=1;
+            char c=specialChar.charAt(i);
+            String value=String.valueOf(c);
+            if(!ChatUtils.isNormalCharacter(c)){
+                ++i;
+                if(i<len){
+                    char d=specialChar.charAt(i);
+                    value=new String(new char[]{c,d});
+                }
+            }
+            final String valueOfChar=value;
+            addDrawableChild(ButtonWidget.builder(Text.literal(valueOfChar),b->{
+                Element el=getFocused();
+                if(el instanceof TextFieldWidget text){
+                    text.write(valueOfChar);
+                }
+            }).dimensions(this.width-25*x,this.height-104-y*24,22,20 ).build());
+            if(x>=xm){
+                x=0;y+=1;
+            }
+        }
 
     }
     //关于选择Element这件事
     //在mouseClick中选择
 
+    //防止选中原输出框时候不进行setFocus
     @Redirect(method = "mouseClicked",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;mouseClicked(DDI)Z"))
     private boolean fixMouseClickedOnChatFocusLost(TextFieldWidget instance, double v, double w, int i) {
         boolean returnValue=instance.mouseClicked(v, w, i);
@@ -100,14 +137,16 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
         }
         return returnValue;
     }
+    //interface
     @Unique
     public Element getDefaultElement(){
         return this.chatField;
     }
     @Unique
-    public boolean doKeepButtonAfterClicked(){
+    public boolean doFocusButtonWhenClicked(){
         return false;
     }
+    //resize
     @Unique
     private String saveWhenRezie;
     @Inject(method = "resize",at=@At("HEAD"))
@@ -119,28 +158,37 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     private void onResizeAddReturn(CallbackInfo ci) {
         this.int2CharInputField.setText(saveWhenRezie);
     }
-    @Redirect(method = "sendMessage",at= @At(value = "INVOKE", target = "Ljava/lang/String;isEmpty()Z"))
-    private boolean modifyEmptyStringReturn(String va){
-        return false;
-    }
+
+    //save
     @Unique
-    protected void saveEntryToValues(){
+    public void saveEntryToValues(){
         Configs.CHAT_CONFIG.setValue(this.helperInputField.getText(), Configs.CHAT_HELPER_CACHE);
     }
+    //todo disable pageup and pagedown switch drawables
+    @Inject(method = "keyPressed",at=@At("HEAD"))
+    private void onCheck(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
+        //Debug.info()
+    }
+    //keep-inv and save config when send
     @Redirect(method="keyPressed",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;sendMessage(Ljava/lang/String;Z)Z"))
     private boolean onCancelCloseScreenAfterSend(ChatScreen instance, String chatText, boolean addToHistory){
         boolean val=instance.sendMessage(chatText, addToHistory);
         if(val&&HotKeys.getSimpleToggleManager().getState(HotKeys.KEEP_CHATINV)){
-            return false;
+            val=false;
+        }
+        if(val){
+            saveEntryToValues();
         }
         return val;
 
     }
+    //
     public void close(){
         super.close();
         saveEntryToValues();
-        Debug.info("saved");
+        //Debug.info("saved");
     }
+
     @Unique
     private void tranlateInt2char(){
         String value=int2CharInputField.getText();

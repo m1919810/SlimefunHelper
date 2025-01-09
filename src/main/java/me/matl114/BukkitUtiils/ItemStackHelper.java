@@ -95,6 +95,7 @@ public class ItemStackHelper {
             return null;
         }
     }
+
     public static NbtCompound fromJsonToDisplay(Object rawJsonName,Object rawJsonLore){
         if(rawJsonName==null&&rawJsonLore==null){
             return null;

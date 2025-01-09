@@ -2,6 +2,8 @@ package me.matl114;
 
 import me.matl114.BukkitUtiils.BukkitMock;
 import me.matl114.BukkitUtiils.ItemStackHelper;
+import me.matl114.HackUtils.Tasks;
+import me.matl114.ListenerUtils.Listener;
 import me.matl114.ManageUtils.HotKeys;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunItemModelManager;
@@ -81,6 +83,12 @@ public class SlimefunHelper implements ModInitializer {
 		LOGGER.info("loading bukkitMock!");
 		ItemStackHelper.init();
 		HotKeys.init();
+		Tasks.init();
+		Listener.init();
 
 	}
+	//todo 接下来要做什么
+	//todo 已知的冲突:
+	//todo PlayerSpawnS2CPacket->1.20.4合并于EntitySpawnS2CPacket
+
 }

@@ -11,6 +11,7 @@ import org.bukkit.plugin.Plugin;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
 
@@ -54,7 +55,7 @@ public class ConfigLoader {
     }
     public static HashMap<String, Object> loadYamlConfig(File file){
         try{
-            return loadYamlConfig(new FileReader(file));
+            return loadYamlConfig(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
         }catch (Throwable e){
             Debug.info("failed to load yaml config " + file.getName() + ".yml, Error: " + e.getMessage());
             throw new RuntimeException();

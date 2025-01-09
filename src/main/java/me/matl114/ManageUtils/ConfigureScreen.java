@@ -11,8 +11,7 @@ import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Objects;
+import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConfigureScreen extends Screen implements ButtonNotFocusedScreenAccess {
@@ -26,7 +25,7 @@ public class ConfigureScreen extends Screen implements ButtonNotFocusedScreenAcc
     }
     public void loadConfig(Config config){
         this.config = config;
-        this.originValue = new HashMap<>();
+        this.originValue = new LinkedHashMap<>();
         config.getPaths().forEach(path -> {
             Debug.info((Object[]) Config.cutToPath(path));
             this.originValue.put(path,config.get(Config.cutToPath(path)));
@@ -50,12 +49,12 @@ public class ConfigureScreen extends Screen implements ButtonNotFocusedScreenAcc
             // 设置一些属性
             textField.setMaxLength(100);  // 设置最大输入字符数
             textField.setEditable(true);  // 设置为可编辑
-            textField.setText(Config.toString(value));  // 设置默认文本
+            textField.setText(Config.getSaveFormat(value));  // 设置默认文本
             addDrawableChild(textField);
             textEntryBox.put(key,textField);
         });
     }
-    protected void saveEntryToValues(){
+    public void saveEntryToValues(){
         textEntryBox.forEach((key, value) -> {
             originValue.put(key,Config.saveFrom(value.getText()));
         });
@@ -79,7 +78,7 @@ public class ConfigureScreen extends Screen implements ButtonNotFocusedScreenAcc
         return null;
     }
     @Unique
-    public boolean doKeepButtonAfterClicked(){
+    public boolean doFocusButtonWhenClicked(){
         return false;
     }
 

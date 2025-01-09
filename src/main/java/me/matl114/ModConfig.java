@@ -35,7 +35,7 @@ public class ModConfig {
         //sync with internal
         Yaml yaml = new Yaml();
         HashMap<String,Object> config=new HashMap<>();
-        HashMap<String,Object> defaults;
+        HashMap<String,Object> defaults=null;
         try(FileReader readerConfig=new FileReader(configFile)){
             config = yaml.load(readerConfig);
             config=(config==null?new HashMap<>():config);

@@ -1,9 +1,9 @@
 package me.matl114.SlimefunMixin.HackMixin;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import me.matl114.Access.PlayerInteractionAccess;
 import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
-import me.matl114.SlimefunUtils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -24,8 +24,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayerInteractionManager.class)
@@ -48,19 +48,19 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
     @Shadow @Final private MinecraftClient client;
 
-    public void sendStopPacket(BlockPos pos, Direction direction){
+    public void sendStopBreakPacket(BlockPos pos, Direction direction){
         this.sendSequencedPacket(MinecraftClient.getInstance().world,(sequence -> {
             return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
         }));
     }
-    public void sendStartPacket(BlockPos pos,Direction direction){
+    public void sendStartBreakPacket(BlockPos pos, Direction direction){
         this.sendSequencedPacket(MinecraftClient.getInstance().world,(sequence -> {
             return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction, sequence);
         }));
     }
     public void autoSendStopPacket(){
         if(currentBreakingPos!=null){
-            sendStopPacket(currentBreakingPos, Direction.UP);
+            sendStopBreakPacket(currentBreakingPos, Direction.UP);
         }
     }
 
@@ -70,17 +70,24 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         }else {
             BlockState state=this.client.world.getBlockState(blockPos);
             float speed =state.calcBlockBreakingDelta(this.client.player, this.client.player.getWorld(), blockPos);
-            if(speed>=1.0f||(speed>0.72&&HotKeys.getHotkeyToggleManager().getState(HotKeys.QUICK_MINE))||(speed>0.4&&enableFakeInstBreak.get())){
+            if(speed>=1.0f||(speed>breakThreshold.get()&&HotKeys.getHotkeyToggleManager().getState(HotKeys.QUICK_MINE))||(enableFakeInstBreak.get()&& speed>((breakThreshold.get()/2.0)+0.04d))){
                 return true;
             }else return false;
         }
     }
 
+    @Unique
+    private final static AtomicDouble breakThreshold=Configs.MINE_CONFIG.getDouble(Configs.MINE_FASTBREAK_THRESHOLD);
+    @Unique
+    private final static AtomicInteger breakCoolDown=Configs.MINE_CONFIG.getInt(Configs.MINE_FASTBREAK_BREAKCOOLDOWN);
+
     //speed up with early packet when progress>0.7
     @Inject(method = "updateBlockBreakingProgress",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/tutorial/TutorialManager;onBlockBreaking(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;F)V",ordinal = 1,shift=At.Shift.AFTER),cancellable = true,locals = LocalCapture.CAPTURE_FAILSOFT)
     public void fastbreak(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir,net.minecraft.block.BlockState blockState) {
         if(HotKeys.getHotkeyToggleManager().getState(HotKeys.QUICK_MINE)) {
-            if (this.currentBreakingProgress >= 0.72F&& HotKeys.getHotkeyToggleManager().getState(HotKeys.QUICK_MINE)) {
+           // Debug.info(breakThreshold.get(),this.currentBreakingProgress);
+            if (this.currentBreakingProgress >= breakThreshold.get()&& HotKeys.getHotkeyToggleManager().getState(HotKeys.QUICK_MINE)) {
+                //Debug.info("here");
                 this.breakingBlock = false;
                 this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
                     this.breakBlock(pos);
@@ -88,22 +95,25 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 });
                 this.currentBreakingProgress = 0.0F;
                 this.blockBreakingSoundCooldown = 0.0F;
-                this.blockBreakingCooldown = 0;
+                this.blockBreakingCooldown = breakCoolDown.get();
             }
         }
     }
     @Unique
     private boolean nextTickEarlyBreak=false;
     @Unique
-    private AtomicBoolean enableFakeInstBreak= Configs.MINE_CONFIG.getBoolean(Configs.MINE_ENABLE_FAKE_INSTANT_BREAK);
+    private static final AtomicBoolean enableFakeInstBreak= Configs.MINE_CONFIG.getBoolean(Configs.MINE_ENABLE_FAKE_INSTANT_BREAK);
+    @Unique
+    private static final AtomicDouble reachDistance=Configs.MINE_CONFIG.getDouble(Configs.MINE_FASTBREAK_REACH);
     //
     @Inject(method = "attackBlock",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V",ordinal = 1,shift = At.Shift.AFTER),locals = LocalCapture.CAPTURE_FAILSOFT)
     public void earlyBreakPacket(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir, net.minecraft.block.BlockState blockState){
         if(HotKeys.getHotkeyToggleManager().getState(HotKeys.QUICK_MINE)) {
             float speed=blockState.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getWorld(), pos);
             //speed>1.0f可以秒破 此处不调用
+            //Debug.info("speed",speed);
             if(!blockState.isAir()){
-                if(speed>0.72f&&speed<1.0f){
+                if(speed>breakThreshold.get()&&speed<1.0f){
                     this.breakingBlock = false;
                     this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
                         this.breakBlock(pos);
@@ -115,8 +125,8 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
                     this.currentBreakingProgress = 0.0F;
                     this.blockBreakingSoundCooldown = 0.0F;
-                    this.blockBreakingCooldown = 0;
-                }else if(enableFakeInstBreak.get()&& speed>0.4){
+                    this.blockBreakingCooldown = breakCoolDown.get();
+                }else if(enableFakeInstBreak.get()&& speed>((breakThreshold.get()/2.0)+0.04d)){
                     nextTickEarlyBreak=true;
                 }
             }
@@ -124,7 +134,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     }
     @Inject(method = "updateBlockBreakingProgress",at= @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;calcBlockBreakingDelta(Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F",ordinal = 0),cancellable = true,locals = LocalCapture.CAPTURE_FAILSOFT)
     public void earlyBreakNextTickPacketSend(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
-        if(this.nextTickEarlyBreak) {
+        if(enableFakeInstBreak.get()&&this.nextTickEarlyBreak) {
             this.nextTickEarlyBreak=false;
             this.breakingBlock = false;
             this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
@@ -133,7 +143,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             });
             this.currentBreakingProgress = 0.0F;
             this.blockBreakingSoundCooldown = 0.0F;
-            this.blockBreakingCooldown = 0;
+            this.blockBreakingCooldown = breakCoolDown.get();
             MinecraftClient.getInstance().world.setBlockBreakingInfo(MinecraftClient.getInstance().player.getId(), this.currentBreakingPos, -1);
             cir.setReturnValue(true);
         }
@@ -142,7 +152,21 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Inject(method = "getReachDistance",at = @At(value = "HEAD"),cancellable = true)
     public void widerReachDistance(CallbackInfoReturnable<Float> cir){
         if(HotKeys.getHotkeyToggleManager().getState(HotKeys.REACH)){
-            cir.setReturnValue(5.5f);
+            cir.setReturnValue(reachDistance.floatValue());
+        }
+    }
+    @Unique
+    private static final AtomicBoolean DIS_INTERVAL=Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_INTERVEL) ;
+    @Inject(method = "hasLimitedAttackSpeed",at = @At(value = "HEAD"),cancellable = true)
+    public void cancelAttackSpeedLimit(CallbackInfoReturnable<Boolean> cir){
+        if(DIS_INTERVAL.get()){
+            cir.setReturnValue(false);
+        }
+    }
+    @Inject(method = "hasExtendedReach",at = @At(value = "HEAD"),cancellable = true)
+    public void extendedReach(CallbackInfoReturnable<Boolean> cir){
+        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.REACH)){
+            cir.setReturnValue(true);
         }
     }
 

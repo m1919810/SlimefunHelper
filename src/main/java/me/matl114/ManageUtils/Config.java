@@ -1,13 +1,12 @@
 package me.matl114.ManageUtils;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,22 +14,24 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import it.unimi.dsi.fastutil.Hash;
+import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.Setter;
 import me.matl114.SlimefunHelper;
+import me.matl114.SlimefunUtils.Debug;
 import org.lwjgl.system.NonnullDefault;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
-public class Config {
+public class
+Config {
     private final File file;
     private Logger logger;
     private String header;
     protected HashMap<String,Object> fileConfig;
     @Setter
     @Getter
-    private static HashSet<Config> configs = new HashSet<>();
+    private static HashSet<Config> configs = new LinkedHashSet<>();
     public static void reloadAll(){
         configs.forEach(Config::reload);
     }
@@ -42,18 +43,30 @@ public class Config {
         public StringRef(String value){
             this.value = value;
         }
+        public String getInternal(){
+            return value;
+        }
         public String get(){
             return value;
         }
+        private HashSet<Consumer<String>> updated=new LinkedHashSet<>();
+        public void addUpdateListener(Consumer<String> updateListener){
+            this.updated.add(updateListener)  ;
+        }
         public void set(String value){
             this.value = value;
+            try{
+                updated.forEach(i->i.accept(value));
+            }catch (Throwable ignored){
+
+            }
         }
         public String toString(){
             return value;
         }
     }
     private static HashMap<String,Object> transferConfig(HashMap<String,Object> config){
-        HashMap<String,Object> newConfig = new HashMap<>();
+        HashMap<String,Object> newConfig = new LinkedHashMap<>();
         for(Map.Entry<String,Object> entry : config.entrySet()){
             if(entry.getValue() instanceof HashMap map) {
                 newConfig.put(entry.getKey(), transferConfig(map));
@@ -61,7 +74,12 @@ public class Config {
                 newConfig.put(entry.getKey(), new AtomicInteger(integer));
             }else if(entry.getValue() instanceof Boolean bool){
                 newConfig.put(entry.getKey(), new AtomicBoolean(bool));
-            }else if(entry.getValue() instanceof String string){
+            }else if(entry.getValue() instanceof Float f){
+                newConfig.put(entry.getKey(),new AtomicDouble(f));
+            }else if(entry.getValue() instanceof Double d){
+                newConfig.put(entry.getKey(),new AtomicDouble(d));
+            }
+            else if(entry.getValue() instanceof String string){
                 if("true".equals(string)){
                     newConfig.put(entry.getKey(), new AtomicBoolean(true));
                 }else if("false".equals(string)){
@@ -91,7 +109,10 @@ public class Config {
                 newConfig.put(entry.getKey(), integer.get());
             }else if(entry.getValue() instanceof AtomicBoolean bool){
                 newConfig.put(entry.getKey(),  bool.get());
-            }else if(entry.getValue() instanceof StringRef string){
+            }else if(entry.getValue() instanceof AtomicDouble dou){
+                newConfig.put(entry.getKey(),dou.get());
+            }
+            else if(entry.getValue() instanceof StringRef string){
                 newConfig.put(entry.getKey(), string.get());
             }else if(entry.getValue() instanceof AtomicReference obj){
                 newConfig.put(entry.getKey(), obj.get());
@@ -114,7 +135,10 @@ public class Config {
                     bool1.set(bool2.get());
                 }else if(oldValue instanceof StringRef r1 && newValue instanceof StringRef r2){
                     r1.set(r2.get());
-                }else if(oldValue instanceof AtomicReference int1&& newValue instanceof AtomicReference int2){
+                }else if(oldValue instanceof AtomicDouble dou1&& newValue instanceof AtomicDouble dou2){
+                    dou1.set(dou2.get());
+                }
+                else if(oldValue instanceof AtomicReference int1&& newValue instanceof AtomicReference int2){
                     int1.set(int2.get());
                 }else{
                     oldConfig.put(entry.getKey(), newValue);
@@ -132,23 +156,8 @@ public class Config {
             }
         }
     }
-    public static Object saveFrom(String string){
-        if("true".equals(string)){
-            return true;
-        }else if("false".equals(string)){
-            return false;
-        }else {
-            try{
-                int value=Integer.parseInt(string);
-                return value;
-            }catch (Throwable e){
-                return string;
-            }
-        }
-    }
-    public static String toString(Object obj){
-        return obj == null ? "null" : obj.toString();
-    }
+
+
 
 
     private boolean autoSave=false;
@@ -191,6 +200,13 @@ public class Config {
             int2.set(int1);
         }else if(value instanceof AtomicBoolean int1 &&  node instanceof AtomicBoolean int2){
             int2.set(int1.get());
+        }else if(value instanceof Double int1&& node instanceof AtomicDouble int2){
+            int2.set(int1);
+        }else if(value instanceof Float int1 &&  node instanceof AtomicDouble int2){
+            int2.set(int1);
+        }
+        else if(value instanceof AtomicDouble int1&& node instanceof AtomicDouble int2){
+            int2.set(int1.get());
         }
         else if(value instanceof String int1 && node instanceof StringRef int2){
             int2.set(int1);
@@ -204,6 +220,58 @@ public class Config {
             return false;
         }
         return true;
+    }
+    private Object wrapper(Object val){
+        if(val instanceof Boolean b){
+            return new AtomicBoolean(b);
+        }else if(val instanceof Integer i){
+            return new AtomicInteger(i);
+
+        }else if(val instanceof Double d){
+            return new AtomicDouble(d);
+        }else if(val instanceof Float d){
+            return new AtomicDouble(d);
+        }
+        else if(val instanceof String i){
+            return new StringRef(i);
+        }else if(val.getClass().getSimpleName().startsWith("Atomic")||val.getClass()==StringRef.class){
+            return val;
+        }else {
+            return new AtomicReference<>(val);
+        }
+    }
+
+    /**
+     * for visual config
+     * @param string
+     * @return
+     */
+    public static Object saveFrom(String string){
+        if("true".equals(string)){
+            return true;
+        }else if("false".equals(string)){
+            return false;
+        }
+        else {
+            if(string.endsWith("d")){
+                try{
+                    return Double.parseDouble(string);
+                }catch(Throwable e){
+                    return string;
+                }
+            }
+            try{
+                return Integer.parseInt(string);
+            }catch (Throwable e){
+                return string;
+            }
+        }
+    }
+    public static String getSaveFormat(Object obj){
+        if(obj instanceof Double b||obj instanceof Float f||obj instanceof AtomicDouble s){
+            return String.valueOf(obj)+"d";
+        }
+        return obj == null ? "null" : obj.toString();
     }
     public void setValue(Object value, @Nonnull String... path) {
         Object node=this.fileConfig;
@@ -234,6 +302,7 @@ public class Config {
             save();
         }
     }
+
     public Object get(@Nonnull String... path) {
         Object node=this.fileConfig;
         for(String p:path){
@@ -247,20 +316,7 @@ public class Config {
         }
         return node;
     }
-    private Object wrapper(Object val){
-        if(val instanceof Boolean b){
-            return new AtomicBoolean(b);
-        }else if(val instanceof Integer i){
-            return new AtomicInteger(i);
 
-        }else if(val instanceof String i){
-            return new StringRef(i);
-        }else if(val.getClass().getSimpleName().startsWith("Atomic")||val.getClass()==StringRef.class){
-            return val;
-        }else {
-            return new AtomicReference<>(val);
-        }
-    }
 
     public Config defaultVal(Object defaultValue,String ...path ){
         getOrCreate(()->wrapper(defaultValue),path);
@@ -313,7 +369,7 @@ public class Config {
             options.setPrettyFlow(true);  // 启用漂亮的流式显示
             Yaml yaml=new Yaml(options);
             HashMap savedData=transferBack(this.fileConfig);
-            yaml.dump(savedData,new FileWriter(file));
+            yaml.dump(savedData, new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
         } catch (IOException var3) {
             IOException e = var3;
             this.logger.log(Level.SEVERE, "Exception while saving a Config file", e);
@@ -346,7 +402,14 @@ public class Config {
             return null;
         }
     }
-
+    public AtomicDouble getDouble(String... path){
+        Object node=get(path);
+        if(node instanceof AtomicDouble ref){
+            return ref;
+        }else {
+            return null;
+        }
+    }
     public AtomicBoolean getBoolean(@Nonnull String... path) {
         Object node=get(path);
         if(node instanceof AtomicBoolean ref ){

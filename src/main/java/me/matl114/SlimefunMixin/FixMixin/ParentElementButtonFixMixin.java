@@ -1,10 +1,8 @@
 package me.matl114.SlimefunMixin.FixMixin;
 
 import me.matl114.Access.ButtonNotFocusedScreenAccess;
-import me.matl114.SlimefunUtils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.AbstractParentElement;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -24,15 +22,13 @@ public interface ParentElementButtonFixMixin {
     @Inject(method = "mouseClicked",at=@At( "RETURN"))
     default void mouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
         boolean returnValue=cir.getReturnValueZ();
-        Element defaultVal=null;
-        Element nowValue=((ParentElement)((Object)this)).getFocused();
-        boolean force=false;
-        if(nowValue instanceof ButtonWidget widget&&((ParentElement)((Object)this)) instanceof ButtonNotFocusedScreenAccess access){
-            force=!access.doKeepButtonAfterClicked();
-            defaultVal=access.getDefaultElement();
-        }
-        if(force|| !returnValue ){
+        if( !returnValue ){
            // Debug.info("miss!");
+            Element defaultVal=null;
+            if(((ParentElement)((Object)this)) instanceof ButtonNotFocusedScreenAccess access){
+                //force=!access.doKeepButtonWhenClicked();
+                defaultVal=access.getDefaultElement();
+            }
             this.setFocused(defaultVal);
         }
     }

@@ -1,6 +1,7 @@
 package me.matl114.ManageUtils;
 
 import me.matl114.Access.ButtonNotFocusedScreenAccess;
+import me.matl114.SlimefunUtils.Debug;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -33,10 +34,11 @@ public class SelectScreen extends Screen implements ButtonNotFocusedScreenAccess
                     .builder(Text.literal(key), b ->value.run())
                     .dimensions(10+x0 ,y0 , buttonWidth, buttonHeight).build());
             //
-            if(x.incrementAndGet()>buttonPerLine){
+            if(x.incrementAndGet()>=buttonPerLine){
                 x.set(0);
-                y.addAndGet(buttonHeight);
+                y.addAndGet(1);
             }
+            Debug.info(x,y,key);
         });
     }
     @Unique
@@ -44,7 +46,12 @@ public class SelectScreen extends Screen implements ButtonNotFocusedScreenAccess
         return null;
     }
     @Unique
-    public boolean doKeepButtonAfterClicked(){
+    public boolean doFocusButtonWhenClicked(){
         return false;
+    }
+
+    @Override
+    public void saveEntryToValues() {
+
     }
 }

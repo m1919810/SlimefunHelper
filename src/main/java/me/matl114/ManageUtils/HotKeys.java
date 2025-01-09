@@ -1,11 +1,13 @@
 package me.matl114.ManageUtils;
 
 import lombok.Getter;
+import me.matl114.Access.HandledScreenAccess;
 import me.matl114.HackUtils.InvTasks;
-import me.matl114.HackUtils.MineTasks;
+import me.matl114.HackUtils.Tasks;
 import me.matl114.ModConfig;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunUtils;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import org.yaml.snakeyaml.Yaml;
 
@@ -74,6 +76,49 @@ public class HotKeys {
     public static final String OPEN_MENU="open-menu";
     public static final String AUTO_CHAT="auto-chat";
     public static final String KEEP_CHATINV="keep-chat-inv";
+    public static final String DETECT_ENTITY="detect-entity";
+    public static final String QUICK_DROP="quick-drop";
+    public static final String TAKE_ALL="take-all";
+    public static final String SAVE_ALL="save-all";
+    public static final String ALWAYS_ATTACK="always-att";
+
+    public static final String BUTTON_TASK_1="btask1";
+    public static final String BUTTON_TASK_2="btask2";
+    public static final String HOTKEY_TEST1="hktest1";
+    public static final String HOTKEY_TEST2="hktest2";
+    public static final String HOTKEY_TEST3="hktest3";
+    public static final String HOTKEY_TEST4="hktest4";
+
+    public static final Config.StringRef SHARED_ARGUMENT=new Config.StringRef(""){
+        @Override
+        public String get() {
+            String val=super.get();
+            Debug.chat("Using shared argument 1: "+val);
+            return val;
+        }
+    };
+    public static final Config.StringRef SHARED_ARGUMENT_2=new Config.StringRef(""){
+        @Override
+        public String get() {
+            String val=super.get();
+            Debug.chat("Using shared argument 2: "+val);
+            return val;
+        }
+    };
+    static{
+        SHARED_ARGUMENT.addUpdateListener(str->{
+
+            if(MinecraftClient.getInstance().currentScreen instanceof HandledScreenAccess access){
+
+                access.updateSharedArgument(str,null);
+            }
+        });
+        SHARED_ARGUMENT_2.addUpdateListener(str->{
+            if(MinecraftClient.getInstance().currentScreen instanceof HandledScreenAccess access){
+                access.updateSharedArgument(null,str);
+            }
+        });
+    }
     private static void initButtonToggles(){
         buttonToggleManager.register(KEEP_INV,false);
         buttonToggleManager.register("test1",false);
@@ -85,6 +130,12 @@ public class HotKeys {
         getToggleHotKey(REACH,false);
         getToggleHotKey(MINEBOT,false);
         getToggleHotKey(MINE_ONEBLOCK,false);
+        getToggleHotKey(DETECT_ENTITY,false);
+        getToggleHotKey(ALWAYS_ATTACK,false);
+        getToggleHotKey(HOTKEY_TEST1,false);
+        getToggleHotKey(HOTKEY_TEST2,false);
+        getToggleHotKey(HOTKEY_TEST3,false);
+        getToggleHotKey(HOTKEY_TEST4,false);
     }
     private static void initSimpleToggles(){
         simpleToggleManager.register(AUTO_CHAT,false);
@@ -93,6 +144,9 @@ public class HotKeys {
 
     private static void initButtonTasks(){
         buttonTaskManager.register(CLEAR_KEEPED, InvTasks::clearKeepedInv);
+        buttonTaskManager.register(TAKE_ALL,InvTasks::takeAllContainerItem);
+        buttonTaskManager.register(SAVE_ALL,InvTasks::saveAllPlayerInvItem);
+        buttonTaskManager.register(BUTTON_TASK_1, Tasks::doButtonTaskTest1);
     }
     private static void initHotkeyTasks(){
         getTaskHotKey(SLIMEFUNID_COPY,(manager)->{
@@ -110,6 +164,7 @@ public class HotKeys {
             InvTasks.openSelectScreen();
             return true;
         }));
+        getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
     }
     static File toggleSave;
     private static void save(){
