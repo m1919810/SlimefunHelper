@@ -82,7 +82,7 @@ public abstract class ScreenButtonMixin extends Screen implements HandledScreenA
         sharedArgument2.setText(HotKeys.SHARED_ARGUMENT_2.getInternal());
         sharedArgument2.setChangedListener(HotKeys.SHARED_ARGUMENT_2::set);
         addDrawableChild(sharedArgument2);
-        for(Map.Entry<String ,Runnable> entry:buttonTasks.entrySet()) {
+        for(Map.Entry<String ,Runnable> entry:buttonToggles.entrySet()) {
             addDrawableChild(ButtonWidget
                     .builder(Text.literal(entry.getKey()), b ->entry.getValue().run())
                     .dimensions(this.x+x0*(buttonWidth+1) , this.y +y0, buttonWidth, buttonHeight).build());
@@ -92,15 +92,13 @@ public abstract class ScreenButtonMixin extends Screen implements HandledScreenA
                 y0+=(buttonHeight+2);
             }
         }
-        if(x0!=0){
-            y0+=(buttonHeight+2);
-            x0=0;
-        }
-        y0+=6;
-        for(Map.Entry<String ,Runnable> entry:buttonToggles.entrySet()) {
+        //换行
+        x0 = 0;
+        y0 = buttonHeight+ 2;
+        for(Map.Entry<String ,Runnable> entry:buttonTasks.entrySet()) {
             addDrawableChild(ButtonWidget
                     .builder(Text.literal(entry.getKey()), b ->entry.getValue().run())
-                    .dimensions(this.x+x0*(buttonWidth+1) , this.y +y0, buttonWidth, buttonHeight).build());
+                    .dimensions(this.x+x0*(buttonWidth+1) , this.y -y0, buttonWidth, buttonHeight).build());
             x0+=1;
             if(x0==4){
                 x0=0;

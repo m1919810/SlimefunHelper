@@ -17,6 +17,10 @@ public class LimitedSpeedExecutor implements Executor {
         this.size=new AtomicInteger(0);
         this.queue = new ArrayDeque<>();
     }
+    //execute when next "execute" or "reset" method is called
+    public void addDelayedExecuteTask(Runnable runnable){
+        queue.add(runnable);
+    }
 
     @Override
     public void execute(@NotNull Runnable runnable) {

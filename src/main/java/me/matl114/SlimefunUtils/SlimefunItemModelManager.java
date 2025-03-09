@@ -6,11 +6,14 @@ import me.matl114.Access.ItemRendererAccess;
 import me.matl114.Access.ModelOverrideListAccess;
 import me.matl114.ModConfig;
 import me.matl114.SlimefunHelper;
+import me.matl114.Utils.RenderUtils;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.*;
 import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.resource.*;
 import net.minecraft.util.Identifier;
@@ -72,7 +75,8 @@ public class SlimefunItemModelManager {
             Debug.info(e);
         }
     }
-    public static Collection<Identifier> walkThroughResourcePacks(ResourceManager resourceManager){
+
+    public static Collection<Identifier> walkThroughResourcePacks(ResourceManager resourceManager, boolean allLoad){
         Debug.info("on walkThroughResourcePacks");
         Collection<Identifier> id= new LinkedHashSet<>();
         List<ResourcePack> packs= resourceManager.streamResourcePacks().toList();
@@ -85,22 +89,44 @@ public class SlimefunItemModelManager {
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
             BakedModelManagerAccess access=BakedModelManagerAccess.of(MinecraftClient.getInstance().getBakedModelManager());
             for(String namespace : namespacess){
+                if(allLoad || "slimefunhelper".equals(namespace)){
+                    Debug.info("Force loading namespace ",namespace,"in pack ",pack.getName());
+                    //Debug.info("in namespace ",namespace);
+                    pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"models",(i,j)->{
+                            ///Debug.info("finding resource ",i,j);
+                            String realNamespace=i.getNamespace();
+                            String realPath=i.getPath().replaceFirst("^models/","").replaceAll(".json$","");
+                            String[] splits=realPath.split("/");
+                            String trueId=splits[splits.length-1];
+                            Identifier shouldId=new Identifier(realNamespace,trueId);
+                            //Debug.info(shouldId);
+                            Identifier shouldModelId="item".equals(splits[0])?new ModelIdentifier(realNamespace,realPath.replaceFirst("^item/",""),"inventory"):new Identifier(realNamespace,realPath);
+                            if(Registries.ITEM.get(shouldId)== Items.AIR){
+                               // Debug.info("input into registry");
+                                id.add(shouldModelId);
+                            }
 
-                Debug.info("Force loading namespace ",namespace,"in pack ",pack.getName());
-                //Debug.info("in namespace ",namespace);
-                pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"models",(i,j)->{
-                        String realNamespace=i.getNamespace();
-                        String realPath=i.getPath().replaceFirst("^models/","").replaceAll(".json$","");
-                        String[] splits=realPath.split("/");
-                        String trueId=splits[splits.length-1];
-                        Identifier shouldId=new Identifier(realNamespace,trueId);
-                        Identifier shouldModelId="item".equals(splits[0])?new ModelIdentifier(realNamespace,realPath.replaceFirst("^item/",""),"inventory"):new Identifier(realNamespace,realPath);
-                        if(Registries.ITEM.get(shouldId)== Items.AIR){
-                            id.add(shouldModelId);
                         }
+                    );
+//                    pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
+//                            Debug.info("finding more textures ",i,j);
+//                            String realNamespace=i.getNamespace();
+//                            String realPath=i.getPath().replaceFirst("^textures/","").replaceAll(".json$","");
+//                            String[] splits=realPath.split("/");
+//                            String trueId=splits[splits.length-1];
+//                            Identifier shouldId=new Identifier(realNamespace,trueId);
+//                            Debug.info(shouldId);
+//                            Identifier shouldModelId="item".equals(splits[0])?new ModelIdentifier(realNamespace,realPath.replaceFirst("^item/",""),"inventory"):new Identifier(realNamespace,realPath);
+//                            if(Registries.ITEM.get(shouldId)== Items.AIR){
+//                                Debug.info("input into registry");
+//                                //id.add(shouldModelId);
+//                            }
+//
+//                        }
+//                    );
 
                 }
-                );
+
             }
         }
         //Debug.info(id);
@@ -119,10 +145,68 @@ public class SlimefunItemModelManager {
 //        }
         return id;
     }
+    public static Collection<Identifier> loadOurselvesCustomModelTexture(ResourceManager manager){
+        List<Identifier> textureIds = new ArrayList<>();
+        for(ResourcePack pack : manager.streamResourcePacks().toList()){
+            //Debug.info("in resourcepack ",pack.getName());
+            Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
+            for(String namespace : namespacess){
+                if("slimefunhelper".equals(namespace)|| ModConfig.getSlimefunTextureNamespaces().contains(namespace)){
+                    Debug.info("Force load texture in pack",pack.getName(),"and namespace",namespace);
+                    pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
+
+                            String realNamespace=i.getNamespace();
+                            if(i.getPath().endsWith(".png")){
+                                String realPath=i.getPath().replaceFirst("^textures/","").replaceAll(".png$","");
+
+                                Identifier shouldId=new Identifier(realNamespace,realPath);
+                                textureIds.add(shouldId);
+
+                            }
+
+                        }
+                    );
+                }
+            }
+
+
+        }
+        return textureIds;
+    }
+    public static int getOverridingModelData(ItemStack item){
+        return -1;
+    }
+
     public static int getCustomModelData(String id){
         return SLIMEFUNITEMS_CUSTOMMODELDATAS.getOrDefault(id,0);
     }
     public static Identifier getSfItemPath(String id){
         return LOADED_SLIMEFUNITEMS.get(id);
+    }
+    static {
+        RenderUtils.registerModelOverridePredicate((stack)->{
+            if(stack.hasNbt()){
+                try{
+                    NbtCompound nbt=stack.getNbt();
+                    String model=null;
+                    if(nbt.contains("item_model")){
+                        model=nbt.getString("item_model");
+                    }else if(nbt.contains("minecraft:item_model")){
+                        model=nbt.getString("minecraft:item_model");
+                    }
+                    if(model!=null){
+                        String[] namespaceCheck=model.split(":");
+                        String namespace="minecraft";
+                        String itemModel=namespaceCheck[namespaceCheck.length-1];
+                        if(namespaceCheck.length>=2){
+                            namespace=namespaceCheck[0];
+                        }
+                        return Optional.of( new ModelIdentifier(namespace,itemModel,"inventory"));
+
+                    }
+                }catch(Throwable e){}
+            }
+            return Optional.empty();
+        });
     }
 }

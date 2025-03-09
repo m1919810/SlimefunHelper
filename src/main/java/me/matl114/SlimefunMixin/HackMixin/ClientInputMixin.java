@@ -6,6 +6,7 @@ import me.matl114.HackUtils.CombatTasks;
 import me.matl114.HackUtils.Tasks;
 import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
+import me.matl114.SlimefunUtils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -13,9 +14,12 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.util.Hand;
+import net.minecraft.resource.ResourcePackManager;
+import net.minecraft.server.SaveLoader;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.profiler.Profiler;
+import net.minecraft.world.level.storage.LevelStorage;
+import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -42,6 +46,9 @@ public abstract class ClientInputMixin {
     @Shadow @Nullable public ClientPlayerInteractionManager interactionManager;
 
     @Shadow @Nullable public HitResult crosshairTarget;
+
+    @Shadow
+    static MinecraftClient instance;
 
     @ModifyArg(method = "handleInputEvents",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V",ordinal = 1))
     public Screen onRedirectInventoryKeyPress(Screen screen){
@@ -71,7 +78,7 @@ public abstract class ClientInputMixin {
     public void onAttackWhenMissedEntity(CallbackInfoReturnable<Boolean> cir) {
         if(crosshairTarget!=null&& crosshairTarget.getType()!=HitResult.Type.ENTITY){
             if(HotKeys.getHotkeyToggleManager().getState(HotKeys.ALWAYS_ATTACK)){
-                CombatTasks.autoAttackBest();
+                CombatTasks.autoAttackBest(false);
             }
         }
     }
@@ -85,5 +92,46 @@ public abstract class ClientInputMixin {
         }
         Tasks.doTick();
     }
+    @Unique
+    private static final AtomicBoolean USEINGiTEM_ATTACK = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_SHIELDING);
+    //for attack when using shield
+    @Redirect(method = "handleInputEvents",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",ordinal = 0))
+    public boolean onAllowingPlayerAttackWhenUseItem(ClientPlayerEntity player) {
+        boolean flag = player.isUsingItem();
+        if(flag&&USEINGiTEM_ATTACK.get()){
+            //do attack logic
+            boolean bl3 = false;
+            while(instance.options.attackKey.wasPressed()) {
+                bl3 |= this.doAttack();
+            }
+            while(instance.options.pickItemKey.wasPressed()) {
+                this.doItemPick();
+            }
+
+            this.handleBlockBreaking(instance.currentScreen == null && !bl3 && instance.options.attackKey.isPressed() && instance.mouse.isCursorLocked());
+        }
+        return flag;
+    }
+    @Redirect(method = "handleBlockBreaking",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",ordinal = 0))
+    public boolean onAllowingPlayerBreakingWhenUseItem(ClientPlayerEntity player) {
+        if(USEINGiTEM_ATTACK.get()){
+            return false;
+        }else{
+            return player.isUsingItem();
+        }
+    }
+    @Shadow
+    protected abstract void handleBlockBreaking(boolean b) ;
+
+    @Shadow
+    protected abstract void doItemPick();
+
+    @Shadow
+    protected abstract boolean doAttack();
+
+//    @Inject(method = "startIntegratedServer",at = @At("HEAD"))
+//    public void onStartIntegratedServer(LevelStorage.Session session, ResourcePackManager dataPackManager, SaveLoader saveLoader, boolean newWorld, CallbackInfo ci) {
+//        Debug.info("Debug: start integrated server");
+//    }
 
 }

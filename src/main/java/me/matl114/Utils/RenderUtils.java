@@ -1,15 +1,23 @@
 package me.matl114.Utils;
 
+import com.mojang.datafixers.util.Pair;
 import me.matl114.Access.DrawContextAccess;
+import me.matl114.SlimefunUtils.Debug;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -17,9 +25,13 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class RenderUtils {
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
     public static void drawItem(DrawContext context, @Nullable LivingEntity entity, @Nullable World world, ItemStack stack,float scale, int x, int y, int seed, int z,int dz) {
         if (stack.isEmpty()) {
             return;
@@ -52,28 +64,39 @@ public class RenderUtils {
         }
         access.getMatrixStack().pop();
     }
-    public static Optional<ModelIdentifier> getCustomItemModel(ItemStack stack) {
-        if(stack.hasNbt()){
-            try{
-                NbtCompound nbt=stack.getNbt();
-                String model=null;
-                if(nbt.contains("item_model")){
-                    model=nbt.getString("item_model");
-                }else if(nbt.contains("minecraft:item_model")){
-                    model=nbt.getString("minecraft:item_model");
-                }
-                if(model!=null){
-                    String[] namespaceCheck=model.split(":");
-                    String namespace="minecraft";
-                    String itemModel=namespaceCheck[namespaceCheck.length-1];
-                    if(namespaceCheck.length>=2){
-                        namespace=namespaceCheck[0];
-                    }
-                    return Optional.of( new ModelIdentifier(namespace,itemModel,"inventory"));
+    private static final List<Function<ItemStack,Optional<ModelIdentifier>>> modelOverrideFunctions = new ArrayList<>();
+    public static void registerModelOverridePredicate(Function<ItemStack,Optional<ModelIdentifier>> function) {
+        modelOverrideFunctions.add(function);
+    }
+    public static Optional<BakedModel> getCustomItemModel(ItemStack stack) {
 
+        ModelIdentifier overrides = null;
+        BakedModel model = null;
+        for(Function<ItemStack,Optional<ModelIdentifier>> function : modelOverrideFunctions){
+            var re = function.apply(stack);
+            if(re.isPresent()){
+                overrides = re.get();
+                model = mc.getBakedModelManager().getModel(overrides);
+                if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
+                    model = mc.getBakedModelManager().getModel(new Identifier(overrides.getNamespace(), overrides.getPath()));
+                    if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
+                        continue;
+                    }else {
+                        return Optional.of(model);
+                    }
+                }else {
+                    return Optional.of(model);
                 }
-            }catch(Throwable e){}
+            }
         }
         return Optional.empty();
+    }
+    public static void drawSlotLikeItemAt(DrawContext context, TextRenderer textRenderer, ItemStack item, int x, int y,int depth,float scale, int seed){
+        context.getMatrices().push();
+
+       drawItem(context, MinecraftClient.getInstance().player,MinecraftClient.getInstance().world, item,scale, x, y, seed, 0 ,depth);
+
+        context.drawItemInSlot(textRenderer, item, x, y, null);
+        context.getMatrices().pop();
     }
 }

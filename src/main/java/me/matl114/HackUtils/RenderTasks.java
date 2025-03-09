@@ -1,21 +1,31 @@
 package me.matl114.HackUtils;
 
+import me.matl114.Access.PlayerInteractionAccess;
 import me.matl114.ListenerUtils.Listener;
 import me.matl114.ManageUtils.Config;
 import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.Utils.EntityUtils;
+import me.matl114.Utils.RenderUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket;
+import net.minecraft.network.packet.s2c.common.ResourcePackSendS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
+import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
@@ -25,12 +35,14 @@ import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RenderTasks {
     public static void init(){
 
     }
     private static HashSet<EntityType<?>> entityTypes = new HashSet<>();
+    private static MinecraftClient mc = MinecraftClient.getInstance();
     public static Config.StringRef RENDER_DETECT_WHITELIST= Configs.RENDER_CONFIG.getString(Configs.RENDER_DETECT_SPAWN_WHITELIST);
     private static HashSet<EntityType<?>> getWhitelisted(){
 
@@ -87,6 +99,7 @@ public class RenderTasks {
                     }
                 }
                 Debug.chat("Player ",text==null?"":text,"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
+                Debug.chat("Player Entity Id ",packet.getId());
             }else{
                 Debug.chat("Entity",packet.getEntityType().getName(),"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
             }
@@ -118,13 +131,44 @@ public class RenderTasks {
                 if(entity==null)continue;
                 if(whitelisted.contains(entity.getType())){
                     Debug.chat("Entity",entity.getType().getName(),entity instanceof PlayerEntity pl? pl.getName():(entity.hasCustomName()? entity.getCustomName():""),"disappear at position ",getDisplayedLocation(entity.getX(),entity.getY(),entity.getZ()),",distance: %.2f".formatted(calculateDistance(entity.getX(),entity.getY(),entity.getZ())));
-                    Debug.info(entity.getDisplayName(),entity.getUuid());
+//                    Debug.info(entity.getDisplayName(),entity.getUuid());
                 }
             }
         }
 
 
     }
+    public static void drawRecipeHistory(DrawContext context, TextRenderer textRenderer, int x, int y, int atX, int atY){
+        RecipeEntry<?> entry = PlayerInteractionAccess.of( MinecraftClient.getInstance().interactionManager).getLastlyCrafted();
+        ItemStack tobeRendered;
+        if(entry != null){
+            tobeRendered = entry.value().getResult(MinecraftClient.getInstance().world.getRegistryManager());
+        }else{
+            tobeRendered = new ItemStack(Items.BARRIER);
+        }
+        context.getMatrices().push();
+        context.getMatrices().translate((float)x, (float)y, 0.0F);
+        RenderUtils.drawSlotLikeItemAt(context,textRenderer,tobeRendered,atX,atY,0,1.0F,666);
+        //render lock
+        boolean lock = PlayerInteractionAccess.of(MinecraftClient.getInstance().interactionManager).getRecipeLock();
+        if(lock){
+            RenderUtils.drawSlotLikeItemAt(context,textRenderer,new ItemStack(Items.BARRIER),atX     -4,atY + 4,50,0.4F,999);
+        }
+        context.getMatrices().pop();
+    }
+    private static final AtomicBoolean disableServerResourcePack = Configs.RENDER_CONFIG.getBoolean(Configs.RESOURCE_IGNORE_SERVER);
+    public static boolean denyServerPacket(ClientConnection connection, Packet packet){
+        if(packet instanceof ResourcePackSendS2CPacket sendPacket && disableServerResourcePack.get()){
+            connection.send(new ResourcePackStatusC2SPacket(sendPacket.id(), ResourcePackStatusC2SPacket.Status.ACCEPTED));
+            connection.send(new ResourcePackStatusC2SPacket(sendPacket.id(), ResourcePackStatusC2SPacket.Status.DOWNLOADED));
+            connection.send(new ResourcePackStatusC2SPacket(sendPacket.id(), ResourcePackStatusC2SPacket.Status.SUCCESSFULLY_LOADED));
+            Debug.chat(Text.literal("Successfully reject server resourcepack").formatted(Formatting.GREEN),sendPacket.id());
+            Debug.chat(Text.literal("Download url:").formatted(Formatting.GREEN),Text.literal( sendPacket.url()).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, sendPacket.url()))).formatted(Formatting.YELLOW));
+            return false;
+        }
+        return true;
+    }
+
     //todo add rayTrace render Func
     static {
         EntityUtils.parseEntityWhiteList(RENDER_DETECT_WHITELIST.get().replace(',','|'),entityTypes);
@@ -132,5 +176,6 @@ public class RenderTasks {
             EntityUtils.parseEntityWhiteList(str.replace(',','|'),entityTypes);
         });
         Listener.registerPacketListener(RenderTasks::onDetect,true);
+        Listener.registerPacketListener(RenderTasks::denyServerPacket,true);
     }
 }

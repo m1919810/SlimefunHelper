@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import me.matl114.Access.PlayerInteractionAccess;
 import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
+import me.matl114.SlimefunUtils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -11,16 +12,17 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.network.SequencedPacketCreator;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.recipe.RecipeEntry;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.GameMode;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
@@ -61,6 +63,15 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     public void autoSendStopPacket(){
         if(currentBreakingPos!=null){
             sendStopBreakPacket(currentBreakingPos, Direction.UP);
+        }
+    }
+    public float calculateBreakingSpeed(BlockPos blockPos){
+        if(this.gameMode.isCreative()){
+            return 100.0f;
+        }else {
+            BlockState state=this.client.world.getBlockState(blockPos);
+            return state.calcBlockBreakingDelta(this.client.player, this.client.player.getWorld(), blockPos);
+
         }
     }
 
@@ -113,21 +124,23 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             //speed>1.0f可以秒破 此处不调用
             //Debug.info("speed",speed);
             if(!blockState.isAir()){
-                if(speed>breakThreshold.get()&&speed<1.0f){
-                    this.breakingBlock = false;
-                    this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
-                        this.breakBlock(pos);
-                        return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
-                    });
-    //                CompletableFuture.runAsync(()->{
-    //
-    //                });
+                if(speed < 1.0f){
+                    if(speed>breakThreshold.get()){
+                        this.breakingBlock = false;
+                        this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
+                            this.breakBlock(pos);
+                            return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
+                        });
+                        //                CompletableFuture.runAsync(()->{
+                        //
+                        //                });
 
-                    this.currentBreakingProgress = 0.0F;
-                    this.blockBreakingSoundCooldown = 0.0F;
-                    this.blockBreakingCooldown = breakCoolDown.get();
-                }else if(enableFakeInstBreak.get()&& speed>((breakThreshold.get()/2.0)+0.04d)){
-                    nextTickEarlyBreak=true;
+                        this.currentBreakingProgress = 0.0F;
+                        this.blockBreakingSoundCooldown = 0.0F;
+                        this.blockBreakingCooldown = breakCoolDown.get();
+                    }else if(enableFakeInstBreak.get()&& speed>((breakThreshold.get()/2.0)+0.04d)){
+                        nextTickEarlyBreak=true;
+                    }
                 }
             }
         }
@@ -169,5 +182,34 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             cir.setReturnValue(true);
         }
     }
-
+    @Unique
+    private RecipeEntry<?> lastlyCrafted;
+    @Unique
+    public RecipeEntry<?> getLastlyCrafted(){
+        return lastlyCrafted;
+    }
+    @Unique
+    private AtomicBoolean lockRecipe = new AtomicBoolean(false);
+    @Unique
+    public boolean getRecipeLock(){
+        return lockRecipe.get();
+    }
+    public void setLastlyCrafted(RecipeEntry<?> recipe){
+        if(!lockRecipe.get()){
+            lastlyCrafted=recipe;
+        }
+    }
+    @Inject(method = "clickRecipe",at = @At("HEAD"))
+    public void recordLastRecipe(int syncId, RecipeEntry<?> recipe, boolean craftAll, CallbackInfo ci){
+        setLastlyCrafted(recipe);
+    }
+    @Unique
+    public void toggleRecipeLock(){
+        lockRecipe.set(!lockRecipe.get());
+        Debug.chat("Toggle RecipeLock ",lockRecipe.get());
+    }
+//    @Inject(method = "clickSlot",at = @At("HEAD"))
+//    public void clickSlot(int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci){
+//        Debug.info("check slot click",syncId,slotId,button,actionType,player);
+//    }
 }

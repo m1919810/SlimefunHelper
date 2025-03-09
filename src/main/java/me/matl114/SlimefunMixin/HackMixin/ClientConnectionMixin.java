@@ -1,5 +1,6 @@
 package me.matl114.SlimefunMixin.HackMixin;
 
+import io.netty.channel.ChannelHandlerContext;
 import me.matl114.HackUtils.RenderTasks;
 import me.matl114.ListenerUtils.Listener;
 import me.matl114.SlimefunUtils.Debug;
@@ -33,15 +34,15 @@ import java.util.function.Consumer;
 @Mixin(ClientConnection.class)
 public class ClientConnectionMixin {
 
-    @Inject(method = "handlePacket",at=@At("HEAD"),cancellable = true)
-    private static void acceptPacket(Packet<?> packet, PacketListener listener, CallbackInfo ci) {
-        if(!Listener.acceptS2CPacket(packet)){
+    @Inject(method = "channelRead0(Lio/netty/channel/ChannelHandlerContext;Lnet/minecraft/network/packet/Packet;)V",at=@At("HEAD"),cancellable = true)
+    private void acceptPacket(ChannelHandlerContext channelHandlerContext, Packet<?> packet, CallbackInfo ci) {
+        if(!Listener.acceptS2CPacket((ClientConnection) (Object)this,packet)){
             ci.cancel();
         }
     }
     @Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V",at=@At("HEAD"),cancellable = true)
     private void sendPacket(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
-        if(!Listener.sendC2SPacket(packet)){
+        if(!Listener.sendC2SPacket((ClientConnection) (Object)this,packet)){
             ci.cancel();
         }
     }

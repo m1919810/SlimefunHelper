@@ -12,12 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Environment(EnvType.CLIENT)
 @Mixin(BlazeEntity.class)
 public abstract class BlazeMixin {
-   // @Inject(method = "<init>",at=@At("RETURN"))
-    private void onInit(EntityType entityType, World world, CallbackInfo ci) {
-        Debug.info("on Client Blaze create");
-        Debug.stackTrace();
-    }
+
 }

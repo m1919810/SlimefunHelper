@@ -17,30 +17,30 @@ public class BukkitObjectInputStreamAccess extends BukkitObjectInputStream {
     public BukkitObjectInputStreamAccess(InputStream in) throws IOException {
         super(in);
     }
-    protected Object resolveObject(Object obj) throws IOException {
-        Object a=null;
-        try{
-            Debug.info(obj);
-            Debug.info(obj.getClass());
-            Field map=obj.getClass().getDeclaredField("map");
-            map.setAccessible(true);
-            a= map.get(obj);
-            Debug.info(a);
-            Debug.info(a.getClass());
-        }catch (Throwable e){
-            Debug.info("no such field map");
-            return super.resolveObject(obj);
-        }
-        try{
-            Debug.info("get wrapper map");
-            Debug.info(a);
-            Debug.info(a.getClass());
-            (obj = ConfigurationSerialization.deserializeObject((Map)a)).getClass();
-            Debug.info("deserialized object");
-        }catch (Throwable e){
-            e.printStackTrace();
-        }
-        Debug.info("super.resolveObject");
-        return super.resolveObject(obj);
-    }
+//    protected Object resolveObject(Object obj) throws IOException {
+//        Object a=null;
+//        try{
+//            Debug.info(obj);
+//            Debug.info(obj.getClass());
+//            Field map=obj.getClass().getDeclaredField("map");
+//            map.setAccessible(true);
+//            a= map.get(obj);
+//            Debug.info(a);
+//            Debug.info(a.getClass());
+//        }catch (Throwable e){
+//            Debug.info("no such field map");
+//            return super.resolveObject(obj);
+//        }
+//        try{
+//            Debug.info("get wrapper map");
+//            Debug.info(a);
+//            Debug.info(a.getClass());
+//            (obj = ConfigurationSerialization.deserializeObject((Map)a)).getClass();
+//            Debug.info("deserialized object");
+//        }catch (Throwable e){
+//            e.printStackTrace();
+//        }
+//        Debug.info("super.resolveObject");
+//        return super.resolveObject(obj);
+//    }
 }

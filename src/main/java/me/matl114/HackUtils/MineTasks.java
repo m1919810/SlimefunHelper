@@ -5,13 +5,21 @@ import me.matl114.Access.PlayerInteractionAccess;
 import me.matl114.ManageUtils.Config;
 import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
+import me.matl114.SlimefunUtils.Debug;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -197,26 +205,40 @@ public class MineTasks {
     public static void onMineBotStop(){
         CACHED_POSITION=null;
     }
+    private static AtomicBoolean rightClick = Configs.MINE_CONFIG.getBoolean(Configs.MINE_BOT_RIGHT_CLICK);
     private static int minebot(ClientPlayerEntity player,ClientPlayerInteractionManager manager){
         int tryMine=0;
-        do{
-            Vec3d playerPos=player.getEyePos(); ;
-            if(distanceOut(CACHED_POSITION,playerPos)||isMined(player.getWorld(),CACHED_POSITION)){
-                CACHED_POSITION=findNextMinePos(player.getWorld(),playerPos);
-            }
-            if(CACHED_POSITION==null){
+        if(rightClick.get()){
+            //  Vec3d face = player.getEyePos().subtract(Vec3d.of(CACHED_POSITION));
+//            HitResult result = mc.crosshairTarget;
+//            if(result instanceof BlockHitResult blockHitResult){
+//                Debug.info(blockHitResult.getSide().toString());
+//                manager.sendSequencedPacket(mc.world, (sequence) -> {
+//                    return new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, blockHitResult  , sequence);
+//                });
+//                tryMine+=1;
+//            }
+            manager.sendSequencedPacket(mc.world, (sequence) -> {
+                return new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, sequence);
+            });
+        }else{
+            do{
+                Vec3d playerPos=player.getEyePos(); ;
+                if(distanceOut(CACHED_POSITION,playerPos)||isMined(player.getWorld(),CACHED_POSITION)){
+                    CACHED_POSITION=findNextMinePos(player.getWorld(),playerPos);
+                }
+                if(CACHED_POSITION==null){
+                    break;
+                }
+                boolean preCalculation=PlayerInteractionAccess.of(manager).preCalculateInstantBreak(CACHED_POSITION);
+                tryMine+=1;
 
-                break;
-            }
-            boolean preCalculation=PlayerInteractionAccess.of(manager).preCalculateInstantBreak(CACHED_POSITION);
-            tryMine+=1;
-
-            manager.updateBlockBreakingProgress(CACHED_POSITION, Direction.UP);
-            if(!preCalculation){
-                break;
-            }
-
-        }while(!manager.isBreakingBlock()&&tryMine<MAX_PER_TICK.get());
+                manager.updateBlockBreakingProgress(CACHED_POSITION, Direction.UP);
+                if(!preCalculation){
+                    break;
+                }
+            }while(!manager.isBreakingBlock()&&tryMine<MAX_PER_TICK.get());
+        }
         if(tryMine==0){
             no_block_mention++;
             if(no_block_mention>NO_BLOCK_MENTION_LIMIT){
@@ -232,7 +254,7 @@ public class MineTasks {
 
     private static AtomicInteger ONE_BLOCK_MULTIPLY_PACKET=Configs.MINE_CONFIG.getInt(Configs.MINE_ONEBLOCK_PACKET_MULTIPLE);
     private static BlockPos CACHED_ONE_BLOCK=null;
-    private static BlockPos rayTraceBlock(ClientPlayerEntity player){
+    public static BlockPos rayTraceBlock(ClientPlayerEntity player){
         var blockState=player.getWorld().raycast(new RaycastContext(player.getEyePos(),player.getEyePos().add(player.getRotationVec(1.0f).multiply(6.0f)), RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, player));
         if(blockState.getType()== HitResult.Type.BLOCK){
             return blockState.getBlockPos();

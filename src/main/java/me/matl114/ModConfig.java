@@ -11,7 +11,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -78,6 +80,8 @@ public class ModConfig {
     @Getter
     private static boolean enableToolTipsDisplay=true;
     @Getter
+    private static List<String> slimefunTextureNamespaces = new ArrayList<>();
+    @Getter
     private static String slimefunIdCopyHotkey="LEFT_CONTROL,C,BUTTON_1";
 
     private static HashMap<String,String> toggleHotKeys=new HashMap<>();
@@ -122,6 +126,10 @@ public class ModConfig {
                 for(Map.Entry<String,Object> entry:modConfig.entrySet()){
                     toggleHotKeys.put(entry.getKey(),entry.getValue().toString());
                 }
+            }
+            sf_namespace:{
+                List<String> namespaces = (List) data.get("namespace-for-slimefun");
+                slimefunTextureNamespaces = namespaces;
             }
 //            configsValues:{
 //                Map<String,Object> modConfig=(Map<String, Object>) data.get("configValue");

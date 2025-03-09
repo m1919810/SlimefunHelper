@@ -24,15 +24,7 @@ public abstract class CustomNbtItemModelMixin {
         if(ModConfig.isEnableItemModelOvevrride()){
             var re= RenderUtils.getCustomItemModel(stack);
             if(re.isPresent()){
-
-                BakedModelManagerAccess access= BakedModelManagerAccess.of(this.modelManager);
-                BakedModel model=access.getBakedModel(re.get());
-                if(model==access.getThisMissingModel()){
-                    Identifier id=new Identifier(re.get().getNamespace(),re.get().getPath());
-                    model=access.getBakedModel(id);
-                }
-
-                cir.setReturnValue(model);
+                cir.setReturnValue(re.get());
                 cir.cancel();
             }
         }

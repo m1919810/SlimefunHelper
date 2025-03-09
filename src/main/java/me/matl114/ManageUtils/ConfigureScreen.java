@@ -27,10 +27,10 @@ public class ConfigureScreen extends Screen implements ButtonNotFocusedScreenAcc
         this.config = config;
         this.originValue = new LinkedHashMap<>();
         config.getPaths().forEach(path -> {
-            Debug.info((Object[]) Config.cutToPath(path));
+//            Debug.info((Object[]) Config.cutToPath(path));
             this.originValue.put(path,config.get(Config.cutToPath(path)));
         });
-        Debug.info(this.originValue);
+//        Debug.info(this.originValue);
     }
     private static final int buttonWidth=200;
     private static final int buttonHeight=20;

@@ -20,7 +20,7 @@ public interface ToggleManager {
     HashMap<String,AtomicBoolean> getRaw();
     @Nonnull
     default AtomicBoolean get(String value){
-       return getRaw().computeIfAbsent(value,(val)->new AtomicBoolean(HotKeys.getToggles(value,false)));
+       return getRaw().getOrDefault(value,new AtomicBoolean(false));
     }
     default boolean getState(String value){
         return get(value).get();

@@ -9,7 +9,15 @@ options:
   #启用存储物品解析与展示
   enable-storageitem-display: true
   #启用物品粘液信息显示
+
   enable-tooltips-display: true
+
+namespace-for-slimefun:
+  - ae2
+  - slimefunhelper
+  - infinityexpansion
+  - avaritia
+
 
 
 #暂时不能重载这部分功能
@@ -19,7 +27,10 @@ hotkeys:
   slimefunid-copy: LEFT_CONTROL,C,BUTTON_1
   test-func: LEFT_CONTROL,T
   open-menu: LEFT_CONTROL,G
-  quick-drop: LEFT_CONTROL,LEFT_SHIFT,Q,BUTTON_1
+  quick-drop: LEFT_SHIFT,Q,BUTTON_1
+  fast-mov: LEFT_SHIFT,BUTTON_1
+  fast-drop: LEFT_SHIFT,Q
+
 
 hotkeys-toggle:
   quick-mine: LEFT_CONTROL,M
@@ -28,6 +39,7 @@ hotkeys-toggle:
   mine-oneblock: LEFT_CONTROL,O
   detect-entity: LEFT_CONTROL,P
   always-att: LEFT_CONTROL,K
+  auto-att: LEFT_CONTROL,LEFT_SHIFT,APOSTROPHE
   hktest1: LEFT_CONTROL,T,1
   hktest2: LEFT_CONTROL,T,2
   hktest3: LEFT_CONTROL,T,3

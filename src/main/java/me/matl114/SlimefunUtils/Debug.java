@@ -1,6 +1,9 @@
 package me.matl114.SlimefunUtils;
 
 
+import lombok.Getter;
+import me.matl114.HackUtils.ChatTasks;
+import me.matl114.Utils.UtilClass.LimitedSpeedExecutor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -8,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Debug {
     private static Logger logger= LoggerFactory.getLogger("SlimefunHelper");
@@ -15,33 +19,38 @@ public class Debug {
         logger.info(string);
     }
     public static void chat(Text... string){
-        if(MinecraftClient.getInstance().player!=null){
-            MutableText text=Text.literal("");
-            for (var tx:string){
-                text.append(tx);
-            }
+
+        MutableText text=Text.literal("");
+        for (var tx:string){
+            text.append(tx);
+        }
+        sendPlayer(text);
+
+    }
+    public static void sendPlayer(Text text){
+        if(MinecraftClient.getInstance().player != null){
             MinecraftClient.getInstance().player.sendMessage(text);
+        }else {
+            ChatTasks.sendDelayChatMessage(text);
         }
     }
     public static void chat(Object... values){
-        if(MinecraftClient.getInstance().player!=null){
-            MutableText text=Text.literal("");
-            boolean f=true;
-            for (var tx:values){
-                if(f){
-                    f=false;
-                }else {
-                    text.append(Text.of(" "));
-                }
-
-                if(tx instanceof Text){
-                    text.append(((Text)tx));
-                }else {
-                    text.append(Text.literal(tx.toString()));
-                }
+        MutableText text=Text.literal("");
+        boolean f=true;
+        for (var tx:values){
+            if(f){
+                f=false;
+            }else {
+                text.append(Text.of(" "));
             }
-            MinecraftClient.getInstance().player.sendMessage(text);
+
+            if(tx instanceof Text){
+                text.append(((Text)tx));
+            }else {
+                text.append(Text.literal(tx.toString()));
+            }
         }
+        sendPlayer(text);
     }
 //    public static void chat(String... string){
 //        if(MinecraftClient.getInstance().player!=null){

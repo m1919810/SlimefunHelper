@@ -38,7 +38,7 @@ public class SelectScreen extends Screen implements ButtonNotFocusedScreenAccess
                 x.set(0);
                 y.addAndGet(1);
             }
-            Debug.info(x,y,key);
+         //   Debug.info(x,y,key);
         });
     }
     @Unique

@@ -25,6 +25,7 @@ public class Configs {
     public static final String[] MINE_FASTBREAK_THRESHOLD={"fast-break","break-threshold"};
     public static final String[] MINE_FASTBREAK_BREAKCOOLDOWN={"fast-break","break-cooldown"};
     public static final String[] MINE_FASTBREAK_REACH={"fast-break","reach-distance"};
+    public static final String[] MINE_BOT_RIGHT_CLICK={"mine-bot","right-click"};
     public static final Config MINE_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/mine.yml","mine settings")
             //.defaultVal(false,MINE_BOT_ONLY_MINE_ABOVE)
             .defaultVal(-1,MINE_BOT_MINE_MIN_DY)
@@ -38,6 +39,7 @@ public class Configs {
             .defaultVal(0.72d,MINE_FASTBREAK_THRESHOLD )
             .defaultVal(0,MINE_FASTBREAK_BREAKCOOLDOWN)
             .defaultVal(5.5,MINE_FASTBREAK_REACH)
+            .defaultVal(false,MINE_BOT_RIGHT_CLICK)
             .save();
     public static final String[] CHAT_HELPER_CACHE={"chat-helper","cached"};
     public static final String[] CHAT_HELPER_PERIOD={"chat-helper","period"};
@@ -51,8 +53,16 @@ public class Configs {
             .save();
 
     public static final String[] RENDER_DETECT_SPAWN_WHITELIST={"detect-entity","spawn-whitelist"};
+    public static final String[] RENDER_NO_EFFECT = {"render","no-effect"};
+    public static final String[] RENDER_NIGHTVISION = {"render","nightvision"};
+    public static final String[] RENDER_NO_EFFECT_FORCE = {"render","eff-setting","force-no"};
+    public static final String[] RESOURCE_IGNORE_SERVER = {"resource","server","ignore-server-request"};
     public static final Config RENDER_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/render.yml","render settings")
             .defaultVal("player,wither",RENDER_DETECT_SPAWN_WHITELIST)
+            .defaultVal(true,RENDER_NO_EFFECT)
+            .defaultVal(true,RENDER_NIGHTVISION)
+            .defaultVal(false,RENDER_NO_EFFECT_FORCE)
+            .defaultVal(false,RESOURCE_IGNORE_SERVER)
             .save();
     public static final String[] TEST_ARGS1={"test","arg1"};
     public static final String[] TEST_ARGS2={"test","arg2"};
@@ -63,19 +73,32 @@ public class Configs {
 
     public static final String[] COMBAT_INTERVEL={"attack","cancel-interval"};
     public static final String[] COMBAT_RIDING={"attack","riding-attack"};
-    public static final String[] AUTOATTACK_AUTO={"att-bot","auto-click"};
     public static final String[] ATTACK_RANGE={"attack","att-range"};
-    public static final String[] AUTOATTACK_WHITELISTED={"att-bot","whitelist"};
+    public static final String[] COMBAT_SHIELDING = {"attack","shielding-attack"};
+    public static final String[] ATTACK_WHITELISTED={"att-bot","whitelist"};
+    public static final String[] ATTACK_PLAYER_FRIENDLIST = {"att-bot","friends"};
+    public static final String[] ATTACK_NAMED = {"att-bot","att-named"};
+    public static final String[] AUTOATTACK_DO_INTERVEL_WEAPON = {"att-bot","respect-cooldown","weapon"};
+    public static final String[] AUTOATTACK_DO_INTERVEL_HAND = { "att-bot","respect-cooldown","hand"};
     public static final Config COMBAT_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/combat.yml","combat settings")
             .defaultVal(false,COMBAT_INTERVEL)
             .defaultVal(false,COMBAT_RIDING)
-            .defaultVal("^(monster|!endermite)$",AUTOATTACK_WHITELISTED)
+            .defaultVal("^(monster|!endermite)$",ATTACK_WHITELISTED)
+            .defaultVal("^(.*NPC.*|matl114)$",ATTACK_PLAYER_FRIENDLIST)
             .defaultVal(6.0f,ATTACK_RANGE)
+            .defaultVal(true,COMBAT_SHIELDING)
+            .defaultVal(true,AUTOATTACK_DO_INTERVEL_WEAPON)
+            .defaultVal(false,AUTOATTACK_DO_INTERVEL_HAND)
+            .defaultVal(false,ATTACK_NAMED)
             .save();
 
     public static final String[] INV_CLICK_LIMIT={"inventory","packet-limit"};
+    public static final String[] FAST_INV_DO_SHIFT = {"fastinv","apply-shift"};
+    public static final String[] FAST_INV_DO_DROP ={"fastinv","apply-drop"};
     public static final Config INV_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/inv.yml","inv settings")
             .defaultVal(40,INV_CLICK_LIMIT)
+            .defaultVal(true,FAST_INV_DO_SHIFT)
+            .defaultVal(false,FAST_INV_DO_DROP)
             .save();
 
 

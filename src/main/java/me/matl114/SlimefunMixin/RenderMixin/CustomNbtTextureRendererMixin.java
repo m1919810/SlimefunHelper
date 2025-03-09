@@ -43,19 +43,25 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
 
     @Shadow @Final private MinecraftClient client;
 
-    public void printInfo(){
-        ObjectCollection<ModelIdentifier> mod= models.modelIds.values();
-        for(ModelIdentifier id:mod){
-            Debug.info(id);
-        }
-
-    }
+//    public void printInfo(){
+//        ObjectCollection<ModelIdentifier> mod= models.modelIds.values();
+//        for(ModelIdentifier id:mod){
+//            Debug.info(id);
+//        }
+//
+//    }
     @ModifyVariable(method =
 //            "Lnet.minecraft.client.render.item.ItemRender;getModel(Lnet.minecraft.item.ItemStack;Lnet.minecraft.world.World;Lnet.minecraft.entity.LivingEntity;I)Lnet.minecraft.client.render.model.BakedModel;"
             "getModel"
             , at = @At("HEAD"), index = 1, argsOnly = true)
     public ItemStack onItemModelLoad(ItemStack stack){
         if(ModConfig.isEnableSlimefunCmdOverride()){
+            int specialCmd = SlimefunItemModelManager.getOverridingModelData(stack);
+            if(specialCmd > 0){
+                ItemStack cloned=stack.copy();
+                SlimefunUtils.setCustomModelData(cloned, specialCmd);
+                return cloned;
+            }
             String sfid= SlimefunUtils.getSfId(stack);
             if(sfid!=null){
                 int cmd= SlimefunItemModelManager.getCustomModelData(sfid);
@@ -89,7 +95,7 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
         if(ModConfig.isEnableStorageItemDisplay()){
             ItemStack stack=null;
             try{
-                stack= SlimefunUtils.getStorageContent(item);
+                stack= SlimefunUtils.getContainedItemInfo(item);
             }catch (Throwable e){
                 Debug.info("An Error occurred while deserialization");
                 return;

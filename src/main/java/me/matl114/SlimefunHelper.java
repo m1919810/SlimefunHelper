@@ -37,6 +37,7 @@ public class SlimefunHelper implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		instance = this;
+		Debug.info(System.getProperty("java.version"));
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
@@ -75,7 +76,9 @@ public class SlimefunHelper implements ModInitializer {
 				if(ModConfig.isEnableItemModelOvevrride()) {
 					Debug.info("Force Load Model enabled");
 					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
-					SlimefunItemModelManager.walkThroughResourcePacks(manager).forEach(out);
+					SlimefunItemModelManager.walkThroughResourcePacks(manager,true).forEach(out);
+				}else{
+					SlimefunItemModelManager.walkThroughResourcePacks(manager,false).forEach(out);
 				}
 			}
 		});

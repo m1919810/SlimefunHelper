@@ -4,10 +4,14 @@ accessible field net/minecraft/client/render/model/json/ModelOverrideList overri
 accessible class net/minecraft/client/render/model/BakedModelManager$BakingResult
 accessible field net/minecraft/client/render/model/BakedModelManager$BakingResult readyForUpload Ljava/util/concurrent/CompletableFuture;
 accessible method net/minecraft/client/gui/widget/ClickableWidget clicked (DD)Z
-
-
-
-
+accessible method net/minecraft/client/world/ClientWorld getPendingUpdateManager ()Lnet/minecraft/client/network/PendingUpdateManager;
+accessible method net/minecraft/client/network/ClientPlayerInteractionManager sendSequencedPacket (Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V
+accessible class net/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier
+accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler
+accessible field net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket ATTACK Lnet/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler;
+accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket <init> (IZLnet/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler;)V
+accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractHandler
+accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractHandler <init> (Lnet/minecraft/util/Hand;)V
 
 
 

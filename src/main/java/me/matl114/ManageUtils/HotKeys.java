@@ -23,9 +23,10 @@ public class HotKeys {
         KeyCode.init();
         initToggleSaves();
         initHotkeyTasks();
+        initButtonTasks();
         initButtonToggles();
         initHotkeyToggles();
-        initButtonTasks();
+        initSimpleToggles();
         Debug.info("HotKeys enabled!");
     }
     private static SimpleHotKey getToggleHotKey(String key,boolean defaultValue){
@@ -69,6 +70,9 @@ public class HotKeys {
     public static final String SLIMEFUNID_COPY="slimefunid-copy";
     public static final String CLEAR_KEEPED="clear-keep";
     public static final String KEEP_INV="keep-inv";
+    public static final String FAST_INV = "fast-inv";
+    public static final String FAST_MOVE = "fast-mov";
+    public static final String FAST_DROP = "fast-drop";
     public static final String QUICK_MINE="quick-mine";
     public static final String REACH="reach";
     public static final String MINEBOT="mine-bot";
@@ -81,6 +85,8 @@ public class HotKeys {
     public static final String TAKE_ALL="take-all";
     public static final String SAVE_ALL="save-all";
     public static final String ALWAYS_ATTACK="always-att";
+    public static final String AUTO_ATTACK = "auto-att";
+    public static final String DROP_CRAFT = "drop-craft";
 
     public static final String BUTTON_TASK_1="btask1";
     public static final String BUTTON_TASK_2="btask2";
@@ -121,7 +127,7 @@ public class HotKeys {
     }
     private static void initButtonToggles(){
         buttonToggleManager.register(KEEP_INV,false);
-        buttonToggleManager.register("test1",false);
+        buttonToggleManager.register(FAST_INV,false);
         buttonToggleManager.register("test2",false);
         buttonToggleManager.register("test3",false);
     }
@@ -132,6 +138,7 @@ public class HotKeys {
         getToggleHotKey(MINE_ONEBLOCK,false);
         getToggleHotKey(DETECT_ENTITY,false);
         getToggleHotKey(ALWAYS_ATTACK,false);
+        getToggleHotKey(AUTO_ATTACK,false);
         getToggleHotKey(HOTKEY_TEST1,false);
         getToggleHotKey(HOTKEY_TEST2,false);
         getToggleHotKey(HOTKEY_TEST3,false);
@@ -140,6 +147,7 @@ public class HotKeys {
     private static void initSimpleToggles(){
         simpleToggleManager.register(AUTO_CHAT,false);
         simpleToggleManager.register(KEEP_CHATINV,false);
+        simpleToggleManager.register(DROP_CRAFT,false);
     }
 
     private static void initButtonTasks(){
@@ -157,7 +165,8 @@ public class HotKeys {
             return false;
         });
         getTaskHotKey("test-func",(manager -> {
-            Debug.info(manager.getClient().player.currentScreenHandler);
+            Debug.chat("Doing Test!!!");
+            Tasks.doHokeyTaskTest1();
             return true;
         }));
         getTaskHotKey(OPEN_MENU,(manager->{
@@ -165,6 +174,9 @@ public class HotKeys {
             return true;
         }));
         getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
+        getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
+        getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
+
     }
     static File toggleSave;
     private static void save(){

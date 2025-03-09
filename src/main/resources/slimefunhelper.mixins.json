@@ -16,26 +16,35 @@
     "HackMixin.ClientConnectionMixin",
     "HackMixin.ClientInputMixin",
     "HackMixin.ClientPacketListenerMixin",
-    "HackMixin.GameRenderMixin",
+    "HackMixin.CraftingScreenMixin",
+    "HackMixin.InventoryCraftScreenMixin",
     "HackMixin.PlayerInteractionMixin",
     "HackMixin.PlayerMixin",
     "HotkeyMixin.KeyBoardMixin",
     "HotkeyMixin.MouseMixin",
     "HotkeyMixin.ScreenButtonMixin",
     "HotkeyMixin.ScreenMixin",
+    "RenderMixin.AtlasLoaderMixin",
+    "RenderMixin.BackGroundRenderMixin",
     "RenderMixin.BakedModelManagerMixin",
     "RenderMixin.CustomNbtItemModelMixin",
     "RenderMixin.CustomNbtTextureRendererMixin",
     "RenderMixin.DrawContextMixin",
+    "RenderMixin.GameRenderMixin",
     "RenderMixin.ItemStackMixin",
     "RenderMixin.JsonUnbakedModelMixin",
-    "RenderMixin.ModelOverrideListMixin"
+    "RenderMixin.LightMapTextureMixin",
+    "RenderMixin.ModelOverrideListMixin",
+    "RenderMixin.WorldRenderMixin"
   ],
-  "server": [],
+  "server": [
+    "DebugMixin.BlazeMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   },
   "mixins": [
-    "FixMixin.LoginHelloNameFixC2SPacketMixin"
+    "FixMixin.LoginHelloNameFixC2SPacketMixin",
+    "HackMixin.PlayerInteractEntityPacketMixin"
   ]
 }
