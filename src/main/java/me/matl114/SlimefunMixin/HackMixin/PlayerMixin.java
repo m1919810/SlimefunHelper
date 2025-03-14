@@ -85,7 +85,7 @@ public abstract class PlayerMixin extends AbstractClientPlayerEntity implements 
     }
     @Inject(method="closeHandledScreen",at=@At(value = "HEAD"),cancellable = true)
     public void closeHandledScreen(CallbackInfo ci) {
-        if(!this.forceCloseInv&& HotKeys.getButtonToggleManager().get(HotKeys.KEEP_INV).get()) {
+        if(!this.forceCloseInv&& HotKeys.getButtonToggleManager().getState(HotKeys.KEEP_INV)) {
             if(this.client.currentScreen instanceof HandledScreen handled) {
                 keepedInv= handled;
                 this.keepedInvHandler=((ClientPlayerEntity)(Object)this).currentScreenHandler;

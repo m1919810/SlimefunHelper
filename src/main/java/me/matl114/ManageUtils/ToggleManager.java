@@ -18,15 +18,16 @@ public interface ToggleManager {
         return ()->map;
     }
     HashMap<String,AtomicBoolean> getRaw();
+    static AtomicBoolean FALSE = new AtomicBoolean(false);
     @Nonnull
-    default AtomicBoolean get(String value){
-       return getRaw().getOrDefault(value,new AtomicBoolean(false));
+    default AtomicBoolean getInternal(String value){
+       return getRaw().getOrDefault(value,FALSE);
     }
     default boolean getState(String value){
-        return get(value).get();
+        return getInternal(value).get();
     }
     default Runnable getToggle(String value){
-        final AtomicBoolean toggle = get(value);
+        final AtomicBoolean toggle = getInternal(value);
         return ()->{
             boolean result=!toggle.get();
             toggle.set(result);

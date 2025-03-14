@@ -34,10 +34,10 @@ public class SlimefunHelper implements ModInitializer {
 	public static SlimefunHelper getInstance() {
 		return instance;
 	}
+	public static final boolean HACK_VERSION = true;
 	@Override
 	public void onInitialize() {
 		instance = this;
-		Debug.info(System.getProperty("java.version"));
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
@@ -88,7 +88,6 @@ public class SlimefunHelper implements ModInitializer {
 		HotKeys.init();
 		Tasks.init();
 		Listener.init();
-
 	}
 	//todo 接下来要做什么
 	//todo 已知的冲突:

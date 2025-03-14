@@ -29,11 +29,15 @@ Config {
     private Logger logger;
     private String header;
     protected HashMap<String,Object> fileConfig;
-    @Setter
+
     @Getter
-    private static HashSet<Config> configs = new LinkedHashSet<>();
+    private static final HashSet<Config> configs = new LinkedHashSet<>();
+    private static final HashSet<Config> allConfigInternal = new LinkedHashSet<>();
+    public void registerGlobal(){
+        configs.add(this);
+    }
     public static void reloadAll(){
-        configs.forEach(Config::reload);
+        allConfigInternal.forEach(Config::reload);
     }
     @Setter
     @Getter
@@ -171,7 +175,7 @@ Config {
         this.file = file;
         this.fileConfig = new HashMap<String,Object>();
         syncTo(this.fileConfig,transferConfig(fileConfig));
-        configs.add(this);
+        allConfigInternal.add(this);
     }
 
 

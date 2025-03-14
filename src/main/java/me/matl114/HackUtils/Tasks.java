@@ -8,6 +8,7 @@ import lombok.Getter;
 import me.matl114.ListenerUtils.Listener;
 import me.matl114.ManageUtils.Configs;
 import me.matl114.ManageUtils.HotKeys;
+import me.matl114.SlimefunHelper;
 import me.matl114.SlimefunUtils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
@@ -404,12 +405,17 @@ public class Tasks {
         taskQueue.addLast(new RepeatTimedTask(task, delay, period));
     }
     static{
-        RenderTasks.init();
-        MineTasks.init();
-        InvTasks.init();
-        ChatTasks.init();
-        CombatTasks.init();
-        MovTasks.init();
+        if(SlimefunHelper.HACK_VERSION){
+            RenderTasks.init();
+            MineTasks.init();
+            InvTasks.init();
+            ChatTasks.init();
+            CombatTasks.init();
+            MovTasks.init();
+        }else {
+            ChatTasks.init();
+        }
+
         registerTickTask(()->{
             ++ tickCounter;
             tickRandom = randomContext.nextInt();

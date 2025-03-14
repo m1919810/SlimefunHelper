@@ -1,14 +1,28 @@
 package me.matl114.ManageUtils;
 
 import me.matl114.HackUtils.CombatTasks;
+import me.matl114.SlimefunHelper;
 
 public class Configs {
     public static void loadConfigs(){
+        if(SlimefunHelper.HACK_VERSION){
+            MINE_CONFIG.registerGlobal();
+            CHAT_CONFIG.registerGlobal();
+            RENDER_CONFIG.registerGlobal();
+            TEST_CONFIG.registerGlobal();
+            COMBAT_CONFIG.registerGlobal();
+            INV_CONFIG.registerGlobal();
+            MOV_CONFIG.registerGlobal();
+        }else{
+            CHAT_CONFIG.registerGlobal();
+            INV_CONFIG.registerGlobal();
+        }
         if(init){
             Config.reloadAll();
         }else {
             init=true;
         }
+
     }
     private static boolean init=false;
     public static final String MINE_BOT_MINE_ABOVE="mine-bot-only-mine-above";

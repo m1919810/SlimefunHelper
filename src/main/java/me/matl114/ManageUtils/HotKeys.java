@@ -6,6 +6,7 @@ import me.matl114.HackUtils.InvTasks;
 import me.matl114.HackUtils.MovTasks;
 import me.matl114.HackUtils.Tasks;
 import me.matl114.ModConfig;
+import me.matl114.SlimefunHelper;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunUtils;
 import net.minecraft.client.MinecraftClient;
@@ -30,6 +31,7 @@ public class HotKeys {
         initSimpleToggles();
         Debug.info("HotKeys enabled!");
     }
+    private static final boolean HACK_VERSION = SlimefunHelper.HACK_VERSION;
     private static SimpleHotKey getToggleHotKey(String key,boolean defaultValue){
         hotkeyToggleManager.register(key, defaultValue);
         Runnable runnable = hotkeyToggleManager.getToggle(key);
@@ -130,12 +132,21 @@ public class HotKeys {
         });
     }
     private static void initButtonToggles(){
-        buttonToggleManager.register(KEEP_INV,false);
-        buttonToggleManager.register(FAST_INV,false);
-        buttonToggleManager.register("test2",false);
-        buttonToggleManager.register("test3",false);
+        if(!HACK_VERSION){
+            buttonToggleManager.register(FAST_INV,false);
+        }else {
+            buttonToggleManager.register(KEEP_INV,false);
+            buttonToggleManager.register(FAST_INV,false);
+            buttonToggleManager.register("test2",false);
+            buttonToggleManager.register("test3",false);
+        }
+
+
     }
     private static void initHotkeyToggles(){
+        if(!HACK_VERSION){
+            return;
+        }
         getToggleHotKey(QUICK_MINE,false);
         getToggleHotKey(REACH,false);
         getToggleHotKey(MINEBOT,false);
@@ -151,16 +162,24 @@ public class HotKeys {
 
     }
     private static void initSimpleToggles(){
+        if(!HACK_VERSION){
+            return;
+        }
         simpleToggleManager.register(AUTO_CHAT,false);
         simpleToggleManager.register(KEEP_CHATINV,false);
         simpleToggleManager.register(DROP_CRAFT,false);
     }
 
     private static void initButtonTasks(){
-        buttonTaskManager.register(CLEAR_KEEPED, InvTasks::clearKeepedInv);
-        buttonTaskManager.register(TAKE_ALL,InvTasks::takeAllContainerItem);
-        buttonTaskManager.register(SAVE_ALL,InvTasks::saveAllPlayerInvItem);
-        buttonTaskManager.register(BUTTON_TASK_1, Tasks::doButtonTaskTest1);
+        if(!HACK_VERSION){
+            buttonTaskManager.register(TAKE_ALL,InvTasks::takeAllContainerItem);
+            buttonTaskManager.register(SAVE_ALL,InvTasks::saveAllPlayerInvItem);
+        }else {
+            buttonTaskManager.register(CLEAR_KEEPED, InvTasks::clearKeepedInv);
+            buttonTaskManager.register(TAKE_ALL,InvTasks::takeAllContainerItem);
+            buttonTaskManager.register(SAVE_ALL,InvTasks::saveAllPlayerInvItem);
+            buttonTaskManager.register(BUTTON_TASK_1, Tasks::doButtonTaskTest1);
+        }
     }
     private static void initHotkeyTasks(){
         getTaskHotKey(SLIMEFUNID_COPY,(manager)->{
@@ -170,20 +189,27 @@ public class HotKeys {
             }
             return false;
         });
-        getTaskHotKey("test-func",(manager -> {
-            Debug.chat("Doing Test!!!");
-            Tasks.doHokeyTaskTest1();
-            return true;
-        }));
-        getTaskHotKey(OPEN_MENU,(manager->{
-            InvTasks.openSelectScreen();
-            return true;
-        }));
-        getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
-        getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
-        getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
-        getTaskHotKey(FAST_PLAYER_MOVE,(iInputManager -> MovTasks.quickMovFront()));
-        getTaskHotKey(TOGGLE_FLYSPEED, (iInputManager -> MovTasks.toggleSpeedOverride()));
+        if(!HACK_VERSION){
+            getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
+            getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
+            getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
+        }else {
+            getTaskHotKey("test-func",(manager -> {
+                Debug.chat("Doing Test!!!");
+                Tasks.doHokeyTaskTest1();
+                return true;
+            }));
+            getTaskHotKey(OPEN_MENU,(manager->{
+                InvTasks.openSelectScreen();
+                return true;
+            }));
+            getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
+            getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
+            getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
+            getTaskHotKey(FAST_PLAYER_MOVE,(iInputManager -> MovTasks.quickMovFront()));
+            getTaskHotKey(TOGGLE_FLYSPEED, (iInputManager -> MovTasks.toggleSpeedOverride()));
+        }
+
     }
     static File toggleSave;
     private static void save(){
