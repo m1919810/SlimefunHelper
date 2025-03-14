@@ -176,8 +176,7 @@ public class MovTasks {
             player.setVelocity(v.x / currentSpeed * maxSpeed, v.y,
                 v.z / currentSpeed * maxSpeed);
     }
-    private static int antiKickCount = 0;
-    private static final int antiKickPeriod = 60;
+    private static final int antiKickPeriod = 75;
     private static final double antiKickOffset = 0.032D;
     private static double antiKickOffset0 ;
     private static boolean escapeMotionReset = false;
@@ -218,55 +217,44 @@ public class MovTasks {
         return  !serverPacketAllowFlight && mc.player.getVelocity().y >= -0.03125D && mc.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR  && !mc.player.hasStatusEffect(StatusEffects.LEVITATION) && !mc.player.isFallFlying() && !mc.player.isUsingRiptide() && !mc.player.isSleeping() && !mc.player.isRiding() && !mc.player.isDead() && noBlocksAround(mc.player) ;
     }
     public static void antiKick(ClientPlayerEntity player){
-        if(seenAsFloating()){
-            antiKickCount++;
-        }else {
-            antiKickCount = 0;
-        }
-        if(antiKickCount > antiKickPeriod){
-            antiKickCount = 0;
-            escapeMotionReset = false;
-            preservedLastMotion = player.getVelocity().y;
-            setMotionY(- antiKickOffset);
-            //randomly fall down twice
-            waitingForServerResponse = true; //Tasks.getTickRandom()%3 == 0;
-            antiKickOffset0 = antiKickOffset - 0.008;
-            return;
-        }
-       // int tickCounter = Tasks.getTick()%antiKickPeriod;
-//        if(tickCounter == 0){
-//            if(mc.options.sneakKey.isPressed()
-//                && !mc.options.jumpKey.isPressed()){
-//                escapeMotionReset = true;
-//            }
-//            else
-//            if( !seenAsFloating() ){
-//                escapeMotionReset = true;
-//            }
-//            else{
-//                escapeMotionReset = false;
-//
-//            }
-//        }else if(tickCounter < 5 ){
-        if( !escapeMotionReset){
-            if(waitingForServerResponse){
-                setMotionY(- antiKickOffset);
-                antiKickOffset0 += antiKickOffset - 0.008;
-                //there is no fucking packet for response
-                waitingForServerResponse = false;
-
-                //continue fall down til server respond
-            }else {
-                setMotionY( antiKickOffset0 + preservedLastMotion - 0.0);
-                antiKickOffset0 = 0D;
-                preservedLastMotion = 0.0D;
-                Tasks.scheduleDelayed(MovTasks::restoreKeyPresses,1);
-                //set end
+        int tickCounter = Tasks.getTick()%antiKickPeriod;
+        if(tickCounter == 0){
+            if(mc.options.sneakKey.isPressed()
+                && !mc.options.jumpKey.isPressed()){
                 escapeMotionReset = true;
             }
-        }
+            else
+            if( !seenAsFloating() ){
+                escapeMotionReset = true;
+            }
+            else{
+                escapeMotionReset = false;
+                preservedLastMotion = player.getVelocity().y;
+                setMotionY(- antiKickOffset);
+                //randomly fall down twice
+                waitingForServerResponse = true; //Tasks.getTickRandom()%3 == 0;
+                antiKickOffset0 = antiKickOffset - 0.008;
+            }
+        }else if(tickCounter < 5 ){
+            if( !escapeMotionReset){
+                if(waitingForServerResponse){
+                    setMotionY(- antiKickOffset);
+                    antiKickOffset0 += antiKickOffset - 0.008;
+                    //there is no fucking packet for response
+                    waitingForServerResponse = false;
 
-//        }
+                    //continue fall down til server respond
+                }else {
+                    setMotionY( antiKickOffset0 + preservedLastMotion - 0.0);
+                    antiKickOffset0 = 0D;
+                    preservedLastMotion = 0.0D;
+                    Tasks.scheduleDelayed(MovTasks::restoreKeyPresses,1);
+                    //set end
+                    escapeMotionReset = true;
+                }
+            }
+
+        }
 
     }
     private static void setMotionY(double motionY)
