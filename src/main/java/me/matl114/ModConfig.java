@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ModConfig {
 
@@ -82,6 +84,8 @@ public class ModConfig {
     @Getter
     private static List<String> slimefunTextureNamespaces = new ArrayList<>();
     @Getter
+    private static Pattern slimefunModelPathPattern ;
+    @Getter
     private static String slimefunIdCopyHotkey="LEFT_CONTROL,C,BUTTON_1";
 
     private static HashMap<String,String> toggleHotKeys=new HashMap<>();
@@ -128,8 +132,13 @@ public class ModConfig {
                 }
             }
             sf_namespace:{
-                List<String> namespaces = (List) data.get("namespace-for-slimefun");
+                List<String> namespaces = (List) data.get("namespace-for-slimefun-texture");
                 slimefunTextureNamespaces = namespaces;
+            }
+            sf_model:{
+                String patterns = ((List<String>) data.get("path-pattern-for-slimefun-model")).stream().map(i->"("+i+")").collect(Collectors.joining("|"));
+                Debug.info("Load slimefun model path pattern:",patterns);
+                slimefunModelPathPattern = Pattern.compile(patterns);
             }
 //            configsValues:{
 //                Map<String,Object> modConfig=(Map<String, Object>) data.get("configValue");

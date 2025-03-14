@@ -2,6 +2,8 @@ package me.matl114.HackUtils;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.ListenerUtils.Listener;
 import me.matl114.ManageUtils.Configs;
@@ -15,6 +17,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
@@ -26,12 +29,13 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 public class Tasks {
@@ -43,7 +47,20 @@ public class Tasks {
     }
     @Getter
     private static Tasks instance = new Tasks();
-
+    private static Random randomContext = new Random();
+    private static volatile int tickCounter;
+    @Getter
+    private static volatile int tickRandom;
+    private static volatile int secondCounter;
+    @Getter
+    private static volatile int sencondRandom;
+    public static int getTick(){
+        return tickCounter;
+    }
+    public static int getSecond(){
+        return secondCounter;
+    }
+   // private static final AtomicInteger tickRandomSource = new AtomicInteger(0);
     //todo find where is the error when 17 name login
     //finded ,at packet
     //todo find how to dupe with ITEM
@@ -204,12 +221,42 @@ public class Tasks {
                packet
         );
     }
+    public static void doTeleport()  {
+        String value= HotKeys.SHARED_ARGUMENT.get();
+        double x;
+        try{
+            x = Double.parseDouble(value);
+        }catch (Throwable e){
+            x = 0;
+        }
+        double y;
+        try{
+            y = Double.parseDouble(HotKeys.SHARED_ARGUMENT_2.get());
+        }catch (Throwable e){
+            y = 0;
+        }
+//        Constructor<PlayerInteractEntityC2SPacket> constructor =(Constructor<PlayerInteractEntityC2SPacket>) Arrays.stream(PlayerInteractEntityC2SPacket.class.getConstructors()).filter(c->c.getParameters().length==3).findAny().orElse(null);
+        Debug.info("using argument",x,y);
+        mc.player.setPos(mc.player.getX()+x, mc.player.getY(), mc.player.getZ()+y);
+        PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(),mc.player.getY(),mc.player.getZ(),true);
+//        PlayerInteractEntityC2SPacket packet = new PlayerInteractEntityC2SPacket(t,false, attack==0? PlayerInteractEntityC2SPacket.ATTACK: new PlayerInteractEntityC2SPacket.InteractHandler(Hand.MAIN_HAND));
+//        try{
+//            packet=constructor.newInstance();
+//        }catch (Throwable e){
+//            Debug.chat("Error");
+//            Debug.info(constructor);
+//            return;
+//        }
+        MinecraftClient.getInstance().getNetworkHandler().sendPacket(
+            packet
+        );
+    }
     public static void doButtonTaskTest1(){
         //instance.doContainerPacketClickAndDragInternal();
         instance.doShulkerTryDupePacket();
     }
     public static void doHokeyTaskTest1(){
-        doTryInteractWithNPCInDifferentDimension();
+        doTeleport();
     }
     public void doShulkerTryDupePacket(){
         if(mc.currentScreen instanceof ShulkerBoxScreen shulkerBoxScreen){
@@ -285,7 +332,7 @@ public class Tasks {
         return true;
     }
     public static boolean doPacketListenOut(Packet<?> packet){
-        tryTridentDupe(packet);
+     //   tryTridentDupe(packet);
         return true;
     }
     public static void tryTridentDupe(Packet<?> packet){
@@ -297,12 +344,82 @@ public class Tasks {
 //            if(dropTridents.get())mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 44, 0, SlotActionType.THROW, mc.player);
         }
     }
+    @AllArgsConstructor
+    static abstract class TimedTask  {
+        abstract boolean runTask();
+        int delay;
+        boolean execute(){
+            if(--delay <= 0 ){
+                return runTask();
+            }
+            return false;
+        }
+    }
+
+    static class DelayedTimedTask extends TimedTask {
+        Runnable task;
+
+        public DelayedTimedTask(Runnable runnable, int delay) {
+            super(delay);
+            this.task = runnable;
+        }
+
+        @Override
+        boolean runTask() {
+            task.run();
+            return true;
+        }
+    }
+    static class RepeatTimedTask extends TimedTask{
+
+        boolean isCancelled = false;
+        BooleanSupplier task;
+        int period ;
+
+        public RepeatTimedTask(BooleanSupplier shouldStop, int delay, int period) {
+            super(delay);
+            this.task = shouldStop;
+            this.period = period;
+        }
+
+        @Override
+        boolean runTask() {
+            if(isCancelled ){
+                return true;
+            }
+            if(task.getAsBoolean()){
+                isCancelled = true;
+                return true;
+            }else{
+                delay = period;
+                return false;
+            }
+        }
+    }
+    private static final Deque<TimedTask> taskQueue = new ConcurrentLinkedDeque<>();
+    public static void scheduleDelayed(Runnable task, int delay){
+        taskQueue.addLast(new DelayedTimedTask(task, delay));
+    }
+    public static void scheduleRepeated(BooleanSupplier task, int delay, int period){
+        taskQueue.addLast(new RepeatTimedTask(task, delay, period));
+    }
     static{
         RenderTasks.init();
         MineTasks.init();
         InvTasks.init();
         ChatTasks.init();
         CombatTasks.init();
+        MovTasks.init();
+        registerTickTask(()->{
+            ++ tickCounter;
+            tickRandom = randomContext.nextInt();
+            if(tickCounter < 0){
+                tickCounter = 0;
+            }else if(tickCounter % 20 == 0){
+                ++secondCounter ;
+                sencondRandom = randomContext.nextInt();
+            }
+        });
         registerGameTask((playerEntity) -> {
             if(HotKeys.getHotkeyToggleManager().getState(HotKeys.HOTKEY_TEST1)){
                 Tasks.sendDropAllPacket();
@@ -310,13 +427,28 @@ public class Tasks {
             if(HotKeys.getHotkeyToggleManager().getState(HotKeys.AUTO_ATTACK)){
                 CombatTasks.handleAutoAttack(playerEntity);
             }
-//            if(HotKeys.getButtonToggleManager().getState("test1")){
-//                Tasks.sendItemSwapPacket();
-//            }else{
-//                Tasks.stopItemSwapPacket();
-//            }
+        });
+        registerTickTask(()->{
+            var iter = taskQueue.iterator();
+            while (iter.hasNext()){
+                try{
+                    var task = iter.next();
+                    if(task.execute()){
+                        iter.remove();
+                    }
+                }catch (Throwable e){
+                    Debug.info("unexpected error while executing TimedTask:");
+                    Debug.info(e);
+                    iter.remove();
+                }
+            }
         });
         Listener.registerPacketListener(Tasks::doPacketListenIn,true);
         Listener.registerPacketListener(Tasks::doPacketListenOut,false);
+//        Listener.registerPacketListener((packet->{
+//            if( packet instanceof PlayerPositionLookS2CPacket packet1){
+//
+//            }
+//        }),true);
     }
 }

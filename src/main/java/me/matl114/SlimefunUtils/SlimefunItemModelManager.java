@@ -26,9 +26,9 @@ import java.rmi.registry.Registry;
 import java.util.*;
 
 public class SlimefunItemModelManager {
-    private static HashMap<String,Identifier> LOADED_SLIMEFUNITEMS = new HashMap<>();
     private static HashMap<String,Integer> SLIMEFUNITEMS_CUSTOMMODELDATAS=new HashMap<>();
-    private static HashMap<String,BakedModel> SLIMEFUNITEMS_MODELS = new HashMap<>();
+    private static HashMap<String,Identifier> CUSTOM_PATH_SLIMEFUN_MODEL = new HashMap<>();
+    private static final String OUR_NAMESPACE = "slimefunhelper";
     public static Gson gson =new Gson();
     public static JsonObject readJsonObject(Resource resource) {
         try {
@@ -44,9 +44,8 @@ public class SlimefunItemModelManager {
         //JsonUnbakedModel.deserialize()
     }
     public static void init(){
-        SLIMEFUNITEMS_MODELS.clear();
+
         SLIMEFUNITEMS_CUSTOMMODELDATAS.clear();
-        LOADED_SLIMEFUNITEMS.clear();
     }
     public static void loadCustomModelDatas(){
         try{
@@ -89,7 +88,7 @@ public class SlimefunItemModelManager {
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
             BakedModelManagerAccess access=BakedModelManagerAccess.of(MinecraftClient.getInstance().getBakedModelManager());
             for(String namespace : namespacess){
-                if(allLoad || "slimefunhelper".equals(namespace)){
+                if(allLoad || OUR_NAMESPACE.equals(namespace)){
                     Debug.info("Force loading namespace ",namespace,"in pack ",pack.getName());
                     //Debug.info("in namespace ",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"models",(i,j)->{
@@ -101,11 +100,18 @@ public class SlimefunItemModelManager {
                             Identifier shouldId=new Identifier(realNamespace,trueId);
                             //Debug.info(shouldId);
                             Identifier shouldModelId="item".equals(splits[0])?new ModelIdentifier(realNamespace,realPath.replaceFirst("^item/",""),"inventory"):new Identifier(realNamespace,realPath);
+//                            if(OUR_NAMESPACE.equals(namespace)){
+//                                Debug.info("try test slimefun item model",shouldModelId);
+//                            }
+                            if( ModConfig.getSlimefunModelPathPattern().asMatchPredicate().test(shouldModelId.toString())){
+                                //custom item
+                                Debug.info("load custom slimefun item model:",shouldModelId);
+                                CUSTOM_PATH_SLIMEFUN_MODEL.put(splits[splits.length-1].toUpperCase(Locale.ROOT),shouldModelId);
+                            }
                             if(Registries.ITEM.get(shouldId)== Items.AIR){
                                // Debug.info("input into registry");
                                 id.add(shouldModelId);
                             }
-
                         }
                     );
 //                    pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
@@ -151,10 +157,9 @@ public class SlimefunItemModelManager {
             //Debug.info("in resourcepack ",pack.getName());
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
             for(String namespace : namespacess){
-                if("slimefunhelper".equals(namespace)|| ModConfig.getSlimefunTextureNamespaces().contains(namespace)){
+                if(OUR_NAMESPACE.equals(namespace)|| ModConfig.getSlimefunTextureNamespaces().contains(namespace)){
                     Debug.info("Force load texture in pack",pack.getName(),"and namespace",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
-
                             String realNamespace=i.getNamespace();
                             if(i.getPath().endsWith(".png")){
                                 String realPath=i.getPath().replaceFirst("^textures/","").replaceAll(".png$","");
@@ -163,7 +168,6 @@ public class SlimefunItemModelManager {
                                 textureIds.add(shouldId);
 
                             }
-
                         }
                     );
                 }
@@ -180,9 +184,7 @@ public class SlimefunItemModelManager {
     public static int getCustomModelData(String id){
         return SLIMEFUNITEMS_CUSTOMMODELDATAS.getOrDefault(id,0);
     }
-    public static Identifier getSfItemPath(String id){
-        return LOADED_SLIMEFUNITEMS.get(id);
-    }
+
     static {
         RenderUtils.registerModelOverridePredicate((stack)->{
             if(stack.hasNbt()){
@@ -205,6 +207,15 @@ public class SlimefunItemModelManager {
 
                     }
                 }catch(Throwable e){}
+            }
+            return Optional.empty();
+        });
+        RenderUtils.registerModelOverridePredicate((stack)->{
+            if(stack.hasNbt()){
+                String id = SlimefunUtils.getSfId(stack.getNbt());
+                if(id!=null ){
+                    return Optional.ofNullable(CUSTOM_PATH_SLIMEFUN_MODEL.get(id));
+                }
             }
             return Optional.empty();
         });

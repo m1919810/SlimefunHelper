@@ -64,26 +64,29 @@ public class RenderUtils {
         }
         access.getMatrixStack().pop();
     }
-    private static final List<Function<ItemStack,Optional<ModelIdentifier>>> modelOverrideFunctions = new ArrayList<>();
-    public static void registerModelOverridePredicate(Function<ItemStack,Optional<ModelIdentifier>> function) {
+    private static final List<Function<ItemStack,Optional<Identifier>>> modelOverrideFunctions = new ArrayList<>();
+    public static void registerModelOverridePredicate(Function<ItemStack,Optional<Identifier>> function) {
         modelOverrideFunctions.add(function);
     }
     public static Optional<BakedModel> getCustomItemModel(ItemStack stack) {
 
-        ModelIdentifier overrides = null;
+        Identifier overrides = null;
         BakedModel model = null;
-        for(Function<ItemStack,Optional<ModelIdentifier>> function : modelOverrideFunctions){
+        for(Function<ItemStack,Optional<Identifier>> function : modelOverrideFunctions){
             var re = function.apply(stack);
             if(re.isPresent()){
                 overrides = re.get();
-                model = mc.getBakedModelManager().getModel(overrides);
-                if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
-                    model = mc.getBakedModelManager().getModel(new Identifier(overrides.getNamespace(), overrides.getPath()));
+                if(overrides instanceof ModelIdentifier modeled){
+                    model = mc.getBakedModelManager().getModel(modeled);
                     if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
-                        continue;
+                        overrides = new Identifier(overrides.getNamespace(), overrides.getPath());
                     }else {
                         return Optional.of(model);
                     }
+                }
+                model = mc.getBakedModelManager().getModel(overrides);
+                if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
+                    continue;
                 }else {
                     return Optional.of(model);
                 }

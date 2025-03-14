@@ -12,13 +12,15 @@ options:
 
   enable-tooltips-display: true
 
-namespace-for-slimefun:
+namespace-for-slimefun-texture:
   - ae2
   - slimefunhelper
   - infinityexpansion
   - avaritia
 
-
+path-pattern-for-slimefun-model:
+  - '^slimefunhelper:slimefunitem/.*$'
+  - '^slimefunhelper:test/.*$'
 
 #暂时不能重载这部分功能
 
@@ -30,6 +32,7 @@ hotkeys:
   quick-drop: LEFT_SHIFT,Q,BUTTON_1
   fast-mov: LEFT_SHIFT,BUTTON_1
   fast-drop: LEFT_SHIFT,Q
+  quick-move: W,GRAVE_ACCENT
 
 
 hotkeys-toggle:
@@ -40,6 +43,8 @@ hotkeys-toggle:
   detect-entity: LEFT_CONTROL,P
   always-att: LEFT_CONTROL,K
   auto-att: LEFT_CONTROL,LEFT_SHIFT,APOSTROPHE
+  toggle-flight: LEFT_CONTROL,F
+  toggle-flight-speed: LEFT_CONTROL,LEFT_BRACKET
   hktest1: LEFT_CONTROL,T,1
   hktest2: LEFT_CONTROL,T,2
   hktest3: LEFT_CONTROL,T,3

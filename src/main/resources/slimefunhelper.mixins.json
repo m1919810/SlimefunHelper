@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "AccessMixin.HandledScreenMixin",
+    "AccessMixin.KeyBindingMixin",
     "AccessMixin.StringNbtReaderMixin",
     "DebugMixin.BlazeMixin",
     "FixMixin.AbstractElementButtonFixMixin",
@@ -45,6 +46,7 @@
   },
   "mixins": [
     "FixMixin.LoginHelloNameFixC2SPacketMixin",
+    "HackMixin.PlayerAbilityMixin",
     "HackMixin.PlayerInteractEntityPacketMixin"
   ]
 }

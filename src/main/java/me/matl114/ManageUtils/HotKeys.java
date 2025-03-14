@@ -3,6 +3,7 @@ package me.matl114.ManageUtils;
 import lombok.Getter;
 import me.matl114.Access.HandledScreenAccess;
 import me.matl114.HackUtils.InvTasks;
+import me.matl114.HackUtils.MovTasks;
 import me.matl114.HackUtils.Tasks;
 import me.matl114.ModConfig;
 import me.matl114.SlimefunUtils.Debug;
@@ -73,6 +74,8 @@ public class HotKeys {
     public static final String FAST_INV = "fast-inv";
     public static final String FAST_MOVE = "fast-mov";
     public static final String FAST_DROP = "fast-drop";
+    public static final String FAST_PLAYER_MOVE = "quick-move";
+    public static final String TOGGLE_FLYSPEED = "toggle-flight-speed";
     public static final String QUICK_MINE="quick-mine";
     public static final String REACH="reach";
     public static final String MINEBOT="mine-bot";
@@ -87,6 +90,7 @@ public class HotKeys {
     public static final String ALWAYS_ATTACK="always-att";
     public static final String AUTO_ATTACK = "auto-att";
     public static final String DROP_CRAFT = "drop-craft";
+    public static final String TOGGLE_FLIGHT = "toggle-flight";
 
     public static final String BUTTON_TASK_1="btask1";
     public static final String BUTTON_TASK_2="btask2";
@@ -139,10 +143,12 @@ public class HotKeys {
         getToggleHotKey(DETECT_ENTITY,false);
         getToggleHotKey(ALWAYS_ATTACK,false);
         getToggleHotKey(AUTO_ATTACK,false);
+        getToggleHotKey(TOGGLE_FLIGHT,false);
         getToggleHotKey(HOTKEY_TEST1,false);
         getToggleHotKey(HOTKEY_TEST2,false);
         getToggleHotKey(HOTKEY_TEST3,false);
         getToggleHotKey(HOTKEY_TEST4,false);
+
     }
     private static void initSimpleToggles(){
         simpleToggleManager.register(AUTO_CHAT,false);
@@ -176,7 +182,8 @@ public class HotKeys {
         getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
         getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
         getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
-
+        getTaskHotKey(FAST_PLAYER_MOVE,(iInputManager -> MovTasks.quickMovFront()));
+        getTaskHotKey(TOGGLE_FLYSPEED, (iInputManager -> MovTasks.toggleSpeedOverride()));
     }
     static File toggleSave;
     private static void save(){

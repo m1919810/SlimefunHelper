@@ -12,8 +12,7 @@ accessible field net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPa
 accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket <init> (IZLnet/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler;)V
 accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractHandler
 accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractHandler <init> (Lnet/minecraft/util/Hand;)V
-
-
+accessible method net/minecraft/util/shape/VoxelShape getPointPositions (Lnet/minecraft/util/math/Direction$Axis;)Lit/unimi/dsi/fastutil/doubles/DoubleList;
 
 
 
