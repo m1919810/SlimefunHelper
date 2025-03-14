@@ -190,14 +190,14 @@ public class HotKeys {
             getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
             getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
             getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
+            getTaskHotKey(OPEN_MENU,(manager->{
+                InvTasks.openSelectScreen();
+                return true;
+            }));
         }else {
             getTaskHotKey("test-func",(manager -> {
                 Debug.chat("Doing Test!!!");
                 Tasks.doHokeyTaskTest1();
-                return true;
-            }));
-            getTaskHotKey(OPEN_MENU,(manager->{
-                InvTasks.openSelectScreen();
                 return true;
             }));
             getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
