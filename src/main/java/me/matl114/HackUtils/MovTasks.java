@@ -177,7 +177,7 @@ public class MovTasks {
                 v.z / currentSpeed * maxSpeed);
     }
     private static final int antiKickPeriod = 75;
-    private static final double antiKickOffset = 0.0333D;
+    private static final double antiKickOffset = 0.032D;
     private static double antiKickOffset0 ;
     private static boolean escapeMotionReset = false;
     private static double preservedLastMotion = 0.0D;
@@ -213,7 +213,8 @@ public class MovTasks {
         // Paper end - stop using streams, this is already a known fixed problem in Entity#move
     }
     public static boolean seenAsFloating(){
-        return  mc.player.getVelocity().y >= -0.03125D && mc.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR  && !mc.player.hasStatusEffect(StatusEffects.LEVITATION) && !mc.player.isFallFlying() && !mc.player.isUsingRiptide() && !mc.player.isSleeping() && !mc.player.isRiding() && !mc.player.isDead() && noBlocksAround(mc.player) ;
+        //add serverPacket result, if toggle flight at server, stop seen as floating, no need to antiKick
+        return  !serverPacketAllowFlight && mc.player.getVelocity().y >= -0.03125D && mc.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR  && !mc.player.hasStatusEffect(StatusEffects.LEVITATION) && !mc.player.isFallFlying() && !mc.player.isUsingRiptide() && !mc.player.isSleeping() && !mc.player.isRiding() && !mc.player.isDead() && noBlocksAround(mc.player) ;
     }
     public static void antiKick(ClientPlayerEntity player){
         int tickCounter = Tasks.getTick()%antiKickPeriod;
@@ -293,7 +294,7 @@ public class MovTasks {
                 //keep ability\
                 Tasks.scheduleDelayed(()->{
 
-
+                    serverPacketAllowFlight = packet1.allowFlying();
                     if(mc.player != null){
                         PlayerAbilities abilities = mc.player.getAbilities();
                         //abilities.allowFlying = abilities.allowFlying;
