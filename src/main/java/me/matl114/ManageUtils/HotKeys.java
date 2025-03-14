@@ -162,9 +162,6 @@ public class HotKeys {
 
     }
     private static void initSimpleToggles(){
-        if(!HACK_VERSION){
-            return;
-        }
         simpleToggleManager.register(AUTO_CHAT,false);
         simpleToggleManager.register(KEEP_CHATINV,false);
         simpleToggleManager.register(DROP_CRAFT,false);

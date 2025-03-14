@@ -28,7 +28,7 @@ public interface ToggleManager {
     }
     default Runnable getToggle(String value){
         final AtomicBoolean toggle = getInternal(value);
-        return ()->{
+        return toggle == FALSE ?()->{} :() ->{
             boolean result=!toggle.get();
             toggle.set(result);
             HotKeys.setToggles(value,result);
