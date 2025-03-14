@@ -1,5 +1,6 @@
 package me.matl114.BukkitUtiils;
 
+import com.mojang.authlib.GameProfile;
 import me.matl114.SlimefunUtils.Debug;
 import me.matl114.SlimefunUtils.SlimefunUtils;
 import me.matl114.Utils.ItemStackUtils;
@@ -18,10 +19,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.regex.Pattern;
 
 public class ItemStackHelper {
     public static ConfigurationSerializableDataType<org.bukkit.inventory.ItemStack> DATATYPE_ITEMSTACK=new ConfigurationSerializableDataType(org.bukkit.inventory.ItemStack.class);
@@ -218,6 +218,15 @@ public class ItemStackHelper {
             return null;
         }
         return null;
+    }
+    public static final Pattern HEXADECIMAL = Pattern.compile("[A-Fa-f\\d]+");
+    public static NbtCompound buildPlayerHead(String hash){
+        BukkitPlayerProfile.PlayerSkin skin = BukkitPlayerProfile.fromHashCode(hash);
+        BukkitPlayerProfile profile = skin.getProfile();
+        profile.name = "CS-CoreLib";
+        //GameProfile profile = new GameProfile(uid, "CS-CoreLib");
+        return profile.writeGameProfile(new NbtCompound());
+
     }
 
 }
