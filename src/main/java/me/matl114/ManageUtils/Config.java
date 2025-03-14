@@ -306,6 +306,33 @@ Config {
             save();
         }
     }
+    public void setValueNoNew(Object value, @Nonnull String... path){
+        Object node=this.fileConfig;
+        HashMap parent=null;
+        for(int i=0;i<path.length;i++){
+            String p=path[i];
+            if(node instanceof HashMap map){
+                if(map.containsKey(p)){
+                    parent=map;
+                    node = map.get(p);
+                    continue;
+                }
+            }else{
+                node=new HashMap<>();
+            }
+            parent=(HashMap)node;
+            node=(i==path.length-1)?null: new HashMap<>();
+            parent.put(p,node);
+        }
+        if(node==null){
+            parent.put(path[path.length-1],value);
+        }else {
+            setValueInternal(node,value);
+        }
+        if(autoSave){
+            save();
+        }
+    }
 
     public Object get(@Nonnull String... path) {
         Object node=this.fileConfig;

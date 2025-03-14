@@ -69,7 +69,7 @@ public class ConfigureScreen extends Screen implements ButtonNotFocusedScreenAcc
         saveEntryToValues();
         //totol save
         for(String value: originValue.keySet()) {
-            config.setValue(originValue.get(value),Config.cutToPath(value));
+            config.setValueNoNew(originValue.get(value),Config.cutToPath(value));
         }
         config.save();
     }
