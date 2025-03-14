@@ -3,6 +3,7 @@ package me.matl114.SlimefunMixin.HotkeyMixin;
 import me.matl114.Access.ButtonNotFocusedScreenAccess;
 import me.matl114.Access.HandledScreenAccess;
 import me.matl114.ManageUtils.HotKeys;
+import me.matl114.SlimefunHelper;
 import me.matl114.SlimefunUtils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -70,18 +71,20 @@ public abstract class ScreenButtonMixin extends Screen implements HandledScreenA
         line+=((size2-1)/4)+1;
         int y0=-(buttonHeight+2)*line-6;
         int x0=0;
-        sharedArgument=new TextFieldWidget(this.textRenderer,this.x,this.y+y0-buttonHeight-2,buttonWidth*2,buttonHeight,Text.literal(HotKeys.SHARED_ARGUMENT.getInternal()));
-        sharedArgument.setMaxLength(256);  // 设置最大输入字符数
-        sharedArgument.setEditable(true);
-        sharedArgument.setText(HotKeys.SHARED_ARGUMENT.getInternal());
-        sharedArgument.setChangedListener(HotKeys.SHARED_ARGUMENT::set);
-        addDrawableChild(sharedArgument);
-        sharedArgument2=new TextFieldWidget(this.textRenderer,this.x+buttonWidth*2,this.y+y0-buttonHeight-2,buttonWidth*2,buttonHeight,Text.literal(HotKeys.SHARED_ARGUMENT_2.getInternal()));
-        sharedArgument2.setMaxLength(256);  // 设置最大输入字符数
-        sharedArgument2.setEditable(true);
-        sharedArgument2.setText(HotKeys.SHARED_ARGUMENT_2.getInternal());
-        sharedArgument2.setChangedListener(HotKeys.SHARED_ARGUMENT_2::set);
-        addDrawableChild(sharedArgument2);
+        if(SlimefunHelper.HACK_VERSION){
+            sharedArgument=new TextFieldWidget(this.textRenderer,this.x,this.y+y0-buttonHeight-2,buttonWidth*2,buttonHeight,Text.literal(HotKeys.SHARED_ARGUMENT.getInternal()));
+            sharedArgument.setMaxLength(256);  // 设置最大输入字符数
+            sharedArgument.setEditable(true);
+            sharedArgument.setText(HotKeys.SHARED_ARGUMENT.getInternal());
+            sharedArgument.setChangedListener(HotKeys.SHARED_ARGUMENT::set);
+            addDrawableChild(sharedArgument);
+            sharedArgument2=new TextFieldWidget(this.textRenderer,this.x+buttonWidth*2,this.y+y0-buttonHeight-2,buttonWidth*2,buttonHeight,Text.literal(HotKeys.SHARED_ARGUMENT_2.getInternal()));
+            sharedArgument2.setMaxLength(256);  // 设置最大输入字符数
+            sharedArgument2.setEditable(true);
+            sharedArgument2.setText(HotKeys.SHARED_ARGUMENT_2.getInternal());
+            sharedArgument2.setChangedListener(HotKeys.SHARED_ARGUMENT_2::set);
+            addDrawableChild(sharedArgument2);
+        }
         for(Map.Entry<String ,Runnable> entry:buttonToggles.entrySet()) {
             addDrawableChild(ButtonWidget
                     .builder(Text.literal(entry.getKey()), b ->entry.getValue().run())
