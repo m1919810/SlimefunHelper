@@ -1,0 +1,7 @@
+{
+    "author": "Matl114",
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "slimefunhelper:slimefunitem/logitech/logitech_true_"
+    }
+}
