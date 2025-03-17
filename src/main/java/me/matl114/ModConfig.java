@@ -1,9 +1,8 @@
 package me.matl114;
 
 import lombok.Getter;
-import me.matl114.ManageUtils.Configs;
-import me.matl114.SlimefunUtils.Debug;
-import me.matl114.Utils.Utils;
+import me.matl114.managers.Configs;
+import me.matl114.utils.Debug;
 import net.fabricmc.loader.api.FabricLoader;
 import org.yaml.snakeyaml.Yaml;
 
@@ -15,8 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 

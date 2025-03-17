@@ -1,13 +1,15 @@
 package me.matl114;
 
-import me.matl114.BukkitUtiils.BukkitMock;
-import me.matl114.BukkitUtiils.ItemStackHelper;
-import me.matl114.HackUtils.Tasks;
-import me.matl114.ListenerUtils.Listener;
-import me.matl114.ManageUtils.HotKeys;
-import me.matl114.SlimefunUtils.Debug;
-import me.matl114.SlimefunUtils.SlimefunItemModelManager;
-import me.matl114.SlimefunUtils.SlimefunUtils;
+import me.matl114.bukkitUtiils.BukkitMock;
+import me.matl114.bukkitUtiils.ItemStackHelper;
+import me.matl114.hackUtils.Tasks;
+import me.matl114.listenerUtils.Listener;
+import me.matl114.managers.HotKeys;
+import me.matl114.utils.Debug;
+import me.matl114.renders.SlimefunCustomModelManager;
+import me.matl114.renders.SlimefunUtils;
+import me.matl114.renders.RenderMain;
+import me.matl114.utils.Utils;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.client.model.ExtraModelProvider;
@@ -46,15 +48,15 @@ public class SlimefunHelper implements ModInitializer {
 		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
 			@Override
 			public Identifier getFabricId() {
-				return SlimefunUtils.getNamespaceKey("reload_listener");
+				return Utils.getNamespaceKey("reload_listener");
 			}
 			@Override
 			public void reload(ResourceManager manager) {
 				ModConfig.reloadModConfig();
-				SlimefunItemModelManager.init();
+				SlimefunCustomModelManager.init();
 				if(ModConfig.isEnableSlimefunCmdOverride()){
 					Debug.info("Reloading SlimefunHelper resources");
-					SlimefunItemModelManager.loadCustomModelDatas();
+					SlimefunCustomModelManager.loadCustomModelDatas();
 				}
 			}
 		});
@@ -76,15 +78,17 @@ public class SlimefunHelper implements ModInitializer {
 				if(ModConfig.isEnableItemModelOvevrride()) {
 					Debug.info("Force Load Model enabled");
 					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
-					SlimefunItemModelManager.walkThroughResourcePacks(manager,true).forEach(out);
+					SlimefunCustomModelManager.walkThroughResourcePacks(manager,true).forEach(out);
 				}else{
-					SlimefunItemModelManager.walkThroughResourcePacks(manager,false).forEach(out);
+					SlimefunCustomModelManager.walkThroughResourcePacks(manager,false).forEach(out);
 				}
 			}
 		});
 		BukkitMock.init();
 		LOGGER.info("loading bukkitMock!");
 		ItemStackHelper.init();
+		SlimefunUtils.init();
+		RenderMain.init();
 		HotKeys.init();
 		Tasks.init();
 		Listener.init();
