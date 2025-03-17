@@ -2,6 +2,7 @@ package me.matl114.mixins.RenderMixin;
 
 import me.matl114.ModConfig;
 import me.matl114.renders.SlimefunUtils;
+import me.matl114.utils.ItemStackUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.item.TooltipContext;
@@ -27,7 +28,7 @@ public abstract class ItemStackMixin {
     @Inject(method = "getTooltip", at = @At(value = "RETURN"))
     public void changeTooltip(PlayerEntity player, TooltipContext context, CallbackInfoReturnable<List<Text>> cir) {
         if(ModConfig.isEnableToolTipsDisplay()){
-            final String id = SlimefunUtils.getSfId(getNbt());
+            final String id = ItemStackUtils.getSfId(getNbt());
             if (id == null) {
                 return;
             }

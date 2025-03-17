@@ -76,11 +76,11 @@ public class ItemStackUtils {
     public static boolean isSimilarItemStack(ItemStack stack1,ItemStack stack2){
         return ItemStack.canCombine(stack1,stack2);
     }
-    public static NbtCompound getStoredBlockState(ItemStack stack){
+    public static NbtCompound getStoredBlockEntity(ItemStack stack){
         if(stack.hasNbt()){
             var nbt = stack.getNbt();
-            if(nbt != null && nbt.contains("BlockStateTag")){
-                return nbt.getCompound("BlockStateTag");
+            if(nbt != null && nbt.contains("BlockEntityTag")){
+                return nbt.getCompound("BlockEntityTag");
             }
         }
         return null;

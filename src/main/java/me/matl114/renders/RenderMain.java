@@ -5,6 +5,7 @@ import me.matl114.renders.implement.NewVersionModelRender;
 import me.matl114.renders.implement.SpawnerRender;
 import me.matl114.utils.UtilClass.OrderedSupplier;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.color.item.ItemColorProvider;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.DiffuseLighting;
@@ -14,6 +15,7 @@ import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.data.client.Model;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashException;
@@ -143,6 +145,15 @@ public class RenderMain {
             }
         }
         return null;
+    }
+    public static boolean shouldStopVanillaColoring(ItemStack item){
+        return NewVersionModelRender.isNewVersion(item);
+    }
+    public static ItemColorProvider getSpecificItemColorProvider(ItemConvertible[] item){
+        return null;
+//            ((stack, tintIndex) -> {
+//            return -999;
+//        });
     }
 
     static {

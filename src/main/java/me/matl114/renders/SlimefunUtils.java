@@ -6,14 +6,19 @@ import me.matl114.bukkitUtiils.BukkitItemStack;
 import me.matl114.bukkitUtiils.ItemStackHelper;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.managers.HotKeys;
+import me.matl114.renders.implement.NewVersionModelRender;
+import me.matl114.renders.implement.SpawnerRender;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -646,6 +651,20 @@ public class SlimefunUtils {
         }
         return null;
     }
+    public static final String ES_PREFIX = "ELECTRIC_SPAWNER_";
+    public static final int ES_PREFIX_LEN = ES_PREFIX.length();
+    public static ItemStack handleElectricSpawnerInfo(ItemStack item){
+        String sfid = getSfId(item);
+        if( sfid != null && sfid.startsWith(ES_PREFIX)){
+            String entity = sfid.substring(ES_PREFIX_LEN);
+            EntityType<?> entity1 = Registries.ENTITY_TYPE.getOrEmpty(new Identifier("minecraft",entity.toLowerCase(Locale.ROOT))).orElse(null);
+            if(entity1!=null){
+                return SpawnerRender.getRenderingEntityContent(entity1);
+            }
+        }
+        return null;
+    }
+
     static{
         RenderMain.registerContainerInfoPredicate((stack)->{
             NbtCompound tag = getBukkitValues(stack);
@@ -678,6 +697,8 @@ public class SlimefunUtils {
             if((item = getOptionalChickenOutput(stack))!=null){
 
             }else if((item = handleCLTInfo(stack))!=null){
+
+            }else if((item = handleElectricSpawnerInfo(stack)) != null){
 
             }
             else {

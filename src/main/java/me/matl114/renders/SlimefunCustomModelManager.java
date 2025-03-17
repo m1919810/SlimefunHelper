@@ -4,6 +4,7 @@ import com.google.gson.*;
 import me.matl114.access.BakedModelManagerAccess;
 import me.matl114.ModConfig;
 import me.matl114.utils.Debug;
+import me.matl114.utils.ItemStackUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.item.ItemStack;
@@ -209,7 +210,7 @@ public class SlimefunCustomModelManager {
         });
         RenderMain.registerModelOverridePredicate((stack)->{
             if(stack.hasNbt()){
-                String id = SlimefunUtils.getSfId(stack.getNbt());
+                String id = ItemStackUtils.getSfId(stack.getNbt());
                 if(id!=null ){
                     return Optional.ofNullable(CUSTOM_PATH_SLIMEFUN_MODEL.get(id));
                 }

@@ -67,7 +67,8 @@ public class EntityUtils {
     }
     public static EntityType<?> getStoredEntityType(ItemStack stack){
         if(stack != null && stack.getItem() instanceof BlockItem block && block.getBlock() instanceof SpawnerBlock spawner){
-            return getSpawnerEntityType(stack.getNbt());
+
+            return getSpawnerEntityType(ItemStackUtils.getStoredBlockEntity(stack));
         }
         return null;
     }
@@ -77,8 +78,11 @@ public class EntityUtils {
     public static Identifier getSpawnedEntityId(NbtCompound nbt, String spawnDataKey) {
         if (nbt.contains(spawnDataKey, 10)) {
             String string = nbt.getCompound(spawnDataKey).getCompound("entity").getString("id");
-            return Identifier.tryParse(string);
+
+          return Identifier.tryParse(string);
+
         } else {
+
             return null;
         }
     }

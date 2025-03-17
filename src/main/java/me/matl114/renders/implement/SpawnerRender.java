@@ -24,11 +24,14 @@ public class SpawnerRender {
             }
         }
     }};
+    public static ItemStack getRenderingEntityContent(EntityType<?> typed) {
+        return ENTITYTYPE_TO_NEWSPAWNEREGGS.containsKey(typed) ? ENTITYTYPE_TO_NEWSPAWNEREGGS.get(typed).copy() : null;
+    }
     static{
         RenderMain.registerContainerInfoPredicate(1005, (stack)->{
             EntityType<?> typed = EntityUtils.getStoredEntityType(stack);
             if(typed != null){
-                return ENTITYTYPE_TO_NEWSPAWNEREGGS.containsKey(typed) ? ENTITYTYPE_TO_NEWSPAWNEREGGS.get(typed).copy() : null;
+                return getRenderingEntityContent(typed);
             }
             return null;
         });

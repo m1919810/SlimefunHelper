@@ -32,6 +32,7 @@
     "RenderMixin.CustomNbtTextureRendererMixin",
     "RenderMixin.DrawContextMixin",
     "RenderMixin.GameRenderMixin",
+    "RenderMixin.ItemColorMixin",
     "RenderMixin.ItemStackMixin",
     "RenderMixin.JsonUnbakedModelMixin",
     "RenderMixin.LightMapTextureMixin",

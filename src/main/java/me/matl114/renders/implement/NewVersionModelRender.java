@@ -35,7 +35,7 @@ public class NewVersionModelRender {
         }
         return  NEW_VERSION_ITEMS.get(item);
     }
-    private static final Map<Item,Identifier> NEW_VERSION_ITEMS = new HashMap<>();
+    public static final Map<Item,Identifier> NEW_VERSION_ITEMS = new HashMap<>();
 
     static {
         SlimefunCustomModelManager.registerResourceReloadTasks(()->{
