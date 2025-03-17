@@ -1,6 +1,7 @@
 package me.matl114.HackUtils;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import me.matl114.Access.ClientPlayerAccess;
 import me.matl114.Access.KeyBindAccess;
 import me.matl114.ListenerUtils.Listener;
 import me.matl114.ManageUtils.Configs;
@@ -280,8 +281,13 @@ public class MovTasks {
 
     private static void restoreKeyPresses()
     {
-        KeyBindAccess.of(mc.options.jumpKey).resetKeyState();
-        KeyBindAccess.of(mc.options.sneakKey).resetKeyState();
+        //bugfix when shift click in screen, this key is reset to fall
+        if(mc.currentScreen == null){
+
+            KeyBindAccess.of(mc.options.jumpKey).resetKeyState();
+            KeyBindAccess.of(mc.options.sneakKey).resetKeyState();
+        }
+
     }
 
     private static final AtomicBoolean overrideFly = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_FLY);
