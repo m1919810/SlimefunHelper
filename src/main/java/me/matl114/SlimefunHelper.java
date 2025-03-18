@@ -36,7 +36,7 @@ public class SlimefunHelper implements ModInitializer {
 	public static SlimefunHelper getInstance() {
 		return instance;
 	}
-	public static final boolean HACK_VERSION = true;
+	public static final boolean HACK_VERSION = false;
 	@Override
 	public void onInitialize() {
 		instance = this;
