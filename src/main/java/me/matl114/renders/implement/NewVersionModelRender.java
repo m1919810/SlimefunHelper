@@ -17,7 +17,7 @@ public class NewVersionModelRender {
 
     }
     private static final Set<Item> NEWVERSION_ITEM_FORCE_DISPLAY = new HashSet<>(){{
-        add(Items.ENCHANTED_BOOK);
+       // add(Items.ENCHANTED_BOOK);
     }};
     public static String PATH_OF_NEW_VERSION = "new-version";
     public static String NAMESPACE = "slimefunhelper";

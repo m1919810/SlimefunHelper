@@ -7,8 +7,8 @@ import me.matl114.hackUtils.MovTasks;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.ModConfig;
 import me.matl114.SlimefunHelper;
+import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.utils.Debug;
-import me.matl114.renders.SlimefunUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import org.yaml.snakeyaml.Yaml;
@@ -182,7 +182,7 @@ public class HotKeys {
         getTaskHotKey(SLIMEFUNID_COPY,(manager)->{
             ClientPlayerEntity player= manager.getClient().player;
             if(player!=null){
-                return SlimefunUtils.copySfIdInHand(player,manager.getClient());
+                return SlimefunRender.copySfIdInHand(player,manager.getClient());
             }
             return false;
         });

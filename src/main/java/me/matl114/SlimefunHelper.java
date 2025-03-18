@@ -5,9 +5,9 @@ import me.matl114.bukkitUtiils.ItemStackHelper;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.HotKeys;
+import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.utils.Debug;
 import me.matl114.renders.SlimefunCustomModelManager;
-import me.matl114.renders.SlimefunUtils;
 import me.matl114.renders.RenderMain;
 import me.matl114.utils.Utils;
 import net.fabricmc.api.ModInitializer;
@@ -87,7 +87,6 @@ public class SlimefunHelper implements ModInitializer {
 		BukkitMock.init();
 		LOGGER.info("loading bukkitMock!");
 		ItemStackHelper.init();
-		SlimefunUtils.init();
 		RenderMain.init();
 		HotKeys.init();
 		Tasks.init();

@@ -1,7 +1,7 @@
 package me.matl114.mixins.RenderMixin;
 
 import me.matl114.ModConfig;
-import me.matl114.renders.SlimefunUtils;
+import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.utils.ItemStackUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -38,16 +38,16 @@ public abstract class ItemStackMixin {
             for (int i = 0; i < lore.size(); i++) {
                 String line = lore.get(i).getString();
                 if (("§9§oMinecraft").equals(line)) {
-                    lore.set(i, SlimefunUtils.modShow());
+                    lore.set(i, SlimefunRender.modShow());
                     found=true;
                 }
             }
             if(!found){
-                lore.add(SlimefunUtils.modShow());
+                lore.add(SlimefunRender.modShow());
             }
             lore.add(Text.literal("粘液物品ID: ").formatted(Formatting.GRAY).append(Text.literal(id).formatted(Formatting.GREEN)));
-            SlimefunUtils.handleGCEInfo(id,(ItemStack)(Object)this,lore);
-            SlimefunUtils.handleCLTInfo(id,(ItemStack)(Object)this,lore);
+            SlimefunRender.handleGCEInfo(id,(ItemStack)(Object)this,lore);
+            SlimefunRender.handleCLTInfo(id,(ItemStack)(Object)this,lore);
         }
     }
 }

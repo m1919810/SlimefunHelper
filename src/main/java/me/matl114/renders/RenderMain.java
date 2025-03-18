@@ -1,7 +1,9 @@
 package me.matl114.renders;
 
 import me.matl114.access.DrawContextAccess;
+import me.matl114.renders.implement.EnchantmentRender;
 import me.matl114.renders.implement.NewVersionModelRender;
+import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.renders.implement.SpawnerRender;
 import me.matl114.utils.UtilClass.OrderedSupplier;
 import net.minecraft.client.MinecraftClient;
@@ -159,5 +161,7 @@ public class RenderMain {
     static {
         NewVersionModelRender.init();
         SpawnerRender.init();
+        EnchantmentRender.init();
+        SlimefunRender.init();
     }
 }

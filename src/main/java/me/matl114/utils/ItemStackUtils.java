@@ -1,6 +1,8 @@
 package me.matl114.utils;
 
 import me.matl114.bukkitUtiils.ItemStackHelper;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -9,6 +11,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
+import java.util.List;
 import java.util.Locale;
 
 public class ItemStackUtils {
@@ -32,6 +35,9 @@ public class ItemStackUtils {
         }
         return null;
     }
+    public static NbtList getStoredEnchantment(ItemStack stack){
+        return EnchantedBookItem.getEnchantmentNbt(stack);
+    }
     public static void setEnchantment(ItemStack stack, NbtList enchantments){
         stack.getOrCreateNbt().put("Enchantments", enchantments);
     }
@@ -41,16 +47,16 @@ public class ItemStackUtils {
     public static ItemStack getCleanedItem(ItemStack stack){
         return getCleanedItem(stack, true);
     }
-    public static ItemStack getCleanedItem(ItemStack stack,boolean keepDur){
+    public static ItemStack getCleanedItem(ItemStack stack, boolean keepDur){
         return getCleanedItem(stack,keepDur,true);
     }
-    public static ItemStack getCleanedItem(ItemStack stack,boolean keepDur,boolean keepEnchant){
-        return getCleanedItem(stack,true,keepDur,keepEnchant);
+    public static ItemStack getCleanedItem(ItemStack stack, boolean keepDur, boolean keepEnchant){
+        return getCleanedItem(stack,true, keepDur, keepEnchant);
     }
-    public static ItemStack getCleanedItem(ItemStack stack,boolean keepNBT,boolean keepDur,boolean keepEnchant){
+    public static ItemStack getCleanedItem(ItemStack stack, boolean keepNBT, boolean keepDur, boolean keepEnchant){
         return getCleanedItem(stack, -999, keepNBT, keepDur, keepEnchant);
     }
-    public static ItemStack getCleanedItem(ItemStack stack,int setAmount,boolean keepNBT,boolean keepDur,boolean keepEnchant){
+    public static ItemStack getCleanedItem(ItemStack stack, int setAmount, boolean keepNBT, boolean keepDur, boolean keepEnchant){
         ItemStack cleaned=stack.getItem().getDefaultStack();
 
         if(!keepNBT){
