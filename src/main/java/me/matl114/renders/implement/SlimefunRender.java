@@ -8,6 +8,7 @@ import me.matl114.hackUtils.Tasks;
 import me.matl114.managers.HotKeys;
 import me.matl114.renders.RenderMain;
 import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.UtilClass.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -23,7 +24,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
 
 import static me.matl114.utils.ItemStackUtils.*;
 
@@ -161,8 +161,8 @@ public class SlimefunRender {
         if(player==null||client==null)return false;
         ItemStack heldItem=null;
         if(client.currentScreen instanceof HandledScreen<?> s){
-            Pair<Integer,Integer> mouseCoord= ScreenUtils.getMouseCoord(client);
-            Slot slot=HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.getLeft(),mouseCoord.getRight());
+            Point mouseCoord= ScreenUtils.getMouseCoord(client);
+            Slot slot=HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.x,mouseCoord.y);
             if(slot!=null){
                 heldItem=slot.getStack();
             }
@@ -179,7 +179,10 @@ public class SlimefunRender {
 
                 return true;
             }else{
-                player.sendMessage(Text.literal("该物品不是Slimefun物品,不能获取对应粘液ID!").formatted(Formatting.RED));
+                String id = Registries.ITEM.getId(heldItem.getItem()).getPath().toUpperCase(Locale.ROOT);
+                client.keyboard.setClipboard(id);
+                HotKeys.SHARED_ARGUMENT.set(id);
+                player.sendMessage(Text.literal("该物品不是Slimefun物品,拷贝原版ID!").formatted(Formatting.GREEN).append(Text.literal(id).formatted(Formatting.WHITE)));
                 return true;
             }
         }
@@ -675,7 +678,7 @@ public class SlimefunRender {
                 }else{
                     return null;
                 }
-                return ItemStackHelper.getAsNMItem(stored);
+                return ItemStackHelper.getAsDisplayItem(stored);
             }
             return null;
         });

@@ -1,31 +1,25 @@
 package me.matl114.renders;
 
-import me.matl114.access.DrawContextAccess;
+import lombok.Getter;
 import me.matl114.renders.implement.EnchantmentRender;
 import me.matl114.renders.implement.NewVersionModelRender;
 import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.renders.implement.SpawnerRender;
+import me.matl114.utils.UtilClass.ArgumentListenerPoint;
+import me.matl114.utils.UtilClass.ListenerPoint;
 import me.matl114.utils.UtilClass.OrderedSupplier;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.item.ItemColorProvider;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.ModelIdentifier;
-import net.minecraft.data.client.Model;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.crash.CrashException;
-import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.crash.CrashReportSection;
-import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 
 import java.util.*;
 import java.util.function.Function;
@@ -34,38 +28,7 @@ public class RenderMain {
     public static void init(){
     }
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    public static void drawItem(DrawContext context, @Nullable LivingEntity entity, @Nullable World world, ItemStack stack,float scale, int x, int y, int seed, int z,int dz) {
-        if (stack.isEmpty()) {
-            return;
-        }
-        DrawContextAccess access=DrawContextAccess.of(context);
-        BakedModel bakedModel =access.getMinecraftClient().getItemRenderer().getModel(stack, world, entity, seed);
-        access.getMatrixStack().push();
-        access.getMatrixStack().translate(x + 8, y + 8, 150+dz + (bakedModel.hasDepth() ? z : 0));
-        try {
-            boolean bl;
-            access.getMatrixStack().multiplyPositionMatrix(new Matrix4f().scaling(1.0f, -1.0f, 1.0f));
-            access.getMatrixStack().scale(16.0f*scale, 16.0f*scale, 16.0f*scale);
-            boolean bl2 = bl = !bakedModel.isSideLit();
-            if (bl) {
-                DiffuseLighting.disableGuiDepthLighting();
-            }
-            access.getMinecraftClient().getItemRenderer().renderItem(stack, ModelTransformationMode.GUI, false, access.getMatrixStack(), context.getVertexConsumers(), 0xF000F0, OverlayTexture.DEFAULT_UV, bakedModel);
-            context.draw();
-            if (bl) {
-                DiffuseLighting.enableGuiDepthLighting();
-            }
-        } catch (Throwable throwable) {
-            CrashReport crashReport = CrashReport.create((Throwable)throwable, (String)"Rendering item");
-            CrashReportSection crashReportSection = crashReport.addElement("Item being rendered");
-            crashReportSection.add("Item Type", () -> String.valueOf(stack.getItem()));
-            crashReportSection.add("Item Damage", () -> String.valueOf(stack.getDamage()));
-            crashReportSection.add("Item NBT", () -> String.valueOf(stack.getNbt()));
-            crashReportSection.add("Item Foil", () -> String.valueOf(stack.hasGlint()));
-            throw new CrashException(crashReport);
-        }
-        access.getMatrixStack().pop();
-    }
+
     private static final List<OrderedSupplier<ItemStack,Optional<Identifier>>> modelOverrideFunctions = new ArrayList<>();
     //lower goes first
     public static void registerModelOverridePredicate(int priority ,Function<ItemStack,Optional<Identifier>> function) {
@@ -121,14 +84,7 @@ public class RenderMain {
             return model;
         }
     }
-    public static void drawSlotLikeItemAt(DrawContext context, TextRenderer textRenderer, ItemStack item, int x, int y,int depth,float scale, int seed){
-        context.getMatrices().push();
 
-       drawItem(context, MinecraftClient.getInstance().player,MinecraftClient.getInstance().world, item,scale, x, y, seed, 0 ,depth);
-
-        context.drawItemInSlot(textRenderer, item, x, y, null);
-        context.getMatrices().pop();
-    }
     private static final List<OrderedSupplier<ItemStack,ItemStack>> containerInfoSuppilers = new ArrayList<>();
     public static void registerContainerInfoPredicate(Function<ItemStack,ItemStack> func){
         containerInfoSuppilers.add(OrderedSupplier.create(1000, func));
@@ -157,6 +113,31 @@ public class RenderMain {
 //            return -999;
 //        });
     }
+    @Getter
+    private static final ListenerPoint<MatrixStack> renderTasks = new ListenerPoint<>();
+    public static void renderMoreTasks(MatrixStack stack){
+        GL11.glEnable(GL11.GL_LINE_SMOOTH);
+        renderTasks.handleValue(stack);
+        GL11.glDisable(GL11.GL_LINE_SMOOTH);
+    }
+    @Getter
+    private static final ArgumentListenerPoint<DrawContext> renderSlot = new ArgumentListenerPoint<>();
+    public static void renderSlotInScreen(DrawContext context, HandledScreen<?> renderer, Slot stack, int mouseX, int mouseY){
+        renderSlot.handleValue(context, renderer, stack, mouseX, mouseY);
+    }
+
+    @Getter
+    private static final ArgumentListenerPoint<DrawContext> renderHandledScreen = new ArgumentListenerPoint<>();
+    public static void renderHandledScreen(DrawContext context, HandledScreen<?> screen, int mouseX, int mouseY, float delta){
+        renderHandledScreen.handleValue(context, screen, mouseX, mouseY, delta);
+    }
+
+//    @Getter
+//    private static final ArgumentListenerPoint<DrawContext> renderToolTips = new ArgumentListenerPoint<>();
+//    public static void renderItemTooltipsTasks(DrawContext context, TextRenderer renderer, ItemStack stack, int x, int y){
+//        renderToolTips.handleValue(context, renderer, stack, x, y);
+//    }
+
 
     static {
         NewVersionModelRender.init();

@@ -49,6 +49,41 @@ public class ConfigLoader {
         copyFile(cfgFile, fileName);
         return new Config(customName,cfgFile);
     }
+
+    public static String loadExternalJson(String name){
+        final File cfg = FabricLoader.getInstance().getConfigDir().resolve(name).toFile();
+        if(!cfg.exists()){
+            try{
+                if(!cfg.getParentFile().exists()) {
+                    Files.createDirectories(cfg.toPath().getParent());
+                }
+                Files.createFile(cfg.toPath());
+                Files.writeString(cfg.toPath(), "{}");
+            }catch (Throwable e){
+                Debug.info("创建新json文件失败: 文件:", cfg, "错误:");
+                Debug.info(e);
+                return "{}";
+            }
+        }
+        try{
+            return Files.readString(cfg.toPath(), StandardCharsets.UTF_8);
+        }catch (Throwable e){
+            Debug.info("读取json文件失败: 文件:", cfg, "错误:");
+            Debug.info(e);
+            return "{}";
+        }
+    }
+    public static void saveToFile(String name, String data) throws IOException {
+        final File cfg = FabricLoader.getInstance().getConfigDir().resolve(name).toFile();
+        if(!cfg.exists()) {
+            if (!cfg.getParentFile().exists()) {
+                Files.createDirectories(cfg.toPath().getParent());
+            }
+            Files.createFile(cfg.toPath());
+        }
+        Files.writeString(cfg.toPath(), data);
+    }
+
     public static HashMap<String, Object> loadYamlConfig(File file){
         try{
             return loadYamlConfig(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));

@@ -34,6 +34,10 @@ hotkeys:
   fast-drop: LEFT_SHIFT,Q
   quick-move: W,GRAVE_ACCENT
   toggle-flight-speed: LEFT_CONTROL,LEFT_BRACKET
+  pick-item: LEFT_CONTROL,BUTTON_3
+  recipe-display-add: LEFT_CONTROL,BUTTON_1
+  save-slot-item: LEFT_CONTROL,A,BUTTON_1
+  open-editor: LEFT_CONTROL,I
 
 
 hotkeys-toggle:

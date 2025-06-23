@@ -3,11 +3,9 @@ package me.matl114.bukkitUtiils;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import me.matl114.access.StringNbtReaderAccess;
+import me.matl114.utils.Debug;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.*;
-import org.bukkit.Material;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -77,14 +75,28 @@ public class BukkitConfigDeserializor {
 
         throw new RuntimeException("Could not deserialize NBTBase");
     }
+    public static final String TEST_CASE = "item:\n" +
+        "  ==: org.bukkit.inventory.ItemStack\n" +
+        "  v: 3465\n" +
+        "  type: DIRT\n" +
+        "  meta:\n" +
+        "    ==: ItemMeta\n" +
+        "    meta-type: UNSPECIFIC\n" +
+        "    PublicBukkitValues:\n" +
+        "      infinityexpansion:display: 351372703i\n" ;
     public static BukkitItemStack deserializeItemFromString(String string){
-        YamlConfiguration config = new YamlConfiguration();
+        return deserializeItemFromStringTest(string);
+
+    }
+    public static BukkitItemStack deserializeItemFromStringTest(String string){
+        BukkitYaml config = new BukkitYaml();
         try {
-            config.loadFromString(string);
-        } catch (InvalidConfigurationException var3) {
-            return new BukkitItemStack(Material.STONE,1);
+            return config.getItemStackFromString(string);//  config.loadFromString(string);
+        } catch (BukkitYaml.InvalidConfigException var3) {
+            Debug.info(var3);
+            return new BukkitItemStack(Items.STONE,1);
         }
-        BukkitItemStack item = config.getObject("item",BukkitItemStack.class);
-        return (item != null ? item :new BukkitItemStack(Material.STONE,1));
+//        BukkitItemStack item = config.getObject("item",BukkitItemStack.class);
+//        return (item != null ? item :new BukkitItemStack(Items.STONE,1));
     }
 }

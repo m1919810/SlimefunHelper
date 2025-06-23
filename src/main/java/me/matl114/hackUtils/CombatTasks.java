@@ -24,6 +24,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -137,6 +138,7 @@ public class CombatTasks {
 
     private static final AtomicBoolean DO_INTERVEL_WEAPON = Configs.COMBAT_CONFIG.getBoolean(Configs.AUTOATTACK_DO_INTERVEL_WEAPON);
     private static final AtomicBoolean DO_INTERVEL_HAND = Configs.COMBAT_CONFIG.getBoolean(Configs.AUTOATTACK_DO_INTERVEL_HAND);
+    private static final AtomicInteger MAX_ONCE_ATTACK = Configs.COMBAT_CONFIG.getInt(Configs.AUTOATTACK_ONCE_MAX);
     public static void handleAutoAttack(ClientPlayerEntity player){
         boolean holdingWeapon = isHoldingWeapon(player);
         if((holdingWeapon && DO_INTERVEL_WEAPON.get())||(!holdingWeapon&&DO_INTERVEL_HAND.get())){
@@ -149,9 +151,15 @@ public class CombatTasks {
             //attack! attack! attack!
             List<Entity> targets= getAttackableEntitiesForPlayer();
             //Debug.info(pos);
+            int max = MAX_ONCE_ATTACK.get();
             if(!targets.isEmpty()) {
                 //Debug.info("attack!");
-                targets.forEach(target->attackEntity(player,target));
+                for (Entity target : targets) {
+                    attackEntity(player,target);
+                    if( -- max <= 0){
+                        return;
+                    }
+                }
             }
         }
     }

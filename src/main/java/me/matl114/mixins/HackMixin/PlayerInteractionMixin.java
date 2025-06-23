@@ -1,7 +1,10 @@
 package me.matl114.mixins.HackMixin;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import me.matl114.access.PlayerInteractionAccess;
+import me.matl114.hackUtils.InvTasks;
+import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.utils.Debug;
@@ -9,11 +12,19 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.network.SequencedPacketCreator;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.recipe.RecipeEntry;
+import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.GameMode;
@@ -47,6 +58,8 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Shadow private GameMode gameMode;
 
     @Shadow @Final private MinecraftClient client;
+
+    @Shadow @Final private ClientPlayNetworkHandler networkHandler;
 
     public void sendStopBreakPacket(BlockPos pos, Direction direction){
         this.sendSequencedPacket(MinecraftClient.getInstance().world,(sequence -> {
@@ -206,8 +219,31 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         lockRecipe.set(!lockRecipe.get());
         Debug.chat("Toggle RecipeLock ",lockRecipe.get());
     }
-//    @Inject(method = "clickSlot",at = @At("HEAD"))
-//    public void clickSlot(int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci){
-//        Debug.info("check slot click",syncId,slotId,button,actionType,player);
-//    }
+    private static final AtomicBoolean OPTIMIZE_REMOTE_STACK = InvTasks.OPTIMIZE_SLOT_CLICK_PACKET;
+    @Inject(method = "clickSlot",at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/ScreenHandler;onSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V",shift = At.Shift.AFTER), cancellable = true)
+    public void clickSlot(int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci){
+        if(OPTIMIZE_REMOTE_STACK.get()){
+            this.networkHandler.sendPacket(new ClickSlotC2SPacket(syncId, player.currentScreenHandler.getRevision(), slotId, button, actionType, player.currentScreenHandler.getCursorStack().copy(), new Int2ObjectOpenHashMap<>()));
+            ci.cancel();
+        }
+    }
+
+
+    @Inject(method = "interactBlock", at = @At(value = "HEAD"))
+    public void onPreInteractBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir){
+       if( !Listener.doItemUseAtBlockPre(hand, hitResult)){
+           cir.setReturnValue(ActionResult.PASS);
+       }
+    }
+    @Inject(method = "interactBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V",shift = At.Shift.AFTER))
+    public void onPostInteractBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir){
+        Listener.doItemUseAtBlockPost(hand, hitResult);
+    }
+
+
+
+
+
+
+
 }

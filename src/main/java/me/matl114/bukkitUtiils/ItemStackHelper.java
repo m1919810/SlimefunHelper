@@ -2,78 +2,57 @@ package me.matl114.bukkitUtiils;
 
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
-import net.minecraft.item.Item;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
+
 
 import static me.matl114.utils.ItemStackUtils.*;
-import static me.matl114.utils.Utils.*;
-import java.lang.reflect.Field;
+
 import java.util.*;
 import java.util.regex.Pattern;
 
 public class ItemStackHelper {
-    public static ConfigurationSerializableDataType<org.bukkit.inventory.ItemStack> DATATYPE_ITEMSTACK=new ConfigurationSerializableDataType(org.bukkit.inventory.ItemStack.class);
     public static ConfigurationSerializableDataType<BukkitItemStack> DATATYPE_MOCKITEMSTACK=new ConfigurationSerializableDataType(BukkitItemStack.class);
-    public static HashMap<Material, Item> MATERIAL_ITEM=new HashMap<>();
-    public static ItemStack STACK_FORBIDDEN=new ItemStack(Items.BARRIER,1);
+   // public static ItemStack STACK_FORBIDDEN=new ItemStack(Items.BARRIER,1);
     public static void init(){
         Debug.info("ItemStackHelper enabled");
     }
-    static {
-        for(Material mat : Material.values()) {
-            NamespacedKey key;
-            if(mat.isLegacy()){
-                key=new NamespacedKey("minecraft", mat.name().replace("LEGACY_","").toLowerCase());
-            }else{
-                key=mat.getKey();
-            }
-            if(mat.isItem()){
-                Item item= Registries.ITEM.get(fromNamespace(key));
-                if(item!=null){
-                    MATERIAL_ITEM.put(mat, item);
-                }else {
-                    Debug.info("Material " + mat.toString() + " not found");
-                }
-            }
-        }
+
+    private static final NbtList DEFAULT_ENCH = new NbtList();
+    static{
+        DEFAULT_ENCH.add(EnchantmentHelper.createNbt(Registries.ENCHANTMENT.getId(Enchantments.LUCK_OF_THE_SEA), 1));
     }
-
-
-    public static ItemStack getAsNMItem(BukkitItemStack itemStack){
+    public static ItemStack getAsDisplayItem(BukkitItemStack itemStack){
         try{
-            ItemStack stack=new ItemStack(MATERIAL_ITEM.get(itemStack.getType()));
+            ItemStack stack=new ItemStack(itemStack.getType());
             stack.setCount(itemStack.getAmount());
             if(itemStack.hasItemMeta()){
-                ItemMeta meta=itemStack.getItemMeta();
+                BukkitMetaItem meta=itemStack.getItemMeta();
 
                 if(meta.hasDisplayName()||meta.hasLore()){
                     ItemStackUtils.setDisplay(stack,ItemStackHelper.fromJsonToDisplay(meta.getDisplayName(),meta.getLore()));
                 }
                 if(meta.hasEnchants()){
-                    ItemStackUtils.setEnchantment(stack, ItemStackHelper.fromEnchantsToList(getEnchantmentKeys(meta.getEnchants())));
+                    ItemStackUtils.setEnchantment(stack, DEFAULT_ENCH);
                 }
                 if(BukkitMetaType.ENCHANT_BOOK.isType(meta)){
                     Map<?,?> e=(Map<?,?>)BukkitMetaType.ENCHANT_BOOK.getAttr(meta,"stored-enchants");
-                   ItemStackUtils.setStoredEnchantment(stack, ItemStackHelper.fromEnchantsToList(getEnchantmentKeys(e)));
+                   ItemStackUtils.setStoredEnchantment(stack, DEFAULT_ENCH);
                 }
                 if(BukkitMetaType.SKULL.isType(meta)){
                     if(BukkitMetaType.SKULL.getAttr(meta,"skull-owner") instanceof BukkitPlayerProfile bp){
                         bp.addGameProfile(stack);
                     }
                 }
-                PersistentDataContainer container=meta.getPersistentDataContainer();
-                if(container!=null&& container instanceof BukkitPersistentDataContainer bpdc){
-                    stack.getOrCreateNbt().put("PublicBukkitValues",bpdc.toCompound());
+                BukkitPersistentDataContainer container=meta.getPersistentDataContainer();
+                if(container!=null){
+                    stack.getOrCreateNbt().put("PublicBukkitValues",container.toCompound());
                 }
                 if(meta.hasCustomModelData()){
                     setCustomModelData(stack, meta.getCustomModelData());
@@ -87,7 +66,6 @@ public class ItemStackHelper {
 
         }catch (Throwable e) {
             Debug.info("error in ItemConvertion");
-            Debug.info(e);
             return null;
         }
     }
@@ -116,69 +94,8 @@ public class ItemStackHelper {
         return compound;
 
     }
-    public static Map<Enchantment, Integer> buildEnchantments(Map<?, ?> ench) {
-        if (ench == null) {
-            return null;
-        }
 
-        Map<Enchantment, Integer> enchantments = new LinkedHashMap<Enchantment, Integer>(ench.size());
-        for (Map.Entry<?, ?> entry : ench.entrySet()) {
-            // Doctor older enchants
-            String enchantKey = entry.getKey().toString();
-            if (enchantKey.equals("SWEEPING")) {
-                enchantKey = "SWEEPING_EDGE";
-            }
 
-            Enchantment enchantment = Enchantment.getByName(enchantKey);
-            if(enchantment==null){
-                try{
-                    Field field = Enchantment.class.getField(enchantKey);
-                    field.setAccessible(true);
-                    enchantment=(Enchantment) field.get(null);
-                }catch (Throwable e){
-
-                }
-            }
-            if ((enchantment != null) && (entry.getValue() instanceof Integer)) {
-                enchantments.put(enchantment, (Integer) entry.getValue());
-            }
-        }
-
-        return enchantments;
-    }
-    public static Map<String, Integer> getEnchantmentKeys(Map<?, ?> ench) {
-        if (ench == null) {
-            return null;
-        }
-        Map<String, Integer> enchantments = new LinkedHashMap<>(ench.size());
-        for (Map.Entry<?, ?> entry : ench.entrySet()) {
-            // Doctor older enchants
-            String enchantKey = entry.getKey().toString();
-            if (enchantKey.equals("SWEEPING")) {
-                enchantKey = "SWEEPING_EDGE";
-            }
-
-            Enchantment enchantment = Enchantment.getByName(enchantKey);
-            if(enchantment==null){
-                try{
-                    Field field = Enchantment.class.getField(enchantKey);
-                    field.setAccessible(true);
-                    enchantment=(Enchantment) field.get(null);
-                }catch (Throwable e){
-
-                }
-            }
-            if(entry.getValue() instanceof Integer it){
-                if ((enchantment != null) ) {
-                    enchantments.put(enchantment.getKey().toString(),it);
-                }else{
-                    enchantments.put("minecraft:"+enchantKey.toLowerCase(),it);
-                }
-            }
-        }
-
-        return enchantments;
-    }
     public static NbtList fromEnchantsToList(Map<String, Integer> enchants){
         if(enchants==null||enchants.isEmpty()){
             return null;
@@ -196,25 +113,7 @@ public class ItemStackHelper {
 
         return list;
     }
-    public static ItemStack getAsNMItem(org.bukkit.inventory.ItemStack itemStack){
-        try{
-            ItemStack stack=new ItemStack(MATERIAL_ITEM.get(itemStack.getType()));
-            stack.setCount(itemStack.getAmount());
-            if(itemStack.hasItemMeta()){
-                ItemMeta meta=itemStack.getItemMeta();
-                if(meta.hasCustomModelData()){
-                    setCustomModelData(stack, meta.getCustomModelData());
-                }
-//                if(meta.hasDisplayName()){
-//
-//                }
 
-            }
-        }catch (Throwable e) {
-            return null;
-        }
-        return null;
-    }
     public static final Pattern HEXADECIMAL = Pattern.compile("[A-Fa-f\\d]+");
     public static NbtCompound buildPlayerHead(String hash){
         BukkitPlayerProfile.PlayerSkin skin = BukkitPlayerProfile.fromHashCode(hash);

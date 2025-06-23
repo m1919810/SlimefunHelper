@@ -1,0 +1,1676 @@
+package me.matl114.hackUtils;
+
+import com.google.common.base.Preconditions;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.*;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.objects.Object2ReferenceArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
+import lombok.AllArgsConstructor;
+import me.matl114.access.*;
+import me.matl114.gui.slimefun.SavedItemWidget;
+import me.matl114.gui.slimefun.SlimefunChoiceScreen;
+import me.matl114.gui.slimefun.SlimefunEntryListScreen;
+import me.matl114.gui.slimefun.SlimefunQuestionScreen;
+import me.matl114.gui.basic.ExecutableWidget;
+import me.matl114.gui.basic.MouseHandler;
+import me.matl114.gui.basic.SlotElement;
+import me.matl114.listenerUtils.Listener;
+import me.matl114.managers.Config;
+import me.matl114.managers.ConfigLoader;
+import me.matl114.managers.Configs;
+import me.matl114.renders.RenderMain;
+import me.matl114.utils.Debug;
+import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.UtilClass.*;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
+import net.minecraft.recipe.*;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.TagKey;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.World;
+
+import java.lang.reflect.Type;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static me.matl114.gui.FilterService.*;
+import static me.matl114.hackUtils.SlimefunTasks.MultiBlockEntry.DIR_CONSIDER;
+import static me.matl114.hackUtils.SlimefunTasks.MultiBlockEntry.DIR_SYMM;
+
+public class SlimefunTasks {
+    public static void init(){
+
+    }
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
+    public static record ItemStackSample(ItemStack sample){
+        public static final ItemStackSample EMPTY = new ItemStackSample(ItemStack.EMPTY);
+
+        public static ItemStackSample of(ItemStack stack){
+            if(stack.isEmpty()){
+                return EMPTY;
+            }
+            var st = stack.copy();
+            st.setCount(1);
+            return new ItemStackSample(st);
+        }
+
+        @Override
+        public int hashCode(){
+            return 31* sample.getItem().hashCode() + (sample.hasNbt()? sample.getNbt().hashCode() :0);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return (o instanceof ItemStackSample sample && ItemStack.canCombine(sample.sample, this.sample)) ||(o instanceof ItemStack item && ItemStack.canCombine(item, this.sample));
+        }
+    }
+    public static record ItemStackWithId(ItemStack stack, String identifier){
+        public static ItemStackWithId ofNullable(ItemStack item){
+            if(item == null || item.isEmpty())return EMPTY;
+            String optional = ItemStackUtils.getSfId(item);
+            if(optional != null){
+                return new ItemStackWithId(item, optional);
+            }else {
+                return new ItemStackWithId(item, Registries.ITEM.getId(item.getItem()).toString());
+            }
+        }
+        public static String generateId(ItemStack item){
+            if(item == null || item.isEmpty()){
+                return EMPTY.identifier;
+            }
+            String optional = ItemStackUtils.getSfId(item);
+            return optional != null ? optional: Registries.ITEM.getId(item.getItem()).toString();
+
+        }
+        public static ItemStackWithId EMPTY = new ItemStackWithId(ItemStack.EMPTY, "minecraft:air");
+    }
+    public static final JsonCodec<ItemStackSample> ITEM_SAMPLE_CODEC = new JsonCodec<ItemStackSample>() {
+        @Override
+        public ItemStackSample deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            if(json.isJsonNull()){
+                return ItemStackSample.EMPTY;
+            }
+            JsonObject jsonMap = json.getAsJsonObject();
+            String id = jsonMap.getAsJsonPrimitive("id").getAsString();
+            Item item = Registries.ITEM.get(new Identifier(id));
+            JsonPrimitive nbtRaw = jsonMap.getAsJsonPrimitive("nbt");
+            NbtCompound nbt ;
+            try {
+                nbt = nbtRaw == null ? null : StringNbtReader.parse(nbtRaw.getAsString());
+            } catch (CommandSyntaxException e) {
+                throw new RuntimeException(e);
+            }
+            var itemStack = new ItemStack(item);
+            itemStack.setNbt(nbt);
+            return new ItemStackSample(itemStack);
+        }
+
+        @Override
+        public JsonElement serialize(ItemStackSample src, Type typeOfSrc, JsonSerializationContext context) {
+            if(src == ItemStackSample.EMPTY){
+                return JsonNull.INSTANCE;
+            }
+            JsonObject jsonMap = new JsonObject();
+            Identifier identifier = Registries.ITEM.getId(src.sample().getItem());
+            jsonMap.addProperty("id",identifier == null ? "minecraft:air" : identifier.toString());
+            if(src.sample().hasNbt())
+                jsonMap.addProperty("nbt",src.sample().getNbt().asString());
+            return jsonMap;
+        }
+    };
+    private static DirtyMap<ItemStackSample, String> ITEM_SAMPLE_MAP;
+    private static Map<String, ItemStackSample> ITEM_SAMPLE_INDEX ;
+    private static final Random rand = new Random();
+
+    public static String getIdOrNull(ItemStack item){
+        if(item.hasNbt()){
+            //only nbt item use custom type;
+            ItemStackSample sample = ItemStackSample.of(item);
+            String re =  ITEM_SAMPLE_MAP.getOrDefault(sample, null);
+            if(re != null){
+                ACTIVE_ID.add(re);
+            }
+            return re;
+        }else {
+            Identifier identifier = Registries.ITEM.getId(item.getItem());
+            return identifier == null ? "minecraft:air" : identifier.toString();
+        }
+    }
+
+    public static String getOrAddId(ItemStack item){
+        if(item.hasNbt()){
+            //only nbt item use custom type;
+            ItemStackSample sample = ItemStackSample.of(item);
+            String re =  ITEM_SAMPLE_MAP.computeIfAbsent(sample, (s)->{
+                String newName ;
+                do{
+                    newName = "customitems:" +rand.nextInt(1145141919);
+                }while (ITEM_SAMPLE_INDEX.containsKey(newName));
+
+                ITEM_SAMPLE_INDEX.put(newName, s);
+                ITEM_SAMPLE_MAP.setDirty();
+
+                return newName;
+            });
+            ACTIVE_ID.add(re);
+            return re;
+        }else {
+            Identifier identifier = Registries.ITEM.getId(item.getItem());
+            return identifier == null ? "minecraft:air" : identifier.toString();
+        }
+    }
+    public static ItemStack byId(String id){
+        if(id.startsWith("customitems:")){
+            ACTIVE_ID.add(id);
+            var re= ITEM_SAMPLE_INDEX.get(id);
+            return re != null ? re.sample.copy() : ItemStack.EMPTY;
+        }else {
+            return new ItemStack(Registries.ITEM.get(new Identifier(id)));
+        }
+    }
+    public static final JsonCodec<ItemStack> ITEM_CODEC = new JsonCodec<ItemStack>() {
+        @Override
+        public ItemStack deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            if(json.isJsonNull()){
+                return ItemStack.EMPTY;
+            }
+            var jsonObject = json.getAsJsonObject();
+            String val = jsonObject.getAsJsonPrimitive("typeid").getAsString();
+            ItemStack sampleCopy = byId(val);
+            int amount = jsonObject.getAsJsonPrimitive("amount").getAsInt();
+            sampleCopy.setCount(amount);
+            return sampleCopy;
+        }
+
+        @Override
+        public JsonElement serialize(ItemStack src, Type typeOfSrc, JsonSerializationContext context) {
+            if(src.isEmpty()){
+                return JsonNull.INSTANCE;
+            }
+            String typeid = getOrAddId(src);
+            var json = new JsonObject();
+            json.addProperty("typeid",typeid);
+            json.addProperty("amount", src.getCount());
+            return json;
+        }
+    };
+    public static final JsonCodec<CraftingType> TYPE_CODEC = new JsonCodec<CraftingType>(){
+        @Override
+        public JsonElement serialize(CraftingType src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("rid", (String) src.id);
+            jsonObject.add("icon", context.serialize(src.icon));
+            return jsonObject;
+        }
+
+        @Override
+        public CraftingType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            JsonObject jsonObject = json.getAsJsonObject();
+            String rid = jsonObject.getAsJsonPrimitive("rid").getAsString();
+            ItemStack icon = context.deserialize(jsonObject.getAsJsonObject("icon"), ItemStack.class);
+            return new CraftingType(rid, icon);
+        }
+    };
+
+    public static final JsonCodec<SlimefunRecipeEntry> ENTRY_CODED = new JsonCodec<SlimefunRecipeEntry>() {
+        @Override
+        public SlimefunRecipeEntry deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            JsonObject data = json.getAsJsonObject();
+            String rid = data.getAsJsonPrimitive("rid").getAsString();
+            String id = data.getAsJsonPrimitive("id").getAsString();
+            ItemStack output = context.deserialize(data.getAsJsonObject("output"), ItemStack.class);
+            ItemStack[] ingredient = context.deserialize(data.getAsJsonArray("ingredient"), ItemStack[].class);
+            ItemStackWithId[] ingredientEntry = new ItemStackWithId[ingredient.length];
+            //resolve the NULL problem
+            for (int i=0 ;i<ingredient.length; ++i){
+                ingredientEntry[i] = ItemStackWithId.ofNullable(ingredient[i]);
+            }
+            return new SlimefunRecipeEntry(rid, id, ingredientEntry, output);
+        }
+
+        @Override
+        public JsonElement serialize(SlimefunRecipeEntry src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject data = new JsonObject();
+            data.addProperty("rid", (String) src.rid);
+            data.addProperty("id", (String) src.id);
+            data.add("output", context.serialize((ItemStack)src.output));
+            data.add("ingredient", context.serialize((ItemStack[])src.inputs()));
+            return data;
+        }
+    };
+
+
+    private static final Gson RECIPES_JSON_CODEC = new GsonBuilder()
+        .disableHtmlEscaping()
+        .registerTypeAdapter(ItemStackSample.class, ITEM_SAMPLE_CODEC)
+        .registerTypeAdapter(ItemStack.class, ITEM_CODEC)
+        .registerTypeAdapter(CraftingType.class, TYPE_CODEC)
+        .registerTypeAdapter(SlimefunRecipeEntry.class, ENTRY_CODED)
+        .create();
+
+    private static final Type DATA_MAP_TYPE = new TypeToken<Map<String, ItemStackSample>>(){}.getType();
+    private static final Type TYPE_MAP_TYPE = new TypeToken<Map<String, CraftingType>>(){}.getType();
+    private static final Type RECIPE_MAP_TYPE = new TypeToken<Map<String, SlimefunRecipeEntry>>(){}.getType()
+        ;
+    private static final Type ID_LIST_TYPE = new TypeToken<Map<String, List<String>>>(){}.getType();
+
+    private static final Map<String, ItemStack> SUPPORT_VANILLA_RTYPE = Map.of(
+        "minecraft:crafting", new ItemStack(Items.CRAFTING_TABLE),
+        "minecraft:smelting", new ItemStack(Items.FURNACE),
+        "minecraft:blasting", new ItemStack(Items.BLAST_FURNACE),
+        "minecraft:smoking", new ItemStack(Items.SMOKER),
+        "minecraft:campfire_cooking", new ItemStack(Items.CAMPFIRE),
+        "minecraft:stonecutting", new ItemStack(Items.STONECUTTER),
+        "minecraft:smithing", new ItemStack(Items.SMITHING_TABLE)
+    );
+    private static ItemStack getSupportVanillaIcon(String rid){
+        return SUPPORT_VANILLA_RTYPE.getOrDefault(rid,null);
+    }
+    public static ItemStack getRecipeTypeIcon(String rid){
+        ItemStack rt;
+        if((rt = getSupportVanillaIcon(rid)) == null){
+            rt = getSlimefunRecipeTypeIcon(rid);
+        }
+        return rt;
+    }
+    public static ItemStack getSlimefunRecipeTypeIcon(String rid){
+        return ALL_RECIPE_TYPE.getOrDefault(rid,CraftingType.EMPTY).icon;
+    }
+    private static DirtyMap<String, CraftingType> ALL_RECIPE_TYPE;
+    private static DirtyMap<String, SlimefunRecipeEntry> ALL_RECIPE_ENTRY;
+    private static DirtyCollectionImpl<Set<String>,String> SAVED_ITEM_ID;
+    private static Set<String> ACTIVE_ID = new HashSet<>();
+    public static void loadData(){
+        Map<String, ItemStackSample> map0 = new Object2ReferenceOpenHashMap<>();
+        String dataJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/item-database.json");
+        map0.putAll(RECIPES_JSON_CODEC.fromJson(dataJson, DATA_MAP_TYPE));
+        Map<ItemStackSample, String> data0 = new Object2ReferenceOpenHashMap<>();
+        map0.forEach((k,v)->data0.put(v,k));
+        ITEM_SAMPLE_MAP = new DirtyMap<>(data0);
+        ITEM_SAMPLE_INDEX = new Object2ReferenceOpenHashMap<>(map0);
+        ACTIVE_ID.clear();
+
+        Map<String, CraftingType> map = new Object2ReferenceOpenHashMap<>();
+        String typeJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/craft-types.json");
+        map.putAll(RECIPES_JSON_CODEC.fromJson(typeJson, TYPE_MAP_TYPE));
+        ALL_RECIPE_TYPE = new DirtyMap<>(map);
+        Map<String, SlimefunRecipeEntry> map1 = new Object2ReferenceOpenHashMap<>();
+        String recipeJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/recipe-data.json");
+        map1.putAll(RECIPES_JSON_CODEC.fromJson(recipeJson, RECIPE_MAP_TYPE));
+        ALL_RECIPE_ENTRY = new DirtyMap<>(map1);
+        resetMultiblockRegistry();
+        map1.forEach((k,v)->{
+            if(MULTIBLOCK_REGEX.asMatchPredicate().test(v.rid)){
+                addToMultiblockRegistry(v);
+            }
+        });
+        Set<String> saveId = new LinkedHashSet<>();
+        String savedItemIds = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/saved-items.json");
+        saveId.addAll(((Map<String, List<String>>)RECIPES_JSON_CODEC.fromJson(savedItemIds, ID_LIST_TYPE)).getOrDefault("saved-ids",List.of()));
+        SAVED_ITEM_ID = new DirtyCollectionImpl<>(saveId);
+
+        var iter = ITEM_SAMPLE_MAP.entrySet().iterator();
+        while (iter.hasNext()){
+            if(!ACTIVE_ID.contains( iter.next().getValue()) ){
+                iter.remove();
+            }
+        }
+        var iter2 = ITEM_SAMPLE_INDEX.entrySet().iterator();
+        while (iter2 .hasNext()){
+            if(!ACTIVE_ID.contains(iter2.next().getKey())){
+                iter2.remove();
+            }
+        }
+        ACTIVE_ID.clear();
+
+    }
+    public static interface BlockMatcher{
+        public Set<Block> getPotentials();
+        default boolean match(Block b){
+            return getPotentials().contains(b);
+        }
+    }
+    public static record SingleBlockMatch(Block block) implements BlockMatcher{
+        public Set<Block> getPotentials(){
+            return Set.of(block);
+        }
+        public boolean match(Block b){
+            return b == block;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof SingleBlockMatch && block == ((SingleBlockMatch) o).block;
+        }
+    }
+    public static record TaggedBlockMatch(TagKey<Block> blockTagKey) implements BlockMatcher{
+        public Set<Block> getPotentials(){
+            return Registries.BLOCK.getEntryList(blockTagKey).orElseThrow().stream().map(RegistryEntry::value).collect(Collectors.toUnmodifiableSet());
+        }
+
+        public boolean match(Block b){
+            return b.getRegistryEntry().isIn(blockTagKey);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof TaggedBlockMatch && ((TaggedBlockMatch) o).blockTagKey == this.blockTagKey;
+        }
+    }
+    //means the AIR in the recipe, any block is ok and none is required
+    public static final BlockMatcher ANY_MATCH = new BlockMatcher() {
+        @Override
+        public Set<Block> getPotentials() {
+            return Set.of();
+        }
+
+        @Override
+        public boolean match(Block b) {
+            return true;
+        }
+    };
+    public static class DispenserMultiBlockLookup{
+        public BlockMatcher[] blockTypes;
+        public Point dispenserPos;
+        boolean symm;
+        public Map<BiPredicate<World,BlockPos>, Vec3i> predicate2LeftRightAxis = new Object2ReferenceArrayMap<>();
+        public DispenserMultiBlockLookup(BlockMatcher[] blockTypes, boolean isSymm){
+            this.blockTypes = blockTypes;
+            this.symm  = isSymm;
+            initData();
+        }
+        private void initData(){
+            for (int i=0 ;i<9 ;++i){
+                if(blockTypes[i] != ANY_MATCH && blockTypes[i].match(Blocks.DISPENSER)){
+                    dispenserPos = new Point(i%3, i/3);
+                    break;
+                }
+            }
+            if(dispenserPos != null){
+                //has dispensor
+                for (Direction dir: symm? DIR_SYMM : DIR_CONSIDER){{
+                    generatePredicate(dir.getVector());
+                }}
+            }
+        }
+        private void generatePredicate(Vec3i axis){
+            List<BiPredicate<World,BlockPos>> listPredicates = new ArrayList<>();
+            for (int i=0 ;i<9; ++i){
+                BlockMatcher matcher = blockTypes[i];
+                //jump dispenser
+                if(i == dispenserPos.x + dispenserPos.y*3)continue;
+                if(matcher != ANY_MATCH){
+                    int daxis = -dispenserPos.x +i%3;
+                    int dy = -dispenserPos.y + i/3;
+                    Vec3i targetPos = new Vec3i(axis.getX() * daxis, dy, axis.getZ()* daxis);
+                    listPredicates.add((world, pos)->{
+                        return matcher.match( world.getBlockState(  pos.add(targetPos)).getBlock());
+                    });
+                }
+            }
+            predicate2LeftRightAxis.put(((clientWorld, blockPos) -> {
+                for (var pd: listPredicates){
+                    if(!pd.test(clientWorld, blockPos))return false;
+                }
+                return true;
+            }), axis);
+
+        }
+        public Collection<MultiBlockLocation> lookup(World world, BlockPos dispensorPos){
+            Collection<MultiBlockLocation> block = new HashSet<>();
+            if(dispensorPos != null){
+                for (var pd: predicate2LeftRightAxis.entrySet()){
+                    if(pd.getKey().test(world, dispensorPos)){
+                        BlockPos pos = dispensorPos.add(-this.dispenserPos.x * pd.getValue().getX(), -this.dispenserPos.y, -this.dispenserPos.x * pd.getValue().getZ() );
+                        block.add(new MultiBlockLocation(pos, pd.getValue()));
+                    }
+                }
+            }
+            return block;
+        }
+
+
+    }
+    @AllArgsConstructor
+    public static class MultiBlockLocation {
+        BlockPos leftDown;
+        Vec3i left2Right;
+
+        public BlockPos getComponentBlock(int x, int y){
+            return leftDown.add(left2Right.getX() * x, y, left2Right.getZ() *x );
+        }
+    }
+
+    @AllArgsConstructor
+    public static class MultiBlockWithLocation{
+        public MultiBlockEntry multiBlockEntry;
+        public MultiBlockLocation location;
+    }
+
+    //should store from left to right, **from low to high**
+    public static record MultiBlockEntry(String id, BlockMatcher[] blockTypes, Collection<Point> optionalActionBlock, DispenserMultiBlockLookup lookup, boolean symm) implements BlockMatcher{
+        public Set<Block> getPotentials(){
+            Set<Block> blocks = new HashSet<>();
+            blocks.addAll(blockTypes[1].getPotentials());
+            blocks.addAll(blockTypes[4].getPotentials());
+            blocks.addAll(blockTypes[7].getPotentials());
+            return blocks;
+        }
+        private static final TaggedBlockMatch LOGS = new TaggedBlockMatch(BlockTags.LOGS);
+        private static final TaggedBlockMatch WOODEN_TRAPDOORS = new TaggedBlockMatch(BlockTags.WOODEN_TRAPDOORS);
+        private static final TaggedBlockMatch WOODEN_SLABS = new TaggedBlockMatch(BlockTags.WOODEN_SLABS);
+        private static final TaggedBlockMatch WOODEN_FENCES = new TaggedBlockMatch(BlockTags.WOODEN_FENCES);
+        private static final TaggedBlockMatch FIRE = new TaggedBlockMatch(BlockTags.FIRE);
+
+        public static MultiBlockEntry of(ItemStack[] inputs, String id){
+            if(inputs.length != 9){
+                return null;
+            }
+            BlockMatcher[] array = new BlockMatcher[9];
+            for (int i=0; i< 9; ++i){
+                Item item = inputs[i].getItem();
+                net.minecraft.block.Block block = null;
+                if(item == Items.AIR){
+                    block = Blocks.AIR;
+                }else if(item == Items.FLINT_AND_STEEL){
+                    block = Blocks.FIRE;
+                }else {
+                    block = Block.getBlockFromItem(item);
+                }
+                RegistryEntry<Block> blockRegistryEntry = block.getRegistryEntry();
+                int idx = (2-i/3) * 3 + i%3;
+                if(blockRegistryEntry.isIn(BlockTags.LOGS)){
+                    array[idx] = LOGS;
+                }else if(blockRegistryEntry.isIn(BlockTags.WOODEN_TRAPDOORS)){
+                    array[idx] = WOODEN_TRAPDOORS;
+                }else if(blockRegistryEntry.isIn(BlockTags.WOODEN_SLABS)){
+                    array[idx] = WOODEN_SLABS;
+                }else if(blockRegistryEntry.isIn(BlockTags.WOODEN_FENCES)){
+                    array[idx] = WOODEN_FENCES;
+                }else if(blockRegistryEntry.isIn(BlockTags.FIRE)){
+                    array[idx] = FIRE;
+                }else {
+                    array[idx] = block == Blocks.AIR ? ANY_MATCH : new SingleBlockMatch(block);
+                }
+            }
+            boolean symm =true;
+            for (int i=0 ;i< 3; ++i){
+                if(!Objects.equals(array[3*i], array[3*i+2])){
+                    symm = false;
+                    break;
+                }
+            }
+            //judge the optional Action
+            Collection<Point> coord = new HashSet<>();
+            //发射器在中间
+            if( array[7].match(Blocks.DISPENSER)){
+                if(array[4].match(Blocks.DISPENSER)){
+                    if( array[1].match(Blocks.DISPENSER)){
+                        coord.add(new Point(1,1));
+                        coord.add(new Point(1,2));
+                    }else{
+                        coord.add(new Point(1,0));
+                    }
+                }else{
+                    coord.add(new Point(1, 1));
+                }
+            }else {
+                coord.add(new Point(1,2));
+            }
+            DispenserMultiBlockLookup lookup = new DispenserMultiBlockLookup(array, symm);
+            return new MultiBlockEntry(id,  array, coord, lookup, symm);
+        }
+        static Direction[] DIR_CONSIDER =new Direction[] {Direction.NORTH, Direction.WEST,Direction.SOUTH,Direction.EAST};
+        static Direction[] DIR_SYMM = new Direction[] {Direction.NORTH, Direction.WEST};
+
+        public MultiblockOffset matchDirection(World world, BlockPos blockPos){
+            position:
+            for (int i=0 ;i <=2 ;++i){
+                //match middle first
+                BlockPos.Mutable middleBotton = blockPos.mutableCopy().move(0, -i,0);
+                for (int s = 0; s <= 2; ++s){
+                    Block block = world.getBlockState(middleBotton).getBlock();
+                    if(!blockTypes[1+ 3*s].match(block)){
+                        continue position;
+                    }
+                    middleBotton.move(0,1,0);
+                }
+                //middle match
+                //then consider symm
+                Direction currentDir = null;
+                for (Direction dir: symm? DIR_SYMM : DIR_CONSIDER){
+                    currentDir = dir;
+                    BlockPos.Mutable leftBotton = blockPos.mutableCopy().move(0,-i,0).move(dir);
+                    for (int s = 0; s <= 2; ++s){
+
+                        Block block = world.getBlockState(leftBotton).getBlock();
+                        if(!blockTypes[3*s].match(block)){
+                            continue position;
+                        }
+                        leftBotton.move(0,1,0);
+                    }
+                }
+
+                if(!symm){
+                    BlockPos.Mutable rightBotton = blockPos.mutableCopy().move(0,-i,0).move(currentDir,-1);
+                    //if not symm, still need check
+                    for (int s = 0; s <= 2; ++s){
+                        Block block = world.getBlockState(rightBotton).getBlock();
+                        if(!blockTypes[3*s + 2].match(block)){
+                            continue position;
+                        }
+                        rightBotton.move(0,1,0);
+                    }
+                }
+                return new MultiblockOffset(i, currentDir);
+            }
+            return null;
+        }
+        public boolean anyMatchMiddle(World world, BlockPos blockPos){
+            return matchDirection(world, blockPos) != null;
+        }
+        public List<BlockPos> getPositionByDirection(BlockPos blockPos, MultiblockOffset direcion){
+             blockPos.add(0,-direcion.dy, 0);
+             int dy = direcion.dy;
+             Direction dir = direcion.direction;
+            List<BlockPos> pos = new ArrayList<>(9);
+            for (int i=-1; i<= 1; ++i){
+                for (int j=0; j<= 2; ++j){
+                    //only match existing block
+                    if(blockTypes[3*j + (i + 1)] != ANY_MATCH){
+                        pos.add(blockPos.add(i* dir.getOffsetX(), j-dy, i*dir.getOffsetZ()));
+                    }
+                }
+            }
+            return pos;
+        }
+        public Collection<BlockPos> getOptionalActionFromDispenser(ClientWorld world, BlockPos pos){
+            Collection<MultiBlockLocation> locations = lookup.lookup(world, pos);
+            if(locations != null && !locations.isEmpty()){
+                Set<BlockPos> poseSet = new HashSet<>();
+                for (var ml: locations){
+                    for (var pt: optionalActionBlock){
+                        poseSet.add(ml.getComponentBlock(pt.x, pt.y));
+                    }
+                }
+                return poseSet;
+            }
+            return Set.of();
+        }
+
+        public Optional<CraftingType> getOptionalCraftingType(){
+            return id == null ? Optional.empty(): ALL_RECIPE_TYPE.values().stream().filter(ct->id.equals( ItemStackUtils.getSfId(ct.icon)))
+                .findFirst();
+        }
+    }
+    public static record MultiblockOffset(int dy, Direction direction){
+
+    }
+    private static Map<String, MultiBlockEntry> MULTIBLOCK_REGISTRIES = new Object2ReferenceOpenHashMap<>();
+
+    private static Map<Block, Set<MultiBlockEntry>> MULTIBLOCK_INDEXED_BY_POTENTIALS = new Reference2ReferenceOpenHashMap<>();
+    private static void resetMultiblockRegistry(){
+        if(MULTIBLOCK_REGISTRIES != null){
+            MULTIBLOCK_REGISTRIES.clear();
+        }
+        MULTIBLOCK_REGISTRIES = new Object2ReferenceOpenHashMap<>();
+        if(MULTIBLOCK_INDEXED_BY_POTENTIALS != null){
+            MULTIBLOCK_INDEXED_BY_POTENTIALS = new Reference2ReferenceOpenHashMap<>();
+        }
+    }
+    private static void addToMultiblockRegistry(SlimefunRecipeEntry entry){
+        var newEntry = MultiBlockEntry.of(entry.inputs(), entry.id);
+        if(newEntry == null)return;
+        MULTIBLOCK_REGISTRIES.put(entry.id, newEntry);
+        Set<Block> potentialTriggerBlocks = newEntry.getPotentials();
+        for (Block block: potentialTriggerBlocks){
+            MULTIBLOCK_INDEXED_BY_POTENTIALS.computeIfAbsent(block, (b)->new ReferenceArraySet<>()).add(newEntry);
+        }
+    }
+    private static AtomicBoolean ENABLE_CLICK = Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_MULTIBLOCK_CLICKER);
+    private static AtomicInteger CLICK_RATE = Configs.SLIMEFUN_CONFIG.getInt(Configs.SLIMEFUN_MB_RATE);
+    private static int lastChatTimestamp = 0;
+    private static void onClickBlock(BlockHitResult result){
+        if(!ENABLE_CLICK.get()){
+            return;
+        }
+        //judge
+        onClickBlockExecute(result, false);
+    }
+    private static void onClickBlockExecute(BlockHitResult result, boolean delayClick){
+        if(result == null)return;
+        BlockPos pos = result.getBlockPos();
+        Block block = mc.world.getBlockState(pos).getBlock();
+        //do not speed up when opening crafting dispensor
+        if(block == Blocks.DISPENSER || block == Blocks.DROPPER){
+            return;
+        }
+        var potentials = MULTIBLOCK_INDEXED_BY_POTENTIALS.get(block);
+        if(potentials == null || potentials.isEmpty())return;
+        Optional<MultiBlockEntry> first = potentials.stream()
+            .filter(m->m.anyMatchMiddle(mc.world, pos))
+            .findFirst();
+        if(!first.isPresent())return;
+        if(lastChatTimestamp + 5*20 < Tasks.getTick()){
+            Debug.chat(Text.literal("[fast click] Interacting with multiblock: ").formatted(Formatting.RED),first.get().id);
+        }
+        lastChatTimestamp = Tasks.getTick();
+        for(int i=0 ; i< CLICK_RATE.get(); ++i){
+            mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND,result, sequence)));
+        }
+        if(delayClick){
+            AtomicInteger count = new AtomicInteger(2);
+            Tasks.scheduleRepeated(()->{
+                for(int i=0 ; i< CLICK_RATE.get(); ++i){
+                    mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND,result, sequence)));
+                }
+                return count.decrementAndGet() <= 0 ;
+            },3,4);
+        }
+        ClientAccess.of(mc).setCooldown(0);
+    }
+    public static void handleMultiBlockExecute(){
+        if(mc.player ==null ||!(mc.currentScreen instanceof TileInventoryScreen tile) || tile.isVirtual() || tile.getWorld() != mc.world){
+            return;
+        }
+        BlockPos pos = tile.getPos();
+        Block block = mc.world.getBlockState(pos).getBlock();
+        if(block == Blocks.DISPENSER || block == Blocks.DROPPER){
+            for (var multiblock: MULTIBLOCK_REGISTRIES.values()){
+                var optional = multiblock.getOptionalActionFromDispenser(mc.world, pos);
+                if(optional.isEmpty())continue;
+                for (var bp : optional){
+                    BlockHitResult result = MovTasks.createHitResult(bp);
+                    onClickBlockExecute(result, true);
+                }
+            }
+        }
+    }
+    public static Collection<MultiBlockWithLocation> getOptionalMultiBlocks(World world, BlockPos dispensor){
+        Collection<MultiBlockWithLocation> ans = new HashSet<>();
+        for (var multi : MULTIBLOCK_REGISTRIES.values()){
+            var op = multi.lookup.lookup(world, dispensor);
+            if(op != null && !op.isEmpty()){
+                for (var ml: op){
+                    ans.add(new MultiBlockWithLocation(multi, ml));
+                }
+            }
+        }
+        return ans;
+    }
+    public static Collection<SlimefunTasks.MultiBlockEntry> getOptionalMultiBlockTypes(World world, BlockPos dispensor){
+        Collection<MultiBlockEntry> ans = new HashSet<>();
+        for (var multi : MULTIBLOCK_REGISTRIES.values()){
+            var op = multi.lookup.lookup(world, dispensor);
+            if(op != null && !op.isEmpty()){
+                ans.add(multi);
+            }
+        }
+        return ans;
+    }
+
+    public static final ItemStack GUIDE_ICON;
+    public static final ItemStack RTYPE_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
+    public static final ItemStack VTYPE_ICON = new ItemStack(Items.CRAFTING_TABLE);
+    public static final ItemStack SAVED_ICON = new ItemStack(Items.CHAIN_COMMAND_BLOCK);
+    static {
+        ItemStack ICON;
+        try {
+            ICON = ItemStack.fromNbt(StringNbtReader.parse( "{Count:1b,id:\"minecraft:enchanted_book\",tag:{CustomModelData:2200001,PublicBukkitValues:{\"slimefun:slimefun_guide_mode\":\"SURVIVAL_MODE\"},display:{Lore:['{\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"浏览物品\"}],\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"Shift + 右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"打开 设置 / 关于\"}],\"text\":\"\"}'],Name:'{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"green\",\"text\":\"Slimefun 指南 \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"(箱子界面)\"}],\"text\":\"\"}'}}}"));
+        } catch (CommandSyntaxException e) {
+            Debug.info("Icon deserialize failure");
+            ICON = new ItemStack(Items.ENCHANTED_BOOK);
+        }
+        GUIDE_ICON = ICON;
+    }
+
+
+    public static void saveData(){
+        //不保存数据
+        if(!Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_SAVE).get()){
+            return;
+        }
+        try{
+            if(ALL_RECIPE_TYPE.isDirty()){
+                ALL_RECIPE_TYPE.setDirty(false);
+                Map<String, CraftingType> map = ALL_RECIPE_TYPE.getDelegate();
+                String savedData = RECIPES_JSON_CODEC.toJson(map);
+                ConfigLoader.saveToFile("sfhelper-configs/recipes/craft-types.json", savedData);
+            }
+        }catch (Throwable e){
+            Debug.info("保存craft-types.json文件失败, 错误:");
+            Debug.info(e);
+        }
+
+        try{
+            if(ALL_RECIPE_ENTRY.isDirty()){
+                ALL_RECIPE_ENTRY.setDirty(false);
+                Map<String, SlimefunRecipeEntry> map = ALL_RECIPE_ENTRY.getDelegate();
+                String savedData = RECIPES_JSON_CODEC.toJson(map);
+                ConfigLoader.saveToFile("sfhelper-configs/recipes/recipe-data.json", savedData);
+            }
+        }catch (Throwable e){
+            Debug.info("保存recipe-data.json文件失败, 错误:");
+            Debug.info(e);
+        }
+        try{
+            if(SAVED_ITEM_ID.isDirty()){
+                SAVED_ITEM_ID.setDirty(false);
+                List<String> list = SAVED_ITEM_ID.getDelegate().stream().toList();
+                String savedData = RECIPES_JSON_CODEC.toJson(Map.of("saved-ids" ,list));
+                ConfigLoader.saveToFile("sfhelper-configs/recipes/saved-items.json", savedData);
+            }
+        }catch (Throwable e){
+            Debug.info("保存saved-items.json文件失败, 错误:");
+            Debug.info(e);
+        }
+        //save at last in case of key missing for save
+        try{
+            if(ITEM_SAMPLE_MAP.isDirty()){
+                ITEM_SAMPLE_MAP.setDirty(false);
+                String savedData = RECIPES_JSON_CODEC.toJson(ITEM_SAMPLE_INDEX);
+                ConfigLoader.saveToFile("sfhelper-configs/recipes/item-database.json", savedData);
+            }
+        }catch (Throwable e){
+            Debug.info("保存item-database.json文件失败, 错误:");
+            Debug.info(e);
+        }
+    }
+    public static void reloadData(){
+        loadData();
+    }
+    public static boolean scheduledSave(){
+        CompletableFuture.runAsync(SlimefunTasks::saveData);
+        return false;
+    }
+    private static final ItemStack ITEM_NULL_TYPE = new ItemStack(Items.BARRIER);
+    private static final ItemStack CRAFTING_TABLE = new ItemStack(Items.CRAFTING_TABLE);
+    private static final int[] recipeSlots = {3,4,5,12,13,14,21,22,23};
+    public static boolean handleLockedItem(ItemStack lockIcon){
+        if(lockIcon.getItem()==Items.BARRIER){
+            List<String> lore = ItemStackUtils.getLoreString(lockIcon);
+            for (var str : lore){
+                if(str.contains("已锁定")){
+
+                    return true;
+                }
+            }
+            return false;
+        }return false;
+    }
+    public static void delayUpdateGuideRecipe(GenericContainerScreen screen){
+        DefaultedList<Slot> slots = screen.getScreenHandler().slots;
+        //brief judgement of recipe
+        if(slots.size() >= 27 && slots.get(2).getStack().isEmpty() && slots.get(11).getStack().isEmpty() && slots.get(20).getStack().isEmpty() && slots.get(15).getStack().isEmpty() && slots.get(17).getStack().isEmpty() && slots.get(25).getStack().isEmpty() && !slots.get(16).getStack().isEmpty()){
+            ItemStack stack = slots.get(16).getStack();
+            String id = ItemStackUtils.getSfId(stack);
+            int[] recipeSlots = {3,4,5,12,13,14,21,22,23};
+
+            if(id != null){
+                boolean shouldUpdate = false;
+
+                if(ALL_RECIPE_ENTRY.containsKey(id)){
+                    //存在这个,
+                    SlimefunRecipeEntry entry = ALL_RECIPE_ENTRY.get(id);
+                    ItemStackWithId[] ingredient = entry.ingredientEntry();
+                    if(ingredient.length == 9){
+                        for (int i=0 ;i<9 ;++i){
+                            ItemStack stackI =  slots.get(recipeSlots[i]).getStack();
+                            //if it is lock, return immediately
+                            if(handleLockedItem(stackI))return;
+                            if(!ItemStackUtils.matchItemWithoutLore(ingredient[i].stack(),stackI)){
+                                shouldUpdate = true;
+                                break;
+                            }
+                        }
+                        //都是相同的,不进行update
+                    }else {
+                        shouldUpdate = true;
+                    }
+                }else {
+                    for (int i=0 ;i<9 ;++i){
+                        ItemStack stackI =  slots.get(recipeSlots[i]).getStack();
+                        //if it is lock, return immediately
+                        if(handleLockedItem(stackI))return;
+                    }
+                    //不存在这个
+                    shouldUpdate = true;
+                }
+                if(shouldUpdate){
+                    ItemStack rtypeIcon = slots.get(10).getStack();
+                    String recipeTypeName = rtypeIcon.isEmpty()? "NULL_RECIPE": rtypeIcon.getName().getString().replace("§.", "");
+                    if(!ALL_RECIPE_TYPE.containsKey(recipeTypeName)){
+                        ItemStack ICON = rtypeIcon.isEmpty()? ITEM_NULL_TYPE.copy(): rtypeIcon.copy();
+                        ICON.setCount(1);
+                        ALL_RECIPE_TYPE.put(recipeTypeName, new CraftingType(recipeTypeName, ICON));
+                    }
+                    ItemStackWithId[] ingredient = new ItemStackWithId[9];
+                    for (int i=0 ; i<9 ; ++i){
+                        ingredient[i] = ItemStackWithId.ofNullable( slots.get(recipeSlots[i]).getStack().copy());
+                    }
+                    ItemStack output = slots.get(16).getStack().copy();
+                    SlimefunRecipeEntry entry = new SlimefunRecipeEntry(recipeTypeName, id, ingredient, output);
+                    ALL_RECIPE_ENTRY.put(id, entry);
+                    if(MULTIBLOCK_REGEX.asMatchPredicate().test(recipeTypeName)){
+                        addToMultiblockRegistry(entry);
+                    }
+                }
+            }
+        }
+    }
+
+    public static void renderSlimefunItemTask(){
+
+    }
+
+    public static void updateGuideRecipe(GenericContainerScreen screen){
+        Tasks.addPacketCatcher(new Tasks.TimedPacketCatcher<InventoryS2CPacket>(InventoryS2CPacket.class, 20) {
+            @Override
+            public int catchPacket(InventoryS2CPacket packet) {
+                if(packet.getSyncId() == screen.getScreenHandler().syncId){
+                    mc.executeSync(()->{
+                        delayUpdateGuideRecipe(screen);
+                    });
+                    return REMOVAL & (~CANCEL);
+                }
+                return (~REMOVAL)& (~CANCEL);
+            }
+        });
+
+    }
+    private static final Identifier TEXTURE = new Identifier("textures/gui/container/crafting_table.png");
+    private static final Map<Slot, RenderRecipeRecord> CURRENT = new Reference2ReferenceOpenHashMap<>(4);
+    private static HandledScreen<?> CURRENT_HANDLING_SCREEN;
+    private static interface RenderRecipeRecord{
+        default boolean render(DrawContext context, HandledScreen<?> screen){
+            if(examine(context, screen)){
+                startRender(context, screen);
+            }
+            return true;
+        }
+        public void disableRender(HandledScreen<?> screen);
+        public boolean examine(DrawContext context, HandledScreen<?> screen);
+        public void startRender(DrawContext context, HandledScreen<?> screen);
+    }
+    private static record RenderRecipeRecordImpl(int textureX, int textureY, int slotDepth, Set<Slot> extraSlots, HolderWithState<ButtonWidget> buttonHolder) implements RenderRecipeRecord{
+
+        public void disableRender(HandledScreen<?> screen){
+            HandledScreenAccess.of(screen).getExtraSlots().removeAll(extraSlots);
+            if(buttonHolder.state && buttonHolder.val != null){
+                HandledScreenAccess.of(screen).removeChildFrom(buttonHolder.val);
+            }
+        }
+        public boolean examine(DrawContext context, HandledScreen<?> screen){
+            return true;
+        }
+        public void startRender(DrawContext context, HandledScreen<?> screen){
+            var accessContext =DrawContextAccess.of(context);
+            MatrixStack matrics = accessContext.getMatrixStack();
+            RenderSystem.enableDepthTest();
+            matrics.push();
+            matrics.translate(textureX, textureY ,200 + slotDepth);
+            matrics.scale(SCALING, SCALING, SCALING);
+            context.drawTexture(TEXTURE, 0,0, 0 , 28,15,120, 56,256, 256);
+            matrics.pop();
+            RenderSystem.disableDepthTest();
+            HandledScreenAccess.of(screen).getExtraSlots().addAll(extraSlots);
+            if(!buttonHolder.state ){
+                buttonHolder.state = true;
+                if(buttonHolder.val != null)
+                    HandledScreenAccess.of(screen).addDrawableChildTo(buttonHolder.val);
+            }
+        }
+    }
+    private static record RenderRecipeRecordNoCache(Slot slot) implements RenderRecipeRecord{
+
+        static final Text data = Text.literal( "暂无缓存数据").formatted(Formatting.BOLD);
+        @Override
+        public void disableRender(HandledScreen<?> screen) {
+
+        }
+
+        @Override
+        public boolean examine(DrawContext context, HandledScreen<?> screen) {
+            return HandledScreenAccess.of(screen).isSlotPointed(slot);
+        }
+
+        @Override
+        public void startRender(DrawContext context, HandledScreen<?> screen) {
+            TextRenderer renderer = HandledScreenAccess.of(screen).getTextRenderer();
+            var accessContext =DrawContextAccess.of(context);
+            RenderSystem.enableDepthTest();
+            MatrixStack matrics = accessContext.getMatrixStack();
+            matrics.push();
+            matrics.translate(0,0f, 500);
+            var position = matrics.peek().getPositionMatrix();
+            renderer.draw(data, slot.x + 10 - renderer.getWidth(data), slot.y - 6 - 3, Colors.RED, false, position, accessContext.getVertexConsumers(), TextRenderer.TextLayerType.POLYGON_OFFSET, 0, 15728880);
+            matrics.pop();
+            RenderSystem.disableDepthTest();
+        }
+    }
+
+
+    private static final int EXTRA_DEPTH = 256;
+    private static final float SCALING = 0.8f;
+//    private static final int[] RECIPE_SLOT_DX = {
+//        1, 1 + (int)(18*SCALING), 1 + 2*(int)(18*SCALING),
+//        1, 1 + (int)(18*SCALING), 1 + 2*(int)(18*SCALING),
+//        1, 1 + (int)(18*SCALING), 1 + 2*(int)(18*SCALING),
+//    };
+//    private static final int[] RECIPE_SLOT_DY = {
+//        1, 1, 1,
+//        1 + (int)(18*SCALING), 1 + (int)(18*SCALING), 1 + (int)(18*SCALING),
+//        1 + 2*(int)(18*SCALING),1 + 2*(int)(18*SCALING),1 + 2*(int)(18*SCALING)
+//    };
+    //renderingSL
+
+    private static final Ingredient EMPTY =Ingredient.EMPTY;
+    private static void releaseAllDisplayRecipe(){
+        if(!CURRENT.isEmpty()){
+            if(CURRENT_HANDLING_SCREEN != null){
+                CURRENT.values().forEach(entry->entry.disableRender( CURRENT_HANDLING_SCREEN));
+            }
+            CURRENT.clear();
+        }
+        CURRENT_HANDLING_SCREEN = null;
+    }
+    private static void releaseSlotRecipe(Slot slot){
+        var current = CURRENT.remove(slot);
+        if(current != null && CURRENT_HANDLING_SCREEN != null){
+
+            current.disableRender(CURRENT_HANDLING_SCREEN);
+        }
+        if(CURRENT.isEmpty()){
+            releaseAllDisplayRecipe();
+        }
+    }
+    public static Ingredient[] transfer3x3RecipeDisplay(RecipeTasks.RecipeRecord recipeRecord){
+        return recipeRecord.ingredients();
+    }
+    public static Ingredient[] transfer3x3RecipeDisplay(Recipe<?> instance, Ingredient[] ingred){
+
+        Ingredient[] ingredients = new Ingredient[9];
+
+        if(instance instanceof ShapedRecipe shaped){
+            List<Ingredient> raw = shaped.getIngredients();
+            int width = shaped.getWidth();
+            int height = shaped.getHeight();
+            for (int i=0; i< 3; ++i){
+                for(int j = 0; j< 3; ++j){
+                    if(i < height && j < width){
+                        ingredients[3*i + j] = raw.get(width * i + j);
+                    }else {
+                        ingredients[3*i + j] = EMPTY;
+                    }
+                }
+            }
+        }else {
+            Ingredient[] raw = ingred;
+            System.arraycopy(raw, 0, ingredients, 0, raw.length);
+            for (int i=raw.length; i<9 ;++i){
+                ingredients[i] = EMPTY;
+            }
+        }
+        return ingredients;
+    }
+    //one recipe screen
+    public static void handleOpenSlimefunRecipeScreen(SlimefunRecipeEntry recipe){
+        if(handleNotEnable())return;
+        openOrSwitch( SlimefunEntryListScreen.recipeEntry(List.of(recipe)));
+    }
+    //typed screen
+    public static void handleOpenCraftingTypeScreen(CraftingType type){
+        if(handleNotEnable())return;
+        openOrSwitch(SlimefunEntryListScreen.recipeEntry(ALL_RECIPE_ENTRY.values()
+            .stream()
+            .filter(i->Objects.equals(i.rid, type.id))
+            .map(RecipeEntry.class::cast)
+            .toList()
+        ));
+    }
+    public static void handleAutoEnable(){
+        ENABLE_RECIPE.set(true);
+        Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_SAVE).set(true);
+        Configs.SLIMEFUN_CONFIG.save();
+        Debug.chat("配方自动记录功能已开启,请使用ctrl+G打开Slimefun settings设置具体参数");
+        Debug.chat(Text.literal("注意: 在1.20.5以上的物品数据和1.20.4及以下不互通,如果你进入了via支持的服务器,请注意这一点!").formatted(Formatting.YELLOW));
+        mc.setScreen(null);
+    }
+    private static boolean reject = false;
+    public static void handleRejectEnable(){
+        Debug.chat("您仍旧可以继续使用GUIDE功能,在这次启动中该弹窗将不再弹出");
+        reject = true;
+        mc.setScreen(null);
+    }
+    private static final Text QUESTION_NOT_ENABLE = Text.literal("您当前并未启用配方记录功能,无法体验完整版GUIDE功能,请问您该如何选择?");
+    private static final List<SlimefunQuestionScreen.Solution> QUESTION_SOLUTIONS = List.of(
+        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable),
+        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,但不启用"), SlimefunTasks::handleRejectEnable),
+        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable),
+        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,但不启用"), SlimefunTasks::handleRejectEnable),
+        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable)
+    );
+    public static boolean handleNotEnable(){
+        //没有启用recipe或者没有启用
+        if((!ENABLE_RECIPE.get()|| !Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_SAVE).get() )&& !reject){
+            openOrSwitch(new SlimefunQuestionScreen(QUESTION_NOT_ENABLE, QUESTION_SOLUTIONS));
+            return true;
+        }
+        return false;
+    }
+    //vanilla typed screen
+    public static void handleOpenVanillaTypeScreen(RecipeType type){
+        if(handleNotEnable())return;
+        openOrSwitch(SlimefunEntryListScreen.recipeEntry(RecipeTasks.getAllRecipe().values()
+            .stream()
+            .filter(i->Objects.equals(type, i.type()))
+            .map(RecipeEntry.class::cast)
+            .toList())
+        );
+    }
+
+    private static final Text TITLE_ALL_ITEM = Text.literal("全部记录物品");
+    public static final List<Text> TOOLTIPS_ITEM_RULE =  List.of(
+        Text.literal("左键查看当前物品合成表"),
+        Text.literal("右键查看包含当前物品的合成表"),
+        Text.literal("Shift点击的时候会同时显示原版物品配方")
+    );
+    private static final Text TITLE_ALL_TYPE = Text.literal("全部记录配方类型");
+    private static final Text TITLE_ALL_VANILLA =Text.literal("全部原版配方类型");
+    private static final Text TITLE_ALL_SAVED = Text.literal("全部保存物品");
+    public static final List<Text> TOOLTIPS_SAVED_RULE =  List.of(
+        Text.literal("左键获得一组该物品(仅限创造)"),
+        Text.literal("shift左键拷贝/give指令"),
+        Text.literal("右键打开物品编辑器")
+    );
+    public static void openOrSwitch(Screen sf){
+        ScreenAccess access = ScreenAccess.of(sf);
+        if(mc.currentScreen instanceof SlimefunEntryListScreen<?> sf2 ){
+            //当前正在预览配方;,如果要切换到其他配方,使用水平切换
+            if(sf instanceof SlimefunEntryListScreen<?>){
+                //同级之间水平切换
+                access.switchFromCurrent();
+            }else if(sf instanceof SlimefunChoiceScreen<?> choosing) {
+                //退出到上级,
+                sf2.close();
+                openOrSwitch(sf);
+            }else{
+                access.openFromCurrent();
+            }
+        }else if (mc.currentScreen instanceof SlimefunChoiceScreen<?> sf3){
+            if(sf instanceof SlimefunChoiceScreen<?>){
+                //同级之间切换
+                access.switchFromCurrent();
+            }else {
+                access.openFromCurrent();
+            }
+        }else {
+            access.openFromCurrent();
+        }
+    }
+
+
+    //guide icon
+    public static void handleClickGuideIcon(){
+        if(handleNotEnable())return;
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_ITEM ,TOOLTIPS_ITEM_RULE, ALL_RECIPE_ENTRY.values()
+            .stream()
+            .toList(),
+            (entry)-> new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(entry.output.copyWithCount(1)).withMouseHandler(MouseHandler.isLeft(t->{
+                if(t){
+                    handleOpenSlimefunRecipeScreen(entry);
+                }else {
+                    handleClickItemStack(entry.output, false);
+                }
+            })))
+            ).setSearchFilter((BiPredicate<String, SlimefunRecipeEntry>)(BiPredicate) RECIPE_FILTER)
+        );
+    }
+
+    public static Stream<RecipeEntry> getAllSlimefunRecipeEntry(){
+        return ALL_RECIPE_ENTRY.values().stream().map(RecipeEntry.class::cast);
+    }
+
+
+    public static void handleClickSaveItemIcon(){
+        if(handleNotEnable())return;
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_SAVED ,TOOLTIPS_SAVED_RULE, SAVED_ITEM_ID
+                .stream()
+                .map(SlimefunTasks::byId)
+                .toList(),
+                (entry)-> new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(entry.copyWithCount(1)).withMouseHandler(MouseHandler.isLeft(t->{
+                    if(t){
+                        if(Screen.hasShiftDown()){
+                            InvTasks.copyGiveCommand(entry.copy());
+                        }else {
+                            if(mc.player != null && mc.player.isCreative()){
+                                InvTasks.creativeAddItem(entry.copy(), 64);
+                            }else {
+                                Debug.chat(Text.literal("当前并不处于创造模式,无法获取保存物品!").formatted(Formatting.YELLOW));
+                            }
+                        }
+                    }else {
+                        openOrSwitch(SlimefunEntryListScreen.mapToWidget(
+                            List.of(entry)
+                        , (item)->new SavedItemWidget(0,0,item, null)));
+                        ItemEditTasks.openEditScreen(entry, (it)->{});
+                    }
+                })))
+            ).setSearchFilter(ITEM_FILTER)
+        );
+    }
+
+    //rtype icon
+    public static void handleClickRtypeIcon(){
+        if(handleNotEnable())return;
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_TYPE,ALL_RECIPE_TYPE.values()
+            .stream()
+            .toList(),
+            (ct)->new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(ct.icon)
+                .withMouseHandler(MouseHandler.isLeft(t->handleOpenCraftingTypeScreen(ct)))
+            )
+            ).setSearchFilter(RTYPE_FILTER)
+        );
+    }
+    //crafttable icon
+    public static void handleClickCraftTableIcon(){
+        if(handleNotEnable())return;
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_VANILLA, Registries.RECIPE_TYPE.stream().toList(),
+            (rp)-> new ExecutableWidget(0,0,16,16).setElementHandler(
+                SlotElement.instance(SUPPORT_VANILLA_RTYPE.getOrDefault(Registries.RECIPE_TYPE.getId(rp).toString(), ITEM_NULL_TYPE)).withMouseHandler(MouseHandler.isLeft(t->handleOpenVanillaTypeScreen(rp)))
+                )
+            )
+        );
+    }
+    //clicking action
+    public static void handleClickItemStack(ItemStack item, boolean isLeft){
+        if(handleNotEnable())return;
+        List<RecipeEntry> resultToDisplay = new ArrayList<>();
+        if(isLeft){
+            //搞到当前物品的配方表
+            String sfid = ItemStackUtils.getSfId(item);
+            SlimefunRecipeEntry entry = ALL_RECIPE_ENTRY.get(sfid);
+            if(entry!=null){
+                resultToDisplay.add(entry);
+            }
+            if(Screen.hasShiftDown()){
+                resultToDisplay.addAll( RecipeTasks.getRecipeByOutput(item.getItem()).values());
+            }
+        }else {
+            String generatedId = ItemStackWithId.generateId(item);
+            ALL_RECIPE_ENTRY.values().stream()
+                .filter(i->i.containingIdAsIngredient(generatedId))
+                .forEach(resultToDisplay::add);
+            if(Screen.hasShiftDown()){
+                RecipeTasks.getAllRecipe().values().stream()
+                    .filter(i->i.containingIdAsIngredient(generatedId))
+                    .forEach(resultToDisplay::add);
+            }
+        }
+        if(resultToDisplay.isEmpty()){
+            return;
+        }
+        openOrSwitch(SlimefunEntryListScreen.recipeEntry(resultToDisplay));
+    }
+    //recipetype click action
+    public static void handleClickRecipeTypeIcon(String type, boolean isLeft){
+        if(handleNotEnable())return;
+        RecipeType type1 = RecipeTasks.getById(type);
+        List<RecipeEntry> myEntry;
+        if(type1 != null){
+            Map<Identifier, RecipeTasks.RecipeRecord> myCache = RecipeTasks.getAllRecipe();
+            myEntry = RecipeTasks.getRecipeByType(type1)
+                .stream()
+                .map(i->(RecipeEntry)myCache.get(i.id()))
+                .filter(Objects::nonNull)
+                .toList();
+        }else {
+
+            myEntry = ALL_RECIPE_ENTRY.values()
+                .stream()
+                .filter(i->i.rid.equals(type))
+                .map(RecipeEntry.class::cast)
+                .toList();
+
+        }
+        if(myEntry.isEmpty())return;
+        openOrSwitch(SlimefunEntryListScreen.recipeEntry(myEntry));
+    }
+
+    public static List<RecipeEntry> getInventoryRelativeRecipes(Inventory inventory){
+        Set<String> relatedIds = new HashSet<>();
+        int size = inventory.size();
+        for (int i=0 ;i<size;++i){
+            ItemStack item = inventory.getStack(i);
+            if(item != null && !item.isEmpty()){
+                String optionalItemId = getIdOrNull(item);
+                if(optionalItemId != null){
+                    relatedIds.add(optionalItemId);
+                }
+            }
+        }
+
+        List<RecipeEntry> results = new ArrayList<>();
+        for (var iter: ALL_RECIPE_ENTRY.values()){
+            ItemStackWithId[] ingredients = iter.ingredientEntry();
+            for (var ingre: ingredients){
+                String id = getIdOrNull(ingre.stack);
+                if(id != null && relatedIds.contains(id)){
+                    results.add(iter);
+                    break;
+                }
+            }
+        }
+        return results;
+    }
+
+    public static void handleMoveRecipeToSlots(RecipeEntry entry, HandledScreen<?> screen, int amount, boolean removeOrigin, int... acceptSlots){
+        Preconditions.checkArgument(acceptSlots.length == 9);
+        ItemStack[] ingredients = new ItemStack[9];
+        Ingredient[] ingre = entry.ingredient();
+        Preconditions.checkArgument(ingre.length <= 9);
+        for (var re = 0 ;re < ingre.length; ++re){
+
+            Ingredient var = ingre[re];
+            if(var.isEmpty()){
+                ingredients[re] = ItemStack.EMPTY;
+            }else {
+                ingredients[re] = var.getMatchingStacks()[0];
+            }
+        }
+        for (var re = ingre.length ;re < 9; ++re){
+            ingredients[re] = ItemStack.EMPTY;
+        }
+        Map<ItemStackSample, IntList> stackRecipe = new HashMap<>();
+        for ( int i=0; i< 9; ++i){
+            ItemStack item = ingredients[i];
+            if(item != null && !item.isEmpty()){
+                ItemStackSample sample = new ItemStackSample(item);
+                int index = i;
+                stackRecipe.compute(sample, (key, list)->{
+                    if(list == null){
+                        list = new IntArrayList();
+                    }
+                    list.add(index);
+                    return list;
+                });
+            }
+        }
+        for (var mapEntry: stackRecipe.entrySet()){
+            ItemStackSample sample = mapEntry.getKey();
+            int counter = 0;
+            IntList cachedSlots = new IntArrayList();
+            DefaultedList<Slot> allSlots = screen.getScreenHandler().slots;
+            int size = allSlots.size();
+            for (int i=0; i< size; ++i){
+                Slot slot = allSlots.get(i);
+                if(slot != null && slot.inventory instanceof PlayerInventory && !slot.getStack().isEmpty() && ItemStack.canCombine(slot.getStack(), sample.sample())){
+                    //all match
+                    cachedSlots.add(i);
+                    counter += slot.getStack().getCount();
+                }
+            }
+            int needed = 0;
+            for (var i: mapEntry.getValue()){
+                needed += ingredients[i].getCount();
+            }
+            int maxSupply = Math.min( counter/ needed, amount);
+            for (var i: mapEntry.getValue()){
+                int slotNeed = ingredients[i].getCount() * maxSupply;
+                InvTasks.moveToSlot(screen, sample.sample(), acceptSlots[i], slotNeed, removeOrigin, cachedSlots);
+            }
+        }
+
+    }
+
+
+
+    public static void handleSaveItem(ItemStack item){
+        if(handleNotEnable())return;
+        String id = getOrAddId(item);
+        if(SAVED_ITEM_ID.contains(id)){
+            Debug.chat(Text.literal("该物品已经保存过了!").formatted(Formatting.YELLOW));
+        }else {
+            SAVED_ITEM_ID.add(id);
+            Debug.chat(Text.literal("成功保存物品!").formatted(Formatting.GREEN));
+        }
+    }
+    public static void handleRemoveSaveItem(ItemStack item){
+        if(handleNotEnable())return;
+        String id = getIdOrNull(item);
+        if(id != null && SAVED_ITEM_ID.remove(id)){
+            Debug.chat(Text.literal("已经成功移除这个保存物品").formatted(Formatting.GREEN));
+        }
+    }
+
+    public static boolean clickToSaveItem(ClientPlayerEntity player){
+
+        if(player==null)return false;
+
+        ItemStack heldItem=null;
+        if(mc.currentScreen instanceof HandledScreen<?> s){
+            Point mouseCoord= ScreenUtils.getMouseCoord(mc);
+            Slot slot=HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.x,mouseCoord.y);
+            if(slot!=null){
+                heldItem=slot.getStack();
+            }
+        }else{
+            heldItem=player.getStackInHand(Hand.MAIN_HAND);
+        }
+
+        if(heldItem != null && !heldItem.isEmpty()){
+            handleSaveItem(heldItem);
+            return true;
+        }
+        return false;
+    }
+    public static boolean clickToAddRecipeDisplay(HandledScreen<?> screen){
+        //find if any
+        if(screen == null){
+            return false;
+        }
+        HandledScreenAccess access = HandledScreenAccess.of(screen);
+        var pair = ScreenUtils.getMouseCoord(mc);
+        int mouseX = pair.x;
+        int mouseY = pair.y;
+        Slot slot = null;
+        Set<Slot> extraSlots = access.getExtraSlots();
+        boolean hasRemoval = false;
+        if(!extraSlots.isEmpty()){
+            List<Slot> orderedExtra = extraSlots.stream().sorted(Comparator.comparingInt(s-> - ScaleSlotAccess.of(s).getExtraDepth())).toList();
+            int size = orderedExtra.size();
+            for (int i = 0 ; i < size; ++i){
+                Slot test = orderedExtra.get(i);
+                if(access.isSlotPointed(orderedExtra.get(i), mouseX, mouseY)){
+                    if(!CURRENT.containsKey(test)){
+                        slot = test;
+                        break;
+                    }else{
+                        releaseSlotRecipe(test);
+                        hasRemoval = true;
+                    }
+
+                }
+            }
+        }
+        if(slot == null){
+            Slot test = access.reallyGetSlotAt(mouseX, mouseY);
+            if(!CURRENT.containsKey(test) ){
+                slot= test;
+            }else if(test != null) {
+                releaseSlotRecipe(test);
+                hasRemoval = true;
+            }
+        }
+        if(slot == null)return hasRemoval;
+        //find pointed slot, check recipe
+        ItemStack stack = slot.getStack();
+        if(stack.isEmpty())return hasRemoval;
+        String id = ItemStackUtils.getSfId(stack);
+        int extraDepth = ScaleSlotAccess.of(slot).getExtraDepth() + EXTRA_DEPTH;
+        if(id == null ){
+            //render vanilla item recipe
+            Item itemType = stack.getItem();
+            var re = RecipeTasks.getRecipeByOutput(itemType);
+            RecipeTasks.RecipeRecord recipeRecord = re.values().stream().filter(i->i.type() == RecipeType.CRAFTING).findFirst().orElse(null);
+            if(recipeRecord == null){
+                return hasRemoval;
+            }
+            int x = slot.x;
+            int y = slot.y;
+            int startX = x - (int)(96*SCALING);
+            int startY = y - (int)(45 * SCALING);
+            Set<Slot> slots = new LinkedHashSet<>();
+            Ingredient[] val = transfer3x3RecipeDisplay(recipeRecord);
+
+            Inventory inventory = new MyIngredientImmutableInventory(val);
+            int i;
+            for ( i=0; i < 9 ; ++i){
+                Slot slotT = new CustomDisplaySlot(inventory,i,  startX  + ((int)(((i%3)*18 + 2)*SCALING)),  startY + ((int)(((i/3)*18 + 2)*SCALING)));
+                ScaleSlotAccess.of(slotT).setXYScale(SCALING).setExtraDepth(extraDepth);
+                slots.add(slotT);
+            }
+            ItemStack typeIcon = CRAFTING_TABLE;
+            Inventory outputInv = new SimpleInventory(new ItemStack[]{typeIcon, recipeRecord.output()});
+            Slot slotType = new CustomDisplaySlot(outputInv, 0,  startX + (int)( 64*SCALING), startY + (int)(20*SCALING));
+            ScaleSlotAccess.of(slotType).setXYScale(SCALING).setExtraDepth(extraDepth);
+            slots.add(slotType);
+            Slot slotOut = new CustomDisplaySlot(outputInv, 1,  startX + (int)( 96*SCALING), startY + (int)(20*SCALING) );
+            ScaleSlotAccess.of(slotOut).setXYScale(SCALING).setExtraDepth(extraDepth);
+            slots.add(slotOut);
+            var newEntry = new RenderRecipeRecordImpl(startX, startY, extraDepth, slots, HolderWithState.EMPTY_COMPLETE);
+            CURRENT.put(slot, newEntry);
+
+        }else {
+            //当前matrix: 物品栏右侧为x+, 下侧为y+
+            if(!ALL_RECIPE_ENTRY.containsKey(id)){
+                CURRENT.put(slot, new RenderRecipeRecordNoCache(slot));
+            }else {
+                SlimefunRecipeEntry entry = ALL_RECIPE_ENTRY.get(id);
+                Ingredient[] ingredient = entry.ingredient();
+                int x = slot.x;
+                int y = slot.y;
+                int startX = x - (int)(96*SCALING);
+                int startY = y - (int)(45 * SCALING);
+                Inventory inventory = new MyIngredientImmutableInventory(ingredient);
+                Set<Slot> slots = new LinkedHashSet<>();
+                for ( int i=0; i < 9 ; ++i){
+                    Slot slotT = new CustomDisplaySlot(inventory,i,  startX  + ((int)(((i%3)*18 + 2)*SCALING)),  startY + ((int)(((i/3)*18 + 2)*SCALING)));
+                    ScaleSlotAccess.of(slotT).setXYScale(SCALING).setExtraDepth(extraDepth);
+                    slots.add(slotT);
+                }
+                ItemStack typeIcon = ALL_RECIPE_TYPE.getOrDefault(entry.rid,CraftingType.EMPTY).icon;
+                ItemStack outputItem = entry.output;
+                Inventory outputInv = new SimpleInventory(new ItemStack[]{typeIcon, outputItem});
+                Slot slotType = new CustomDisplaySlot(outputInv, 0,  startX + (int)( 64*SCALING), startY + (int)(20*SCALING));
+                ScaleSlotAccess.of(slotType).setXYScale(SCALING).setExtraDepth(extraDepth);
+                slots.add(slotType);
+                Slot slotOut = new CustomDisplaySlot(outputInv, 1,  startX + (int)( 96*SCALING), startY + (int)(20*SCALING) );
+                ScaleSlotAccess.of(slotOut).setXYScale(SCALING).setExtraDepth(extraDepth);
+                slots.add(slotOut);
+                int ax = startX + (int)( 58*SCALING) + access.getScreenX();
+                int ay = startY + (int)(44*SCALING) + access.getScreenY();
+                ButtonWidget widget = ButtonWidget.builder(Text.literal("配方"),(b)->{
+                        handleOpenSlimefunRecipeScreen(entry);
+                    })
+                    .dimensions(ax, ay, (int)(28* SCALING), (int)(8*SCALING) )
+                    .build();
+                ClickableAccess.of(widget).setExtraDepth(extraDepth + 210);
+                CURRENT.put(slot, new RenderRecipeRecordImpl(startX, startY, extraDepth, slots, new HolderWithState<>(widget)));
+            }
+        }
+        CURRENT_HANDLING_SCREEN = screen;
+        return true;
+    }
+
+
+    public static void renderSpecificRecipeCache(DrawContext context, HandledScreen screen, int mouseX, int mouseY, float delta){
+        if(!ENABLE_RECIPE.get()){
+            releaseAllDisplayRecipe();
+            return;
+        }
+        if(!Screen.hasControlDown()){
+            //if not control anyMore;
+            releaseAllDisplayRecipe();
+            return;
+        }
+        if(!CURRENT.isEmpty()){
+            //keep rendering current logic
+            //left not complete
+            if(CURRENT_HANDLING_SCREEN != screen){
+                releaseAllDisplayRecipe();
+                return;
+            }
+
+            CURRENT.values().removeIf(i -> {
+                if(!i.render(context, screen)){
+                    i.disableRender(screen);
+
+
+                    return true;
+                }
+                return false;
+            });
+            if(CURRENT.isEmpty()){
+                releaseAllDisplayRecipe();
+            }
+            return;
+
+        }
+
+    }
+
+
+    private static final Config.StringRef TITLE_PATTERN = Configs.SLIMEFUN_CONFIG.getString(Configs.SLIMEFUN_RECIPE_TITLE);
+    private static final AtomicBoolean ENABLE_RECIPE = Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_RECORD);
+    private static final Config.StringRef MULTIBLOCK_PATTERN = Configs.SLIMEFUN_CONFIG.getString(Configs.SLIMEFUN_MULTIBLOCK_MATCHER);
+    private static Pattern TITLE_REGEX;
+    private static Pattern MULTIBLOCK_REGEX;
+    public static void listenGuideRecipe(HandledScreen<?> screen){
+        if(!ENABLE_RECIPE.get())return;
+        if(!SCREEN_TYPES.contains( screen.getScreenHandler().getType())){
+            return;
+        }
+        if(!(screen instanceof GenericContainerScreen generic)){
+            return;
+        }
+        Text title = screen.getTitle();
+        if(title == null ){
+            return;
+        }
+        String texts1 = title.getString();
+        if(texts1 == null){
+            return;
+        }
+        texts1 = texts1.replaceAll("§.", "");
+        if(TITLE_REGEX.asMatchPredicate().test(texts1)){
+            updateGuideRecipe(generic);
+        }
+    }
+    private static final Set<?> SCREEN_TYPES = Set.of(ScreenHandlerType.GENERIC_9X6, ScreenHandlerType.GENERIC_9X3, ScreenHandlerType.GENERIC_9X4,ScreenHandlerType.GENERIC_9X5);
+    static{
+        TITLE_PATTERN.addUpdateListener((str)->{
+            TITLE_REGEX = Pattern.compile(str);
+        });
+        TITLE_REGEX = Pattern.compile(TITLE_PATTERN.get());
+        MULTIBLOCK_PATTERN.addUpdateListener((str)->{
+            MULTIBLOCK_REGEX = Pattern.compile(str);
+        });
+        MULTIBLOCK_REGEX = Pattern.compile(MULTIBLOCK_PATTERN.get());
+
+        loadData();
+        //定时保存
+        Tasks.scheduleRepeated(SlimefunTasks::scheduledSave, 20* 60, 20*60* 5);
+        //退出服务器时保存
+        Listener.getServerDisconnectPoint().registerHandler((v)->{
+            SlimefunTasks.scheduledSave();
+        });
+        Listener.getScreenOpenPoint().registerHandler(SlimefunTasks::listenGuideRecipe);
+        RenderMain.getRenderHandledScreen().registerHandler((c, o)->{
+            SlimefunTasks.renderSpecificRecipeCache(c, (HandledScreen) o[0], (Integer) o[1], (Integer) o[2], (Float)o[3]);
+        });
+        Listener.getPostPlayerUseItemAtBlock().registerSimple(SlimefunTasks::onClickBlock);
+//        Listener.registerSinglePacketListener(OpenScreenS2CPacket.class, (openScreenS2CPacket -> {
+//            if(SCREEN_TYPES.contains(openScreenS2CPacket.getScreenHandlerType())){
+//                mc.executeSync();
+//            }
+//        }));
+    }
+    public static record CraftingType(String id, ItemStack icon){
+        public static final CraftingType EMPTY = new CraftingType("NULL", ITEM_NULL_TYPE);
+    }
+    public static BiPredicate<String, SlimefunTasks.CraftingType> RTYPE_FILTER = (str, i)->nameMatch(i.id, str);
+
+    public interface RecipeEntry{
+        public String rid();
+        public String id();
+        public Ingredient[] ingredient();
+        public ItemStack output();
+        public boolean containingIdAsIngredient(String id);
+    }
+
+    public static record SlimefunRecipeEntry(String rid, String id, ItemStackWithId[] ingredientEntry, ItemStack output) implements RecipeEntry{
+        public ItemStack[] inputs(){
+            ItemStack[] itemStacks = new ItemStack[9];
+            for (int i=0; i<ingredientEntry.length; ++i){
+                itemStacks[i] = ingredientEntry[i].stack;
+            }
+            for (int i = ingredientEntry.length; i<9 ;++i){
+                itemStacks[i] = ItemStack.EMPTY;
+            }
+            return itemStacks;
+        }
+        public Ingredient[] ingredient(){
+            Ingredient[] items = new Ingredient[9];
+            for (int i=0; i<ingredientEntry.length; ++i){
+                items[i] = Ingredient.ofStacks( ingredientEntry[i].stack()) ;
+            }
+            for (int i = ingredientEntry.length; i<9 ;++i){
+                items[i] = Ingredient.EMPTY;
+            }
+            return items;
+        }
+
+        @Override
+        public boolean containingIdAsIngredient(String id) {
+            for (var iid : ingredientEntry){
+                if(iid.identifier.equals(id)){
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return "SlimefunRecipeEntry[ rid = "+rid +" , id = "+id +" , ingredient = "+Arrays.asList(ingredientEntry).toString() + ", output = "+ output +" ]";
+        }
+    }
+}

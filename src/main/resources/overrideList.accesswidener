@@ -13,7 +13,8 @@ accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SP
 accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractHandler
 accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractHandler <init> (Lnet/minecraft/util/Hand;)V
 accessible method net/minecraft/util/shape/VoxelShape getPointPositions (Lnet/minecraft/util/math/Direction$Axis;)Lit/unimi/dsi/fastutil/doubles/DoubleList;
-
-
-
-
+accessible class net/minecraft/client/gui/screen/Screen$PositionedTooltip
+accessible method net/minecraft/client/gui/DrawContext drawTexturedQuad (Lnet/minecraft/util/Identifier;IIIIIFFFF)V
+accessible field net/minecraft/nbt/NbtCompound entries Ljava/util/Map;
+accessible field net/minecraft/text/TextColor FORMATTING_TO_COLOR Ljava/util/Map;
+accessible method net/minecraft/item/ItemStack getHideFlags ()I

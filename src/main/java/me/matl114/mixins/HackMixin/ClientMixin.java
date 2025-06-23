@@ -1,9 +1,11 @@
 package me.matl114.mixins.HackMixin;
 
 
+import me.matl114.access.ClientAccess;
 import me.matl114.access.ClientPlayerAccess;
 import me.matl114.hackUtils.CombatTasks;
 import me.matl114.hackUtils.Tasks;
+import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import net.fabricmc.api.EnvType;
@@ -19,19 +21,17 @@ import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Environment(EnvType.CLIENT)
 @Mixin(MinecraftClient.class)
-public abstract class ClientInputMixin {
+public abstract class ClientMixin implements Cloneable, ClientAccess {
 
 
     @Shadow private Profiler profiler;
@@ -42,9 +42,14 @@ public abstract class ClientInputMixin {
 
     @Shadow @Nullable public HitResult crosshairTarget;
 
+    @Shadow private int itemUseCooldown;
+
     @Shadow
     static MinecraftClient instance;
-
+    @Unique
+    public void setCooldown(int cooldown){
+        this.itemUseCooldown = cooldown;
+    }
     @ModifyArg(method = "handleInputEvents",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V",ordinal = 1))
     public Screen onRedirectInventoryKeyPress(Screen screen){
         if(HotKeys.getButtonToggleManager().getState(HotKeys.KEEP_INV)){
@@ -64,6 +69,7 @@ public abstract class ClientInputMixin {
     private static final AtomicBoolean RIDING_ATTACK= Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_RIDING);
     @Redirect(method = "doAttack",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isRiding()Z"))
     public boolean onEnableRidingAttack(ClientPlayerEntity instance) {
+
         if(RIDING_ATTACK.get()){
             return true;
         }
@@ -107,6 +113,8 @@ public abstract class ClientInputMixin {
         }
         return flag;
     }
+    @Unique
+    private static final AtomicInteger USE_ITEM_NO_COOLDOWN = Configs.INTERACT_CONFIG.getInt(Configs.INTERACT_NO_COOLDOWN);
     @Redirect(method = "handleBlockBreaking",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",ordinal = 0))
     public boolean onAllowingPlayerBreakingWhenUseItem(ClientPlayerEntity player) {
         if(USEINGiTEM_ATTACK.get()){
@@ -115,6 +123,26 @@ public abstract class ClientInputMixin {
             return player.isUsingItem();
         }
     }
+//    @Redirect(method = "doItemUse", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;itemUseCooldown:I"))
+//    public void onRewriteItemCooldown1(MinecraftClient instance, int value){
+//
+//    }
+    @Unique
+    private static final AtomicBoolean RIDE_USE = Configs.INTERACT_CONFIG.getBoolean(Configs.INTERACT_WHEN_RIDING);
+    @Redirect(method = "doItemUse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isRiding()Z"))
+    public boolean onAllowRidingUse(ClientPlayerEntity instance){
+        //inject the cooldown, before the riding call
+        int val = USE_ITEM_NO_COOLDOWN.get();
+        if(val >= 0){
+            this.itemUseCooldown = val;
+        }
+        if(RIDE_USE.get()){
+            return false;
+        }
+        return instance.isRiding();
+    }
+
+
     @Shadow
     protected abstract void handleBlockBreaking(boolean b) ;
 
@@ -123,6 +151,22 @@ public abstract class ClientInputMixin {
 
     @Shadow
     protected abstract boolean doAttack();
+
+    @Override
+    public ClientAccess clone() {
+        try {
+            ClientAccess clone = (ClientMixin) super.clone();
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
+
+    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V", at = @At("HEAD"))
+    public void onDisconnectListen(Screen disconnectionScreen, CallbackInfo ci){
+        Listener.getServerDisconnectPoint().handleValue(null);
+    }
 
 //    @Inject(method = "startIntegratedServer",at = @At("HEAD"))
 //    public void onStartIntegratedServer(LevelStorage.Session session, ResourcePackManager dataPackManager, SaveLoader saveLoader, boolean newWorld, CallbackInfo ci) {

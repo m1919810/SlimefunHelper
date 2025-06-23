@@ -84,11 +84,12 @@ public class ModConfig {
     private static Pattern slimefunModelPathPattern ;
     @Getter
     private static String slimefunIdCopyHotkey="LEFT_CONTROL,C,BUTTON_1";
-
+    @Getter
     private static HashMap<String,String> toggleHotKeys=new HashMap<>();
     public static String getToggleHotkeys(String key){
         return toggleHotKeys.get(key);
     }
+    @Getter
     private static HashMap<String,String> funcHotKeys=new HashMap<>();
     public static String getFuncHotKeys(String key){
         return funcHotKeys.get(key);

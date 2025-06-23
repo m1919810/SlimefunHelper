@@ -26,7 +26,9 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -125,6 +127,34 @@ public abstract class PlayerMixin extends AbstractClientPlayerEntity implements 
     public void onVelocityUpdateWithModification(CallbackInfo ci){
         MovTasks.onMoving((ClientPlayerEntity)(Object)this);
     }
+    @Unique
+    private static final AtomicBoolean noSlot = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_NO_SLOW_DOWN);
+    @Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z") )
+    public boolean noSlowUsingItem(ClientPlayerEntity instance){
+        if(noSlot.get()){
+            return false;
+        }
+        return instance.isUsingItem();
+    }
+    @Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldSlowDown()Z"))
+    public boolean noSlowSneak(ClientPlayerEntity instance){
+        if(noSlot.get()){
+            return false;
+        }
+        return instance.shouldSlowDown();
+    }
 
+    @Override
+    protected float getVelocityMultiplier(){
+        if(noSlot.get()){
+            return 1.0f;
+        }
+        return super.getVelocityMultiplier();
+    }
+
+    @Inject(method = "getPermissionLevel", at = @At("HEAD"), cancellable = true)
+    protected void grantAllClientPermissions(CallbackInfoReturnable<Integer> cir){
+        cir.setReturnValue(4);
+    }
 
 }

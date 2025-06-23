@@ -1,0 +1,18 @@
+[21:00:10] [Test worker/INFO]: check 1
+[21:00:10] [Test worker/INFO]: running ItemStack tests 2
+[21:00:10] [Test worker/INFO]: item:
+  ==: org.bukkit.inventory.ItemStack
+  v: 3465
+  type: DIRT
+  meta:
+    ==: ItemMeta
+    meta-type: UNSPECIFIC
+    PublicBukkitValues:
+      infinityexpansion:display: 351372703i
+
+[21:00:12] [Test worker/INFO]: Could not call method 'public static me.matl114.bukkitUtiils.BukkitMetaItem me.matl114.bukkitUtiils.BukkitMetaItem.deserialize(java.util.Map) throws java.lang.Throwable' of class me.matl114.bukkitUtiils.BukkitMetaItem for deserialization java.lang.ExceptionInInitializerError
+[21:00:12] [Test worker/INFO]: Could not call method 'public static me.matl114.bukkitUtiils.BukkitItemStack me.matl114.bukkitUtiils.BukkitItemStack.deserialize(java.util.Map)' of class me.matl114.bukkitUtiils.BukkitItemStack for deserialization java.lang.NoClassDefFoundError: Could not initialize class net.minecraft.item.Items
+[21:00:12] [Test worker/INFO]: null
+[21:00:12] [Test worker/INFO]: check 2
+[21:00:12] [Test worker/INFO]: running ItemStack tests 2
+[21:00:12] [Test worker/INFO]: Could not call method 'public static me.matl114.bukkitUtiils.BukkitMetaItem me.matl114.bukkitUtiils.BukkitMetaItem.deserialize(java.util.Map) throws java.lang.Throwable' of class me.matl114.bukkitUtiils.BukkitMetaItem for deserialization java.lang.NoClassDefFoundError: Could not initialize class net.minecraft.item.Items

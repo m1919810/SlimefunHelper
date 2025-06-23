@@ -15,8 +15,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.StringHelper;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.profile.PlayerTextures;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -266,4 +266,37 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
         UUID uuid = UUID.nameUUIDFromBytes(hashCode.getBytes(StandardCharsets.UTF_8));
         return fromHashCode(uuid, hashCode);
     }
+    public interface PlayerTextures {
+        boolean isEmpty();
+
+        void clear();
+
+        @Nullable
+        URL getSkin();
+
+        void setSkin(@Nullable URL var1);
+
+        void setSkin(@Nullable URL var1, @Nullable PlayerTextures.SkinModel var2);
+
+        @NotNull
+        PlayerTextures.SkinModel getSkinModel();
+
+        @Nullable
+        URL getCape();
+
+        void setCape(@Nullable URL var1);
+
+        long getTimestamp();
+
+        boolean isSigned();
+
+        public static enum SkinModel {
+            CLASSIC,
+            SLIM;
+
+            private SkinModel() {
+            }
+        }
+    }
+
 }

@@ -1,18 +1,25 @@
 package me.matl114.mixins.HackMixin;
 
 import me.matl114.access.ClientPlayerAccess;
+import me.matl114.hackUtils.ChatTasks;
+import me.matl114.listenerUtils.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
+import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
+
+import java.util.Objects;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayNetworkHandler.class)
@@ -47,4 +54,54 @@ public abstract class ClientPacketListenerMixin {
             }
         }
     }
+
+    @Inject(method = "onOpenScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreens;open(Lnet/minecraft/screen/ScreenHandlerType;Lnet/minecraft/client/MinecraftClient;ILnet/minecraft/text/Text;)V",shift = At.Shift.AFTER))
+    private void onInventoryOpen(OpenScreenS2CPacket packet, CallbackInfo ci){
+        int id = packet.getSyncId();
+        if(MinecraftClient.getInstance().player!=null){
+            ClientPlayerAccess access=ClientPlayerAccess.of(MinecraftClient.getInstance().player);
+            HandledScreen<?> screen = access.getServerHandledScreen();
+            //check for open failure
+            if(screen != null && screen.getScreenHandler().syncId == id){
+                Listener.getScreenOpenPoint().handleValue(screen);
+            }
+        }
+    }
+
+    @ModifyVariable(method = "sendChatCommand", at = @At(value = "HEAD"), argsOnly = true)
+    private String onChat0(String args){
+        String chatContent = "/" + args;
+        MutableObject<String> value = new MutableObject<>(chatContent);
+        if(!ChatTasks.getChatEntryPoint().handleValue(value)){
+            //set null string to trigger ret
+            return "";
+        }
+        if(!Objects.equals(chatContent, value.getValue())){
+            return value.getValue().substring(1);
+        }
+        return args;
+    }
+    @Inject(method = "sendChatCommand",at = @At(value = "INVOKE", target = "Ljava/time/Instant;now()Ljava/time/Instant;"), cancellable = true)
+    private void onChat1(String command, CallbackInfo ci){
+        // empty command will be ignored
+        if(command == null || command.isEmpty()){
+            ci.cancel();
+        }
+    }
+    @ModifyVariable(method = "sendChatMessage", at = @At(value = "HEAD"), argsOnly = true)
+    private String onChat2(String args){
+        MutableObject<String> value = new MutableObject<>(args);
+        if(!ChatTasks.getChatEntryPoint().handleValue(value)){
+            //set null string to trigger ret
+            return null;
+        }
+        return value.getValue();
+    }
+    @Inject(method = "sendChatMessage", at = @At(value = "INVOKE", target = "Ljava/time/Instant;now()Ljava/time/Instant;"), cancellable = true)
+    private void onChat3(String content, CallbackInfo ci){
+        if(content == null){
+            ci.cancel();
+        }
+    }
+
 }

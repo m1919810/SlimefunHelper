@@ -2,6 +2,8 @@ package me.matl114.mixins.HackMixin;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import me.matl114.managers.Configs;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.entity.player.PlayerAbilities;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -13,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Mixin(PlayerAbilities.class)
+@Environment(EnvType.CLIENT)
 public class PlayerAbilityMixin {
     @Unique
     private static final AtomicBoolean overrideFly = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_FLY);
