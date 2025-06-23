@@ -34,7 +34,7 @@ public class SlimefunHelper implements ModInitializer {
     //public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 	@Getter
     public static SlimefunHelper instance;
-    public static final boolean HACK_VERSION = true;
+    public static final boolean HACK_VERSION = false;
 	@Override
 	public void onInitialize() {
 		instance = this;
