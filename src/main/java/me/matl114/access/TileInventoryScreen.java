@@ -1,5 +1,7 @@
 package me.matl114.access;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
@@ -9,8 +11,14 @@ public interface TileInventoryScreen {
     @Nullable
     public BlockPos getPos();
 
+
+
     @Nullable
     public ClientWorld getWorld();
+
+
+    @Nullable
+    public Block getBlockType();
 
     @Nullable
     default boolean isVirtual(){
