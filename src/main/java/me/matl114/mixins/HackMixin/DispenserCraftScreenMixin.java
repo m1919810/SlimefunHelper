@@ -5,6 +5,7 @@ import me.matl114.access.TileInventoryScreen;
 import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hackUtils.MovTasks;
 import me.matl114.hackUtils.SlimefunTasks;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.Generic3x3ContainerScreen;
@@ -35,6 +36,14 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen implements
     private BlockPos pos;
 
     @Unique
+    private Block cacheBlockType;
+
+    @Unique
+    public Block getBlockType(){
+        return cacheBlockType;
+    }
+
+    @Unique
     @Getter
     private ClientWorld world;
 
@@ -51,6 +60,9 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen implements
     protected void tryInitBlockPos(Generic3x3ContainerScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci){
         this.world = MinecraftClient.getInstance().world;
         this.pos = MovTasks.rayTraceSpecificBlock((b)->b == Blocks.DISPENSER || b == Blocks.DROPPER).orElse(null);
+        if(this.pos != null && this.world != null){
+            cacheBlockType = this.world.getBlockState(this.pos).getBlock();
+        }
     }
 
 

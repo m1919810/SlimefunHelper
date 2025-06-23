@@ -721,7 +721,7 @@ public class SlimefunTasks {
             return;
         }
         BlockPos pos = tile.getPos();
-        Block block = mc.world.getBlockState(pos).getBlock();
+        Block block = tile.getBlockType();
         if(block == Blocks.DISPENSER || block == Blocks.DROPPER){
             for (var multiblock: MULTIBLOCK_REGISTRIES.values()){
                 var optional = multiblock.getOptionalActionFromDispenser(mc.world, pos);
@@ -733,6 +733,14 @@ public class SlimefunTasks {
             }
         }
     }
+    private static boolean AUTO_EXECUTE = false;
+    public static boolean isMultiBlockAutoExecute(){
+        return AUTO_EXECUTE;
+    }
+    public static void handleMultiBlockAutoExecuteToggle(boolean val){
+        AUTO_EXECUTE  = true;
+    }
+
     public static Collection<MultiBlockWithLocation> getOptionalMultiBlocks(World world, BlockPos dispensor){
         Collection<MultiBlockWithLocation> ans = new HashSet<>();
         for (var multi : MULTIBLOCK_REGISTRIES.values()){
@@ -1567,6 +1575,24 @@ public class SlimefunTasks {
 
     }
 
+    private static long lastAutoTick;
+    public static void slimefunMultiBlockTick(ClientPlayerEntity player){
+        if(AUTO_EXECUTE){
+            if(mc.currentScreen instanceof TileInventoryScreen holder){
+                if(!holder.isVirtual() && holder.getBlockType() == Blocks.DISPENSER){
+                    long currentMs = System.currentTimeMillis();
+                    if(currentMs > lastAutoTick + 300){
+                        lastAutoTick = currentMs;
+                        handleMultiBlockExecute();
+                    }
+                }
+            }else {
+                AUTO_EXECUTE = false;
+            }
+
+        }
+    }
+
 
     private static final Config.StringRef TITLE_PATTERN = Configs.SLIMEFUN_CONFIG.getString(Configs.SLIMEFUN_RECIPE_TITLE);
     private static final AtomicBoolean ENABLE_RECIPE = Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_RECORD);
@@ -1617,6 +1643,8 @@ public class SlimefunTasks {
             SlimefunTasks.renderSpecificRecipeCache(c, (HandledScreen) o[0], (Integer) o[1], (Integer) o[2], (Float)o[3]);
         });
         Listener.getPostPlayerUseItemAtBlock().registerSimple(SlimefunTasks::onClickBlock);
+
+        Tasks.registerGameTask(SlimefunTasks::slimefunMultiBlockTick);
 //        Listener.registerSinglePacketListener(OpenScreenS2CPacket.class, (openScreenS2CPacket -> {
 //            if(SCREEN_TYPES.contains(openScreenS2CPacket.getScreenHandlerType())){
 //                mc.executeSync();

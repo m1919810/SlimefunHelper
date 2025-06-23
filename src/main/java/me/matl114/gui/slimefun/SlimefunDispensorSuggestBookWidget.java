@@ -60,13 +60,21 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         Text.literal("服务端普遍限速点击频率,为9/300ms"),
         Text.literal("点击数可以在配置文件中配置,和自动多方块连点功能相同")
     );
-    protected static final Text MULTIBLOCK_EXECUTE = Text.literal("执行多方块");
+    protected static final List<Text> MULTIBLOCK_TOOLTIPS_AUTO =List.of(
+        Text.literal("仅当识别到发射器才可使用,自动搜索多方块结构,自动使用"),
+        Text.literal("服务端普遍限速点击频率,为9/300ms"),
+        Text.literal("点击数可以在配置文件中配置,和自动多方块连点功能相同")
+    );
+
+    protected static final Text MULTIBLOCK_EXECUTE = Text.literal("合成");
+    protected static final Text MULTIBLOCK_AUTO = Text.literal("自动");
 
     protected ExecutableWidget toggleBookWidget;
     protected ExecutableWidget prevPage;
     protected ExecutableWidget nextPage;
     protected ExecutableWidget titleWidget;
     protected ExecutableWidget multiblockExecuteWidget;
+    protected ExecutableWidget multiblockAutoExecute;
     protected ExecutableWidget refresh;
     protected DrawableWidget textField;
     protected ContentDelegateWidget<DrawableWidget> toggleActivateTextField;
@@ -104,7 +112,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
             resetPage();
         }
     }
-    protected boolean activate;
+    protected static boolean activate;
     protected Collection<String> type;
     public SlimefunDispensorSuggestBookWidget(int x, int y, Collection<String> optionalType, BiConsumer<Boolean, SlimefunTasks.RecipeEntry> callback){
         super(x, y, DX, DY);
@@ -114,6 +122,9 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     }
     protected void toggleActive(){
         activate = !activate;
+        refreshActiveState();
+    }
+    protected void refreshActiveState(){
         if(activate){
             this.toggleActivateTextField.setContentDelegate(this.textField);
             refreshContents();
@@ -170,10 +181,28 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                     .withPresentCondition(this::active)
             )
             .addToSub(this);
-        multiblockExecuteWidget = ExecutableWidget.instance(DX - 36,0, 36, 8)
+        multiblockExecuteWidget = ExecutableWidget.instance(DX - 36,0, 18, 8)
             .setElementHandler(
                 new ButtonElement(TextProvider.of(MULTIBLOCK_EXECUTE), ButtonAction.run(SlimefunTasks::handleMultiBlockExecute))
                     .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_EXECUTE))
+                    .withActiveActionCondition((el)->{
+                        return MinecraftClient.getInstance().currentScreen instanceof TileInventoryScreen tile && !tile.isVirtual();
+                    })
+            )
+            .addToSub(this);
+        multiblockAutoExecute = ExecutableWidget.instance(DX - 18,0, 18, 8)
+            .setElementHandler(
+                new ButtonElement(TextProvider.of(MULTIBLOCK_AUTO), ((element, widget, mouseButton) -> {
+                    if(SlimefunTasks.isMultiBlockAutoExecute()){
+                        widget.setAlpha(0.4f);
+                        SlimefunTasks.handleMultiBlockAutoExecuteToggle(false);
+                    }else {
+                        widget.setAlpha(1.0f);
+                        SlimefunTasks.handleMultiBlockAutoExecuteToggle(true);
+                    }
+                    return true;
+                }))
+                    .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_AUTO))
                     .withActiveActionCondition((el)->{
                         return MinecraftClient.getInstance().currentScreen instanceof TileInventoryScreen tile && !tile.isVirtual();
                     })
@@ -197,7 +226,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         this.toggleActivateTextField = new ContentDelegateWidget<DrawableWidget>(0,0,0,0 )
             .setContentDelegate(this.activate? this.textField :(DrawableWidget) null)
         ;
-        refreshContents();
+        refreshActiveState();
     }
 
     @Override
