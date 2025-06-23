@@ -1,6 +1,7 @@
-package me.matl114.managers;
+package me.matl114.gui.config;
 
 import me.matl114.access.ButtonNotFocusedScreenAccess;
+import me.matl114.managers.Config;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;

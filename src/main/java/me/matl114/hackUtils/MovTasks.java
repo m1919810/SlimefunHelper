@@ -6,6 +6,7 @@ import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.utils.Debug;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -16,15 +17,18 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameMode;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 public class MovTasks {
     public static void init(){
@@ -66,7 +70,13 @@ public class MovTasks {
         }
     }
     public static boolean toggleSpeedOverride(){
-        overrideFly.set(!overrideFly.get());
+        if(mc.player.getAbilities().flying){
+            overrideFly.set(!overrideFly.get());
+            Debug.chat("toggle fly speed override",overrideFly.get());
+        }else{
+            overrideWalk.set(!overrideWalk.get());
+            Debug.chat("toggle walk speed override",overrideWalk.get());
+        }
         return true;
     }
     private static void modifyVelocity(double x,double y,double z){
@@ -288,6 +298,7 @@ public class MovTasks {
     }
 
     private static final AtomicBoolean overrideFly = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_FLY);
+    private static final AtomicBoolean overrideWalk = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_WALK);
     private static boolean serverPacketAllowFlight = false;
     public static void onMoving(ClientPlayerEntity player){
         if( HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT)){
@@ -297,47 +308,93 @@ public class MovTasks {
             antiKick(player);
         }
     }
+
+
+    public static Optional<BlockPos> rayTraceSpecificBlock(Predicate<Block> blockPredicate){
+        if(mc.world == null || mc.player == null)return Optional.empty();
+        if(mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.BLOCK){
+            BlockHitResult blockHitResult = (BlockHitResult)mc.crosshairTarget;
+            Block block = mc.world.getBlockState(blockHitResult.getBlockPos()).getBlock();
+            if(blockPredicate.test(block)){
+                return Optional.of(blockHitResult.getBlockPos());
+            }
+        }
+        Vec3d lookat = mc.player.getRotationVector().normalize().multiply(distance);
+        Vec3d cameraPose = mc.player.getCameraPosVec(1.0f);
+        BlockPos.Mutable mutable = new BlockPos.Mutable(cameraPose.x, cameraPose.y, cameraPose.z);
+        for (int i= 0; i< 75; ++i){
+            int x = (int) (lookat.x *i + cameraPose.x );
+            int y = (int) (lookat.y *i + cameraPose.y );
+            int z = (int) (lookat.z *i + cameraPose.z );
+            if(x != mutable.getX() || y != mutable.getY() || z != mutable.getZ()){
+                mutable.set(x,y,z);
+                BlockPos pos = mutable.toImmutable();
+                Block block = mc.world.getBlockState(pos).getBlock();
+                if(blockPredicate.test(block)){
+                    return Optional.of(pos);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static BlockHitResult createHitResult(BlockPos pos){
+        if(mc.player == null)return null;
+        Vec3d startVec = mc.player.getCameraPosVec(1.0f);
+        Vec3d endVec = pos.toCenterPos();
+        Vec3d ray = startVec.subtract(endVec);
+        Direction dir = Direction.getFacing(ray.x, ray.y, ray.z);
+        Vec3d crossTargetPose =  ray.lengthSquared() > 0.25 ?
+            switch (dir){
+                case DOWN -> startVec.subtract(ray.multiply((startVec.y - (endVec.y - 0.5))/ray.y ));
+                case UP -> startVec.subtract(ray.multiply((startVec.y - (endVec.y + 0.5))/ray.y ));
+                case NORTH -> startVec.subtract(ray.multiply((startVec.z - (endVec.z - 0.5))/ray.z ));
+                case SOUTH -> startVec.subtract(ray.multiply((startVec.z - (endVec.z + 0.5))/ray.z ));
+                case WEST -> startVec.subtract(ray.multiply((startVec.x - (endVec.x - 0.5))/ray.x ));
+                case EAST -> startVec.subtract(ray.multiply((startVec.x - (endVec.x + 0.5))/ray.x ));
+        }: endVec;
+        return new BlockHitResult(crossTargetPose, dir, pos, false);
+    }
+
+
+
     //    @Unique
 //    private static final AtomicBoolean overrideWalk = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_WALK);
     static{
 //        Tasks.registerGameTask((player -> {
 //
 //        }));
-        Listener.registerPacketListener(packet ->{
-            if(packet instanceof PlayerAbilitiesS2CPacket packet1 ){
-                //Debug.info("update ability",packet1);
-                //keep ability\
-                Tasks.scheduleDelayed(()->{
+        Listener.registerSinglePacketListener(PlayerAbilitiesS2CPacket.class, packet1 ->{
 
-                    serverPacketAllowFlight = packet1.allowFlying();
-                    if(mc.player != null){
-                        PlayerAbilities abilities = mc.player.getAbilities();
-                        //abilities.allowFlying = abilities.allowFlying;
-                        abilities.creativeMode = packet1.isCreativeMode();
-                        abilities.invulnerable = packet1.isInvulnerable();
-                        if(! HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT)){
-                            abilities.allowFlying = packet1.allowFlying();
-                        }
-                        if(!overrideFly.get()){
-                            abilities.setFlySpeed(packet1.getFlySpeed());
-                        }
-                        abilities.setWalkSpeed(packet1.getWalkSpeed());
-                        //mc.player.getAbilities().flying = isFly;
+            //Debug.info("update ability",packet1);
+            //keep ability\
+            Tasks.scheduleDelayed(()->{
+
+                serverPacketAllowFlight = packet1.allowFlying();
+                if(mc.player != null){
+                    PlayerAbilities abilities = mc.player.getAbilities();
+                    //abilities.allowFlying = abilities.allowFlying;
+                    abilities.creativeMode = packet1.isCreativeMode();
+                    abilities.invulnerable = packet1.isInvulnerable();
+                    if(! HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT)){
+                        abilities.allowFlying = packet1.allowFlying();
                     }
+                    if(!overrideFly.get()){
+                        abilities.setFlySpeed(packet1.getFlySpeed());
+                    }
+                    abilities.setWalkSpeed(packet1.getWalkSpeed());
+                    //mc.player.getAbilities().flying = isFly;
+                }
 
-                },1);
-                   // boolean isFly = mc.player.getAbilities().flying;
+            },1);
+               // boolean isFly = mc.player.getAbilities().flying;
 //                    Tasks.scheduleDelayed(()->{
 //                        if(mc.player != null){
 //                            mc.player.getAbilities().flying = isFly;
 //                        }
 //                    },1);
-
-                return false;
-
-            }
-            return true;
-        },true);
+            return false;
+        });
 //        Listener.registerPacketListener(packet -> {
 //            Debug.info("acc ?",packet.getClass().getSimpleName());
 //            if(mc.world !=null && packet instanceof EntityS2CPacket pack && pack.getEntity(mc.world) == mc.player){

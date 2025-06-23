@@ -1,7 +1,5 @@
 package me.matl114.bukkitUtiils;
 
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 

@@ -1,6 +1,7 @@
 package me.matl114.utils;
 
 import com.google.common.collect.Maps;
+import me.matl114.utils.UtilClass.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.screen.Screen;
@@ -50,13 +51,13 @@ public class ScreenUtils {
     public static <T extends ScreenHandler> HandledScreens.Provider getProvider(ScreenHandlerType<T> type) {
         return (HandledScreens.Provider)PROVIDERS.get(type);
     }
-    public  static Pair<Integer,Integer> getMouseCoord(MinecraftClient client) {
+    public  static Point getMouseCoord(MinecraftClient client) {
         return getMouseCoord(client,client.mouse);
     }
-    public static Pair<Integer,Integer> getMouseCoord(MinecraftClient client, Mouse mouse) {
+    public static Point getMouseCoord(MinecraftClient client, Mouse mouse) {
         Window window = client.getWindow();
         int mouseX = (int) (mouse.getX() * (double) window.getScaledWidth() / (double) window.getWidth());
         int mouseY = (int) (mouse.getY() * (double) window.getScaledHeight() / (double) window.getHeight());
-        return new Pair<>(mouseX, mouseY);
+        return new Point(mouseX, mouseY);
     }
 }

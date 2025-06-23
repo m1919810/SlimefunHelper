@@ -1,6 +1,7 @@
 plugins {
 	id 'fabric-loom' version '1.6-SNAPSHOT'
 	id 'maven-publish'
+	id 'com.github.johnrengelman.shadow' version "8.1.1"
 }
 loom {
 	accessWidenerPath = file("src/main/resources/overrideList.accesswidener")
@@ -58,12 +59,40 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	modImplementation 'org.yaml:snakeyaml:1.30'
-	modImplementation "org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT"
-	include "org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT"
-	include 'org.yaml:snakeyaml:1.30'
-	compileOnly 'org.projectlombok:lombok:1.18.24'  // 最新的 Lombok 版本
+	//api 'org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT'
+	api 'com.github.houbb:pinyin:0.4.0'
+	api 'io.netty:netty-handler-proxy:4.1.97.Final'
+	api 'org.yaml:snakeyaml:1.30'
+	compileOnly 'org.projectlombok:lombok:1.18.24'   // 最新的 Lombok 版本
+	compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 	annotationProcessor 'org.projectlombok:lombok:1.18.24'  // 注解处理器
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+	// import REI
+//	modCompileOnly "me.shedaniel:RoughlyEnoughItems-api-fabric:${rei_version}"
+//	modRuntimeOnly "me.shedaniel:RoughlyEnoughItems-fabric:${rei_version}"
+//	modCompileOnly "me.shedaniel:RoughlyEnoughItems-default-plugin-fabric:${rei_version}"
+
+}
+
+shadowJar {
+	minimize()
+	archiveFileName = "${project.properties["archives_base_name"]}-${project.version}-shadow-raw.jar"
+	configurations = [project.configurations.runtimeClasspath]
+	dependencies {
+		include dependency('com.github.houbb:.*')
+		include dependency('io.netty:netty-handler.*:.*')
+		include dependency('io.netty:netty-codec.*:.*')
+		include dependency('org.yaml:snakeyaml:.*')
+		exclude "mappings/mappings.tiny"
+	}
+	finalizedBy(tasks.remapJar)
+}
+
+remapJar {
+	dependsOn shadowJar
+	inputFile = shadowJar.archiveFile.get().asFile
+	archiveFileName = "${project.properties["archives_base_name"]}-${project.version}.jar"
 }
 
 processResources {
@@ -80,20 +109,42 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
 	sourceCompatibility = JavaVersion.VERSION_17
 	targetCompatibility = JavaVersion.VERSION_17
 }
+//afterEvaluate {
+//
+//	configurations.runtimeClasspath.forEach { file ->
+//
+//		if (file.name.startsWith("sponge-mixin")) {
+//
+//			tasks.named("runClient", JavaExec) {
+//
+//				jvmArgs("-javaagent:${file.absolutePath}")
+//
+//			}
+//
+//		}
+//
+//	}
+//
+//}
 
 jar {
 	from("LICENSE") {
 		rename { "${it}_${project.base.archivesName.get()}"}
 	}
 
+}
+tasks.named("runClient", JavaExec) {
+	jvmArgs("-XX:+AllowEnhancedClassRedefinition")
+	jvmArgs("-XX:-OmitStackTraceInFastThrow")
+}
+
+tasks.test {
+	useJUnitPlatform()
 }
 
 

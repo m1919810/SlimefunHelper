@@ -1,4 +1,4 @@
-package me.matl114.managers;
+package me.matl114.gui.config;
 
 import me.matl114.access.ButtonNotFocusedScreenAccess;
 import net.minecraft.client.gui.Element;

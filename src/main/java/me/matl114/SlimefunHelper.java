@@ -1,11 +1,12 @@
 package me.matl114;
 
-import me.matl114.bukkitUtiils.BukkitMock;
+import lombok.Getter;
+import me.matl114.bridge.BridgeMain;
+import me.matl114.bukkitUtiils.BukkitSerializationMock;
 import me.matl114.bukkitUtiils.ItemStackHelper;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.HotKeys;
-import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.utils.Debug;
 import me.matl114.renders.SlimefunCustomModelManager;
 import me.matl114.renders.RenderMain;
@@ -20,9 +21,8 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 
@@ -31,19 +31,17 @@ public class SlimefunHelper implements ModInitializer {
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final String MOD_ID = "slimefunhelper";
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-	public static SlimefunHelper instance;
-	public static SlimefunHelper getInstance() {
-		return instance;
-	}
-	public static final boolean HACK_VERSION = true;
+    //public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+	@Getter
+    public static SlimefunHelper instance;
+    public static final boolean HACK_VERSION = true;
 	@Override
 	public void onInitialize() {
 		instance = this;
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
-		LOGGER.info("Slimefun, start!");
+		Debug.info("Slimefun, start!");
 		ModConfig.reloadModConfig();
 		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
 			@Override
@@ -84,16 +82,18 @@ public class SlimefunHelper implements ModInitializer {
 				}
 			}
 		});
-		BukkitMock.init();
-		LOGGER.info("loading bukkitMock!");
+		BukkitSerializationMock.init();
+		Debug.info("loading bukkitMock!");
 		ItemStackHelper.init();
 		RenderMain.init();
 		HotKeys.init();
 		Tasks.init();
 		Listener.init();
+		BridgeMain.init();
 	}
 	//todo 接下来要做什么
 	//todo 已知的冲突:
-	//todo PlayerSpawnS2CPacket->1.20.4合并于EntitySpawnS2CPacket
-
+	//todo 大饼: 实现指令系统，接入聊天框 !!开头
+	//todo 大饼: 客户端实现/give指令劫持
+	//todo 大饼: 发射器界面实现一键放入+合成(?)+交互合成按钮  有了
 }

@@ -1,6 +1,8 @@
 package me.matl114.mixins.HackMixin;
 
 import me.matl114.access.ButtonNotFocusedScreenAccess;
+import me.matl114.hackUtils.ChatTasks;
+import me.matl114.hackUtils.Tasks;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
@@ -13,6 +15,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
+import net.minecraft.util.StringHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -21,6 +24,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ChatScreen.class)
@@ -40,12 +45,17 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     protected ChatScreenMixin(Text title) {
         super(title);
     }
-
+    @Unique
+    private static final AtomicBoolean changeInputLimit = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_IGNORE_INPUT_LIMIT);
     @Inject(method = "init",at = @At("RETURN"))
     private void onInitAdd(CallbackInfo ci) {
+        //change input maxLen to 32768, so commands can be executed
+        if(changeInputLimit.get()){
+            Tasks.scheduleDelayed(()->this.chatField.setMaxLength(32768),1);
+        }
 
         this.helperInputField = new TextFieldWidget(this.textRenderer, this.width - 250, this.height - 56, 140, 20, Text.of(""));
-        this.helperInputField.setMaxLength(1024);  // 设置最大输入字符数
+        this.helperInputField.setMaxLength(32768);  // 设置最大输入字符数
         this.helperInputField.setEditable(true);  // 设置为可编辑
         this.helperInputField.setText(stored.get());  // 设置默认文本
         addDrawableChild(this.helperInputField);
@@ -116,6 +126,7 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
                 x=0;y+=1;
             }
         }
+        ChatTasks.initChatScreen(this);
 
     }
     //关于选择Element这件事
@@ -174,6 +185,14 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
         }
         return val;
 
+    }
+    @Redirect(method = "sendMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;normalize(Ljava/lang/String;)Ljava/lang/String;"))
+    private String cancelNormalizeString(ChatScreen instance, String chatText){
+        if(changeInputLimit.get()){
+            return chatText;
+        }else {
+            return StringHelper.truncateChat(chatText);
+        }
     }
     //
     public void close(){

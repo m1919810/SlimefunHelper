@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.bukkit.profile.PlayerTextures;
+
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -39,10 +39,10 @@ public class BukkitPlayerTextures {
     }
 
     @Nullable
-    private static PlayerTextures.SkinModel parseSkinModel(@Nullable String skinModelName) {
+    private static BukkitPlayerProfile.PlayerTextures.SkinModel parseSkinModel(@Nullable String skinModelName) {
         if (skinModelName == null) return null;
         try {
-            return PlayerTextures.SkinModel.valueOf(skinModelName.toUpperCase(Locale.ROOT));
+            return BukkitPlayerProfile.PlayerTextures.SkinModel.valueOf(skinModelName.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return null;
         }
@@ -56,7 +56,7 @@ public class BukkitPlayerTextures {
     private BukkitPlayerProfile profile;
     // Lazily decoded textures data that can subsequently be overwritten:
     private URL skin;
-    private PlayerTextures.SkinModel skinModel = PlayerTextures.SkinModel.CLASSIC;
+    private BukkitPlayerProfile.PlayerTextures.SkinModel skinModel = BukkitPlayerProfile.PlayerTextures.SkinModel.CLASSIC;
     private URL cape;
 
     // Dirty: Indicates a change that requires a rebuild of the property.

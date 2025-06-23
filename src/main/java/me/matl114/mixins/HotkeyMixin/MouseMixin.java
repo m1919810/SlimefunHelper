@@ -2,6 +2,7 @@ package me.matl114.mixins.HotkeyMixin;
 
 import me.matl114.managers.SimpleInputManager;
 import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.UtilClass.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.util.Pair;
@@ -40,8 +41,8 @@ public abstract class MouseMixin
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;IS_SYSTEM_MAC:Z", ordinal = 0))
     private void onMouseClick(long handle, final int button, final int action, int mods, CallbackInfo ci)
     {
-        Pair<Integer,Integer> coord= ScreenUtils.getMouseCoord(this.client,(Mouse)(Object)this);
-        if (SimpleInputManager.getInstance().onMouseClick(coord.getLeft(),coord.getRight(), button, action))
+        Point coord= ScreenUtils.getMouseCoord(this.client,(Mouse)(Object)this);
+        if (SimpleInputManager.getInstance().onMouseClick(coord.x,coord.y, button, action))
         {
             ci.cancel();
         }

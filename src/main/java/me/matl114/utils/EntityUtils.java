@@ -32,7 +32,7 @@ public class EntityUtils {
             if(Pattern.matches(value,"monster")){
                 for(net.minecraft.entity.EntityType<?> entityType: Registries.ENTITY_TYPE){
                     if(entityType.getSpawnGroup()== SpawnGroup.MONSTER){
-                        if(!(entityType== net.minecraft.entity.EntityType.ZOGLIN)&&!(entityType== net.minecraft.entity.EntityType.ENDERMAN)){
+                        if(!(entityType== EntityType.ZOMBIFIED_PIGLIN)&&!(entityType== net.minecraft.entity.EntityType.ENDERMAN)){
                             collection.add(entityType);
                         }
                     }

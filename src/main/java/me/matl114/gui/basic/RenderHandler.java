@@ -1,0 +1,275 @@
+package me.matl114.gui.basic;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.MathHelper;
+import org.joml.Vector4f;
+
+import java.util.function.Predicate;
+
+public interface RenderHandler {
+    /**
+     * the matrix stack of context is changed into element's coord, you can draw texture with coord 0,0 , they will be scaled and translated to the element's position
+     * @param element
+     * @param context
+     * @param mouseX
+     * @param mouseY
+     * @param delta
+     * @param alpha
+     * @param shouldHighlight
+     */
+    public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight);
+
+    /**
+     * the matrix stack of context is poped here , you can draw tooltips or something without scaling by element
+     * @param element
+     * @param context
+     * @param mouseX
+     * @param mouseY
+     * @param delta
+     * @param alpha
+     * @param shouldHighlight
+     */
+    default void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
+
+    }
+    default RenderHandler combineRender(RenderHandler handler){
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                RenderHandler.this.renderAtCentered(element, context, mouseX, mouseY, delta,alpha, shouldHighlight);
+                handler.renderAtCentered(element, context, mouseX, mouseY, delta,alpha, shouldHighlight);
+            }
+        };
+    }
+
+    default RenderHandler combineAbsoluteRender(RenderHandler handlerAbsolute){
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                RenderHandler.this.renderAtCentered(element, context, mouseX, mouseY, delta,alpha, shouldHighlight);
+            }
+
+            @Override
+            public void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                handlerAbsolute.renderExtraAbsoluteCoord(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
+            }
+        };
+    }
+
+    default RenderHandler withRenderCondition(Predicate<RenderHandler> renderPredicate){
+        RenderHandler de = this;
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                if(renderPredicate.test(de)){
+                    de.renderAtCentered(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
+                }
+            }
+
+            @Override
+            public void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                if(renderPredicate.test(de)){
+                    de.renderExtraAbsoluteCoord(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
+                }
+            }
+        };
+    }
+
+    /**
+     * auto shape texture uv part to element texture size
+     * @param identifier
+     * @param u0
+     * @param v0
+     * @param uheight
+     * @param vheight
+     * @return
+     */
+    public static RenderHandler ofMatchingElement(Identifier identifier, int u0, int v0, int uheight, int vheight){
+        float u1 = (float) u0/256f;
+        float v1 = (float) v0/256f;
+        float u2 = (float)(u0 +uheight )/256f;
+        float v2 = (float)(v0 + vheight)/256f;
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                RenderSystem.enableBlend();
+                RenderSystem.enableDepthTest();
+                context.drawTexturedQuad(identifier, 0,  element.getTextureWidth(), 0, element.getTextureHeight(),0,u1, u2, v1, v2);
+                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+            }
+        };
+    }
+    public static RenderHandler ofMatchingElement(Identifier identifier){
+        return ofMatchingElement(identifier, 0,0,256,256);
+    }
+    public static RenderHandler ofElementTextureSize(Identifier identifier){
+        return ofElementTextureSize(identifier, 1.0f);
+    }
+
+    /**
+     * scale the picture with scaler( which multiply pict wxh->scaler *w x scaler *h and cut from the element size after scale
+     * @param identifier
+     * @param scaler
+     * @return
+     */
+    public static RenderHandler ofElementTextureSize(Identifier identifier, float scaler){
+        final float scaler256 = scaler * 256;
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                RenderSystem.enableBlend();
+                RenderSystem.enableDepthTest();
+                context.drawTexturedQuad(identifier, 0, element.getTextureWidth(),0,  element.getTextureHeight(),0 ,0, ((float) element.getTextureWidth())/scaler256, 0, ((float) element.getTextureHeight())/scaler256);
+                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+            }
+        };
+    }
+    public static RenderHandler ofResource(Identifier identifier){
+        return ofResource(identifier, 1.0f);
+    }
+    public static RenderHandler ofResource(Identifier identifier, int u0, int v0, int uheight, int vheight){
+        return ofResource(identifier, u0, v0, uheight, vheight, 1.0f);
+    }
+    public static RenderHandler ofResource(Identifier identifier, float scaler){
+        return ofResource(identifier, 0,0, 256, 256, scaler);
+    }
+    public static RenderHandler ofResource(Identifier identifier, int u0, int v0, int uheight, int vheight, float scaler){
+        float u1 = (float) u0 /256f;
+        float v1 = (float)v0 / 256f;
+        float u2 = (float)(u0 + uheight) /256f;
+        float v2 = (float)(v0 + vheight) /256f;
+        int dx =(int)( (float)uheight * scaler);
+        int dy = (int )((float)vheight *scaler);
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                RenderSystem.enableBlend();
+                RenderSystem.enableDepthTest();
+                context.drawTexturedQuad(identifier, 0, dx, 0, dy, 0, u1, u2, v1, v2);
+                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+            }
+        };
+    }
+    public static RenderHandler ofPositionResource(Identifier identifier, int x, int y, int xheight, int yheight){
+        return ofPositionResource(identifier, x, y, xheight, yheight, 0, 0, 256, 256);
+    }
+    public static RenderHandler ofPositionResource(Identifier identifier, int x, int y, int xheight, int yheight , int u0, int v0, int uheight, int vheight){
+        float u1 = (float) u0 /256f;
+        float v1 = (float)v0 / 256f;
+        float u2 = (float)(u0 + uheight) /256f;
+        float v2 = (float)(v0 + vheight) /256f;
+        int x2 = x + xheight;
+        int y2 = y + yheight;
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                RenderSystem.enableBlend();
+                RenderSystem.enableDepthTest();
+                context.drawTexturedQuad(identifier, x, x2, y, y2, 0, u1, u2, v1, v2);
+                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+            }
+        };
+    }
+
+    public static RenderHandler ofGuiTextures(Identifier guiTexture, int startX, int startY, int sizeX, int sizeY){
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.drawGuiTexture(guiTexture, startX, startY, sizeX, sizeY);
+            }
+        };
+    }
+
+    public static MinecraftClient mc = MinecraftClient.getInstance();
+    public static RenderHandler ofScrollableText(Text text, int color){
+        final int color1 = color;
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                drawScrollableText(context, mc.textRenderer, text, 0,0, element.getTextureWidth(), element.getTextureHeight(), color1);
+            }
+        };
+    }
+
+    public static RenderHandler ofAutoScaleText(Text text, int color){
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                RenderHandler. drawScaledText0(context, mc.textRenderer, text, 0,0, element.getTextureWidth(), element.getTextureHeight(), color,0);
+            }
+        };
+    }
+
+    public static void drawScrollableText(DrawContext context, TextRenderer textRenderer, Text text, int startX, int startY, int endX, int endY, int color) {
+        drawScrollableText0(context, textRenderer, text, (startX + endX) / 2, startX, startY, endX, endY, color);
+    }
+
+
+
+    public static void drawScrollableText0(DrawContext context, TextRenderer textRenderer, Text text, int centerX, int startX, int startY, int endX, int endY, int color) {
+        int i = textRenderer.getWidth(text);
+        int var10000 = startY + endY;
+        int j = (var10000 - 9) / 2 + 1;
+        int k = endX - startX;
+        int l;
+        if (i > k) {
+            l = i - k;
+            double d = (double) Util.getMeasuringTimeMs() / 1000.0;
+            double e = Math.max((double)l * 0.5, 3.0);
+            double f = Math.sin(1.5707963267948966 * Math.cos(6.283185307179586 * d / e)) / 2.0 + 0.5;
+            double g = MathHelper.lerp(f, 0.0, (double)l);
+            var trans = context.getMatrices().peek().getPositionMatrix();
+            var point1 = new Vector4f(startX, startY,0 ,1).mul(trans);
+            var point2 = new Vector4f(endX, endY, 0, 1).mul(trans);
+            //fix: respect MatrixTranslation
+            context.enableScissor((int) point1.x, (int) point1.y, (int) point2.x, (int) point2.y);
+            context.drawTextWithShadow(textRenderer, text, startX - (int)g, j, color);
+            context.disableScissor();
+        } else {
+            l = MathHelper.clamp(centerX, startX + i / 2, endX - i / 2);
+            context.drawCenteredTextWithShadow(textRenderer, text, l, j, color);
+        }
+    }
+
+    public static void drawScaledText0(DrawContext context, TextRenderer textRenderer, Text text, int startX, int startY, int endX, int endY, int color, int alignment){
+        int i = textRenderer.getWidth(text);
+        int availableWidth = endX - startX;
+        //居中位置
+        int j = (startY + endY - 9) /2 +1 ;
+        if(availableWidth > i){
+            int l;
+            switch (alignment){
+                case -1: l = startX + i/2  ;break;
+                case 1: l =  endX - i/2  ;break;
+                default:l = MathHelper.clamp((startX + endX) / 2, startX + i / 2, endX - i / 2);break;
+            }
+            context.drawCenteredTextWithShadow(textRenderer, text, l, j, color);
+        }else{
+            float scale =((float) availableWidth) / (float)i;
+            context.getMatrices().push();
+            context.getMatrices().translate(startX, startY,0);
+            context.getMatrices().push();
+            context.getMatrices().scale(scale, scale,1);
+            //
+            context.drawCenteredTextWithShadow(textRenderer, text,(int)( ((endX - startX) / 2)/scale), (int)((((endY - startY)/2)/scale  - 7f/2)), color);
+            context.getMatrices().pop();
+            context.getMatrices().pop();
+        }
+    }
+
+
+
+
+
+
+}

@@ -1,14 +1,17 @@
 package me.matl114.mixins.RenderMixin;
 
 import me.matl114.managers.Configs;
+import me.matl114.renders.RenderMain;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,5 +28,10 @@ public abstract class GameRenderMixin {
         if(doNightVision.get()) {
             cir.setReturnValue(1.0F);
         }
+    }
+
+    @Inject(method = "renderWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V", ordinal = 1, shift = At.Shift.AFTER))
+    public void renderMore(float tickDelta, long limitTime, MatrixStack matrices, CallbackInfo ci){
+        RenderMain.renderMoreTasks(matrices);
     }
 }
