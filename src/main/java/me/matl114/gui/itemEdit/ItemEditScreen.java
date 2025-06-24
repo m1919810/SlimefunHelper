@@ -550,7 +550,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     stackTemplate.setNbt(origin.getNbt());
                 }
                 stackTemplate.setCount(count.getOriginValue());
-                stackTemplate.setDamage(damage.getOriginValue());
+                ItemStackUtils.setDamage(stackTemplate, damage.getOriginValue());
                 ItemStackUtils.setSfId(stackTemplate, sfid.getOriginValue());
                 ItemStackUtils.setUnbreakable(stackTemplate, this.unbreakable.getOriginValue());
                 this.flags.applyChange(stackTemplate);

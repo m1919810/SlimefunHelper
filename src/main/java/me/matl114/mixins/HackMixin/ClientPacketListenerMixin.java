@@ -8,10 +8,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
-import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
-import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.*;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
@@ -81,6 +78,7 @@ public abstract class ClientPacketListenerMixin {
         }
         return args;
     }
+    //stop sending empty commands
     @Inject(method = "sendChatCommand",at = @At(value = "INVOKE", target = "Ljava/time/Instant;now()Ljava/time/Instant;"), cancellable = true)
     private void onChat1(String command, CallbackInfo ci){
         // empty command will be ignored
@@ -104,4 +102,8 @@ public abstract class ClientPacketListenerMixin {
         }
     }
 
+    @Inject(method = "onGameJoin", at = @At("RETURN"))
+    private void onGameJoinEntryPoint(GameJoinS2CPacket packet, CallbackInfo ci){
+        Listener.getGameJoinPoint().handleValue(null);
+    }
 }

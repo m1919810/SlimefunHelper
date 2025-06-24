@@ -1,15 +1,19 @@
 package me.matl114.utils;
 
 import com.google.common.collect.Maps;
+import me.matl114.access.HandledScreenAccess;
 import me.matl114.utils.UtilClass.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.util.Window;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
 
 import java.util.Map;
@@ -50,6 +54,21 @@ public class ScreenUtils {
     }
     public static <T extends ScreenHandler> HandledScreens.Provider getProvider(ScreenHandlerType<T> type) {
         return (HandledScreens.Provider)PROVIDERS.get(type);
+    }
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    public static ItemStack getSelectingItemOrHand(){
+        if(mc.player ==null)return null;
+        if(mc.currentScreen instanceof HandledScreen<?> s){
+            Point mouseCoord= ScreenUtils.getMouseCoord(mc);
+            Slot slot= HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.x,mouseCoord.y);
+            if(slot!=null){
+                return slot.getStack();
+            }
+        }else{
+            return mc.player.getStackInHand(Hand.MAIN_HAND);
+        }
+        return null;
     }
     public  static Point getMouseCoord(MinecraftClient client) {
         return getMouseCoord(client,client.mouse);
