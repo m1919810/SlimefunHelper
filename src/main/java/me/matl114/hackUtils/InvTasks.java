@@ -200,57 +200,59 @@ public class InvTasks {
         return false;
     }
     public static void quickMoveSlot(ScreenHandler handler, int index){
-        if(handler.getCursorStack().isEmpty() && handler.getSlot(index).getStack().getCount() > 1 && HotKeys.getButtonToggleManager().getState(HotKeys.LEFT_ONE)){
+        quickMoveSlot(handler, index, false);
+    }
+    public static void quickMoveSlot(ScreenHandler handler, int index, boolean ignoreConfig){
+        if(!ignoreConfig &&  handler.getSlot(index).getStack().getCount() > 1 && HotKeys.getButtonToggleManager().getState(HotKeys.LEFT_ONE)){
 //            Debug.info("quick move 1");
-            clickExecutor.execute(()->{
-                int syncId = handler.syncId;
-                if(!handler.getCursorStack().isEmpty()){
-                    Debug.chat(Text.literal("[left 1] ").formatted(Formatting.RED).append(Text.literal("cursor stack needs to be empty to apply left-one quickMove")));
-                    return;
+            int syncId = handler.syncId;
+            if(!handler.getCursorStack().isEmpty()){
+                Debug.chat(Text.literal("[left 1] ").formatted(Formatting.RED).append(Text.literal("cursor stack needs to be empty to apply left-one quickMove")));
+                return;
+            }
+            Slot slot = handler.getSlot(index);
+            if(slot.getStack().isEmpty()){
+                return;
+            }
+            boolean tryTake = slot.inventory instanceof PlayerInventory;
+            boolean hasPlace = false;
+            for (Slot s: handler.slots){
+                //skip same-side inventory
+                if((s.inventory instanceof PlayerInventory) == tryTake){
+                    continue;
                 }
-                Slot slot = handler.getSlot(index);
-                if(slot.getStack().isEmpty()){
-                    return;
+                if(s.getStack().isEmpty() || (s.getStack().getCount() < s.getStack().getMaxCount() && ItemStack.areItemsAndComponentsEqual(slot.getStack(), s.getStack()))){
+                    hasPlace = true;
+                    break;
                 }
-                boolean tryTake = slot.inventory instanceof PlayerInventory;
-                boolean hasPlace = false;
-                for (Slot s: handler.slots){
-                    //skip same-side inventory
-                    if((s.inventory instanceof PlayerInventory) == tryTake){
-                        continue;
-                    }
-                    if(s.getStack().isEmpty() || (s.getStack().getCount() < s.getStack().getMaxCount() && ItemStack.areItemsAndComponentsEqual(slot.getStack(), s.getStack()))){
-                        hasPlace = true;
-                        break;
-                    }
+            }
+            //minimize packet amount sent
+            if(!hasPlace){
+                return;
+            }
+            mc.interactionManager.clickSlot(syncId, index, 0,SlotActionType.PICKUP,mc.player);
+            mc.interactionManager.clickSlot(syncId, index, 1, SlotActionType.PICKUP, mc.player);
+            ItemStack sample = handler.getCursorStack();
+            if(sample.isEmpty()){
+                return;
+            }
+            //save sample
+            sample = sample.copy();
+            for (int i = 0; i < handler.slots.size() ; ++i){
+                Slot s = handler.slots.get(i);
+                if((s.inventory instanceof PlayerInventory) == tryTake){
+                    continue;
                 }
-                //minimize packet amount sent
-                if(!hasPlace){
-                    return;
-                }
-                mc.interactionManager.clickSlot(syncId, index, 0,SlotActionType.PICKUP,mc.player);
-                mc.interactionManager.clickSlot(syncId, index, 1, SlotActionType.PICKUP, mc.player);
-                ItemStack sample = handler.getCursorStack();
-                if(sample.isEmpty()){
-                    return;
-                }
-                //save sample
-                sample = sample.copy();
-                for (int i = 0; i < handler.slots.size() ; ++i){
-                    Slot s = handler.slots.get(i);
-                    if((s.inventory instanceof PlayerInventory) == tryTake){
-                        continue;
-                    }
-                    if(s.getStack().isEmpty() || (s.getStack().getCount() < s.getStack().getMaxCount() && ItemStack.areItemsAndComponentsEqual(slot.getStack(), s.getStack()))){
-                        mc.interactionManager.clickSlot(syncId, i, 0, SlotActionType.PICKUP, mc.player);
-                        if(handler.getCursorStack().isEmpty()){
-                            return;
-                        }
+                if(s.getStack().isEmpty() || (s.getStack().getCount() < s.getStack().getMaxCount() && ItemStack.areItemsAndComponentsEqual(slot.getStack(), s.getStack()))){
+                    mc.interactionManager.clickSlot(syncId, i, 0, SlotActionType.PICKUP, mc.player);
+                    if(handler.getCursorStack().isEmpty()){
+                        return;
                     }
                 }
-                if(!handler.getCursorStack().isEmpty()){
-                    mc.interactionManager.clickSlot(syncId, index, 0, SlotActionType.PICKUP, mc.player);
-                }
+            }
+            if(!handler.getCursorStack().isEmpty()){
+                mc.interactionManager.clickSlot(syncId, index, 0, SlotActionType.PICKUP, mc.player);
+            }
 //            while (handler.getSlot(index).getStack().getCount() > 1){
 //                mc.interactionManager.clickSlot(syncId, index, 1,SlotActionType.PICKUP,mc.player);
 //                mc.interactionManager.clickSlot(syncId, index, 0, SlotActionType.QUICK_MOVE, mc.player);
@@ -266,12 +268,13 @@ public class InvTasks {
 //                }
 //                mc.interactionManager.clickSlot(syncId, index, 0, SlotActionType.QUICK_MOVE, mc.player);
 //                mc.interactionManager.clickSlot(syncId, index, 1,SlotActionType.PICKUP,mc.player);
-            });
 
         }else {
-            clickExecutor.execute(()->{
-                mc.interactionManager.clickSlot(handler.syncId,index,0,SlotActionType.QUICK_MOVE,mc.player);
-            });
+            if(handler.getCursorStack().isEmpty()){
+                mc.interactionManager.clickSlot(handler.syncId, -999, 0, SlotActionType.PICKUP, mc.player);
+            }
+            mc.interactionManager.clickSlot(handler.syncId,index,0,SlotActionType.QUICK_MOVE,mc.player);
+
         }
     }
 
@@ -528,7 +531,17 @@ public class InvTasks {
         builder.append(" ").append(itemStack.getCount());
         return builder.toString();
     }
-
+    public static void quickMoveSlotOrDrop(HandledScreen handledScreen, int slot){
+        ScreenHandler handler = handledScreen.getScreenHandler();
+        if(mc.player == null || mc.player.currentScreenHandler != handler)return;
+        if(!handler.getCursorStack().isEmpty()){
+            mc.interactionManager.clickSlot(handler.syncId,-999,0,SlotActionType.PICKUP,mc.player );
+        }
+        quickMoveSlot(handler, slot, true);
+        if(!handler.getSlot(slot).getStack().isEmpty()){
+            mc.interactionManager.clickSlot(handler.syncId, slot, 1,SlotActionType.THROW, mc.player);
+        }
+    }
     public static void moveToSlot(HandledScreen handledScreen, ItemStack itemStack, int toSlot, int toAmountAdd, boolean removeExist, IntList alreadyMatched){
         if(itemStack.isEmpty())return;
         ScreenHandler handler = handledScreen.getScreenHandler();
@@ -555,7 +568,8 @@ public class InvTasks {
             }
 
         }
-        if(toAmount > itemStack.getMaxCount()){
+        //填满一组不需要控制数量!
+        if(toAmount >= itemStack.getMaxCount()){
             toAmount = itemStack.getMaxCount();
             if(handler.getSlot(toSlot).getStack().getCount() >=  toAmount){
                 return;
@@ -574,6 +588,7 @@ public class InvTasks {
             for (var i: alreadyMatched){
                 if(!handler.getSlot(i).getStack().isEmpty() && ItemStack.areItemsAndComponentsEqual(handler.getSlot(i).getStack(), itemStack)){
                     int currentAmount = handler.getSlot(toSlot).getStack().getCount();
+                    //
                     if(currentAmount + handler.getSlot(i).getStack().getCount() > toAmount){
                         //satisfy , use tasks to
                         moveFromToAmount(handler, i, toSlot, toAmount - currentAmount);
@@ -597,13 +612,75 @@ public class InvTasks {
         }
     }
     private static void moveFromToAmount(ScreenHandler handler, int fromIndex, int toSlot, int amount){
-        mc.interactionManager.clickSlot(handler.syncId, fromIndex, 0, SlotActionType.PICKUP, mc.player);
-        for (var i=0; i<amount;++i){
-            mc.interactionManager.clickSlot(handler.syncId, toSlot, 1, SlotActionType.PICKUP, mc.player);
+        Slot currentFrom = handler.getSlot(fromIndex);
+        Slot currentTo = handler.getSlot(toSlot);
+        int currentFromAmount = currentFrom.getStack().getCount();
+
+        //from 的数量完全不够
+        if(currentFromAmount <= amount){
+            moveFromTo(handler, fromIndex, toSlot);
+            return;
+        }else {
+            //from的数量超出了,我们只需要amount个
+            int currentToAmount = currentTo.getStack().getCount();
+            int max = currentFrom.getStack().getMaxCount();
+            if(currentToAmount + amount >= max){
+                //如果amount赛过去就满了《那和直接把from赛过去一样
+                moveFromTo(handler, fromIndex, toSlot);
+                return;
+            }else {
+                // amount < max - currentTo
+                // currentFrom > amount
+                for (int __=0; __< 10; ++__){
+                    if(amount <=0){
+                        return;
+                    }
+                    int halfTrans = (currentFromAmount + 1)/2;
+                    int distanceToHalf = Math.abs(halfTrans - amount);
+                    int minDelta = Math.min( Math.min(amount, currentFromAmount - amount), distanceToHalf);
+                    if(minDelta == amount){
+                        mc.interactionManager.clickSlot(handler.syncId, fromIndex, 0, SlotActionType.PICKUP, mc.player);
+                        for (var i=0; i<amount;++i){
+                            mc.interactionManager.clickSlot(handler.syncId, toSlot, 1, SlotActionType.PICKUP, mc.player);
+                        }
+                        if(!handler.getCursorStack().isEmpty()){
+                            mc.interactionManager.clickSlot(handler.syncId, fromIndex,0, SlotActionType.PICKUP, mc.player);
+                        }
+                        return;
+                    }else if(minDelta == currentFromAmount - amount){
+                        mc.interactionManager.clickSlot(handler.syncId, fromIndex, 0, SlotActionType.PICKUP, mc.player);
+                        for (int i= 0 ;i< minDelta; ++i){
+                            mc.interactionManager.clickSlot(handler.syncId, fromIndex, 1, SlotActionType.PICKUP, mc.player);
+                        }
+                        mc.interactionManager.clickSlot(handler.syncId, toSlot, 0, SlotActionType.PICKUP, mc.player);
+                        return;
+                    }else {
+                        //
+                        if(halfTrans <= amount){
+                            mc.interactionManager.clickSlot(handler.syncId, fromIndex, 1, SlotActionType.PICKUP, mc.player);
+                            mc.interactionManager.clickSlot(handler.syncId, toSlot, 0, SlotActionType.PICKUP, mc.player);
+                            //通过计算currentTo增长了多少来更新amount
+                            amount = amount - currentTo.getStack().getCount() + currentToAmount;
+                            currentToAmount = currentTo.getStack().getCount();
+                            currentFromAmount = currentFrom.getStack().getCount();
+                            continue;
+                        }else {
+                            mc.interactionManager.clickSlot(handler.syncId, fromIndex, 1, SlotActionType.PICKUP, mc.player);
+                            int trans = (currentFromAmount+1)/2 - amount;
+                            for (int i=0 ; i< trans; ++i){
+                                mc.interactionManager.clickSlot(handler.syncId, fromIndex, 1, SlotActionType.PICKUP, mc.player);
+                            }
+                            mc.interactionManager.clickSlot(handler.syncId, toSlot, 0, SlotActionType.PICKUP, mc.player);
+                            return;
+                        }
+                    }
+
+                }
+                Debug.chat(Text.literal("Error while transfering itemStacks, which takes 10 more loop "));
+
+            }
         }
-        if(!handler.getCursorStack().isEmpty()){
-            mc.interactionManager.clickSlot(handler.syncId, fromIndex,0, SlotActionType.PICKUP, mc.player);
-        }
+
     }
 
 

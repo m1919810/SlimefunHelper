@@ -57,6 +57,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     );
     protected static final List<Text> MULTIBLOCK_TOOLTIPS_EXECUTE = List.of(
         Text.literal("仅当识别到发射器才可使用,自动搜索多方块结构"),
+        Text.literal("点击合成一次,shift点击合成多次(点击数)"),
         Text.literal("服务端普遍限速点击频率,为9/300ms"),
         Text.literal("点击数可以在配置文件中配置,和自动多方块连点功能相同")
     );
@@ -136,7 +137,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         return !activate;
     }
     protected boolean active(ElementHandler el){
-        return this.activate;
+        return activate;
     }
     public void init(){
         toggleBookWidget = ExecutableWidget.instance(0,0,8,8)
@@ -183,7 +184,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
             .addToSub(this);
         multiblockExecuteWidget = ExecutableWidget.instance(DX - 36,0, 18, 8)
             .setElementHandler(
-                new ButtonElement(TextProvider.of(MULTIBLOCK_EXECUTE), ButtonAction.run(SlimefunTasks::handleMultiBlockExecute))
+                new ButtonElement(TextProvider.of(MULTIBLOCK_EXECUTE), ButtonAction.run(()->SlimefunTasks.handleMultiBlockExecute(Screen.hasShiftDown())))
                     .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_EXECUTE))
                     .withActiveActionCondition((el)->{
                         return MinecraftClient.getInstance().currentScreen instanceof TileInventoryScreen tile && !tile.isVirtual();
@@ -308,13 +309,17 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                                   if(button == 0){
                                       if (type == Type.MOUSE_CLICK && SlimefunDispensorSuggestBookWidget.this.callback != null) {
                                           SlimefunDispensorSuggestBookWidget.this.callback.accept(Screen.hasShiftDown(), recipeEntry);
+                                          //refresh after callback modify the backpack content
+                                          refreshContents();
                                           return true;
                                       }
                                   }else if(button == 1){
                                         if(type == Type.MOUSE_CLICK){
                                             //init
-
                                             setHoveringItem(recipeEntry, element.getX() + mouseX, element.getY()+ mouseY);
+                                            //what can I say?
+                                            //最好加一个
+                                            refreshContents();
                                             return true;
                                         }
                                   }

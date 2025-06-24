@@ -31,10 +31,7 @@ import net.minecraft.text.Texts;
 import net.minecraft.util.Formatting;
 import org.apache.commons.lang3.mutable.MutableObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -380,9 +377,19 @@ public class ChatTasks {
 
     private static void handleClientSideGiveCommand(CommandContextBuilder<CommandSource> contextData, String command) throws CommandSyntaxException{
         //... ?
-        //fix bug in 1.21
-        contextData = contextData.getChild();
-
+        //flatten this
+        List<CommandContextBuilder<CommandSource>> modifiers = new ArrayList<>();
+        while (true){
+            CommandContextBuilder<CommandSource> child = contextData.getChild();
+            if(child == null){
+                if(contextData.getCommand() ==null){
+                    throw new IllegalArgumentException("Invalid command context passed, it can not be flatten into the commandChain");
+                }
+                break;
+            }
+            modifiers.add(contextData);
+            contextData = child;
+        }
         Map<String, ParsedArgument<CommandSource, ?>> argsMap = contextData.getArguments();
 
         ItemStackArgument itemStack = (ItemStackArgument) argsMap.get("item").getResult();

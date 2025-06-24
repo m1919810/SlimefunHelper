@@ -773,9 +773,9 @@ public class SlimefunTasks {
             return;
         }
         //judge
-        onClickBlockExecute(result, false);
+        onClickBlockExecute(result, false, true);
     }
-    private static void onClickBlockExecute(BlockHitResult result, boolean delayClick){
+    private static void onClickBlockExecute(BlockHitResult result, boolean delayClick, boolean clickMany){
         if(result == null)return;
         BlockPos pos = result.getBlockPos();
         Block block = mc.world.getBlockState(pos).getBlock();
@@ -793,10 +793,10 @@ public class SlimefunTasks {
             Debug.chat(Text.literal("[fast click] Interacting with multiblock: ").formatted(Formatting.RED),first.get().id);
         }
         lastChatTimestamp = Tasks.getTick();
-        for(int i=0 ; i< CLICK_RATE.get(); ++i){
+        for(int i=0 ; i< (clickMany?  CLICK_RATE.get(): 1); ++i){
             mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND,result, sequence)));
         }
-        if(delayClick){
+        if(delayClick && clickMany){
             AtomicInteger count = new AtomicInteger(2);
             Tasks.scheduleRepeated(()->{
                 for(int i=0 ; i< CLICK_RATE.get(); ++i){
@@ -807,7 +807,7 @@ public class SlimefunTasks {
         }
         ClientAccess.of(mc).setCooldown(0);
     }
-    public static void handleMultiBlockExecute(){
+    public static void handleMultiBlockExecute(boolean clickMany){
         if(mc.player ==null ||!(mc.currentScreen instanceof TileInventoryScreen tile) || tile.isVirtual() || tile.getWorld() != mc.world){
             return;
         }
@@ -821,7 +821,7 @@ public class SlimefunTasks {
                 find = true;
                 for (var bp : optional){
                     BlockHitResult result = MovTasks.createHitResult(bp);
-                    onClickBlockExecute(result, true);
+                    onClickBlockExecute(result, true, clickMany);
                 }
             }
         }
@@ -1388,6 +1388,7 @@ public class SlimefunTasks {
             ingredients[re] = ItemStack.EMPTY;
         }
         Map<ItemStackSample, IntList> stackRecipe = new HashMap<>();
+        IntList emptySlots = new IntArrayList();
         for ( int i=0; i< 9; ++i){
             ItemStack item = ingredients[i];
             if(item != null && !item.isEmpty()){
@@ -1400,6 +1401,8 @@ public class SlimefunTasks {
                     list.add(index);
                     return list;
                 });
+            }else{
+                emptySlots.add(i);
             }
         }
         for (var mapEntry: stackRecipe.entrySet()){
@@ -1425,6 +1428,9 @@ public class SlimefunTasks {
                 int slotNeed = ingredients[i].getCount() * maxSupply;
                 InvTasks.moveToSlot(screen, sample.sample(), acceptSlots[i], slotNeed, removeOrigin, cachedSlots);
             }
+        }
+        for (var i: emptySlots){
+            InvTasks.quickMoveSlotOrDrop(screen, i);
         }
 
     }
@@ -1627,7 +1633,7 @@ public class SlimefunTasks {
                     long currentMs = System.currentTimeMillis();
                     if(currentMs > lastAutoTick + 300){
                         lastAutoTick = currentMs;
-                        handleMultiBlockExecute();
+                        handleMultiBlockExecute(true);
                     }
                 }
             }else {

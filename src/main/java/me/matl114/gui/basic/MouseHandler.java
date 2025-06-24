@@ -11,7 +11,7 @@ public interface MouseHandler {
     public boolean onClick(ExecutableWidget element, double mouseX, double mouseY, int button);
 
     default boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, Type type){
-        if(type == Type.MOUSE_RELEASE){
+        if(type != Type.MOUSE_CLICK){
             return false;
         }
         return onClick(element, mouseX, mouseY, button);
