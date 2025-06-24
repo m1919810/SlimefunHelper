@@ -69,6 +69,7 @@ public abstract class BakedModelManagerMixin implements BakedModelManagerAccess 
 //    public final void reloadRewrite(ResourceReloader.Synchronizer synchronizer, ResourceManager manager, Profiler prepareProfiler, Profiler applyProfiler, Executor prepareExecutor, Executor applyExecutor, CallbackInfoReturnable<CompletableFuture<Void>> cir){
 //
 //    }
+    @Unique
     public final CompletableFuture<Void> myReload(ResourceReloader.Synchronizer synchronizer, ResourceManager manager, Profiler prepareProfiler, Profiler applyProfiler, Executor prepareExecutor, Executor applyExecutor) {
         Debug.info("execute MyReload");
         prepareProfiler.startTick();

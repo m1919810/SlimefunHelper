@@ -265,8 +265,11 @@ public class ChatTasks {
         }else if(command.startsWith("/!!")){
             dispatchClientCommand(command.substring(3));
             return true;
-        }else if(command.startsWith("/") && parseVanillaCommands(command.substring(1))){
-            return true;
+        }else if(command.startsWith("/")){
+            if(parseVanillaCommands(command.substring(1))){
+                return true;
+            }
+            return checkCommandLength(command);
         }
         return checkMessageLength(command);
     }
@@ -296,12 +299,19 @@ public class ChatTasks {
         });
 
     }
-    private static boolean checkMessageLength(String command){
+    private static boolean checkCommandLength(String command){
         if(MESSAGE_LENGTH.get() >0 && command.length() > MESSAGE_LENGTH.get()){
-            Debug.chat(Text.literal("你的输入内容太长了! %d / 256".formatted(command.length())).formatted(Formatting.RED));
-            if(command.startsWith("/give") || command.startsWith("/minecraft:give")){
+            Debug.chat(Text.literal("你的输入内容太长了! %d / %d".formatted(command.length(), MESSAGE_LENGTH.get())).formatted(Formatting.RED));
+            if(!EXECUTE_GIVE_CLIENTSIDE.get() &&(command.startsWith("/give") || command.startsWith("/minecraft:give"))){
                 Debug.chat(Text.literal("可以在配置文件中启用客户端/give指令来执行长指令"));
             }
+            return true;
+        }
+        return false;
+    }
+    private static boolean checkMessageLength(String command){
+        if(MESSAGE_LENGTH.get() >0 && command.length() > MESSAGE_LENGTH.get()){
+            Debug.chat(Text.literal("你的输入内容太长了! %d / %d".formatted(command.length(),MESSAGE_LENGTH.get())).formatted(Formatting.RED));
             return true;
         }
         return false;

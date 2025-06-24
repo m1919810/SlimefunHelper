@@ -104,6 +104,10 @@ public class Listener {
             return onSinglePacketListen(connection,packet,isS2C?listenerS2C:listenerC2S);
         }
     }
+
+    @Getter
+    private static final ListenerPoint<Void> gameJoinPoint = new ListenerPoint<>();
+
     @Getter
     private static final ListenerPoint<Void> serverDisconnectPoint  = new ListenerPoint<>();
 

@@ -722,15 +722,21 @@ public class SlimefunTasks {
         }
         BlockPos pos = tile.getPos();
         Block block = tile.getBlockType();
+        boolean find = false;
         if(block == Blocks.DISPENSER || block == Blocks.DROPPER){
             for (var multiblock: MULTIBLOCK_REGISTRIES.values()){
                 var optional = multiblock.getOptionalActionFromDispenser(mc.world, pos);
                 if(optional.isEmpty())continue;
+                find = true;
                 for (var bp : optional){
                     BlockHitResult result = MovTasks.createHitResult(bp);
                     onClickBlockExecute(result, true);
                 }
             }
+        }
+        if(!find){
+            Debug.chat(Text.literal("[多方块执行] 当前多方块结构与已记录的多方块无法匹配").formatted(Formatting.RED));
+            AUTO_EXECUTE = false;
         }
     }
     private static boolean AUTO_EXECUTE = false;
@@ -764,11 +770,14 @@ public class SlimefunTasks {
         return ans;
     }
 
-    public static final ItemStack GUIDE_ICON;
-    public static final ItemStack RTYPE_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
-    public static final ItemStack VTYPE_ICON = new ItemStack(Items.CRAFTING_TABLE);
-    public static final ItemStack SAVED_ICON = new ItemStack(Items.CHAIN_COMMAND_BLOCK);
+    public static ItemStack GUIDE_ICON;
+    public static ItemStack RTYPE_ICON ;
+    public static ItemStack VTYPE_ICON ;
+    public static ItemStack SAVED_ICON ;
     static {
+
+    }
+    private static void initIcon(){
         ItemStack ICON;
         try {
             ICON = ItemStack.fromNbt(StringNbtReader.parse( "{Count:1b,id:\"minecraft:enchanted_book\",tag:{CustomModelData:2200001,PublicBukkitValues:{\"slimefun:slimefun_guide_mode\":\"SURVIVAL_MODE\"},display:{Lore:['{\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"浏览物品\"}],\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"Shift + 右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"打开 设置 / 关于\"}],\"text\":\"\"}'],Name:'{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"green\",\"text\":\"Slimefun 指南 \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"(箱子界面)\"}],\"text\":\"\"}'}}}"));
@@ -777,6 +786,9 @@ public class SlimefunTasks {
             ICON = new ItemStack(Items.ENCHANTED_BOOK);
         }
         GUIDE_ICON = ICON;
+        RTYPE_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
+        VTYPE_ICON = new ItemStack(Items.CRAFTING_TABLE);
+        SAVED_ICON = new ItemStack(Items.CHAIN_COMMAND_BLOCK);
     }
 
 
@@ -1402,20 +1414,13 @@ public class SlimefunTasks {
 
         if(player==null)return false;
 
-        ItemStack heldItem=null;
-        if(mc.currentScreen instanceof HandledScreen<?> s){
-            Point mouseCoord= ScreenUtils.getMouseCoord(mc);
-            Slot slot=HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.x,mouseCoord.y);
-            if(slot!=null){
-                heldItem=slot.getStack();
-            }
-        }else{
-            heldItem=player.getStackInHand(Hand.MAIN_HAND);
-        }
+        ItemStack heldItem = ScreenUtils.getSelectingItemOrHand();
 
         if(heldItem != null && !heldItem.isEmpty()){
             handleSaveItem(heldItem);
             return true;
+        }else if (heldItem != null){
+            Debug.chat(Text.literal("不能保存空物品").formatted(Formatting.RED));
         }
         return false;
     }
@@ -1631,7 +1636,11 @@ public class SlimefunTasks {
         });
         MULTIBLOCK_REGEX = Pattern.compile(MULTIBLOCK_PATTERN.get());
 
-        loadData();
+        Tasks.scheduleDelayed(()->{
+            Debug.info("Running Slimefun Post Setup Tasks");
+            loadData();
+            initIcon();
+        },1);
         //定时保存
         Tasks.scheduleRepeated(SlimefunTasks::scheduledSave, 20* 60, 20*60* 5);
         //退出服务器时保存

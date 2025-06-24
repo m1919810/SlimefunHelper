@@ -33,8 +33,7 @@ public abstract class JsonUnbakedModelMixin implements UnbakedModel {
             cir.cancel();
         }
     }
-    @Invoker("bake")
-    public abstract BakedModel invokeBake(Baker baker, JsonUnbakedModel parent, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings settings, Identifier id, boolean hasDepth);
+
     private BakedModel rewriteSafeBkae(Baker baker, JsonUnbakedModel parent, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings settings, Identifier id, boolean hasDepth){
         Sprite sprite = (Sprite)textureGetter.apply(this.resolveSprite("particle"));
         if (this.getRootModel() == ModelLoader.BLOCK_ENTITY_MARKER) {

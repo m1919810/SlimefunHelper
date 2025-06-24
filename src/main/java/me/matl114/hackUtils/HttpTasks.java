@@ -3,6 +3,7 @@ package me.matl114.hackUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPipeline;
 import io.netty.handler.proxy.HttpProxyHandler;
 import io.netty.handler.proxy.Socks4ProxyHandler;
 import io.netty.handler.proxy.Socks5ProxyHandler;
@@ -32,7 +33,7 @@ public class HttpTasks {
     static Config.StringRef proxyUser = Configs.HTTP_CONFIG.getString(Configs.HTTP_PROXY_USERNAME);
     static Config.StringRef proxyPassword = Configs.HTTP_CONFIG.getString(Configs.HTTP_PROXY_OPTIONAL_PASSWORD);
     static Config.StringRef proxyType = Configs.HTTP_CONFIG.getString(Configs.HTTP_PROXY_TYPE);
-    public static void redirectIpPre(Channel ch){
+    public static void redirectIpPre(ChannelPipeline ch){
         if(proxyEnable.get()){
             int port = proxyPort.get();
             if(port > 0){
@@ -42,17 +43,17 @@ public class HttpTasks {
                 switch (proxyType.get()){
                     case "socks":
                         if(password == null || password.isEmpty()){
-                            ch.pipeline().addFirst("socks5CLientProxy", new Socks4ProxyHandler(
+                            ch.addFirst("socks5CLientProxy", new Socks4ProxyHandler(
                                 new InetSocketAddress(proxyIp.get(), port),userNo?null :username
                             ));
                         }else {
-                            ch.pipeline().addFirst("socks5CLientProxy", new Socks5ProxyHandler(
+                            ch.addFirst("socks5CLientProxy", new Socks5ProxyHandler(
                                 new InetSocketAddress(proxyIp.get(), port), userNo? null: username, password
                             ));
                         }
                         break;
                     case "http":
-                        ch.pipeline().addFirst("httpCLientProxy", new HttpProxyHandler(
+                        ch.addFirst("httpCLientProxy", new HttpProxyHandler(
                             new InetSocketAddress(proxyIp.get(), port),userNo?null :username, (password == null || password.isEmpty())?null:password
                         ));
                         break;

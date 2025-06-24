@@ -27,7 +27,7 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
 
 
     public boolean isDirty() {
-        return false;
+        return dirty;
     }
 
     @Override

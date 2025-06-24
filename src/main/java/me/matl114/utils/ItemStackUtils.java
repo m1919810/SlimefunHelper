@@ -47,6 +47,19 @@ public class ItemStackUtils {
     public static void setDisplay(ItemStack stack,NbtCompound display){
         stack.getOrCreateNbt().put("display", display);
     }
+    public static void setDamage(ItemStack stack,  int damage){
+        if(stack == ItemStack.EMPTY){
+            return;
+        }
+        if(damage > 0 ){
+            stack.setDamage(damage);
+        }else {
+            if(stack.hasNbt()){
+                stack.getNbt().remove("Damage");
+            };
+        }
+    }
+
     public static Text jsonRawToText(String jsonRaw){
         try{
             if(jsonRaw == null)return null;
