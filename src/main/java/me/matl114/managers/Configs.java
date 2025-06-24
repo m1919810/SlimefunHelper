@@ -175,6 +175,7 @@ public class Configs {
 
 
     public static final String[] SLIMEFUN_RECIPE_RECORD = {"recipe-record","enable"};
+    public static final String[] SLIMEFUN_RECIPE_LOCKED = {"recipe-record", "lock-current-data"};
     public static final String[] SLIMEFUN_RECIPE_SAVE = {"recipe-record","save-data"};
     public static final String[] SLIMEFUN_RECIPE_TITLE = {"recipe-record","rp-title"};
     public static final String[] SLIMEFUN_MULTIBLOCK_MATCHER = {"recipe-record", "multiblock-pattern"};
@@ -186,6 +187,7 @@ public class Configs {
         "sfhelper-configs/slimefun.yml", "slimefun settings"
     )
         .defaultVal(false, SLIMEFUN_RECIPE_RECORD)
+        .defaultVal(false, SLIMEFUN_RECIPE_LOCKED)
         .defaultVal(true, SLIMEFUN_RECIPE_SAVE)
         .defaultVal("^(Slimefun 指南.*)$", SLIMEFUN_RECIPE_TITLE)
         .defaultVal("^(多方块结构)$", SLIMEFUN_MULTIBLOCK_MATCHER)

@@ -1646,17 +1646,21 @@ public class SlimefunTasks {
 
     private static final Config.StringRef TITLE_PATTERN = Configs.SLIMEFUN_CONFIG.getString(Configs.SLIMEFUN_RECIPE_TITLE);
     private static final AtomicBoolean ENABLE_RECIPE = Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_RECORD);
+    private static final AtomicBoolean RECIPE_LOCK = Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_LOCKED);
     private static final Config.StringRef MULTIBLOCK_PATTERN = Configs.SLIMEFUN_CONFIG.getString(Configs.SLIMEFUN_MULTIBLOCK_MATCHER);
     private static Pattern TITLE_REGEX;
     private static Pattern MULTIBLOCK_REGEX;
     public static void listenGuideRecipe(HandledScreen<?> screen){
         if(!ENABLE_RECIPE.get())return;
+        if(RECIPE_LOCK.get())return;
         if(!SCREEN_TYPES.contains( screen.getScreenHandler().getType())){
             return;
         }
+
         if(!(screen instanceof GenericContainerScreen generic)){
             return;
         }
+
         Text title = screen.getTitle();
         if(title == null ){
             return;
