@@ -169,7 +169,7 @@ public class BukkitItemStack implements Cloneable, ConfigurationSerializable {
         }
         Item type ;
         try{
-            type = Registries.ITEM.get(new Identifier(((String) args.get("type")).toLowerCase(Locale.ROOT)));
+            type = Registries.ITEM.get(new Identifier("minecraft",((String) args.get("type")).toLowerCase(Locale.ROOT)));
 
         }catch (Throwable e){
             type = Items.BARRIER;

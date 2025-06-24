@@ -7,6 +7,7 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
@@ -45,7 +46,7 @@ public class CombatTasks {
 
     public static double getAttackRange(){
         double d=attackRange.doubleValue();
-        return d<=3?mc.interactionManager.getReachDistance() : d;
+        return  d;
     }
     private static void updateWhitelist(String value){
         EntityUtils.parseEntityWhiteList(value,WHITELISTED_ENTITIES);
@@ -133,7 +134,7 @@ public class CombatTasks {
     }
     public static boolean isHoldingWeapon(ClientPlayerEntity player){
         ItemStack itemInHand = player.getStackInHand(Hand.MAIN_HAND);
-        return itemInHand != null && itemInHand.getItem().getAttributeModifiers(EquipmentSlot.MAINHAND).containsKey(EntityAttributes.GENERIC_ATTACK_SPEED);
+        return itemInHand != null && !itemInHand.getItem().getAttributeModifiers().modifiers().isEmpty();
     }
 
     private static final AtomicBoolean DO_INTERVEL_WEAPON = Configs.COMBAT_CONFIG.getBoolean(Configs.AUTOATTACK_DO_INTERVEL_WEAPON);

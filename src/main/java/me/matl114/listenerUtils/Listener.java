@@ -105,6 +105,9 @@ public class Listener {
         }
     }
     @Getter
+    private static final ListenerPoint<Void> gameJoinPoint = new ListenerPoint<>();
+
+    @Getter
     private static final ListenerPoint<Void> serverDisconnectPoint  = new ListenerPoint<>();
 
     @Getter

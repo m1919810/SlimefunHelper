@@ -52,7 +52,6 @@ public class RenderUtils {
             CrashReportSection crashReportSection = crashReport.addElement("Item being rendered");
             crashReportSection.add("Item Type", () -> String.valueOf(stack.getItem()));
             crashReportSection.add("Item Damage", () -> String.valueOf(stack.getDamage()));
-            crashReportSection.add("Item NBT", () -> String.valueOf(stack.getNbt()));
             crashReportSection.add("Item Foil", () -> String.valueOf(stack.hasGlint()));
             throw new CrashException(crashReport);
         }
@@ -99,19 +98,17 @@ public class RenderUtils {
         Vec3d camPos = RenderUtils.getCameraPos();
         Matrix4f matrix = matrixStack.peek().getPositionMatrix();
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        BufferBuilder bufferBuilder = tessellator.getBuffer();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
+        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION);
 
-        bufferBuilder.begin(
-            VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION);
         setAsShaderColor(color,1.0F);
 
         for(Vec3d point : path){
             bufferBuilder.vertex(matrix, (float)(point.x - camPos.x),
-                (float)(point.y - camPos.y), (float)(point.z - camPos.z)).next();
+                (float)(point.y - camPos.y), (float)(point.z - camPos.z));
 
         }
-        tessellator.draw();
+        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
     }
     public static void setAsShaderColor(Color color, float opacity){
         RenderSystem.setShaderColor(color.getRed(), color.getGreen(), color.getBlue(), opacity);

@@ -43,7 +43,7 @@ public class SlimefunScreen extends GenericScreen {
     protected static final List<Text> ALL_CUSTOM = List.of(Text.literal("点击查看全部保存物品"), Text.literal("使用CTRL+A+左键在物品栏中保存物品"),Text.literal("或者使用明确标明的按钮保存"));
     protected static final List<Text> CLOSE_SCREEN = List.of(Text.literal("点击关闭屏幕,退出至正常页面"));
     protected static final List<Text> SEARCH_DEFAULT = List.of(Text.literal("当前屏幕不支持搜索功能!").formatted(Formatting.RED));
-    protected static Identifier CANCEL_GUI_TEXTURE = new Identifier("container/beacon/cancel");
+    protected static Identifier CANCEL_GUI_TEXTURE = new Identifier("minecraft","container/beacon/cancel");
     private static final Identifier SEARCH_TEXTURE = new Identifier("slimefunhelper","textures/gui/search.png");
     protected List<Text> getSearchButtonTooltips(){
         return SEARCH_DEFAULT;

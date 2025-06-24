@@ -67,7 +67,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
         for (var ch: children){
-            ch.render0(context, translatedMouseX, translatedMouseY, delta, false);
+            ch.render0(context, translatedMouseX, translatedMouseY, delta, disableSelect);
         }
     }
 

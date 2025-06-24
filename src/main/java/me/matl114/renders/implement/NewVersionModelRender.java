@@ -2,8 +2,9 @@ package me.matl114.renders.implement;
 
 import me.matl114.renders.RenderMain;
 import me.matl114.renders.SlimefunCustomModelManager;
-import me.matl114.renders.SlimefunItemResourcePack;
 import me.matl114.utils.Debug;
+import me.matl114.utils.ItemStackUtils;
+import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -22,28 +23,26 @@ public class NewVersionModelRender {
     public static String PATH_OF_NEW_VERSION = "new-version";
     public static String NAMESPACE = "slimefunhelper";
     public static ItemStack ofNewVersion(ItemStack stack) {
-        stack.getOrCreateNbt().putBoolean(PATH_OF_NEW_VERSION, true);
+        ItemStackUtils.updateCustomData(stack, nbtCompound -> nbtCompound.putBoolean(PATH_OF_NEW_VERSION, true));
         return stack;
     }
     public static boolean isNewVersion(ItemStack stack) {
-        return stack.hasNbt() && stack.getNbt().getBoolean(PATH_OF_NEW_VERSION);
+        return ItemStackUtils.getCustomDataReadOnly(stack).getBoolean(PATH_OF_NEW_VERSION);
     }
-    public static Identifier resolveNewModel(ItemStack stack) {
+
+    public static ModelIdentifier resolveNewModel(ItemStack stack) {
         Item item = stack.getItem();
-        if( item == Items.ENCHANTED_BOOK ) {
-            return new Identifier(NAMESPACE, "enchanted_book_");
-        }
         return  NEW_VERSION_ITEMS.get(item);
     }
-    public static final Map<Item,Identifier> NEW_VERSION_ITEMS = new HashMap<>();
+    public static final Map<Item,ModelIdentifier> NEW_VERSION_ITEMS = new HashMap<>();
 
     static {
         SlimefunCustomModelManager.registerResourceReloadTasks(()->{
             NEW_VERSION_ITEMS.clear();
             for(Item item : Registries.ITEM) {
                 Identifier id = new Identifier(NAMESPACE,PATH_OF_NEW_VERSION + "/" + Registries.ITEM.getId(item).getPath());
-                if(RenderMain.validateModel(id)){
-                    NEW_VERSION_ITEMS.put(item, id);
+                if(RenderMain.validateCustomModel(id)){
+                    NEW_VERSION_ITEMS.put(item, RenderMain.wrapAsModel(id));
                     Debug.info("Loading new-version model",id);
                 }
             }

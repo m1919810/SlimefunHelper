@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @Mixin(AtlasLoader.class)
 public abstract class AtlasLoaderMixin {
-    private static Identifier targetIdentifier = new Identifier("blocks");
+    private static Identifier targetIdentifier = new Identifier("minecraft","blocks");
     @Inject(method = "of",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/texture/atlas/AtlasLoader;<init>(Ljava/util/List;)V",shift = At.Shift.BEFORE),locals = LocalCapture.CAPTURE_FAILHARD)
     private static void loadSources(ResourceManager resourceManager, Identifier id, CallbackInfoReturnable<AtlasLoader> cir, Identifier identifier, List<AtlasSource> list) {
         if(targetIdentifier.equals(id)){

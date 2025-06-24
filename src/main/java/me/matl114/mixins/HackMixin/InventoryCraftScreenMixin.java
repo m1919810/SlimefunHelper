@@ -29,9 +29,12 @@ public abstract class InventoryCraftScreenMixin extends AbstractInventoryScreen<
     public InventoryCraftScreenMixin(PlayerScreenHandler screenHandler, PlayerInventory playerInventory, Text text) {
         super(screenHandler, playerInventory, text);
     }
-    @Inject(method = "init",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/InventoryScreen;setInitialFocus(Lnet/minecraft/client/gui/Element;)V"))
+    @Inject(method = "init",at = @At("RETURN"))
     protected void initAdd(CallbackInfo ci){
-        addButton();
+        //skip the open of CreativeInventory
+        if(!this.client.interactionManager.hasCreativeInventory()){
+            addButton();
+        }
     }
     @ModifyArg(method = "init",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TexturedButtonWidget;<init>(IIIILnet/minecraft/client/gui/screen/ButtonTextures;Lnet/minecraft/client/gui/widget/ButtonWidget$PressAction;)V"),index = 5)
     public ButtonWidget.PressAction modifyPressAction(ButtonWidget.PressAction pressAction){

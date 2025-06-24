@@ -10,6 +10,7 @@ import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -18,14 +19,14 @@ import java.util.List;
 
 
 public class BeaconEffectSelectButton extends PressableWidget {
-    public static final List<StatusEffect> EFFECTS_BEACON = List.of(StatusEffects.SPEED, StatusEffects.HASTE,StatusEffects.RESISTANCE, StatusEffects.JUMP_BOOST,StatusEffects.STRENGTH,StatusEffects.REGENERATION);
+    public static final List<RegistryEntry<StatusEffect>> EFFECTS_BEACON = List.of(StatusEffects.SPEED, StatusEffects.HASTE,StatusEffects.RESISTANCE, StatusEffects.JUMP_BOOST,StatusEffects.STRENGTH,StatusEffects.REGENERATION);
     private static final int SIZE =EFFECTS_BEACON.size();
-    private static Identifier NO_PATH = new Identifier("container/beacon/cancel");
-    static final Identifier BUTTON_HIGHLIGHTED_TEXTURE = new Identifier("container/beacon/button_highlighted");
-    static final Identifier BUTTON_TEXTURE = new Identifier("container/beacon/button");
+    private static Identifier NO_PATH = new Identifier("minecraft","container/beacon/cancel");
+    static final Identifier BUTTON_HIGHLIGHTED_TEXTURE = new Identifier("minecraft","container/beacon/button_highlighted");
+    static final Identifier BUTTON_TEXTURE = new Identifier("minecraft","container/beacon/button");
     int currentIndex = 0;
     @Getter
-    StatusEffect currentEffect ;
+    RegistryEntry<StatusEffect> currentEffect ;
     Sprite currentSprite;
     private void updateCurrentEffect(){
         currentIndex %= (SIZE +1);
@@ -75,6 +76,6 @@ public class BeaconEffectSelectButton extends PressableWidget {
     }
     @Override
     protected MutableText getNarrationMessage() {
-        return getMessage().copy().append(this.currentEffect == null ? Text.literal("无选中") : Text.translatable(this.currentEffect.getTranslationKey()));
+        return getMessage().copy().append(this.currentEffect == null ? Text.literal("无选中") : Text.translatable(this.currentEffect.value().getTranslationKey()));
     }
 }

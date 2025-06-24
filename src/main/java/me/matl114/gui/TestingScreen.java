@@ -81,7 +81,7 @@ public class TestingScreen extends Screen {
         Inventory inventory = new SimpleInventory(3);
         inventory.setStack(0, new ItemStack(Items.FURNACE));
         var it = new ItemStack(Items.DIAMOND_SWORD);
-        EnchantmentHelper.set(Map.of(Enchantments.KNOCKBACK,1,Enchantments.SHARPNESS,100),it);
+        //EnchantmentHelper.set(Map.of(Enchantments.KNOCKBACK,1,Enchantments.SHARPNESS,100),it);
         inventory.setStack(1, it);
         element1 =  new ExecutableWidget(this.x, this.y, 36, 36)
             .setElementHandler(new SlotElement(inventory, 0, ((item, button) -> {
@@ -108,12 +108,12 @@ public class TestingScreen extends Screen {
         ;
         element5 = new DisplayWidget(this.x + 72, this.y, 36, 72)
             .setTextureScale(2.0f)
-            .setRenderHandler(RenderHandler.ofResource(new Identifier("textures/item/barrier.png"),0,0,128,128,0.25f))
+            .setRenderHandler(RenderHandler.ofResource(new Identifier("minecraft","textures/item/barrier.png"),0,0,128,128,0.25f))
             .setExtraDepth(100)
         ;
         element6 = new DisplayWidget(this.x + 108, this.y, 36, 72)
             .setTextureScale(0.25f)
-            .setRenderHandler(RenderHandler.ofMatchingElement(new Identifier("textures/item/barrier.png"),0,0,256, 256))
+            .setRenderHandler(RenderHandler.ofMatchingElement(new Identifier("minecraft","textures/item/barrier.png"),0,0,256, 256))
             .setExtraDepth(100)
         ;
         addDrawableChild(element3);

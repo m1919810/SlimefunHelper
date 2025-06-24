@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Environment(EnvType.CLIENT)
 @Mixin(ChatScreen.class)
 public abstract class ChatScreenMixin extends Screen implements ButtonNotFocusedScreenAccess {
-    @Shadow public abstract boolean sendMessage(String chatText, boolean addToHistory);
+    @Shadow public abstract void sendMessage(String chatText, boolean addToHistory);
 
     @Shadow protected TextFieldWidget chatField;
     @Unique
@@ -174,17 +174,12 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
         //Debug.info()
     }
     //keep-inv and save config when send
-    @Redirect(method="keyPressed",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;sendMessage(Ljava/lang/String;Z)Z"))
-    private boolean onCancelCloseScreenAfterSend(ChatScreen instance, String chatText, boolean addToHistory){
-        boolean val=instance.sendMessage(chatText, addToHistory);
-        if(val&&HotKeys.getSimpleToggleManager().getState(HotKeys.KEEP_CHATINV)){
-            val=false;
+    @Inject(method="keyPressed",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;sendMessage(Ljava/lang/String;Z)V", shift = At.Shift.AFTER), cancellable = true)
+    private void onCancelCloseScreenAfterSend(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
+        saveEntryToValues();
+        if(HotKeys.getSimpleToggleManager().getState(HotKeys.KEEP_CHATINV)){
+            cir.setReturnValue(true);
         }
-        if(val){
-            saveEntryToValues();
-        }
-        return val;
-
     }
     @Redirect(method = "sendMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;normalize(Ljava/lang/String;)Ljava/lang/String;"))
     private String cancelNormalizeString(ChatScreen instance, String chatText){

@@ -1,7 +1,7 @@
 plugins {
-	id 'fabric-loom' version '1.6-SNAPSHOT'
+	id 'fabric-loom' version "1.8-SNAPSHOT"
 	id 'maven-publish'
-	id 'com.github.johnrengelman.shadow' version "8.1.1"
+	id 'com.gradleup.shadow' version "9.0.0-beta13"
 }
 loom {
 	accessWidenerPath = file("src/main/resources/overrideList.accesswidener")
@@ -57,21 +57,18 @@ dependencies {
 	}
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	// Fabric API. This is technically optional, but you probably want it anyway.
+
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	//api 'org.bukkit:bukkit:1.20.1-R0.1-SNAPSHOT'
+
 	api 'com.github.houbb:pinyin:0.4.0'
-	api 'io.netty:netty-handler-proxy:4.1.97.Final'
+	//api 'io.netty:netty-handler-proxy:4.1.97.Final'
 	api 'org.yaml:snakeyaml:1.30'
-	compileOnly 'org.projectlombok:lombok:1.18.24'   // 最新的 Lombok 版本
+	compileOnly 'org.projectlombok:lombok:1.18.30'   // 最新的 Lombok 版本
 	compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-	annotationProcessor 'org.projectlombok:lombok:1.18.24'  // 注解处理器
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'  // 注解处理器
 	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
 	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
-	// import REI
-//	modCompileOnly "me.shedaniel:RoughlyEnoughItems-api-fabric:${rei_version}"
-//	modRuntimeOnly "me.shedaniel:RoughlyEnoughItems-fabric:${rei_version}"
-//	modCompileOnly "me.shedaniel:RoughlyEnoughItems-default-plugin-fabric:${rei_version}"
+
 
 }
 
@@ -104,15 +101,15 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 17
+	it.options.release = 21
 	options.annotationProcessorPath = configurations.annotationProcessor
 }
 
 java {
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 //afterEvaluate {
 //
@@ -139,8 +136,7 @@ jar {
 
 }
 tasks.named("runClient", JavaExec) {
-	jvmArgs("-XX:+AllowEnhancedClassRedefinition")
-	jvmArgs("-XX:-OmitStackTraceInFastThrow")
+	jvmArgs("-XX:+AllowEnhancedClassRedefinition", "-XX:-OmitStackTraceInFastThrow")
 }
 
 tasks.test {

@@ -12,6 +12,7 @@ import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
+import me.matl114.renders.RenderMain;
 import me.matl114.utils.Debug;
 import me.matl114.utils.UtilClass.AbstractMainCommand;
 import me.matl114.utils.UtilClass.CancellableEntryPoint;
@@ -251,6 +252,15 @@ public class ChatTasks {
             .setEnum("action","enable",List.of("reload","enable"))
             .register(this);
 
+        SubCommand renderDebugCommand = new SubCommand("render", genArgument(), "!!render 进行debug"){
+            @Override
+            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
+                RenderMain.modelDebug();
+                return true;
+            }
+        }
+            .register(this);
+
         @Override
         public AbstractMainCommand reload() {
             return new SlimefunHelperMainCommand();
@@ -265,8 +275,11 @@ public class ChatTasks {
         }else if(command.startsWith("/!!")){
             dispatchClientCommand(command.substring(3));
             return true;
-        }else if(command.startsWith("/") && parseVanillaCommands(command.substring(1))){
-            return true;
+        }else if(command.startsWith("/")){
+            if(parseVanillaCommands(command.substring(1))){
+                return true;
+            }
+            return checkCommandLength(command);
         }
         return checkMessageLength(command);
     }
@@ -283,6 +296,7 @@ public class ChatTasks {
     }
     private static final AtomicBoolean EXECUTE_GIVE_CLIENTSIDE = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_CLIENT_GIVE);
     private static final AtomicInteger MESSAGE_LENGTH = Configs.CHAT_CONFIG.getInt(Configs.CHAT_HELPER_CHECK_MESSAGE_LENGTH);
+    private static final AtomicInteger COMMAND_LENGTH = Configs.CHAT_CONFIG.getInt(Configs.CHAT_HELPER_CHECK_COMMAND_LENGTH);
     private static CommandManager manager;
     public static CommandManager getVanillaCommandManager(){
         if(manager == null){
@@ -296,12 +310,19 @@ public class ChatTasks {
         });
 
     }
-    private static boolean checkMessageLength(String command){
-        if(MESSAGE_LENGTH.get() >0 && command.length() > MESSAGE_LENGTH.get()){
-            Debug.chat(Text.literal("你的输入内容太长了! %d / 256".formatted(command.length())).formatted(Formatting.RED));
-            if(command.startsWith("/give") || command.startsWith("/minecraft:give")){
+    private static boolean checkCommandLength(String command){
+        if(MESSAGE_LENGTH.get() >0 && command.length() > COMMAND_LENGTH.get()){
+            Debug.chat(Text.literal("你的输入内容太长了! %d / %d".formatted(command.length(), COMMAND_LENGTH.get())).formatted(Formatting.RED));
+            if(!EXECUTE_GIVE_CLIENTSIDE.get() &&(command.startsWith("/give") || command.startsWith("/minecraft:give"))){
                 Debug.chat(Text.literal("可以在配置文件中启用客户端/give指令来执行长指令"));
             }
+            return true;
+        }
+        return false;
+    }
+    private static boolean checkMessageLength(String command){
+        if(MESSAGE_LENGTH.get() >0 && command.length() > MESSAGE_LENGTH.get()){
+            Debug.chat(Text.literal("你的输入内容太长了! %d / %d".formatted(command.length(),MESSAGE_LENGTH.get())).formatted(Formatting.RED));
             return true;
         }
         return false;
@@ -320,8 +341,6 @@ public class ChatTasks {
                 }
             }
         }
-
-
         return false;
     }
     private static ResultConsumer<CommandSource> consumer = (c, s, r) -> {
@@ -360,6 +379,10 @@ public class ChatTasks {
     }
 
     private static void handleClientSideGiveCommand(CommandContextBuilder<CommandSource> contextData, String command) throws CommandSyntaxException{
+        //... ?
+        //fix bug in 1.21
+        contextData = contextData.getChild();
+
         Map<String, ParsedArgument<CommandSource, ?>> argsMap = contextData.getArguments();
 
         ItemStackArgument itemStack = (ItemStackArgument) argsMap.get("item").getResult();

@@ -21,7 +21,7 @@ import java.util.*;
 
 public class SlimefunCustomModelManager {
     private static final HashMap<String,Integer> SLIMEFUNITEMS_CUSTOMMODELDATAS=new HashMap<>();
-    private static final HashMap<String,Identifier> CUSTOM_PATH_SLIMEFUN_MODEL = new HashMap<>();
+    private static final HashMap<String,ModelIdentifier> CUSTOM_PATH_SLIMEFUN_MODEL = new HashMap<>();
     private static final String OUR_NAMESPACE = "slimefunhelper";
     public static Gson gson =new Gson();
     public static JsonObject readJsonObject(Resource resource) {
@@ -79,15 +79,17 @@ public class SlimefunCustomModelManager {
         List<ResourcePack> packs= resourceManager.streamResourcePacks().toList();
         for(ResourcePack pack : packs){
             //Debug.info("in resourcepack ",pack.getName());
-            String name=pack.getName();
+            Debug.info("check pack", pack);
+            String name=pack.getId();
             if(name.equals("minecraft")||name.equals("realms")||name.startsWith("fabric-")||name.equals("fabric")){
                 continue;
             }
+            Debug.info("walk at", name);
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
             BakedModelManagerAccess access=BakedModelManagerAccess.of(MinecraftClient.getInstance().getBakedModelManager());
             for(String namespace : namespacess){
                 if(allLoad || OUR_NAMESPACE.equals(namespace)){
-                    Debug.info("Force loading namespace ",namespace,"in pack ",pack.getName());
+                    Debug.info("Force loading namespace ",namespace,"in pack ",pack.getId());
                     //Debug.info("in namespace ",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"models",(i,j)->{
                             ///Debug.info("finding resource ",i,j);
@@ -97,18 +99,24 @@ public class SlimefunCustomModelManager {
                             String trueId=splits[splits.length-1];
                             Identifier shouldId=new Identifier(realNamespace,trueId);
                             //Debug.info(shouldId);
-                            Identifier shouldModelId="item".equals(splits[0])?new ModelIdentifier(realNamespace,realPath.replaceFirst("^item/",""),"inventory"):new Identifier(realNamespace,realPath);
+                            Identifier fullPathId = new Identifier(realNamespace,realPath);
+                            Identifier shouldModelId="item".equals(splits[0])?new Identifier(realNamespace,String.join("/",Arrays.copyOfRange(splits, 1, splits.length)))  :fullPathId;
+                            ModelIdentifier wrappedId = RenderMain.wrapAsModel(fullPathId);
+
 //                            if(OUR_NAMESPACE.equals(namespace)){
 //                                Debug.info("try test slimefun item model",shouldModelId);
 //                            }
                             if( ModConfig.getSlimefunModelPathPattern().asMatchPredicate().test(shouldModelId.toString())){
                                 //custom item
                                 Debug.info("load custom slimefun item model:",shouldModelId);
-                                CUSTOM_PATH_SLIMEFUN_MODEL.put(splits[splits.length-1].toUpperCase(Locale.ROOT),shouldModelId);
+                                CUSTOM_PATH_SLIMEFUN_MODEL.put(splits[splits.length-1].toUpperCase(Locale.ROOT),wrappedId);
                             }
+
                             if(Registries.ITEM.get(shouldId)== Items.AIR){
+
                                // Debug.info("input into registry");
-                                id.add(shouldModelId);
+                               // Debug.info("add into ", fullPathId);
+                                id.add(fullPathId);
                             }
                         }
                     );
@@ -147,6 +155,7 @@ public class SlimefunCustomModelManager {
 //
 //            }
 //        }
+
         return id;
     }
     public static Collection<Identifier> loadOurselvesCustomModelTexture(ResourceManager manager){
@@ -156,7 +165,7 @@ public class SlimefunCustomModelManager {
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
             for(String namespace : namespacess){
                 if(OUR_NAMESPACE.equals(namespace)|| ModConfig.getSlimefunTextureNamespaces().contains(namespace)){
-                    Debug.info("Force load texture in pack",pack.getName(),"and namespace",namespace);
+                    Debug.info("Force load texture in pack",pack.getId(),"and namespace",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
                             String realNamespace=i.getNamespace();
                             if(i.getPath().endsWith(".png")){
@@ -185,36 +194,33 @@ public class SlimefunCustomModelManager {
 
     static {
         RenderMain.registerModelOverridePredicate((stack)->{
-            if(stack.hasNbt()){
-                try{
-                    NbtCompound nbt=stack.getNbt();
-                    String model=null;
-                    if(nbt.contains("item_model")){
-                        model=nbt.getString("item_model");
-                    }else if(nbt.contains("minecraft:item_model")){
-                        model=nbt.getString("minecraft:item_model");
+            NbtCompound nbt= ItemStackUtils.getCustomDataReadOnly(stack);
+            try{
+                String model=null;
+                if(nbt.contains("item_model")){
+                    model=nbt.getString("item_model");
+                }else if(nbt.contains("minecraft:item_model")){
+                    model=nbt.getString("minecraft:item_model");
+                }
+                if(model!=null){
+                    String[] namespaceCheck=model.split(":");
+                    String namespace="minecraft";
+                    String itemModel=namespaceCheck[namespaceCheck.length-1];
+                    if(namespaceCheck.length>=2){
+                        namespace=namespaceCheck[0];
                     }
-                    if(model!=null){
-                        String[] namespaceCheck=model.split(":");
-                        String namespace="minecraft";
-                        String itemModel=namespaceCheck[namespaceCheck.length-1];
-                        if(namespaceCheck.length>=2){
-                            namespace=namespaceCheck[0];
-                        }
-                        return Optional.of( new ModelIdentifier(namespace,itemModel,"inventory"));
+                    return Optional.of( ModelIdentifier.ofInventoryVariant(new Identifier(namespace,itemModel)));
 
-                    }
-                }catch(Throwable e){}
-            }
-            return Optional.empty();
-        });
-        RenderMain.registerModelOverridePredicate((stack)->{
-            if(stack.hasNbt()){
-                String id = ItemStackUtils.getSfId(stack.getNbt());
+                }
+            }catch(Throwable e){}
+            try{
+                String id = ItemStackUtils.getSfId(nbt);
                 if(id!=null ){
                     return Optional.ofNullable(CUSTOM_PATH_SLIMEFUN_MODEL.get(id));
                 }
+            }catch (Throwable e){
             }
+
             return Optional.empty();
         });
     }

@@ -3,6 +3,7 @@ package me.matl114.gui.config;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.PropertyTracker;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -12,6 +13,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
@@ -54,10 +57,10 @@ public class ListRegistrySelectScreen<T> extends ListSelectScreen<Triplet<String
     }
     public static ListRegistrySelectScreen<Enchantment> enchant(int x, int y, int dx, int dy, int height){
         return new ListRegistrySelectScreen<>(
-            Registries.ENCHANTMENT,
-            (item -> Text.translatable(item.getTranslationKey()).getString()),
+            ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT),
+            (item -> item.description().getString()),
             (trp)->new RegistryDisplayRender(new ItemStack(Items.ENCHANTED_BOOK),
-                Text.translatable(trp.getC().getTranslationKey()), trp.getB()),
+                trp.getC().description(), trp.getB()),
             x,y,dx,dy, height
         );
     }
@@ -73,10 +76,10 @@ public class ListRegistrySelectScreen<T> extends ListSelectScreen<Triplet<String
     public static <T> ListRegistrySelectScreen<T> registry(Registry<T> registry, int x, int y, int dx, int dy, int height){
         if(registry == Registries.ITEM){
             return (ListRegistrySelectScreen<T>) item(x, y, dx, dy, height);
-        }else if(registry ==Registries.ENCHANTMENT){
-            return (ListRegistrySelectScreen<T>) enchant(x, y, dx, dy, height);
         }else if(registry == Registries.ATTRIBUTE){
             return (ListRegistrySelectScreen<T>) attribute(x, y, dx, dy, height);
+        }else if(registry == ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT)){
+            return (ListRegistrySelectScreen<T>) enchant(x, y, dx, dy, height);
         }else {
             return new ListRegistrySelectScreen<>(
                 registry,

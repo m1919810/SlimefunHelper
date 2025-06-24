@@ -163,9 +163,11 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         }
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V", at = @At("HEAD"))
-    public void onDisconnectListen(Screen disconnectionScreen, CallbackInfo ci){
-        Listener.getServerDisconnectPoint().handleValue(null);
+    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At("HEAD"))
+    public void onDisconnectListen(Screen disconnectionScreen, boolean transferring, CallbackInfo ci){
+        //origin exit
+        if(!transferring)
+            Listener.getServerDisconnectPoint().handleValue(null);
     }
 
 //    @Inject(method = "startIntegratedServer",at = @At("HEAD"))

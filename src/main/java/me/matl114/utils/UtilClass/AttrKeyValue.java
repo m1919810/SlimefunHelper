@@ -9,8 +9,10 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.injection.At;
 
+import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String> {
     public AttrKeyValue(String key, T value){
@@ -18,10 +20,15 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         this.originValue = value;
         this.value = updateValue(value);
     }
-    public AttrKeyValue(String key, String value, T value2){
+    public AttrKeyValue(String key, String value, T value2, boolean isValidate){
         this.keyName = key;
         this.originValue = value2;
         this.value = value;
+        this.validate = isValidate;
+
+    }
+    public AttrKeyValue(String key, Optional<String> value, T value2){
+        this(key, value.orElse(""), value2, value.isPresent());
     }
 
     @Getter
@@ -128,7 +135,13 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         return new RegistryAttrKeyValue<>(key, val, registry);
     }
     public static <T>  AttrKeyValue<T> openRegistry(String key, Registry<T> registry, String val){
-        return new RegistryAttrKeyValue<>(key, val, registry);
+        Identifier identifier = Identifier.tryParse(val);
+        T val0;
+        if(identifier != null && (val0 = registry.getOrEmpty(identifier).orElse(null)) != null){
+            return new RegistryAttrKeyValue<>(key, val0, registry);
+        }else {
+            return new RegistryAttrKeyValue<>(key, val, registry, null);
+        }
     }
     public static AttrKeyValue<String> str(String key, String val){
         return new AttrKeyValue<String>(key, val) {
@@ -157,13 +170,13 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
     public static class RegistryAttrKeyValue<T> extends AttrKeyValue<T>{
         @Getter
         Registry<T> registry;
-        public RegistryAttrKeyValue(String key, T value, Registry<T> registry) {
-            super(key,registry.getId(value).toString() ,value);
+        public RegistryAttrKeyValue(String key, @Nonnull T value, Registry<T> registry) {
+            super(key,registry.getId(value).toString() ,value, true);
             this.registry = registry;
         }
 
-        public RegistryAttrKeyValue(String key, String value, Registry<T> registry){
-            super(key, value, registry.getOrEmpty(Identifier.tryParse(value)).orElse(null));
+        public RegistryAttrKeyValue(String key, String value, Registry<T> registry,@Nullable T origin){
+            super(key, value, origin, origin != null);
             this.registry = registry;
         }
 
@@ -203,7 +216,7 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             return finiteValueMap;
         }
         public EnumAttrKeyValue(String key, T value, Map<String, T> finiteValueMap) {
-            super(key, finiteValueMap.entrySet().stream().filter(entry-> Objects.equals(value, entry.getValue())).findAny().map(Map.Entry::getKey).orElseThrow() ,value);
+            super(key, finiteValueMap.entrySet().stream().filter(entry-> Objects.equals(value, entry.getValue())).findAny().map(Map.Entry::getKey) ,value);
             this.finiteValueMap = finiteValueMap;
         }
 

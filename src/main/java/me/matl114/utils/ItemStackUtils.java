@@ -1,56 +1,197 @@
 package me.matl114.utils;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.mojang.datafixers.util.Pair;
+import com.google.common.collect.ImmutableMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+import lombok.val;
 import me.matl114.bukkitUtiils.ItemStackHelper;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientDynamicRegistryType;
+import net.minecraft.component.ComponentChanges;
+import net.minecraft.component.ComponentMapImpl;
+import net.minecraft.component.ComponentType;
+import net.minecraft.component.type.*;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.item.EnchantedBookItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.item.*;
+import net.minecraft.item.trim.ArmorTrim;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.Registries;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.text.MutableText;
+import net.minecraft.registry.*;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Unit;
 import org.jetbrains.annotations.Nullable;
-import oshi.util.tuples.Triplet;
 
 import javax.annotation.Nonnull;
 import java.util.*;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+
+import static net.minecraft.component.DataComponentTypes.*;
 
 public class ItemStackUtils {
-    public static NbtCompound getDisplay(ItemStack stack){
-        if(stack.hasNbt()){
-            if(stack.getNbt().contains("display")){
-                return stack.getNbt().getCompound("display");
+    public enum TooltipHideFlag{
+        HIDE_ALL("全部", component(HIDE_TOOLTIP), TooltipsToggle.byComponent(HIDE_TOOLTIP)),
+        HIDE_ADDITIONAL("额外", component(HIDE_ADDITIONAL_TOOLTIP), TooltipsToggle.byComponent(HIDE_ADDITIONAL_TOOLTIP)),
+        HIDE_ENCHANT("附魔", componentPredicate(ENCHANTMENTS, (i)->!i.showInTooltip, false), TooltipsToggle.onComponent(ENCHANTMENTS, ItemEnchantmentsComponent::withShowInTooltip)),
+        HIDE_ATTRIBUTE("属性", componentPredicate(ATTRIBUTE_MODIFIERS, inv(AttributeModifiersComponent::showInTooltip), false), TooltipsToggle.onComponent(ATTRIBUTE_MODIFIERS, AttributeModifiersComponent::withShowInTooltip)),
+        HIDE_UNBREAKABLE("无法破坏",componentPredicate(UNBREAKABLE, inv(UnbreakableComponent::showInTooltip), false), TooltipsToggle.onComponent(UNBREAKABLE, UnbreakableComponent::withShowInTooltip)),
+        HIDE_DESTROYS("可破坏", componentPredicate(CAN_BREAK, inv(BlockPredicatesChecker::showInTooltip),false), TooltipsToggle.onComponent(CAN_BREAK, BlockPredicatesChecker::withShowInTooltip)),
+        HIDE_PLACED_ON("可放置", componentPredicate(CAN_PLACE_ON, inv(BlockPredicatesChecker::showInTooltip),false), TooltipsToggle.onComponent(CAN_PLACE_ON, BlockPredicatesChecker::withShowInTooltip)),
+        HIDE_DYE("染色", componentPredicate(DYED_COLOR, inv(DyedColorComponent::showInTooltip),false),TooltipsToggle.onComponent(DYED_COLOR, DyedColorComponent::withShowInTooltip)),
+        HIDE_ARMOR_TRIM("盔甲纹饰", componentPredicate(TRIM, inv(armorTrim ->armorTrim.showInTooltip),false), TooltipsToggle.onComponent(TRIM,ArmorTrim::withShowInTooltip)),
+        HIDE_STORED_ENCHANTS("附魔书",componentPredicate(STORED_ENCHANTMENTS, i->!i.showInTooltip, false),TooltipsToggle.onComponent(STORED_ENCHANTMENTS, ItemEnchantmentsComponent::withShowInTooltip))
+        ;
+        public String display;
+        public Predicate<ItemStack> hideFlagGetter;
+        public TooltipsToggle toggle;
+        TooltipHideFlag(String display ,Predicate<ItemStack> stack, TooltipsToggle toggle){
+            this.hideFlagGetter = stack;
+            this.toggle = toggle;
+        }
+        private static <T> Predicate<T> inv(Predicate<T> tt){
+            return (val)->!tt.test(val);
+        }
+        public boolean isHide(ItemStack stack){
+            return hideFlagGetter.test(stack);
+        }
+        public void setHideFlag(ItemStack stack,  boolean hide){
+            this.toggle.apply(stack, !hide);
+        }
+    }
+    public static Predicate<ItemStack> component(ComponentType<?> type){
+        return (stack)->hasInPatch(stack, type);
+    }
+    public static <T>  Predicate<ItemStack> componentPredicate(ComponentType<T> type,  Predicate<T> test, boolean nullDefault){
+        return (stack)->{
+            var val = stack.get(type);
+            if(val != null){
+                return test.test(val);
+            }else {
+                return nullDefault;
             }
+        };
+    }
+
+
+    public interface TooltipsToggle{
+        public void apply(ItemStack stack, boolean showInTooltip);
+        public static  TooltipsToggle byComponent(ComponentType<Unit> type){
+            return ((stack, showInTooltip) -> {
+                if(showInTooltip){
+                    stack.remove(type);
+                }else {
+                    stack.set(type, Unit.INSTANCE);
+                }
+            });
+        }
+        public static <T> TooltipsToggle onComponent(ComponentType<T> type,  ComponentTooltipsToggle<T> toggle){
+            return ((stack, showInTooltips)->{
+                T val = stack.get(type);
+                if(val != null){
+                    stack.set(type, toggle.toggle(val, showInTooltips));
+                }
+            });
+        }
+    }
+    public interface ComponentTooltipsToggle<T>{
+        T toggle(T val, boolean showInToolTips);
+    }
+    @SuppressWarnings("all")
+    public static <T> T getInPatch(ItemStack stack, ComponentType<T> type){
+        if(stack != null && !stack.isEmpty()){
+            var map = stack.components.changedComponents;
+            if(map == null)return null;
+            var optional = map.get(type);
+            return (T)(optional == null? null: optional.orElse(null));
         }
         return null;
     }
-    public static NbtCompound getOrCreateDisplay(ItemStack stack){
-        return stack.getOrCreateSubNbt("display");
+    public static boolean hasInPatch(ItemStack stack){
+        if(stack != null && !stack.isEmpty()){
+            var map = stack.components.changedComponents;
+            return  map != null && !map.isEmpty();
+        }
+        return false;
     }
-    public static void setDisplay(ItemStack stack,NbtCompound display){
-        stack.getOrCreateNbt().put("display", display);
+    public static boolean hasInPatch(ItemStack stack,  ComponentType<?> type){
+        if(stack != null && !stack.isEmpty()){
+            var map = stack.components.changedComponents;
+            if(map == null)return false;
+            return map.containsKey(type) && !Objects.equals(Optional.empty(), map.get(type));
+        }
+        return false;
+    }
+
+    public static <T> void setOrRemoveChange(ItemStack stack,  ComponentType<T> type,@Nullable T val){
+        if(stack != null && !stack.isEmpty()){
+            var cpmap = stack.components;
+            var map = cpmap.changedComponents;
+            if(map == null)return;
+            boolean shouldChange;
+            if (val == null ) {
+                shouldChange = map.containsKey(type);
+            }else {
+                var op = map.get(type);
+                if(op != null && Objects.equals(val, op.orElse(null))){
+                    shouldChange = false;
+                }else shouldChange = true;
+            }
+            if(shouldChange){
+                //copy before write
+                cpmap.onWrite();
+                //update the map after copy
+                map = cpmap.changedComponents;
+                if(val == null)map.remove(type);
+                else map.put(type, Optional.of(val));
+            }
+        }
+    }
+    public static <T> void markRemoveAsChange(ItemStack stack,  ComponentType<T> type){
+        if(stack != null && !stack.isEmpty()){
+            var cpmap = stack.components;
+            var map = cpmap.changedComponents;
+            if(map != null){
+                //no need to modify
+                if(map.containsKey(type) && map.get(type) == Optional.empty())return;
+                cpmap.onWrite();;
+                cpmap.changedComponents.put(type, Optional.empty());
+            }
+        }
+    }
+
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static DynamicRegistryManager staticRegistry;
+
+    //todo need test
+    public static <T> Identifier solveDynamic(RegistryEntry<T> entry){
+        return entry.getKey().get().getValue();
+    }
+
+    public static <T> RegistryEntry<T> findEntry(Registry<T> registry, Identifier id){
+        return registry.getOrEmpty(id).map(registry::getEntry).orElse(null);
+    }
+
+
+    @Nonnull
+    public static DynamicRegistryManager registry(){
+        if(mc.getNetworkHandler() != null){
+            return mc.getNetworkHandler().getRegistryManager();
+        }else {
+            if(staticRegistry == null){
+                staticRegistry = ClientDynamicRegistryType.createCombinedDynamicRegistries().getCombinedRegistryManager();
+            }
+            return staticRegistry;
+        }
     }
     public static Text jsonRawToText(String jsonRaw){
         try{
             if(jsonRaw == null)return null;
-            return Text.Serialization.fromJson(jsonRaw);
+            return Text.Serialization.fromJson(jsonRaw, registry());
         }catch (Throwable e){
             return null;
         }
@@ -58,35 +199,22 @@ public class ItemStackUtils {
     public static String textToJsonRaw(Text text){
         if(text == null)return null;
         try{
-            return Text.Serialization.toJsonString(text);
+            return Text.Serialization.toJsonString(text, registry());
         }catch (Throwable e){
             return null;
         }
     }
-    public static String getCustomNameRaw(ItemStack stack){
-        var nbt = getDisplay(stack);
-        return nbt == null?"":nbt.getString("Name");
-    }
     @Nullable
     public static Text getCustomName(ItemStack stack){
-        var nbt = getDisplay(stack);
-        return nbt == null?Text.empty():jsonRawToText(nbt.getString("Name"));
+        var text = getInPatch(stack , CUSTOM_NAME);
+        return text == null ? Text.empty() : text;
     }
 
 
     public static void setCustomName(ItemStack stack,  Text text){
-        String jsonRaw = textToJsonRaw(text);
-        NbtCompound nbtCompound;
-        if(jsonRaw == null){
-            nbtCompound = getDisplay(stack);
-            if(nbtCompound != null){
-                nbtCompound.remove("Name");
-            }
-        }else {
-            nbtCompound = getOrCreateDisplay(stack);
-            nbtCompound.putString("Name", jsonRaw);
-        }
+        setOrRemoveChange(stack, CUSTOM_NAME , Objects.equals(text, Text.empty()) ? null : text);
     }
+
 //    @Nonnull
 //    public static List<Text> getLore(ItemStack stack){
 //        var nbt = getDisplay(stack);
@@ -100,33 +228,14 @@ public class ItemStackUtils {
 //        return lore;
 //    }
 
-    public static NbtCompound getEnchantment(ItemStack stack){
-        if(stack.hasNbt()){
-            if(stack.getNbt().contains("Enchantments")){
-                return stack.getNbt().getCompound("Enchantments");
-            }
-        }
-        return null;
+
+    public static void applyItemEnchant(ItemStack stack,  ItemEnchantmentsComponent ench){
+        setOrRemoveChange(stack, ENCHANTMENTS, Objects.equals(ench, ItemEnchantmentsComponent.DEFAULT)? null: ench);
     }
 
-    public static void applyItemEnchant(ItemStack stack,  Stream<Pair<String, Integer>> ench){
-        NbtList list = new NbtList();
-        ench.sorted(Comparator.comparing(Pair::getFirst))
-            .forEach(var->list.add(EnchantmentHelper.createNbt(Identifier.tryParse(var.getFirst()), var.getSecond())));
-        if(list.isEmpty()){
-            if(stack.hasNbt()){
-                stack.getNbt().remove("Enchantments");
-            }
-        }else {
-            stack.getOrCreateNbt().put("Enchantments", list);
-        }
-    }
-
-    public static Stream<Pair<String, Integer>> getItemEnchant(ItemStack stack){
-        if(stack.hasNbt()){
-            return stack.getEnchantments().stream().map(NbtCompound.class::cast).map(nbtComp->new Pair<>(nbtComp.getString("id"), nbtComp.getInt("lvl")));
-        }
-        return Stream.empty();
+    public static ItemEnchantmentsComponent getItemEnchant(ItemStack stack){
+        var itemEnchant = getInPatch(stack, ENCHANTMENTS);
+        return itemEnchant == null? ItemEnchantmentsComponent.DEFAULT : itemEnchant;
     }
     private static final Map<String, EquipmentSlot> NAME_TO_SLOT =new HashMap<>();
     static {
@@ -134,139 +243,72 @@ public class ItemStackUtils {
             NAME_TO_SLOT.put(re.getName(), re);
         }
     }
-    public static Stream<Triplet< String, EntityAttributeModifier, EquipmentSlot>> getEntityModifier(ItemStack stack){
-
-        if (stack.hasNbt() && stack.getNbt().contains("AttributeModifiers", 9)) {
-            NbtList nbtList = stack.getNbt().getList("AttributeModifiers", 10);
-            return nbtList.stream().map(NbtCompound.class::cast)
-                .map(nbtCompound->{
-                    String optionalSlot = nbtCompound.getString("Slot");
-                    EquipmentSlot optional = null;
-                    if(optionalSlot != null && NAME_TO_SLOT.containsKey(optionalSlot)){
-                        optional = NAME_TO_SLOT.get(optionalSlot);
-                    }
-                    String id = nbtCompound.getString("AttributeName");
-                    EntityAttributeModifier entityAttributeModifier = EntityAttributeModifier.fromNbt(nbtCompound);
-                    return new Triplet<>(id, entityAttributeModifier, optional);
-                })
-                .filter(trp->{
-                    return trp.getB() != null;
-                });
-        }
-        return Stream.empty();
+    public static AttributeModifiersComponent getEntityModifier(ItemStack stack){
+        var attr = getInPatch(stack, ATTRIBUTE_MODIFIERS);
+        return attr == null? AttributeModifiersComponent.DEFAULT: attr;
     }
-    public static void applyEntityModifier(ItemStack stack,  Stream<Triplet< String, EntityAttributeModifier, EquipmentSlot>> data){
-        NbtList list = new NbtList();
-        data.forEach(var->{
-            NbtCompound compound = var.getB().toNbt();
-            compound.putString("AttributeName", var.getA());
-            if(var.getC() != null){
-                compound.putString("Slot", var.getC().getName());
-            }
-            list.add(compound);
-        });
-        if(list.isEmpty()){
-            if(stack.hasNbt()){
-                stack.getNbt().remove("AttributeModifiers");
-            }
-        }else {
-            stack.getOrCreateNbt().put("AttributeModifiers", list);
-        }
-
+    public static void applyEntityModifier(ItemStack stack,  AttributeModifiersComponent data){
+        setOrRemoveChange(stack, ATTRIBUTE_MODIFIERS, Objects.equals(data, AttributeModifiersComponent.DEFAULT)? null: data);
     }
 
 
     public static boolean getIsUnbreakable(ItemStack stack){
-        if(stack.hasNbt() && stack.getNbt().getBoolean("Unbreakable")){
-            return true;
-        }
-        return false;
+        return hasInPatch(stack, UNBREAKABLE);
     }
     public static void setUnbreakable(ItemStack stack, boolean ub){
-        if(ub){
-            stack.getOrCreateNbt().putBoolean("Unbreakable", true);
+        UnbreakableComponent component = getInPatch(stack, UNBREAKABLE);
+        if(component == null){
+            setOrRemoveChange(stack, UNBREAKABLE, ub? new UnbreakableComponent(true): null);
         }else {
-            if(stack.hasNbt()){
-                stack.getNbt().remove("Unbreakable");
+            if(!ub){
+                setOrRemoveChange(stack, UNBREAKABLE, null);
             }
+        }
+
+    }
+
+    public static void setDamage(ItemStack stack,  int damage){
+        if(stack == ItemStack.EMPTY)return;
+        if(damage > 0){
+            stack.setDamage(damage);
+        }else {
+            setOrRemoveChange(stack, DAMAGE, null);
         }
     }
 
     private static final Style LORE_STYLE = Style.EMPTY.withColor(Formatting.DARK_PURPLE).withItalic(true);
     public static List<Text> getLore(ItemStack stack){
-        NbtCompound nbt = stack.getNbt();
-        List<Text> list = new ArrayList<>();
-        if (nbt != null && nbt.contains("display", 10)) {
-            NbtCompound nbtCompound = nbt.getCompound("display");
-            if (nbtCompound.getType("Lore") == 9) {
-                NbtList nbtList = nbtCompound.getList("Lore", 8);
-
-                for(int j = 0; j < nbtList.size(); ++j) {
-                    String string = nbtList.getString(j);
-
-                    try {
-                        MutableText mutableText2 = Text.Serialization.fromJson(string);
-                        if (mutableText2 != null) {
-                            list.add(mutableText2);
-                        }
-                    } catch (Exception var19) {
-                        nbtCompound.remove("Lore");
-                    }
-                }
-            }
-        }
-        return list;
+        var itemLore = getInPatch(stack, LORE);
+        return itemLore == null? new ArrayList<>(): new ArrayList<>(itemLore.lines());
+    }
+    public static List<Text> getLoreReadOnly(ItemStack stack){
+        var itemLore = getInPatch(stack, LORE);
+        return itemLore == null ? List.of(): itemLore.lines();
     }
 
     public static void setLore(ItemStack itemStack, List<Text> lore){
-        if(lore == null || lore.isEmpty()){
-            NbtCompound nbtCompound = getDisplay(itemStack);
-            if(nbtCompound != null){
-                nbtCompound.remove("Display");
-            }
+        if(lore != null && !lore.isEmpty()){
+            setOrRemoveChange(itemStack, LORE, new LoreComponent(lore));
         }else {
-            NbtList list =  new NbtList();
-            for (var j = 0; j< lore.size(); ++j){
-                Text text = lore.get(j);
-                String json  =textToJsonRaw(text);
-                list.add(NbtString.of(json));
-            }
-            getOrCreateDisplay(itemStack).put("Lore", list);
+            setOrRemoveChange(itemStack, LORE, null);
         }
     }
 
     public static List<String> getLoreString(ItemStack stack){
-        NbtCompound nbt = stack.getNbt();
-        List<String> list = new ArrayList<>();
-        if (nbt != null && nbt.contains("display", 10)) {
-            NbtCompound nbtCompound = nbt.getCompound("display");
-            if (nbtCompound.getType("Lore") == 9) {
-                NbtList nbtList = nbtCompound.getList("Lore", 8);
-
-                for(int j = 0; j < nbtList.size(); ++j) {
-                    String string = nbtList.getString(j);
-
-                    try {
-                        MutableText mutableText2 = Text.Serialization.fromJson(string);
-                        if (mutableText2 != null) {
-                            list.add(mutableText2.getString().replaceAll("§.", ""));
-                        }
-                    } catch (Exception var19) {
-                        nbtCompound.remove("Lore");
-                    }
-                }
-            }
-        }
-        return list;
+        return getLoreReadOnly(stack).stream().map(txt->txt.getString().replace("§.","")).collect(Collectors.toCollection(ArrayList::new));
     }
-    public static NbtList getStoredEnchantment(ItemStack stack){
-        return EnchantedBookItem.getEnchantmentNbt(stack);
+    public static ItemEnchantmentsComponent getStoredEnchantment(ItemStack stack){
+        var ench = getInPatch(stack, STORED_ENCHANTMENTS);
+        return ench == null? ItemEnchantmentsComponent.DEFAULT: ench;
     }
-    public static void setEnchantment(ItemStack stack, NbtList enchantments){
-        stack.getOrCreateNbt().put("Enchantments", enchantments);
+    public static void setEnchantmentGlow(ItemStack stack){
+        setOrRemoveChange(stack, ENCHANTMENT_GLINT_OVERRIDE, Boolean.TRUE);
     }
-    public static void setStoredEnchantment(ItemStack stack, NbtList enchantments){
-        stack.getOrCreateNbt().put("StoredEnchantments", enchantments);
+    public static void setEnchantment(ItemStack stack, ItemEnchantmentsComponent enchantments){
+        setOrRemoveChange(stack, ENCHANTMENTS, Objects.equals(enchantments, ItemEnchantmentsComponent.DEFAULT)? null: enchantments);
+    }
+    public static void setStoredEnchantment(ItemStack stack, ItemEnchantmentsComponent enchantments){
+        setOrRemoveChange(stack,STORED_ENCHANTMENTS, Objects.equals(enchantments, ItemEnchantmentsComponent.DEFAULT)? null: enchantments);
     }
     public static ItemStack getCleanedItem(ItemStack stack){
         return getCleanedItem(stack, true);
@@ -297,8 +339,8 @@ public class ItemStackUtils {
             stackCopy.setDamage(cleaned.getDamage());
         }
         if(!keepEnchant){
-            stackCopy.removeSubNbt("Enchantments");
-            stackCopy.removeSubNbt("StoredEnchantments");
+            setOrRemoveChange(stackCopy, ENCHANTMENTS, null);
+            setOrRemoveChange(stackCopy, STORED_ENCHANTMENTS, null);
         }
 
         return stackCopy;
@@ -312,30 +354,21 @@ public class ItemStackUtils {
         }else if(stack2.isEmpty()){
             return false;
         }else {
-            NbtCompound compound1 = stack1.getNbt();
-            NbtCompound compound2 = stack2.getNbt();
+            var compound1 = stack1.components.changedComponents;
+            var compound2 = stack2.components.changedComponents;
             if(compound1 == null || compound2 == null){
                 return compound1 == compound2;
             }
-            Map<String, NbtElement> map1 = new HashMap<>(compound1.entries);
-            Map<String, NbtElement> map2 = new HashMap<>(compound2.entries);
-            var n1 = map1.remove("display");
-            var n2 = map2.remove("display");
-            return map1.equals(map2) && ((n1 instanceof NbtCompound c1 && n2 instanceof NbtCompound c2)? Objects.equals(c1.get("Name"),c2.get("Name")): n1 == n2);
+            Map<ComponentType, Optional> map1 = new HashMap<>(compound1);
+            Map<ComponentType, Optional> map2 = new HashMap<>(compound2);
+            var n1 = map1.remove(LORE);
+            var n2 = map2.remove(LORE);
+            //both having or not having lore
+            return ((n1 == null)? (n2 == null || n2 == Optional.empty()) : (n2 != null && n2.isPresent())) && map1.equals(map2) ;
         }
     }
-    public static boolean isSimilarItemStack(ItemStack stack1,ItemStack stack2){
-        return ItemStack.canCombine(stack1,stack2);
-    }
-    public static NbtCompound getStoredBlockEntity(ItemStack stack){
-        if(stack.hasNbt()){
-            var nbt = stack.getNbt();
-            if(nbt != null && nbt.contains("BlockEntityTag")){
-                return nbt.getCompound("BlockEntityTag");
-            }
-        }
-        return null;
-    }
+
+
     protected static String BUKKIT_NAMESPACE="PublicBukkitValues";
     protected static String SLIMEFUN_ID_PATH="slimefun:slimefun_item";
     protected static boolean isGrassOrShortGrass = Registries.ITEM.get(new Identifier("minecraft","grass")) != Items.AIR;
@@ -350,59 +383,110 @@ public class ItemStackUtils {
         ItemStack stacked = new ItemStack(typed);
         if(typedString.length == 2 ){
             if(typed == Items.PLAYER_HEAD){
-                stacked.getOrCreateNbt().put("SkullOwner", ItemStackHelper.buildPlayerHead(typedString[1]));
+                setOrRemoveChange(stacked, PROFILE, ItemStackHelper.buildPlayerHeadProfile(typedString[1]));
             }
         }
         if(id!=null && !"null".equals(id)){
-            getOrCreateBukkitValues(stacked).putString(SLIMEFUN_ID_PATH,id);
+            setSfId(stacked, id);
         }
         return stacked.isEmpty() ? null: stacked;
     }
+    public static boolean hasCustomData(ItemStack itemStack){
+        NbtComponent customData = getInPatch(itemStack, CUSTOM_DATA);
+        return customData != null && !customData.isEmpty();
+    }
+    private static final NbtCompound EMPTY = new NbtCompound(ImmutableMap.of());
+    public static NbtCompound getCustomDataReadOnly(ItemStack itemStack){
+        NbtComponent customData = getInPatch(itemStack, CUSTOM_DATA);
+        return customData == null? EMPTY: customData.getNbt();
+    }
+    public static void mapCustomData(ItemStack itemStack, UnaryOperator<NbtCompound> updater){
+        NbtComponent customData = getInPatch(itemStack, CUSTOM_DATA);
+        NbtCompound nbtCompound ;
+        if(customData == null){
+            nbtCompound = new NbtCompound();
+        }else {
+            nbtCompound = customData.copyNbt();
+        }
+        nbtCompound = updater.apply(nbtCompound);
+        if(nbtCompound == null || nbtCompound.isEmpty()){
+            setOrRemoveChange(itemStack, CUSTOM_DATA, null);
+        }else {
+            setOrRemoveChange(itemStack, CUSTOM_DATA, new NbtComponent(nbtCompound));
+        }
+
+    }
+    public static void updateCustomData(ItemStack itemStack, Consumer<NbtCompound> updater){
+        NbtComponent customData = getInPatch(itemStack, CUSTOM_DATA);
+        NbtCompound nbtCompound ;
+        if(customData == null){
+            nbtCompound = new NbtCompound();
+        }else {
+            nbtCompound = customData.copyNbt();
+        }
+         updater.accept(nbtCompound);
+        if(nbtCompound == null || nbtCompound.isEmpty()){
+            setOrRemoveChange(itemStack, CUSTOM_DATA, null);
+        }else {
+            setOrRemoveChange(itemStack, CUSTOM_DATA, new NbtComponent(nbtCompound));
+        }
+
+    }
+    public static NbtCompound getBukkitValueReadOnly(ItemStack stack){
+        NbtCompound compound = getCustomDataReadOnly(stack);
+        return getBukkitValue(compound);
+    }
+    public static NbtCompound getBukkitValue(@Nonnull NbtCompound nbt){
+        return nbt.contains(BUKKIT_NAMESPACE, NbtElement.COMPOUND_TYPE) ? nbt.getCompound(BUKKIT_NAMESPACE): null;
+    }
+    private static NbtCompound createBukkitValue(NbtCompound nbt){
+        var nbt0 = nbt.getCompound(BUKKIT_NAMESPACE);
+        if(nbt0 != null)return nbt0;
+        nbt0 = new NbtCompound();
+        nbt.put(BUKKIT_NAMESPACE, nbt0);
+        return nbt;
+    }
+    private static String getSfIdFromBukkitValues(NbtCompound ntb){
+        return ntb == null? null: (ntb.contains(SLIMEFUN_ID_PATH)? ntb.getString(SLIMEFUN_ID_PATH): null);
+    }
     public static String getSfId(NbtCompound nbt){
-        NbtCompound bukkitValues=getBukkitValues(nbt);
+        NbtCompound bukkitValues=getBukkitValue(nbt);
         if(bukkitValues==null)return null;
         return getSfIdFromBukkitValues(bukkitValues);
     }
     public static void setSfId(ItemStack stack , String id){
         if(id == null || id.isEmpty()){
-            var re = getBukkitValues(stack);
-            if(re != null){
-                re.remove(SLIMEFUN_ID_PATH);
-                if(re.isEmpty()){
-                    stack.removeSubNbt(BUKKIT_NAMESPACE);
+            mapCustomData(stack, (nbt)->{
+                var nbt0 = getBukkitValue(nbt);
+                if(nbt0 != null){
+                    nbt0.remove(SLIMEFUN_ID_PATH);
+                    if(nbt0.isEmpty()){
+                        nbt.remove(BUKKIT_NAMESPACE);
+                    }
                 }
-            }
+                return nbt;
+            });
         }else {
-            var re = getOrCreateBukkitValues(stack);
-            re.putString(SLIMEFUN_ID_PATH, id);
+            mapCustomData(stack, (nbt)->{
+                NbtCompound compound = createBukkitValue(nbt);
+                compound.putString(SLIMEFUN_ID_PATH, id);
+                return nbt;
+            });
         }
     }
     public static String getSfId(ItemStack stack) {
-        NbtCompound bukkitValues=getBukkitValues(stack);
+        NbtCompound bukkitValues=getBukkitValueReadOnly(stack);
         if(bukkitValues==null)return null;
         return getSfIdFromBukkitValues(bukkitValues);
     }
-    public static NbtCompound getBukkitValues(ItemStack stack) {
-        if(stack.hasNbt()){
-            return getBukkitValues(stack.getNbt());
-        }else return null;
-    }
-    public static NbtCompound getOrCreateBukkitValues(ItemStack stack) {
-        return stack.getOrCreateSubNbt(BUKKIT_NAMESPACE);
-    }
-    public static NbtCompound getBukkitValues(NbtCompound tag) {
-        if(tag!=null&&!tag.isEmpty()&&tag.contains(BUKKIT_NAMESPACE)){
-            return tag.getCompound(BUKKIT_NAMESPACE);
-        }else return null;
-    }
-    public static String getSfIdFromBukkitValues(NbtCompound bukkitValues) {
-        if(bukkitValues!=null&&!bukkitValues.isEmpty()&&bukkitValues.contains(SLIMEFUN_ID_PATH)){
-            return bukkitValues.getString(SLIMEFUN_ID_PATH);
-        }else return null;
+
+    public static ItemStack withTypeChange(ItemStack itemStack, Item typeChange){
+        return itemStack.copyComponentsToNewStackIgnoreEmpty((ItemConvertible) typeChange, itemStack.getCount());
     }
 
+
     public static void setCustomModelData(ItemStack stack,int customModelData){
-        stack.getOrCreateNbt().putInt("CustomModelData",customModelData);
+        setOrRemoveChange(stack, CUSTOM_MODEL_DATA, new CustomModelDataComponent(customModelData));
     }
 
 

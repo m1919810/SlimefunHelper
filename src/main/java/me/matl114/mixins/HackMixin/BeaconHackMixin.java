@@ -14,6 +14,7 @@ import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.network.packet.c2s.play.UpdateBeaconC2SPacket;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.BeaconScreenHandler;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;

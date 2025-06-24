@@ -21,10 +21,14 @@ import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.component.ComponentType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.nbt.visitor.StringNbtWriter;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.registry.Registries;
@@ -35,10 +39,13 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -106,7 +113,7 @@ public class InvTasks {
                         continue;
                     }
                     ItemStack cleaned= ItemStackUtils.getCleanedItem( slot,false,false);
-                    if(ItemStack.canCombine(cleaned,cleanedCursor)){
+                    if(ItemStack.areItemsAndComponentsEqual(cleaned,cleanedCursor)){
                         final  int index=i;
                         clickExecutor.execute(()->{
                             MinecraftClient.getInstance().interactionManager.clickSlot(handler.syncId,index,1,SlotActionType.THROW,player );
@@ -167,7 +174,7 @@ public class InvTasks {
 
                     for(int i=0;i<handler.slots.size();i++){
                         Slot slot2=handler.getSlot(i);
-                        if(((slot2.inventory instanceof PlayerInventory)==isPlayerInventory) &&ItemStack.areItemsEqual(cleanedStack,slot2.getStack()) &&  ItemStack.canCombine(cleanedStack,ItemStackUtils.getCleanedItem(slot2.getStack(),false,false))){
+                        if(((slot2.inventory instanceof PlayerInventory)==isPlayerInventory) &&ItemStack.areItemsEqual(cleanedStack,slot2.getStack()) &&  ItemStack.areItemsAndComponentsEqual(cleanedStack,ItemStackUtils.getCleanedItem(slot2.getStack(),false,false))){
                             quickMoveSlot(handler, i);
                         }
                     }
@@ -212,7 +219,7 @@ public class InvTasks {
                     if((s.inventory instanceof PlayerInventory) == tryTake){
                         continue;
                     }
-                    if(s.getStack().isEmpty() || (s.getStack().getCount() < s.getStack().getMaxCount() && ItemStack.canCombine(slot.getStack(), s.getStack()))){
+                    if(s.getStack().isEmpty() || (s.getStack().getCount() < s.getStack().getMaxCount() && ItemStack.areItemsAndComponentsEqual(slot.getStack(), s.getStack()))){
                         hasPlace = true;
                         break;
                     }
@@ -234,7 +241,7 @@ public class InvTasks {
                     if((s.inventory instanceof PlayerInventory) == tryTake){
                         continue;
                     }
-                    if(s.getStack().isEmpty() || (s.getStack().getCount() < s.getStack().getMaxCount() && ItemStack.canCombine(slot.getStack(), s.getStack()))){
+                    if(s.getStack().isEmpty() || (s.getStack().getCount() < s.getStack().getMaxCount() && ItemStack.areItemsAndComponentsEqual(slot.getStack(), s.getStack()))){
                         mc.interactionManager.clickSlot(syncId, i, 0, SlotActionType.PICKUP, mc.player);
                         if(handler.getCursorStack().isEmpty()){
                             return;
@@ -281,7 +288,7 @@ public class InvTasks {
                     ItemStack cleanedStack = ItemStackUtils.getCleanedItem(slot.getStack(), false, false);
                     for(int i=0;i<handler.slots.size();i++){
                         Slot slot2=handler.getSlot(i);
-                        if(ItemStack.areItemsEqual(cleanedStack,slot2.getStack()) &&  ItemStack.canCombine(cleanedStack,ItemStackUtils.getCleanedItem(slot2.getStack(),false,false))){
+                        if(ItemStack.areItemsEqual(cleanedStack,slot2.getStack()) &&  ItemStack.areItemsAndComponentsEqual(cleanedStack,ItemStackUtils.getCleanedItem(slot2.getStack(),false,false))){
                             final int index = i;
                             clickExecutor.execute(()->{
                                 mc.interactionManager.clickSlot(handler.syncId, index, 1, SlotActionType.THROW, player);
@@ -398,7 +405,7 @@ public class InvTasks {
         for (int i : index){
             ItemStack stack2 = slots.get(i).getStack();
             //can place stack with amount on it,
-            if(stack2 != null && (stack2.isEmpty() || stack2.getCount() + amount <= stack2.getMaxCount() && ItemStack.canCombine(stack, stack2))){
+            if(stack2 != null && (stack2.isEmpty() || stack2.getCount() + amount <= stack2.getMaxCount() && ItemStack.areItemsAndComponentsEqual(stack, stack2))){
                 return i;
             }
         }
@@ -431,7 +438,7 @@ public class InvTasks {
                 if(slot0.getStack().isEmpty()){
                     transfer = Math.min(64, count);
                     stackToSet = itemStack.copyWithCount(transfer);
-                }else if(slot0.getStack().getCount() < 64 && ItemStack.canCombine( slot0.getStack(), itemStack)){
+                }else if(slot0.getStack().getCount() < 64 && ItemStack.areItemsAndComponentsEqual( slot0.getStack(), itemStack)){
                     transfer = Math.min(64 - slot0.getStack().getCount(), count);
                     stackToSet = itemStack.copyWithCount(slot0.getStack().getCount()+ transfer);
                 }
@@ -462,7 +469,7 @@ public class InvTasks {
                 if(slot0.getStack().isEmpty()){
                     slot = i;
                     break;
-                }else if(slot0.getStack().getCount() < 64 && ItemStack.canCombine( slot0.getStack(), itemStack)){
+                }else if(slot0.getStack().getCount() < 64 && ItemStack.areItemsAndComponentsEqual( slot0.getStack(), itemStack)){
                     slot=  i;
                     countA = count + slot0.getStack().getCount();
                     break;
@@ -489,9 +496,34 @@ public class InvTasks {
         if(itemStack.isEmpty())return "";
         StringBuilder builder = new StringBuilder("/minecraft:give @s ");
         builder.append(Registries.ITEM.getId(itemStack.getItem()));
-        if(itemStack.hasNbt()){
-            String nbtString = itemStack.getNbt().toString();
-            builder.append(nbtString);
+        if(ItemStackUtils.hasInPatch(itemStack)){
+            builder.append('[');
+            Map<ComponentType, Optional> map = new HashMap<>( itemStack.components.changedComponents);
+            int index = 0;
+            for (var entry: map.entrySet()){
+                if(index > 0){
+                    builder.append(',');
+                }
+                Identifier identifier = Registries.DATA_COMPONENT_TYPE.getId(entry.getKey());
+                if(identifier != null){
+                    String cmp  = identifier.toString();
+                    Optional val = entry.getValue();
+                    if(val.isPresent()){
+                        try{
+                            String nbtSeri = entry.getKey().getCodecOrThrow().encodeStart(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), val.get()).getOrThrow().toString();
+                            builder.append(cmp).append('=').append(nbtSeri);
+                            index ++;
+                        }catch (Throwable e){
+                            //exception, skip
+                            Debug.chat(e.getMessage());
+                        }
+                    }else {
+                        builder.append('!').append(cmp);
+                        index ++;
+                    }
+                }
+            }
+            builder.append(']');
         }
         builder.append(" ").append(itemStack.getCount());
         return builder.toString();
@@ -508,7 +540,7 @@ public class InvTasks {
         ItemStack stackAt = handler.getSlot(toSlot).getStack();
         int toAmount = toAmountAdd;
         if(!stackAt.isEmpty()){
-            if(ItemStack.canCombine(stackAt, itemStack)){
+            if(ItemStack.areItemsAndComponentsEqual(stackAt, itemStack)){
                 toAmount += stackAt.getCount();
             }else {
                 // 不要动
@@ -530,7 +562,7 @@ public class InvTasks {
             }
             //直接填满就行
             for (var i: alreadyMatched){
-                if(!handler.getSlot(i).getStack().isEmpty() && ItemStack.canCombine(handler.getSlot(i).getStack(), itemStack)){
+                if(!handler.getSlot(i).getStack().isEmpty() && ItemStack.areItemsAndComponentsEqual(handler.getSlot(i).getStack(), itemStack)){
                     moveFromTo(handler, i, toSlot);
                     if(handler.getSlot(toSlot).getStack().getCount() >=  toAmount){
                         break;
@@ -540,7 +572,7 @@ public class InvTasks {
         }else {
             //考虑数量
             for (var i: alreadyMatched){
-                if(!handler.getSlot(i).getStack().isEmpty() && ItemStack.canCombine(handler.getSlot(i).getStack(), itemStack)){
+                if(!handler.getSlot(i).getStack().isEmpty() && ItemStack.areItemsAndComponentsEqual(handler.getSlot(i).getStack(), itemStack)){
                     int currentAmount = handler.getSlot(toSlot).getStack().getCount();
                     if(currentAmount + handler.getSlot(i).getStack().getCount() > toAmount){
                         //satisfy , use tasks to

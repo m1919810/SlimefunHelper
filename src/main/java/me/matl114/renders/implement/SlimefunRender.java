@@ -7,6 +7,7 @@ import me.matl114.bukkitUtiils.ItemStackHelper;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.managers.HotKeys;
 import me.matl114.renders.RenderMain;
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.UtilClass.Point;
 import net.minecraft.client.MinecraftClient;
@@ -193,10 +194,10 @@ public class SlimefunRender {
     protected static char[] GCE_GENE_DISPLAY_U=new char[]{'B','C','D','F','S','W'};
     public static void handleGCEInfo(String sfid,ItemStack stack, List<Text> lores){
         if(sfid.startsWith("GCE_")){
-            if(stack!=null&&stack.hasNbt()){
+            if(stack!=null&& ItemStackUtils.hasCustomData(stack)){
                 try{
-                    NbtCompound tag=stack.getNbt();
-                    if((tag=getBukkitValues(tag))!=null  && tag.contains(GCE_CHICKEN_PATH)){
+                    NbtCompound tag= getCustomDataReadOnly(stack);
+                    if((tag=getBukkitValue(tag))!=null  && tag.contains(GCE_CHICKEN_PATH)){
                         int[] dna=tag.getIntArray(GCE_CHICKEN_PATH);
                         int len=dna.length;
                         StringBuilder sb=new StringBuilder();
@@ -351,10 +352,10 @@ public class SlimefunRender {
         return re.isEmpty()?null:re;
     }
     public static String handlePureChickenDNAInfo(ItemStack item){
-        NbtCompound tag=item.getNbt();
+        NbtCompound tag= ItemStackUtils.getCustomDataReadOnly(item);
 
         String val = getSfId(tag);
-        if(val!=null && val.startsWith("GCE_") &&( tag=getBukkitValues(tag))!=null && tag.contains(GCE_CHICKEN_PATH)){
+        if(val!=null && val.startsWith("GCE_") &&( tag=getBukkitValue(tag))!=null && tag.contains(GCE_CHICKEN_PATH)){
             try{
                 int[] dna=tag.getIntArray(GCE_CHICKEN_PATH);
                 int len=dna.length;
@@ -389,7 +390,7 @@ public class SlimefunRender {
             if(optionalChicken!=null ){
                 String val = dnaInfo.get(optionalChicken);
                 if(val != null){
-                    return Optional.of( new Identifier("slimefunhelper","gce/"+val));
+                    return Optional.of(RenderMain.wrapAsModel( new Identifier("slimefunhelper","gce/"+val)));
                 }
             }
             return Optional.empty();
@@ -473,7 +474,7 @@ public class SlimefunRender {
         put("CLT_PLANT_WITHER_ROSE",ofNullableList(Items.WITHER_ROSE));
         put("CLT_PLANT_BASALT",ofNullableList(Items.BASALT));
         put("CLT_PLANT_CREEPER",ofNullableList(Items.GUNPOWDER, Items.CREEPER_HEAD));
-        put("CLT_PLANT_TURTLE",ofNullableList(Items.SCUTE, Items.SEAGRASS, Items.TURTLE_EGG));
+        put("CLT_PLANT_TURTLE",ofNullableList(Items.TURTLE_SCUTE, Items.SEAGRASS, Items.TURTLE_EGG));
         put("CLT_PLANT_PHANTOM",ofNullableList(Items.PHANTOM_MEMBRANE));
         put("CLT_PLANT_ENDER_DRAGON",ofNullableList(Items.DRAGON_BREATH, Items.DRAGON_HEAD, Items.DRAGON_EGG));
         put("CLT_PLANT_AMETHYST",ofNullableList(Items.AMETHYST_SHARD));
@@ -582,9 +583,9 @@ public class SlimefunRender {
     }};
     public static void handleCLTInfo(String sfid,ItemStack stack,List<Text> lores){
         if(sfid.startsWith("CLT_PLANT")){
-            if(stack!=null&&stack.hasNbt()){
+            if(stack!=null&& ItemStackUtils.hasCustomData(stack)){
                 MutableText info=Text.literal("农耕工艺: [").formatted(Formatting.GRAY);
-                NbtCompound tag=getBukkitValues(stack);
+                NbtCompound tag=getBukkitValueReadOnly(stack);
                 if(tag!=null){
                     try{
                         if(tag.contains(CLT_SEED_PATH)){
@@ -657,7 +658,7 @@ public class SlimefunRender {
 
     static{
         RenderMain.registerContainerInfoPredicate((stack)->{
-            NbtCompound tag = getBukkitValues(stack);
+            NbtCompound tag = getBukkitValueReadOnly(stack);
 
             if(tag!=null){
                 BukkitItemStack stored;

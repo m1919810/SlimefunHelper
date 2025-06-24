@@ -144,6 +144,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     public void renderAbsolute(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         if(this.renderHandler != null){
             this.renderHandler.renderExtraAbsoluteCoord(this, context, mouseX, mouseY , delta, this.alpha, this.selected);
+            context.tryDraw();
         }
     }
 

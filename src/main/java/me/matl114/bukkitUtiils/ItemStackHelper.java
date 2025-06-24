@@ -2,14 +2,11 @@ package me.matl114.bukkitUtiils;
 
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
+import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.Registries;
 
 
 import static me.matl114.utils.ItemStackUtils.*;
@@ -24,26 +21,25 @@ public class ItemStackHelper {
         Debug.info("ItemStackHelper enabled");
     }
 
-    private static final NbtList DEFAULT_ENCH = new NbtList();
-    static{
-        DEFAULT_ENCH.add(EnchantmentHelper.createNbt(Registries.ENCHANTMENT.getId(Enchantments.LUCK_OF_THE_SEA), 1));
-    }
+
     public static ItemStack getAsDisplayItem(BukkitItemStack itemStack){
         try{
             ItemStack stack=new ItemStack(itemStack.getType());
             stack.setCount(itemStack.getAmount());
             if(itemStack.hasItemMeta()){
                 BukkitMetaItem meta=itemStack.getItemMeta();
-
-                if(meta.hasDisplayName()||meta.hasLore()){
-                    ItemStackUtils.setDisplay(stack,ItemStackHelper.fromJsonToDisplay(meta.getDisplayName(),meta.getLore()));
+                if(meta.hasDisplayName()){
+                    ItemStackUtils.setCustomName(stack, ItemStackUtils.jsonRawToText(meta.getDisplayName()));
+                }
+                if(meta.hasLore()){
+                    ItemStackUtils.setLore(stack, meta.getLore().stream().map(ItemStackUtils::jsonRawToText).toList());
                 }
                 if(meta.hasEnchants()){
-                    ItemStackUtils.setEnchantment(stack, DEFAULT_ENCH);
+
+                    ItemStackUtils.setEnchantmentGlow(stack);
                 }
                 if(BukkitMetaType.ENCHANT_BOOK.isType(meta)){
-                    Map<?,?> e=(Map<?,?>)BukkitMetaType.ENCHANT_BOOK.getAttr(meta,"stored-enchants");
-                   ItemStackUtils.setStoredEnchantment(stack, DEFAULT_ENCH);
+                    ItemStackUtils.setEnchantmentGlow(stack);
                 }
                 if(BukkitMetaType.SKULL.isType(meta)){
                     if(BukkitMetaType.SKULL.getAttr(meta,"skull-owner") instanceof BukkitPlayerProfile bp){
@@ -52,7 +48,7 @@ public class ItemStackHelper {
                 }
                 BukkitPersistentDataContainer container=meta.getPersistentDataContainer();
                 if(container!=null){
-                    stack.getOrCreateNbt().put("PublicBukkitValues",container.toCompound());
+                    updateCustomData(stack, nbtCompound ->nbtCompound.put("PublicBukkitValues",container.toCompound()));
                 }
                 if(meta.hasCustomModelData()){
                     setCustomModelData(stack, meta.getCustomModelData());
@@ -122,6 +118,13 @@ public class ItemStackHelper {
         //GameProfile profile = new GameProfile(uid, "CS-CoreLib");
         return profile.writeGameProfile(new NbtCompound());
 
+    }
+    public static ProfileComponent buildPlayerHeadProfile(String hash){
+        BukkitPlayerProfile.PlayerSkin skin = BukkitPlayerProfile.fromHashCode(hash);
+        BukkitPlayerProfile profile = skin.getProfile();
+        profile.name = "CS-CoreLib";
+        //GameProfile profile = new GameProfile(uid, "CS-CoreLib");
+        return profile.createGameProfile();
     }
 
 }

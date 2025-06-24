@@ -5,12 +5,17 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.properties.PropertyMap;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.utils.Debug;
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.JsonUtils;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -126,7 +131,16 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
 
     }
     public void addGameProfile(ItemStack stack) {
-        writeGameProfile(stack.getOrCreateSubNbt("SkullOwner"));
+        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, createGameProfile());
+    }
+    public ProfileComponent createGameProfile(){
+        PropertyMap map = new PropertyMap();
+        map.putAll(this.properties);
+        return new ProfileComponent(
+            Optional.ofNullable( StringHelper.isEmpty(this.name)? (String)null: this.name),
+            Optional.ofNullable(this.uniqueId),
+            map
+        );
     }
     public NbtCompound writeGameProfile(NbtCompound var0) {
 

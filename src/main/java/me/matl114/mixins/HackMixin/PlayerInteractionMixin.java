@@ -125,8 +125,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     private boolean nextTickEarlyBreak=false;
     @Unique
     private static final AtomicBoolean enableFakeInstBreak= Configs.MINE_CONFIG.getBoolean(Configs.MINE_ENABLE_FAKE_INSTANT_BREAK);
-    @Unique
-    private static final AtomicDouble reachDistance=Configs.MINE_CONFIG.getDouble(Configs.MINE_FASTBREAK_REACH);
+
     //
     @Inject(method = "attackBlock",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V",ordinal = 1,shift = At.Shift.AFTER),locals = LocalCapture.CAPTURE_FAILSOFT)
     public void earlyBreakPacket(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir, net.minecraft.block.BlockState blockState){
@@ -173,12 +172,10 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         }
     }
 
-    @Inject(method = "getReachDistance",at = @At(value = "HEAD"),cancellable = true)
-    public void widerReachDistance(CallbackInfoReturnable<Float> cir){
-        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.REACH)){
-            cir.setReturnValue(reachDistance.floatValue());
-        }
-    }
+//    @Inject(method = "getReachDistance",at = @At(value = "HEAD"),cancellable = true)
+//    public void widerReachDistance(CallbackInfoReturnable<Float> cir){
+//
+//    }
     @Unique
     private static final AtomicBoolean DIS_INTERVAL=Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_INTERVEL) ;
     @Inject(method = "hasLimitedAttackSpeed",at = @At(value = "HEAD"),cancellable = true)
@@ -187,12 +184,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             cir.setReturnValue(false);
         }
     }
-    @Inject(method = "hasExtendedReach",at = @At(value = "HEAD"),cancellable = true)
-    public void extendedReach(CallbackInfoReturnable<Boolean> cir){
-        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.REACH)){
-            cir.setReturnValue(true);
-        }
-    }
+
     @Unique
     private RecipeEntry<?> lastlyCrafted;
     @Unique

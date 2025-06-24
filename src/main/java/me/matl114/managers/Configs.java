@@ -65,6 +65,7 @@ public class Configs {
     public static final String[] CHAT_HELPER_IGNORE_INPUT_LIMIT = {"chat-helper","ignore-chat-len-limit"};
     public static final String[] CHAT_HELPER_CLIENT_GIVE = {"chat-helper","client-side-give"};
     public static final String[] CHAT_HELPER_CHECK_MESSAGE_LENGTH = {"chat-helper","check-chat-len"};
+    public static final String[] CHAT_HELPER_CHECK_COMMAND_LENGTH = {"chat-helper","check-command-len"};
     public static final Config CHAT_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/chat.yml","chat settings")
         .defaultVal("",CHAT_HELPER_CACHE)
         .defaultVal(20,CHAT_HELPER_PERIOD)
@@ -73,6 +74,7 @@ public class Configs {
         .defaultVal(true, CHAT_HELPER_IGNORE_INPUT_LIMIT)
         .defaultVal(false, CHAT_HELPER_CLIENT_GIVE)
         .defaultVal(256, CHAT_HELPER_CHECK_MESSAGE_LENGTH)
+        .defaultVal(32760, CHAT_HELPER_CHECK_COMMAND_LENGTH)
         .save();
 
     public static final String[] RENDER_DETECT_SPAWN_WHITELIST={"detect-entity","spawn-whitelist"};

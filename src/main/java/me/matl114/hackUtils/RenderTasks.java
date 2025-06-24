@@ -78,7 +78,7 @@ public class RenderTasks {
         HashSet<EntityType<?>> whitelisted=getWhitelisted();
 
         if(whitelisted.contains(packet.getEntityType())){
-            trackingEntity.add(packet.getId());
+            trackingEntity.add(packet.getEntityId());
             EntityType<?> type=packet.getEntityType();
             if(type==EntityType.PLAYER){
                 Text text=null;
@@ -89,7 +89,7 @@ public class RenderTasks {
                     }
                 }
                 Debug.chat("Player ",text==null?"":text,"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
-                Debug.chat("Player Entity Id ",packet.getId());
+                Debug.chat("Player Entity Id ",packet.getEntityId());
             }else{
                 Debug.chat("Entity",packet.getEntityType().getName(),"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
             }
@@ -176,7 +176,7 @@ public class RenderTasks {
     public static void updatePoweredProjectile(ExplosiveProjectileEntity fireball){
         calculatingExplosives.add(fireball);
         var access = ExplosiveProjectileAccess.of(fireball);
-        access.initPower(fireball.powerX, fireball.powerY, fireball.powerZ);
+
     }
     public static AtomicBoolean calFireball = Configs.RENDER_CONFIG.getBoolean(Configs.CAL_FIREBALL_TRACE);
     public static void calPoweredProjectileTrace(ExplosiveProjectileEntity fireball){
@@ -188,26 +188,25 @@ public class RenderTasks {
         }
 
         Vec3d vec = fireball.getVelocity();
-        var access = ExplosiveProjectileAccess.of(fireball);
-        Vec3d power = access.getPower();
-        if(power == null){
-            return;
+//        var access = ExplosiveProjectileAccess.of(fireball);
+//        Vec3d power = access.getPower();
+//        if(power == null){
+//            return;
+//        }
+        if(fireball.accelerationPower > 1e-4){
+            calLineTrace(fireball.getPos(), vec);
         }
-        if(vec.lengthSquared() < 0.00001 || vec.normalize().squaredDistanceTo(power.normalize()) < 0.01){
-            //初速度不值得一提 或者速度基本上和加速度同向 近似为加速直线运动检测
-            calLineTrace(fireball.getPos(), power);
-        }else {
-            //需要模拟运动轨迹
-            //Debug.info("complex");
-        }
+//        if(vec.lengthSquared() < 0.00001 || vec.normalize().squaredDistanceTo(power.normalize()) < 0.01){
+//            //初速度不值得一提 或者速度基本上和加速度同向 近似为加速直线运动检测
+//
+//        }else {
+//            //需要模拟运动轨迹
+//            //Debug.info("complex");
+//        }
     }
     public static void calLineTrace(Vec3d fireballPosition, Vec3d power){
         // (x - x0)/px = (y - y0)/py = (z - z0)/pz
-        if(!ExplosiveProjectileAccess.powerNotZero(power)){
-            //are you moving? NO
-            //not moving
-            Debug.chat("Fireball trace update: 0");
-        }else if(mc.player != null){
+        if(mc.player != null){
             //给行进方向norm
             power = power.normalize();
             var playerPos = mc.player.getEyePos();
@@ -255,13 +254,11 @@ public class RenderTasks {
         var access = ExplosiveProjectileAccess.of(fireball);
         float drag = access.getDragCommon();
         Vec3d motion = fireball.getVelocity();
-        Vec3d power = access.getPower();
-        if(!ExplosiveProjectileAccess.powerNotZero(power)){
-            return trace;
-        }
+        Vec3d power = motion.normalize().multiply(fireball.accelerationPower);
+
         trace.add(startpos);
 
-        for (int i=0; i<500;++i){
+        for (int i=0; i<400;++i){
             startpos = startpos.add(motion);
             motion = motion.add(power).multiply(drag);
             trace.add(startpos);

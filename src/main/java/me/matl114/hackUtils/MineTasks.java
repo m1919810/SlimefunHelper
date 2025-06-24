@@ -213,7 +213,7 @@ public class MineTasks {
 //                tryMine+=1;
 //            }
             manager.sendSequencedPacket(mc.world, (sequence) -> {
-                return new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, sequence);
+                return new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, sequence, mc.player.getYaw(), mc.player.getPitch());
             });
         }else{
             do{

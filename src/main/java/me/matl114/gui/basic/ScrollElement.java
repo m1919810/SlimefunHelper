@@ -40,9 +40,9 @@ public class ScrollElement extends AbstractElement {
         this.valueTracker = valueTracker;
         this.activate = activate;
     }
-    private static final Identifier SCROLLER_BACKGROUND = new Identifier("textures/gui/container/creative_inventory/tab_items.png");
-    private static final Identifier SCROLLER_TEXTURE = new Identifier("container/creative_inventory/scroller");
-    private static final Identifier SCROLLER_DISABLED_TEXTURE = new Identifier("container/creative_inventory/scroller_disabled");
+    private static final Identifier SCROLLER_BACKGROUND = new Identifier("minecraft","textures/gui/container/creative_inventory/tab_items.png");
+    private static final Identifier SCROLLER_TEXTURE = new Identifier("minecraft","container/creative_inventory/scroller");
+    private static final Identifier SCROLLER_DISABLED_TEXTURE = new Identifier("minecraft","container/creative_inventory/scroller_disabled");
     private static final Quaternionf ROTATE_X = RotationAxis.NEGATIVE_Z.rotationDegrees(90);
     public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
         //绘制滑动条

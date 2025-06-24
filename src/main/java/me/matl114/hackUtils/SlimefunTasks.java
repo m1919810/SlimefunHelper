@@ -5,6 +5,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceArrayMap;
@@ -53,6 +54,7 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.recipe.*;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
@@ -85,6 +87,7 @@ import static me.matl114.hackUtils.SlimefunTasks.MultiBlockEntry.DIR_CONSIDER;
 import static me.matl114.hackUtils.SlimefunTasks.MultiBlockEntry.DIR_SYMM;
 
 public class SlimefunTasks {
+    //fixme , may exception when loading data firstly
     public static void init(){
 
     }
@@ -103,12 +106,12 @@ public class SlimefunTasks {
 
         @Override
         public int hashCode(){
-            return 31* sample.getItem().hashCode() + (sample.hasNbt()? sample.getNbt().hashCode() :0);
+            return ItemStack.hashCode(sample);
         }
 
         @Override
         public boolean equals(Object o) {
-            return (o instanceof ItemStackSample sample && ItemStack.canCombine(sample.sample, this.sample)) ||(o instanceof ItemStack item && ItemStack.canCombine(item, this.sample));
+            return (o instanceof ItemStackSample sample && ItemStack.areItemsAndComponentsEqual(sample.sample, this.sample)) ||(o instanceof ItemStack item && ItemStack.areItemsAndComponentsEqual(item, this.sample));
         }
     }
     public static record ItemStackWithId(ItemStack stack, String identifier){
@@ -138,18 +141,13 @@ public class SlimefunTasks {
                 return ItemStackSample.EMPTY;
             }
             JsonObject jsonMap = json.getAsJsonObject();
-            String id = jsonMap.getAsJsonPrimitive("id").getAsString();
-            Item item = Registries.ITEM.get(new Identifier(id));
-            JsonPrimitive nbtRaw = jsonMap.getAsJsonPrimitive("nbt");
-            NbtCompound nbt ;
-            try {
-                nbt = nbtRaw == null ? null : StringNbtReader.parse(nbtRaw.getAsString());
-            } catch (CommandSyntaxException e) {
-                throw new RuntimeException(e);
+            try{
+                ItemStack stack = ItemStack.CODEC.decode(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), jsonMap).getOrThrow().getFirst();
+                return stack.isEmpty() ? ItemStackSample.EMPTY: new ItemStackSample(stack);
+            }catch (Throwable e){
+                throw new JsonParseException(e);
             }
-            var itemStack = new ItemStack(item);
-            itemStack.setNbt(nbt);
-            return new ItemStackSample(itemStack);
+
         }
 
         @Override
@@ -157,90 +155,35 @@ public class SlimefunTasks {
             if(src == ItemStackSample.EMPTY){
                 return JsonNull.INSTANCE;
             }
-            JsonObject jsonMap = new JsonObject();
-            Identifier identifier = Registries.ITEM.getId(src.sample().getItem());
-            jsonMap.addProperty("id",identifier == null ? "minecraft:air" : identifier.toString());
-            if(src.sample().hasNbt())
-                jsonMap.addProperty("nbt",src.sample().getNbt().asString());
-            return jsonMap;
+            try{
+                JsonElement jsonMap = ItemStack.CODEC.encodeStart(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), src.sample).getOrThrow();
+                return jsonMap;
+            }catch (Throwable e){
+                throw new JsonParseException(e);
+            }
+
         }
     };
     private static DirtyMap<ItemStackSample, String> ITEM_SAMPLE_MAP;
     private static Map<String, ItemStackSample> ITEM_SAMPLE_INDEX ;
     private static final Random rand = new Random();
-
+    private static SlimefunRegistryDataBase check(){
+        Preconditions.checkArgument(DATA != null, "Illegal State, you are not in a game!");
+        return DATA;
+    }
     public static String getIdOrNull(ItemStack item){
-        if(item.hasNbt()){
-            //only nbt item use custom type;
-            ItemStackSample sample = ItemStackSample.of(item);
-            String re =  ITEM_SAMPLE_MAP.getOrDefault(sample, null);
-            if(re != null){
-                ACTIVE_ID.add(re);
-            }
-            return re;
-        }else {
-            Identifier identifier = Registries.ITEM.getId(item.getItem());
-            return identifier == null ? "minecraft:air" : identifier.toString();
-        }
+        return check().getIdOrNull(item);
+
     }
 
     public static String getOrAddId(ItemStack item){
-        if(item.hasNbt()){
-            //only nbt item use custom type;
-            ItemStackSample sample = ItemStackSample.of(item);
-            String re =  ITEM_SAMPLE_MAP.computeIfAbsent(sample, (s)->{
-                String newName ;
-                do{
-                    newName = "customitems:" +rand.nextInt(1145141919);
-                }while (ITEM_SAMPLE_INDEX.containsKey(newName));
+        return check().getOrAddId(item);
 
-                ITEM_SAMPLE_INDEX.put(newName, s);
-                ITEM_SAMPLE_MAP.setDirty();
-
-                return newName;
-            });
-            ACTIVE_ID.add(re);
-            return re;
-        }else {
-            Identifier identifier = Registries.ITEM.getId(item.getItem());
-            return identifier == null ? "minecraft:air" : identifier.toString();
-        }
     }
     public static ItemStack byId(String id){
-        if(id.startsWith("customitems:")){
-            ACTIVE_ID.add(id);
-            var re= ITEM_SAMPLE_INDEX.get(id);
-            return re != null ? re.sample.copy() : ItemStack.EMPTY;
-        }else {
-            return new ItemStack(Registries.ITEM.get(new Identifier(id)));
-        }
+        return check().byId(id);
     }
-    public static final JsonCodec<ItemStack> ITEM_CODEC = new JsonCodec<ItemStack>() {
-        @Override
-        public ItemStack deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            if(json.isJsonNull()){
-                return ItemStack.EMPTY;
-            }
-            var jsonObject = json.getAsJsonObject();
-            String val = jsonObject.getAsJsonPrimitive("typeid").getAsString();
-            ItemStack sampleCopy = byId(val);
-            int amount = jsonObject.getAsJsonPrimitive("amount").getAsInt();
-            sampleCopy.setCount(amount);
-            return sampleCopy;
-        }
 
-        @Override
-        public JsonElement serialize(ItemStack src, Type typeOfSrc, JsonSerializationContext context) {
-            if(src.isEmpty()){
-                return JsonNull.INSTANCE;
-            }
-            String typeid = getOrAddId(src);
-            var json = new JsonObject();
-            json.addProperty("typeid",typeid);
-            json.addProperty("amount", src.getCount());
-            return json;
-        }
-    };
     public static final JsonCodec<CraftingType> TYPE_CODEC = new JsonCodec<CraftingType>(){
         @Override
         public JsonElement serialize(CraftingType src, Type typeOfSrc, JsonSerializationContext context) {
@@ -287,13 +230,7 @@ public class SlimefunTasks {
     };
 
 
-    private static final Gson RECIPES_JSON_CODEC = new GsonBuilder()
-        .disableHtmlEscaping()
-        .registerTypeAdapter(ItemStackSample.class, ITEM_SAMPLE_CODEC)
-        .registerTypeAdapter(ItemStack.class, ITEM_CODEC)
-        .registerTypeAdapter(CraftingType.class, TYPE_CODEC)
-        .registerTypeAdapter(SlimefunRecipeEntry.class, ENTRY_CODED)
-        .create();
+
 
     private static final Type DATA_MAP_TYPE = new TypeToken<Map<String, ItemStackSample>>(){}.getType();
     private static final Type TYPE_MAP_TYPE = new TypeToken<Map<String, CraftingType>>(){}.getType();
@@ -321,56 +258,229 @@ public class SlimefunTasks {
         return rt;
     }
     public static ItemStack getSlimefunRecipeTypeIcon(String rid){
-        return ALL_RECIPE_TYPE.getOrDefault(rid,CraftingType.EMPTY).icon;
+        return check().ALL_RECIPE_TYPE.getOrDefault(rid,CraftingType.EMPTY).icon;
     }
-    private static DirtyMap<String, CraftingType> ALL_RECIPE_TYPE;
-    private static DirtyMap<String, SlimefunRecipeEntry> ALL_RECIPE_ENTRY;
-    private static DirtyCollectionImpl<Set<String>,String> SAVED_ITEM_ID;
-    private static Set<String> ACTIVE_ID = new HashSet<>();
-    public static void loadData(){
-        Map<String, ItemStackSample> map0 = new Object2ReferenceOpenHashMap<>();
-        String dataJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/item-database.json");
-        map0.putAll(RECIPES_JSON_CODEC.fromJson(dataJson, DATA_MAP_TYPE));
-        Map<ItemStackSample, String> data0 = new Object2ReferenceOpenHashMap<>();
-        map0.forEach((k,v)->data0.put(v,k));
-        ITEM_SAMPLE_MAP = new DirtyMap<>(data0);
-        ITEM_SAMPLE_INDEX = new Object2ReferenceOpenHashMap<>(map0);
-        ACTIVE_ID.clear();
+    public static  SlimefunRegistryDataBase DATA;
 
-        Map<String, CraftingType> map = new Object2ReferenceOpenHashMap<>();
-        String typeJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/craft-types.json");
-        map.putAll(RECIPES_JSON_CODEC.fromJson(typeJson, TYPE_MAP_TYPE));
-        ALL_RECIPE_TYPE = new DirtyMap<>(map);
-        Map<String, SlimefunRecipeEntry> map1 = new Object2ReferenceOpenHashMap<>();
-        String recipeJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/recipe-data.json");
-        map1.putAll(RECIPES_JSON_CODEC.fromJson(recipeJson, RECIPE_MAP_TYPE));
-        ALL_RECIPE_ENTRY = new DirtyMap<>(map1);
-        resetMultiblockRegistry();
-        map1.forEach((k,v)->{
-            if(MULTIBLOCK_REGEX.asMatchPredicate().test(v.rid)){
-                addToMultiblockRegistry(v);
+    private static class SlimefunRegistryDataBase{
+        private DirtyMap<String, CraftingType> ALL_RECIPE_TYPE;
+        private DirtyMap<String, SlimefunRecipeEntry> ALL_RECIPE_ENTRY;
+        private DirtyCollectionImpl<Set<String>,String> SAVED_ITEM_ID;
+        private Set<String> ACTIVE_ID = new HashSet<>();
+        public final JsonCodec<ItemStack> ITEM_CODEC = new JsonCodec<ItemStack>() {
+            @Override
+            public ItemStack deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+                if(json.isJsonNull()){
+                    return ItemStack.EMPTY;
+                }
+                var jsonObject = json.getAsJsonObject();
+                String val = jsonObject.getAsJsonPrimitive("typeid").getAsString();
+                ItemStack sampleCopy = byId(val);
+                int amount = jsonObject.getAsJsonPrimitive("amount").getAsInt();
+                sampleCopy.setCount(amount);
+                return sampleCopy;
             }
-        });
-        Set<String> saveId = new LinkedHashSet<>();
-        String savedItemIds = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/saved-items.json");
-        saveId.addAll(((Map<String, List<String>>)RECIPES_JSON_CODEC.fromJson(savedItemIds, ID_LIST_TYPE)).getOrDefault("saved-ids",List.of()));
-        SAVED_ITEM_ID = new DirtyCollectionImpl<>(saveId);
 
-        var iter = ITEM_SAMPLE_MAP.entrySet().iterator();
-        while (iter.hasNext()){
-            if(!ACTIVE_ID.contains( iter.next().getValue()) ){
-                iter.remove();
+            @Override
+            public JsonElement serialize(ItemStack src, Type typeOfSrc, JsonSerializationContext context) {
+                if(src.isEmpty()){
+                    return JsonNull.INSTANCE;
+                }
+                String typeid = getOrAddId(src);
+                var json = new JsonObject();
+                json.addProperty("typeid",typeid);
+                json.addProperty("amount", src.getCount());
+                return json;
+            }
+        };
+        private final Gson RECIPES_JSON_CODEC = new GsonBuilder()
+            .disableHtmlEscaping()
+            .registerTypeAdapter(ItemStackSample.class, ITEM_SAMPLE_CODEC)
+            .registerTypeAdapter(ItemStack.class, ITEM_CODEC)
+            .registerTypeAdapter(CraftingType.class, TYPE_CODEC)
+            .registerTypeAdapter(SlimefunRecipeEntry.class, ENTRY_CODED)
+            .create();
+        public void loadData(){
+            Map<String, ItemStackSample> map0 = new Object2ReferenceOpenHashMap<>();
+            String dataJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/item-database.json");
+            map0.putAll(RECIPES_JSON_CODEC.fromJson(dataJson, DATA_MAP_TYPE));
+            Map<ItemStackSample, String> data0 = new Object2ReferenceOpenHashMap<>();
+            map0.forEach((k,v)->data0.put(v,k));
+            ITEM_SAMPLE_MAP = new DirtyMap<>(data0);
+            ITEM_SAMPLE_INDEX = new Object2ReferenceOpenHashMap<>(map0);
+            ACTIVE_ID.clear();
+
+            Map<String, CraftingType> map = new Object2ReferenceOpenHashMap<>();
+            String typeJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/craft-types.json");
+            map.putAll(RECIPES_JSON_CODEC.fromJson(typeJson, TYPE_MAP_TYPE));
+            ALL_RECIPE_TYPE = new DirtyMap<>(map);
+            Map<String, SlimefunRecipeEntry> map1 = new Object2ReferenceOpenHashMap<>();
+            String recipeJson = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/recipe-data.json");
+            map1.putAll(RECIPES_JSON_CODEC.fromJson(recipeJson, RECIPE_MAP_TYPE));
+            ALL_RECIPE_ENTRY = new DirtyMap<>(map1);
+            resetMultiblockRegistry();
+            map1.forEach((k,v)->{
+                if(MULTIBLOCK_REGEX.asMatchPredicate().test(v.rid)){
+                    addToMultiblockRegistry(v);
+                }
+            });
+            Set<String> saveId = new LinkedHashSet<>();
+            String savedItemIds = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/saved-items.json");
+            saveId.addAll(((Map<String, List<String>>)RECIPES_JSON_CODEC.fromJson(savedItemIds, ID_LIST_TYPE)).getOrDefault("saved-ids",List.of()));
+            SAVED_ITEM_ID = new DirtyCollectionImpl<>(saveId);
+
+            var iter = ITEM_SAMPLE_MAP.entrySet().iterator();
+            while (iter.hasNext()){
+                if(!ACTIVE_ID.contains( iter.next().getValue()) ){
+                    iter.remove();
+                }
+            }
+            var iter2 = ITEM_SAMPLE_INDEX.entrySet().iterator();
+            while (iter2 .hasNext()){
+                if(!ACTIVE_ID.contains(iter2.next().getKey())){
+                    iter2.remove();
+                }
+            }
+            ACTIVE_ID.clear();
+
+        }
+        public void saveData(){
+            //不保存数据
+            if(!Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_SAVE).get()){
+                return;
+            }
+            try{
+                if(ALL_RECIPE_TYPE.isDirty()){
+                    ALL_RECIPE_TYPE.setDirty(false);
+                    Map<String, CraftingType> map = ALL_RECIPE_TYPE.getDelegate();
+                    String savedData = RECIPES_JSON_CODEC.toJson(map);
+                    ConfigLoader.saveToFile("sfhelper-configs/recipes/craft-types.json", savedData);
+                }
+            }catch (Throwable e){
+                Debug.info("保存craft-types.json文件失败, 错误:");
+                Debug.info(e);
+            }
+
+            try{
+                if(ALL_RECIPE_ENTRY.isDirty()){
+                    ALL_RECIPE_ENTRY.setDirty(false);
+                    Map<String, SlimefunRecipeEntry> map = ALL_RECIPE_ENTRY.getDelegate();
+                    String savedData = RECIPES_JSON_CODEC.toJson(map);
+                    ConfigLoader.saveToFile("sfhelper-configs/recipes/recipe-data.json", savedData);
+                }
+            }catch (Throwable e){
+                Debug.info("保存recipe-data.json文件失败, 错误:");
+                Debug.info(e);
+            }
+            try{
+                if(SAVED_ITEM_ID.isDirty()){
+                    SAVED_ITEM_ID.setDirty(false);
+                    List<String> list = SAVED_ITEM_ID.getDelegate().stream().toList();
+                    String savedData = RECIPES_JSON_CODEC.toJson(Map.of("saved-ids" ,list));
+                    ConfigLoader.saveToFile("sfhelper-configs/recipes/saved-items.json", savedData);
+                }
+            }catch (Throwable e){
+                Debug.info("保存saved-items.json文件失败, 错误:");
+                Debug.info(e);
+            }
+            //save at last in case of key missing for save
+            try{
+                if(ITEM_SAMPLE_MAP.isDirty()){
+                    ITEM_SAMPLE_MAP.setDirty(false);
+                    String savedData = RECIPES_JSON_CODEC.toJson(ITEM_SAMPLE_INDEX);
+                    ConfigLoader.saveToFile("sfhelper-configs/recipes/item-database.json", savedData);
+                }
+            }catch (Throwable e){
+                Debug.info("保存item-database.json文件失败, 错误:");
+                Debug.info(e);
             }
         }
-        var iter2 = ITEM_SAMPLE_INDEX.entrySet().iterator();
-        while (iter2 .hasNext()){
-            if(!ACTIVE_ID.contains(iter2.next().getKey())){
-                iter2.remove();
+        private Map<String, MultiBlockEntry> MULTIBLOCK_REGISTRIES = new Object2ReferenceOpenHashMap<>();
+
+        private Map<Block, Set<MultiBlockEntry>> MULTIBLOCK_INDEXED_BY_POTENTIALS = new Reference2ReferenceOpenHashMap<>();
+        private void resetMultiblockRegistry(){
+            if(MULTIBLOCK_REGISTRIES != null){
+                MULTIBLOCK_REGISTRIES.clear();
+            }
+            MULTIBLOCK_REGISTRIES = new Object2ReferenceOpenHashMap<>();
+            if(MULTIBLOCK_INDEXED_BY_POTENTIALS != null){
+                MULTIBLOCK_INDEXED_BY_POTENTIALS = new Reference2ReferenceOpenHashMap<>();
             }
         }
-        ACTIVE_ID.clear();
+        private void addToMultiblockRegistry(SlimefunRecipeEntry entry){
+            var newEntry = MultiBlockEntry.of(entry.inputs(), entry.id);
+            if(newEntry == null)return;
+            MULTIBLOCK_REGISTRIES.put(entry.id, newEntry);
+            Set<Block> potentialTriggerBlocks = newEntry.getPotentials();
+            for (Block block: potentialTriggerBlocks){
+                MULTIBLOCK_INDEXED_BY_POTENTIALS.computeIfAbsent(block, (b)->new ReferenceArraySet<>()).add(newEntry);
+            }
+        }
+
+        public String getIdOrNull(ItemStack item){
+            if(ItemStackUtils.hasInPatch(item)){
+                //only nbt item use custom type;
+                ItemStackSample sample = ItemStackSample.of(item);
+                String re =  ITEM_SAMPLE_MAP.getOrDefault(sample, null);
+                if(re != null){
+                    ACTIVE_ID.add(re);
+                }
+                return re;
+            }else {
+                Identifier identifier = Registries.ITEM.getId(item.getItem());
+                return identifier == null ? "minecraft:air" : identifier.toString();
+            }
+        }
+
+        public String getOrAddId(ItemStack item){
+            if(ItemStackUtils.hasInPatch(item)){
+                //only nbt item use custom type;
+                ItemStackSample sample = ItemStackSample.of(item);
+                String re =  ITEM_SAMPLE_MAP.computeIfAbsent(sample, (s)->{
+                    String newName ;
+                    do{
+                        newName = "customitems:" +rand.nextInt(1145141919);
+                    }while (ITEM_SAMPLE_INDEX.containsKey(newName));
+
+                    ITEM_SAMPLE_INDEX.put(newName, s);
+                    ITEM_SAMPLE_MAP.setDirty();
+
+                    return newName;
+                });
+                ACTIVE_ID.add(re);
+                return re;
+            }else {
+                Identifier identifier = Registries.ITEM.getId(item.getItem());
+                return identifier == null ? "minecraft:air" : identifier.toString();
+            }
+        }
+        public ItemStack byId(String id){
+            if(id.startsWith("customitems:")){
+                ACTIVE_ID.add(id);
+                var re= ITEM_SAMPLE_INDEX.get(id);
+                return re != null ? re.sample.copy() : ItemStack.EMPTY;
+            }else {
+                return new ItemStack(Registries.ITEM.get(Identifier.tryParse(id)));
+            }
+        }
+
+        public void putSlimefunEntry(SlimefunRecipeEntry entry){
+            ALL_RECIPE_ENTRY.put(entry.id(), entry);
+            if(MULTIBLOCK_REGEX.asMatchPredicate().test(entry.rid())){
+                check().addToMultiblockRegistry(entry);
+            }
+        }
+        public void validateRecipeType(String rid, ItemStack icon){
+            if(!check().ALL_RECIPE_TYPE.containsKey(rid)){
+                ItemStack ICON = icon.isEmpty()? ITEM_NULL_TYPE.copy(): icon.copy();
+                ICON.setCount(1);
+                check().ALL_RECIPE_TYPE.put(rid, new CraftingType(rid, ICON));
+            }
+        }
 
     }
+
+
     public static interface BlockMatcher{
         public Set<Block> getPotentials();
         default boolean match(Block b){
@@ -646,34 +756,15 @@ public class SlimefunTasks {
         }
 
         public Optional<CraftingType> getOptionalCraftingType(){
-            return id == null ? Optional.empty(): ALL_RECIPE_TYPE.values().stream().filter(ct->id.equals( ItemStackUtils.getSfId(ct.icon)))
+            return id == null ? Optional.empty(): check().ALL_RECIPE_TYPE.values().stream().filter(ct->id.equals( ItemStackUtils.getSfId(ct.icon)))
                 .findFirst();
         }
     }
     public static record MultiblockOffset(int dy, Direction direction){
 
     }
-    private static Map<String, MultiBlockEntry> MULTIBLOCK_REGISTRIES = new Object2ReferenceOpenHashMap<>();
 
-    private static Map<Block, Set<MultiBlockEntry>> MULTIBLOCK_INDEXED_BY_POTENTIALS = new Reference2ReferenceOpenHashMap<>();
-    private static void resetMultiblockRegistry(){
-        if(MULTIBLOCK_REGISTRIES != null){
-            MULTIBLOCK_REGISTRIES.clear();
-        }
-        MULTIBLOCK_REGISTRIES = new Object2ReferenceOpenHashMap<>();
-        if(MULTIBLOCK_INDEXED_BY_POTENTIALS != null){
-            MULTIBLOCK_INDEXED_BY_POTENTIALS = new Reference2ReferenceOpenHashMap<>();
-        }
-    }
-    private static void addToMultiblockRegistry(SlimefunRecipeEntry entry){
-        var newEntry = MultiBlockEntry.of(entry.inputs(), entry.id);
-        if(newEntry == null)return;
-        MULTIBLOCK_REGISTRIES.put(entry.id, newEntry);
-        Set<Block> potentialTriggerBlocks = newEntry.getPotentials();
-        for (Block block: potentialTriggerBlocks){
-            MULTIBLOCK_INDEXED_BY_POTENTIALS.computeIfAbsent(block, (b)->new ReferenceArraySet<>()).add(newEntry);
-        }
-    }
+
     private static AtomicBoolean ENABLE_CLICK = Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_MULTIBLOCK_CLICKER);
     private static AtomicInteger CLICK_RATE = Configs.SLIMEFUN_CONFIG.getInt(Configs.SLIMEFUN_MB_RATE);
     private static int lastChatTimestamp = 0;
@@ -692,7 +783,7 @@ public class SlimefunTasks {
         if(block == Blocks.DISPENSER || block == Blocks.DROPPER){
             return;
         }
-        var potentials = MULTIBLOCK_INDEXED_BY_POTENTIALS.get(block);
+        var potentials = check().MULTIBLOCK_INDEXED_BY_POTENTIALS.get(block);
         if(potentials == null || potentials.isEmpty())return;
         Optional<MultiBlockEntry> first = potentials.stream()
             .filter(m->m.anyMatchMiddle(mc.world, pos))
@@ -722,15 +813,21 @@ public class SlimefunTasks {
         }
         BlockPos pos = tile.getPos();
         Block block = tile.getBlockType();
+        boolean find = false;
         if(block == Blocks.DISPENSER || block == Blocks.DROPPER){
-            for (var multiblock: MULTIBLOCK_REGISTRIES.values()){
+            for (var multiblock: check().MULTIBLOCK_REGISTRIES.values()){
                 var optional = multiblock.getOptionalActionFromDispenser(mc.world, pos);
                 if(optional.isEmpty())continue;
+                find = true;
                 for (var bp : optional){
                     BlockHitResult result = MovTasks.createHitResult(bp);
                     onClickBlockExecute(result, true);
                 }
             }
+        }
+        if(!find){
+            Debug.chat(Text.literal("[多方块执行] 当前多方块结构与已记录的多方块无法匹配").formatted(Formatting.RED));
+            AUTO_EXECUTE = false;
         }
     }
     private static boolean AUTO_EXECUTE = false;
@@ -743,7 +840,7 @@ public class SlimefunTasks {
 
     public static Collection<MultiBlockWithLocation> getOptionalMultiBlocks(World world, BlockPos dispensor){
         Collection<MultiBlockWithLocation> ans = new HashSet<>();
-        for (var multi : MULTIBLOCK_REGISTRIES.values()){
+        for (var multi : check().MULTIBLOCK_REGISTRIES.values()){
             var op = multi.lookup.lookup(world, dispensor);
             if(op != null && !op.isEmpty()){
                 for (var ml: op){
@@ -755,7 +852,7 @@ public class SlimefunTasks {
     }
     public static Collection<SlimefunTasks.MultiBlockEntry> getOptionalMultiBlockTypes(World world, BlockPos dispensor){
         Collection<MultiBlockEntry> ans = new HashSet<>();
-        for (var multi : MULTIBLOCK_REGISTRIES.values()){
+        for (var multi : check().MULTIBLOCK_REGISTRIES.values()){
             var op = multi.lookup.lookup(world, dispensor);
             if(op != null && !op.isEmpty()){
                 ans.add(multi);
@@ -764,78 +861,36 @@ public class SlimefunTasks {
         return ans;
     }
 
-    public static final ItemStack GUIDE_ICON;
-    public static final ItemStack RTYPE_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
-    public static final ItemStack VTYPE_ICON = new ItemStack(Items.CRAFTING_TABLE);
-    public static final ItemStack SAVED_ICON = new ItemStack(Items.CHAIN_COMMAND_BLOCK);
-    static {
+    public static ItemStack GUIDE_ICON;
+    public static ItemStack RTYPE_ICON ;
+    public static ItemStack VTYPE_ICON ;
+    public static ItemStack SAVED_ICON ;
+    private static void initIcon(){
         ItemStack ICON;
         try {
-            ICON = ItemStack.fromNbt(StringNbtReader.parse( "{Count:1b,id:\"minecraft:enchanted_book\",tag:{CustomModelData:2200001,PublicBukkitValues:{\"slimefun:slimefun_guide_mode\":\"SURVIVAL_MODE\"},display:{Lore:['{\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"浏览物品\"}],\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"Shift + 右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"打开 设置 / 关于\"}],\"text\":\"\"}'],Name:'{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"green\",\"text\":\"Slimefun 指南 \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"(箱子界面)\"}],\"text\":\"\"}'}}}"));
+            ICON = ItemStack.fromNbtOrEmpty(ItemStackUtils.registry(), StringNbtReader.parse( "{Count:1b,id:\"minecraft:enchanted_book\",tag:{CustomModelData:2200001,PublicBukkitValues:{\"slimefun:slimefun_guide_mode\":\"SURVIVAL_MODE\"},display:{Lore:['{\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"浏览物品\"}],\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"Shift + 右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"打开 设置 / 关于\"}],\"text\":\"\"}'],Name:'{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"green\",\"text\":\"Slimefun 指南 \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"(箱子界面)\"}],\"text\":\"\"}'}}}"));
         } catch (CommandSyntaxException e) {
             Debug.info("Icon deserialize failure");
             ICON = new ItemStack(Items.ENCHANTED_BOOK);
         }
         GUIDE_ICON = ICON;
+        RTYPE_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
+        VTYPE_ICON = new ItemStack(Items.CRAFTING_TABLE);
+        SAVED_ICON = new ItemStack(Items.CHAIN_COMMAND_BLOCK);
     }
 
 
-    public static void saveData(){
-        //不保存数据
-        if(!Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_SAVE).get()){
-            return;
-        }
-        try{
-            if(ALL_RECIPE_TYPE.isDirty()){
-                ALL_RECIPE_TYPE.setDirty(false);
-                Map<String, CraftingType> map = ALL_RECIPE_TYPE.getDelegate();
-                String savedData = RECIPES_JSON_CODEC.toJson(map);
-                ConfigLoader.saveToFile("sfhelper-configs/recipes/craft-types.json", savedData);
-            }
-        }catch (Throwable e){
-            Debug.info("保存craft-types.json文件失败, 错误:");
-            Debug.info(e);
-        }
 
-        try{
-            if(ALL_RECIPE_ENTRY.isDirty()){
-                ALL_RECIPE_ENTRY.setDirty(false);
-                Map<String, SlimefunRecipeEntry> map = ALL_RECIPE_ENTRY.getDelegate();
-                String savedData = RECIPES_JSON_CODEC.toJson(map);
-                ConfigLoader.saveToFile("sfhelper-configs/recipes/recipe-data.json", savedData);
-            }
-        }catch (Throwable e){
-            Debug.info("保存recipe-data.json文件失败, 错误:");
-            Debug.info(e);
-        }
-        try{
-            if(SAVED_ITEM_ID.isDirty()){
-                SAVED_ITEM_ID.setDirty(false);
-                List<String> list = SAVED_ITEM_ID.getDelegate().stream().toList();
-                String savedData = RECIPES_JSON_CODEC.toJson(Map.of("saved-ids" ,list));
-                ConfigLoader.saveToFile("sfhelper-configs/recipes/saved-items.json", savedData);
-            }
-        }catch (Throwable e){
-            Debug.info("保存saved-items.json文件失败, 错误:");
-            Debug.info(e);
-        }
-        //save at last in case of key missing for save
-        try{
-            if(ITEM_SAMPLE_MAP.isDirty()){
-                ITEM_SAMPLE_MAP.setDirty(false);
-                String savedData = RECIPES_JSON_CODEC.toJson(ITEM_SAMPLE_INDEX);
-                ConfigLoader.saveToFile("sfhelper-configs/recipes/item-database.json", savedData);
-            }
-        }catch (Throwable e){
-            Debug.info("保存item-database.json文件失败, 错误:");
-            Debug.info(e);
-        }
-    }
     public static void reloadData(){
-        loadData();
+        Debug.info("Reloading Slimefun Registry Data Base");
+        DATA = new SlimefunRegistryDataBase();
+        DATA.loadData();
     }
+
     public static boolean scheduledSave(){
-        CompletableFuture.runAsync(SlimefunTasks::saveData);
+        CompletableFuture.runAsync(()->{
+            if(DATA != null)DATA.saveData();
+        });
         return false;
     }
     private static final ItemStack ITEM_NULL_TYPE = new ItemStack(Items.BARRIER);
@@ -854,6 +909,7 @@ public class SlimefunTasks {
         }return false;
     }
     public static void delayUpdateGuideRecipe(GenericContainerScreen screen){
+        if(mc.player == null)return;
         DefaultedList<Slot> slots = screen.getScreenHandler().slots;
         //brief judgement of recipe
         if(slots.size() >= 27 && slots.get(2).getStack().isEmpty() && slots.get(11).getStack().isEmpty() && slots.get(20).getStack().isEmpty() && slots.get(15).getStack().isEmpty() && slots.get(17).getStack().isEmpty() && slots.get(25).getStack().isEmpty() && !slots.get(16).getStack().isEmpty()){
@@ -864,9 +920,9 @@ public class SlimefunTasks {
             if(id != null){
                 boolean shouldUpdate = false;
 
-                if(ALL_RECIPE_ENTRY.containsKey(id)){
+                if(check().ALL_RECIPE_ENTRY.containsKey(id)){
                     //存在这个,
-                    SlimefunRecipeEntry entry = ALL_RECIPE_ENTRY.get(id);
+                    SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(id);
                     ItemStackWithId[] ingredient = entry.ingredientEntry();
                     if(ingredient.length == 9){
                         for (int i=0 ;i<9 ;++i){
@@ -894,21 +950,16 @@ public class SlimefunTasks {
                 if(shouldUpdate){
                     ItemStack rtypeIcon = slots.get(10).getStack();
                     String recipeTypeName = rtypeIcon.isEmpty()? "NULL_RECIPE": rtypeIcon.getName().getString().replace("§.", "");
-                    if(!ALL_RECIPE_TYPE.containsKey(recipeTypeName)){
-                        ItemStack ICON = rtypeIcon.isEmpty()? ITEM_NULL_TYPE.copy(): rtypeIcon.copy();
-                        ICON.setCount(1);
-                        ALL_RECIPE_TYPE.put(recipeTypeName, new CraftingType(recipeTypeName, ICON));
-                    }
+                    check().validateRecipeType(recipeTypeName, rtypeIcon);
+
                     ItemStackWithId[] ingredient = new ItemStackWithId[9];
                     for (int i=0 ; i<9 ; ++i){
                         ingredient[i] = ItemStackWithId.ofNullable( slots.get(recipeSlots[i]).getStack().copy());
                     }
                     ItemStack output = slots.get(16).getStack().copy();
                     SlimefunRecipeEntry entry = new SlimefunRecipeEntry(recipeTypeName, id, ingredient, output);
-                    ALL_RECIPE_ENTRY.put(id, entry);
-                    if(MULTIBLOCK_REGEX.asMatchPredicate().test(recipeTypeName)){
-                        addToMultiblockRegistry(entry);
-                    }
+                    check().putSlimefunEntry(entry);
+
                 }
             }
         }
@@ -933,7 +984,7 @@ public class SlimefunTasks {
         });
 
     }
-    private static final Identifier TEXTURE = new Identifier("textures/gui/container/crafting_table.png");
+    private static final Identifier TEXTURE = new Identifier("minecraft","textures/gui/container/crafting_table.png");
     private static final Map<Slot, RenderRecipeRecord> CURRENT = new Reference2ReferenceOpenHashMap<>(4);
     private static HandledScreen<?> CURRENT_HANDLING_SCREEN;
     private static interface RenderRecipeRecord{
@@ -1076,7 +1127,7 @@ public class SlimefunTasks {
     //typed screen
     public static void handleOpenCraftingTypeScreen(CraftingType type){
         if(handleNotEnable())return;
-        openOrSwitch(SlimefunEntryListScreen.recipeEntry(ALL_RECIPE_ENTRY.values()
+        openOrSwitch(SlimefunEntryListScreen.recipeEntry(check().ALL_RECIPE_ENTRY.values()
             .stream()
             .filter(i->Objects.equals(i.rid, type.id))
             .map(RecipeEntry.class::cast)
@@ -1168,7 +1219,7 @@ public class SlimefunTasks {
     //guide icon
     public static void handleClickGuideIcon(){
         if(handleNotEnable())return;
-        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_ITEM ,TOOLTIPS_ITEM_RULE, ALL_RECIPE_ENTRY.values()
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_ITEM ,TOOLTIPS_ITEM_RULE, check().ALL_RECIPE_ENTRY.values()
             .stream()
             .toList(),
             (entry)-> new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(entry.output.copyWithCount(1)).withMouseHandler(MouseHandler.isLeft(t->{
@@ -1183,13 +1234,13 @@ public class SlimefunTasks {
     }
 
     public static Stream<RecipeEntry> getAllSlimefunRecipeEntry(){
-        return ALL_RECIPE_ENTRY.values().stream().map(RecipeEntry.class::cast);
+        return check().ALL_RECIPE_ENTRY.values().stream().map(RecipeEntry.class::cast);
     }
 
 
     public static void handleClickSaveItemIcon(){
         if(handleNotEnable())return;
-        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_SAVED ,TOOLTIPS_SAVED_RULE, SAVED_ITEM_ID
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_SAVED ,TOOLTIPS_SAVED_RULE, check().SAVED_ITEM_ID
                 .stream()
                 .map(SlimefunTasks::byId)
                 .toList(),
@@ -1218,7 +1269,7 @@ public class SlimefunTasks {
     //rtype icon
     public static void handleClickRtypeIcon(){
         if(handleNotEnable())return;
-        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_TYPE,ALL_RECIPE_TYPE.values()
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_TYPE,check().ALL_RECIPE_TYPE.values()
             .stream()
             .toList(),
             (ct)->new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(ct.icon)
@@ -1244,7 +1295,7 @@ public class SlimefunTasks {
         if(isLeft){
             //搞到当前物品的配方表
             String sfid = ItemStackUtils.getSfId(item);
-            SlimefunRecipeEntry entry = ALL_RECIPE_ENTRY.get(sfid);
+            SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(sfid);
             if(entry!=null){
                 resultToDisplay.add(entry);
             }
@@ -1253,7 +1304,7 @@ public class SlimefunTasks {
             }
         }else {
             String generatedId = ItemStackWithId.generateId(item);
-            ALL_RECIPE_ENTRY.values().stream()
+            check().ALL_RECIPE_ENTRY.values().stream()
                 .filter(i->i.containingIdAsIngredient(generatedId))
                 .forEach(resultToDisplay::add);
             if(Screen.hasShiftDown()){
@@ -1281,7 +1332,7 @@ public class SlimefunTasks {
                 .toList();
         }else {
 
-            myEntry = ALL_RECIPE_ENTRY.values()
+            myEntry = check().ALL_RECIPE_ENTRY.values()
                 .stream()
                 .filter(i->i.rid.equals(type))
                 .map(RecipeEntry.class::cast)
@@ -1306,7 +1357,7 @@ public class SlimefunTasks {
         }
 
         List<RecipeEntry> results = new ArrayList<>();
-        for (var iter: ALL_RECIPE_ENTRY.values()){
+        for (var iter: check().ALL_RECIPE_ENTRY.values()){
             ItemStackWithId[] ingredients = iter.ingredientEntry();
             for (var ingre: ingredients){
                 String id = getIdOrNull(ingre.stack);
@@ -1359,7 +1410,7 @@ public class SlimefunTasks {
             int size = allSlots.size();
             for (int i=0; i< size; ++i){
                 Slot slot = allSlots.get(i);
-                if(slot != null && slot.inventory instanceof PlayerInventory && !slot.getStack().isEmpty() && ItemStack.canCombine(slot.getStack(), sample.sample())){
+                if(slot != null && slot.inventory instanceof PlayerInventory && !slot.getStack().isEmpty() && ItemStack.areItemsAndComponentsEqual(slot.getStack(), sample.sample())){
                     //all match
                     cachedSlots.add(i);
                     counter += slot.getStack().getCount();
@@ -1383,17 +1434,17 @@ public class SlimefunTasks {
     public static void handleSaveItem(ItemStack item){
         if(handleNotEnable())return;
         String id = getOrAddId(item);
-        if(SAVED_ITEM_ID.contains(id)){
+        if(check().SAVED_ITEM_ID.contains(id)){
             Debug.chat(Text.literal("该物品已经保存过了!").formatted(Formatting.YELLOW));
         }else {
-            SAVED_ITEM_ID.add(id);
+            check().SAVED_ITEM_ID.add(id);
             Debug.chat(Text.literal("成功保存物品!").formatted(Formatting.GREEN));
         }
     }
     public static void handleRemoveSaveItem(ItemStack item){
         if(handleNotEnable())return;
         String id = getIdOrNull(item);
-        if(id != null && SAVED_ITEM_ID.remove(id)){
+        if(id != null && check().SAVED_ITEM_ID.remove(id)){
             Debug.chat(Text.literal("已经成功移除这个保存物品").formatted(Formatting.GREEN));
         }
     }
@@ -1402,20 +1453,13 @@ public class SlimefunTasks {
 
         if(player==null)return false;
 
-        ItemStack heldItem=null;
-        if(mc.currentScreen instanceof HandledScreen<?> s){
-            Point mouseCoord= ScreenUtils.getMouseCoord(mc);
-            Slot slot=HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.x,mouseCoord.y);
-            if(slot!=null){
-                heldItem=slot.getStack();
-            }
-        }else{
-            heldItem=player.getStackInHand(Hand.MAIN_HAND);
-        }
+        ItemStack heldItem = ScreenUtils.getSelectingItemOrHand();
 
         if(heldItem != null && !heldItem.isEmpty()){
             handleSaveItem(heldItem);
             return true;
+        }else if (heldItem != null){
+            Debug.chat(Text.literal("不能保存空物品").formatted(Formatting.RED));
         }
         return false;
     }
@@ -1498,10 +1542,10 @@ public class SlimefunTasks {
 
         }else {
             //当前matrix: 物品栏右侧为x+, 下侧为y+
-            if(!ALL_RECIPE_ENTRY.containsKey(id)){
+            if(!check().ALL_RECIPE_ENTRY.containsKey(id)){
                 CURRENT.put(slot, new RenderRecipeRecordNoCache(slot));
             }else {
-                SlimefunRecipeEntry entry = ALL_RECIPE_ENTRY.get(id);
+                SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(id);
                 Ingredient[] ingredient = entry.ingredient();
                 int x = slot.x;
                 int y = slot.y;
@@ -1514,7 +1558,7 @@ public class SlimefunTasks {
                     ScaleSlotAccess.of(slotT).setXYScale(SCALING).setExtraDepth(extraDepth);
                     slots.add(slotT);
                 }
-                ItemStack typeIcon = ALL_RECIPE_TYPE.getOrDefault(entry.rid,CraftingType.EMPTY).icon;
+                ItemStack typeIcon = check().ALL_RECIPE_TYPE.getOrDefault(entry.rid,CraftingType.EMPTY).icon;
                 ItemStack outputItem = entry.output;
                 Inventory outputInv = new SimpleInventory(new ItemStack[]{typeIcon, outputItem});
                 Slot slotType = new CustomDisplaySlot(outputInv, 0,  startX + (int)( 64*SCALING), startY + (int)(20*SCALING));
@@ -1630,13 +1674,21 @@ public class SlimefunTasks {
             MULTIBLOCK_REGEX = Pattern.compile(str);
         });
         MULTIBLOCK_REGEX = Pattern.compile(MULTIBLOCK_PATTERN.get());
+        Tasks.scheduleDelayed(()->{
+            //post init tasks
+            Debug.info("Running Slimefun Post Setup Tasks");
+            initIcon();
+        }, 1);
 
-        loadData();
         //定时保存
         Tasks.scheduleRepeated(SlimefunTasks::scheduledSave, 20* 60, 20*60* 5);
         //退出服务器时保存
         Listener.getServerDisconnectPoint().registerHandler((v)->{
+            Debug.info("Save Slimefun Data...");
             SlimefunTasks.scheduledSave();
+        });
+        Listener.getGameJoinPoint().registerHandler((v)->{
+            SlimefunTasks.reloadData();
         });
         Listener.getScreenOpenPoint().registerHandler(SlimefunTasks::listenGuideRecipe);
         RenderMain.getRenderHandledScreen().registerHandler((c, o)->{
@@ -1645,11 +1697,7 @@ public class SlimefunTasks {
         Listener.getPostPlayerUseItemAtBlock().registerSimple(SlimefunTasks::onClickBlock);
 
         Tasks.registerGameTask(SlimefunTasks::slimefunMultiBlockTick);
-//        Listener.registerSinglePacketListener(OpenScreenS2CPacket.class, (openScreenS2CPacket -> {
-//            if(SCREEN_TYPES.contains(openScreenS2CPacket.getScreenHandlerType())){
-//                mc.executeSync();
-//            }
-//        }));
+
     }
     public static record CraftingType(String id, ItemStack icon){
         public static final CraftingType EMPTY = new CraftingType("NULL", ITEM_NULL_TYPE);

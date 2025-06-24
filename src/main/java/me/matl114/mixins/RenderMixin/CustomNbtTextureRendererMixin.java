@@ -148,11 +148,11 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
     Random random=new Random();
     @Inject(method = "renderItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;push()V", shift = At.Shift.AFTER))
     public void onObfuscatedItemRender(ItemStack item, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model,CallbackInfo ci){
-        if( item.hasNbt()){
-            if(item.getNbt().contains("obfuscated")){
-                matrices.translate(random.nextFloat(-3.0f,3.0f),random.nextFloat(-3.0f,3.0f),random.nextFloat(-3.0f,3.0f));
-            }
+
+        if(ItemStackUtils.getCustomDataReadOnly(item).contains("obfuscated")){
+            matrices.translate(random.nextFloat(-3.0f,3.0f),random.nextFloat(-3.0f,3.0f),random.nextFloat(-3.0f,3.0f));
         }
+
     }
 //    @Inject(method = "renderBakedItemQuads",at = @At("HEAD"))
 //    public void checkInject(MatrixStack matrices, VertexConsumer vertices, List<BakedQuad> quads, ItemStack stack, int light, int overlay, CallbackInfo ci){

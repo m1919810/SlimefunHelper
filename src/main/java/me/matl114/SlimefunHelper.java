@@ -13,16 +13,27 @@ import me.matl114.renders.RenderMain;
 import me.matl114.utils.Utils;
 import net.fabricmc.api.ModInitializer;
 
-import net.fabricmc.fabric.api.client.model.ExtraModelProvider;
-import net.fabricmc.fabric.api.client.model.ModelLoadingRegistry;
+
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin;
+import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 
+import net.fabricmc.fabric.impl.client.model.loading.ModelLoaderHooks;
+import net.fabricmc.fabric.impl.client.model.loading.ModelLoadingPluginManager;
+import net.minecraft.client.render.model.ModelLoader;
+import net.minecraft.data.client.BlockStateModelGenerator;
+import net.minecraft.data.client.ItemModelGenerator;
+import net.minecraft.data.client.ModelProvider;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 
+import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 
@@ -50,6 +61,7 @@ public class SlimefunHelper implements ModInitializer {
 			}
 			@Override
 			public void reload(ResourceManager manager) {
+				Debug.info("reload called");
 				ModConfig.reloadModConfig();
 				SlimefunCustomModelManager.init();
 				if(ModConfig.isEnableSlimefunCmdOverride()){
@@ -69,19 +81,25 @@ public class SlimefunHelper implements ModInitializer {
 //				}
 //			}
 //		});
-		ModelLoadingRegistry.INSTANCE.registerModelProvider (new ExtraModelProvider() {
-			@Override
-			public void provideExtraModels(ResourceManager manager, Consumer<Identifier> out) {
+		ModelLoadingPluginManager.<Collection<Identifier>>registerPlugin(
+            (resourceManager, executor) -> CompletableFuture.supplyAsync(()->{
+				Debug.info("check plugin work");
+				Debug.info("is it a reload?");
 				ModConfig.reloadModConfig();
 				if(ModConfig.isEnableItemModelOvevrride()) {
 					Debug.info("Force Load Model enabled");
 					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
-					SlimefunCustomModelManager.walkThroughResourcePacks(manager,true).forEach(out);
+					return SlimefunCustomModelManager.walkThroughResourcePacks(resourceManager,true);
 				}else{
-					SlimefunCustomModelManager.walkThroughResourcePacks(manager,false).forEach(out);
+					return SlimefunCustomModelManager.walkThroughResourcePacks(resourceManager,false);
 				}
-			}
-		});
+			}),
+            (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {
+				pluginContext.addModels(data);
+            }
+
+        );
+
 		BukkitSerializationMock.init();
 		Debug.info("loading bukkitMock!");
 		ItemStackHelper.init();

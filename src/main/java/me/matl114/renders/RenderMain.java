@@ -1,10 +1,12 @@
 package me.matl114.renders;
 
 import lombok.Getter;
+import me.matl114.access.BakedModelManagerAccess;
 import me.matl114.renders.implement.EnchantmentRender;
 import me.matl114.renders.implement.NewVersionModelRender;
 import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.renders.implement.SpawnerRender;
+import me.matl114.utils.Debug;
 import me.matl114.utils.UtilClass.ArgumentListenerPoint;
 import me.matl114.utils.UtilClass.ListenerPoint;
 import me.matl114.utils.UtilClass.OrderedSupplier;
@@ -29,55 +31,43 @@ public class RenderMain {
     }
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    private static final List<OrderedSupplier<ItemStack,Optional<Identifier>>> modelOverrideFunctions = new ArrayList<>();
+    private static final List<OrderedSupplier<ItemStack,Optional<ModelIdentifier>>> modelOverrideFunctions = new ArrayList<>();
     //lower goes first
-    public static void registerModelOverridePredicate(int priority ,Function<ItemStack,Optional<Identifier>> function) {
+    public static void registerModelOverridePredicate(int priority ,Function<ItemStack,Optional<ModelIdentifier>> function) {
         modelOverrideFunctions.add(OrderedSupplier.create(priority, function));
         Collections.sort(modelOverrideFunctions);
     }
-    public static void registerModelOverridePredicate(Function<ItemStack,Optional<Identifier>> function) {
+    public static void registerModelOverridePredicate(Function<ItemStack,Optional<ModelIdentifier>> function) {
         modelOverrideFunctions.add(OrderedSupplier.create(1000, function));
         Collections.sort(modelOverrideFunctions);
     }
     public static Optional<BakedModel> getCustomItemModel(ItemStack stack) {
-        Identifier overrides = null;
+        ModelIdentifier overrides = null;
         BakedModel model = null;
-        for(Function<ItemStack,Optional<Identifier>> function : modelOverrideFunctions){
+        for(Function<ItemStack,Optional<ModelIdentifier>> function : modelOverrideFunctions){
             var re = function.apply(stack);
             if(re.isPresent()){
                 overrides = re.get();
-                if(overrides instanceof ModelIdentifier modeled){
-                    model = mc.getBakedModelManager().getModel(modeled);
-                    if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
-                        overrides = new Identifier(overrides.getNamespace(), overrides.getPath());
-                    }else {
-                        return Optional.of(model);
-                    }
-                }
-                model = mc.getBakedModelManager().getModel(overrides);
-                if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
-                    continue;
-                }else {
-                    return Optional.of(model);
-                }
+                model = getModelOf(overrides);
+                if(model != null)return Optional.of(model);
             }
         }
         return Optional.empty();
     }
-    public static boolean validateModel(Identifier identifier){
-        return getModelOf(identifier)!=null;
+    public static boolean validateCustomModel(Identifier identifier){
+        return getCustomModelOf(identifier)!=null;
     }
-    public static BakedModel getModelOf(Identifier identifier){
+    public static BakedModel getModelOf(ModelIdentifier modeled){
         BakedModel model;
-        if(identifier instanceof ModelIdentifier modeled){
-            model = mc.getBakedModelManager().getModel(modeled);
-            if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
-                identifier = new Identifier(identifier.getNamespace(), identifier.getPath());
-            }else {
-                return model;
-            }
+        model = mc.getBakedModelManager().getModel(modeled);
+        if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
+            return getCustomModelOf(modeled.id());
+        }else {
+            return model;
         }
-        model = mc.getBakedModelManager().getModel(identifier);
+    }
+    public static BakedModel getCustomModelOf(Identifier identifier){
+        BakedModel model = mc.getBakedModelManager().getModel(identifier);
         if(model == null || model ==  mc.getBakedModelManager().getMissingModel()){
             return null;
         }else {
@@ -93,6 +83,10 @@ public class RenderMain {
     public static void registerContainerInfoPredicate(int priority ,Function<ItemStack,ItemStack> func){
         containerInfoSuppilers.add(OrderedSupplier.create(priority, func));
         Collections.sort(containerInfoSuppilers);
+    }
+    public static final String RESOURCE_SPECIAL_VARIANT = "fabric_resource";
+    public static ModelIdentifier wrapAsModel(Identifier id){
+        return new ModelIdentifier(id, RESOURCE_SPECIAL_VARIANT);
     }
 
     public static ItemStack getContainedItemInfo(ItemStack stack){
@@ -137,6 +131,10 @@ public class RenderMain {
 //    public static void renderItemTooltipsTasks(DrawContext context, TextRenderer renderer, ItemStack stack, int x, int y){
 //        renderToolTips.handleValue(context, renderer, stack, x, y);
 //    }
+
+    public static void modelDebug(){
+        Debug.info(BakedModelManagerAccess.of(MinecraftClient.getInstance().getBakedModelManager()).getAllBakedModels().keySet());
+    }
 
 
     static {

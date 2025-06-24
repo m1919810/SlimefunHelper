@@ -1,13 +1,13 @@
 package me.matl114.gui.basic;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.item.TooltipContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.util.Identifier;
 
 public class SlotElement extends AbstractElement implements ElementHandler {
@@ -90,7 +90,7 @@ public class SlotElement extends AbstractElement implements ElementHandler {
         if(shouldHighlight && tooltips){
             ItemStack stack = inventory.getStack(index);
             if(!stack.isEmpty()){
-                context.drawTooltip(mc.textRenderer, stack.getTooltip(mc.player, TooltipContext.ADVANCED), stack.getTooltipData(), mouseX, mouseY);
+                context.drawTooltip(mc.textRenderer, stack.getTooltip(Item.TooltipContext.create(mc.world), mc.player, TooltipType.ADVANCED), stack.getTooltipData(), mouseX, mouseY);
             }
         }
     }

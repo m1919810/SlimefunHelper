@@ -7,6 +7,7 @@ import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,16 +30,16 @@ public abstract class BackGroundRenderMixin {
             cir.setReturnValue(null);
         }
     }
-    @Redirect(method = "render",at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/entity/effect/StatusEffect;)Z",ordinal = 0))
-    private static boolean render(LivingEntity instance, StatusEffect effect) {
+    @Redirect(method = "render",at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",ordinal = 0))
+    private static boolean render(LivingEntity instance, RegistryEntry<StatusEffect> effect) {
         if(doNightVision.get()) {
             return true;
         }else {
             return instance.hasStatusEffect(effect);
         }
     }
-    @Redirect(method = "render",at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/entity/effect/StatusEffect;)Z",ordinal = 1))
-    private static boolean render2(LivingEntity instance, StatusEffect effect) {
+    @Redirect(method = "render",at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",ordinal = 1))
+    private static boolean render2(LivingEntity instance, RegistryEntry<StatusEffect> effect) {
         if(noEffect.get()) {
             return false;
         }else {

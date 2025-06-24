@@ -72,42 +72,19 @@ public abstract class ClientConnectionMixin implements ClientConnectionAccess {
 //    }\
     @Shadow
     PacketSizeLogger packetSizeLogger;
+    @Shadow private Channel channel;
+
     public PacketSizeLogger getPacketSizeLogger(){
         return packetSizeLogger;
     }
 
 
-    @Inject(method = "connect(Ljava/net/InetSocketAddress;ZLnet/minecraft/network/ClientConnection;)Lio/netty/channel/ChannelFuture;",at = @At("HEAD"), cancellable = true)
-    private  static void proxyIp(InetSocketAddress address, boolean useEpoll, ClientConnection connection, CallbackInfoReturnable<ChannelFuture> cir){
-        Class class_;
-        EventLoopGroup eventLoopGroup;
-        if (Epoll.isAvailable() && useEpoll) {
-            class_ = EpollSocketChannel.class;
-            eventLoopGroup = (EventLoopGroup)EPOLL_CLIENT_IO_GROUP.get();
-        } else {
-            class_ = NioSocketChannel.class;
-            eventLoopGroup = (EventLoopGroup)CLIENT_IO_GROUP.get();
+
+    @Inject(method = "addHandlers", at = @At("HEAD"))
+    private static void proxyChannelIp(ChannelPipeline pipeline, NetworkSide side, boolean local, PacketSizeLogger packetSizeLogger, CallbackInfo ci){
+        if(side == NetworkSide.CLIENTBOUND){
+            HttpTasks.redirectIpPre(pipeline);
         }
-
-        var returnValue1 =  ((io.netty.bootstrap.Bootstrap)((io.netty.bootstrap.Bootstrap)((io.netty.bootstrap.Bootstrap)(new Bootstrap()).group(eventLoopGroup)).handler(new ChannelInitializer<Channel>() {
-            protected void initChannel(Channel channel) {
-                ClientConnection.setHandlers(channel);
-
-                try {
-                    channel.config().setOption(ChannelOption.TCP_NODELAY, true);
-                } catch (ChannelException var3) {
-                }
-//                channel.pipeline().addFirst(new Sock)
-                HttpTasks.redirectIpPre(channel);
-
-                ChannelPipeline channelPipeline = channel.pipeline().addLast("timeout", new ReadTimeoutHandler(30));
-                ClientConnection.addHandlers(channelPipeline, NetworkSide.CLIENTBOUND, ClientConnectionAccess.of(connection).getPacketSizeLogger());
-                connection.addFlowControlHandler(channelPipeline);
-            }
-        })).channel(class_));
-
-        var returnValue2 = returnValue1.connect(address.getAddress(), address.getPort());
-        cir.setReturnValue(returnValue2);
     }
 
 

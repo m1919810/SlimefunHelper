@@ -1,15 +1,19 @@
 package me.matl114.utils;
 
 import com.google.common.collect.Maps;
+import me.matl114.access.HandledScreenAccess;
 import me.matl114.utils.UtilClass.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.util.Window;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
 
 import java.util.Map;
@@ -59,5 +63,20 @@ public class ScreenUtils {
         int mouseX = (int) (mouse.getX() * (double) window.getScaledWidth() / (double) window.getWidth());
         int mouseY = (int) (mouse.getY() * (double) window.getScaledHeight() / (double) window.getHeight());
         return new Point(mouseX, mouseY);
+    }
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    public static ItemStack getSelectingItemOrHand(){
+        if(mc.player ==null)return null;
+        if(mc.currentScreen instanceof HandledScreen<?> s){
+            Point mouseCoord= ScreenUtils.getMouseCoord(mc);
+            Slot slot= HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.x,mouseCoord.y);
+            if(slot!=null){
+                return slot.getStack();
+            }
+        }else{
+            return mc.player.getStackInHand(Hand.MAIN_HAND);
+        }
+        return null;
     }
 }

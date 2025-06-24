@@ -1,5 +1,7 @@
 package me.matl114.gui.itemEdit;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.*;
 import com.mojang.datafixers.util.Pair;
 import me.matl114.access.TextFieldAccess;
@@ -20,6 +22,10 @@ import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.AttributeModifierSlot;
+import net.minecraft.component.type.AttributeModifiersComponent;
+import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -31,6 +37,10 @@ import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.nbt.visitor.NbtOrderedStringFormatter;
 import net.minecraft.nbt.visitor.StringNbtWriter;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -40,6 +50,7 @@ import oshi.util.tuples.Triplet;
 
 import java.util.*;
 import java.util.function.Consumer;
+import static net.minecraft.component.DataComponentTypes.*;
 
 public class ItemEditScreen extends ConfirmingBigScreen {
     protected static final MinecraftClient mc  = MinecraftClient.getInstance();
@@ -286,7 +297,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         protected boolean validateItemStack(){
             if(validateAndUpdate()){
                 try{
-                    ItemStack decode = ItemStack.fromNbt(this.compoundItem);
+                    ItemStack decode = ItemStack.fromNbt(ItemStackUtils.registry(), this.compoundItem).get();
+                    Preconditions.checkArgument(decode != ItemStack.EMPTY);
                     this.lastResult = decode;
                     ItemEditScreen.this.validSaveState = true;
                     return true;
@@ -326,7 +338,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         protected void init(){
             //transform item to json
             this.lastResult = ItemEditScreen.this.itemStack.copy();
-            NbtCompound compound = this.lastResult.writeNbt(new NbtCompound());
+            NbtCompound compound = (NbtCompound) this.lastResult.encode(ItemStackUtils.registry());
 
             this.compoundItem = compound;
             this.compoundString = new StringNbtWriter().apply(this.compoundItem);
@@ -478,14 +490,10 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             protected static final int BASIC_DKEY = 50;
             protected static class ItemHideFlags{
                 //true means hide
-                EnumMap<ItemStack.TooltipSection, Boolean> flagMapper;
-
+                ItemStack sample ;
+                @SuppressWarnings("all")
                 public ItemHideFlags(ItemStack stack){
-                    this.flagMapper = new EnumMap<>(ItemStack.TooltipSection.class);
-                    int hideflag = stack.getHideFlags();
-                    for (var sec: ItemStack.TooltipSection.values()){
-                        flagMapper.put(sec, ((hideflag & sec.getFlag()) != 0));
-                    }
+                    sample = stack.copy();
                 }
                 public DrawableWidget factory(int x, int y){
                     SubScreenWidget subScreenWidget =  new SubScreenWidget(x,y,0,0);
@@ -493,7 +501,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         DisplayWidget.instance(1,1, 50 -1, 20 -1)
                             .setRenderHandler(LabelElement.instance(Text.literal("是否隐藏")))
                     );
-                    for (var sec: ItemStack.TooltipSection.values()){
+                    for (var sec: ItemStackUtils.TooltipHideFlag.values()){
                         int index = sec.ordinal();
                         subScreenWidget.addDrawableChild(
                             ExecutableWidget.instance(50 +1 + 20 * index, 1, 20 -2, 20- 2)
@@ -501,8 +509,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                     IconElement.stateGuiPredicate(
                                         ButtonElement.BUTTON,
                                         ButtonElement.BUTTON_INACTIVE,
-                                        ButtonAction.run(()-> flagMapper.compute(sec, (sec00,b)->!b)),
-                                        (bl)->flagMapper.get(sec)
+                                        ButtonAction.run(()-> sec.setHideFlag(sample, !sec.isHide(sample))),
+                                        (bl)->sec.isHide(sample)
                                     )
                                         .withTooltips(TooltipHandler.of(List.of(Text.literal(sec.name().toLowerCase(Locale.ROOT)))))
                                 )
@@ -512,12 +520,10 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 }
                 public void applyChange(ItemStack stack){
                     //clear hideFlags
-                    if(stack.hasNbt())stack.getNbt().remove("HideFlags");
-                    for (var sec: ItemStack.TooltipSection.values()){
-                        if(flagMapper.get(sec)){
-                            stack.addHideFlag(sec);
-                        }
+                    for (var entry: ItemStackUtils.TooltipHideFlag.values()){
+                        entry.setHideFlag(stack, entry.isHide(sample));
                     }
+
                 }
             }
             protected void init(){
@@ -545,12 +551,10 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             @Override
             protected void saveChanges() {
                 if(stackTemplate.getItem() != this.item.getOriginValue()){
-                    var origin = stackTemplate;
-                    stackTemplate = new ItemStack(this.item.getOriginValue());
-                    stackTemplate.setNbt(origin.getNbt());
+                    stackTemplate = ItemStackUtils.withTypeChange(stackTemplate, this.item.getOriginValue());
                 }
                 stackTemplate.setCount(count.getOriginValue());
-                stackTemplate.setDamage(damage.getOriginValue());
+                ItemStackUtils.setDamage(stackTemplate, damage.getOriginValue());
                 ItemStackUtils.setSfId(stackTemplate, sfid.getOriginValue());
                 ItemStackUtils.setUnbreakable(stackTemplate, this.unbreakable.getOriginValue());
                 this.flags.applyChange(stackTemplate);
@@ -618,7 +622,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
             protected static class ItemEnchantAttrGroup{
                 public ItemEnchantAttrGroup(String enchantment,  int level){
-                    id = AttrKeyValue.openRegistry("附魔",Registries.ENCHANTMENT, enchantment);
+                    id = AttrKeyValue.openRegistry("附魔", ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT), enchantment);
                     lvl = AttrKeyValue.integer("等级", level);
                 }
                 AttrKeyValue<Enchantment> id;
@@ -635,17 +639,31 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 public Pair<String, Integer> value(){
                     return new Pair<>(this.id.getValue(), this.lvl.getOriginValue());
                 }
+                public Pair<RegistryEntry<Enchantment>, Integer> entryValue(){
+                    try{
+                        Enchantment enchantment = this.id.getOriginValue();
+                        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT);
+                        RegistryEntry<Enchantment> ench = enchantmentRegistry.getEntry(enchantment);
+                        return new Pair<>(ench, lvl.getOriginValue());
+                    }catch (Throwable e){
+                        return new Pair<>(null, 0);
+                    }
+
+                }
             }
             {
                 init();
             }
             protected List<ItemEnchantAttrGroup> enchantList;
+            protected boolean showInTooltips;
             protected void init(){
                 enchantList = new ArrayList<>();
-                ItemStackUtils.getItemEnchant(stackTemplate)
+                ItemEnchantmentsComponent component = ItemStackUtils.getItemEnchant(stackTemplate);
+                component.getEnchantmentEntries()
                     .forEach(var->{
-                        enchantList.add(new ItemEnchantAttrGroup(var.getFirst(), var.getSecond()));
+                        enchantList.add(new ItemEnchantAttrGroup(ItemStackUtils.solveDynamic(var.getKey()).toString(), var.getIntValue()));
                     });
+                this.showInTooltips = component.showInTooltip;
                 new ListModifyWidget(
                     ListEntryWidgetController.mutable(
                         enchantList,
@@ -661,7 +679,15 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
             @Override
             protected void saveChanges() {
-                ItemStackUtils.applyItemEnchant(stackTemplate, this.enchantList.stream().map(ItemEnchantAttrGroup::value));
+                ItemEnchantmentsComponent.Builder builder = new ItemEnchantmentsComponent.Builder(ItemEnchantmentsComponent.DEFAULT.withShowInTooltip(this.showInTooltips));
+                for (var ench: enchantList){
+                    var re = ench.entryValue();
+                    if(re.getFirst() != null){
+                        builder.add(re.getFirst(), re.getSecond());
+                    }
+                }
+
+                ItemStackUtils.applyItemEnchant(stackTemplate, builder.build());
             }
 
             @Override
@@ -671,44 +697,53 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         }
         protected class ItemAttributeModifiersSubSubScreen extends ItemAttrSubSubScreen{
             protected class ItemAttributeModifierEntry{
-                public ItemAttributeModifierEntry(String attribute, EntityAttributeModifier modifier, EquipmentSlot slot){
+                public ItemAttributeModifierEntry(String attribute, EntityAttributeModifier modifier, AttributeModifierSlot slot){
                     attr = AttrKeyValue.openRegistry("属性名", Registries.ATTRIBUTE, attribute);
-                    modifierComp = modifier.toNbt();
-                    modifierValue = AttrKeyValue.doub("值", modifier.getValue());
-                    modifierOperation = AttrKeyValue.enumMap("操作", modifier.getOperation(), NAME_TO_OPER);
-                    optionalSlot = AttrKeyValue.enumMap("槽位", Optional.ofNullable(slot), NAME_TO_OP);
+                    identifier = modifier.id();
+                    modifierValue = AttrKeyValue.doub("值", modifier.value());
+                    modifierOperation = AttrKeyValue.enumMap("操作", modifier.operation(), NAME_TO_OPER);
+                    optionalSlot = AttrKeyValue.enumMap("槽位", slot, NAME_TO_OP);
                 }
-                NbtCompound modifierComp;
+                Identifier identifier;
                 AttrKeyValue<EntityAttribute> attr;
                 AttrKeyValue<Double> modifierValue;
                 AttrKeyValue<EntityAttributeModifier.Operation> modifierOperation;
-                AttrKeyValue<Optional< EquipmentSlot>> optionalSlot;
-                protected static final Map<String, Optional<EquipmentSlot>> NAME_TO_OP = new LinkedHashMap<>();
+                AttrKeyValue<AttributeModifierSlot> optionalSlot;
+                protected static final Map<String, AttributeModifierSlot> NAME_TO_OP = new LinkedHashMap<>();
                 protected static final Map<String, EntityAttributeModifier.Operation> NAME_TO_OPER = new LinkedHashMap<>();
                 static{
-                    NAME_TO_OP.put("全部槽位", Optional.empty());
-                    NAME_TO_OP.put("主手",Optional.of(EquipmentSlot.MAINHAND));
-                    NAME_TO_OP.put("副手",Optional.of(EquipmentSlot.OFFHAND));
-                    NAME_TO_OP.put("头盔",Optional.of(EquipmentSlot.HEAD));
-                    NAME_TO_OP.put("胸甲", Optional.of(EquipmentSlot.CHEST));
-                    NAME_TO_OP.put("护腿",Optional.of(EquipmentSlot.LEGS));
-                    NAME_TO_OP.put("靴子",Optional.of(EquipmentSlot.FEET));
-                    NAME_TO_OPER .put("加法", EntityAttributeModifier.Operation.ADDITION);
-                    NAME_TO_OPER.put("乘基数", EntityAttributeModifier.Operation.MULTIPLY_BASE);
-                    NAME_TO_OPER.put("乘法", EntityAttributeModifier.Operation.MULTIPLY_TOTAL);
+                    for (var re: AttributeModifierSlot.values()){
+                        NAME_TO_OP.put(re.asString(), re);
+                    }
+                    NAME_TO_OPER .put("加法", EntityAttributeModifier.Operation.ADD_VALUE);
+                    NAME_TO_OPER.put("乘基数", EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+                    NAME_TO_OPER.put("乘法", EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
                 }
                 public ItemAttributeModifierEntry(){
-                    this("minecraft:", new EntityAttributeModifier(null, 0.0d, EntityAttributeModifier.Operation.ADDITION), null);
+                    this("minecraft:", new EntityAttributeModifier(null, 0.0d, EntityAttributeModifier.Operation.ADD_VALUE), AttributeModifierSlot.ANY);
                 }
 
-                public Triplet<String, EntityAttributeModifier, EquipmentSlot> value(){
-                    EntityAttributeModifier modifier = new EntityAttributeModifier(
-                        modifierComp.getUuid("UUID"),
-                        modifierComp.getString("Name"),
-                        modifierValue.getOriginValue(),
-                        modifierOperation.getOriginValue()
-                    );
-                    return new Triplet<>(attr.getValue(), modifier, optionalSlot.getOriginValue().orElse(null));
+                public AttributeModifiersComponent.Entry value(){
+                    try{
+                        EntityAttribute attribute  = this.attr.getOriginValue();
+                        if(attribute != null){
+                            RegistryEntry<EntityAttribute> attribute0 = Registries.ATTRIBUTE.getEntry(this.attr.getOriginValue());
+                            if(attribute0 != null && attribute0.value() != null){
+                                EntityAttributeModifier modifier = new EntityAttributeModifier(
+                                    identifier,
+                                    modifierValue.getOriginValue(),
+                                    modifierOperation.getOriginValue()
+                                );
+                                AttributeModifierSlot slot = this.optionalSlot.getOriginValue();
+                                return new AttributeModifiersComponent.Entry(attribute0, modifier, slot);
+                            }else {
+                                Debug.info("Attribute null? ", this.attr.getOriginValue(), this.attr.getValue());
+                            }
+                        }
+                    }catch (Throwable e){
+                    }
+                    return null;
+
                 }
                 public DrawableWidget factory(){
                     return new SubScreenWidget(0,0,0,0)
@@ -733,11 +768,14 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 init();
             }
             protected List<ItemAttributeModifierEntry> modifierEntries ;
+            boolean showInTooltips;
             protected void init(){
                 this.modifierEntries = new ArrayList<>();
-                ItemStackUtils.getEntityModifier(stackTemplate)
+                AttributeModifiersComponent modifiers= ItemStackUtils.getEntityModifier(stackTemplate);
+                this.showInTooltips = modifiers.showInTooltip();
+                modifiers.modifiers()
                     .forEach(var->{
-                        this.modifierEntries.add(new ItemAttributeModifierEntry(var.getA(), var.getB(), var.getC()));
+                        this.modifierEntries.add(new ItemAttributeModifierEntry(ItemStackUtils.solveDynamic( var.attribute()).toString(), var.modifier(), var.slot()));
                     });
                 new ListModifyWidget(
                     ListEntryWidgetController.mutable(
@@ -753,7 +791,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             }
             @Override
             protected void saveChanges() {
-                ItemStackUtils.applyEntityModifier(stackTemplate, this.modifierEntries.stream().map(ItemAttributeModifierEntry::value));
+                ItemStackUtils.applyEntityModifier(stackTemplate,new AttributeModifiersComponent( this.modifierEntries.stream().map(ItemAttributeModifierEntry::value).filter(Objects::nonNull).toList(), this.showInTooltips));
             }
 
             @Override

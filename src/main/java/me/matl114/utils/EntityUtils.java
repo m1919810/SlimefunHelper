@@ -1,6 +1,8 @@
 package me.matl114.utils;
 
 import net.minecraft.block.SpawnerBlock;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.item.*;
@@ -55,7 +57,7 @@ public class EntityUtils {
     static {
         for(Item item: Registries.ITEM){
             if(item instanceof SpawnEggItem egg){
-                ITEM2SPAWN_ENTITY.put(item, egg.getEntityType(null));
+                ITEM2SPAWN_ENTITY.put(item, egg.getEntityType(new ItemStack(item)));
             }
         }
     }
@@ -66,9 +68,9 @@ public class EntityUtils {
         return ITEM2SPAWN_ENTITY.inverse().getOrDefault(entityType, null);
     }
     public static EntityType<?> getStoredEntityType(ItemStack stack){
-        if(stack != null && stack.getItem() instanceof BlockItem block && block.getBlock() instanceof SpawnerBlock spawner){
-
-            return getSpawnerEntityType(ItemStackUtils.getStoredBlockEntity(stack));
+        if(stack != null && stack.getItem() instanceof BlockItem block && block.getBlock() instanceof SpawnerBlock spawner && ItemStackUtils.hasInPatch(stack, DataComponentTypes.BLOCK_ENTITY_DATA)){
+            NbtComponent component = ItemStackUtils.getInPatch(stack, DataComponentTypes.BLOCK_ENTITY_DATA);
+            return getSpawnerEntityType(component.getNbt());
         }
         return null;
     }
@@ -78,9 +80,10 @@ public class EntityUtils {
     public static Identifier getSpawnedEntityId(NbtCompound nbt, String spawnDataKey) {
         if (nbt.contains(spawnDataKey, 10)) {
             String string = nbt.getCompound(spawnDataKey).getCompound("entity").getString("id");
-
-          return Identifier.tryParse(string);
-
+            if(string != null && !string.isEmpty()){
+                return Identifier.tryParse(string);
+            }
+            return null;
         } else {
 
             return null;

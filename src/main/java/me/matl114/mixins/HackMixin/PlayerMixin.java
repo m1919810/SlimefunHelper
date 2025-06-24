@@ -19,6 +19,7 @@ import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenHandler;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -76,8 +77,11 @@ public abstract class PlayerMixin extends AbstractClientPlayerEntity implements 
                 forceCloseInv=false;
             }
         }
-
     }
+
+
+
+
     @Inject(method="closeHandledScreen",at=@At(value = "HEAD"),cancellable = true)
     public void closeHandledScreen(CallbackInfo ci) {
         if(!this.forceCloseInv&& HotKeys.getButtonToggleManager().getState(HotKeys.KEEP_INV)) {
@@ -117,7 +121,7 @@ public abstract class PlayerMixin extends AbstractClientPlayerEntity implements 
     @Unique
     private static final AtomicDouble speedValue = Configs.MOV_CONFIG.getDouble(Configs.MOVE_SPEED_WALK_VAL);
     @Unique
-    public double getAttributeValue(EntityAttribute attribute){
+    public double getAttributeValue(RegistryEntry<EntityAttribute> attribute){
         if(attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED && overrdeSpeed.get()){
             return speedValue.get();
         }
@@ -156,5 +160,22 @@ public abstract class PlayerMixin extends AbstractClientPlayerEntity implements 
     protected void grantAllClientPermissions(CallbackInfoReturnable<Integer> cir){
         cir.setReturnValue(4);
     }
+    @Unique
+    private static final AtomicDouble reachDistance=Configs.MINE_CONFIG.getDouble(Configs.MINE_FASTBREAK_REACH);
 
+    @Override
+    public double getBlockInteractionRange() {
+        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.REACH)){
+            return reachDistance.floatValue();
+        }
+        return super.getBlockInteractionRange();
+    }
+
+    @Override
+    public double getEntityInteractionRange() {
+        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.REACH)){
+            return reachDistance.floatValue();
+        }
+        return super.getEntityInteractionRange();
+    }
 }

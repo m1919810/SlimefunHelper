@@ -5,9 +5,11 @@ import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.utils.ItemStackUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.item.TooltipContext;
+
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -23,12 +25,13 @@ import java.util.List;
 @Environment(EnvType.CLIENT)
 @Mixin(value = ItemStack.class, priority = 10000)
 public abstract class ItemStackMixin {
-    @Shadow @Nullable
-    public abstract NbtCompound getNbt();
+    private ItemStack cast(){
+        return (ItemStack)(Object) this;
+    }
     @Inject(method = "getTooltip", at = @At(value = "RETURN"))
-    public void changeTooltip(PlayerEntity player, TooltipContext context, CallbackInfoReturnable<List<Text>> cir) {
+    public void changeTooltip(Item.TooltipContext context, @Nullable PlayerEntity player, TooltipType type, CallbackInfoReturnable<List<Text>> cir) {
         if(ModConfig.isEnableToolTipsDisplay()){
-            final String id = ItemStackUtils.getSfId(getNbt());
+            final String id = ItemStackUtils.getSfId(cast());
             if (id == null) {
                 return;
             }

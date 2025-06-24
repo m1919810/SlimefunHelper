@@ -15,9 +15,9 @@ public class ButtonElement extends IconElement.SimpleIconElement {
     @Getter
     private ColorProvider color;
 
-    public static final Identifier BUTTON=new Identifier("widget/button");
-    public static final Identifier BUTTON_HIGHLIGHT= new Identifier("widget/button_highlighted");
-    public static final Identifier BUTTON_INACTIVE =new Identifier("widget/button_disabled");
+    public static final Identifier BUTTON=new Identifier("minecraft","widget/button");
+    public static final Identifier BUTTON_HIGHLIGHT= new Identifier("minecraft","widget/button_highlighted");
+    public static final Identifier BUTTON_INACTIVE =new Identifier("minecraft","widget/button_disabled");
 
     public ButtonElement setColorProvider(ColorProvider provider){
         this.color = provider;

@@ -26,8 +26,8 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.15.1",
-		"minecraft": "~1.20",
-		"java": ">=17",
+		"minecraft": "~1.21",
+		"java": ">=21",
 		"fabric-api": "*"
 	},
 	"accessWidener":"overrideList.accesswidener",

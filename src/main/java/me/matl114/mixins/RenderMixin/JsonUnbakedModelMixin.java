@@ -24,37 +24,37 @@ import java.util.function.Function;
 @Mixin(value = JsonUnbakedModel.class,priority = 990)
 public abstract class JsonUnbakedModelMixin implements UnbakedModel {
     //fix ommc wrongly mixin unbakedModel
-    @Inject(method = "bake(Lnet/minecraft/client/render/model/Baker;Lnet/minecraft/client/render/model/json/JsonUnbakedModel;Ljava/util/function/Function;Lnet/minecraft/client/render/model/ModelBakeSettings;Lnet/minecraft/util/Identifier;Z)Lnet/minecraft/client/render/model/BakedModel;",
+    @Inject(method = "bake(Lnet/minecraft/client/render/model/Baker;Lnet/minecraft/client/render/model/json/JsonUnbakedModel;Ljava/util/function/Function;Lnet/minecraft/client/render/model/ModelBakeSettings;Z)Lnet/minecraft/client/render/model/BakedModel;",
             at = @At(value = "HEAD"), cancellable = true)
-    private void generateCustomBakedModel(Baker baker, JsonUnbakedModel parent, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings settings, Identifier id, boolean hasDepth, CallbackInfoReturnable<BakedModel> cir) {
+    private void generateCustomBakedModel(Baker baker, JsonUnbakedModel parent, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings settings, boolean bl, CallbackInfoReturnable<BakedModel> cir) {
         if(ModConfig.isEnableBlockModelProtect()){
            // Debug.info("Fixing OMMC Model Errors");
-            cir.setReturnValue(rewriteSafeBkae(baker, parent, textureGetter, settings, id, hasDepth));
+            cir.setReturnValue(rewriteSafeBkae(baker, parent, textureGetter, settings, bl));
             cir.cancel();
         }
     }
-    @Invoker("bake")
-    public abstract BakedModel invokeBake(Baker baker, JsonUnbakedModel parent, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings settings, Identifier id, boolean hasDepth);
-    private BakedModel rewriteSafeBkae(Baker baker, JsonUnbakedModel parent, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings settings, Identifier id, boolean hasDepth){
+
+
+    public BakedModel rewriteSafeBkae(Baker baker, JsonUnbakedModel parent, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings settings, boolean bl) {
         Sprite sprite = (Sprite)textureGetter.apply(this.resolveSprite("particle"));
         if (this.getRootModel() == ModelLoader.BLOCK_ENTITY_MARKER) {
             return new BuiltinBakedModel(this.getTransformations(), this.compileOverrides(baker, parent), sprite, this.getGuiLight().isSide());
         } else {
-            BasicBakedModel.Builder builder = (new BasicBakedModel.Builder((JsonUnbakedModel)(Object) this, this.compileOverrides(baker, parent), hasDepth)).setParticle(sprite);
-            Iterator var9 = this.getElements().iterator();
+            BasicBakedModel.Builder builder = (new BasicBakedModel.Builder((JsonUnbakedModel) (Object)this, this.compileOverrides(baker, parent), bl)).setParticle(sprite);
+            Iterator var8 = this.getElements().iterator();
 
-            while(var9.hasNext()) {
-                ModelElement modelElement = (ModelElement)var9.next();
-                Iterator var11 = modelElement.faces.keySet().iterator();
+            while(var8.hasNext()) {
+                ModelElement modelElement = (ModelElement)var8.next();
+                Iterator var10 = modelElement.faces.keySet().iterator();
 
-                while(var11.hasNext()) {
-                    Direction direction = (Direction)var11.next();
+                while(var10.hasNext()) {
+                    Direction direction = (Direction)var10.next();
                     ModelElementFace modelElementFace = (ModelElementFace)modelElement.faces.get(direction);
-                    Sprite sprite2 = (Sprite)textureGetter.apply(this.resolveSprite(modelElementFace.textureId));
-                    if (modelElementFace.cullFace == null) {
-                        builder.addQuad(createQuad(modelElement, modelElementFace, sprite2, direction, settings, id));
+                    Sprite sprite2 = (Sprite)textureGetter.apply(this.resolveSprite(modelElementFace.textureId()));
+                    if (modelElementFace.cullFace() == null) {
+                        builder.addQuad(createQuad(modelElement, modelElementFace, sprite2, direction, settings));
                     } else {
-                        builder.addQuad(Direction.transform(settings.getRotation().getMatrix(), modelElementFace.cullFace), createQuad(modelElement, modelElementFace, sprite2, direction, settings, id));
+                        builder.addQuad(Direction.transform(settings.getRotation().getMatrix(), modelElementFace.cullFace()), createQuad(modelElement, modelElementFace, sprite2, direction, settings));
                     }
                 }
             }
@@ -62,8 +62,10 @@ public abstract class JsonUnbakedModelMixin implements UnbakedModel {
             return builder.build();
         }
     }
+
+
     @Shadow
-    public static BakedQuad createQuad(ModelElement modelElement, ModelElementFace modelElementFace, Sprite sprite2, Direction direction, ModelBakeSettings settings, Identifier id) {
+    public static BakedQuad createQuad(ModelElement element, ModelElementFace elementFace, Sprite sprite, Direction side, ModelBakeSettings settings) {
         throw new NullPointerException("not implemented yet");
     }
 

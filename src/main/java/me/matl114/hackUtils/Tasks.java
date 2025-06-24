@@ -13,6 +13,7 @@ import me.matl114.managers.HotKeys;
 import me.matl114.SlimefunHelper;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.ItemStackUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -200,26 +201,7 @@ public class Tasks {
             );
         }
     }
-    public static void doTryBeaconPacket(){
-        int t;
-        try{
-            t=Integer.parseInt(HotKeys.SHARED_ARGUMENT.get());
-        }catch (Throwable e){
-            Debug.chat("Invalid argument passed");
-            return;
-        }
-        int a;
-        try{
-            a=Integer.parseInt(HotKeys.SHARED_ARGUMENT_2.get());
-        }catch (Throwable e){
-            a = 0;
-            Debug.chat("Invalid argument passed");
-        }
-        StatusEffect effect1 = Registries.STATUS_EFFECT.get(t);
-        StatusEffect effect2 = Registries.STATUS_EFFECT.get(a);
-        Debug.info("updated", effect1 == null ? null : Registries.STATUS_EFFECT.getId(effect1) , effect2 == null ? null : Registries.STATUS_EFFECT.getId(effect2));
-        mc.getNetworkHandler().sendPacket(new UpdateBeaconC2SPacket(Optional.ofNullable( Registries.STATUS_EFFECT.get(t)),Optional.ofNullable(Registries.STATUS_EFFECT.get(a))));
-    }
+
     public static void doTest(){
         //doTryBeaconPacket();
      //   ItemEditTasks.openEditScreenLater(mc.player.getMainHandStack().copy(), null);

@@ -6,6 +6,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,8 +29,8 @@ public abstract class LightMapTextureMixin {
             cir.setReturnValue(0.0F);
         }
     }
-    @Redirect(method = "update",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/entity/effect/StatusEffect;)Z",ordinal = 0))
-    public boolean alwaysNightVision(ClientPlayerEntity clientPlayerEntity, StatusEffect statusEffect) {
+    @Redirect(method = "update",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",ordinal = 0))
+    public boolean alwaysNightVision(ClientPlayerEntity clientPlayerEntity, RegistryEntry<StatusEffect> statusEffect) {
         if(doNightVision.get()) {
             return true;
         }
