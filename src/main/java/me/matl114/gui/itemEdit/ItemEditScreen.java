@@ -1,8 +1,8 @@
 package me.matl114.gui.itemEdit;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.gson.*;
+import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.datafixers.util.Pair;
 import me.matl114.access.TextFieldAccess;
 import me.matl114.bukkitUtiils.ItemStackHelper;
@@ -22,12 +22,11 @@ import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.component.type.AttributeModifiersComponent;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.Item;
@@ -38,15 +37,11 @@ import net.minecraft.nbt.visitor.NbtOrderedStringFormatter;
 import net.minecraft.nbt.visitor.StringNbtWriter;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import org.spongepowered.asm.mixin.injection.At;
-import org.w3c.dom.Attr;
-import oshi.util.tuples.Triplet;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -207,7 +202,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         //40 ~ 60,给上方的按钮
         //60 ~ conten_end_y给下面的屏幕
         //如果大小正常的画,应该是 400 * 270
-        this.optionalMultiLine = new ContentDelegateWidget<>(0,0,0,0)
+        this.optionalMultiLine = new McWidgetHelpers.TextContentDelegateWidget<>(0,0, null)
             .addTo(this);
         this.processingSubScreen = new ContentDelegateWidget<ItemProcessingSubScreen>(this.x + CONTENT_START_X, this.y + CONTENT_START_Y + 20, this.backgroundWidth - 2* CONTENT_START_X, this.content_end_y - CONTENT_START_Y - 20)
             .addTo(this)
@@ -483,6 +478,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             AttrKeyValue<Boolean> unbreakable;
             AttrKeyValue<Integer> damage;
             AttrKeyValue<String> sfid;
+            ProfileComponent lastComponent;
+            AttrKeyValue<String> skullHashProfile;
             ItemHideFlags flags;
             {
                 init();
@@ -534,6 +531,17 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 this.sfid = AttrKeyValue.str("粘液id", sfid == null? "": sfid);
                 this.unbreakable = AttrKeyValue.bool( "无法破坏", ItemStackUtils.getIsUnbreakable(stackTemplate));
                 this.flags = new ItemHideFlags(stackTemplate);
+                ProfileComponent component  = ItemStackUtils.getInPatch(stackTemplate, PROFILE);
+                this.lastComponent = component;
+                String hash = "";
+
+                if(component != null){
+                    hash = ItemStackHelper.getHashFromProfile(component);
+                }
+                if(hash == null)hash = "";
+                this.skullHashProfile = AttrKeyValue.str("CSCoreLib", hash);
+
+
                 new KeyValueInputWidget<>(30, 0,240, 20, 50, this.item)
                     .addToSub((ItemBasicAttributeSubSubScreen)this);
                 new KeyValueInputWidget<>(30, 30,240, 20, 50, this.count)
@@ -545,6 +553,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 new KeyValueInputWidget<>(30, 120,240, 20, 50, this.unbreakable)
                     .addToSub((ItemBasicAttributeSubSubScreen)this);
                 this.flags.factory(30, 150)
+                    .addToSub((ItemBasicAttributeSubSubScreen)this);
+                new KeyValueInputWidget<>(30, 180, 240,20,50, this.skullHashProfile)
                     .addToSub((ItemBasicAttributeSubSubScreen)this);
 
             }
@@ -558,6 +568,25 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 ItemStackUtils.setSfId(stackTemplate, sfid.getOriginValue());
                 ItemStackUtils.setUnbreakable(stackTemplate, this.unbreakable.getOriginValue());
                 this.flags.applyChange(stackTemplate);
+                String hash = this.skullHashProfile.getOriginValue();
+                if(hash != null && !hash.isEmpty()){
+                    if(lastComponent != null){
+                        PropertyMap map = ItemStackHelper.buildPropertyMap(lastComponent.properties(), hash);
+                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE,
+                            new ProfileComponent(lastComponent.name(), lastComponent.id(), map));
+                    }else {
+                        //generate empty
+                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, new ProfileComponent(Optional.empty(), Optional.empty(), ItemStackHelper.buildPropertyMap(new PropertyMap(), hash)));
+                    }
+                }else {
+                    //empty hash remove
+                    if(lastComponent != null){
+                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, new ProfileComponent(lastComponent.name(), lastComponent.id(), new PropertyMap()));
+                    }else {
+                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, null);
+                    }
+
+                }
             }
 
 

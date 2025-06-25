@@ -3,7 +3,9 @@ package me.matl114.bukkitUtiils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
@@ -98,33 +100,36 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
     static final String PROPERTY_NAME = "textures";
     private static final String MINECRAFT_HOST = "textures.minecraft.net";
     private static final String MINECRAFT_PATH = "/texture/";
+    public static Property encodeUrlToProperty(URL skinUrl, PlayerTextures.SkinModel model, URL cape){
+        JsonObject propertyData = new JsonObject();
+        if( skinUrl !=null){
+            JsonObject texturesMap = JsonUtils.getOrCreateObject(propertyData, "textures");
+            JsonObject skinTexture = JsonUtils.getOrCreateObject(texturesMap, MinecraftProfileTexture.Type.SKIN.name());
+            skinTexture.addProperty("url", skinUrl.toExternalForm());
+
+            // Special case: If the skin model is classic (i.e. default), omit it.
+            // Assert: skinModel != null
+            if (model != PlayerTextures.SkinModel.CLASSIC) {
+                JsonObject metadata = JsonUtils.getOrCreateObject(skinTexture, "metadata");
+                metadata.addProperty("model", model.name().toLowerCase(Locale.ROOT));
+            }
+        }
+
+        if (cape != null) {
+            JsonObject texturesMap = JsonUtils.getOrCreateObject(propertyData, "textures");
+            JsonObject skinTexture = JsonUtils.getOrCreateObject(texturesMap, MinecraftProfileTexture.Type.CAPE.name());
+            skinTexture.addProperty("url", cape.toExternalForm());
+        }
+        String encodedTexturesData = BukkitPlayerTextures. encodePropertyValue(propertyData, BukkitPlayerTextures.JsonFormatter.COMPACT);
+        return new Property(PROPERTY_NAME, encodedTexturesData);
+    }
     public void setSkinUrl(URL skinUrl, PlayerTextures.SkinModel model, URL cape) {
         this.skinUrl = skinUrl;
         if( skinUrl == null && cape ==  null){
             this.properties.removeAll(PROPERTY_NAME) ;//  removeProperty(CraftPlayerTextures.PROPERTY_NAME);
             return;
         }else {
-            JsonObject propertyData = new JsonObject();
-            if( skinUrl !=null){
-                JsonObject texturesMap = JsonUtils.getOrCreateObject(propertyData, "textures");
-                JsonObject skinTexture = JsonUtils.getOrCreateObject(texturesMap, MinecraftProfileTexture.Type.SKIN.name());
-                skinTexture.addProperty("url", skinUrl.toExternalForm());
-
-                // Special case: If the skin model is classic (i.e. default), omit it.
-                // Assert: skinModel != null
-                if (model != PlayerTextures.SkinModel.CLASSIC) {
-                    JsonObject metadata = JsonUtils.getOrCreateObject(skinTexture, "metadata");
-                    metadata.addProperty("model", model.name().toLowerCase(Locale.ROOT));
-                }
-            }
-
-            if (cape != null) {
-                JsonObject texturesMap = JsonUtils.getOrCreateObject(propertyData, "textures");
-                JsonObject skinTexture = JsonUtils.getOrCreateObject(texturesMap, MinecraftProfileTexture.Type.CAPE.name());
-                skinTexture.addProperty("url", cape.toExternalForm());
-            }
-            String encodedTexturesData = BukkitPlayerTextures. encodePropertyValue(propertyData, BukkitPlayerTextures.JsonFormatter.COMPACT);
-            Property property = new Property(PROPERTY_NAME, encodedTexturesData);
+            Property property = encodeUrlToProperty(skinUrl, model, cape);
             this.properties.removeAll(PROPERTY_NAME);
             this.properties.put(PROPERTY_NAME, property);
         }
@@ -132,6 +137,12 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
     }
     public void addGameProfile(ItemStack stack) {
         ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, createGameProfile());
+    }
+
+    public PropertyMap createPropertyMap(){
+        PropertyMap map = new PropertyMap();
+        map.putAll(this.properties);
+        return map;
     }
     public ProfileComponent createGameProfile(){
         PropertyMap map = new PropertyMap();
@@ -186,6 +197,7 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
         String signature = (String) map.get("signature");
         return new Property(name, value, signature);
     }
+
     public static Map<String, Object> serializeProperty(@Nonnull Property property) {
         Map<String, Object> map = new LinkedHashMap<>();
         try{
@@ -209,6 +221,26 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
         public PlayerSkin(UUID uniqueId, String name, URL url) {
             profile = new BukkitPlayerProfile(uniqueId, name);
             profile.setSkinUrl(url, PlayerTextures.SkinModel.CLASSIC, null);
+        }
+        @javax.annotation.Nullable
+        private static String decodeBase64(@Nonnull String encoded) {
+            try {
+                return new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+            } catch (IllegalArgumentException e) {
+                return null; // Invalid input
+            }
+        }
+        @javax.annotation.Nullable
+        public static JsonObject decodePropertyValue(@Nonnull String encodedPropertyValue) {
+            String json = decodeBase64(encodedPropertyValue);
+            if (json == null) return null;
+            try {
+                JsonElement jsonElement = JsonParser.parseString(json);
+                if (!jsonElement.isJsonObject()) return null;
+                return jsonElement.getAsJsonObject();
+            } catch (JsonParseException e) {
+                return null; // Invalid input
+            }
         }
     }
     @ParametersAreNonnullByDefault
@@ -259,6 +291,19 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
         }
 
         return fromBase64(uuid, base64skinTexture, skinUrl);
+    }
+
+    public static URL fromHashToUrl(String hash){
+        String url = "http://textures.minecraft.net/texture/" + hash;
+        URL skinUrl;
+        try {
+            skinUrl = URI.create(url).toURL();
+        } catch (MalformedURLException var6) {
+            MalformedURLException e = var6;
+            throw new RuntimeException(e);
+        }
+        return skinUrl;
+
     }
 
     @ParametersAreNonnullByDefault

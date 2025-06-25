@@ -7,13 +7,18 @@ import me.matl114.utils.UtilClass.PropertyTracker;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.EditBox;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.client.gui.widget.ScrollableWidget;
 import net.minecraft.text.Text;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nonnull;
 import java.util.function.Consumer;
@@ -49,6 +54,12 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
     @Shadow
     public abstract void setChangeListener(Consumer<String> changeListener);
 
+    @Shadow @Final private EditBox editBox;
+
+    @Shadow protected abstract void moveCursor(double mouseX, double mouseY);
+
+    @Shadow protected abstract double getDeltaYPerScroll();
+
     @Unique
     public void setListener(PropertyTracker<TextFieldAccess, String> tracker){
         setChangeListener((str)->tracker.valueChange(this, str));
@@ -62,5 +73,34 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
     @Override
     protected void drawBox(DrawContext context, int x, int y, int width, int height){
         McWidgetHelpers.drawTextWidgetBox(this, context, x, y, width, height, this.isFocused(), this.boxColorProvider);
+    }
+
+    @Inject(method = "setFocused", at = @At("HEAD"))
+    private void resetSelectOnRelease(boolean focused, CallbackInfo ci){
+        if(!focused){
+            resetSelect();
+        }
+    }
+
+    @Unique
+    public void dragSelect(int deltaX, int deltaY, boolean shiftDownAction){
+        if(this.isWithinBounds(deltaX, deltaY)){
+            this.editBox.setSelecting(true);
+            this.moveCursor(deltaX, deltaY);
+            this.editBox.setSelecting(Screen.hasShiftDown());
+        }else {
+            if(deltaY < this.getY()){
+                this.setScrollY(this.getScrollY() - 2.0f * this.getDeltaYPerScroll());
+            }else if(deltaY > this.getY() + this.getHeight()){
+                this.setScrollY(this.getScrollY() + 2.0f * this.getDeltaYPerScroll());
+            }
+        }
+    }
+    @Unique
+    public void resetSelect(){
+        if(this.editBox.hasSelection()){
+            this.editBox.setSelecting(false);
+            this.editBox.selectionEnd = this.editBox.getCursor();
+        }
     }
 }

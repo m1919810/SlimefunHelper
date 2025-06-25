@@ -63,11 +63,6 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
                 )
                 .addToSub(this)
             ;
-        }else if(id == Integer.class || id == String.class || id == Double.class){
-            this.interactPlace = McWidgetHelpers.createTextFieldEditBox(
-                dkey + 1, 1, dx - dkey - 2, dy -2, this.keyValueHolder, this.keyValueHolder.getValue(), McWidgetHelpers.getWrongRedTextBoxColorProvider(this.keyValueHolder::isValidate)
-            )
-                .addToSub(this);
         }else if(id == Registry.class){
             Registry<T> thisRegistry =Objects.requireNonNull (((AttrKeyValue.RegistryAttrKeyValue<T>)this.keyValueHolder).getRegistry());
             ContentDelegateWidget<TextFieldWidget> interactPlace = McWidgetHelpers.createTextFieldEditBox(
@@ -102,6 +97,11 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
                         this.keyValueHolder.valueChange(this, flattenMap.get(index0));
                     }))
                         .withTooltips(TooltipHandler.of(List.of(Text.literal(this.keyValueHolder.getKeyName()))))
+                )
+                .addToSub(this);
+        }else{
+            this.interactPlace = McWidgetHelpers.createTextFieldEditBox(
+                    dkey + 1, 1, dx - dkey - 2, dy -2, this.keyValueHolder, this.keyValueHolder.getValue(), McWidgetHelpers.getWrongRedTextBoxColorProvider(this.keyValueHolder::isValidate)
                 )
                 .addToSub(this);
         }

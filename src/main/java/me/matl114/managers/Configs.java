@@ -190,7 +190,7 @@ public class Configs {
         .defaultVal(false, SLIMEFUN_RECIPE_LOCKED)
         .defaultVal(true, SLIMEFUN_RECIPE_SAVE)
         .defaultVal("^(Slimefun 指南.*)$", SLIMEFUN_RECIPE_TITLE)
-        .defaultVal("^(多方块结构)$", SLIMEFUN_MULTIBLOCK_MATCHER)
+        .defaultVal("^(多方块结构|MultiBlock)$", SLIMEFUN_MULTIBLOCK_MATCHER)
         .defaultVal(false, SLIMEFUN_MULTIBLOCK_CLICKER)
         .defaultVal(12, SLIMEFUN_MB_RATE)
         .defaultVal(true, SLIMEFUN_MATCH_UP_AND_DOWN)

@@ -18,9 +18,7 @@ public abstract class ScrollableWidgetMixin extends ClickableWidget implements D
     }
     @Shadow
     private boolean scrollbarDragged;
-    public boolean canDrag(double mouseX, double mouseY){
-        return this.overflows() && mouseX >= (double)(this.getX() + this.width) && mouseX <= (double)(this.getX() + this.width + 8) && mouseY >= (double)this.getY() && mouseY < (double)(this.getY() + this.height);
-    }
+
     @Shadow
     protected abstract boolean overflows() ;
 
@@ -32,7 +30,11 @@ public abstract class ScrollableWidgetMixin extends ClickableWidget implements D
         this.scrollbarDragged = false;
     }
 
-    public void startDrag(Screen screen, double mouseX, double mouseY){
-        this.scrollbarDragged = true;
+    public boolean startDrag(Screen screen, double mouseX, double mouseY){
+        if (this.overflows() && mouseX >= (double)(this.getX() + this.width) && mouseX <= (double)(this.getX() + this.width + 8) && mouseY >= (double)this.getY() && mouseY < (double)(this.getY() + this.height)) {
+            this.scrollbarDragged = true;
+            return true;
+
+        }return false;
     }
 }

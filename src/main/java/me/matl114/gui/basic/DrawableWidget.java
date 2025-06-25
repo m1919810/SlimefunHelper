@@ -281,9 +281,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return ScreenRect.empty();
     }
 
-    public boolean canDrag(double mouseX, double mouseY){
-        return false;
-    }
+
 
     public boolean isDragging(){
         return false;
@@ -294,8 +292,8 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     }
 
 
-    public void startDrag(Screen screen, double mouseX, double mouseY){
-
+    public boolean startDrag(Screen screen, double mouseX, double mouseY){
+        return false;
     }
 
 }

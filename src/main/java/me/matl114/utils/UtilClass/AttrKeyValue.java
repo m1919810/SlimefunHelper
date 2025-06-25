@@ -13,6 +13,7 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String> {
     public AttrKeyValue(String key, T value){
@@ -167,6 +168,31 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         return new EnumAttrKeyValue<>(key, val, finiteValueMap);
     }
 
+    public static <T> AttrKeyValue<T> computeNonnull(String keyName, String value, Function<String, T> valueMapper){
+        return new AttrKeyValue<T>(keyName, Optional.ofNullable(value), valueMapper.apply(value)) {
+            @Override
+            public boolean validateAndUpdate() {
+                T val = valueMapper.apply(this.value);
+                if(val != null){
+                    this.originValue = val;
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public String updateValue(T val) {
+                return "";
+            }
+
+            @Override
+            public Class identifier() {
+                return Function.class;
+            }
+        };
+    }
+
+
     public static class RegistryAttrKeyValue<T> extends AttrKeyValue<T>{
         @Getter
         Registry<T> registry;
@@ -240,5 +266,7 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             return Enum.class;
         }
     }
+
+
 
 }

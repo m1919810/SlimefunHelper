@@ -1,13 +1,9 @@
 package me.matl114.utils;
 
 import com.google.common.collect.ImmutableMap;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-import lombok.val;
 import me.matl114.bukkitUtiils.ItemStackHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
-import net.minecraft.component.ComponentChanges;
-import net.minecraft.component.ComponentMapImpl;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.type.*;
 import net.minecraft.entity.EquipmentSlot;
@@ -383,7 +379,7 @@ public class ItemStackUtils {
         ItemStack stacked = new ItemStack(typed);
         if(typedString.length == 2 ){
             if(typed == Items.PLAYER_HEAD){
-                setOrRemoveChange(stacked, PROFILE, ItemStackHelper.buildPlayerHeadProfile(typedString[1]));
+                setOrRemoveChange(stacked, PROFILE, ItemStackHelper.buildPlayerHeadProfileCSCoreLib(typedString[1]));
             }
         }
         if(id!=null && !"null".equals(id)){

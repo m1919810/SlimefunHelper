@@ -29,3 +29,4 @@ accessible method net/minecraft/nbt/NbtCompound <init> (Ljava/util/Map;)V
 accessible field net/minecraft/client/render/model/json/ModelElementFace textureId Ljava/lang/String;
 accessible field net/minecraft/client/render/model/json/ModelElementFace cullFace Lnet/minecraft/util/math/Direction;
 accessible method net/minecraft/client/gui/DrawContext tryDraw ()V
+accessible field net/minecraft/client/gui/EditBox selectionEnd I

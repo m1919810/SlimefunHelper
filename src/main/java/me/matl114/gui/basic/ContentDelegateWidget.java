@@ -174,10 +174,6 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
     }
 
 
-    @Override
-    public boolean canDrag(double mouseX, double mouseY) {
-        return this.delegate != null && this.delegate instanceof Draggable draggable && draggable.canDrag((mouseX - this.x)/ this.textureScale, (mouseY - this.y)/ this.textureScale);
-    }
 
     @Override
     public boolean isDragging() {
@@ -192,10 +188,10 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
     }
 
     @Override
-    public void startDrag(Screen screen, double mouseX, double mouseY) {
+    public boolean startDrag(Screen screen, double mouseX, double mouseY) {
         if(delegate instanceof  Draggable draggable){
-            draggable.startDrag(screen, (mouseX - this.x)/this.textureScale, (mouseY - this.y)/this.textureScale);
-        }
+            return draggable.startDrag(screen, (mouseX - this.x)/this.textureScale, (mouseY - this.y)/this.textureScale);
+        }return false;
     }
 
 }

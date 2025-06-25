@@ -1343,7 +1343,7 @@ public class SlimefunTasks {
         openOrSwitch(SlimefunEntryListScreen.recipeEntry(myEntry));
     }
 
-    public static List<RecipeEntry> getInventoryRelativeRecipes(Inventory inventory){
+    public static List<RecipeEntry> getInventoryRelativeRecipes(Inventory inventory, boolean hard){
         Set<String> relatedIds = new HashSet<>();
         int size = inventory.size();
         for (int i=0 ;i<size;++i){
@@ -1357,14 +1357,28 @@ public class SlimefunTasks {
         }
 
         List<RecipeEntry> results = new ArrayList<>();
+        loop:
         for (var iter: check().ALL_RECIPE_ENTRY.values()){
             ItemStackWithId[] ingredients = iter.ingredientEntry();
+
             for (var ingre: ingredients){
-                String id = getIdOrNull(ingre.stack);
-                if(id != null && relatedIds.contains(id)){
-                    results.add(iter);
-                    break;
+                if(!ingre.stack.isEmpty()){
+                    String id = getIdOrNull(ingre.stack);
+                    if(id != null && relatedIds.contains(id)){
+                        //soft accept
+                        if(!hard){
+                            results.add(iter);
+                            break;
+                        }
+                    }else {
+                        //非空但id不在
+                       continue loop;
+                    }
                 }
+            }
+            //ingre全部通过了id hard才接受
+            if(hard){
+                results.add(iter);
             }
         }
         return results;

@@ -41,7 +41,16 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         Text.literal("和玩家的搜索过滤器内容"),
         Text.literal("匹配配方,过滤器支持拼音搜索")
     );
-    protected static final Text TITLE = Text.literal("粘液配方补全书");
+    protected boolean refreshHard = false;
+    protected static final Text REFRESH_HARD = Text.literal("严格");
+    protected static final Text REFRESH_SOFT = Text.literal("宽松");
+    protected static final List<Text> REFRESH_RULE_TOOLTIPS = List.of(
+        Text.literal("切换严格搜索和宽松搜索"),
+        Text.literal("当使用\"根据玩家背包内容搜索配方\"时"),
+        Text.literal("严格搜索需要你持有全部的原材料"),
+        Text.literal("宽松搜索只需要你持有一种原材料")
+    );
+    protected static final Text TITLE = Text.literal("补全书");
 
     protected static final List<Text> TITLE_TOOLTIPS_SHOWALL = List.of(
         Text.literal("当前展示全部配方"),
@@ -73,6 +82,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     protected ExecutableWidget toggleBookWidget;
     protected ExecutableWidget prevPage;
     protected ExecutableWidget nextPage;
+    protected ExecutableWidget switchHard;
     protected ExecutableWidget titleWidget;
     protected ExecutableWidget multiblockExecuteWidget;
     protected ExecutableWidget multiblockAutoExecute;
@@ -148,7 +158,17 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
             )
             .addToSub(this)
         ;
-        prevPage = ExecutableWidget.instance(12,0,8,8)
+        switchHard = ExecutableWidget.instance(12, 0, 36, 8)
+            .setElementHandler(
+                new ButtonElement((el)-> refreshHard ? REFRESH_HARD:REFRESH_SOFT, ButtonAction.run(()->{
+                    refreshHard = !refreshHard;
+                    refreshContents();
+                }))
+                    .withTooltips(TooltipHandler.of(REFRESH_RULE_TOOLTIPS))
+                    .withPresentCondition(this::active)
+            )
+            .addToSub(this);
+        prevPage = ExecutableWidget.instance(52,0,8,8)
             .setElementHandler(
                 PageButtonElement.prev(this::getMaxPage, this::getPage, this::setPage)
                     .withPresentCondition(this::active)
@@ -160,7 +180,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                     .withPresentCondition(this::active)
             )
             .addToSub(this);
-        titleWidget = ExecutableWidget.instance( 20, 0, DX - 80, 8)
+        titleWidget = ExecutableWidget.instance( 60, 0, DX - 120, 8)
             .setElementHandler(
                 new LabelElement(TITLE, Colors.WHITE)
                     .withMouseHandler(MouseHandler.run(()->{
@@ -244,7 +264,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     public void calculateMatchingRecipes(){
         if(this.onlyShowRelated){
             //impl here
-            this.originItems = MinecraftClient.getInstance().player != null? SlimefunTasks.getInventoryRelativeRecipes(MinecraftClient.getInstance().player.getInventory()): SlimefunTasks.getAllSlimefunRecipeEntry().toList();
+            this.originItems = MinecraftClient.getInstance().player != null? SlimefunTasks.getInventoryRelativeRecipes(MinecraftClient.getInstance().player.getInventory(), refreshHard): SlimefunTasks.getAllSlimefunRecipeEntry().toList();
         }else {
             this.originItems = SlimefunTasks.getAllSlimefunRecipeEntry().toList();
         }

@@ -7,10 +7,6 @@ public class DraggableExecutableWidget extends ExecutableWidget implements Dragg
         super(x, y, dx, dy);
     }
     // enable mouseScroll for MouseHandler
-    @Override
-    public boolean canDrag(double mouseX, double mouseY) {
-        return isMouseOver(mouseX, mouseY);
-    }
 
     @Override
     public boolean isDragging() {
@@ -24,8 +20,13 @@ public class DraggableExecutableWidget extends ExecutableWidget implements Dragg
     }
 
     @Override
-    public void startDrag(Screen screen, double mouseX, double mouseY) {
-        dragging = true;
+    public boolean startDrag(Screen screen, double mouseX, double mouseY) {
+        if(isMouseOver(mouseX, mouseY)){
+            dragging = true;
+            return true;
+        }
+        return false;
+
     }
 
 

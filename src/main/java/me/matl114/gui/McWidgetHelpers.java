@@ -9,32 +9,44 @@ import me.matl114.utils.UtilClass.PropertyTracker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
+import net.minecraft.util.math.MathHelper;
 
 import java.util.function.BooleanSupplier;
 
 public class McWidgetHelpers {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     public static DrawableWidget createMultiLineEditBox(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin){
-        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());
-        widget.setText(origin);
-        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
-        return new ContentDelegateWidget<>(0,0, 0,0)
-            .setContentDelegate(widget);
+        return createEnhancedMultiLine(x, y, dx, dy, valueTracker, origin);
+//        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());;
+//        widget.setText(origin);
+//        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
+//        return new ContentDelegateWidget<>(0,0, 0,0)
+//            .setContentDelegate(widget);
     }
     public static <T> ContentDelegateWidget<TextFieldWidget> createTextFieldEditBox(int x, int y, int dx, int dy, PropertyTracker<T, String> valueTracker, String origin){
+        if(true)
+            return createEnhancedTextBox(x, y, dx, dy, valueTracker, origin,null);
         TextFieldWidget textFieldWidget = new TextFieldWidget(mc.textRenderer, 0,0,dx, dy, Text.empty());
+        textFieldWidget.setMaxLength(32768);
         textFieldWidget.setText(origin);
         textFieldWidget.setChangedListener((str)->valueTracker.valueChange((T)textFieldWidget, str));
         return new ContentDelegateWidget<TextFieldWidget>(x,y,0,0)
             .setContentDelegate(textFieldWidget);
     }
 
+
+
     public static <T> ContentDelegateWidget<TextFieldWidget> createTextFieldEditBox(int x, int y, int dx, int dy, PropertyTracker<T, String> valueTracker, String origin, ColorProvider boxColorProvider){
+        if(true)
+            return createEnhancedTextBox(x, y, dx, dy, valueTracker, origin, boxColorProvider);
         TextFieldWidget textFieldWidget = new TextFieldWidget(mc.textRenderer, 0,0,dx, dy, Text.empty());
+        textFieldWidget.setMaxLength(32768);
         textFieldWidget.setText(origin);
         textFieldWidget.setChangedListener((str)->valueTracker.valueChange((T)textFieldWidget, str));
         TextFieldAccess.of(textFieldWidget).setBorderColorProvider(boxColorProvider);
@@ -62,4 +74,65 @@ public class McWidgetHelpers {
         context.fill(x + width -1, y, x + width, y + height, color);
         context.fill(x, y + height - 1, x + width, y + height, color);
     }
+
+
+    public static <T> ContentDelegateWidget<TextFieldWidget> createEnhancedTextBox(int x, int y, int dx, int dy, PropertyTracker<T, String> valueTracker, String origin, ColorProvider boxColorProvider){
+        TextFieldWidget textFieldWidget = new TextFieldWidget(mc.textRenderer, 0,0,dx, dy, Text.empty());
+        textFieldWidget.setMaxLength(32768);
+        textFieldWidget.setText(origin);
+        textFieldWidget.setChangedListener((str)->valueTracker.valueChange((T)textFieldWidget, str));
+        if(boxColorProvider != null)
+            TextFieldAccess.of(textFieldWidget).setBorderColorProvider(boxColorProvider);
+        return new TextContentDelegateWidget<>(x, y, textFieldWidget);
+    }
+    public static <T> ContentDelegateWidget<EditBoxWidget> createEnhancedMultiLine(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin){
+        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());;
+        widget.setText(origin);
+        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
+        return new TextContentDelegateWidget<>(0,0, widget);
+
+    }
+    public static class TextContentDelegateWidget<T extends ClickableWidget> extends ContentDelegateWidget<T>{
+
+        public TextContentDelegateWidget(int x, int y ,T widget) {
+            super(x, y, 0,0);
+            this.delegate = widget;
+        }
+        boolean startDrag = false;
+
+        @Override
+        public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+            if(this.startDrag && this.delegate != null){
+                //设置cursor位置
+                TextFieldAccess.of(this.delegate).dragSelect((int) ((mouseX - this.x )/this.textureScale), (int) ((mouseY - this.y)/this.textureScale), true);
+            }
+            return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        }
+
+
+
+        @Override
+        public boolean startDrag(Screen screen, double mouseX, double mouseY) {
+            if(isMouseOver( mouseX, mouseY)){
+                this.startDrag = true;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean isDragging() {
+            return this.delegate != null && this.startDrag;
+        }
+
+        @Override
+        public void releaseDrag(Screen screen, double mouseX, double mouseY) {
+            this.startDrag = false;
+//
+        }
+    }
+
+
+
+
 }

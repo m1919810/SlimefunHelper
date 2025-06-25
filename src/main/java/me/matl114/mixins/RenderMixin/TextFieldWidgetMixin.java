@@ -7,11 +7,15 @@ import me.matl114.utils.UtilClass.PropertyTracker;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -19,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.function.Consumer;
@@ -28,6 +33,21 @@ import java.util.function.Consumer;
 public abstract class TextFieldWidgetMixin extends ClickableWidget implements TextFieldAccess {
     @Unique
     private static final ColorProvider ORIGIN_PROVIDER = McWidgetHelpers.getDefaultTextBoxColorProvider();
+    @Final
+    @Shadow
+    private TextRenderer textRenderer;
+
+    @Shadow
+    private String text;
+
+    @Shadow
+    private int firstCharacterIndex;
+
+    @Unique
+    TextFieldWidget cast(){
+        return (TextFieldWidget) (Object)this;
+    }
+
     @Unique
     public boolean isMultiLine(){
         return false;
@@ -52,6 +72,11 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
 
     @Shadow
     public abstract void setChangedListener(Consumer<String> changedListener);
+
+    @Shadow private int selectionStart;
+
+    @Shadow protected abstract void onChanged(String newText);
+
     @Unique
     public void setListener(PropertyTracker<TextFieldAccess, String> tracker){
         setChangedListener((str)->tracker.valueChange(this, str));
@@ -81,4 +106,29 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
             cir.setReturnValue(true);
         }
     }
+
+    @Unique
+    public void dragSelect(int deltaX, int deltaY, boolean shiftDownAction){
+        int i = deltaX;
+        if (cast().drawsBackground()) {
+            i -= 4;
+        }
+
+        String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.cast().getInnerWidth());
+        this.cast().setCursor(this.textRenderer.trimToWidth(string, i).length() + this.firstCharacterIndex, shiftDownAction);
+    }
+
+    @Inject(method = "setFocused", at = @At("HEAD"))
+    public void resetSelectOnRelease(boolean focused, CallbackInfo ci){
+        if(!focused){
+            resetSelect();
+        }
+    }
+
+    @Unique
+    public void resetSelect(){
+        this.cast().setSelectionEnd(this.selectionStart);
+        this.onChanged(this.text);
+    }
+
 }

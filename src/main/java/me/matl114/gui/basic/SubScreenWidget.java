@@ -2,6 +2,7 @@ package me.matl114.gui.basic;
 
 import me.matl114.utils.Debug;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
 import org.apache.commons.compress.utils.Lists;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
     protected List<DrawableWidget> children = Lists.newArrayList();
     protected DrawableWidget selected = null;
+    protected DrawableWidget dragging = null;
 
     public <T extends SubSelectable> T setSelected(DrawableWidget subWidget){
         if(selected != null){
@@ -92,12 +94,14 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+
         double translatedMouseX = mouseX - this.x;
         double translatedMouseY = mouseY - this.y;
         if(this.textureScale != 1.0f){
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
+
         for (var ch : children){
             if(ch.mouseReleased(translatedMouseX, translatedMouseY, button)){
                 return true;
@@ -107,20 +111,56 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
     }
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY){
+        return this.dragging != null && this.dragging.isDragging() && this.dragging.mouseDragged((mouseX - this.x)/ this.textureScale, (mouseY - this.y)/this.textureScale,button, deltaX/this.textureScale, deltaY/this.textureScale);
+//        double translatedMouseX = mouseX - this.x;
+//        double translatedMouseY = mouseY - this.y;
+//        if(this.textureScale != 1.0f){
+//            translatedMouseX = (int) (translatedMouseX / this.textureScale);
+//            translatedMouseY = (int) (translatedMouseY / this.textureScale);
+//        }
+//        for (var ch : children){
+//            if(ch.mouseDragged(translatedMouseX, translatedMouseY, button, deltaX, deltaY)){
+//                return true;
+//            }
+//        }
+//        return false;
+    }
+
+    @Override
+    public boolean isDragging() {
+        return this.dragging != null && this.dragging.isDragging();
+    }
+
+    @Override
+    public boolean startDrag(Screen screen, double mouseX, double mouseY) {
+        //todo how?
         double translatedMouseX = mouseX - this.x;
         double translatedMouseY = mouseY - this.y;
         if(this.textureScale != 1.0f){
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        for (var ch : children){
-            if(ch.mouseDragged(translatedMouseX, translatedMouseY, button, deltaX, deltaY)){
+        for (var ch: children){
+            if(ch.startDrag(screen, translatedMouseX, translatedMouseY)){
+                this.dragging = ch;
                 return true;
             }
         }
         return false;
     }
 
+    @Override
+    public void releaseDrag(Screen screen, double mouseX, double mouseY) {
+        if(this.dragging != null){
+            double translatedMouseX = mouseX - this.x;
+            double translatedMouseY = mouseY - this.y;
+            if(this.textureScale != 1.0f){
+                translatedMouseX = (int) (translatedMouseX / this.textureScale);
+                translatedMouseY = (int) (translatedMouseY / this.textureScale);
+            }
+            this.dragging.releaseDrag(screen, translatedMouseX, translatedMouseY);
+        }
+    }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         //should not scrolled

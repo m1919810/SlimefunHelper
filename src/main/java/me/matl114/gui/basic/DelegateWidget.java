@@ -226,10 +226,6 @@ public class DelegateWidget extends DrawableWidget implements Draggable{
         return this.delegate == null? SelectionType.NONE : this.delegate.getType();
     }
 
-    @Override
-    public boolean canDrag(double mouseX, double mouseY) {
-        return this.delegate != null &&  this.delegate.canDrag(mouseX, mouseY);
-    }
 
     @Override
     public boolean isDragging() {
@@ -244,9 +240,8 @@ public class DelegateWidget extends DrawableWidget implements Draggable{
     }
 
     @Override
-    public void startDrag(Screen screen, double mouseX, double mouseY) {
-        if(delegate != null){
-            delegate.startDrag(screen, mouseX, mouseY);
-        }
+    public  boolean startDrag(Screen screen, double mouseX, double mouseY) {
+        return this.delegate != null && delegate.startDrag(screen, mouseX, mouseY);
+
     }
 }

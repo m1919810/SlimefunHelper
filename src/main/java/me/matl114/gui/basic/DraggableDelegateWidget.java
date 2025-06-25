@@ -4,10 +4,7 @@ import net.minecraft.client.gui.screen.Screen;
 
 public class DraggableDelegateWidget extends DelegateWidget implements Draggable{
     // can change a no-drag element to a drag-element
-    @Override
-    public boolean canDrag(double mouseX, double mouseY) {
-        return this.delegate != null && this.delegate.isMouseOver(mouseX, mouseY);
-    }
+
 
     @Override
     public boolean isDragging() {
@@ -21,8 +18,12 @@ public class DraggableDelegateWidget extends DelegateWidget implements Draggable
     }
 
     @Override
-    public void startDrag(Screen screen, double mouseX, double mouseY) {
-        dragging = true;
+    public boolean startDrag(Screen screen, double mouseX, double mouseY) {
+        if(this.delegate != null && this.delegate.isMouseOver(mouseX, mouseY)){
+            dragging = true;
+            return true;
+        }
+        return false;
     }
 
     @Override

@@ -11,6 +11,10 @@ public interface TextFieldAccess {
     void setTextContent(String value);
     void setListener(PropertyTracker<TextFieldAccess, String> tracker);
     public void setBorderColorProvider(ColorProvider provider);
+
+    public void dragSelect(int deltaX, int deltaY, boolean shiftDownAction);
+    public void resetSelect();
+
     static TextFieldAccess of(ClickableWidget clickableWidget){
         return (TextFieldAccess) clickableWidget;
     }

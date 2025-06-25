@@ -19,7 +19,9 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
     DraggableExecutableWidget scoll;
     @Getter
     protected SubScreenWidget scrollableBorder;
+
     DrawableWidget selectedElement;
+    DrawableWidget draggingElement;
     public ScrollableWidget(int x, int y, int dx, int dy) {
         super(x, y, dx, dy);
         resizeMaxHeight();
@@ -213,8 +215,8 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if(this.scoll != null && this.scoll.isDragging()){
-            return this.scoll.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        if(this.draggingElement != null && this.draggingElement.isDragging()){
+            return this.draggingElement.mouseDragged(mouseX - this.x, mouseY - this.y + this.currentPose, button, deltaX, deltaY);
         }
         return false;
     }
@@ -283,24 +285,34 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
     }
     //delegate scoll 's drag
 
-    public boolean canDrag(double mouseX, double mouseY){
-        return this.scoll != null && this.scoll.canDrag(mouseX, mouseY);
-    }
 
     public boolean isDragging(){
-        return this.scoll != null && this.scoll.isDragging();
+        return this.draggingElement != null && this.draggingElement.isDragging();
     }
 
     public void releaseDrag(Screen screen, double mouseX, double mouseY){
-        if(this.scoll != null){
-            this.scoll.releaseDrag(screen, mouseX, mouseY);
+        if(this.draggingElement != null){
+            this.draggingElement.releaseDrag(screen, mouseX - this.x, mouseY - this.y + this.currentPose);
+            this.draggingElement = null;
         }
     }
 
-    public void startDrag(Screen screen, double mouseX, double mouseY){
-        if(this.scoll != null){
-            this.scoll.startDrag(screen, mouseX, mouseY);
+    public boolean startDrag(Screen screen, double mouseX, double mouseY){
+        if(this.scoll != null && this.scoll.startDrag(screen, mouseX, mouseY)){
+            this.draggingElement = scoll;
+            return true;
         }
+        if(isMouseOver(mouseX, mouseY)){
+            double translatedMouseX = mouseX - this.x;
+            double translatedMouseY = mouseY - this.y + this.currentPose;
+            for (var ch : widgets){
+                if(ch.startDrag(screen, translatedMouseX, translatedMouseY)){
+                    draggingElement = ch;
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 }
