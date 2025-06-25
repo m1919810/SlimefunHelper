@@ -216,6 +216,9 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if(this.draggingElement != null && this.draggingElement.isDragging()){
+            if(this.draggingElement == this.scoll){
+                return this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+            }
             return this.draggingElement.mouseDragged(mouseX - this.x, mouseY - this.y + this.currentPose, button, deltaX, deltaY);
         }
         return false;
@@ -292,6 +295,10 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
 
     public void releaseDrag(Screen screen, double mouseX, double mouseY){
         if(this.draggingElement != null){
+            if(this.draggingElement == this.scoll){
+                this.draggingElement.releaseDrag(screen, mouseX, mouseY);
+                return;
+            }
             this.draggingElement.releaseDrag(screen, mouseX - this.x, mouseY - this.y + this.currentPose);
             this.draggingElement = null;
         }

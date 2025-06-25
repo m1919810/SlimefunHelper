@@ -1,10 +1,24 @@
 package me.matl114.utils.UtilClass;
 
 import com.google.common.collect.ImmutableMap;
+import com.mojang.brigadier.StringReader;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.val;
+import me.matl114.access.TextFieldAccess;
+import me.matl114.gui.McWidgetHelpers;
+import me.matl114.gui.itemEdit.ItemEditScreen;
+import me.matl114.utils.Debug;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.gui.widget.EditBoxWidget;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.nbt.visitor.NbtOrderedStringFormatter;
+import net.minecraft.nbt.visitor.StringNbtWriter;
 import net.minecraft.registry.Registry;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,6 +27,7 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String> {
@@ -266,7 +281,74 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             return Enum.class;
         }
     }
+    @Accessors(chain = true)
+    public static class NbtAttrKeyValue<W> extends AttrKeyValue<NbtElement>{
+        protected final Function<NbtElement, W> nbtParser;
+        public NbtAttrKeyValue<W> setEnableNull(boolean val){
+            this.enableNull = val;
+            return this;
+        }
+        protected boolean enableNull = false;
+        public NbtAttrKeyValue(String key, NbtElement value, Function<NbtElement, W> function) {
+            super(key, value == null? null : value.copy());
+            this.nbtParser = function;
+        }
 
+        private boolean extraParse(){
+            try{
+                nbtParser.apply(this.originValue);
+                return true;
+            }catch (Throwable e){
+                return false;
+            }
+        }
+
+        public void applyFormatting(Consumer<String> callback){
+            if(validate){
+                try{
+                    this.value = new NbtOrderedStringFormatter().apply(this.originValue);
+                    callback.accept(this.value);
+                }catch (Throwable e){
+                }
+            }
+        }
+
+        @Override
+        public boolean validateAndUpdate() {
+            try{
+                if(enableNull){
+                    if(this.value == null|| this.value.isEmpty()){
+                        this.originValue = null;
+                        return extraParse();
+                    }
+                }
+                this.originValue = (new StringNbtReader(new StringReader(this.value))).parseElement();
+                this.validate = true;
+                return extraParse();
+            }catch (Throwable e){
+                this.validate = false;
+                return false;
+            }
+        }
+
+        @Override
+        public String updateValue(NbtElement val) {
+            return val == null? "": new StringNbtWriter().apply(val);
+        }
+
+        @Override
+        public Class identifier() {
+            return NbtElement.class;
+        }
+
+        public EditBoxWidget generateEditBox(int x, int y, int dx, int dy){
+            EditBoxWidget widget = new EditBoxWidget(MinecraftClient.getInstance().textRenderer, x,y, dx,dy, Text.empty(), Text.empty());
+            widget.setText(this.value);
+            widget.setChangeListener((val)->valueChange(null, val));
+            TextFieldAccess.of(widget).setBorderColorProvider(McWidgetHelpers.getWrongRedTextBoxColorProvider(()->validate));
+            return widget;
+        }
+    }
 
 
 }

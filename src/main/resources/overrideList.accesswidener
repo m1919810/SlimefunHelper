@@ -30,3 +30,4 @@ accessible field net/minecraft/client/render/model/json/ModelElementFace texture
 accessible field net/minecraft/client/render/model/json/ModelElementFace cullFace Lnet/minecraft/util/math/Direction;
 accessible method net/minecraft/client/gui/DrawContext tryDraw ()V
 accessible field net/minecraft/client/gui/EditBox selectionEnd I
+accessible method net/minecraft/component/ComponentChanges <init> (Lit/unimi/dsi/fastutil/objects/Reference2ObjectMap;)V

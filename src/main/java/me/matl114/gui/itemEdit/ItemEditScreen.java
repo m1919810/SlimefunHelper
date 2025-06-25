@@ -4,6 +4,10 @@ import com.google.common.base.Preconditions;
 import com.google.gson.*;
 import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.DataResult;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+import me.matl114.access.ScreenAccess;
 import me.matl114.access.TextFieldAccess;
 import me.matl114.bukkitUtiils.ItemStackHelper;
 import me.matl114.gui.McWidgetHelpers;
@@ -20,37 +24,50 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
+import me.matl114.utils.UtilClass.MutableComponent;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
-import net.minecraft.component.type.AttributeModifierSlot;
-import net.minecraft.component.type.AttributeModifiersComponent;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.component.type.ProfileComponent;
+import net.minecraft.component.Component;
+import net.minecraft.component.ComponentChanges;
+import net.minecraft.component.ComponentType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.*;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.nbt.visitor.NbtOrderedStringFormatter;
 import net.minecraft.nbt.visitor.StringNbtWriter;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryOps;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
+import org.w3c.dom.Attr;
 
+import java.net.URI;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
 import static net.minecraft.component.DataComponentTypes.*;
 
 public class ItemEditScreen extends ConfirmingBigScreen {
     protected static final MinecraftClient mc  = MinecraftClient.getInstance();
     protected ItemStack itemStack;
-    protected boolean validSaveState = true;
     protected State state = null;
     protected Consumer<ItemStack> callback;
     public ItemEditScreen(Text title, ItemStack itemStack, Consumer<ItemStack> callback) {
@@ -58,10 +75,13 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         this.itemStack = itemStack.copy();
         this.callback  = callback;
     }
-
+    protected boolean canConfirm(){
+        var re = this.processingSubScreen.getDelegate();
+        return re == null || re.canConfirm();
+    }
     @Override
     protected boolean canConfirm(ElementHandler elementHandler) {
-        return validSaveState;
+        return canConfirm();
     }
 
     @Override
@@ -85,14 +105,12 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         var re = this.processingSubScreen.getDelegate();
         if(re != null){
             re.saveChanges();
-        }else {
-            validSaveState = true;
         }
     }
 
     public void executeSave(){
         syncItemStack();
-        if(validSaveState){
+        if(canConfirm()){
             SlimefunTasks.handleSaveItem(itemStack.copy());
         }else {
             Debug.chat(Text.literal("当前的编辑参数存在问题,不能保存为物品"));
@@ -100,7 +118,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     }
     public void executeCmdCopy(){
         syncItemStack();
-        if(validSaveState){
+        if(canConfirm()){
             InvTasks.copyGiveCommand(itemStack.copy());
         }else {
             Debug.chat(Text.literal("当前的编辑参数存在问题,不能保存为物品"));
@@ -263,6 +281,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             super(0,0, 0,0);
         }
         protected abstract void saveChanges();
+        protected abstract boolean canConfirm();
         protected abstract void refreshScreen();
     }
     protected class SnbtItemProcessingSubScreen extends ItemProcessingSubScreen{
@@ -272,80 +291,42 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             ItemEditScreen.this.setTitleLabel(Text.literal("Snbt 编辑器").formatted(Formatting.GREEN));
             init();
         }
-        boolean stringFormatRight = true;
-        String compoundString;
-        NbtCompound compoundItem;
+
+        AttrKeyValue.NbtAttrKeyValue<ItemStack> itemAttrValue;
         ItemStack lastResult;
         ExecutableWidget formatButton;
         EditBoxWidget widget ;
         protected static final Identifier FORMAT_TEXTURE = new Identifier("slimefunhelper", "textures/gui/format.png");
-        protected boolean validateAndUpdate(){
-            try{
-                compoundItem = StringNbtReader.parse(this.compoundString);
-                stringFormatRight = true;
-                return true;
-            }catch (Throwable e){
-                stringFormatRight = false;
-                return false;
-            }
-        }
-        protected boolean validateItemStack(){
-            if(validateAndUpdate()){
-                try{
-                    ItemStack decode = ItemStack.fromNbt(ItemStackUtils.registry(), this.compoundItem).get();
-                    Preconditions.checkArgument(decode != ItemStack.EMPTY);
-                    this.lastResult = decode;
-                    ItemEditScreen.this.validSaveState = true;
-                    return true;
-                }catch (Throwable e){
-                }
-
-            }
-            ItemEditScreen.this.validSaveState = false;
-            return false;
-        }
-
-
-        protected static final Gson jsonStringify = new Gson();
-        protected static final Gson jsonFormatStringify = new GsonBuilder().setPrettyPrinting().create();
-        protected void formattingJsonString(){
-            if(!stringFormatRight){
-                Debug.info("Illegal call from ? ,Flag is not true");
-                Debug.stackTrace();
-            }else {
-                try{
-                    String value = new NbtOrderedStringFormatter().apply(this.compoundItem);
-                    this.compoundString = value;
-                    widget.setText(value);
-                }catch (Throwable e){
-
-                }
-            }
+        protected static final List<Text> FORMAT =List.of( Text.literal("格式化NBT字符串") );
+        protected ItemStack validateItemStack(NbtElement element){
+            ItemStack decode = ItemStack.fromNbt(ItemStackUtils.registry(), element).get();
+            Preconditions.checkArgument(decode != ItemStack.EMPTY);
+            this.lastResult = decode;
+            return decode;
         }
         protected void error(){
             throw new RuntimeException("Error while parsing itemStack snbt");
         }
-        protected void updateString(String value){
-            this.compoundString = value;
-            //update available flag;
-            this.validateItemStack();
-        }
+
         protected void init(){
             //transform item to json
             this.lastResult = ItemEditScreen.this.itemStack.copy();
-            NbtCompound compound = (NbtCompound) this.lastResult.encode(ItemStackUtils.registry());
-
-            this.compoundItem = compound;
-            this.compoundString = new StringNbtWriter().apply(this.compoundItem);
-            if(!validateItemStack()){
+            NbtElement compound = this.lastResult.encode(ItemStackUtils.registry());
+            this.itemAttrValue = new AttrKeyValue.NbtAttrKeyValue<>("", compound, this::validateItemStack);
+            if(!itemAttrValue.validateAndUpdate()){
                 error();
             }
             this.formatButton = ExecutableWidget.instance(141, -19, 18, 18)
                 .setElementHandler(
-                    IconElement.fixed(FORMAT_TEXTURE, ButtonAction.run(this::formattingJsonString))
+                    IconElement.fixed(FORMAT_TEXTURE, ButtonAction.run(()->{
+                            this.itemAttrValue.applyFormatting((str)->{
+                                if(this.widget != null)widget.setText(str);
+                            });
+                        }))
+                        .withTooltips(TooltipHandler.of(FORMAT))
                         .withActiveActionCondition((icon)->{
                             if(icon instanceof IconElement){
-                                if(this.stringFormatRight){
+                                if(this.itemAttrValue.isValidate()){
                                     this.formatButton.setAlpha(1.0f);
                                     return true;
                                 }else {
@@ -363,18 +344,20 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
         @Override
         protected void saveChanges() {
-            validateItemStack();
-            ItemEditScreen.this.itemStack = this.lastResult .copy();
+            this.itemAttrValue.validateAndUpdate();
+            ItemEditScreen.this.itemStack = this.lastResult.copy();
 
+        }
+
+        @Override
+        protected boolean canConfirm() {
+            return this.itemAttrValue.isValidate();
         }
 
         @Override
         protected void refreshScreen() {
             //refresh widget with absolute coord
-            this.widget = new EditBoxWidget(mc.textRenderer, ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getWidth() - 20, ItemEditScreen.this.processingSubScreen.getHeight() -20, Text.empty(), Text.empty());
-            widget.setText(this.compoundString);
-            widget.setChangeListener(this::updateString);
-            TextFieldAccess.of(widget).setBorderColorProvider(McWidgetHelpers.getWrongRedTextBoxColorProvider(()->ItemEditScreen.this.validSaveState));
+            this.widget = this.itemAttrValue.generateEditBox(ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getWidth() - 20, ItemEditScreen.this.processingSubScreen.getHeight() -20);
             ItemEditScreen.this.optionalMultiLine.setContentDelegate(widget);
         }
     }
@@ -383,6 +366,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         public ItemAttributeProcessingSubScreen(){
             super();
             this.stackTemplate = itemStack.copy();
+            ItemEditScreen.this.setTitleLabel(Text.literal("Nbt 编辑器").formatted(Formatting.GREEN));
             init();
         }
         ItemStack stackTemplate;
@@ -415,6 +399,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 case DISPLAY -> new ItemDisplaySubSubScreen();
                 case ENCHANTMENT -> new ItemEnchantListSubSubScreen();
                 case ATTRIBUTE -> new ItemAttributeModifiersSubSubScreen();
+                case COMPONENTS -> new ItemComponentModifySubSubScreen();
                 default -> null;
             };
         }
@@ -431,6 +416,12 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             }
             itemStack = stackTemplate.copy();
         }
+
+        @Override
+        protected boolean canConfirm() {
+            return true;
+        }
+
         //fixme 窗口resize之后自下而上对齐的图标混乱
         @Override
         protected void refreshScreen() {
@@ -834,10 +825,183 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             BASIC("基础信息"),
             DISPLAY("物品样式"),
             ENCHANTMENT("物品附魔"),
-            ATTRIBUTE("物品属性");
+            ATTRIBUTE("物品属性"),
+            COMPONENTS("堆叠组件");
             String display;
             ItemAttr(String displayName){
                 this.display = displayName;
+            }
+        }
+
+        protected class ItemComponentModifySubSubScreen extends ItemAttrSubSubScreen{
+            protected static class ItemComponentModifyConfirmScreen<T> extends ConfirmingBigScreen{
+                AttrKeyValue.NbtAttrKeyValue<Optional<T>> element;
+                boolean removal;
+                final ComponentType<T> type ;
+                final Consumer<NbtElement> callback;
+                String compoundString;
+
+                protected ItemComponentModifyConfirmScreen(ComponentType<T> type, NbtElement currentValue, Consumer<NbtElement> callback) {
+                    super(Text.empty());
+                    this.type = type;
+                    this.removal = currentValue == null;
+                    this.element = new AttrKeyValue.NbtAttrKeyValue<Optional<T>>("",currentValue, (nbt)->{
+                        if(nbt == null)return Optional.empty();
+                        return Optional.of(this.type.getCodec().decode(RegistryOps.of(NbtOps.INSTANCE, ItemStackUtils.registry()), nbt).getOrThrow().getFirst());
+                    })
+                        .setEnableNull(true)
+                    ;
+                    this.callback = callback;
+                    setTitleLabel(Text.literal("编辑组件 " + Registries.DATA_COMPONENT_TYPE.getId(type)).formatted(Formatting.GREEN));
+
+                }
+
+
+                EditBoxWidget widget;
+                ExecutableWidget formatButton;
+                ExecutableWidget wikiWidget;
+                protected void init(){
+                    super.init();
+                    URI uri = null;
+                    try{
+                        String url = "https://zh.minecraft.wiki/w/%E6%95%B0%E6%8D%AE%E7%BB%84%E4%BB%B6#" +  Registries.DATA_COMPONENT_TYPE.getId(type).getPath();
+                        uri = Util.validateUri(url);
+                    }catch (Throwable e){
+                    }
+                    URI urlll = uri;
+                    Text wikiLink = Text.literal("点我打开 mc wiki 界面");
+                    this.wikiWidget = ExecutableWidget.instance(this.x + 5, this.y + 22, this.backgroundWidth - 10, 12)
+                        .setElementHandler(
+                            LabelElement.instance(wikiLink)
+                                .withMouseHandler(MouseHandler.run(()->{
+                                    if(urlll != null){
+                                        Util.getOperatingSystem().open(urlll);
+                                    }
+                                }))
+                                .withTooltips(
+                                    TooltipHandler.of(()->List.of(Text.literal(urlll == null?"网页解析失败":("打开网页: "+ urlll) )))
+                                )
+                        )
+                        .addTo(this);
+                    this.widget = this.element.generateEditBox(ItemComponentModifyConfirmScreen.this.x +CONTENT_START_X+10,ItemComponentModifyConfirmScreen.this.y+CONTENT_START_Y +30, ItemComponentModifyConfirmScreen.this.backgroundWidth - 2*CONTENT_START_X - 20, ItemComponentModifyConfirmScreen.this.content_end_y - CONTENT_START_Y  -40);
+                    addDrawableChild(this.widget);
+                    this.formatButton = ExecutableWidget.instance(ItemComponentModifyConfirmScreen.this.x +CONTENT_START_X+ 1, ItemComponentModifyConfirmScreen.this.y+CONTENT_START_Y +1, 18, 18)
+                        .setElementHandler(
+                            IconElement.fixed(SnbtItemProcessingSubScreen.FORMAT_TEXTURE, ButtonAction.run(()->{
+                                    this.element.applyFormatting((str)->{
+                                        if(this.widget != null)widget.setText(str);
+                                    });
+                                }))
+                                .withTooltips(TooltipHandler.of(SnbtItemProcessingSubScreen.FORMAT))
+                                .withActiveActionCondition((icon)->{
+                                    if(icon instanceof IconElement){
+                                        if(this.element.isValidate()){
+                                            this.formatButton.setAlpha(1.0f);
+                                            return true;
+                                        }else {
+                                            this.formatButton.setAlpha(0.4f);
+                                            return false;
+                                        }
+                                    }else return true;
+                                })
+                        )
+                        .addTo(this)
+                    ;
+                }
+                @Override
+                protected boolean canConfirm(ElementHandler elementHandler) {
+                    return this.element.isValidate();
+                }
+
+                @Override
+                protected void onConfirmButton() {
+                    callback.accept(this.element.getOriginValue());
+                    this.close();
+                }
+            }
+            {
+                init();
+            }
+            protected static class ItemComponent{
+                AttrKeyValue<ComponentType<?>> typeId;
+                NbtElement optionalComponentData;
+                public <T> ItemComponent(ComponentType<T> type, Optional<T> data){
+                    this.typeId = AttrKeyValue.registry("组件类型", Registries.DATA_COMPONENT_TYPE, type);
+                    optionalComponentData = data.isPresent()? type.getCodec().encodeStart(  RegistryOps.of(NbtOps.INSTANCE, ItemStackUtils.registry()), data.get()).getOrThrow(): null;
+                }
+                public ItemComponent(String newId){
+                    this.typeId = AttrKeyValue.openRegistry("组件类型", Registries.DATA_COMPONENT_TYPE, newId);
+                    optionalComponentData = null;
+                }
+                protected void openThisEditScreen(){
+                    ComponentType type = typeId.getOriginValue();
+                    if(type != null){
+                        ScreenAccess.of(new ItemComponentModifyConfirmScreen<>(type, optionalComponentData, (nbt)->this.optionalComponentData = nbt== null? null: nbt.copy())).openFromCurrent();
+                    }
+                }
+                private static final List<Text> OPEN_EDIT_TOOLTIPS = List.of(
+                    Text.literal("你需要保证组件类型"),
+                    Text.literal("填写无误"),
+                    Text.literal("才可以打开编辑界面")
+                );
+
+                public DrawableWidget factory(){
+                    return new SubScreenWidget(0,0,0,0)
+                        .addDrawableChild(
+                            new KeyValueInputWidget<>(0, 0, 120, 20, 30, this.typeId)
+                        )
+                        .addDrawableChild(
+                            DisplayWidget.instance(120, 0, 30, 20)
+                                .setRenderHandler(new LabelElement((el)->this.optionalComponentData != null?Text.literal("组件非空").formatted(Formatting.GREEN):Text.literal( "组件空").formatted(Formatting.YELLOW), Colors.WHITE, 0))
+                        ).addDrawableChild(
+                            ExecutableWidget.instance(150, 0,30, 20)
+                                .setElementHandler(
+                                    new ButtonElement(TextProvider.of(Text.literal("点击编辑")), ButtonAction.run(this::openThisEditScreen))
+                                        .withTooltips(TooltipHandler.of(OPEN_EDIT_TOOLTIPS))
+                                        .withActiveActionCondition((e)->this.typeId.isValidate())
+                                )
+                        );
+                }
+                public void applyChanges(Map<ComponentType<?>, Optional<?>> map0){
+                    try{
+                        ComponentType type =  this.typeId.getOriginValue();
+                        if(type != null){
+                            if(optionalComponentData == null){
+                                map0.put(type, Optional.empty());
+                            }else {
+                                DataResult<Pair<Object, NbtElement>>  value=  type.getCodec().decode(RegistryOps.of(NbtOps.INSTANCE, ItemStackUtils.registry()), optionalComponentData);
+                                Object val0 = value.getOrThrow().getFirst();
+                                map0.put(type, Optional.ofNullable(val0));
+                            }
+                        }
+                    }catch (Throwable e){
+                    }
+                }
+            }
+            List<ItemComponent> componentList;
+            protected void init(){
+                this.componentList = stackTemplate.components.getChanges().entrySet().stream().map(m->new ItemComponent((ComponentType) m.getKey(), m.getValue())).collect(Collectors.toCollection(ArrayList::new));
+                new ListModifyWidget(
+                    ListEntryWidgetController.mutable(
+                        this.componentList,
+                        ()-> new ItemComponent("minecraft:"),
+                        ItemComponent::factory,
+                        20,
+                        180
+                    ),10, 0, 260, ItemEditScreen.this.processingSubScreen.getHeight() - 10
+                )
+                    .addToSub(this);
+            }
+            @Override
+            protected void saveChanges() {
+                Reference2ObjectMap<ComponentType<?> ,Optional<?>> map0 = new Reference2ObjectArrayMap<>();
+                this.componentList.forEach(i->i.applyChanges(map0));
+                stackTemplate.components.setChanges(new ComponentChanges(map0));
+            }
+
+            @Override
+            protected void refreshScreen() {
+
             }
         }
     }
