@@ -100,7 +100,7 @@ public class HotKeys {
     public static final String SF_RECIPE_INTERNAL = "recipe-display-add";
     public static final String SF_SAVEITEM_INTERNAL = "save-slot-item";
     public static final String ITEMEDITOR_OPEN = "open-editor";
-
+    public static final String OPEN_INV_CACHE = "open-inv-cache";
     public static final String BUTTON_TASK_1="btask1";
     public static final String BUTTON_TASK_2="btask2";
     public static final String HOTKEY_TEST1="hktest1";
@@ -220,6 +220,14 @@ public class HotKeys {
 
             if(player!=null ){
                 ItemEditTasks.openEditor(player);
+                return true;
+            }
+            return false;
+        }));
+        getTaskHotKey(OPEN_INV_CACHE, (iInputManager -> {
+            ClientPlayerEntity player = iInputManager.getClient().player;
+            if(player != null){
+                InvTasks.openInventoryCacheScreen();
                 return true;
             }
             return false;

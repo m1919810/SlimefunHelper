@@ -185,6 +185,18 @@ public class DelegateWidget extends DrawableWidget implements Draggable{
         }
     }
 
+    public void setWidth(int x){
+        if(this.delegate != null){
+            this.delegate.setWidth(x);
+        }
+    }
+
+    public void setHeight(int y){
+        if(delegate !=null){
+            this.delegate.setHeight(y);
+        }
+    }
+
 
     public final int getX() {
         return this.delegate == null ? 0: this.delegate.getX();

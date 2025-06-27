@@ -39,4 +39,10 @@ public class EntityTasks {
         entityDataListener.handleValue(entity);
     }
 
+    @Getter
+    private static final ListenerPoint<Entity> entityVelocityUpdate = new ListenerPoint<>();
+
+    public static void onEntityVelocityUpdate(Entity entity){
+        entityVelocityUpdate.handleValue(entity);
+    }
 }

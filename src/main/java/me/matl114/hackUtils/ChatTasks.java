@@ -2,11 +2,11 @@ package me.matl114.hackUtils;
 
 import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.ResultConsumer;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.context.CommandContextBuilder;
-import com.mojang.brigadier.context.ContextChain;
-import com.mojang.brigadier.context.ParsedArgument;
+import com.mojang.brigadier.context.*;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestion;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.tree.CommandNode;
 import lombok.Getter;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
@@ -14,6 +14,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.renders.RenderMain;
 import me.matl114.utils.Debug;
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.AbstractMainCommand;
 import me.matl114.utils.UtilClass.CancellableEntryPoint;
 import me.matl114.utils.UtilClass.LimitedSpeedExecutor;
@@ -25,10 +26,14 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.ItemStackArgument;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.BuiltinRegistries;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.*;
@@ -103,25 +108,38 @@ public class ChatTasks {
         });
     }
     private static final List<AbstractMainCommand> REGISTERED_COMMANDS = new ArrayList<>();
+    public static void reloadCommand(AbstractMainCommand current){
+        REGISTERED_COMMANDS.remove(current);
+        REGISTERED_COMMANDS.add(current.reload());
+        Debug.chat("SfHelper Command Successfully reloaded");
+    }
+    public static void reloadAllCommand(){
+        List<AbstractMainCommand> commands = new ArrayList<>(REGISTERED_COMMANDS);
+        REGISTERED_COMMANDS.clear();;
+        for (AbstractMainCommand command : commands) {
+            REGISTERED_COMMANDS.add(command.reload());
+        }
+        Debug.chat("SfHelper Command Successfully reloaded");
+    }
     public static class SlimefunHelperMainCommand extends AbstractMainCommand{
         {
 
         }
         SubCommand mainCommand = genMainCommand("");
-        public static void reloadCommand(SlimefunHelperMainCommand current){
-            REGISTERED_COMMANDS.remove(current);
-            List<AbstractMainCommand> copy = new ArrayList<>(REGISTERED_COMMANDS);
-            REGISTERED_COMMANDS.clear();
-            copy.forEach(i->REGISTERED_COMMANDS.add(i.reload()));
-            Debug.chat("SfHelper Command Successfully reloaded");
-        }
-        SubCommand reloadCommand = new SubCommand("reload", genArgument(),"!!reload 重载指令实例"){
+
+        SubCommand reloadCommand = new SubCommand("reload", genArgument("how"),"!!reload 重载指令实例"){
             @Override
             public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
-                Tasks.scheduleDelayed(()->reloadCommand(SlimefunHelperMainCommand.this),2);
+                var re = parseInput(var4).getFirst().nextNonnull();
+                switch (re){
+                    case "all"->Tasks.scheduleDelayed(ChatTasks::reloadAllCommand,2);
+                    case "main"->Tasks.scheduleDelayed(()->reloadCommand(SlimefunHelperMainCommand.this),2);
+                    default -> Debug.chat("不支持的参数类型: " + re);
+                }
                 return true;
             }
         }
+            .setEnum("how","all",List.of("all","main"))
             .register(this);
         SubCommand helpCommand = new SubCommand("help", genArgument("subcommand", "!!help <optional> 获得帮助")){
             @Override
@@ -142,7 +160,7 @@ public class ChatTasks {
         }
             .setTabCompletor("subcommand", this::getDisplayedSubCommand)
             .register(this);
-        SubCommand openMenuCommand = new SubCommand("open", genArgument("page"),"!!open <page:default guide> 打开粘液物品界面"){
+        SubCommand openMenuCommand = new SubCommand("open", genArgument("page"),"!!open <page:default guide> 打开模组的特殊界面"){
             @Override
             public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
                 var re = parseInput(var4).getFirst().nextArg();
@@ -156,13 +174,18 @@ public class ChatTasks {
                     case "rtype" -> Tasks.scheduleDelayed(SlimefunTasks::handleClickRtypeIcon, 1);
                     case "vanilla" -> Tasks.scheduleDelayed( SlimefunTasks::handleClickCraftTableIcon, 1);
                     case "saved"->Tasks.scheduleDelayed( SlimefunTasks::handleClickSaveItemIcon,1);
+                    case "itemedit" -> Tasks.scheduleDelayed(ItemEditTasks::openEditor, 1);
+                    case "invcache" -> Tasks.scheduleDelayed(InvTasks::openInventoryCacheScreen, 1);
+                    case "config" -> Tasks.scheduleDelayed(InvTasks::openSelectScreen, 1);
                     default -> Tasks.scheduleDelayed(SlimefunTasks::handleClickGuideIcon,1);
                 }
                 Debug.chat(Text.literal("成功打开界面").formatted(Formatting.GREEN));
                 return true;
             }
         }
-            .setEnum("page", "guide",List.of("guide","rtype","vanilla","saved"))
+            .setEnum("page", "guide",List.of(
+                "guide","rtype","vanilla","saved", "itemedit", "invcache", "config"
+            ))
             .register(this);
         SubCommand configCommand = new SubCommand("config", genArgument(),"!!config 打开配置文件界面"){
             @Override
@@ -258,6 +281,70 @@ public class ChatTasks {
         }
             .register(this);
 
+        SubCommand listRegistry = new SubCommand("registry", genArgument("id", "filter"), "!!registry <id> <filter: \"\"> 查看原版注册表"){
+            @Override
+            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
+                var re = parseInput(var4).getFirst();
+                Identifier identifier = Identifier.tryParse(re.nextNonnull());
+                RegistryKey registryKey = RegistryKey.ofRegistry(identifier);
+                Registry result = (Registry) ItemStackUtils.registry().getOptional(registryKey).orElse(null);
+                if(result != null){
+                    Debug.chat(Text.literal(identifier.toString() + "所拥有的注册项:").formatted(Formatting.GREEN));
+                    String filter = re.nextNonnull();
+                    for (var id : result.getKeys()){
+                        Identifier identifier1 = ((RegistryKey)id).getValue();
+                        String val = identifier1.getPath();
+                        if(val.contains(filter)){
+                            Debug.chat(identifier1);
+                        }
+                    }
+                }else {
+                    Debug.chat(Text.literal("不存在的注册表: "+identifier).formatted(Formatting.RED));
+                }
+                return true;
+            }
+        }
+            .setTabCompletor("id", ()->ItemStackUtils.registry().streamAllRegistryKeys().map(RegistryKey::getValue).map(i-> "minecraft".equals(i.getNamespace())? i.getPath(): i.toString()).toList())
+            .setDefault("filter","")
+            .register(this);
+
+        SubCommand listData = new SubCommand("resource", genArgument("id", "filter"), "!!resource <id> 查看某些原版重要数据"){
+            @Override
+            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
+                var re = parseInput(var4).getFirst();
+                String val = re.nextNonnull();
+                String filter = re.nextNonnull();
+                List datas = new ArrayList<>();
+                switch (val){
+                    case "world"->{
+                        datas = mc.getNetworkHandler().getWorldKeys().stream().map(RegistryKey::getValue)
+                            .filter(u-> u.getPath().contains(filter))
+                            .toList();
+                    }
+                    case "command"->{
+                       datas = mc.getNetworkHandler().getCommandDispatcher().getRoot().getChildren()
+                            .stream()
+                            .map(CommandNode::getName)
+                            .filter(u->u.contains(filter))
+                            .toList();
+                    }
+                    default -> {
+                        Debug.chat(Text.literal("不支持的资源: "+val).formatted(Formatting.RED));
+                        return false;
+                    }
+                }
+                Debug.chat(Text.literal(val + "所拥有的数据:").formatted(Formatting.GREEN));
+                for (var identifier1 : datas){
+                    Debug.chat(identifier1);
+                }
+                return true;
+            }
+        }
+            .setEnum("id", List.of("world", "command"))
+            .setDefault("filter","")
+            .register(this);
+
+
         @Override
         public AbstractMainCommand reload() {
             return new SlimefunHelperMainCommand();
@@ -280,6 +367,50 @@ public class ChatTasks {
         }
         return checkMessageLength(command);
     }
+
+    public static CompletableFuture<Suggestions> tabCompleteClientCommand(String command, int cursorAt){
+        if(command.startsWith("!!")){
+            return dispatchTabComplete(command.substring(2), cursorAt -2, false);
+        }else if(command.startsWith("/!!")){
+            return dispatchTabComplete(command.substring(3), cursorAt -3,true);
+        }
+        return null;
+    }
+
+    public static CompletableFuture<Suggestions> dispatchTabComplete(String command, int cursorAt, boolean withPrefix){
+        String trueCommand = command.substring(0, cursorAt);
+        int lastBlank = -1 ;
+        int prefixLen = 2 + (withPrefix?1:0);
+        StringRange tabCompleteRange;
+        List<String> args = new ArrayList<>();
+        while(true){
+            int nextBlank = trueCommand.indexOf(" ", lastBlank + 1);
+            if(nextBlank == -1){
+                args.add(trueCommand.substring(lastBlank + 1));
+                tabCompleteRange = new StringRange(prefixLen + lastBlank +1, prefixLen + trueCommand.length());
+                break;
+            }
+            args.add(trueCommand.substring(lastBlank + 1, nextBlank));
+            lastBlank = nextBlank;
+
+        }
+        List<String> tabList = callTabCompletion(args.toArray(String[]::new));
+        List<Suggestion> suggestionList = tabList.stream().map(i->new Suggestion(tabCompleteRange, i)).toList();
+        Suggestions suggestions = new Suggestions(tabCompleteRange, suggestionList);
+        return CompletableFuture.completedFuture(suggestions);
+    }
+    public static List<String> callTabCompletion(String[] command){
+        if(mc.player != null){
+            for (var comm: REGISTERED_COMMANDS){
+                List<String> val = comm.onTabComplete(mc.player, "", command);
+                if(val != null && !val.isEmpty()){
+                    return val;
+                }
+            }
+        }
+        return List.of();
+    }
+
     public static void dispatchClientCommand(String command){
         if(mc.player != null){
             String[] args = command.split(" ");

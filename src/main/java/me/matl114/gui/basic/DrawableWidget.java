@@ -198,10 +198,20 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return dx;
     }
 
+    public void setWidth(int width){
+        this.dx = width;
+    }
+
+    public void setHeight(int height){
+        this.dy = height;
+    }
 
     public int getHeight() {
         return dy;
     }
+
+
+
 
     public <T extends DrawableWidget> T cast(){
         return (T)this;

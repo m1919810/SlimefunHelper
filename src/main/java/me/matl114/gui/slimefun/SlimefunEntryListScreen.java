@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
+    protected int entryPerPage;
+
     List<T> recipeEntries;
     public SlimefunEntryListScreen(List<T> recipeEntries) {
         super(Text.literal("配方展示"));
@@ -22,10 +24,10 @@ public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
     private static final int LABEL_WIDTH = 144;
     private static final int LABEL_MIN_DISTANCE = 4;
     protected void resetPage(){
-        this.maxPage = Math.max(1, 1+((recipeEntries.size() -1) / entryPerPage) );
-        this.page = MathHelper.clamp(this.page ,1, this.maxPage);
+        this.pageSwitcher.updateMaxPage(Math.max(1, 1+((recipeEntries.size() -1) / entryPerPage) ));
+        int page = this.pageSwitcher.getPage();
         int sizeOfEntries = recipeEntries.size();
-        int pageIndex = (this.getPage() - 1) * entryPerPage;
+        int pageIndex = (page - 1) * entryPerPage;
         for (int i=0 ; i< entryPerPage; ++i){
             if(pageContent[i] == null){
                 int startX = (this.backgroundWidth - LABEL_WIDTH)/2;
@@ -42,14 +44,17 @@ public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
 
     public abstract DrawableWidget generateEntryContentDelegate(T entry);
 
+    @Override
+    protected List<Text> provideTitleTooltips(DrawableWidget widget) {
+        return SlimefunTasks.TOOLTIPS_ITEM_RULE;
+    }
+
     protected void init(){
         super.init();
-        this.titleWidget.setRenderHandler(((AbstractElement)this.titleWidget.getRenderHandler()).withTooltips(TooltipHandler.of(SlimefunTasks.TOOLTIPS_ITEM_RULE)));
         int availableRenderSpace = this.backgroundHeight - LABEL_OCCUPIED - LABEL_MIN_DISTANCE;
         int maxinum_entry = Math.max(1, availableRenderSpace/ (64 + 4));
         this.entryPerPage = maxinum_entry;
-        this.maxPage = Math.max(1, 1+((recipeEntries.size() -1) / maxinum_entry));
-        this.page = MathHelper.clamp(this.page ,1, this.maxPage);
+        this.pageSwitcher.updatePage(Math.max(1, 1+((recipeEntries.size() -1) / maxinum_entry)));
         initPageButton();
         pageContent = new ContentDelegateWidget[this.entryPerPage];
         int startX = (this.backgroundWidth - LABEL_WIDTH)/2;

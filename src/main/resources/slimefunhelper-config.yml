@@ -38,6 +38,7 @@ hotkeys:
   recipe-display-add: LEFT_CONTROL,BUTTON_1
   save-slot-item: LEFT_CONTROL,A,BUTTON_1
   open-editor: LEFT_CONTROL,I
+  open-inv-cache: LEFT_CONTROL,J
 
 
 hotkeys-toggle:

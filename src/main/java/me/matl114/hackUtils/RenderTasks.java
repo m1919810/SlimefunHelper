@@ -1,7 +1,9 @@
 package me.matl114.hackUtils;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import lombok.Getter;
 import me.matl114.access.EntityAccess;
 import me.matl114.access.ExplosiveProjectileAccess;
 import me.matl114.access.PlayerInteractionAccess;
@@ -16,9 +18,12 @@ import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.RenderUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -39,11 +44,16 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.*;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix4f;
 import org.joml.Vector2d;
 
+import javax.annotation.Nonnull;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -113,6 +123,11 @@ public class RenderTasks {
     private static final IntOpenHashSet trackingEntity = new IntOpenHashSet();
 
     private static final ObjectOpenHashSet<ExplosiveProjectileEntity> calculatingExplosives = new ObjectOpenHashSet<>();
+
+    public static void clearTrackingEntity(){
+        trackingEntity.clear();
+        calculatingExplosives.clear();
+    }
     public static void removeTrackedId(int i){
         trackingEntity.remove(i);
         calculatingExplosives.removeIf(e->e.getId() == i);
@@ -240,7 +255,7 @@ public class RenderTasks {
             RenderUtils.startDrawVirtual(stack);
             for (var fireball: calculatingExplosives){
                 if(fireball.getPos().squaredDistanceTo(player.getPos()) < 22_500){
-                    RenderUtils.drawLineVirtual(stack, predictFireballTrace(fireball), Color.RED);
+                    RenderUtils.drawStripLineVirtual(stack, predictFireballTrace(fireball), Color.RED);
                 }
             }
             RenderUtils.stopDrawVirtual(stack);
@@ -270,6 +285,9 @@ public class RenderTasks {
         return trace;
     }
 
+    private static void onPlayerDisconnect(Void v){
+        clearTrackingEntity();
+    }
 
     public static Vector2d getPlayerLook2d(){
         float yaw = mc.player.getYaw();
@@ -285,6 +303,142 @@ public class RenderTasks {
 //            Debug.info("called", access.getPower());
 //        }
     }
+    private static final Set<VirtualRenderTask> renderBlocks= new HashSet<>();
+
+
+    public static void registerBlockRenderTask(VirtualRenderTask task){
+        renderBlocks.add(task);
+    }
+    private static final Vec3d FROM = new Vec3d(-0.5, -0.5, -0.5);
+    private static final Vec3d TO = new Vec3d( 0.5, 0.5, 0.5);
+    private static void onRenderVirtualTasks(MatrixStack stack){
+        if(renderBlocks.isEmpty())return;
+        RenderUtils.startDrawVirtual(stack);
+        try{
+            Iterator<VirtualRenderTask> tasks= renderBlocks.iterator();
+            while (tasks.hasNext()){
+                VirtualRenderTask renderTask = tasks.next();
+                if(renderTask.stillRender()){
+                    renderTask.renderVirtual(stack);
+                }else {
+                    tasks.remove();
+                }
+            }
+        }finally {
+            RenderUtils.stopDrawVirtual(stack);
+
+        }
+
+    }
+//    public static interface StaticRenderTask {
+//        boolean stillRender();
+//        VertexBuffer getRenderAction();
+//    }
+
+    public static interface VirtualRenderTask {
+        void renderVirtual(MatrixStack stack);
+        boolean stillRender();
+    }
+
+    public static abstract class BlockRenderingTask implements VirtualRenderTask {
+        @Getter
+        final BlockPos pos;
+        final boolean shouldLine;
+        int tick;
+        public BlockRenderingTask(BlockPos pos,  boolean shouldLine, int tick){
+            this.pos = pos;
+            this.shouldLine= shouldLine;
+            this.tick = tick + Tasks.getTick();
+            this.buffer = createStatic();
+        }
+        final VertexBuffer buffer;
+        @Override
+        public boolean stillRender() {
+            if( Tasks.getTick() <= this.tick){
+                return true;
+            }
+            this.close();
+            return false;
+        }
+        public void close(){
+            this.buffer.close();
+        }
+        public abstract @Nonnull VertexBuffer createStatic();
+        public abstract void setBlockShaderData();
+        @Override
+        public void renderVirtual(MatrixStack stack) {
+            stack.push();
+            //设置着色器为 position配合POSITION Vertex
+            RenderSystem.setShader(GameRenderer::getPositionProgram);
+            Vec3d camera = RenderUtils.getCameraPos();
+            //push to block coord
+            Vec3d camerToBlock = this.pos.toCenterPos().subtract(camera);
+            stack.translate(camerToBlock.x, camerToBlock.y, camerToBlock.z);;
+            //运行
+            Matrix4f viewMatrix  = stack.peek().getPositionMatrix();
+            Matrix4f projMatrix = RenderSystem.getProjectionMatrix();
+            ShaderProgram shader = RenderSystem.getShader();
+            setBlockShaderData();
+            this.buffer.bind();
+            this.buffer.draw(viewMatrix, projMatrix, shader);
+            VertexBuffer.unbind();
+            //运行结束
+            stack.pop();
+            //绘制线
+            if(shouldLine){
+                //back to camera coord
+                Vec3d cursorPos = RenderUtils.getClientLookVec(1.0f);
+                RenderUtils.drawLineVirtualCameraCoord(stack, cursorPos, camerToBlock, Color.RED);
+            }
+        }
+    }
+
+    public static class CountingBlockOutlineTarget extends BlockRenderingTask {
+
+        public CountingBlockOutlineTarget(BlockPos pos, int endTick, boolean shouldLine){
+            super(pos, shouldLine, endTick);
+        }
+
+        @NotNull
+        @Override
+        public VertexBuffer createStatic() {
+            var vertexBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
+            RenderUtils.cacheVertexAction(vertexBuffer, VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION, (b)->{
+                RenderUtils.drawOutlinedBox(b, FROM, TO);
+            });
+            return vertexBuffer;
+        }
+
+        @Override
+        public void setBlockShaderData() {
+            RenderUtils.setAsShaderColor(Color.GREEN,1.0f);
+            //RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
+        }
+    }
+    public static class CountingBlockSolidTarget extends BlockRenderingTask {
+
+
+        public CountingBlockSolidTarget(BlockPos pos, boolean shouldLine, int tick) {
+            super(pos, shouldLine, tick);
+        }
+        @NotNull
+        @Override
+        public VertexBuffer createStatic() {
+            var vertexBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
+            RenderUtils.cacheVertexAction(vertexBuffer, VertexFormat.DrawMode.QUADS, VertexFormats.POSITION, (b)->{
+                RenderUtils.drawSolidBox(b, FROM, TO);
+            });
+            return vertexBuffer;
+        }
+
+        @Override
+        public void setBlockShaderData() {
+            RenderUtils.setAsShaderColor(Color.GREEN,0.25f);
+        }
+    }
+
+
+
     //todo add rayTrace render Func
     static {
         EntityUtils.parseEntityWhiteList(RENDER_DETECT_WHITELIST.get().replace(',','|'),entityTypes);
@@ -308,6 +462,8 @@ public class RenderTasks {
             }
         }));
         EntityTasks.getEntityTickListener().registerHandler(RenderTasks::debugEntityTick);
-        RenderMain.getRenderTasks().registerHandler(RenderTasks::renderExplosiveProjectileLine);
+        RenderMain.getRenderLayerTasks().registerHandler(RenderTasks::renderExplosiveProjectileLine);
+        Listener.getServerDisconnectPoint().registerHandler(RenderTasks::onPlayerDisconnect);
+        RenderMain.getRenderLayerTasks().registerHandler(RenderTasks::onRenderVirtualTasks);
     }
 }

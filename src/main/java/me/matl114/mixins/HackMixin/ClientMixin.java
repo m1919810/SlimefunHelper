@@ -71,7 +71,8 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     public boolean onEnableRidingAttack(ClientPlayerEntity instance) {
 
         if(RIDING_ATTACK.get()){
-            return true;
+            //always not riding
+            return false;
         }
         return instance.isRiding();
     }

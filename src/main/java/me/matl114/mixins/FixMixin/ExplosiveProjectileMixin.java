@@ -50,7 +50,10 @@ public abstract class ExplosiveProjectileMixin  extends ProjectileEntity impleme
     @Override
     public void setVelocityClient(double x, double y, double z){
         super.setVelocityClient(x, y, z);
+        //接近0, 忽略
+        if(this.getVelocity().lengthSquared() < 1e-10)return;
         if(!update){
+            update = true;
             RenderTasks.calPoweredProjectileTrace((ExplosiveProjectileEntity)(Object) this);
         }
     }

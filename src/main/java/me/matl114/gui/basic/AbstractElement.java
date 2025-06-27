@@ -18,6 +18,7 @@ public class AbstractElement implements ElementHandler {
         return this;
     }
     public AbstractElement combineAbsoluteRender(RenderHandler handlerAbsolute){
+        if(handlerAbsolute == null)return this;
         if(absoluteRender == null){
             absoluteRender = new ArrayList<>();
         }

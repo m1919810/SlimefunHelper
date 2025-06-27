@@ -25,6 +25,7 @@ public class GenericScreen extends Screen {
     }
     protected GenericScreen(Text title, int backgroundWidth, int backgroundDefaultHeight) {
         super(title);
+        setTitleLabel(title);
         this.backgroundDefaultHeight = backgroundDefaultHeight;
         this.backgroundWidth = backgroundWidth;
         this.backgroundHeight = backgroundDefaultHeight;
@@ -45,6 +46,7 @@ public class GenericScreen extends Screen {
         super.init();
         init0();
     }
+
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
@@ -90,5 +92,25 @@ public class GenericScreen extends Screen {
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         return this.draggingElement != null && button == 0 && this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (super.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+            //we mixin the input field of these
+            //it will return tru at keyPressed
+        } else if (this.client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
+            this.close();
+            return true;
+        }
+        return true;
+    }
+
+    public void resetScreen(){
+        //schedule refresh
+        this.initTabNavigation();
+        //mc.executeSync(()->this.init(mc,mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight()));
+    }
+
 
 }

@@ -16,7 +16,7 @@ public class SimpleCommandArgs {
         @Getter
         @Setter
         private String defaultValue=null;
-        public Supplier<List<String>> tabCompletor=null;
+        public Supplier<List<String>> tabCompletor=List::of;
         public Argument(String argsName){
             this.argsName = argsName;
             this.argsAlias = new HashSet<>();

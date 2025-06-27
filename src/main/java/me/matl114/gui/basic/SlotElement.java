@@ -80,6 +80,7 @@ public class SlotElement extends AbstractElement implements ElementHandler {
     }
     private boolean tooltips = true;
     public AbstractElement withTooltips(TooltipHandler handler){
+        if(handler ==null)return this;
         tooltips = false;
         return super.withTooltips(handler);
     }

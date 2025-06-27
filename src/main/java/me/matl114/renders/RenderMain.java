@@ -107,12 +107,21 @@ public class RenderMain {
 //            return -999;
 //        });
     }
+    //在屏幕之上渲染的
     @Getter
-    private static final ListenerPoint<MatrixStack> renderTasks = new ListenerPoint<>();
+    private static final ListenerPoint<MatrixStack> renderLayerTasks = new ListenerPoint<>();
     public static void renderMoreTasks(MatrixStack stack){
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
-        renderTasks.handleValue(stack);
+//        GL11.glEnable(GL11.GL_BLEND);
+//        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+//        GL11.glDisable(GL11.GL_DEPTH_TEST);
+
+        // This stack start with the position with RenderUtils.getCameraPose();
+        renderLayerTasks.handleValue(stack);
+//        GL11.glEnable(GL11.GL_DEPTH_TEST);
+//        GL11.glDisable(GL11.GL_BLEND);
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
+
     }
     @Getter
     private static final ArgumentListenerPoint<DrawContext> renderSlot = new ArgumentListenerPoint<>();

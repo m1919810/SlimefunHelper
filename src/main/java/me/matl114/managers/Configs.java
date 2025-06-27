@@ -63,6 +63,7 @@ public class Configs {
     public static final String[] CHAT_HELPER_MULTIPLE={"chat-helper","multiple"};
     public static final String[] CHAT_HELPER_SPECIALCHARS={"chat-helper","special-chars"};
     public static final String[] CHAT_HELPER_IGNORE_INPUT_LIMIT = {"chat-helper","ignore-chat-len-limit"};
+    public static final String[] CHAT_HELPER_ESCAPE_TRIM = {"chat-helper","escape-trim-chat"};
     public static final String[] CHAT_HELPER_CLIENT_GIVE = {"chat-helper","client-side-give"};
     public static final String[] CHAT_HELPER_CHECK_MESSAGE_LENGTH = {"chat-helper","check-chat-len"};
     public static final String[] CHAT_HELPER_CHECK_COMMAND_LENGTH = {"chat-helper","check-command-len"};
@@ -72,6 +73,7 @@ public class Configs {
         .defaultVal(1,CHAT_HELPER_MULTIPLE)
         .defaultVal("\uD83D\uDE21\uD83E\uDD13\uD83E\uDD75\uD83D\uDE2D\uD83E\uDD21\uD83D\uDE0B\uD83E\uDD24\uD83D\uDE0A\uD83D\uDE04\uD83E\uDD72\uD83D\uDE01\uD83D\uDC49\uD83D\uDC46\uD83E\uDD14\uD83D\uDE0E\uD83D\uDC0D\uD83D\uDE05♂♀",CHAT_HELPER_SPECIALCHARS)
         .defaultVal(true, CHAT_HELPER_IGNORE_INPUT_LIMIT)
+        .defaultVal(false, CHAT_HELPER_ESCAPE_TRIM)
         .defaultVal(false, CHAT_HELPER_CLIENT_GIVE)
         .defaultVal(256, CHAT_HELPER_CHECK_MESSAGE_LENGTH)
         .defaultVal(32760, CHAT_HELPER_CHECK_COMMAND_LENGTH)
@@ -83,6 +85,7 @@ public class Configs {
     public static final String[] RENDER_NO_EFFECT_FORCE = {"render","eff-setting","force-no"};
     public static final String[] RESOURCE_IGNORE_SERVER = {"resource","server","ignore-server-request"};
     public static final String[] CAL_FIREBALL_TRACE = {"detect-entity","cal-fireball"};
+    public static final String[] RENDER_REJECT_WURST = {"render","disable-wurst-hud"};
     public static final Config RENDER_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/render.yml","render settings")
         .defaultVal("player,wither",RENDER_DETECT_SPAWN_WHITELIST)
         .defaultVal(true,RENDER_NO_EFFECT)
@@ -90,6 +93,7 @@ public class Configs {
         .defaultVal(false,RENDER_NO_EFFECT_FORCE)
         .defaultVal(false,RESOURCE_IGNORE_SERVER)
         .defaultVal(true,CAL_FIREBALL_TRACE)
+        .defaultVal(false,RENDER_REJECT_WURST)
         .save();
     public static final String[] TEST_ARGS1={"test","arg1"};
     public static final String[] TEST_ARGS2={"test","arg2"};

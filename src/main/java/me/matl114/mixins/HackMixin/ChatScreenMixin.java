@@ -47,6 +47,8 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     }
     @Unique
     private static final AtomicBoolean changeInputLimit = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_IGNORE_INPUT_LIMIT);
+    @Unique
+    private static final AtomicBoolean escapeTrimChatMessage = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_ESCAPE_TRIM);
     @Inject(method = "init",at = @At("RETURN"))
     private void onInitAdd(CallbackInfo ci) {
         //change input maxLen to 32768, so commands can be executed
@@ -183,11 +185,13 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     }
     @Redirect(method = "sendMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;normalize(Ljava/lang/String;)Ljava/lang/String;"))
     private String cancelNormalizeString(ChatScreen instance, String chatText){
-        if(changeInputLimit.get()){
-            return chatText;
-        }else {
-            return StringHelper.truncateChat(chatText);
+        if(!escapeTrimChatMessage.get()){
+            chatText = chatText.trim();
         }
+        if(!changeInputLimit.get()){
+            chatText = StringHelper.truncateChat(chatText);
+        }
+        return chatText;
     }
     //
     public void close(){

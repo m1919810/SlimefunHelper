@@ -6,6 +6,7 @@ import me.matl114.gui.basic.ColorProvider;
 import me.matl114.utils.UtilClass.PropertyTracker;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.EditBox;
 import net.minecraft.client.gui.screen.Screen;
@@ -19,6 +20,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nonnull;
 import java.util.function.Consumer;
@@ -79,6 +81,13 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
     private void resetSelectOnRelease(boolean focused, CallbackInfo ci){
         if(!focused){
             resetSelect();
+        }
+    }
+
+    @Inject(method = "keyPressed", at = @At(value = "RETURN"), cancellable = true)
+    public void fixInventoryKeyPressedWhenFocused(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
+        if(this.isFocused() && MinecraftClient.getInstance().options.inventoryKey.matchesKey(keyCode, scanCode)){
+            cir.setReturnValue(true);
         }
     }
 

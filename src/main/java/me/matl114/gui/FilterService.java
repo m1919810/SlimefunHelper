@@ -28,6 +28,7 @@ public class FilterService {
 
     public static BiPredicate<String,String> RTYPE_ID_FILTER = (str,i)->i.contains(str);
     public static boolean nameMatch(String name, String filter){
+        if(filter == null || filter.isEmpty())return true;
         filter = filter.toLowerCase(Locale.ROOT);
         name = name.toLowerCase(Locale.ROOT);
         if(name.contains(filter)){

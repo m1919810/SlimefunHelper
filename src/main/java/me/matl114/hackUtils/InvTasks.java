@@ -1,29 +1,33 @@
 package me.matl114.hackUtils;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
+import com.mojang.datafixers.util.Pair;
+import it.unimi.dsi.fastutil.ints.*;
 import lombok.Getter;
-import me.matl114.access.ClientPlayerAccess;
-import me.matl114.access.HandledScreenAccess;
-import me.matl114.access.PlayerInteractionAccess;
-import me.matl114.access.ScreenAccess;
+import me.matl114.access.*;
 import me.matl114.gui.config.ConfigureScreen;
 import me.matl114.gui.config.SelectScreen;
+import me.matl114.gui.invcache.InventorySelectScreen;
+import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.*;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.UtilClass.LimitedSpeedExecutor;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.UtilClass.MutableEntry;
 import me.matl114.utils.UtilClass.Point;
+import me.matl114.utils.WorldUtils;
+import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.component.ComponentType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtOps;
@@ -41,13 +45,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class InvTasks {
     public static void init(){
@@ -680,13 +684,84 @@ public class InvTasks {
 
             }
         }
-
     }
 
 
     public static int resizeCreativeYv(int y){
         return y-30;
     }
+    private static final int MAX_INV_CACHE_SIZE = 256;
+    private static int startCursor = 0;
+    private static int endCursor = 0;
+    private static MutableEntry<Pair<ClientWorld, BlockPos>, HandledScreen<?>>[] caches = new MutableEntry[MAX_INV_CACHE_SIZE];
+
+    public static List<HandledScreen<?>> getCachedInventories(){
+        return IntStream.range(startCursor, (endCursor < startCursor)? (endCursor + MAX_INV_CACHE_SIZE) : endCursor)
+            .map(i->i%MAX_INV_CACHE_SIZE)
+            .mapToObj(i->caches[i])
+            .map(i->i.value)
+            .collect(Collectors.toCollection(ArrayList::new));
+    }
+    private static int nextInt(int i){
+        ++i;
+        if(i >= MAX_INV_CACHE_SIZE){
+            i = 0;
+        }
+        return i;
+    }
+
+
+
+
+    public static void registerTracedHandledScreen(HandledScreen<?> screen){
+        if(screen instanceof CreativeInventoryScreen creativeInventoryScreen)return;
+        Pair<ClientWorld, BlockPos> data;
+        if(screen instanceof TileInventoryScreen tile && !tile.isVirtual()){
+            BlockPos pos = tile.getPos();
+            ClientWorld world = tile.getWorld();
+            data = new Pair<>(world, pos);
+            for (int i = startCursor ; i != endCursor; i = nextInt(i)){
+                MutableEntry<Pair<ClientWorld, BlockPos>, HandledScreen<?>> value = caches[i];
+                if(value.key != null && Objects.equals(value.key.getSecond(), pos) && WorldUtils.areWorldEquals( value.key.getFirst() , world)){
+                    value.value = screen;
+                    return;
+                }
+            }
+        }else {
+            data = null;
+        }
+        //追加到队列末尾
+        int index = endCursor;
+        endCursor = nextInt(endCursor);
+        //如果队列已满，则从队列头驱逐一个元素
+        if(endCursor == startCursor){
+            startCursor = nextInt(startCursor);
+        }
+        caches[index] = new MutableEntry<>(data, screen);
+    }
+    private static void refreshInventoryCache(Void v){
+        startCursor = endCursor = 0;
+        Arrays.fill(caches, null);
+    }
+    public static void openInventoryCacheScreen(){
+        ScreenAccess.of(new InventorySelectScreen(getCachedInventories())).openFromCurrent();
+    }
+    public static final ItemStack INV_ICON_UNKNOWN = new ItemStack(Items.BARRIER);
+    private static final ItemStack INV_ICON_NO_ITEM = new ItemStack(Items.BEDROCK);
+    public static ItemStack generateInvIcon(HandledScreen<?> screen){
+        if(screen instanceof TileInventoryScreen tile&& !tile.isVirtual()){
+            Block blockType = tile.getBlockType();
+            if(blockType != null){
+                Item itemType = blockType.asItem();
+                if(itemType != Items.AIR){
+                    return new ItemStack(itemType);
+                }
+            }
+            return INV_ICON_NO_ITEM;
+        }
+        return INV_ICON_UNKNOWN;
+    }
+
 
 
     private static final AtomicInteger SPEED= Configs.INV_CONFIG.getInt(Configs.INV_CLICK_LIMIT);
@@ -697,5 +772,6 @@ public class InvTasks {
             clickExecutor.reset();
         });
         Tasks.registerGameTask(InvTasks::specialInventoryTick);
+        Listener.getServerDisconnectPoint().registerHandler(InvTasks::refreshInventoryCache);
     }
 }

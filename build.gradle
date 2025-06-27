@@ -61,7 +61,7 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 	api 'com.github.houbb:pinyin:0.4.0'
-	//api 'io.netty:netty-handler-proxy:4.1.97.Final'
+	api 'io.netty:netty-handler-proxy:4.1.97.Final'
 	api 'org.yaml:snakeyaml:1.30'
 	compileOnly 'org.projectlombok:lombok:1.18.30'   // 最新的 Lombok 版本
 	compileOnly 'com.google.code.findbugs:jsr305:3.0.2'

@@ -3,7 +3,7 @@ package me.matl114.mixins.HackMixin;
 import lombok.Getter;
 import me.matl114.access.TileInventoryScreen;
 import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
-import me.matl114.hackUtils.MovTasks;
+import me.matl114.hackUtils.InteractionTasks;
 import me.matl114.hackUtils.SlimefunTasks;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -27,13 +27,17 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Mixin(Generic3x3ContainerScreen.class)
-public abstract class DispenserCraftScreenMixin extends HandledScreen implements TileInventoryScreen {
+public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3ContainerScreenHandler> implements TileInventoryScreen {
     @Unique
     private SlimefunDispensorSuggestBookWidget recipeBookWidget;
 
     @Unique
-    @Getter
     private BlockPos pos;
+
+    @Unique
+    public BlockPos getPos(){
+        return this.pos;
+    }
 
     @Unique
     private Block cacheBlockType;
@@ -44,12 +48,15 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen implements
     }
 
     @Unique
-    @Getter
     private ClientWorld world;
 
+    @Unique
+    public ClientWorld getWorld(){
+        return this.world;
+    }
 
     public DispenserCraftScreenMixin(ScreenHandler handler, PlayerInventory inventory, Text title) {
-        super(handler, inventory, title);
+        super((Generic3x3ContainerScreenHandler) handler, inventory, title);
     }
     @Unique
     private static final int[] AVAILABLE_SLOTS = new int[]{
@@ -59,7 +66,7 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen implements
     @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;<init>(Lnet/minecraft/screen/ScreenHandler;Lnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/text/Text;)V", shift = At.Shift.AFTER))
     protected void tryInitBlockPos(Generic3x3ContainerScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci){
         this.world = MinecraftClient.getInstance().world;
-        this.pos = MovTasks.rayTraceSpecificBlock((b)->b == Blocks.DISPENSER || b == Blocks.DROPPER).orElse(null);
+        this.pos = InteractionTasks.predictScreenFrom((b)->b == Blocks.DISPENSER || b == Blocks.DROPPER);
         if(this.pos != null && this.world != null){
             cacheBlockType = this.world.getBlockState(this.pos).getBlock();
         }

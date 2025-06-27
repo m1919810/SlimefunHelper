@@ -1,5 +1,6 @@
 package me.matl114.mixins.AccessMixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.access.HandledScreenAccess;
 import me.matl114.access.ScaleSlotAccess;
 import me.matl114.renders.RenderMain;
@@ -106,7 +107,7 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;)V"),locals = LocalCapture.CAPTURE_FAILHARD)
-    public void onRenderSlot(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci, int i, int j, int k, Slot slot){
+    public void onRenderSlot(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci, @Local Slot slot){
         RenderMain.renderSlotInScreen(context, (HandledScreen<?>) (Object)this, slot, mouseX, mouseY);
     }
 

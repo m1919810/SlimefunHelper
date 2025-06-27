@@ -1,5 +1,6 @@
 package me.matl114.gui.slimefun;
 
+import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.GenericScreen;
 import me.matl114.gui.basic.*;
 import me.matl114.hackUtils.SlimefunTasks;
@@ -11,23 +12,12 @@ import net.minecraft.util.Identifier;
 
 import java.util.List;
 
-public class SlimefunScreen extends GenericScreen {
+public class SlimefunScreen extends GenericBackGroundScreen {
     public SlimefunScreen(Text title){
         super(title, 240, 320);
         this.titleLabel = title;
 
     }
-    protected static final MinecraftClient mc = MinecraftClient.getInstance();
-    public void resetScreen(){
-        //schedule refresh
-        this.initTabNavigation();
-        //mc.executeSync(()->this.init(mc,mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight()));
-    }
-    protected static final int TITLE_LABEL_HEIGHT = 12;
-    protected static final int TITLE_OCCUPIED = 20;
-
-    protected DrawableWidget background;
-    protected DrawableWidget titleWidget;
     protected DrawableWidget guideBackground;
     protected DrawableWidget rtypeBackground;
     protected DrawableWidget vanillaBackground;
@@ -48,9 +38,8 @@ public class SlimefunScreen extends GenericScreen {
     protected List<Text> getSearchButtonTooltips(){
         return SEARCH_DEFAULT;
     }
-    protected void init() {
-        super.init();
-        //render before background, so depth is not needed
+
+    protected void initBackground(){
         this.guideBackground = DisplayWidget.instance(this.x - 23, this.y + 12, 26, 26)
             .setRenderHandler(PlateElement.instance())
             .addTo(this)
@@ -74,19 +63,10 @@ public class SlimefunScreen extends GenericScreen {
             .setMouseHandler(MouseHandler.run(this::close))
             .setRenderHandler(PlateElement.instance().combineRender(RenderHandler.ofPositionResource(SEARCH_TEXTURE,4, 4, 18, 18)).withTooltips(TooltipHandler.of(this::getSearchButtonTooltips)))
             .addTo(this);
-//        this.searchButton = ExecutableWidget.instance( this.x + this.backgroundWidth - 3 , this.y + 38, 26, 26)
-//            .setRenderHandler(PlateElement.instance().combineRender(RenderHandler.ofPositionResource(SEARCH_TEXTURE,4, 4, 18, 18)).withTooltips(TooltipHandler.of(this::getSearchButtonTooltips)))
-//            .addTo(this)
-//        ;
-        this.background = DisplayWidget.instance(this.x, this.y, this.backgroundWidth, this.backgroundHeight)
-            .setRenderHandler(PlateElement.instance())
-            .addTo(this)
-        ;
-        this.titleWidget = DisplayWidget.instance(this.x + 5, this.y + 5, this.backgroundWidth - 10, TITLE_LABEL_HEIGHT)
-            .setRenderHandler(new LabelElement(this::getTitleLabel, Colors.WHITE, 0))
-            .addTo(this)
-        ;
-
+        super.initBackground();
+    }
+    protected void init() {
+        super.init();
         this.guideIcon = ExecutableWidget.instance(this.x - 19, this.y +16 , 18, 18)
             .setRenderHandler(
                 SlotElement.instance(SlimefunTasks.GUIDE_ICON)
@@ -121,14 +101,5 @@ public class SlimefunScreen extends GenericScreen {
         this.saveItemIcon.setMouseHandler(MouseHandler.run(SlimefunTasks::handleClickSaveItemIcon));
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        } else if (this.client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
-            this.close();
-            return true;
-        }
-        return true;
-    }
+
 }

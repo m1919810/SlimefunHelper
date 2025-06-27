@@ -19,9 +19,13 @@ public class SlimefunQuestionScreen extends SlimefunScreen {
     }
 
     @Override
+    protected List<Text> provideTitleTooltips(DrawableWidget widget) {
+        return QUESTION_DESCRIPTION;
+    }
+
+    @Override
     protected void init() {
         super.init();
-        this.titleWidget.setRenderHandler(((AbstractElement)this.titleWidget.getRenderHandler()).withTooltips(TooltipHandler.of(QUESTION_DESCRIPTION)));
         DisplayWidget.instance(this.x + 10, this.y + 80,  this.backgroundWidth - 20, 40)
             .setRenderHandler(LabelElement.instance(q))
             .addTo(this);

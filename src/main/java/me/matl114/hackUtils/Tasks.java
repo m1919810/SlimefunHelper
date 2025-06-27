@@ -15,7 +15,10 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.ItemStack;
@@ -161,6 +164,22 @@ public class Tasks {
 
     }
 
+    public static void relocateGameMenuButtons(Screen screen){
+        List<? extends Element> elements = screen.children();
+        for (var el: elements){
+            if(el instanceof ButtonWidget button){
+                if(!button.visible){
+                    button.visible = true;
+                }
+                if(button.getMessage().getString().contains("Options")){
+                    Debug.info(((ButtonWidget) el).getMessage().getString());
+                    button.setY(button.getY() + 72);
+                }
+
+            }
+        }
+    }
+
     public static void stopItemSwapPacket(){
         instance.stopItemSwapPacketInternal();
     }
@@ -205,7 +224,8 @@ public class Tasks {
     public static void doTest(){
         //doTryBeaconPacket();
      //   ItemEditTasks.openEditScreenLater(mc.player.getMainHandStack().copy(), null);
-        ScreenAccess.of(new TestingScreen2(Text.empty())).openFromCurrent();
+        InvTasks.openInventoryCacheScreen();
+        //ScreenAccess.of(new TestingScreen2(Text.empty())).openFromCurrent();
 //        Debug.info(Text.empty().append(Text.literal("byd")).append(Text.literal("byd").withColor(114514)).append(Text.literal("byd").withColor(1919810)).withColor(13333).getString());
 //        Debug.info(Text.literal("byder").withColor(14444).getString());
 //        Screen screen = mc.currentScreen;
@@ -218,7 +238,13 @@ public class Tasks {
     }
 
     public static void runTask(String taskId, String[] args){
+        CompletableFuture.runAsync(()->{
+            try{
 
+            }catch (Throwable e){
+                Debug.info(e);
+            }
+        });
     }
 
     public static void doTryInteractWithNPCInDifferentDimension()  {
@@ -586,9 +612,11 @@ public class Tasks {
             CombatTasks.init();
             MovTasks.init();
             SlimefunTasks.init();
+            InteractionTasks.init();
         }else {
             ChatTasks.init();
             SlimefunTasks.init();
+            InteractionTasks.init();
         }
 
         registerTickTask(()->{
