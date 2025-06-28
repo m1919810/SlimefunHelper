@@ -31,3 +31,5 @@ accessible field net/minecraft/client/render/model/json/ModelElementFace cullFac
 accessible method net/minecraft/client/gui/DrawContext tryDraw ()V
 accessible field net/minecraft/client/gui/EditBox selectionEnd I
 accessible method net/minecraft/component/ComponentChanges <init> (Lit/unimi/dsi/fastutil/objects/Reference2ObjectMap;)V
+accessible field net/minecraft/client/render/GameRenderer buffers Lnet/minecraft/client/render/BufferBuilderStorage;
+accessible field net/minecraft/client/MinecraftClient disconnecting Z

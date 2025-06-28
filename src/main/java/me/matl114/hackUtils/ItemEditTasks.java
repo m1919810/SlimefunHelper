@@ -13,10 +13,11 @@ import net.minecraft.util.Formatting;
 import java.util.function.Consumer;
 
 public class ItemEditTasks {
-    public static void openEditor(){
+    public static boolean openEditor(){
         if(MinecraftClient.getInstance().player != null){
             openEditor(MinecraftClient.getInstance().player);
-        }
+            return true;
+        }else return false;
     }
     public static void openEditor(ClientPlayerEntity entity){
         ItemStack stack = ScreenUtils.getSelectingItemOrHand();

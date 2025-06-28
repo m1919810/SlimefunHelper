@@ -4,6 +4,7 @@ package me.matl114.mixins.HackMixin;
 import me.matl114.access.ClientAccess;
 import me.matl114.access.ClientPlayerAccess;
 import me.matl114.hackUtils.CombatTasks;
+import me.matl114.hackUtils.RenderTasks;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Configs;
@@ -11,13 +12,17 @@ import me.matl114.managers.HotKeys;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.profiler.Profiler;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -153,6 +158,12 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Shadow
     protected abstract boolean doAttack();
 
+    @Shadow @Nullable public Screen currentScreen;
+
+    @Shadow @Final public GameRenderer gameRenderer;
+
+    @Shadow protected abstract void render(boolean tick);
+
     @Override
     public ClientAccess clone() {
         try {
@@ -170,6 +181,18 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         if(!transferring)
             Listener.getServerDisconnectPoint().handleValue(null);
     }
+
+    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/GameRenderer;render(Lnet/minecraft/client/render/RenderTickCounter;Z)V"))
+    private void onTrySleepGameRender(GameRenderer renderer, RenderTickCounter counter, boolean z){
+        if(RenderTasks.isScreenSleeping()){
+            if(RenderTasks.sleepingRenderTick()){
+                return;
+            }
+        }
+        renderer.render(counter, z);
+
+    }
+
 
 //    @Inject(method = "startIntegratedServer",at = @At("HEAD"))
 //    public void onStartIntegratedServer(LevelStorage.Session session, ResourcePackManager dataPackManager, SaveLoader saveLoader, boolean newWorld, CallbackInfo ci) {

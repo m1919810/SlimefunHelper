@@ -46,6 +46,9 @@ public abstract class AbstractMainCommand implements ComplexCommandExecutor, Int
     public void registerSub(SubCommand command) {
         this.subCommands.add(command);
     }
+    public void registerSubMain(String name, AbstractMainCommand command){
+        new SubCommand(name, genArgument(),name + " 查看子指令组 "+ name +" 的相关信息" ).setCommandExecutor(command).register(this);
+    }
     private SubCommand getMainInternal() {
 
         return mainInternal;
@@ -131,5 +134,4 @@ public abstract class AbstractMainCommand implements ComplexCommandExecutor, Int
         return ()-> Streams.concat(Stream.of(MinecraftClient.getInstance().player.getName().toString()), MinecraftClient.getInstance().getNetworkHandler().getPlayerList().stream().map(pl->pl.getDisplayName().toString())).toList();
     }
 
-    public abstract AbstractMainCommand reload();
 }

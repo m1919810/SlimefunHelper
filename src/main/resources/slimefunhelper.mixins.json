@@ -56,6 +56,7 @@
     "RenderMixin.JsonUnbakedModelMixin",
     "RenderMixin.LightMapTextureMixin",
     "RenderMixin.ModelOverrideListMixin",
+    "RenderMixin.ResourcePackPositionMixin",
     "RenderMixin.ScaleSlotMixin",
     "RenderMixin.ScrollableWidgetMixin",
     "RenderMixin.TextFieldWidgetMixin",

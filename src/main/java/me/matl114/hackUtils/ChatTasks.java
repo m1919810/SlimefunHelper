@@ -1,13 +1,19 @@
 package me.matl114.hackUtils;
 
-import com.mojang.brigadier.ParseResults;
-import com.mojang.brigadier.ResultConsumer;
+import com.mojang.brigadier.*;
+import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.*;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.CommandNode;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.mojang.brigadier.tree.RootCommandNode;
 import lombok.Getter;
+import lombok.val;
+import me.matl114.ModConfig;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
@@ -22,13 +28,17 @@ import me.matl114.utils.UtilClass.SubCommand;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.argument.ItemStackArgument;
+import net.minecraft.command.EntitySelector;
+import net.minecraft.command.argument.*;
+import net.minecraft.command.suggestion.SuggestionProviders;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
@@ -40,6 +50,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class ChatTasks {
     public static void init(){
@@ -86,7 +98,88 @@ public class ChatTasks {
     private static Config.StringRef stored=Configs.CHAT_CONFIG.getString(Configs.CHAT_HELPER_CACHE);
     public static void initChatScreen(Screen screen){
     }
+   private static final   Predicate<CommandSource> requirement = (val)->true;
+   private static void addOurCommandNodesInRoot(RootCommandNode<CommandSource> node){
+        //try add deop command
 
+       CommandNode<CommandSource> give = node.getChild("give");
+       LiteralCommandNode<CommandSource> giveCommand;
+       if (give == null) {
+           giveCommand = new LiteralCommandNode<>(
+               "give",
+               null,
+               requirement,
+               null,
+               null,
+               false
+           );
+           node.addChild(giveCommand);
+       }else {
+           giveCommand = (LiteralCommandNode<CommandSource>) give;
+       }
+       if(node.getChild("minecraft:give") == null){
+           LiteralCommandNode<CommandSource> mcGiveCommand = new LiteralCommandNode<>(
+               "minecraft:give",
+               null,
+               requirement,
+               giveCommand,
+               null,
+               false
+           );
+           node.addChild(mcGiveCommand);
+        }
+        if(give == null){
+            CommandRegistryAccess commandRegistryAccess = CommandRegistryAccess.of(
+                ItemStackUtils.delegate(),
+                FeatureFlags.DEFAULT_ENABLED_FEATURES
+            );
+
+
+            ArgumentCommandNode<CommandSource, EntitySelector> targetArgument = new ArgumentCommandNode<>(
+                "target",
+                EntityArgumentType.players(),
+                null,
+                requirement,
+                null,
+                null,
+                false,
+                SuggestionProviders.byId(Identifier.of("minecraft","ask_server"))
+            );
+            ArgumentCommandNode<CommandSource, ItemStackArgument> itemArgument = new ArgumentCommandNode<>(
+                "item",
+                ItemStackArgumentType.itemStack(commandRegistryAccess),
+                null,
+                requirement,
+                null,
+                null,
+                false,
+                null
+            );
+            targetArgument.addChild(itemArgument);
+            ArgumentCommandNode<CommandSource, Integer> countAmount = new ArgumentCommandNode<>(
+                "count",
+                IntegerArgumentType.integer(1),
+                null,
+                requirement,
+                null,
+                null,
+                false,
+                null
+            );
+            itemArgument.addChild(countAmount);
+        }
+
+
+   }
+   private static void reloadVanillaClientCommand(){
+
+   }
+   private static void onClientCommandReload(CommandDispatcher<CommandSource> dispatcher){
+        RootCommandNode<CommandSource> root = dispatcher.getRoot();
+        if(root != null){
+            addOurCommandNodesInRoot(root);
+        }
+   }
 
     static {
         Tasks.registerGameTask((player -> {
@@ -99,6 +192,10 @@ public class ChatTasks {
         Tasks.registerGameTask(player -> {
             chatExecutor.reset();
         });
+        //use default command registry access
+
+        Listener.getCommandReloadPoint().registerHandler(ChatTasks::onClientCommandReload);
+
     }
     @Getter
     private static final CancellableEntryPoint<MutableObject<String>> chatEntryPoint = new CancellableEntryPoint<>();
@@ -107,39 +204,28 @@ public class ChatTasks {
             return !parseClientCommand(i.getValue());
         });
     }
-    private static final List<AbstractMainCommand> REGISTERED_COMMANDS = new ArrayList<>();
-    public static void reloadCommand(AbstractMainCommand current){
-        REGISTERED_COMMANDS.remove(current);
-        REGISTERED_COMMANDS.add(current.reload());
-        Debug.chat("SfHelper Command Successfully reloaded");
-    }
+    private static AbstractMainCommand REGISTERED_COMMANDS;
+    private static final Map<String, Supplier<AbstractMainCommand>> COMMAND_FACTORY = new HashMap<>();
     public static void reloadAllCommand(){
-        List<AbstractMainCommand> commands = new ArrayList<>(REGISTERED_COMMANDS);
-        REGISTERED_COMMANDS.clear();;
-        for (AbstractMainCommand command : commands) {
-            REGISTERED_COMMANDS.add(command.reload());
-        }
+        REGISTERED_COMMANDS = new SlimefunHelperMainCommand();
         Debug.chat("SfHelper Command Successfully reloaded");
     }
     public static class SlimefunHelperMainCommand extends AbstractMainCommand{
-        {
-
-        }
         SubCommand mainCommand = genMainCommand("");
 
-        SubCommand reloadCommand = new SubCommand("reload", genArgument("how"),"!!reload 重载指令实例"){
+        SubCommand reloadCommand = new SubCommand("reload", genArgument("what"),"!!reload <what: default main> 重载指令实例"){
             @Override
             public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
                 var re = parseInput(var4).getFirst().nextNonnull();
                 switch (re){
-                    case "all"->Tasks.scheduleDelayed(ChatTasks::reloadAllCommand,2);
-                    case "main"->Tasks.scheduleDelayed(()->reloadCommand(SlimefunHelperMainCommand.this),2);
+                    case "main"->Tasks.scheduleDelayed(ChatTasks::reloadAllCommand,2);
+                    case "vanilla" -> Tasks.scheduleDelayed(ChatTasks::reloadVanillaClientCommand, 2);
                     default -> Debug.chat("不支持的参数类型: " + re);
                 }
                 return true;
             }
         }
-            .setEnum("how","all",List.of("all","main"))
+            .setEnum("what","main",List.of("vanilla","main"))
             .register(this);
         SubCommand helpCommand = new SubCommand("help", genArgument("subcommand", "!!help <optional> 获得帮助")){
             @Override
@@ -291,10 +377,12 @@ public class ChatTasks {
                 if(result != null){
                     Debug.chat(Text.literal(identifier.toString() + "所拥有的注册项:").formatted(Formatting.GREEN));
                     String filter = re.nextNonnull();
+                    Identifier filterId = Identifier.tryParse(filter);
+                    boolean namespace = filter.contains(":");
                     for (var id : result.getKeys()){
                         Identifier identifier1 = ((RegistryKey)id).getValue();
                         String val = identifier1.getPath();
-                        if(val.contains(filter)){
+                        if(filterId == null ||( val.contains(filterId.getPath()) && (!namespace || identifier1.getNamespace().contains(filterId.getNamespace())))){
                             Debug.chat(identifier1);
                         }
                     }
@@ -314,11 +402,13 @@ public class ChatTasks {
                 var re = parseInput(var4).getFirst();
                 String val = re.nextNonnull();
                 String filter = re.nextNonnull();
+                Identifier filterId = Identifier.tryParse(filter);
+                boolean namespace = filter.contains(":");
                 List datas = new ArrayList<>();
                 switch (val){
                     case "world"->{
                         datas = mc.getNetworkHandler().getWorldKeys().stream().map(RegistryKey::getValue)
-                            .filter(u-> u.getPath().contains(filter))
+                            .filter(u-> filterId == null ||( u.getPath().contains(filterId.getPath()) && (!namespace|| u.getNamespace().contains(filterId.getNamespace()))))
                             .toList();
                     }
                     case "command"->{
@@ -344,8 +434,36 @@ public class ChatTasks {
             .setDefault("filter","")
             .register(this);
 
+        SubCommand sleep = new SubCommand("sleep", genArgument("level","confirm"), "!!sleep <confirm> 进入睡眠状态"){
+            @Override
+            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
+                var re = parseInput(var4).getFirst();
+                int level = re.nextInt();
+                if(level != 1 && level != 2){
+                    Debug.chat("请输入范围内的数字: 1~2");
+                    return true;
+                }
+                String val = re.nextNonnull();
+                if("confirm".equals(val)){
+                    Tasks.scheduleDelayed(()->RenderTasks.setScreenSleeping(level), 2);
+                }else {
+                    Debug.chat("使用sleep confirm 确认进入睡眠模式, 进入睡眠模式后可以按 "+ ModConfig.getFuncHotKeys(HotKeys.WAKE_UP_SCREEN)+" 键离开");
+                }
+                return true;
+            }
+        }
+            .setDefault("confirm","")
+            .setInt("level")
+            .register(this);
 
-        @Override
+        {
+
+            if(COMMAND_FACTORY != null){
+                COMMAND_FACTORY.forEach(((string, commandSupplier) -> this.registerSubMain(string, commandSupplier.get())));
+            }
+        }
+
+
         public AbstractMainCommand reload() {
             return new SlimefunHelperMainCommand();
         }
@@ -376,8 +494,19 @@ public class ChatTasks {
         }
         return null;
     }
+//    public static ParseResults<CommandSource> addParseToVanillaCommands(ParseResults<CommandSource> originResult, StringReader reader){
+//
+//        if(command.startsWith("/")){
+//            CompletableFuture<Suggestions> sugg = parseVanillaComandsTab(command.substring(1), cursorAt - 1);
+//            if(sugg != null)return sugg;
+//        }
+//    }
 
     public static CompletableFuture<Suggestions> dispatchTabComplete(String command, int cursorAt, boolean withPrefix){
+        if(cursorAt < 0){
+            //handle !!
+            return null;
+        }
         String trueCommand = command.substring(0, cursorAt);
         int lastBlank = -1 ;
         int prefixLen = 2 + (withPrefix?1:0);
@@ -401,11 +530,9 @@ public class ChatTasks {
     }
     public static List<String> callTabCompletion(String[] command){
         if(mc.player != null){
-            for (var comm: REGISTERED_COMMANDS){
-                List<String> val = comm.onTabComplete(mc.player, "", command);
-                if(val != null && !val.isEmpty()){
-                    return val;
-                }
+            List<String> val = REGISTERED_COMMANDS.onTabComplete(mc.player, "", command);
+            if(val != null && !val.isEmpty()){
+                return val;
             }
         }
         return List.of();
@@ -415,13 +542,18 @@ public class ChatTasks {
         if(mc.player != null){
             String[] args = command.split(" ");
             if(args.length == 0)return;
-            for (var comm : REGISTERED_COMMANDS){
-                if(comm.onCommand(mc.player, "", args)){
-                    return;
-                }
+            if(REGISTERED_COMMANDS.onCommand(mc.player, "", args)){
+                return;
             }
         }
     }
+    public static void registerSubCommands(String name, Supplier<AbstractMainCommand> commandSupplier){
+        COMMAND_FACTORY.put(name, commandSupplier);
+        if(REGISTERED_COMMANDS != null){
+            REGISTERED_COMMANDS.registerSubMain(name, commandSupplier.get());
+        }
+    }
+
     private static final AtomicBoolean EXECUTE_GIVE_CLIENTSIDE = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_CLIENT_GIVE);
     private static final AtomicInteger MESSAGE_LENGTH = Configs.CHAT_CONFIG.getInt(Configs.CHAT_HELPER_CHECK_MESSAGE_LENGTH);
     private static final AtomicInteger COMMAND_LENGTH = Configs.CHAT_CONFIG.getInt(Configs.CHAT_HELPER_CHECK_COMMAND_LENGTH);
@@ -461,7 +593,7 @@ public class ChatTasks {
                 if(mc.player.isCreative() ){
                     //parse command for give command
                     Debug.chat(Text.literal("尝试在客户端执行/give指令").formatted(Formatting.GREEN));
-                    dispatchGiveCommand(command);
+                    dispatchVanillaCommand(command);
                     return true;
 
                 }else {
@@ -471,13 +603,26 @@ public class ChatTasks {
         }
         return false;
     }
+    private static CompletableFuture<Suggestions> parseVanillaComandsTab(String command, int cursorAt){
+        if(EXECUTE_GIVE_CLIENTSIDE.get()){
+            if(command.startsWith("minecraft:give") || command.startsWith("give")) {
+                return dispatchVanillaTabComplete(command, cursorAt);
+            }
+        }
+        return null;
+    }
     private static ResultConsumer<CommandSource> consumer = (c, s, r) -> {
     };
-    private static void dispatchGiveCommand(String command){
+    private static CompletableFuture<Suggestions> dispatchVanillaTabComplete(String command, int cursorAt){
+        if(mc.player == null)return null;
+        return null;
+    }
+    private static void dispatchVanillaCommand(String command){
        // Debug.info(command);
+        if(mc.player == null)return;
         mc.player.setClientPermissionLevel(4);
         try{
-            ParseResults<CommandSource> parse = mc.getNetworkHandler().getCommandDispatcher().parse(command, mc.getNetworkHandler().getCommandSource());
+            ParseResults<CommandSource> parse = mc.getNetworkHandler().getCommandDispatcher().parse(command, mc.player.getCommandSource());
             if (parse.getReader().canRead()) {
                 if (parse.getExceptions().size() == 1) {
                     throw parse.getExceptions().values().iterator().next();
@@ -537,6 +682,6 @@ public class ChatTasks {
         return context != null ? Text.translatable("command.context.parse_error", message, e.getCursor(), context) : message;
     }
     static {
-        REGISTERED_COMMANDS.add(new SlimefunHelperMainCommand());
+        REGISTERED_COMMANDS = new SlimefunHelperMainCommand();
     }
 }

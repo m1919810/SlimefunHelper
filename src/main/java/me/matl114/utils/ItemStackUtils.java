@@ -1,6 +1,7 @@
 package me.matl114.utils;
 
 import com.google.common.collect.ImmutableMap;
+import com.mojang.serialization.DynamicOps;
 import me.matl114.bukkitUtiils.ItemStackHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
@@ -26,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.minecraft.component.DataComponentTypes.*;
 
@@ -172,6 +174,33 @@ public class ItemStackUtils {
         return registry.getOrEmpty(id).map(registry::getEntry).orElse(null);
     }
 
+    public static class DelegateRegistryWrapperLookup implements RegistryWrapper.WrapperLookup{
+        protected static final DelegateRegistryWrapperLookup INSTANCE = new DelegateRegistryWrapperLookup();
+        @Override
+        public Stream<RegistryKey<? extends Registry<?>>> streamAllRegistryKeys() {
+            return registry().streamAllRegistryKeys();
+        }
+
+        @Override
+        public <T> Optional<RegistryWrapper.Impl<T>> getOptionalWrapper(RegistryKey<? extends Registry<? extends T>> registryRef) {
+            return registry().getOptionalWrapper(registryRef);
+        }
+
+        public  <T> RegistryWrapper.Impl<T> getWrapperOrThrow(RegistryKey<? extends Registry<? extends T>> registryRef){
+            return registry().getWrapperOrThrow(registryRef);
+        }
+        public  <V> RegistryOps<V> getOps(DynamicOps<V> delegate) {
+            return registry().getOps(delegate);
+        }
+
+        public RegistryEntryLookup.RegistryLookup createRegistryLookup() {
+            return registry().createRegistryLookup();
+        }
+    }
+
+    public static RegistryWrapper.WrapperLookup delegate(){
+        return DelegateRegistryWrapperLookup.INSTANCE;
+    }
 
     @Nonnull
     public static DynamicRegistryManager registry(){

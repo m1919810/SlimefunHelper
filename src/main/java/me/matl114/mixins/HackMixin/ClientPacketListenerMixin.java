@@ -1,5 +1,6 @@
 package me.matl114.mixins.HackMixin;
 
+import com.mojang.brigadier.CommandDispatcher;
 import me.matl114.access.ClientPlayerAccess;
 import me.matl114.hackUtils.ChatTasks;
 import me.matl114.listenerUtils.Listener;
@@ -8,9 +9,11 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.command.CommandSource;
 import net.minecraft.network.packet.s2c.play.*;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
@@ -105,6 +108,14 @@ public abstract class ClientPacketListenerMixin {
     @Inject(method = "onGameJoin", at = @At("RETURN"))
     private void onGameJoinEntryPoint(GameJoinS2CPacket packet, CallbackInfo ci){
         Listener.getGameJoinPoint().handleValue(null);
+    }
+    @Shadow
+    private CommandDispatcher<CommandSource> commandDispatcher;
+
+
+    @Inject(method = "onCommandTree", at = @At("RETURN"))
+    private void onCommandDispatcherReload(CommandTreeS2CPacket packet, CallbackInfo ci){
+        Listener.getCommandReloadPoint().handleValue(commandDispatcher);
     }
 
 }

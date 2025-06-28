@@ -4,9 +4,11 @@ import com.google.common.util.concurrent.AtomicDouble;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.utils.EntityUtils;
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.MathUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -89,8 +91,14 @@ public class CombatTasks {
     private static boolean isRangeAttackable(Entity e){
         return e.getBoundingBox().squaredMagnitude(mc.player.getEyePos())< MathUtils.s2(getAttackRange());
     }
+    private static boolean notSuitableForAttack(ItemStack item){
+        return item.isEmpty() ||(!ItemStackUtils.hasInPatch(item, DataComponentTypes.ATTRIBUTE_MODIFIERS)
+            && notSuitableForAttack(item.getItem()));
+    }
     private static boolean notSuitableForAttack(Item item){
-        return (item instanceof MiningToolItem && !(item instanceof AxeItem))||(!(item instanceof ToolItem));
+        return ((item instanceof MiningToolItem && !(item instanceof AxeItem))||
+            //非重锤 非工具
+            (!(item instanceof MaceItem) &&!(item instanceof ToolItem))) ;
     }
     private static boolean isAttackablePlayerOrElse(Entity e){
         if(e instanceof PlayerEntity){
@@ -112,7 +120,7 @@ public class CombatTasks {
     public static void autoAttackBest(boolean force){
         PlayerEntity player=mc.player;
         if(player!=null&&mc.world!=null){
-            if(!force && mc.crosshairTarget.getType()== HitResult.Type.BLOCK&& notSuitableForAttack( mc.player.getMainHandStack().getItem()) ){
+            if(!force && mc.crosshairTarget.getType()== HitResult.Type.BLOCK&& notSuitableForAttack( mc.player.getMainHandStack()) ){
                 //stop if player only want to mine a block
                 return ;
             }

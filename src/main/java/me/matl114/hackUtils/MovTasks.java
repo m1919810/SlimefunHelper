@@ -70,6 +70,7 @@ public class MovTasks {
         }
     }
     public static boolean toggleSpeedOverride(){
+        if(mc.player == null)return false;
         if(mc.player.getAbilities().flying){
             overrideFly.set(!overrideFly.get());
             Debug.chat("toggle fly speed override",overrideFly.get());
@@ -77,6 +78,8 @@ public class MovTasks {
             overrideWalk.set(!overrideWalk.get());
             Debug.chat("toggle walk speed override",overrideWalk.get());
         }
+        //fix config not save
+        Configs.MOV_CONFIG.save();
         return true;
     }
     private static void modifyVelocity(double x,double y,double z){

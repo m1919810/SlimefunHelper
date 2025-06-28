@@ -103,6 +103,7 @@ public class InvTasks {
     }
     public static boolean dropAllSelectedItem(){
         PlayerEntity player = mc.player;
+        if(player == null)return false;
         Screen nowScreen= getCurrentServerScreen(player);
         if( nowScreen instanceof HandledScreen<?> handled){
             ScreenHandler handler= handled.getScreenHandler();
@@ -165,6 +166,7 @@ public class InvTasks {
     public static boolean quickMoveAllSelectedItem(){
         //fixme distinguish backpack move-from-hotbar-to-backpack, add inv check
         PlayerEntity player = mc.player;
+        if(player == null)return false;
         Screen nowScreen= getCurrentServerScreen(player);
         //filter inventory screen
         if( nowScreen instanceof HandledScreen<?> handled && !(nowScreen instanceof InventoryScreen)){
@@ -284,6 +286,7 @@ public class InvTasks {
 
     private static final AtomicBoolean applyShiftDrop = Configs.INV_CONFIG.getBoolean(Configs.FAST_INV_DO_DROP);
     public static boolean quickDropAllSelectedItem(){
+        if(mc.player == null)return false;
         if(HotKeys.getButtonToggleManager().getState(HotKeys.FAST_INV) && applyShiftDrop.get()) {
             PlayerEntity player = mc.player;
             Screen nowScreen = getCurrentServerScreen(player);
@@ -341,8 +344,9 @@ public class InvTasks {
     }
     public static boolean pickUpSelectingSlot(){
         PlayerEntity player = mc.player;
+        if(player == null)return false;
         Screen nowScreen= getCurrentServerScreen(player);
-        if(player !=null && !player.isCreative() && nowScreen instanceof HandledScreen<?> handled){
+        if( !player.isCreative() && nowScreen instanceof HandledScreen<?> handled){
             Debug.chat("run pickup");
             Point mouseCoord= ScreenUtils.getMouseCoord(mc);
             Slot slot= HandledScreenAccess.of(handled).reallyGetSlotAt(mouseCoord.x, mouseCoord.y);
@@ -743,8 +747,10 @@ public class InvTasks {
         startCursor = endCursor = 0;
         Arrays.fill(caches, null);
     }
-    public static void openInventoryCacheScreen(){
+    public static boolean openInventoryCacheScreen(){
+        if(mc.player == null)return false;
         ScreenAccess.of(new InventorySelectScreen(getCachedInventories())).openFromCurrent();
+        return true;
     }
     public static final ItemStack INV_ICON_UNKNOWN = new ItemStack(Items.BARRIER);
     private static final ItemStack INV_ICON_NO_ITEM = new ItemStack(Items.BEDROCK);

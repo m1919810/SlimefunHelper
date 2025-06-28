@@ -2,6 +2,7 @@ package me.matl114.mixins.HackMixin;
 
 import me.matl114.access.ButtonNotFocusedScreenAccess;
 import me.matl114.hackUtils.ChatTasks;
+import me.matl114.hackUtils.RenderTasks;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;

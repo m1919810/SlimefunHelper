@@ -86,6 +86,7 @@ public class Configs {
     public static final String[] RESOURCE_IGNORE_SERVER = {"resource","server","ignore-server-request"};
     public static final String[] CAL_FIREBALL_TRACE = {"detect-entity","cal-fireball"};
     public static final String[] RENDER_REJECT_WURST = {"render","disable-wurst-hud"};
+    public static final String[] RESOURCE_IGNORE_RESOUCE_LOCK = {"resouce", "server", "can-move-serverpack"};
     public static final Config RENDER_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/render.yml","render settings")
         .defaultVal("player,wither",RENDER_DETECT_SPAWN_WHITELIST)
         .defaultVal(true,RENDER_NO_EFFECT)

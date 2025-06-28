@@ -39,6 +39,7 @@ hotkeys:
   save-slot-item: LEFT_CONTROL,A,BUTTON_1
   open-editor: LEFT_CONTROL,I
   open-inv-cache: LEFT_CONTROL,J
+  wake-up-screen: F11
 
 
 hotkeys-toggle:

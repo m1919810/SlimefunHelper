@@ -30,6 +30,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.MutableText;
+import net.minecraft.text.PlainTextContent;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -171,7 +172,7 @@ public class Tasks {
                 if(!button.visible){
                     button.visible = true;
                 }
-                if(button.getMessage().getString().contains("Options")){
+                if(button.getMessage().getContent() instanceof PlainTextContent && button.getMessage().getString().contains("Options")){
                     Debug.info(((ButtonWidget) el).getMessage().getString());
                     button.setY(button.getY() + 72);
                 }

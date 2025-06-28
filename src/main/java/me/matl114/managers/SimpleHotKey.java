@@ -5,7 +5,7 @@ import java.util.*;
 public class SimpleHotKey implements IHotKey {
     private List<Integer> keyCodes = new ArrayList<>(4);
     public String identifier;
-    public int triggerKey;
+//    public int triggerKey;
     public String keyCode;
     public InputHandler inputHandler;
     public SimpleHotKey(String name,String defaultKeyCode,InputHandler inputHandler) {
@@ -16,7 +16,7 @@ public class SimpleHotKey implements IHotKey {
     }
     public void clearKeys(){
         keyCodes.clear();
-        this.triggerKey = 0;
+//        this.triggerKey = 0;
     }
     public interface InputHandler{
         public boolean handle(IInputManager manager);

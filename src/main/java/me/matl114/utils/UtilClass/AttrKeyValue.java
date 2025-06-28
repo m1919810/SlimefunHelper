@@ -1,17 +1,11 @@
 package me.matl114.utils.UtilClass;
 
-import com.google.common.collect.ImmutableMap;
 import com.mojang.brigadier.StringReader;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.experimental.Accessors;
-import lombok.val;
 import me.matl114.access.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
-import me.matl114.gui.itemEdit.ItemEditScreen;
-import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.StringNbtReader;
@@ -21,7 +15,6 @@ import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.injection.At;
 
 import javax.annotation.Nonnull;
 import java.util.Map;

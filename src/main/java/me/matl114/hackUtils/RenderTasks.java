@@ -1,29 +1,30 @@
 package me.matl114.hackUtils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.systems.VertexSorter;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
-import me.matl114.access.EntityAccess;
-import me.matl114.access.ExplosiveProjectileAccess;
-import me.matl114.access.PlayerInteractionAccess;
+import me.matl114.ModConfig;
+import me.matl114.access.*;
+import me.matl114.gui.basic.*;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
-import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
+import me.matl114.utils.*;
 import me.matl114.renders.RenderMain;
-import me.matl114.utils.RaycastUtils;
-import me.matl114.utils.RenderUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.*;
+import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -46,6 +47,7 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 import org.joml.Vector2d;
 
 import javax.annotation.Nonnull;
@@ -199,6 +201,9 @@ public class RenderTasks {
             return;
         }
         if(!calFireball.get()){
+            return;
+        }
+        if(!getWhitelisted().contains(fireball.getType())){
             return;
         }
 
@@ -435,6 +440,191 @@ public class RenderTasks {
         public void setBlockShaderData() {
             RenderUtils.setAsShaderColor(Color.GREEN,0.25f);
         }
+    }
+
+    private static int sleepingLevel = 0;
+
+    public static boolean isScreenSleeping(){
+        return sleepingLevel != 0;
+    }
+
+    public static boolean wakeUpScreen(){
+        if (RenderTasks.setScreenSleeping(0)){
+            if(mc.player != null)
+                Debug.chat(Text.literal("睡眠状态结束, 欢迎回来!").formatted(Formatting.GREEN));
+            return true;
+        }
+        else return false;
+    }
+    public static boolean setScreenSleeping(int s){
+        if(sleepingLevel != s){
+
+            if(s != 0){
+                sleepingLevel = s;
+                setUpSleepingScreen();
+            }else {
+                //sleeping = false;
+                sleepingLevel = s;
+                //递归关闭全部sleepingScreen
+                while (mc.currentScreen != null && mc.currentScreen == sleepingScreenInstance){
+                    sleepingScreenInstance.close();
+                }
+                sleepingScreenInstance = null;
+
+            }
+            return true;
+        }
+        return false;
+    }
+    private static Screen sleepingScreenInstance;
+
+    private static class SleepingChatScreen extends ChatScreen{
+
+        public SleepingChatScreen(String originalChatText) {
+            super(originalChatText);
+        }
+        protected void init(){
+            super.init();
+            sleepingScreenInstance = this;
+            DisplayWidget.instance(this.width - 80, 0, 80, 40)
+                .setRenderHandler(LabelElement.instance(Text.literal("按 "+ ModConfig.getFuncHotKeys(HotKeys.WAKE_UP_SCREEN) +" 键退出休眠模式")))
+                .addTo(this);
+            shouldFreshSleepScreen = true;
+        }
+
+        @Override
+        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+            super.render(context, mouseX, mouseY, delta);
+            shouldFreshSleepScreen = true;
+        }
+
+        @Override
+        public void close() {
+            //do not close till sleeping is over or game exit
+            if(mc.player == null || !isScreenSleeping()){
+                super.close();
+            }
+        }
+    }
+    private static class SleepingScreen extends Screen implements SafeSleepingScreen{
+        protected SleepingScreen(Text title) {
+            super(title);
+        }
+
+        @Override
+        protected void init() {
+            super.init();
+            sleepingScreenInstance = this;
+            DisplayWidget.instance(40, 40, this.width - 80, this.height - 80)
+                .setRenderHandler(LabelElement.instance(Text.literal("按 "+ ModConfig.getFuncHotKeys(HotKeys.WAKE_UP_SCREEN) +" 键退出休眠模式")))
+                .addTo(this);
+            shouldFreshSleepScreen = true;
+        }
+        public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta){
+
+        }
+    }
+    private static class GameExitWhileSleepingScreen extends Screen implements SafeSleepingScreen{
+        protected GameExitWhileSleepingScreen() {
+            super(Text.empty());
+        }
+        @Override
+        protected void init() {
+            super.init();
+            sleepingScreenInstance = this;
+            DisplayWidget.instance(40, 20, this.width - 80, this.height/3  - 40)
+                .setRenderHandler(LabelElement.instance(Text.literal("您的游戏在待机中退出,目前已停止刷新")))
+                .addTo(this);
+            DisplayWidget.instance(40, this.height/3 + 20, this.width - 80, this.height/3  - 40)
+                .setRenderHandler(LabelElement.instance(Text.literal("按 "+ ModConfig.getFuncHotKeys(HotKeys.WAKE_UP_SCREEN) +" 键退出休眠模式")))
+                .addTo(this);
+            ExecutableWidget.instance(40, (this.height * 2)/3 + 20, this.width - 80, this.height/3 -40)
+                .setElementHandler(
+                    new ButtonElement(
+                        TextProvider.of(Text.literal("点击下方按钮以刷新屏幕")),
+                        ButtonAction.run(()->{
+                            sleepingScreenInstance = null;
+                            if(isScreenSleeping()){
+                                if(!ClientUtils.isPlayerOnline()){
+                                    //强制重置到2级 如果离线
+                                    sleepingLevel = 2;
+                                }
+                                setUpSleepingScreen();
+                            }
+                        })
+                    )
+                )
+                .addTo(this);
+            shouldFreshSleepScreen = true;
+        }
+        public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta){
+
+        }
+    }
+    private static interface SafeSleepingScreen {
+        //screen which implement this can keep even when player exit game, which means it does not need mc.player or mc.world or sth
+    }
+
+    public static void setUpSleepingScreen(){
+        if(sleepingScreenInstance == null){
+            switch (sleepingLevel){
+                case 1:
+                    sleepingScreenInstance =  new SleepingChatScreen("");
+                    break;
+                default:
+                    sleepingScreenInstance = new SleepingScreen(Text.empty());
+                    break;
+            }
+        }
+    }
+    public static boolean ensureSleepingScreen(){
+        if(mc.currentScreen != sleepingScreenInstance){
+            if(ClientUtils.isPlayerOnline() || sleepingScreenInstance instanceof SafeSleepingScreen){
+                ScreenAccess.of(sleepingScreenInstance).openFromCurrent();
+
+            }else {
+                //ensure chat screen is not open when
+                ScreenAccess.of((sleepingScreenInstance = new GameExitWhileSleepingScreen())).open();
+            }
+            //clear current  view
+            mc.getFramebuffer().clear(true);
+            mc.getFramebuffer().endRead();
+            mc.getFramebuffer().beginWrite(true);
+            return true;
+        }
+        return true;
+    }
+    private static boolean shouldFreshSleepScreen = false;
+    public static boolean sleepingRenderTick(){
+        if(RenderTasks.ensureSleepingScreen()){
+            if(mc.currentScreen != null){
+                if(shouldFreshSleepScreen){
+                    shouldFreshSleepScreen = false;
+
+                    int i = (int)(mc.mouse.getX() * (double)mc.getWindow().getScaledWidth() / (double)mc.getWindow().getWidth());
+                    int j = (int)(mc.mouse.getY() * (double)mc.getWindow().getScaledHeight() / (double)mc.getWindow().getHeight());
+                    Window window = mc.getWindow();
+                    RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
+                    Matrix4f matrix4f = (new Matrix4f()).setOrtho(0.0F, (float)((double)window.getFramebufferWidth() / window.getScaleFactor()), (float)((double)window.getFramebufferHeight() / window.getScaleFactor()), 0.0F, 1000.0F, 21000.0F);
+                    RenderSystem.setProjectionMatrix(matrix4f, VertexSorter.BY_Z);
+                    Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
+                    matrix4fStack.pushMatrix();
+                    matrix4fStack.translation(0.0F, 0.0F, -11000.0F);
+                    RenderSystem.applyModelViewMatrix();
+                    DiffuseLighting.enableGuiDepthLighting();
+                    DrawContext drawContext = new DrawContext(mc, mc.gameRenderer.buffers.getEntityVertexConsumers());
+
+                    mc.currentScreen.renderWithTooltip(drawContext, i, j, mc.getRenderTickCounter().getLastDuration());
+                    drawContext.draw();;
+                    matrix4fStack.popMatrix();
+                    RenderSystem.applyModelViewMatrix();
+                }
+            }else {
+                setUpSleepingScreen();
+            }
+            return true;
+        }
+        return false;
     }
 
 

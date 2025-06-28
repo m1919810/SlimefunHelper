@@ -10,6 +10,8 @@ import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
@@ -44,23 +46,17 @@ public class HotKeys {
             return true;
         })).register(SimpleInputManager.getInstance());
     }
-    private static SimpleHotKey getTaskHotKey(String key,Runnable task){
-        return new SimpleHotKey(key,ModConfig.getFuncHotKeys(key),(manager -> {
-            ClientPlayerEntity player= manager.getClient().player;
-            if(player!=null){
-                task.run();
-            }
-            return true;
-        })).register(SimpleInputManager.getInstance());
-    }
+//    private static SimpleHotKey getTaskHotKey(String key,Runnable task){
+//        return new SimpleHotKey(key,ModConfig.getFuncHotKeys(key),(manager -> {
+//            ClientPlayerEntity player= manager.getClient().player;
+//            if(player!=null){
+//                task.run();
+//            }
+//            return true;
+//        })).register(SimpleInputManager.getInstance());
+//    }
     private static SimpleHotKey getTaskHotKey(String key, Predicate<IInputManager> task){
-        return new SimpleHotKey(key,ModConfig.getFuncHotKeys(key),(manager -> {
-            ClientPlayerEntity player= manager.getClient().player;
-            if(player!=null){
-                return task.test(manager);
-            }
-            return true;
-        })).register(SimpleInputManager.getInstance());
+        return new SimpleHotKey(key,ModConfig.getFuncHotKeys(key),(task::test)).register(SimpleInputManager.getInstance());
     }
     private static HashMap<String,Boolean> defaultToggles=new HashMap<>();
     @Getter
@@ -101,6 +97,7 @@ public class HotKeys {
     public static final String SF_SAVEITEM_INTERNAL = "save-slot-item";
     public static final String ITEMEDITOR_OPEN = "open-editor";
     public static final String OPEN_INV_CACHE = "open-inv-cache";
+    public static final String WAKE_UP_SCREEN = "wake-up-screen";
     public static final String BUTTON_TASK_1="btask1";
     public static final String BUTTON_TASK_2="btask2";
     public static final String HOTKEY_TEST1="hktest1";
@@ -201,38 +198,15 @@ public class HotKeys {
         });
         getTaskHotKey(SF_RECIPE_INTERNAL, (manager)->{
             ClientPlayerEntity player= manager.getClient().player;
-
             if(player!=null && manager.getClient().currentScreen instanceof HandledScreen<?> handledScreen && handledScreen.getScreenHandler().getCursorStack().isEmpty()){
                 return SlimefunTasks.clickToAddRecipeDisplay(handledScreen);
             }
             return false;
         });
-        getTaskHotKey(SF_SAVEITEM_INTERNAL, (manager)->{
-            ClientPlayerEntity player= manager.getClient().player;
-
-            if(player!=null){
-                return SlimefunTasks.clickToSaveItem(player);
-            }
-            return false;
-        });
-        getTaskHotKey(ITEMEDITOR_OPEN, (iInputManager -> {
-            ClientPlayerEntity player= iInputManager.getClient().player;
-
-            if(player!=null ){
-                ItemEditTasks.openEditor(player);
-                return true;
-            }
-            return false;
-        }));
-        getTaskHotKey(OPEN_INV_CACHE, (iInputManager -> {
-            ClientPlayerEntity player = iInputManager.getClient().player;
-            if(player != null){
-                InvTasks.openInventoryCacheScreen();
-                return true;
-            }
-            return false;
-        }));
-
+        getTaskHotKey(SF_SAVEITEM_INTERNAL, (manager)->SlimefunTasks.clickToSaveItem());
+        getTaskHotKey(ITEMEDITOR_OPEN, (iInputManager -> ItemEditTasks.openEditor()));
+        getTaskHotKey(OPEN_INV_CACHE, (iInputManager -> InvTasks.openInventoryCacheScreen()));
+        getTaskHotKey(WAKE_UP_SCREEN, (iInputManager -> RenderTasks.wakeUpScreen()));
         if(!HACK_VERSION){
             getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
             getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
@@ -243,9 +217,11 @@ public class HotKeys {
             }));
         }else {
             getTaskHotKey("test-func",(manager -> {
-                Debug.chat("Doing Test!!!");
-                Tasks.doTest();
-                return true;
+                if(manager.getClient().player != null){
+                    Debug.chat("Doing Test!!!");
+                    Tasks.doTest();
+                    return true;
+                }else return false;
             }));
             getTaskHotKey(OPEN_MENU,(manager->{
                 InvTasks.openSelectScreen();

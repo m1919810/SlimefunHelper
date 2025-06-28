@@ -1,5 +1,6 @@
 package me.matl114.listenerUtils;
 
+import com.mojang.brigadier.CommandDispatcher;
 import lombok.Getter;
 import me.matl114.utils.UtilClass.ArgumentCancellablePoint;
 import me.matl114.utils.UtilClass.ArgumentListenerPoint;
@@ -7,6 +8,7 @@ import me.matl114.utils.UtilClass.ArgumentListenerPoint;
 import me.matl114.utils.UtilClass.ListenerPoint;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.command.CommandSource;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.BundlePacket;
@@ -112,6 +114,9 @@ public class Listener {
 
     @Getter
     private static final ListenerPoint<HandledScreen<?>> screenOpenPoint = new ListenerPoint<>();
+
+    @Getter
+    private static final ListenerPoint<CommandDispatcher<CommandSource>> commandReloadPoint = new ListenerPoint<>();
 
     @Getter
     private static final ArgumentCancellablePoint<Packet<?>> mainThreadPacketPreApplyPoint = new ArgumentCancellablePoint<>();

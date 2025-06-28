@@ -1469,8 +1469,8 @@ public class SlimefunTasks {
         }
     }
 
-    public static boolean clickToSaveItem(ClientPlayerEntity player){
-
+    public static boolean clickToSaveItem(){
+        ClientPlayerEntity player = mc.player;
         if(player==null)return false;
 
         ItemStack heldItem = ScreenUtils.getSelectingItemOrHand();
@@ -1772,5 +1772,50 @@ public class SlimefunTasks {
         public String toString() {
             return "SlimefunRecipeEntry[ rid = "+rid +" , id = "+id +" , ingredient = "+Arrays.asList(ingredientEntry).toString() + ", output = "+ output +" ]";
         }
+    }
+
+    public static class SlimefunCommands extends AbstractMainCommand{
+        public SubCommand main = genMainCommand("sf");
+        public SubCommand give = new SubCommand("give", genArgument("id","amount"), "sf give <id> <amount:default 1> 获取粘液物品(以指令形式)"){
+            @Override
+            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
+                var re = parseInput(var4).getFirst();
+                String id = re.nextNonnull();
+                if(check().ALL_RECIPE_ENTRY.containsKey(id)){
+                    SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(id);
+                    ItemStack itemStack = entry.output().copyWithCount(re.nextInt());
+                    String giveCommand = InvTasks.createGiveCommand(itemStack);
+                    ChatTasks.sendMessage(giveCommand, true);
+                }else {
+                    Debug.chat("不存在的id: ", id);
+                }
+                return true;
+            }
+        }
+            .setTabCompletor("id", ()->check().ALL_RECIPE_ENTRY.keySet().stream().toList())
+            .setInt("amount", 1)
+            .register(this);
+        public SubCommand view = new SubCommand("view", genArgument("id"), "sf view <id> 打开对应物品的配方展示页面"){
+            @Override
+            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
+                var re = parseInput(var4).getFirst();
+                String id = re.nextNonnull();
+                if(check().ALL_RECIPE_ENTRY.containsKey(id)){
+                    SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(id);
+                    if(entry != null)
+                        handleOpenSlimefunRecipeScreen(entry);
+                    else
+                        Debug.chat("未知错误!");
+                }else {
+                    Debug.chat("不存在的id: ", id);
+                }
+                return true;
+            }
+        }
+            .setTabCompletor("id", ()->check().ALL_RECIPE_ENTRY.keySet().stream().toList())
+            .register(this);
+    }
+    static{
+        ChatTasks.registerSubCommands("sf", SlimefunCommands::new);
     }
 }
