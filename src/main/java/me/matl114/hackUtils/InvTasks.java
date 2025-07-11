@@ -442,15 +442,16 @@ public class InvTasks {
     public static void creativeGive(ItemStack itemStack, int count){
         if(mc.player != null && mc.player.isCreative()){
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;
+            int stackMax = itemStack.getMaxCount();
             for (int i: PLAYER_SLOTS){
                 Slot slot0 = inventoryView.getSlot(i);
                 int transfer = 0;
                 ItemStack stackToSet = null;
                 if(slot0.getStack().isEmpty()){
-                    transfer = Math.min(64, count);
+                    transfer = Math.min(stackMax, count);
                     stackToSet = itemStack.copyWithCount(transfer);
-                }else if(slot0.getStack().getCount() < 64 && ItemStack.areItemsAndComponentsEqual( slot0.getStack(), itemStack)){
-                    transfer = Math.min(64 - slot0.getStack().getCount(), count);
+                }else if(slot0.getStack().getCount() < stackMax && ItemStack.areItemsAndComponentsEqual( slot0.getStack(), itemStack)){
+                    transfer = Math.min(stackMax - slot0.getStack().getCount(), count);
                     stackToSet = itemStack.copyWithCount(slot0.getStack().getCount()+ transfer);
                 }
                 count -= transfer;
@@ -462,7 +463,7 @@ public class InvTasks {
             }
             ItemStack sample = itemStack.copy();
             while (count > 0 ){
-                int transfer = Math.min(64, count);
+                int transfer = Math.min(stackMax, count);
                 count -= transfer;
                 sample.setCount(transfer);
                 mc.interactionManager.dropCreativeStack(sample);
@@ -474,19 +475,20 @@ public class InvTasks {
             int slot = -1;
 
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;
+            int stackMax = itemStack.getMaxCount();
             int countA = count;
             for ( int i : PLAYER_SLOTS){
                 Slot slot0 = inventoryView.getSlot(i);
                 if(slot0.getStack().isEmpty()){
                     slot = i;
                     break;
-                }else if(slot0.getStack().getCount() < 64 && ItemStack.areItemsAndComponentsEqual( slot0.getStack(), itemStack)){
+                }else if(slot0.getStack().getCount() < stackMax && ItemStack.areItemsAndComponentsEqual( slot0.getStack(), itemStack)){
                     slot=  i;
                     countA = count + slot0.getStack().getCount();
                     break;
                 }
             }
-            ItemStack stackToGive  = itemStack.copyWithCount(countA);
+            ItemStack stackToGive  = itemStack.copyWithCount(Math.min(stackMax, countA));
             if(slot != -1) {
                 inventoryView.getSlot(slot).setStack(stackToGive);
                 mc.interactionManager.clickCreativeStack(stackToGive, slot);
@@ -501,7 +503,7 @@ public class InvTasks {
     }
     public static void copyGiveCommand(ItemStack itemStack){
 
-        mc.keyboard.setClipboard(createGiveCommand(itemStack.copyWithCount(64)));
+        mc.keyboard.setClipboard(createGiveCommand(itemStack.copyWithCount(itemStack.getMaxCount())));
     }
     public static String createGiveCommand(ItemStack itemStack){
         if(itemStack.isEmpty())return "";
@@ -749,7 +751,7 @@ public class InvTasks {
     }
     public static boolean openInventoryCacheScreen(){
         if(mc.player == null)return false;
-        ScreenAccess.of(new InventorySelectScreen(getCachedInventories())).openFromCurrent();
+        ScreenAccess.of(new InventorySelectScreen(InvTasks::getCachedInventories)).openFromCurrent();
         return true;
     }
     public static final ItemStack INV_ICON_UNKNOWN = new ItemStack(Items.BARRIER);

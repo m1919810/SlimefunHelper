@@ -165,6 +165,38 @@ public abstract class IconElement extends AbstractElement{
                 }
             }
 
+            public boolean onScroll(ExecutableWidget widget, double mouseX, double mouseY, double horizontalAmount, double verticalAmount){
+                if(handlerPredicate.test(ob)){
+                    ob.setActive(true);
+                    return ob.onScroll(widget, mouseX, mouseY, horizontalAmount, verticalAmount);
+                }else {
+                    ob.setActive(false);
+                    return false;
+                }
+
+            }
+
+            public boolean onKey(ExecutableWidget widget, int keyCode, int scanCode, int modifiers, boolean isPress){
+                if(handlerPredicate.test(ob)){
+                    ob.setActive(true);
+                    return ob.onKey(widget, keyCode, scanCode, modifiers, isPress);
+                }else {
+                    ob.setActive(false);
+                    return false;
+                }
+
+            }
+
+            public boolean onTyped(ExecutableWidget widget, char chr, int modifiers){
+                if(handlerPredicate.test(ob)){
+                    ob.setActive(true);
+                    return ob.onTyped(widget, chr, modifiers);
+                }else {
+                    ob.setActive(false);
+                    return false;
+                }
+            }
+
             @Override
             public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 //update active condition before render
@@ -184,4 +216,5 @@ public abstract class IconElement extends AbstractElement{
             }
         };
     }
+
 }

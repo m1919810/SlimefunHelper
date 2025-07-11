@@ -1,22 +1,33 @@
 package me.matl114.hackUtils;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import me.matl114.SlimefunHelper;
+import me.matl114.access.ClientPlayerAccess;
+import me.matl114.access.EntityAccess;
 import me.matl114.access.KeyBindAccess;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.utils.Debug;
+import me.matl114.utils.UtilClass.ProgressWrapper;
+import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerAbilities;
+import net.minecraft.item.MaceItem;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
@@ -309,6 +320,8 @@ public class MovTasks {
                 player.getAbilities().allowFlying = true;
             }
             antiKick(player);
+        }else {
+            player.getAbilities().allowFlying = serverPacketAllowFlight;
         }
     }
 
@@ -359,7 +372,109 @@ public class MovTasks {
         return new BlockHitResult(crossTargetPose, dir, pos, false);
     }
 
+    public static boolean fakeFlightEnabled = false;
 
+    public void onPlayerUpdate(Entity entity){
+        if(mc.player == entity){
+            onMCPlayerMovement();
+        }
+    }
+    public void onMCPlayerMovement(){
+        if(fakeFlightEnabled){
+
+        }
+    }
+
+    public static void onFakeFlightEnabled(){
+        fakeFlightEnabled = true;
+        if(false)
+            EntityAccess.of(mc.player).addTickWrapper(
+            new ProgressWrapper<ClientPlayerEntity>() {
+                BlockPos pos;
+                BlockState cacheBlockState;
+                @Override
+                public void preProgress(ClientPlayerEntity args) {
+                    //略微减去一点 保证指向他脚下的方块
+                    if(Screen.hasShiftDown()){
+                        cacheBlockState = null;
+                        return;
+                    }
+                    pos = BlockPos.ofFloored(args.getPos().add(0,-1 + 1e-4,0));
+                    BlockState blockState = mc.world.getBlockState(pos);
+                    if(blockState.isAir()){
+                         cacheBlockState = blockState;
+                         mc.world.setBlockState(pos, Blocks.BARRIER.getDefaultState());
+                    }
+                }
+
+                @Override
+                public void postProgress(ClientPlayerEntity args) {
+                    if(cacheBlockState != null){
+                        mc.world.setBlockState(pos, cacheBlockState);
+                        cacheBlockState = null;
+                    }
+                }
+
+                @Override
+                public boolean stillWrap(ClientPlayerEntity args) {
+                    return HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FAKE_FLIGHT);
+                }
+            }
+        );
+    }
+    private static final AtomicBoolean shouldCheckSetback = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_CHECK_SETBACK);
+    private static void listenAntiCheatSetBack(TeleportConfirmC2SPacket packet1){
+        //WHEN IN hack version, detect grimac backteleport with negative random teleport id
+        if(SlimefunHelper.HACK_VERSION && shouldCheckSetback.get() &&  packet1.getTeleportId() <  -10){
+//            Debug.info("apply confirm", packet1.getTeleportId());
+            if(mc.player != null){
+                Debug.chat(Text.literal("[anti-grim] 检测到反作弊回弹! tp号:" + packet1.getTeleportId()).formatted(Formatting.RED));
+            }
+        }
+    }
+
+    private static final AtomicBoolean noFall = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_NOFALL);
+
+    private static void configurateNoFall(ClientPlayerEntity entity){
+        ClientPlayerAccess.of(entity).addMovementPacketWrapper(new ProgressWrapper<ClientPlayerEntity>() {
+            double lastOnGroundHeight = Integer.MIN_VALUE;
+            double lastHeight;
+            boolean lastOnGround = false;
+            int counter = 0;
+            boolean holdingMace  = false;
+            @Override
+            public void preProgress(ClientPlayerEntity args) {
+                holdingMace = args.getMainHandStack().getItem() instanceof MaceItem;
+                if(!holdingMace && noFall.get() ){
+                    lastHeight = args.getY();
+                    lastOnGround = args.isOnGround();
+                    if(lastHeight < lastOnGroundHeight - 3.0f || counter > 10){
+                        counter = 0;
+                        lastOnGroundHeight = args.getY();
+                        args.setOnGround(true);
+                    }else if(lastHeight > lastOnGroundHeight){
+                        lastOnGroundHeight = lastHeight;
+                        counter = 0;
+                    }else{
+                        counter ++;
+                    }
+                }
+            }
+
+            @Override
+            public void postProgress(ClientPlayerEntity args) {
+                //Debug.info("current : ", args.isOnGround());
+                if(!holdingMace && noFall.get()){
+                    args.setOnGround(lastOnGround);
+                }
+            }
+
+            @Override
+            public boolean stillWrap(ClientPlayerEntity args) {
+                return true;
+            }
+        });
+    }
 
     //    @Unique
 //    private static final AtomicBoolean overrideWalk = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_WALK);
@@ -398,6 +513,7 @@ public class MovTasks {
 //                    },1);
             return false;
         });
+        Listener.registerSinglePacketListener(TeleportConfirmC2SPacket.class, MovTasks::listenAntiCheatSetBack);
 //        Listener.registerPacketListener(packet -> {
 //            Debug.info("acc ?",packet.getClass().getSimpleName());
 //            if(mc.world !=null && packet instanceof EntityS2CPacket pack && pack.getEntity(mc.world) == mc.player){
@@ -412,6 +528,7 @@ public class MovTasks {
 ////            }
 //            return true;
 //        },true);
+        Listener.getPlayerInitConfiguration().registerHandler(MovTasks::configurateNoFall);
     }
 
 }

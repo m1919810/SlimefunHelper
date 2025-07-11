@@ -14,7 +14,7 @@ import java.util.function.Predicate;
 
 public interface RenderHandler {
     /**
-     * the matrix stack of context is changed into element's coord, you can draw texture with coord 0,0 , they will be scaled and translated to the element's position
+     * the matrix stack of context is changed into element's coord, you can draw TEXTURE with coord 0,0 , they will be scaled and translated to the element's position
      * @param element
      * @param context
      * @param mouseX
@@ -24,6 +24,10 @@ public interface RenderHandler {
      * @param shouldHighlight
      */
     public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight);
+
+    default boolean canBeSelected(DrawableWidget element){
+        return true;
+    }
 
     /**
      * the matrix stack of context is poped here , you can draw tooltips or something without scaling by element
@@ -82,7 +86,7 @@ public interface RenderHandler {
     }
 
     /**
-     * auto shape texture uv part to element texture size
+     * auto shape TEXTURE uv part to element TEXTURE size
      * @param identifier
      * @param u0
      * @param v0

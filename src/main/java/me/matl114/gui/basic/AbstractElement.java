@@ -1,6 +1,5 @@
 package me.matl114.gui.basic;
 
-import me.matl114.utils.Debug;
 import net.minecraft.client.gui.DrawContext;
 
 import java.util.ArrayList;
@@ -9,7 +8,7 @@ import java.util.List;
 public class AbstractElement implements ElementHandler {
     List<RenderHandler> extraRender = null;
     List<RenderHandler> absoluteRender = null;
-    List<MouseHandler> mouseHandlers = null;
+    List<InputHandler> mouseHandlers = null;
     public AbstractElement combineRender(RenderHandler handler){
         if(extraRender == null){
             extraRender = new ArrayList<>();
@@ -30,7 +29,7 @@ public class AbstractElement implements ElementHandler {
         return combineAbsoluteRender(handler);
     }
 
-    public AbstractElement withMouseHandler(MouseHandler handler){
+    public AbstractElement withInputHandler(InputHandler handler){
         if(mouseHandlers == null){
             mouseHandlers = new ArrayList<>();
         }
@@ -79,5 +78,42 @@ public class AbstractElement implements ElementHandler {
             }
         }
         return type == Type.MOUSE_CLICK && onClick(element, mouseX, mouseY, button);
+    }
+
+
+    @Override
+    public boolean onScroll(ExecutableWidget widget, double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if(mouseHandlers != null){
+            for ( var h : mouseHandlers){
+                if(h.onScroll(widget, mouseX, mouseY, horizontalAmount, verticalAmount)){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onKey(ExecutableWidget widget, int keyCode, int scanCode, int modifiers, boolean isPress) {
+        if(mouseHandlers != null){
+            for ( var h : mouseHandlers){
+                if(h.onKey(widget, keyCode, scanCode, modifiers, isPress)){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onTyped(ExecutableWidget widget, char chr, int modifiers) {
+        if(mouseHandlers != null){
+            for ( var h : mouseHandlers){
+                if(h.onTyped(widget, chr, modifiers)){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

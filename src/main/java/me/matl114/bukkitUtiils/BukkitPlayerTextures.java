@@ -18,10 +18,10 @@ import java.util.Locale;
 public class BukkitPlayerTextures {
     static final String PROPERTY_NAME = "textures";
     private static final String MINECRAFT_HOST = "textures.minecraft.net";
-    private static final String MINECRAFT_PATH = "/texture/";
+    private static final String MINECRAFT_PATH = "/TEXTURE/";
 
     private static void validateTextureUrl(@Nullable URL url) {
-        // Null represents an unset texture and is therefore valid.
+        // Null represents an unset TEXTURE and is therefore valid.
         if (url == null) return;
 
         Preconditions.checkArgument(url.getHost().equals(MINECRAFT_HOST), "Expected host '%s' but got '%s'", MINECRAFT_HOST, url.getHost());

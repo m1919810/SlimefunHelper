@@ -1,14 +1,21 @@
 package me.matl114.utils;
 
+import me.matl114.utils.UtilClass.Point;
 import net.minecraft.block.SpawnerBlock;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import org.spongepowered.include.com.google.common.collect.BiMap;
 import org.spongepowered.include.com.google.common.collect.HashBiMap;
 
@@ -89,5 +96,73 @@ public class EntityUtils {
             return null;
         }
     }
+
+
+    public static void setEntityRotation(Entity entity, Vec3d vec){
+        vec = vec.normalize();
+
+        entity.setPitch((float) Math.toDegrees( Math.asin(- vec.y)));
+        entity.setYaw((float)Math.toDegrees(Math.atan2( -vec.x, vec.z)));
+    }
+
+    public static void setEntityRotationSafe(Entity entity, Vec3d vec){
+        vec = vec.normalize();
+        entity.setPitch((float) Math.toDegrees( Math.asin(- vec.y)));
+
+
+        float newYaw = (float)Math.toDegrees(Math.atan2( -vec.x, vec.z));
+        setEntityYawSafe(entity, newYaw);
+    }
+    public static void setEntityYawSafe(Entity entity, float newYaw){
+        float oldYaw = entity.getYaw();
+        if(newYaw > oldYaw + 180 ){
+            newYaw = newYaw - 360;
+        }else if(newYaw < oldYaw - 180){
+            newYaw = newYaw + 360;
+        }
+        entity.setYaw(newYaw);
+    }
+
+    public static Vec3d pitchYawToRotation(float pitch, float yaw){
+        float f = pitch * 0.017453292F;
+        float g = -yaw * 0.017453292F;
+        float h = MathHelper.cos(g);
+        float i = MathHelper.sin(g);
+        float j = MathHelper.cos(f);
+        float k = MathHelper.sin(f);
+        return new Vec3d((double)(i * j), (double)(-k), (double)(h * j));
+    }
+
+
+    public static Vec2f rotationToPitchYaw(Vec3d vec){
+        return new Vec2f((float) Math.toDegrees( Math.asin(- vec.y)),(float)Math.toDegrees(Math.atan2( -vec.x, vec.z)));
+    }
+
+    public static double getProjectileGravity(Item item)
+    {
+        if(item instanceof RangedWeaponItem)
+            return 0.05;
+
+        if(item instanceof ThrowablePotionItem)
+            return 0.4;
+
+        if(item instanceof FishingRodItem)
+            return 0.15;
+
+        if(item instanceof TridentItem)
+            return 0.015;
+
+        return 0.03;
+    }
+
+    public static RaycastContext.FluidHandling getFluidHandling(Item item)
+    {
+        if(item instanceof FishingRodItem)
+            return RaycastContext.FluidHandling.ANY;
+
+        return RaycastContext.FluidHandling.NONE;
+    }
+
+
 
 }

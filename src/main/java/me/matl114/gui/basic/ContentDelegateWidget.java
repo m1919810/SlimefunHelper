@@ -26,9 +26,12 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
         this.delegate = delegate;
         return this;
     }
-    public boolean onElement(int mouseX, int mouseY){
-        return this.delegate != null && this.delegate.isMouseOver(mouseX - this.x, mouseY - this.y);
+
+    @Override
+    public boolean canSelect() {
+        return this.delegate != null && ((!(this.delegate instanceof DrawableWidget draw))||draw.canSelect());
     }
+
     public void renderInDefaultMatrix(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         if(this.delegate != null){

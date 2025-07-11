@@ -1,5 +1,6 @@
 package me.matl114.access;
 
+import me.matl114.utils.UtilClass.ProgressWrapper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -11,7 +12,10 @@ public interface ClientPlayerAccess {
     public HandledScreen getKeepedInv();
     public ScreenHandler getKeepedInvHandler();
     public void clearKeepedInventory(boolean closeInv);
-
+    public void syncPitchYaw();
+    public void syncLocationPackets();
+    public boolean isContinueMoving();
+    public void addMovementPacketWrapper(ProgressWrapper<ClientPlayerEntity> wrapper);
     @Nonnull
     public static ClientPlayerAccess of(@Nonnull ClientPlayerEntity player) {
         return (ClientPlayerAccess) player;

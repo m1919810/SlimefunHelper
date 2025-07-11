@@ -1,14 +1,12 @@
 package me.matl114.gui.itemEdit;
 
 import com.google.common.base.Preconditions;
-import com.google.gson.*;
 import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import me.matl114.access.ScreenAccess;
-import me.matl114.access.TextFieldAccess;
 import me.matl114.bukkitUtiils.ItemStackHelper;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
@@ -24,41 +22,30 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
-import me.matl114.utils.UtilClass.MutableComponent;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
-import net.minecraft.component.Component;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.component.ComponentType;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.*;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.nbt.visitor.NbtOrderedStringFormatter;
-import net.minecraft.nbt.visitor.StringNbtWriter;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
 import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
-import org.w3c.dom.Attr;
 
 import java.net.URI;
-import java.net.URL;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -127,7 +114,6 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     public void applyChangeToInventory(){
         if(mc.player != null ){
             if(mc.player.isCreative()){
-                Debug.info("check slot",  mc.player.getInventory().selectedSlot);
                 int slot = mc.player.getInventory().selectedSlot;
                 InvTasks.setCreativeInventory(this.itemStack, slot);
             }else {
@@ -316,6 +302,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             if(!itemAttrValue.validateAndUpdate()){
                 error();
             }
+            this.widget = this.itemAttrValue.generateEditBox(ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getWidth() - 20, ItemEditScreen.this.processingSubScreen.getHeight() -20).getDelegate();
             this.formatButton = ExecutableWidget.instance(141, -19, 18, 18)
                 .setElementHandler(
                     IconElement.fixed(FORMAT_TEXTURE, ButtonAction.run(()->{
@@ -357,8 +344,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         @Override
         protected void refreshScreen() {
             //refresh widget with absolute coord
-            this.widget = this.itemAttrValue.generateEditBox(ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getWidth() - 20, ItemEditScreen.this.processingSubScreen.getHeight() -20);
-            ItemEditScreen.this.optionalMultiLine.setContentDelegate(widget);
+            this.widget = this.itemAttrValue.generateEditBox(ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getWidth() - 20, ItemEditScreen.this.processingSubScreen.getHeight() -20).getDelegate();
+            ItemEditScreen.this.optionalMultiLine.setContentDelegate(this.widget);
         }
     }
     //如果大小正常的画,应该是 400 * 270
@@ -719,12 +706,12 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             protected class ItemAttributeModifierEntry{
                 public ItemAttributeModifierEntry(String attribute, EntityAttributeModifier modifier, AttributeModifierSlot slot){
                     attr = AttrKeyValue.openRegistry("属性名", Registries.ATTRIBUTE, attribute);
-                    identifier = modifier.id();
+                    identifier  = AttrKeyValue.identifier("属性修饰符名称",  modifier.id());
                     modifierValue = AttrKeyValue.doub("值", modifier.value());
                     modifierOperation = AttrKeyValue.enumMap("操作", modifier.operation(), NAME_TO_OPER);
                     optionalSlot = AttrKeyValue.enumMap("槽位", slot, NAME_TO_OP);
                 }
-                Identifier identifier;
+                AttrKeyValue<Identifier> identifier;
                 AttrKeyValue<EntityAttribute> attr;
                 AttrKeyValue<Double> modifierValue;
                 AttrKeyValue<EntityAttributeModifier.Operation> modifierOperation;
@@ -740,7 +727,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     NAME_TO_OPER.put("乘法", EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
                 }
                 public ItemAttributeModifierEntry(){
-                    this("minecraft:", new EntityAttributeModifier(null, 0.0d, EntityAttributeModifier.Operation.ADD_VALUE), AttributeModifierSlot.ANY);
+                    this("minecraft:", new EntityAttributeModifier(Identifier.tryParse("minecraft:"+ UUID.randomUUID().toString()), 0.0d, EntityAttributeModifier.Operation.ADD_VALUE), AttributeModifierSlot.ANY);
                 }
 
                 public AttributeModifiersComponent.Entry value(){
@@ -750,7 +737,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                             RegistryEntry<EntityAttribute> attribute0 = Registries.ATTRIBUTE.getEntry(this.attr.getOriginValue());
                             if(attribute0 != null && attribute0.value() != null){
                                 EntityAttributeModifier modifier = new EntityAttributeModifier(
-                                    identifier,
+                                    identifier.getOriginValue(),
                                     modifierValue.getOriginValue(),
                                     modifierOperation.getOriginValue()
                                 );
@@ -778,7 +765,11 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         )
                         .addDrawableChild(
                             new KeyValueInputWidget<>(160, 20, 100, 20, 20, this.modifierValue)
-                        );
+                        )
+                        .addDrawableChild(
+                            new KeyValueInputWidget<>(0, 40, 260, 20, 80, this.identifier)
+                        )
+                        ;
 
                 }
 
@@ -802,7 +793,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         this.modifierEntries,
                         ItemAttributeModifierEntry::new,
                         ItemAttributeModifierEntry::factory,
-                        40, 180
+                        60, 180
                     ),
                     10, 0, 260, ItemEditScreen.this.processingSubScreen.getHeight() - 10
                 )
@@ -839,7 +830,6 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 boolean removal;
                 final ComponentType<T> type ;
                 final Consumer<NbtElement> callback;
-                String compoundString;
 
                 protected ItemComponentModifyConfirmScreen(ComponentType<T> type, NbtElement currentValue, Consumer<NbtElement> callback) {
                     super(Text.empty());
@@ -873,7 +863,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     this.wikiWidget = ExecutableWidget.instance(this.x + 5, this.y + 22, this.backgroundWidth - 10, 12)
                         .setElementHandler(
                             LabelElement.instance(wikiLink)
-                                .withMouseHandler(MouseHandler.run(()->{
+                                .withInputHandler(InputHandler.run(()->{
                                     if(urlll != null){
                                         Util.getOperatingSystem().open(urlll);
                                     }
@@ -883,8 +873,9 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                 )
                         )
                         .addTo(this);
-                    this.widget = this.element.generateEditBox(ItemComponentModifyConfirmScreen.this.x +CONTENT_START_X+10,ItemComponentModifyConfirmScreen.this.y+CONTENT_START_Y +30, ItemComponentModifyConfirmScreen.this.backgroundWidth - 2*CONTENT_START_X - 20, ItemComponentModifyConfirmScreen.this.content_end_y - CONTENT_START_Y  -40);
-                    addDrawableChild(this.widget);
+                    this.widget = this.element.generateEditBox(ItemComponentModifyConfirmScreen.this.x +CONTENT_START_X+10,ItemComponentModifyConfirmScreen.this.y + CONTENT_START_Y +30, ItemComponentModifyConfirmScreen.this.backgroundWidth - 2*CONTENT_START_X - 20, ItemComponentModifyConfirmScreen.this.content_end_y - CONTENT_START_Y  -40)
+                        .<ContentDelegateWidget<EditBoxWidget>>addTo(this).getDelegate();
+
                     this.formatButton = ExecutableWidget.instance(ItemComponentModifyConfirmScreen.this.x +CONTENT_START_X+ 1, ItemComponentModifyConfirmScreen.this.y+CONTENT_START_Y +1, 18, 18)
                         .setElementHandler(
                             IconElement.fixed(SnbtItemProcessingSubScreen.FORMAT_TEXTURE, ButtonAction.run(()->{

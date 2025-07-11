@@ -1,7 +1,6 @@
 package me.matl114.gui.config;
 
 import me.matl114.gui.basic.*;
-import me.matl114.utils.Debug;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -10,7 +9,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.List;
 
-public class ListModifyWidget extends ScrollableWidget {
+public class ListModifyWidget extends ScrollableListWidget {
     ListEntryWidgetController controller;
     public ListModifyWidget(ListEntryWidgetController controller, int x, int y, int dx, int dy){
         super(x, y, dx, dy);

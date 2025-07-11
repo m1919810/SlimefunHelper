@@ -4,28 +4,23 @@ import me.matl114.access.ScreenAccess;
 import me.matl114.access.TileInventoryScreen;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.GenericBackGroundScreen;
-import me.matl114.gui.PageSwitchSubScreen;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.config.GridSelectSubScreen;
 import me.matl114.hackUtils.InvTasks;
 import me.matl114.hackUtils.RenderTasks;
-import me.matl114.utils.UtilClass.MutableEntry;
 import me.matl114.utils.WorldUtils;
-import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
-import oshi.util.tuples.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class InventorySelectScreen extends GenericBackGroundScreen {
     private static final Text TITLE = Text.literal("缓存物品界面预览");
@@ -36,7 +31,7 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
     ContentDelegateWidget<GridSelectSubScreen<HandledScreen<?>>> gridDelegate;
     private static final int PAGE_LABEL_HEIGHT = 12;
 
-    public InventorySelectScreen(List<HandledScreen<?>> handledScreens) {
+    public InventorySelectScreen(Supplier<List<HandledScreen<?>>> handledScreens) {
         super(TITLE,240, 320);
         this.grid = new GridSelectSubScreen<>(
             0,TITLE_OCCUPIED , this.backgroundWidth  ,PAGE_LABEL_HEIGHT, 0, this.backgroundHeight - LABEL_OCCUPIED, -4,16,
@@ -85,7 +80,7 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
                     icon == null? InvTasks.INV_ICON_UNKNOWN : icon
                 )
                     .setSlotFrame(false)
-                    .withMouseHandler(MouseHandler.isLeft((l)->{
+                    .withInputHandler(InputHandler.isLeft((l)->{
                         if(l){
                             openInventoryViewScreen(screen);
                         }else if(screen instanceof TileInventoryScreen tile && tile.getPos() !=null && WorldUtils.areWorldEquals(MinecraftClient.getInstance().world, tile.getWorld())){
@@ -114,7 +109,7 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
     protected void init() {
         super.init();
         int availableRenderSpace = this.backgroundHeight - LABEL_OCCUPIED ;
-        this.grid.resetGridHeight(availableRenderSpace);
+        this.grid.resetGridHeightAndRefresh(availableRenderSpace);
         this.gridDelegate = new ContentDelegateWidget<>(this.x, this.y, 0,0)
             .setContentDelegate(this.grid)
             .addTo(this);

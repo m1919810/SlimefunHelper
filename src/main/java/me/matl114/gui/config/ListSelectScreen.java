@@ -4,17 +4,14 @@ import me.matl114.gui.FilterService;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.utils.UtilClass.PropertyTracker;
-import net.minecraft.registry.Registry;
 import net.minecraft.util.Colors;
-import net.minecraft.util.Identifier;
-import oshi.util.tuples.Triplet;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class ListSelectScreen<W> extends ScrollableWidget {
+public class ListSelectScreen<W> extends ScrollableListWidget {
     W selected;
     List<W> list;
     int entryHeight;
@@ -57,7 +54,7 @@ public class ListSelectScreen<W> extends ScrollableWidget {
                 }
             }
         );
-        MouseHandler mouseHandler = MouseHandler.run(()->{this.selected = triplet;});
+        InputHandler mouseHandler = InputHandler.run(()->{this.selected = triplet;});
         shitWidget.setMouseHandler(mouseHandler).setRenderHandler(renderHandler);
         return shitWidget;
     }

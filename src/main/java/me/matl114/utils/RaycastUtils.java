@@ -20,4 +20,8 @@ public class RaycastUtils {
         var re = ProjectileUtil.raycast(e, from, to, new Box(from, to), es -> !es.isSpectator() && es.canHit(), 16384);
         return re != null && re.getType() != HitResult.Type.MISS;
     }
+    public static boolean raycastHitAnyEntityExceptPlayer(Entity e, Vec3d from, Vec3d to){
+        var re = ProjectileUtil.raycast(e, from, to, new Box(from, to), es -> !es.isSpectator() && es.canHit() && es != mc.player, 16384);
+        return re != null && re.getType() != HitResult.Type.MISS;
+    }
 }

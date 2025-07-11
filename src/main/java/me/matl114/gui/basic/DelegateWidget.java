@@ -86,10 +86,10 @@ public class DelegateWidget extends DrawableWidget implements Draggable{
     }
 
 
-    public boolean onElement(int mouseX, int mouseY){
-        return this.delegate != null && this.delegate.onElement(mouseX, mouseY);
+    @Override
+    public boolean canSelect() {
+        return this.delegate != null && this.delegate.canSelect();
     }
-
 
     public void render(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         if(this.delegate != null){

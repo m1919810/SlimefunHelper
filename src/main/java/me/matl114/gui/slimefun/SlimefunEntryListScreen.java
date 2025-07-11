@@ -86,10 +86,10 @@ public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
 
 
 
-    public static DrawableWidget generateRecipeEntryContentDelegate(SlimefunTasks.RecipeEntry entry){
+    public static SlimefunRecipeWidget generateRecipeEntryContentDelegate(SlimefunTasks.RecipeEntry entry){
         return new SlimefunRecipeWidget(0,0, entry,SlimefunTasks::handleClickItemStack, SlimefunTasks::handleClickRecipeTypeIcon);
     }
-    public static DrawableWidget generateRecipeEntryContent(SlimefunTasks.RecipeEntry entry, int x, int y){
+    public static SlimefunRecipeWidget generateRecipeEntryContent(SlimefunTasks.RecipeEntry entry, int x, int y){
         return new SlimefunRecipeWidget(x,y, entry,SlimefunTasks::handleClickItemStack, SlimefunTasks::handleClickRecipeTypeIcon);
     }
 

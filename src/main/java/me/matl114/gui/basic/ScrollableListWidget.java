@@ -2,7 +2,6 @@ package me.matl114.gui.basic;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import me.matl114.access.ScreenAccess;
 import me.matl114.utils.UtilClass.PropertyTracker;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -12,7 +11,7 @@ import org.joml.Vector4f;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ScrollableWidget extends DrawableWidget implements SubSelectable{
+public class ScrollableListWidget extends DrawableWidget implements SubSelectable{
     int currentPose = 0;
     int maxHeight ;
     ScrollElement scroll;
@@ -22,7 +21,7 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
 
     DrawableWidget selectedElement;
     DrawableWidget draggingElement;
-    public ScrollableWidget(int x, int y, int dx, int dy) {
+    public ScrollableListWidget(int x, int y, int dx, int dy) {
         super(x, y, dx, dy);
         resizeMaxHeight();
         initBorderWidgets();
@@ -46,13 +45,13 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
     private void resizePose(double percentage){
         this.currentPose = MathHelper.clamp((int)(percentage * (this.maxHeight - this.dy)),0, this.maxHeight- dy);
     }
-    public ScrollableWidget addScrollingWidget(DrawableWidget widget){
-        Preconditions.checkArgument(!(widget instanceof ScrollableWidget), "Recursive Scrolling is not supported");
+    public ScrollableListWidget addScrollingWidget(DrawableWidget widget){
+        Preconditions.checkArgument(!(widget instanceof ScrollableListWidget), "Recursive Scrolling is not supported");
         widgets.add(widget);
         resizeMaxHeight();
         return this;
     }
-    public ScrollableWidget removeScrollingWidget(DrawableWidget widget){
+    public ScrollableListWidget removeScrollingWidget(DrawableWidget widget){
         widgets.remove(widget);
         resizeMaxHeight();
         return this;
@@ -67,12 +66,12 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
             }
         }),this::hasScroll).setDraggingY(true);
 
-        this.scoll = new DraggableExecutableWidget(ScrollableWidget.this.x + ScrollableWidget.this.dx, ScrollableWidget.this.y,(int) ScrollElement. BUTTON_WIDTH, ScrollableWidget.this.dy)
+        this.scoll = new DraggableExecutableWidget(ScrollableListWidget.this.x + ScrollableListWidget.this.dx, ScrollableListWidget.this.y,(int) ScrollElement. BUTTON_WIDTH, ScrollableListWidget.this.dy)
             .setElementHandler(this.scroll)
         ;
-        this.scrollableBorder = new SubScreenWidget(ScrollableWidget.this.x, ScrollableWidget.this.y, ScrollableWidget.this.dx, ScrollableWidget.this.dy);
+        this.scrollableBorder = new SubScreenWidget(ScrollableListWidget.this.x, ScrollableListWidget.this.y, ScrollableListWidget.this.dx, ScrollableListWidget.this.dy);
     }
-    public ScrollableWidget clearScrollingWidget(){
+    public ScrollableListWidget clearScrollingWidget(){
         widgets.clear();
         resizeMaxHeight();
         return this;
@@ -81,8 +80,13 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
         return this.maxHeight > this.dy;
     }
 
+    @Override
+    public boolean canSelect() {
+        return true;
+    }
+
     public void render0(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
-        this.selected = !disableSelect && onElement(mouseX, mouseY);
+        this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
         if(scoll != null){
             scoll.render0(context, mouseX, mouseY, delta, disableSelect);
         }
@@ -119,17 +123,24 @@ public class ScrollableWidget extends DrawableWidget implements SubSelectable{
         // add the current pose of the scroll
         int translatedMouseX = (mouseX - this.x);
         int translatedMouseY = mouseY - this.y + currentPose;
-
+        boolean selected = false;
         for (var ch: widgets){
             //只有接触了这个界面中的子组件需要渲染
             //通过计算高度限制这个
             if(ch.getY() + ch.getHeight() > this.currentPose && ch.getY() < this.currentPose + this.dy){
+                //todo 尝试是否要在这里进行selected计算
                 if(this.selected){
+                    boolean disable = true;
+                    if(!selected && ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){
+                        disable = false;
+                        //select only one in a subScreen
+                        selected = true;
+                    }
                     //mouse in select, calculate the selected field
-                    ch.render0(context, translatedMouseX, translatedMouseY, delta, false);
+                    ch.render0(context, translatedMouseX, translatedMouseY, delta, disable);
                 }else {
                     //mouse not select in big part, force set select to false
-                    ch.render0(context, mouseX, mouseY, delta, true);
+                    ch.render0(context, translatedMouseX, translatedMouseY, delta, true);
                 }
             }
         }

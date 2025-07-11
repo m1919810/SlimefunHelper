@@ -1,6 +1,7 @@
 package me.matl114.mixins.HackMixin;
 
 
+import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.access.ClientAccess;
 import me.matl114.access.ClientPlayerAccess;
 import me.matl114.hackUtils.CombatTasks;
@@ -81,15 +82,28 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         }
         return instance.isRiding();
     }
-    @Inject(method = "doAttack",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;swingHand(Lnet/minecraft/util/Hand;)V",shift = At.Shift.BEFORE))
+    //move before the block interaction, so that it will not reset cooldown when interact block or swing hand
+    @Inject(method = "doAttack",at = @At(value = "INVOKE", target = "Lnet/minecraft/util/hit/HitResult;getType()Lnet/minecraft/util/hit/HitResult$Type;",shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
     public void onAttackWhenMissedEntity(CallbackInfoReturnable<Boolean> cir) {
         if(crosshairTarget!=null&& crosshairTarget.getType()!=HitResult.Type.ENTITY){
             if(HotKeys.getHotkeyToggleManager().getState(HotKeys.ALWAYS_ATTACK)){
-                CombatTasks.autoAttackBest(false);
+                if(CombatTasks.autoAttackBest(false)){
+                    //return true to cancel block break, because this is going to delay attack
+                    //stop another attack-like action before delay attack finish, because another task may reset attack-interval
+                    this.attackCooldown = 1;
+                    cir.setReturnValue(false);
+                }
             }
         }
     }
 
+    @Inject(method = "doAttack", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;swingHand(Lnet/minecraft/util/Hand;)V",shift = At.Shift.AFTER))
+    private void onShieldPredict(CallbackInfoReturnable<Boolean> cir){
+        if(crosshairTarget != null && crosshairTarget.getType() == HitResult.Type.ENTITY){
+            //predict after attack
+            CombatTasks.handleShieldPredict(player.getPitch(), player.getYaw());
+        }
+    }
 
     @Inject(method = "tick",at= @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;pop()V",shift = At.Shift.BEFORE,ordinal = 1),locals = LocalCapture.CAPTURE_FAILSOFT)
     public void onInjectTickTasks(CallbackInfo ci){
@@ -108,14 +122,16 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         if(flag&&USEINGiTEM_ATTACK.get()){
             //do attack logic
             boolean bl3 = false;
+            //still do attack first
             while(instance.options.attackKey.wasPressed()) {
                 bl3 |= this.doAttack();
             }
+            //escape pickItemKey
             while(instance.options.pickItemKey.wasPressed()) {
                 this.doItemPick();
             }
 
-            this.handleBlockBreaking(instance.currentScreen == null && !bl3 && instance.options.attackKey.isPressed() && instance.mouse.isCursorLocked());
+//            this.handleBlockBreaking(instance.currentScreen == null && !bl3 && instance.options.attackKey.isPressed() && instance.mouse.isCursorLocked());
         }
         return flag;
     }
@@ -163,6 +179,8 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Shadow @Final public GameRenderer gameRenderer;
 
     @Shadow protected abstract void render(boolean tick);
+
+    @Shadow public int attackCooldown;
 
     @Override
     public ClientAccess clone() {

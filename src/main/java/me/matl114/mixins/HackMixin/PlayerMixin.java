@@ -2,11 +2,15 @@ package me.matl114.mixins.HackMixin;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.mojang.authlib.GameProfile;
+import it.unimi.dsi.fastutil.BidirectionalIterator;
 import lombok.Getter;
 import me.matl114.access.ClientPlayerAccess;
 import me.matl114.hackUtils.MovTasks;
+import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
+import me.matl114.utils.UtilClass.LinkNode;
+import me.matl114.utils.UtilClass.ProgressWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -14,13 +18,18 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.stat.StatHandler;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,6 +40,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Environment(EnvType.CLIENT)
@@ -40,10 +50,25 @@ public abstract class PlayerMixin extends AbstractClientPlayerEntity implements 
     @Final
     @Shadow
     public ClientPlayNetworkHandler networkHandler;
+    @Shadow
+    private double lastX;
+    @Shadow
+    private double lastBaseY;
+    @Shadow
+    private double lastZ;
+    @Shadow
+    private boolean lastOnGround;
+    @Shadow
+    private int ticksSinceLastPositionPacketSent;
 
     public PlayerMixin(ClientWorld world, GameProfile profile) {
         super(world, profile);
 
+    }
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onClientPlayerInitConfiguration(MinecraftClient client, ClientWorld world, ClientPlayNetworkHandler networkHandler, StatHandler stats, ClientRecipeBook recipeBook, boolean lastSneaking, boolean lastSprinting, CallbackInfo ci){
+        Listener.getPlayerInitConfiguration().handleValue((ClientPlayerEntity)(AbstractClientPlayerEntity) this);
     }
 
 
@@ -54,6 +79,11 @@ public abstract class PlayerMixin extends AbstractClientPlayerEntity implements 
 
 
     @Shadow @Final protected MinecraftClient client;
+
+    @Shadow private float lastYaw;
+    @Shadow private float lastPitch;
+
+    @Shadow public abstract void tick();
 
     @Unique
     @Getter
@@ -178,4 +208,74 @@ public abstract class PlayerMixin extends AbstractClientPlayerEntity implements 
         }
         return super.getEntityInteractionRange();
     }
+    @Unique
+    public void syncPitchYaw(){
+        this.lastYaw = getYaw();
+        this.lastPitch = getPitch();
+    }
+    @Unique
+    public void syncLocationPackets(){
+        double d = this.getX() - this.lastX;
+        double e = this.getY() - this.lastBaseY;
+        double f = this.getZ() - this.lastZ;
+        double g = (double)(this.getYaw() - this.lastYaw);
+        double h = (double)(this.getPitch() - this.lastPitch);
+
+        boolean bl2 = MathHelper.squaredMagnitude(d, e, f) > MathHelper.square(2.0E-4) || this.ticksSinceLastPositionPacketSent > 20;
+        boolean bl3 = g != 0.0 || h != 0.0;
+        if (bl2 && bl3) {
+            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch(), this.isOnGround()));
+        } else if (bl2) {
+            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(this.getX(), this.getY(), this.getZ(), this.isOnGround()));
+        } else if (bl3) {
+            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(this.getYaw(), this.getPitch(), this.isOnGround()));
+        } else if (this.lastOnGround != this.isOnGround()) {
+            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(this.isOnGround()));
+        }
+
+        if (bl2) {
+            this.lastX = this.getX();
+            this.lastBaseY = this.getY();
+            this.lastZ = this.getZ();
+            this.ticksSinceLastPositionPacketSent = 0;
+        }
+
+        if (bl3) {
+            this.lastYaw = this.getYaw();
+            this.lastPitch = this.getPitch();
+        }
+        this.lastOnGround = this.isOnGround();
+    }
+    @Unique
+    public void addMovementPacketWrapper(ProgressWrapper<ClientPlayerEntity> wrapper){
+        headNode.insertAfter(wrapper);
+    }
+
+
+    @Unique
+    private final LinkNode<ProgressWrapper<ClientPlayerEntity>> headNode = LinkNode.createHead();
+    @Unique
+    private BidirectionalIterator<ProgressWrapper<ClientPlayerEntity>> usedIterator;
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/AbstractClientPlayerEntity;tick()V", shift = At.Shift.AFTER))
+    public void prewrappedPlayerMovementSentTick(CallbackInfo ci){
+        var iter = LinkNode.iterator(headNode);
+        while (iter.hasNext()){
+            var next = iter.next();
+            next.preProgress((ClientPlayerEntity) (Object)this);
+        }
+        usedIterator = iter;
+    }
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))
+    public void postwrapperPlayerMovementSentTick(CallbackInfo ci){
+        var iter = usedIterator;
+        usedIterator = null;
+        while (iter.hasPrevious()){
+            var prev = iter.previous();
+            prev.postProgress((ClientPlayerEntity) (Object)this);
+            if(!prev.stillWrap((ClientPlayerEntity) (Object)this)){
+                iter.remove();
+            }
+        }
+    }
+
 }

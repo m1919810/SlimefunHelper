@@ -12,10 +12,7 @@ import me.matl114.utils.UtilClass.PropertyTracker;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
 import java.util.List;
-import java.util.function.BiPredicate;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.*;
 
 public class GridSelectSubScreen<R> extends SubScreenWidget {
     final PageSwitchSubScreen pageSwitcher;
@@ -25,14 +22,14 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
     @Getter
     BiPredicate<String, R> filter;
     List<R> values;
-    List<R> originalValues;
+    Supplier<List<R>> originalValues;
     final Function<R, DrawableWidget> function;
     final int baseHeight;
     final int filterHeight;
     final int filterDistance;
     final int elementX;
     final int elementY;
-    public GridSelectSubScreen(int x, int y, int dx, int pageHeight, int page2Grid, int gridHeight, int grid2Filter, int filterHeight, int elementX, int elementY, List<R> origins, BiPredicate<String, R> filter, Function<R, DrawableWidget> function) {
+    public GridSelectSubScreen(int x, int y, int dx, int pageHeight, int page2Grid, int gridHeight, int grid2Filter, int filterHeight, int elementX, int elementY, Supplier<List<R>> origins, BiPredicate<String, R> filter, Function<R, DrawableWidget> function) {
         super(x, y, dx, 0);
 
         this.baseHeight = pageHeight + page2Grid;
@@ -54,15 +51,19 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
 
     }
     public void setFilter(BiPredicate<String,R> filter){
+        var origin = this.filter;
         this.filter = filter;
         if(this.filter != null){
             this.textFieldWidget.setContentDelegate(this.delegate);
         }else {
             this.textFieldWidget.setContentDelegate(null);
         }
+        //refresh filter
+        if(origin != filter)
+            initFilter();
     }
 
-    public void resetHeight(int newHeight){
+    public boolean resetHeight(int newHeight){
         if(newHeight != dy){
             dy = newHeight;
             int gridHeight = newHeight - baseHeight - this.filterDistance - this.filterHeight;
@@ -73,10 +74,17 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
             ).addToSub(this);
             initFilter();
             resetPage();
+            return true;
+        }
+        return false;
+    }
+    public void resetGridHeightAndRefresh(int gridHeight){
+        if(!resetGridHeight(gridHeight)){
+            refresh();
         }
     }
-    public void resetGridHeight(int gridHeight){
-        resetHeight(gridHeight + baseHeight + this.filterDistance + this.filterHeight);
+    public boolean resetGridHeight(int gridHeight){
+        return resetHeight(gridHeight + baseHeight + this.filterDistance + this.filterHeight);
     }
 
 
@@ -89,13 +97,14 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
     public boolean initFilter(){
         //fixme: input is null does not means escape filter
         if(this.filter != null && (FilterService. currentUserInput != null && !FilterService. currentUserInput.isEmpty())){
-            this.values = originalValues.stream()
+            values = originalValues.get().stream()
                 .filter(t->filter.test(FilterService. currentUserInput, t))
                 .toList();
             return true;
         }else {
-            if(this.values != this.originalValues){
-                this.values = this.originalValues;
+            var list =  this.originalValues.get();
+            if(this.values != list){
+                this.values = list;
                 return true;
             }
             return false;

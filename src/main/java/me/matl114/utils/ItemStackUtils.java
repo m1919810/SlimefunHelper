@@ -7,6 +7,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.type.*;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.*;
 import net.minecraft.item.trim.ArmorTrim;
@@ -465,9 +467,13 @@ public class ItemStackUtils {
         return nbt.contains(BUKKIT_NAMESPACE, NbtElement.COMPOUND_TYPE) ? nbt.getCompound(BUKKIT_NAMESPACE): null;
     }
     private static NbtCompound createBukkitValue(NbtCompound nbt){
-        var nbt0 = nbt.getCompound(BUKKIT_NAMESPACE);
-        if(nbt0 != null)return nbt0;
-        nbt0 = new NbtCompound();
+        NbtCompound nbt0 ;
+        if(nbt.contains(BUKKIT_NAMESPACE, NbtElement.COMPOUND_TYPE)){
+            nbt0 = nbt.getCompound(BUKKIT_NAMESPACE);
+            if(nbt0 != null)return nbt0;
+        }else {
+            nbt0 = new NbtCompound();
+        }
         nbt.put(BUKKIT_NAMESPACE, nbt0);
         return nbt;
     }
@@ -514,5 +520,10 @@ public class ItemStackUtils {
         setOrRemoveChange(stack, CUSTOM_MODEL_DATA, new CustomModelDataComponent(customModelData));
     }
 
+
+    public static int getEnchantmentLevel(ItemEnchantmentsComponent component, RegistryKey<Enchantment> key){
+        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT);
+        return component.getLevel (enchantmentRegistry.getEntry(Enchantments.SHARPNESS).orElse(null));
+    }
 
 }

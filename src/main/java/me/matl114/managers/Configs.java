@@ -80,20 +80,24 @@ public class Configs {
         .save();
 
     public static final String[] RENDER_DETECT_SPAWN_WHITELIST={"detect-entity","spawn-whitelist"};
+    public static final String[] RENDER_LOG_ON_SCREEN= {"detect-entity", "log-to-chat"};
     public static final String[] RENDER_NO_EFFECT = {"render","no-effect"};
     public static final String[] RENDER_NIGHTVISION = {"render","nightvision"};
     public static final String[] RENDER_NO_EFFECT_FORCE = {"render","eff-setting","force-no"};
     public static final String[] RESOURCE_IGNORE_SERVER = {"resource","server","ignore-server-request"};
     public static final String[] CAL_FIREBALL_TRACE = {"detect-entity","cal-fireball"};
+    public static final String[] CAL_PROJECTILE_TRACE = {"detect-entity","cal-projectile"};
     public static final String[] RENDER_REJECT_WURST = {"render","disable-wurst-hud"};
     public static final String[] RESOURCE_IGNORE_RESOUCE_LOCK = {"resouce", "server", "can-move-serverpack"};
     public static final Config RENDER_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/render.yml","render settings")
         .defaultVal("player,wither",RENDER_DETECT_SPAWN_WHITELIST)
+        .defaultVal(false, RENDER_LOG_ON_SCREEN)
         .defaultVal(true,RENDER_NO_EFFECT)
         .defaultVal(true,RENDER_NIGHTVISION)
         .defaultVal(false,RENDER_NO_EFFECT_FORCE)
         .defaultVal(false,RESOURCE_IGNORE_SERVER)
         .defaultVal(true,CAL_FIREBALL_TRACE)
+        .defaultVal(false, CAL_PROJECTILE_TRACE)
         .defaultVal(false,RENDER_REJECT_WURST)
         .save();
     public static final String[] TEST_ARGS1={"test","arg1"};
@@ -107,12 +111,14 @@ public class Configs {
     public static final String[] COMBAT_RIDING={"attack","riding-attack"};
     public static final String[] ATTACK_RANGE={"attack","att-range"};
     public static final String[] COMBAT_SHIELDING = {"attack","shielding-attack"};
+    public static final String[] COMBAT_AUTOSHIELD = {"attack","no-grim-shield-setback"};
     public static final String[] ATTACK_WHITELISTED={"att-bot","whitelist"};
     public static final String[] ATTACK_PLAYER_FRIENDLIST = {"att-bot","friends"};
     public static final String[] ATTACK_NAMED = {"att-bot","att-named"};
     public static final String[] AUTOATTACK_DO_INTERVEL_WEAPON = {"att-bot","respect-cooldown","weapon"};
     public static final String[] AUTOATTACK_DO_INTERVEL_HAND = { "att-bot","respect-cooldown","hand"};
     public static final String[] AUTOATTACK_ONCE_MAX = {"att-bot","max-at-once"};
+    public static final String[] COMBAT_LEGAL_MOD = {"att-bot", "legal-mode"};
     public static final Config COMBAT_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/combat.yml","combat settings")
         .defaultVal(false,COMBAT_INTERVEL)
         .defaultVal(false,COMBAT_RIDING)
@@ -124,6 +130,8 @@ public class Configs {
         .defaultVal(false,AUTOATTACK_DO_INTERVEL_HAND)
         .defaultVal(false,ATTACK_NAMED)
         .defaultVal(20,AUTOATTACK_ONCE_MAX)
+        .defaultVal(true, COMBAT_LEGAL_MOD)
+        .defaultVal(false, COMBAT_AUTOSHIELD)
         .save();
 
     public static final String[] INV_CLICK_LIMIT={"inventory","packet-limit"};
@@ -142,6 +150,8 @@ public class Configs {
     public static final String[] MOVE_SPEED_FLY_VAL_CREATIVE = {"move-speed","fly-speed-creative"};
     public static final String[] QUICK_MOVE_IGNORE_COLLISION = {"quick-move","ignore-move-collision"};
     public static final String[] MOVE_SPEED_NO_SLOW_DOWN = {"move-speed","no-slowdown"};
+    public static final String[] MOVE_CHECK_SETBACK = {"move-safety","check-setback-packets"};
+    public static final String[] MOVE_NOFALL = {"move-safety", "no-fall"};
     public static final Config MOV_CONFIG =ConfigLoader.loadExternalConfig("sfhelper-configs/mov.yml","mov settings")
         .defaultVal(9.5d, MOV_MAX_DISTANCE)
         .defaultVal(false, MOVE_SPEED_OVERRIDE_WALK)
@@ -151,6 +161,8 @@ public class Configs {
         .defaultVal(0.8d, MOVE_SPEED_FLY_VAL)
         .defaultVal(false,QUICK_MOVE_IGNORE_COLLISION)
         .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN)
+        .defaultVal(false, MOVE_CHECK_SETBACK)
+        .defaultVal(false, MOVE_NOFALL)
         .save();
     public static final String[] HTTP_PROXY_SERVER = {"proxy-server","host"};
     public static final String[] HTTP_PROXY_PORT = {"proxy-server", "port"};
@@ -186,6 +198,7 @@ public class Configs {
     public static final String[] SLIMEFUN_MULTIBLOCK_MATCHER = {"recipe-record", "multiblock-pattern"};
     public static final String[] SLIMEFUN_MULTIBLOCK_CLICKER = {"multi-block-clicker","enable"};
     public static final String[] SLIMEFUN_MB_RATE = {"multi-block-clicker","rate"};
+    public static final String[] SLIMEFUN_MB_LEGAL = {"multi-block-clicker","bypass-anticheat"};
     public static final String[] SLIMEFUN_MATCH_UP_AND_DOWN = {"multi-block-clicker","only-when-at-middle"};
     public static final String[] SLIMEFUN_AUTO_CLICK_FACING = {"multi-block-clicker","auto-click-facing"};
     public static final Config SLIMEFUN_CONFIG = ConfigLoader.loadExternalConfig(
@@ -200,6 +213,7 @@ public class Configs {
         .defaultVal(12, SLIMEFUN_MB_RATE)
         .defaultVal(true, SLIMEFUN_MATCH_UP_AND_DOWN)
         .defaultVal(false,SLIMEFUN_AUTO_CLICK_FACING)
+        .defaultVal(false, SLIMEFUN_MB_LEGAL)
         .save();
 
     static{

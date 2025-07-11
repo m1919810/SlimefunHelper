@@ -1,12 +1,9 @@
 package me.matl114.gui.slimefun;
 
 import me.matl114.gui.GenericBackGroundScreen;
-import me.matl114.gui.GenericScreen;
 import me.matl114.gui.basic.*;
 import me.matl114.hackUtils.SlimefunTasks;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
-import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
@@ -56,11 +53,11 @@ public class SlimefunScreen extends GenericBackGroundScreen {
             .setRenderHandler(PlateElement.instance())
             .addTo(this);
         this.closeButton = ExecutableWidget.instance(this.x + this.backgroundWidth - 3, this.y + 12, 26, 26)
-            .setMouseHandler(MouseHandler.run(this::close))
+            .setMouseHandler(InputHandler.run(this::close))
             .setRenderHandler(PlateElement.instance().combineRender(RenderHandler.ofGuiTextures(CANCEL_GUI_TEXTURE,4, 4, 18,18)).withTooltips(TooltipHandler.of(CLOSE_SCREEN)))
             .addTo(this);
         this.searchButton = ExecutableWidget.instance(this.x + this.backgroundWidth - 3, this.y + 38, 26, 26)
-            .setMouseHandler(MouseHandler.run(this::close))
+            .setMouseHandler(InputHandler.run(this::close))
             .setRenderHandler(PlateElement.instance().combineRender(RenderHandler.ofPositionResource(SEARCH_TEXTURE,4, 4, 18, 18)).withTooltips(TooltipHandler.of(this::getSearchButtonTooltips)))
             .addTo(this);
         super.initBackground();
@@ -95,10 +92,10 @@ public class SlimefunScreen extends GenericBackGroundScreen {
             )
             .addTo(this)
         ;
-        this.guideIcon.setMouseHandler(MouseHandler.run(SlimefunTasks::handleClickGuideIcon));
-        this.rtypeIcon.setMouseHandler(MouseHandler.run(SlimefunTasks::handleClickRtypeIcon));
-        this.vanillaIcon.setMouseHandler(MouseHandler.run(SlimefunTasks::handleClickCraftTableIcon));
-        this.saveItemIcon.setMouseHandler(MouseHandler.run(SlimefunTasks::handleClickSaveItemIcon));
+        this.guideIcon.setMouseHandler(InputHandler.run(SlimefunTasks::handleClickGuideIcon));
+        this.rtypeIcon.setMouseHandler(InputHandler.run(SlimefunTasks::handleClickRtypeIcon));
+        this.vanillaIcon.setMouseHandler(InputHandler.run(SlimefunTasks::handleClickCraftTableIcon));
+        this.saveItemIcon.setMouseHandler(InputHandler.run(SlimefunTasks::handleClickSaveItemIcon));
     }
 
 

@@ -20,7 +20,6 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
-import oshi.util.tuples.Pair;
 
 import java.util.*;
 
@@ -179,4 +178,42 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     private static void onRenderGlowHere(DrawContext context, int x, int y, int z, CallbackInfo ci){
         context.fillGradient(RenderLayer.getGuiOverlay(), x, y, x + 16, y + 16, -2130706433, -2130706433, z);
     }
+
+    @Unique
+    private double lastX;
+    @Unique
+    private double lastY;
+    @Unique
+    private boolean lastResult;
+    @Unique
+    private void updateResultElementOn(double lastX, double lastY){
+        this.lastX   = lastX;
+        this.lastY = lastY;
+        for (var element: this.children()){
+            if(element.isMouseOver(lastX, lastY)){
+                lastResult = true;
+                return;
+            }
+        }
+        lastResult = false;
+    }
+    @Shadow
+    protected abstract boolean isPointWithinBounds(int x, int y, int width, int height, double pointX, double pointY);
+
+
+    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;isPointOverSlot(Lnet/minecraft/screen/slot/Slot;DD)Z"))
+    public boolean considerSubElementsWhenRenderSlot(HandledScreen instance, Slot slot, double pointX, double pointY){
+        if(Math.abs(pointX - lastX) < 1e-4 && Math.abs(pointY - lastY) < 1e-4){
+            //same mouse query
+
+        }else {
+            updateResultElementOn(pointX, pointY);
+
+        }
+        if(lastResult){
+            return false;
+        }
+        return isPointOverSlot(slot, pointX, pointY);
+    }
+
 }

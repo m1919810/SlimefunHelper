@@ -1,14 +1,10 @@
 package me.matl114.gui.slimefun;
 
 import me.matl114.gui.FilterService;
-import me.matl114.gui.GridSubScreen;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.config.GridSelectSubScreen;
-import me.matl114.utils.UtilClass.PropertyTracker;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.math.MathHelper;
 
 import java.util.List;
 import java.util.function.*;
@@ -18,10 +14,10 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
     ContentDelegateWidget<GridSelectSubScreen<T>> gridDelegate;
     List<Text> labelTooltips;
     public SlimefunChoiceScreen(Text title, List<T> values, Function<T, DrawableWidget> widgetFunction){
-        this(title, null, values,  widgetFunction);
+        this(title, null, ()-> values,  widgetFunction);
     }
 
-    public SlimefunChoiceScreen(Text title, List<Text> titleTooltips, List<T> originValue,  Function<T, DrawableWidget> widgetFunction) {
+    public SlimefunChoiceScreen(Text title, List<Text> titleTooltips, Supplier<List<T>> originValue,  Function<T, DrawableWidget> widgetFunction) {
         super(title);
         this.selectGrid = new GridSelectSubScreen<>(
             0,TITLE_OCCUPIED , this.backgroundWidth  ,PAGE_LABEL_HEIGHT, 0, this.backgroundHeight - LABEL_OCCUPIED, -4,16,
@@ -57,19 +53,19 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
         super.init();
 
         int availableRenderSpace = this.backgroundHeight - LABEL_OCCUPIED ;
-        this.selectGrid.resetGridHeight(availableRenderSpace);
+        this.selectGrid.resetGridHeightAndRefresh(availableRenderSpace);
         this.gridDelegate = new ContentDelegateWidget<>(this.x, this.y, 0,0)
             .setContentDelegate(this.selectGrid)
             .addTo(this);
         //Search button
         if(this.selectGrid.getFilter() != null){
 
-            this.searchButton.setMouseHandler(MouseHandler.run(this::executeFilterTask));
+            this.searchButton.setMouseHandler(InputHandler.run(this::executeFilterTask));
 
         }
 
         ExecutableWidget.instance(this.x + this.backgroundWidth - 3, this.y + 12, 26, 26)
-            .setMouseHandler(MouseHandler.run(this::close))
+            .setMouseHandler(InputHandler.run(this::close))
             .setRenderHandler(PlateElement.instance().combineRender(RenderHandler.ofGuiTextures(CANCEL_GUI_TEXTURE,4, 4, 18,18)))
             .addTo(this)
         ;

@@ -6,10 +6,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 
-public class LabelElement extends AbstractElement implements ElementHandler{
-    final TextProvider text;
-    final int color;
-    final int alignment;
+public class LabelElement extends RawTextElement{
+
+
     protected static final Identifier BACKGROUND_RESOURCE = new Identifier("slimefunhelper","textures/gui/recipecontainer.png");
     public static LabelElement instance(Text text){
         return new LabelElement(text, Colors.WHITE);
@@ -22,10 +21,8 @@ public class LabelElement extends AbstractElement implements ElementHandler{
         this(TextProvider.of(text), color,  alignment);
     }
     public LabelElement(TextProvider text, int color, int alignment){
-        this.text = text;
-        this.color = color;
+       super(text, color, alignment);
 
-        this.alignment = alignment;
     }
     protected static final float u0 = (110f/256);
     protected static final float v0 = (60f/256);

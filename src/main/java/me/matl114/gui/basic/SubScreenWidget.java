@@ -48,6 +48,15 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
         return selected;
     }
 
+    @Override
+    public boolean canSelect() {
+//        for (var ch: children){
+//            if(ch.canSelect())return true;
+//        }
+//        return false;
+        return true;
+    }
+
     public SubScreenWidget addDrawableChild(DrawableWidget widget){
         children.add(widget);
         widget.setSubWidget(true);
@@ -68,8 +77,18 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
+        boolean selected = false;
         for (var ch: children){
-            ch.render0(context, translatedMouseX, translatedMouseY, delta, disableSelect);
+            boolean disable = true;
+            //use super.selected as a cache value to show whether there is a child which is selecting
+            //it is calculated in render0
+            if(this.isSelected() && !selected && ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){
+                disable = false;
+                //select only one in a subScreen
+                selected = true;
+            }
+            //force disable child highlight, only highlight the first met
+            ch.render0(context, translatedMouseX, translatedMouseY, delta, disable);
         }
     }
 

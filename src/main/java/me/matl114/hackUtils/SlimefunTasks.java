@@ -13,13 +13,14 @@ import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import me.matl114.access.*;
+import me.matl114.gui.basic.InputHandler;
 import me.matl114.gui.slimefun.SavedItemWidget;
 import me.matl114.gui.slimefun.SlimefunChoiceScreen;
 import me.matl114.gui.slimefun.SlimefunEntryListScreen;
 import me.matl114.gui.slimefun.SlimefunQuestionScreen;
 import me.matl114.gui.basic.ExecutableWidget;
-import me.matl114.gui.basic.MouseHandler;
 import me.matl114.gui.basic.SlotElement;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
@@ -27,6 +28,7 @@ import me.matl114.managers.ConfigLoader;
 import me.matl114.managers.Configs;
 import me.matl114.renders.RenderMain;
 import me.matl114.utils.Debug;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.UtilClass.*;
@@ -48,13 +50,11 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.recipe.*;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
@@ -69,6 +69,7 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 
@@ -164,8 +165,7 @@ public class SlimefunTasks {
 
         }
     };
-    private static DirtyMap<ItemStackSample, String> ITEM_SAMPLE_MAP;
-    private static Map<String, ItemStackSample> ITEM_SAMPLE_INDEX ;
+
     private static final Random rand = new Random();
     private static SlimefunRegistryDataBase check(){
         Preconditions.checkArgument(DATA != null, "Illegal State, you are not in a game!");
@@ -173,7 +173,11 @@ public class SlimefunTasks {
     }
     public static String getIdOrNull(ItemStack item){
         return check().getIdOrNull(item);
+    }
 
+    public static String getSfIdOrNull(ItemStack item){
+        String sfid = ItemStackUtils.getSfId(item);
+        return sfid == null? getIdOrNull(item) : sfid;
     }
 
     public static String getOrAddId(ItemStack item){
@@ -209,6 +213,11 @@ public class SlimefunTasks {
             String rid = data.getAsJsonPrimitive("rid").getAsString();
             String id = data.getAsJsonPrimitive("id").getAsString();
             ItemStack output = context.deserialize(data.getAsJsonObject("output"), ItemStack.class);
+            if(output == null){
+
+                Debug.info("Deserialize output failure", id);
+                output = ItemStack.EMPTY;
+            }
             ItemStack[] ingredient = context.deserialize(data.getAsJsonArray("ingredient"), ItemStack[].class);
             ItemStackWithId[] ingredientEntry = new ItemStackWithId[ingredient.length];
             //resolve the NULL problem
@@ -266,6 +275,8 @@ public class SlimefunTasks {
         private DirtyMap<String, CraftingType> ALL_RECIPE_TYPE;
         private DirtyMap<String, SlimefunRecipeEntry> ALL_RECIPE_ENTRY;
         private DirtyCollectionImpl<Set<String>,String> SAVED_ITEM_ID;
+        private static DirtyMap<ItemStackSample, String> ITEM_SAMPLE_MAP;
+        private static Map<String, ItemStackSample> ITEM_SAMPLE_INDEX ;
         private Set<String> ACTIVE_ID = new HashSet<>();
         public final JsonCodec<ItemStack> ITEM_CODEC = new JsonCodec<ItemStack>() {
             @Override
@@ -328,7 +339,8 @@ public class SlimefunTasks {
             String savedItemIds = ConfigLoader.loadExternalJson("sfhelper-configs/recipes/saved-items.json");
             saveId.addAll(((Map<String, List<String>>)RECIPES_JSON_CODEC.fromJson(savedItemIds, ID_LIST_TYPE)).getOrDefault("saved-ids",List.of()));
             SAVED_ITEM_ID = new DirtyCollectionImpl<>(saveId);
-
+            //mark saved item id as active id:
+            ACTIVE_ID.addAll(saveId);
             var iter = ITEM_SAMPLE_MAP.entrySet().iterator();
             while (iter.hasNext()){
                 if(!ACTIVE_ID.contains( iter.next().getValue()) ){
@@ -444,7 +456,6 @@ public class SlimefunTasks {
 
                     ITEM_SAMPLE_INDEX.put(newName, s);
                     ITEM_SAMPLE_MAP.setDirty();
-
                     return newName;
                 });
                 ACTIVE_ID.add(re);
@@ -617,7 +628,22 @@ public class SlimefunTasks {
         private static final TaggedBlockMatch WOODEN_TRAPDOORS = new TaggedBlockMatch(BlockTags.WOODEN_TRAPDOORS);
         private static final TaggedBlockMatch WOODEN_SLABS = new TaggedBlockMatch(BlockTags.WOODEN_SLABS);
         private static final TaggedBlockMatch WOODEN_FENCES = new TaggedBlockMatch(BlockTags.WOODEN_FENCES);
-        private static final TaggedBlockMatch FIRE = new TaggedBlockMatch(BlockTags.FIRE);
+        private static final BlockMatcher FIRE = new BlockMatcher(){
+            public Set<Block> getPotentials(){
+                Set<Block> fires =  Registries.BLOCK.getEntryList(BlockTags.FIRE).orElseThrow().stream().map(RegistryEntry::value).collect(Collectors.toCollection(HashSet::new));
+                fires.add(Blocks.AIR);
+                return fires;
+            }
+
+            public boolean match(Block b){
+                return b == Blocks.AIR || b.getRegistryEntry().isIn(BlockTags.FIRE);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                return o == this;
+            }
+        };
 
         public static MultiBlockEntry of(ItemStack[] inputs, String id){
             if(inputs.length != 9){
@@ -695,31 +721,32 @@ public class SlimefunTasks {
                 //middle match
                 //then consider symm
                 Direction currentDir = null;
+                directionMatch:
                 for (Direction dir: symm? DIR_SYMM : DIR_CONSIDER){
-                    currentDir = dir;
+
                     BlockPos.Mutable leftBotton = blockPos.mutableCopy().move(0,-i,0).move(dir);
                     for (int s = 0; s <= 2; ++s){
 
                         Block block = world.getBlockState(leftBotton).getBlock();
                         if(!blockTypes[3*s].match(block)){
-                            continue position;
+                            continue directionMatch;
                         }
                         leftBotton.move(0,1,0);
                     }
-                }
-
-                if(!symm){
-                    BlockPos.Mutable rightBotton = blockPos.mutableCopy().move(0,-i,0).move(currentDir,-1);
-                    //if not symm, still need check
-                    for (int s = 0; s <= 2; ++s){
-                        Block block = world.getBlockState(rightBotton).getBlock();
-                        if(!blockTypes[3*s + 2].match(block)){
-                            continue position;
+                    currentDir = dir;
+                    if(!symm){
+                        BlockPos.Mutable rightBotton = blockPos.mutableCopy().move(0,-i,0).move(currentDir,-1);
+                        //if not symm, still need check
+                        for (int s = 0; s <= 2; ++s){
+                            Block block = world.getBlockState(rightBotton).getBlock();
+                            if(!blockTypes[3*s + 2].match(block)){
+                                continue directionMatch;
+                            }
+                            rightBotton.move(0,1,0);
                         }
-                        rightBotton.move(0,1,0);
                     }
+                    return new MultiblockOffset(i, currentDir);
                 }
-                return new MultiblockOffset(i, currentDir);
             }
             return null;
         }
@@ -768,6 +795,7 @@ public class SlimefunTasks {
     private static AtomicBoolean ENABLE_CLICK = Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_MULTIBLOCK_CLICKER);
     private static AtomicInteger CLICK_RATE = Configs.SLIMEFUN_CONFIG.getInt(Configs.SLIMEFUN_MB_RATE);
     private static int lastChatTimestamp = 0;
+    private static int lastInteractTimestamp = 0;
     private static void onClickBlock(BlockHitResult result){
         if(!ENABLE_CLICK.get()){
             return;
@@ -775,6 +803,8 @@ public class SlimefunTasks {
         //judge
         onClickBlockExecute(result, false, true);
     }
+    private static final AtomicBoolean legalMode = Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_MB_LEGAL);
+    private static final Random interactOffsetRand = new Random();
     private static void onClickBlockExecute(BlockHitResult result, boolean delayClick, boolean clickMany){
         if(result == null)return;
         BlockPos pos = result.getBlockPos();
@@ -791,28 +821,81 @@ public class SlimefunTasks {
         if(!first.isPresent())return;
         if(lastChatTimestamp + 5*20 < Tasks.getTick()){
             Debug.chat(Text.literal("[fast click] Interacting with multiblock: ").formatted(Formatting.RED),first.get().id);
+            lastChatTimestamp = Tasks.getTick();
         }
-        lastChatTimestamp = Tasks.getTick();
-        for(int i=0 ; i< (clickMany?  CLICK_RATE.get(): 1); ++i){
-            mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND,result, sequence)));
+        Runnable clickTasks = ()->{
+
+        };
+        if(legalMode.get()){
+            //the 300ms limit or the legalMode
+            if( lastInteractTimestamp + (clickMany? 5: 2) < Tasks.getTick()){
+                lastInteractTimestamp = Tasks.getTick();
+                Vec3d interactTarget = result.getBlockPos().toCenterPos();
+                EntityAccess.of(mc.player).addTickWrapper(
+                    new ProgressWrapper<ClientPlayerEntity>() {
+                        float pitch ;
+                        float yaw;
+                        @Override
+                        public void preProgress(ClientPlayerEntity args) {
+                            //step back our position
+                            pitch = args.getPitch();
+                            yaw = args.getYaw();
+                            Vec3d interactLook =  interactTarget.add(
+                                interactOffsetRand.nextDouble(-0.05d, 0.05d),
+                                interactOffsetRand.nextDouble(-0.05d, 0.05d),
+                                interactOffsetRand.nextDouble(-0.05d, 0.05d)
+                            );
+                            Vec3d cacheDirection = interactLook.subtract(args.getEyePos()).normalize();
+                            EntityUtils.setEntityRotationSafe(args, cacheDirection);
+                        }
+
+                        @Override
+                        public void postProgress(ClientPlayerEntity args) {
+                            for(int i=0 ; i< (clickMany?  CLICK_RATE.get(): 1); ++i){
+                                mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND,result, sequence)));
+                            }
+                            ClientAccess.of(mc).setCooldown(0);
+                            EntityUtils.setEntityYawSafe(args, this.yaw);
+                            args.setPitch(this.pitch);
+                        }
+                        @Override
+                        public boolean stillWrap(ClientPlayerEntity args) {
+                            return false;
+                        }
+                    }
+                );
+            }else {
+                Debug.chat(Text.literal("[anti-grim] 你点的太快了,可能无法通过反作弊"));
+            }
+        }else{
+            for(int i=0 ; i< (clickMany?  CLICK_RATE.get(): 1); ++i){
+                mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND,result, sequence)));
+            }
+            if(delayClick && clickMany){
+                AtomicInteger count = new AtomicInteger(2);
+                Tasks.scheduleRepeated(()->{
+                    for(int i=0 ; i< CLICK_RATE.get(); ++i){
+                        mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND,result, sequence)));
+                    }
+                    return count.decrementAndGet() <= 0 ;
+                },3,4);
+            }
+            ClientAccess.of(mc).setCooldown(0);
         }
-        if(delayClick && clickMany){
-            AtomicInteger count = new AtomicInteger(2);
-            Tasks.scheduleRepeated(()->{
-                for(int i=0 ; i< CLICK_RATE.get(); ++i){
-                    mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND,result, sequence)));
-                }
-                return count.decrementAndGet() <= 0 ;
-            },3,4);
-        }
-        ClientAccess.of(mc).setCooldown(0);
+
     }
-    public static void handleMultiBlockExecute(boolean clickMany){
-        if(mc.player ==null ||!(mc.currentScreen instanceof TileInventoryScreen tile) || tile.isVirtual() || tile.getWorld() != mc.world){
+    private static Screen cacheExecuteScreen;
+    public static void handleMultiBlockExecute(Screen executingScreen, boolean clickMany){
+        if(mc.player ==null ||!(executingScreen instanceof TileInventoryScreen tile) || tile.isVirtual() || tile.getWorld() != mc.world){
             return;
         }
         BlockPos pos = tile.getPos();
         Block block = tile.getBlockType();
+        if(pos.toCenterPos().squaredDistanceTo(mc.player.getPos()) > 50){
+            Debug.chat(Text.literal("[多方块执行] 你离着自动执行的多方块太远了,已关闭自动执行"));
+            AUTO_EXECUTE = false;
+            return;
+        }
         boolean find = false;
         if(block == Blocks.DISPENSER || block == Blocks.DROPPER){
             for (var multiblock: check().MULTIBLOCK_REGISTRIES.values()){
@@ -834,8 +917,15 @@ public class SlimefunTasks {
     public static boolean isMultiBlockAutoExecute(){
         return AUTO_EXECUTE;
     }
-    public static void handleMultiBlockAutoExecuteToggle(boolean val){
-        AUTO_EXECUTE  = true;
+    public static void handleMultiBlockAutoExecuteToggle(Screen screen, boolean val){
+        if(val){
+
+            AUTO_EXECUTE  = true;
+            cacheExecuteScreen = screen;
+        }else {
+            AUTO_EXECUTE = false;
+            cacheExecuteScreen = null;
+        }
     }
 
     public static Collection<MultiBlockWithLocation> getOptionalMultiBlocks(World world, BlockPos dispensor){
@@ -886,11 +976,11 @@ public class SlimefunTasks {
         DATA = new SlimefunRegistryDataBase();
         DATA.loadData();
     }
-
+    public static void saveImmediately(){
+        if(DATA != null)DATA.saveData();
+    }
     public static boolean scheduledSave(){
-        CompletableFuture.runAsync(()->{
-            if(DATA != null)DATA.saveData();
-        });
+        CompletableFuture.runAsync(SlimefunTasks::saveImmediately);
         return false;
     }
     private static final ItemStack ITEM_NULL_TYPE = new ItemStack(Items.BARRIER);
@@ -1219,10 +1309,10 @@ public class SlimefunTasks {
     //guide icon
     public static void handleClickGuideIcon(){
         if(handleNotEnable())return;
-        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_ITEM ,TOOLTIPS_ITEM_RULE, check().ALL_RECIPE_ENTRY.values()
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_ITEM ,TOOLTIPS_ITEM_RULE, ()-> check().ALL_RECIPE_ENTRY.values()
             .stream()
             .toList(),
-            (entry)-> new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(entry.output.copyWithCount(1)).withMouseHandler(MouseHandler.isLeft(t->{
+            (entry)-> new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(entry.output.copyWithCount(1)).withInputHandler(InputHandler.isLeft(t->{
                 if(t){
                     handleOpenSlimefunRecipeScreen(entry);
                 }else {
@@ -1240,11 +1330,11 @@ public class SlimefunTasks {
 
     public static void handleClickSaveItemIcon(){
         if(handleNotEnable())return;
-        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_SAVED ,TOOLTIPS_SAVED_RULE, check().SAVED_ITEM_ID
+        openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_SAVED ,TOOLTIPS_SAVED_RULE, ()->check().SAVED_ITEM_ID
                 .stream()
                 .map(SlimefunTasks::byId)
                 .toList(),
-                (entry)-> new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(entry.copyWithCount(1)).withMouseHandler(MouseHandler.isLeft(t->{
+                (entry)-> new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(entry.copyWithCount(1)).withInputHandler(InputHandler.isLeft(t->{
                     if(t){
                         if(Screen.hasShiftDown()){
                             InvTasks.copyGiveCommand(entry.copy());
@@ -1259,7 +1349,7 @@ public class SlimefunTasks {
                         openOrSwitch(SlimefunEntryListScreen.mapToWidget(
                             List.of(entry)
                         , (item)->new SavedItemWidget(0,0,item, null)));
-                        ItemEditTasks.openEditScreen(entry, (it)->{});
+                        //ItemEditTasks.openEditScreen(entry, (it)->{});
                     }
                 })))
             ).setSearchFilter(ITEM_FILTER)
@@ -1273,7 +1363,7 @@ public class SlimefunTasks {
             .stream()
             .toList(),
             (ct)->new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(ct.icon)
-                .withMouseHandler(MouseHandler.isLeft(t->handleOpenCraftingTypeScreen(ct)))
+                .withInputHandler(InputHandler.isLeft(t->handleOpenCraftingTypeScreen(ct)))
             )
             ).setSearchFilter(RTYPE_FILTER)
         );
@@ -1283,7 +1373,7 @@ public class SlimefunTasks {
         if(handleNotEnable())return;
         openOrSwitch(new SlimefunChoiceScreen<>(TITLE_ALL_VANILLA, Registries.RECIPE_TYPE.stream().toList(),
             (rp)-> new ExecutableWidget(0,0,16,16).setElementHandler(
-                SlotElement.instance(SUPPORT_VANILLA_RTYPE.getOrDefault(Registries.RECIPE_TYPE.getId(rp).toString(), ITEM_NULL_TYPE)).withMouseHandler(MouseHandler.isLeft(t->handleOpenVanillaTypeScreen(rp)))
+                SlotElement.instance(SUPPORT_VANILLA_RTYPE.getOrDefault(Registries.RECIPE_TYPE.getId(rp).toString(), ITEM_NULL_TYPE)).withInputHandler(InputHandler.isLeft(t->handleOpenVanillaTypeScreen(rp)))
                 )
             )
         );
@@ -1343,13 +1433,17 @@ public class SlimefunTasks {
         openOrSwitch(SlimefunEntryListScreen.recipeEntry(myEntry));
     }
 
-    public static List<RecipeEntry> getInventoryRelativeRecipes(Inventory inventory, boolean hard){
+    public static List<RecipeEntry> getInventoryRelativeRecipes(Screen inventory, boolean hard){
+        if(!(inventory instanceof HandledScreen<?> handled))return List.of();
+        var handler = handled.getScreenHandler();
+        var slots = handler.slots;
         Set<String> relatedIds = new HashSet<>();
-        int size = inventory.size();
+        int size = slots.size();
+
         for (int i=0 ;i<size;++i){
-            ItemStack item = inventory.getStack(i);
+            ItemStack item = slots.get(i).getStack();
             if(item != null && !item.isEmpty()){
-                String optionalItemId = getIdOrNull(item);
+                String optionalItemId = getSfIdOrNull(item);
                 if(optionalItemId != null){
                     relatedIds.add(optionalItemId);
                 }
@@ -1363,7 +1457,7 @@ public class SlimefunTasks {
 
             for (var ingre: ingredients){
                 if(!ingre.stack.isEmpty()){
-                    String id = getIdOrNull(ingre.stack);
+                    String id = getSfIdOrNull(ingre.stack);
                     if(id != null && relatedIds.contains(id)){
                         //soft accept
                         if(!hard){
@@ -1372,7 +1466,10 @@ public class SlimefunTasks {
                         }
                     }else {
                         //非空但id不在
-                       continue loop;
+                        if(hard){
+                            //只有严格匹配才会直接跳过
+                            continue loop;
+                        }
                     }
                 }
             }
@@ -1389,6 +1486,15 @@ public class SlimefunTasks {
         ItemStack[] ingredients = new ItemStack[9];
         Ingredient[] ingre = entry.ingredient();
         Preconditions.checkArgument(ingre.length <= 9);
+        //try clear all items first;
+        var handler = screen.getScreenHandler();
+        DefaultedList<Slot> allSlots = handler.slots;
+//        for (var i : acceptSlots){
+//            Slot slot = allSlots.get(i);
+//            if(!slot.getStack().isEmpty()){
+//                InvTasks.quickMoveSlot(handler, i, true);
+//            }
+//        }
         for (var re = 0 ;re < ingre.length; ++re){
 
             Ingredient var = ingre[re];
@@ -1421,17 +1527,34 @@ public class SlimefunTasks {
         }
         for (var mapEntry: stackRecipe.entrySet()){
             ItemStackSample sample = mapEntry.getKey();
+            String sampleId = getSfIdOrNull(sample.sample());
+            ItemStack realStack = null;
             int counter = 0;
             IntList cachedSlots = new IntArrayList();
-            DefaultedList<Slot> allSlots = screen.getScreenHandler().slots;
             int size = allSlots.size();
             for (int i=0; i< size; ++i){
                 Slot slot = allSlots.get(i);
-                if(slot != null && slot.inventory instanceof PlayerInventory && !slot.getStack().isEmpty() && ItemStack.areItemsAndComponentsEqual(slot.getStack(), sample.sample())){
-                    //all match
-                    cachedSlots.add(i);
-                    counter += slot.getStack().getCount();
+                if(slot != null && slot.inventory instanceof PlayerInventory && !slot.getStack().isEmpty() ){
+                    if(realStack != null){
+                        if( ItemStack.areItemsAndComponentsEqual(slot.getStack(), realStack)){
+                            //all match
+                            cachedSlots.add(i);
+                            counter += slot.getStack().getCount();
+                        }
+                    }else {
+                        //the first match itemStack will be the realStack template
+                        if(Objects.equals(sampleId,getSfIdOrNull(slot.getStack()) )){
+                            realStack = slot.getStack();
+                            cachedSlots.add(i);
+                            counter += slot.getStack().getCount();
+                        }
+                    }
+
                 }
+            }
+            //nothing match this sample, , , counter must be 0, there is no meaning doing left
+            if(realStack == null){
+                continue;
             }
             int needed = 0;
             for (var i: mapEntry.getValue()){
@@ -1440,7 +1563,7 @@ public class SlimefunTasks {
             int maxSupply = Math.min( counter/ needed, amount);
             for (var i: mapEntry.getValue()){
                 int slotNeed = ingredients[i].getCount() * maxSupply;
-                InvTasks.moveToSlot(screen, sample.sample(), acceptSlots[i], slotNeed, removeOrigin, cachedSlots);
+                InvTasks.moveToSlot(screen, realStack, acceptSlots[i], slotNeed, removeOrigin, cachedSlots);
             }
         }
         for (var i: emptySlots){
@@ -1642,16 +1765,18 @@ public class SlimefunTasks {
     private static long lastAutoTick;
     public static void slimefunMultiBlockTick(ClientPlayerEntity player){
         if(AUTO_EXECUTE){
-            if(mc.currentScreen instanceof TileInventoryScreen holder){
+            if(cacheExecuteScreen instanceof TileInventoryScreen holder){
                 if(!holder.isVirtual() && holder.getBlockType() == Blocks.DISPENSER){
                     long currentMs = System.currentTimeMillis();
-                    if(currentMs > lastAutoTick + 300){
+                    //当玩家关闭界面但并没有取消的时候,以低速运行
+                    if(currentMs > lastAutoTick + (cacheExecuteScreen == mc.currentScreen?300 : 900 )){
                         lastAutoTick = currentMs;
-                        handleMultiBlockExecute(true);
+                        handleMultiBlockExecute(cacheExecuteScreen,true);
                     }
                 }
             }else {
                 AUTO_EXECUTE = false;
+                Debug.chat(Text.literal("[自动多方块] 你所选中的界面并没有位置记录"));
             }
 
         }
@@ -1709,7 +1834,7 @@ public class SlimefunTasks {
         //退出服务器时保存
         Listener.getServerDisconnectPoint().registerHandler((v)->{
             Debug.info("Save Slimefun Data...");
-            SlimefunTasks.scheduledSave();
+            SlimefunTasks.saveImmediately();
         });
         Listener.getGameJoinPoint().registerHandler((v)->{
             SlimefunTasks.reloadData();
@@ -1736,7 +1861,7 @@ public class SlimefunTasks {
         public boolean containingIdAsIngredient(String id);
     }
 
-    public static record SlimefunRecipeEntry(String rid, String id, ItemStackWithId[] ingredientEntry, ItemStack output) implements RecipeEntry{
+    public static record SlimefunRecipeEntry(String rid, String id, ItemStackWithId[] ingredientEntry, @NonNull ItemStack output) implements RecipeEntry{
         public ItemStack[] inputs(){
             ItemStack[] itemStacks = new ItemStack[9];
             for (int i=0; i<ingredientEntry.length; ++i){

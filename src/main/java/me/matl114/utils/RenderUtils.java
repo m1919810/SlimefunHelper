@@ -21,12 +21,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
-import org.joml.Vector3d;
-import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -123,7 +120,8 @@ public class RenderUtils {
     public static void startDrawVirtual(MatrixStack matrixStack){
         matrixStack.push();
         GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        //remove this
+//        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
     }
@@ -261,37 +259,31 @@ public class RenderUtils {
 
         bufferBuilder.vertex(matrix, minX, minY, minZ);
         bufferBuilder.vertex(matrix, maxX, minY, minZ);
-
-        bufferBuilder.vertex(matrix, maxX, minY, minZ);
-        bufferBuilder.vertex(matrix, maxX, minY, maxZ);
-
         bufferBuilder.vertex(matrix, maxX, minY, maxZ);
         bufferBuilder.vertex(matrix, minX, minY, maxZ);
 
-        bufferBuilder.vertex(matrix, minX, minY, maxZ);
-        bufferBuilder.vertex(matrix, minX, minY, minZ);
+        bufferBuilder.vertex(matrix, minX, maxY, minZ);
+        bufferBuilder.vertex(matrix, minX, maxY, maxZ);
+        bufferBuilder.vertex(matrix, maxX, maxY, maxZ);
+        bufferBuilder.vertex(matrix, maxX, maxY, minZ);
 
         bufferBuilder.vertex(matrix, minX, minY, minZ);
         bufferBuilder.vertex(matrix, minX, maxY, minZ);
+        bufferBuilder.vertex(matrix, maxX, maxY, minZ);
+        bufferBuilder.vertex(matrix, maxX, minY, minZ);
 
         bufferBuilder.vertex(matrix, maxX, minY, minZ);
         bufferBuilder.vertex(matrix, maxX, maxY, minZ);
-
-        bufferBuilder.vertex(matrix, maxX, minY, maxZ);
         bufferBuilder.vertex(matrix, maxX, maxY, maxZ);
+        bufferBuilder.vertex(matrix, maxX, minY, maxZ);
 
         bufferBuilder.vertex(matrix, minX, minY, maxZ);
-        bufferBuilder.vertex(matrix, minX, maxY, maxZ);
-
-        bufferBuilder.vertex(matrix, minX, maxY, minZ);
-        bufferBuilder.vertex(matrix, maxX, maxY, minZ);
-
-        bufferBuilder.vertex(matrix, maxX, maxY, minZ);
-        bufferBuilder.vertex(matrix, maxX, maxY, maxZ);
-
+        bufferBuilder.vertex(matrix, maxX, minY, maxZ);
         bufferBuilder.vertex(matrix, maxX, maxY, maxZ);
         bufferBuilder.vertex(matrix, minX, maxY, maxZ);
 
+        bufferBuilder.vertex(matrix, minX, minY, minZ);
+        bufferBuilder.vertex(matrix, minX, minY, maxZ);
         bufferBuilder.vertex(matrix, minX, maxY, maxZ);
         bufferBuilder.vertex(matrix, minX, maxY, minZ);
     }
@@ -311,10 +303,10 @@ public class RenderUtils {
         bufferBuilder.vertex(maxX, minY, maxZ);
         bufferBuilder.vertex(minX, minY, maxZ);
 
-        bufferBuilder.vertex( minX, minY, maxZ);
+        bufferBuilder.vertex(minX, minY, maxZ);
         bufferBuilder.vertex(minX, minY, minZ);
 
-        bufferBuilder.vertex( minX, minY, minZ);
+        bufferBuilder.vertex(minX, minY, minZ);
         bufferBuilder.vertex(minX, maxY, minZ);
 
         bufferBuilder.vertex(maxX, minY, minZ);
@@ -377,7 +369,14 @@ public class RenderUtils {
         bufferBuilder.vertex(minX, maxY, maxZ);
         bufferBuilder.vertex(minX, maxY, minZ);
     }
-    public static void drawOutlinedBox(Matrix4f matrix, Vec3d from, Vec3d to){
+    public static void drawOutlinedBox(MatrixStack matrix, Vec3d from, Vec3d to){
+        Vec3d vec3d = getCameraPos();
+        drawOutlinedBoxCameraCoord(matrix.peek().getPositionMatrix(), from.subtract(vec3d), to.subtract(vec3d));
+    }
+    public static void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to){
+        drawOutlinedBoxCameraCoord(matrix.peek().getPositionMatrix(), from, to);
+    }
+    public static void drawOutlinedBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to){
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
         BufferBuilder bufferBuilder = tessellator
@@ -388,7 +387,7 @@ public class RenderUtils {
 //        drawOutlinedBox(bufferBuilder, vec3d, vec3d1);
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
     }
-    public static void drawSolidBox(Matrix4f matrix, Vec3d from, Vec3d to){
+    public static void drawSolidBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to){
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
         BufferBuilder bufferBuilder = tessellator
@@ -398,6 +397,10 @@ public class RenderUtils {
 //        Vec3d vec3d1 = new Vec3d(matrix.transformPosition((float) to.x, (float) to.y, (float) to.z, new Vector3f()));
 //        drawOutlinedBox(bufferBuilder, vec3d, vec3d1);
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
+    }
+    public static void drawSolidBox(Matrix4f matrix, Vec3d from, Vec3d to){
+        Vec3d vec3d = getCameraPos();
+        drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
     }
     public static void setAsShaderColor(Color color, float opacity){
         RenderSystem.setShaderColor(color.getRed(), color.getGreen(), color.getBlue(), opacity);

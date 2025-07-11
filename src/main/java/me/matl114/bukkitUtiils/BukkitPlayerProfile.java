@@ -99,7 +99,7 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
     }
     static final String PROPERTY_NAME = "textures";
     private static final String MINECRAFT_HOST = "textures.minecraft.net";
-    private static final String MINECRAFT_PATH = "/texture/";
+    private static final String MINECRAFT_PATH = "/TEXTURE/";
     public static Property encodeUrlToProperty(URL skinUrl, PlayerTextures.SkinModel model, URL cape){
         JsonObject propertyData = new JsonObject();
         if( skinUrl !=null){

@@ -8,6 +8,7 @@ import me.matl114.utils.UtilClass.ArgumentListenerPoint;
 import me.matl114.utils.UtilClass.ListenerPoint;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.command.CommandSource;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.listener.PacketListener;
@@ -29,8 +30,9 @@ public class Listener {
 
     private static final HashSet<BiPredicate<ClientConnection,Packet<?>>> listenerS2C = new LinkedHashSet<>();
     private static final HashSet<BiPredicate<ClientConnection,Packet<?>>> listenerC2S = new LinkedHashSet<>();
-    private static final HashMap<Class<?>,HashSet< BiPredicate<ClientConnection,Packet<?>>>> packetListener = new LinkedHashMap<>();
-    private static final HashMap<Class<? extends Packet<?>>, Class<? extends Packet<?>>> mappedPacketClass = new LinkedHashMap<>();
+    private static final HashMap<Class<?>,HashSet< BiPredicate<ClientConnection,Packet<?>>>> packetListener = new HashMap<>();
+    private static final HashMap<Class<?>, Deque<BiPredicate<ClientConnection, Packet<?>>>> packetCatcher = new HashMap<>();
+    private static final HashMap<Class<? extends Packet<?>>, Class<? extends Packet<?>>> mappedPacketClass = new HashMap<>();
     public static <T extends Packet<?>, W extends Packet<?>> Class<W> getMappedPacketClass(Class<T> packet){
         return (Class<W>) mappedPacketClass.computeIfAbsent((Class<? extends Packet<?>>) packet, Listener::getPacketClass);
     }
@@ -67,6 +69,17 @@ public class Listener {
     public static <T extends Packet<?>> void registerSinglePacketListener(Class<T> clazz, BiPredicate<ClientConnection, T> predicate){
         packetListener.computeIfAbsent((Class<?>) clazz, (c)->new LinkedHashSet<>()).add((BiPredicate<ClientConnection, Packet<?>>) predicate);
     }
+    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz){
+        registerSinglePacketCatcher(clazz, ((connection, t) -> {return true;}));
+    }
+    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz, Predicate< T> predicate){
+        registerSinglePacketCatcher(clazz, ((connection, t) -> predicate.test(t)));
+    }
+    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz, BiPredicate<ClientConnection, T> predicate){
+        packetCatcher.computeIfAbsent((Class<?>) clazz, (c)->new ArrayDeque<>()).add((BiPredicate<ClientConnection, Packet<?>>) predicate);
+    }
+
+
     public static boolean acceptS2CPacket(ClientConnection connection,Packet<?> packet){
 
         return unpackMultiPacket(connection,packet,true);
@@ -74,6 +87,10 @@ public class Listener {
     public static boolean sendC2SPacket(ClientConnection connection,Packet<?> packet){
         return unpackMultiPacket(connection,packet,false);
     }
+
+
+
+
     @Unique
     private static boolean onSinglePacketListen(ClientConnection connection,Packet<?> packet, Set<BiPredicate<ClientConnection,Packet<?>>> listeners){
         for(BiPredicate<ClientConnection,Packet<?>> listener:listeners){
@@ -81,7 +98,21 @@ public class Listener {
                 return false;
             }
         }
-        Class<?> t = mappedPacketClass.computeIfAbsent((Class<? extends Packet<?>>) packet.getClass(), Listener::getPacketClass);
+
+        Class<?> t =  getMappedPacketClass(packet.getClass());
+        var re2 = packetCatcher.get(t);
+        boolean result =true;
+        if(re2 != null && !re2.isEmpty()){
+            Iterator<BiPredicate<ClientConnection, Packet<?>>> predicateIterator = re2.iterator();
+            while (predicateIterator.hasNext()){
+                var re3 = predicateIterator.next();
+                if(re3.test(connection, packet)){
+                    result = false;
+                }
+                predicateIterator.remove();
+            }
+        }
+        if(!result)return false;
         var re = packetListener.get(t);
         if(re != null && !re.isEmpty()){
             for (BiPredicate<ClientConnection,Packet<?>> predicate :re){
@@ -90,6 +121,7 @@ public class Listener {
                 }
             }
         }
+
         return true;
     }
     @Unique
@@ -120,7 +152,7 @@ public class Listener {
 
     @Getter
     private static final ArgumentCancellablePoint<Packet<?>> mainThreadPacketPreApplyPoint = new ArgumentCancellablePoint<>();
-
+    @Getter
     private static final ArgumentListenerPoint<Packet<?>> mainThreadPacketPostApplyPoint = new ArgumentListenerPoint<>();
     public static boolean prepacketListenerApplyPoint(Packet<?> packet, PacketListener listener){
         if(!MinecraftClient.getInstance().isOnThread()){
@@ -145,6 +177,9 @@ public class Listener {
     public static void doItemUseAtBlockPost(Hand hand, BlockHitResult result){
         postPlayerUseItemAtBlock.handleValue(result, hand);
     }
+    @Getter
+    private static final ListenerPoint<ClientPlayerEntity> playerInitConfiguration = new ListenerPoint<>();
+
     static{
         //ConnectionListener.init();
     }

@@ -21,8 +21,16 @@ import java.util.function.BooleanSupplier;
 
 public class McWidgetHelpers {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    public static DrawableWidget createMultiLineEditBox(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin){
-        return createEnhancedMultiLine(x, y, dx, dy, valueTracker, origin);
+    public static ContentDelegateWidget<EditBoxWidget> createMultiLineEditBox(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin){
+        return createEnhancedMultiLine(x, y, dx, dy, valueTracker, origin, null);
+//        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());;
+//        widget.setText(origin);
+//        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
+//        return new ContentDelegateWidget<>(0,0, 0,0)
+//            .setContentDelegate(widget);
+    }
+    public static ContentDelegateWidget<EditBoxWidget> createMultiLineEditBox(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin, ColorProvider boxColorProvider){
+        return createEnhancedMultiLine(x, y, dx, dy, valueTracker, origin, boxColorProvider);
 //        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());;
 //        widget.setText(origin);
 //        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
@@ -85,10 +93,13 @@ public class McWidgetHelpers {
             TextFieldAccess.of(textFieldWidget).setBorderColorProvider(boxColorProvider);
         return new TextContentDelegateWidget<>(x, y, textFieldWidget);
     }
-    public static <T> ContentDelegateWidget<EditBoxWidget> createEnhancedMultiLine(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin){
+    public static <T> ContentDelegateWidget<EditBoxWidget> createEnhancedMultiLine(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin, ColorProvider boxColorProvider){
         EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());;
         widget.setText(origin);
         widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
+        if(boxColorProvider != null){
+            TextFieldAccess.of(widget).setBorderColorProvider(boxColorProvider);
+        }
         return new TextContentDelegateWidget<>(0,0, widget);
 
     }

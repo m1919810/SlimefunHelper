@@ -26,12 +26,18 @@ import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.CrossbowUser;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.decoration.InteractionEntity;
+import net.minecraft.entity.mob.AbstractSkeletonEntity;
+
+import net.minecraft.entity.mob.WitherSkeletonEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.item.*;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket;
 import net.minecraft.network.packet.s2c.common.ResourcePackSendS2CPacket;
@@ -42,8 +48,11 @@ import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Arm;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
@@ -52,10 +61,8 @@ import org.joml.Vector2d;
 
 import javax.annotation.Nonnull;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -82,7 +89,9 @@ public class RenderTasks {
     public static Text getDisplayedLocation(double x,double y ,double z){
         return Text.literal("[%d,%d,%d]".formatted((int)x, (int)y, (int)z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
     }
+    private static AtomicBoolean doLog = Configs.RENDER_CONFIG.getBoolean(Configs.RENDER_LOG_ON_SCREEN);
     public static void detectEntitySpawn(EntitySpawnS2CPacket packet){
+        //Debug.info("check entity", packet.getEntityType());
         boolean entitySpawn =  HotKeys.getHotkeyToggleManager().getState(HotKeys.DETECT_ENTITY);
         if( !entitySpawn){
             return;
@@ -92,20 +101,27 @@ public class RenderTasks {
         if(whitelisted.contains(packet.getEntityType())){
             trackingEntity.add(packet.getEntityId());
             EntityType<?> type=packet.getEntityType();
-            if(type==EntityType.PLAYER){
-                Text text=null;
-                if(MinecraftClient.getInstance().world!=null){
-                    PlayerListEntry entry= MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(packet.getUuid());
-                    if(entry!=null){
-                        text=Text.literal(entry.getProfile().getName()).formatted(Formatting.GREEN);
+            if(doLog.get()){
+                if(type==EntityType.PLAYER){
+                    Text text=null;
+                    if(MinecraftClient.getInstance().world!=null){
+                        PlayerListEntry entry= MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(packet.getUuid());
+                        if(entry!=null){
+                            text=Text.literal(entry.getProfile().getName()).formatted(Formatting.GREEN);
+                        }
                     }
+
+                    Debug.chat("Player ",text==null?"":text,"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
+                    Debug.chat("Player Entity Id ",packet.getEntityId());
+                }else{
+                    if(LivingEntity.class.isAssignableFrom( packet.getEntityType().getBaseClass())){
+                        //only log the living Entity; the common Entities are mostly functional and are noisy
+                        Debug.chat("Entity",packet.getEntityType().getName(),"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
+                    }
+
                 }
-                Debug.chat("Player ",text==null?"":text,"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
-                Debug.chat("Player Entity Id ",packet.getEntityId());
-            }else{
-                Debug.chat("Entity",packet.getEntityType().getName(),"spawn at position ",getDisplayedLocation(packet.getX(),packet.getY(),packet.getZ()),",distance: %.2f".formatted(calculateDistance(packet.getX(),packet.getY(),packet.getZ())));
             }
-            //Debug.info(packet.getEntityData(),packet.getUuid());
+
         }
     }
 //    public static void detectPlayerSpawn(PlayerSpawnS2CPacket packet){
@@ -147,8 +163,10 @@ public class RenderTasks {
                 if(detechEntity){
                     Entity entity=clientWorld.getEntityById(i);
                     if(entity==null)continue;
-                    if(whitelisted.contains(entity.getType())){
-                        Debug.chat("Entity",entity.getType().getName(),entity instanceof PlayerEntity pl? pl.getName():(entity.hasCustomName()? entity.getCustomName():""),"disappear at position ",getDisplayedLocation(entity.getX(),entity.getY(),entity.getZ()),",distance: %.2f".formatted(calculateDistance(entity.getX(),entity.getY(),entity.getZ())));
+                    if(entity instanceof LivingEntity && whitelisted.contains(entity.getType())){
+                        if(doLog.get()){
+                            Debug.chat("Entity",entity.getType().getName(),entity instanceof PlayerEntity pl? pl.getName():(entity.hasCustomName()? entity.getCustomName():""),"disappear at position ",getDisplayedLocation(entity.getX(),entity.getY(),entity.getZ()),",distance: %.2f".formatted(calculateDistance(entity.getX(),entity.getY(),entity.getZ())));
+                        }
                     }
                 }
 
@@ -196,6 +214,7 @@ public class RenderTasks {
 
     }
     public static AtomicBoolean calFireball = Configs.RENDER_CONFIG.getBoolean(Configs.CAL_FIREBALL_TRACE);
+    public static AtomicBoolean calArrow = Configs.RENDER_CONFIG.getBoolean(Configs.CAL_PROJECTILE_TRACE);
     public static void calPoweredProjectileTrace(ExplosiveProjectileEntity fireball){
         if(!HotKeys.getHotkeyToggleManager().getState(HotKeys.DETECT_ENTITY)){
             return;
@@ -250,6 +269,60 @@ public class RenderTasks {
             //Debug.info("null player");
         }
     }
+
+
+    public static void calArrowTrace(PersistentProjectileEntity arrow){
+        if(!HotKeys.getHotkeyToggleManager().getState(HotKeys.DETECT_ENTITY)){
+            return;
+        }
+        if(!calFireball.get()){
+            return;
+        }
+        if(!getWhitelisted().contains(EntityType.ARROW)){
+            return;
+        }
+        if(mc.player != null){
+
+            if(arrow.getOwner() == mc.player)return;
+            if(mc.player.getPos().squaredDistanceTo(arrow.getPos()) < 0.1){
+                //might be shot by player using something
+                return;
+            }
+            //给行进方向norm
+            Vec3d vec3d = arrow.getVelocity();
+            Vec3d vecDirection = vec3d.normalize();
+            var playerPos = mc.player.getEyePos();
+            var deltaTo = playerPos.subtract(arrow.getPos());
+            //求出玩家位置在行进方向上的投影长度
+            var projLen = deltaTo.dotProduct(vecDirection);
+            if(projLen > 0){
+                //勾股定理求出最短距离
+                List<Vec3d> preciseLine = ArrowPredictor.of(arrow).predictLine(400);
+                Vec3d proj = null;
+                double lenSquared = 144000000;
+                for (var vec: preciseLine){
+                    double len = vec.squaredDistanceTo(playerPos);
+                    if(len < lenSquared){
+                        proj = vec;
+                        lenSquared = len;
+                    }
+                }
+                if(proj == null)return;
+                Vector2d planeVec = new Vector2d(proj.x, proj.z);
+                double minDist = Math.sqrt(lenSquared);
+                //cal direction
+                Vector2d playerLookat = getPlayerLook2d();
+                boolean front = planeVec.dot(playerLookat) > 0;
+                Debug.chat("Arrow trace update:",Text.literal("%.2f".formatted(minDist)).formatted(Formatting.RED),(front? Text.literal("in front of"): Text.literal("at back of")).formatted(Formatting.GREEN),"you");
+            }else {
+                Debug.chat("Arrow trace update: not towards you");
+            }
+        }else {
+            //Debug.info("null player");
+        }
+    }
+    //public static void calArrowLineTrace()
+
     //todo render more projectile, like arrow and wither skull ,
     public static void renderExplosiveProjectileLine(MatrixStack stack){
         var player = mc.player;
@@ -267,6 +340,218 @@ public class RenderTasks {
         }
     }
 
+    public static void renderPreProjectile(MatrixStack stack){
+        if(mc.world == null || mc.player == null)return;
+        //no render arrow
+        var whitelist = getWhitelisted();
+        boolean arrowItem = whitelist.contains(EntityType.ARROW);
+        if(!arrowItem)return;
+        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.DETECT_ENTITY) && calArrow.get()){
+            RenderUtils.startDrawVirtual(stack);
+            for (var fireball : mc.world.getEntities()){
+                if(arrowItem && fireball instanceof AbstractSkeletonEntity arrow && !(arrow instanceof WitherSkeletonEntity)){
+                    renderSkeletonProjectile(stack, arrow);
+                }
+                else if(arrowItem && fireball instanceof PlayerEntity player){
+                    renderPlayerProjectile(stack, player);
+                }else if(arrowItem && fireball instanceof CrossbowUser user){
+                    renderCrossbowProjectile(stack, user);
+                }else if(arrowItem && fireball instanceof PersistentProjectileEntity arrow){
+                    renderArrowProjectile(stack, arrow);
+                }
+//                if(fireball instanceof InteractionEntity interactionEntity){
+//                    RenderUtils.drawOutlinedBox(stack, interactionEntity.getPos().add(SMALL_FROM), interactionEntity.getPos().add(SMALL_TO) );
+//                    RenderUtils.drawLineVirtual(stack, mc.player.getPos(), interactionEntity.getPos(), Color.YELLOW);
+//                }
+            }
+            RenderUtils.stopDrawVirtual(stack);
+        }
+    }
+
+
+    private static class ArrowPredictor{
+        Vec3d pos;
+        Vec3d vec;
+        Type type;
+        Entity owner;
+        private static final Random random = net.minecraft.util.math.random.Random.create();
+        private static Vec3d lastRand;
+        private static int lastRandTime = 0;
+        private static Vec3d getArrowRand(){
+            if(lastRandTime + 20 < Tasks.getTick()){
+                lastRandTime = Tasks.getTick();
+                float uncertainty = 1.0f;
+                lastRand = new Vec3d(random.nextTriangular(0.0, 0.0172275 * (double)uncertainty), random.nextTriangular(0.0, 0.0172275 * (double)uncertainty), random.nextTriangular(0.0, 0.0172275 * (double)uncertainty));
+            }
+            return lastRand;
+        }
+        private static Vec3d calculateVelocity(double x, double y, double z, float power) {
+            return (new Vec3d(x, y, z)).normalize().add(getArrowRand()).multiply((double)power);
+        }
+        public static ArrowPredictor of(AbstractSkeletonEntity entity){
+            Vec3d originPos = new Vec3d(entity.getX(), entity.getEyeY() - 0.10000000149011612, entity.getZ());
+            Vec3d facing = entity.getRotationVector();
+            double d = facing.getX();
+            double f = facing.getZ();
+            double g = Math.sqrt(d * d + f * f);
+
+//            Debug.info(entity.getTarget());
+            Vec3d vec3d = calculateVelocity(d, facing.y +  g* 0.1  , f, 1.6F);
+            return new ArrowPredictor(originPos, vec3d, Type.SKELETON, entity);
+        }
+        private static float getPullProgress(int useTicks) {
+            float f = (float)useTicks / 20.0F;
+            f = (f * f + f * 2.0F) / 3.0F;
+            if (f > 1.0F) {
+                f = 1.0F;
+            }
+
+            return f;
+        }
+        private static Vec3d getHandOffset(PlayerEntity player, Hand hand)
+        {
+            double yaw = Math.toRadians(player.getYaw());
+            Arm mainArm = mc.options.getMainArm().getValue();
+
+            boolean rightSide = mainArm == Arm.RIGHT && hand == Hand.MAIN_HAND
+                || mainArm == Arm.LEFT && hand == Hand.OFF_HAND;
+
+            double sideMultiplier = rightSide ? -1 : 1;
+            double handOffsetX = Math.cos(yaw) * 0.16 * sideMultiplier;
+            double handOffsetZ = Math.sin(yaw) * 0.16 * sideMultiplier;
+
+            return new Vec3d(handOffsetX,0 , handOffsetZ);
+        }
+        public static ArrowPredictor of(PlayerEntity player, RangedWeaponItem weaponItem, Hand hand){
+            Vec3d vec3d;
+            final Vec3d offset = getHandOffset(player, hand);
+            Vec3d pos = new Vec3d(player.getX(), player.getEyeY() - 0.10000000149011612, player.getZ())
+                .add(offset);
+            if(weaponItem instanceof BowItem){
+                int usingTicks = (player.isUsingItem() && player.getActiveHand() == hand) ? player.getItemUseTime() : 1000;
+                float progress = getPullProgress(usingTicks);
+                float speed = progress * 3.0f;
+                Vec3d facing = player.getRotationVector();
+                vec3d = calculateVelocity(facing.x, facing.y, facing.z, speed);
+            }else {
+                Vec3d facing = player.getRotationVec(1.0f);
+                float speed = 3.15F;
+                vec3d = calculateVelocity(facing.x, facing.y, facing.z, speed);
+            }
+            return new ArrowPredictor(pos, vec3d, Type.PLAYER , player){
+                @Override
+                public List<Vec3d> predictLine(int ticks) {
+                    List<Vec3d> list =  super.predictLine(ticks);
+                    int size = list.size();
+                    if(size == 0)return list;
+                    List<Vec3d> list3d = new ArrayList<>();
+                    for (int i=0 ; i < size; ++ i){
+                        list3d.add(list.get(i).subtract(offset.multiply(((i+1)/(double)size))));
+                    }
+                    return list3d;
+                }
+            };
+        }
+        public static ArrowPredictor of(PersistentProjectileEntity arrow){
+            return new ArrowPredictor(arrow.getPos(), arrow.getVelocity(), Type.ARROW, arrow);
+        }
+        public static ArrowPredictor of(CrossbowUser user){
+            Entity player = (Entity)user;
+            Vec3d facing = (player).getRotationVec(1.0f);
+            float speed = 1.6F;
+            Vec3d vec3d = calculateVelocity(facing.x, facing.y, facing.z, speed);
+            Vec3d pos = new Vec3d(player.getX(), player.getEyeY() - 0.10000000149011612, player.getZ());
+            return new ArrowPredictor(pos, vec3d, Type.CROSSBOW, player);
+        }
+        public ArrowPredictor(Vec3d pos, Vec3d vec, Type type, Entity owner){
+            this.pos = pos;
+            this.vec = vec;
+            this.type = type;
+            this.owner = owner;
+        }
+        public static enum Type{
+            SKELETON,
+            PLAYER,
+            ARROW,
+            CROSSBOW
+            ;
+        }
+
+        public List<Vec3d> predictLine(int ticks){
+            Vec3d arrowPos = pos;
+            Vec3d arrowMotion = vec;
+            double gravity = EntityUtils.getProjectileGravity(Items.BOW);
+            List<Vec3d> path = new ArrayList<>();
+            Vec3d lastPos;
+            if(this.vec.lengthSquared() < 1e-5){
+                return List.of();
+            }
+            for(int i = 0; i < ticks; i++)
+            {
+                // add to path
+                path.add(arrowPos);
+                // apply motion
+                arrowPos = arrowPos.add(arrowMotion.multiply(0.1));
+
+                // apply air friction
+                arrowMotion = arrowMotion.multiply(0.999);
+
+                // apply gravity
+                arrowMotion = arrowMotion.add(0, -gravity * 0.1, 0);
+
+                if(path.size() > 2){
+                    lastPos = path.get(path.size() - 2);
+                    if(RaycastUtils.raycastAnyBlock(owner, lastPos, arrowPos) || RaycastUtils.raycastHitAnyEntityExceptPlayer(owner, lastPos, arrowPos)){
+                        break;
+                    }
+                }
+
+            }
+            return path;
+        }
+    }
+
+    private static void renderSkeletonProjectile(MatrixStack stack, AbstractSkeletonEntity entity){
+        if(entity.isUsingItem() && entity.getActiveItem().getItem() instanceof BowItem){
+            drawClassicArrowTrajectory(stack, ArrowPredictor.of(entity).predictLine(400));
+        }
+    }
+    private static void renderCrossbowProjectile(MatrixStack stack, CrossbowUser pillagerEntity){
+        if(pillagerEntity instanceof LivingEntity entity && entity.isUsingItem() && entity.getActiveItem().getItem() instanceof RangedWeaponItem crossbow){
+            drawClassicArrowTrajectory(stack,ArrowPredictor.of(pillagerEntity).predictLine(400) );
+            return;
+        }
+    }
+
+
+    private static void renderPlayerProjectile(MatrixStack stack, PlayerEntity player){
+        for (var hand : Hand.values()){
+            if(player.getStackInHand(hand).getItem() instanceof RangedWeaponItem item){
+                drawClassicArrowTrajectory(stack, ArrowPredictor.of(player, item, hand).predictLine(400));
+                return;
+            }
+        }
+    }
+
+    private static void renderArrowProjectile(MatrixStack stack, PersistentProjectileEntity arrow){
+        //filter on ground arrows
+        if(!arrow.isOnGround() && arrow.getVelocity().lengthSquared() > 1e-5){
+            //fix? velocity does not change
+            drawClassicArrowTrajectory(stack,ArrowPredictor.of(arrow).predictLine(400) );
+        }
+    }
+    private static void drawClassicArrowTrajectory(MatrixStack stack, List<Vec3d> vec3ds){
+        //escape little traj
+        if(vec3ds.size() <= 3)return;
+        RenderUtils.drawStripLineVirtual(stack, vec3ds, Color.RED);
+        if(!vec3ds.isEmpty()){
+            Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
+            RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
+            RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), finalPosition.add(SMALL_FROM), finalPosition.add(SMALL_TO));
+        }
+    }
+
+
     public static ArrayList<Vec3d> predictFireballTrace(ExplosiveProjectileEntity fireball){
         ArrayList<Vec3d> trace = new ArrayList<>();
         Vec3d startpos = fireball.getPos();
@@ -282,10 +567,13 @@ public class RenderTasks {
             startpos = startpos.add(motion);
             motion = motion.add(power).multiply(drag);
             trace.add(startpos);
-            if(RaycastUtils.raycastAnyBlock(fireball, lastPos, startpos) || RaycastUtils.raycastHitAnyEntity(fireball, lastPos, startpos)){
-                break;
+            if(trace.size() > 2){
+                lastPos = trace.get(trace.size() - 2);
+                if(RaycastUtils.raycastAnyBlock(fireball, lastPos, startpos) || RaycastUtils.raycastHitAnyEntityExceptPlayer(fireball, lastPos, startpos)){
+                    break;
+                }
             }
-            lastPos = startpos;
+
         }
         return trace;
     }
@@ -315,7 +603,9 @@ public class RenderTasks {
         renderBlocks.add(task);
     }
     private static final Vec3d FROM = new Vec3d(-0.5, -0.5, -0.5);
+    private static final Vec3d SMALL_FROM = new Vec3d( - 0.2, -0.2, -0.2);
     private static final Vec3d TO = new Vec3d( 0.5, 0.5, 0.5);
+    private static final Vec3d SMALL_TO = new Vec3d(0.2, 0.2, 0.2);
     private static void onRenderVirtualTasks(MatrixStack stack){
         if(renderBlocks.isEmpty())return;
         RenderUtils.startDrawVirtual(stack);
@@ -579,7 +869,7 @@ public class RenderTasks {
     }
     public static boolean ensureSleepingScreen(){
         if(mc.currentScreen != sleepingScreenInstance){
-            if(ClientUtils.isPlayerOnline() || sleepingScreenInstance instanceof SafeSleepingScreen){
+            if(ClientUtils.isPlayerOnline()){
                 ScreenAccess.of(sleepingScreenInstance).openFromCurrent();
 
             }else {
@@ -655,5 +945,6 @@ public class RenderTasks {
         RenderMain.getRenderLayerTasks().registerHandler(RenderTasks::renderExplosiveProjectileLine);
         Listener.getServerDisconnectPoint().registerHandler(RenderTasks::onPlayerDisconnect);
         RenderMain.getRenderLayerTasks().registerHandler(RenderTasks::onRenderVirtualTasks);
+        RenderMain.getRenderLayerTasks().registerHandler(RenderTasks::renderPreProjectile);
     }
 }

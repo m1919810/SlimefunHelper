@@ -2,6 +2,7 @@ package me.matl114.mixins.HackMixin;
 
 import lombok.Getter;
 import me.matl114.access.TileInventoryScreen;
+import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hackUtils.InteractionTasks;
 import me.matl114.hackUtils.SlimefunTasks;
@@ -16,6 +17,7 @@ import net.minecraft.screen.Generic3x3ContainerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -70,11 +72,6 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
         if(this.pos != null && this.world != null){
             cacheBlockType = this.world.getBlockState(this.pos).getBlock();
         }
-    }
-
-
-    @Inject(method = "init",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;init()V", shift = At.Shift.AFTER))
-    protected void initRecipeBook(CallbackInfo ci){
         Collection<String> co = this.isVirtual()? null: SlimefunTasks.getOptionalMultiBlockTypes(this.world, this.pos)
             .stream()
             .map(SlimefunTasks.MultiBlockEntry::getOptionalCraftingType)
@@ -82,7 +79,15 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
             .map(Optional::get)
             .map(SlimefunTasks.CraftingType::id)
             .collect(Collectors.toSet());
-        this.recipeBookWidget = new SlimefunDispensorSuggestBookWidget(this.x + 3, this.y + 3,co,(bol, entry)-> SlimefunTasks.handleMoveRecipeToSlots(entry, this, bol ? 64: 1, true, AVAILABLE_SLOTS))
+        this.recipeBookWidget = new SlimefunDispensorSuggestBookWidget( 3,  3,co,(bol, entry)-> SlimefunTasks.handleMoveRecipeToSlots(entry, this, bol, true, AVAILABLE_SLOTS));
+    }
+
+
+    @Inject(method = "init",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;init()V", shift = At.Shift.AFTER))
+    protected void initRecipeBook(CallbackInfo ci){
+        this.recipeBookWidget.refreshActiveState();
+        new ContentDelegateWidget<>(this.x , this.y,0,0)
+            .setContentDelegate(this.recipeBookWidget)
             .addTo(this);
     }
 

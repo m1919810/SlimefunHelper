@@ -48,8 +48,8 @@ public class SavedItemWidget extends SubScreenWidget{
             .addToSub(this);
         ExecutableWidget.instance(15, 5, 54, 54)
             .setElementHandler(
-                new OutputSlotElement(this.itemStack)
-                    .withMouseHandler(MouseHandler.run(()->
+                new SlotElement(this.itemStack)
+                    .withInputHandler(InputHandler.run(()->
                         this.clickIcon.accept(this.itemStack)))
             )
             .addToSub(this)

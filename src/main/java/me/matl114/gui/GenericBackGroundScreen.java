@@ -30,7 +30,7 @@ public class GenericBackGroundScreen extends GenericScreen{
         this.titleWidget = ExecutableWidget.instance(this.x + 5, this.y + 5, this.backgroundWidth - 10, TITLE_LABEL_HEIGHT)
             .setElementHandler(
                 new LabelElement(this::getTitleLabel, Colors.WHITE, 0)
-                    .withMouseHandler(MouseHandler.isLeft(this::runClickTitle))
+                    .withInputHandler(InputHandler.isLeft(this::runClickTitle))
                     .withTooltips(TooltipHandler.of(this::provideTitleTooltips))
             )
             .addTo(this)

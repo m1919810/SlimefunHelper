@@ -10,7 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.util.Identifier;
 
-public class SlotElement extends AbstractElement implements ElementHandler {
+public class SlotElement extends AbstractElement {
     final Inventory inventory;
     final int index;
     final SlotClickCallback callback;

@@ -5,8 +5,10 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import me.matl114.access.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
+import me.matl114.gui.basic.ContentDelegateWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.nbt.visitor.NbtOrderedStringFormatter;
@@ -14,6 +16,7 @@ import net.minecraft.nbt.visitor.StringNbtWriter;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
@@ -64,6 +67,10 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         validateValue();
     }
 
+    public ContentDelegateWidget<TextFieldWidget> generateTextField(int x, int y, int dx, int dy){
+        return McWidgetHelpers.createTextFieldEditBox(x, y, dx, dy, (ed, val)->valueChange(null, val), this.value, McWidgetHelpers.getWrongRedTextBoxColorProvider(()->validate));
+    }
+
     public static AttrKeyValue<Boolean> bool(String key, boolean value){
         return new AttrKeyValue<Boolean>(key, value) {
             @Override
@@ -94,29 +101,75 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             }
         };
     }
-    public static AttrKeyValue<Integer> integer(String key, int val){
-        return new AttrKeyValue<Integer>(key, val) {
-            @Override
-            public boolean validateAndUpdate() {
-                try{
-                    this.originValue = Integer.parseInt(this.value);
-                    return true;
-                }catch (Throwable e){
-                    return false;
-                }
-            }
 
-            @Override
-            public String updateValue(Integer val) {
-                return val != null? String.valueOf(val): "0";
-            }
+    public static class IntAttrKeyValue extends AttrKeyValue<Integer> {
+        public IntAttrKeyValue(String key, int value) {
+            super(key, value);
+        }
 
-            @Override
-            public Class<Integer> identifier() {
-                return Integer.class;
+        @Override
+        public boolean validateAndUpdate() {
+            try{
+                this.originValue = Integer.parseInt(this.value);
+                return true;
+            }catch (Throwable e){
+                return false;
             }
-        };
+        }
+
+        @Override
+        public String updateValue(Integer val) {
+            return val != null? String.valueOf(val): "0";
+        }
+
+        public int clampInput(int val){
+            return val;
+        }
+        @Override
+        public Class<Integer> identifier() {
+            return Integer.class;
+        }
     }
+
+    public static class ClampedIntAttrKeyValue extends IntAttrKeyValue{
+        @Getter
+        int min;
+        @Getter
+        int max;
+
+        public ClampedIntAttrKeyValue(String key, int value, int min, int max) {
+            super(key, value);
+            this.min = min;
+            this.max  = max;
+        }
+
+        public int clampInput(int val){
+            return MathHelper.clamp(val, min, max);
+        }
+
+        @Override
+        public boolean validateAndUpdate() {
+            try{
+                int val = Integer.parseInt(this.value);
+                if(val >= min && val <= max){
+                    this.originValue = val;
+                    return true;
+                }
+                return false;
+            }catch (Throwable e){
+                return false;
+            }
+        }
+    }
+
+    public static AttrKeyValue<Integer> integer(String key, int val){
+        return new IntAttrKeyValue(key, val);
+    }
+    public static AttrKeyValue<Integer> clampedInt(String key, int val, int from, int to){
+        return new ClampedIntAttrKeyValue(key, val, from, to);
+    }
+
+
     public static AttrKeyValue<Double> doub(String keyName, double val){
         return new AttrKeyValue<Double>(keyName, val) {
             @Override
@@ -200,6 +253,41 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         };
     }
 
+    public static AttrKeyValue<Identifier> identifier(String key, Identifier id){
+        return new IdentifierAttrKeyValue(key, id);
+    }
+
+    public static class IdentifierAttrKeyValue extends AttrKeyValue<Identifier>{
+
+        public IdentifierAttrKeyValue(String key, Identifier value) {
+            super(key, value);
+        }
+
+        @Override
+        public boolean validateAndUpdate() {
+            try{
+                int index = this.value.indexOf(":");
+                if(index <= 0)return false;
+                Identifier id =  Identifier.tryParse(this.value);
+                if(id != null){
+                    this.originValue = id;
+                    return true;
+                }else return false;
+            }catch (Throwable e){
+                return false;
+            }
+        }
+
+        @Override
+        public String updateValue(Identifier val) {
+            return val.toString();
+        }
+
+        @Override
+        public Class identifier() {
+            return Identifier.class;
+        }
+    }
 
     public static class RegistryAttrKeyValue<T> extends AttrKeyValue<T>{
         @Getter
@@ -334,12 +422,13 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             return NbtElement.class;
         }
 
-        public EditBoxWidget generateEditBox(int x, int y, int dx, int dy){
-            EditBoxWidget widget = new EditBoxWidget(MinecraftClient.getInstance().textRenderer, x,y, dx,dy, Text.empty(), Text.empty());
-            widget.setText(this.value);
-            widget.setChangeListener((val)->valueChange(null, val));
-            TextFieldAccess.of(widget).setBorderColorProvider(McWidgetHelpers.getWrongRedTextBoxColorProvider(()->validate));
-            return widget;
+        public ContentDelegateWidget<EditBoxWidget> generateEditBox(int x, int y, int dx, int dy){
+//            EditBoxWidget widget = new EditBoxWidget(MinecraftClient.getInstance().textRenderer, x,y, dx,dy, Text.empty(), Text.empty());
+//            widget.setText(this.value);
+//            widget.setChangeListener((val)->valueChange(null, val));
+//            TextFieldAccess.of(widget).setBorderColorProvider();
+            return McWidgetHelpers.createMultiLineEditBox(x, y, dx, dy, (ed, val)->valueChange(null, val), this.value, McWidgetHelpers.getWrongRedTextBoxColorProvider(()->validate));
+//            return widget;
         }
     }
 

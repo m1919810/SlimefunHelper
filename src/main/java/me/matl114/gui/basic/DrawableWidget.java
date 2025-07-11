@@ -104,9 +104,9 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
 
 
 
-    public boolean onElement(int mouseX, int mouseY){
-        return  mouseX >= this.getX() && mouseY >= this.getY() && mouseX < this.getX() + this.textureWidth && mouseY < this.getY() + this.textureHeight;
-    }
+//    public boolean onElement(int mouseX, int mouseY){
+//
+//    }
 
     /**
      * override only for delegate!
@@ -119,10 +119,15 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         render0(context, mouseX, mouseY, delta, false);
     }
     protected void checkSelect(boolean disableSelect, int mouseX, int mouseY){
-        this.selected = !disableSelect && onElement(mouseX, mouseY);
+        this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
     }
+
+    public boolean canSelect(){
+        return renderHandler != null && renderHandler.canBeSelected(this);
+    }
+
     public void render0(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
-        this.selected = !disableSelect && onElement(mouseX, mouseY);
+        this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
         context.getMatrices().push();
         context.getMatrices().translate(x, y, extraDepth);
         if(textureScale != 1.0f){
@@ -158,7 +163,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
 
 
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return onElement((int) mouseX, (int) mouseY);
+        return  mouseX >= this.getX() && mouseY >= this.getY() && mouseX < this.getX() + this.textureWidth && mouseY < this.getY() + this.textureHeight;
     }
 
 

@@ -165,7 +165,7 @@ public class SlimefunCustomModelManager {
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
             for(String namespace : namespacess){
                 if(OUR_NAMESPACE.equals(namespace)|| ModConfig.getSlimefunTextureNamespaces().contains(namespace)){
-                    Debug.info("Force load texture in pack",pack.getId(),"and namespace",namespace);
+                    Debug.info("Force load TEXTURE in pack",pack.getId(),"and namespace",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
                             String realNamespace=i.getNamespace();
                             if(i.getPath().endsWith(".png")){

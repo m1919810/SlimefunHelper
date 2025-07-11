@@ -5,17 +5,14 @@ import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.GridSubScreen;
 import me.matl114.gui.basic.*;
 import me.matl114.hackUtils.InvTasks;
-import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.List;
@@ -61,7 +58,7 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
              labelElement = LabelElement.instance(
                  Text.literal("%s [%d, %d, %d]".formatted(this.blockWorld.getRegistryKey().getValue().toString(), blockPos.getX(), blockPos.getY(), blockPos.getZ()))
              )
-                 .withMouseHandler(MouseHandler.run(()->{
+                 .withInputHandler(InputHandler.run(()->{
                      MinecraftClient.getInstance().keyboard.setClipboard("%d %d %d".formatted(blockPos.getX(), blockPos.getY(), blockPos.getZ()));
                  }))
                  .withTooltips(TooltipHandler.of(CLICK_COPY_TOOLTIPS));

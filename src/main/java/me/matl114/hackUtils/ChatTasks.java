@@ -99,14 +99,19 @@ public class ChatTasks {
     public static void initChatScreen(Screen screen){
     }
    private static final   Predicate<CommandSource> requirement = (val)->true;
+    private static final Command<CommandSource> success = (val)->Command.SINGLE_SUCCESS;
+
+
+
+
    private static void addOurCommandNodesInRoot(RootCommandNode<CommandSource> node){
         //try add deop command
-
-       CommandNode<CommandSource> give = node.getChild("give");
+       //fix: plugin give commands
+       CommandNode<CommandSource> give = node.getChild("minecraft:give");
        LiteralCommandNode<CommandSource> giveCommand;
        if (give == null) {
            giveCommand = new LiteralCommandNode<>(
-               "give",
+               "minecraft:give",
                null,
                requirement,
                null,
@@ -117,9 +122,9 @@ public class ChatTasks {
        }else {
            giveCommand = (LiteralCommandNode<CommandSource>) give;
        }
-       if(node.getChild("minecraft:give") == null){
+       if(node.getChild("give") == null){
            LiteralCommandNode<CommandSource> mcGiveCommand = new LiteralCommandNode<>(
-               "minecraft:give",
+               "give",
                null,
                requirement,
                giveCommand,
@@ -136,19 +141,21 @@ public class ChatTasks {
 
 
             ArgumentCommandNode<CommandSource, EntitySelector> targetArgument = new ArgumentCommandNode<>(
-                "target",
+                "targets",
                 EntityArgumentType.players(),
                 null,
                 requirement,
                 null,
                 null,
                 false,
-                SuggestionProviders.byId(Identifier.of("minecraft","ask_server"))
+                //use default because if "minecraft:give" node is absent, then we definitely have no permission of requesting this
+                null
             );
+            giveCommand.addChild(targetArgument);
             ArgumentCommandNode<CommandSource, ItemStackArgument> itemArgument = new ArgumentCommandNode<>(
                 "item",
                 ItemStackArgumentType.itemStack(commandRegistryAccess),
-                null,
+                success,
                 requirement,
                 null,
                 null,
@@ -159,7 +166,7 @@ public class ChatTasks {
             ArgumentCommandNode<CommandSource, Integer> countAmount = new ArgumentCommandNode<>(
                 "count",
                 IntegerArgumentType.integer(1),
-                null,
+                success,
                 requirement,
                 null,
                 null,
@@ -176,7 +183,7 @@ public class ChatTasks {
    }
    private static void onClientCommandReload(CommandDispatcher<CommandSource> dispatcher){
         RootCommandNode<CommandSource> root = dispatcher.getRoot();
-        if(root != null){
+        if(root != null && EXECUTE_GIVE_CLIENTSIDE.get()){
             addOurCommandNodesInRoot(root);
         }
    }
@@ -593,9 +600,7 @@ public class ChatTasks {
                 if(mc.player.isCreative() ){
                     //parse command for give command
                     Debug.chat(Text.literal("尝试在客户端执行/give指令").formatted(Formatting.GREEN));
-                    dispatchVanillaCommand(command);
-                    return true;
-
+                    return dispatchVanillaCommand(command);
                 }else {
                     Debug.chat(Text.literal("你启用了客户端/give指令的功能,但是你并不是创造模式!").formatted(Formatting.YELLOW));
                 }
@@ -617,9 +622,9 @@ public class ChatTasks {
         if(mc.player == null)return null;
         return null;
     }
-    private static void dispatchVanillaCommand(String command){
+    private static boolean dispatchVanillaCommand(String command){
        // Debug.info(command);
-        if(mc.player == null)return;
+        if(mc.player == null)return false;
         mc.player.setClientPermissionLevel(4);
         try{
             ParseResults<CommandSource> parse = mc.getNetworkHandler().getCommandDispatcher().parse(command, mc.player.getCommandSource());
@@ -635,44 +640,49 @@ public class ChatTasks {
 
             final String commandStr = parse.getReader().getString();
             final CommandContextBuilder<CommandSource> originalBuilder = parse.getContext();
-            final CommandContext<CommandSource> original = originalBuilder.build(commandStr);
-            final Optional<ContextChain<CommandSource>> flatContext = ContextChain.tryFlatten(original);
-            if (!flatContext.isPresent()) {
-                consumer.onCommandComplete(original, false, 0);
-                throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().createWithContext(parse.getReader());
+            //flatten this
+            List<CommandContextBuilder<CommandSource>> modifiers = new ArrayList<>();
+            CommandContextBuilder<CommandSource> contextData = originalBuilder;
+            while (true){
+                CommandContextBuilder<CommandSource> child = contextData.getChild();
+                if(child == null){
+                    if(contextData.getCommand() ==null){
+                        consumer.onCommandComplete(originalBuilder.build(commandStr), false, 0);
+                        throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().createWithContext(parse.getReader());
+                    }
+                    break;
+                }
+                modifiers.add(contextData);
+                contextData = child;
             }
+            Map<String, ParsedArgument<CommandSource, ?>> argsMap = contextData.getArguments();
             if(commandStr.startsWith("give") || commandStr.startsWith("minecraft:give")){
-                handleClientSideGiveCommand(originalBuilder, command);
+                return handleClientSideGiveCommand(argsMap, command);
             }
         }catch (CommandSyntaxException e){
             Debug.chat(getErrorMessage(e));
         }catch (Throwable e){
             Debug.chat(Text.literal("Internal Error!").formatted(Formatting.RED) ,e);
         }
+        return false;
     }
 
-    private static void handleClientSideGiveCommand(CommandContextBuilder<CommandSource> contextData, String command) throws CommandSyntaxException{
-        //... ?
-        //flatten this
-        List<CommandContextBuilder<CommandSource>> modifiers = new ArrayList<>();
-        while (true){
-            CommandContextBuilder<CommandSource> child = contextData.getChild();
-            if(child == null){
-                if(contextData.getCommand() ==null){
-                    throw new IllegalArgumentException("Invalid command context passed, it can not be flatten into the commandChain");
-                }
-                break;
-            }
-            modifiers.add(contextData);
-            contextData = child;
-        }
-        Map<String, ParsedArgument<CommandSource, ?>> argsMap = contextData.getArguments();
+    private static boolean handleClientSideGiveCommand(Map<String, ParsedArgument<CommandSource, ?>> argsMap, String command) throws CommandSyntaxException{
 
-        ItemStackArgument itemStack = (ItemStackArgument) argsMap.get("item").getResult();
-        int count = argsMap.containsKey("count") ? (Integer)argsMap.get("count").getResult(): 1;
-        ItemStack itemStackToGive = itemStack.createStack(count, false);
-        InvTasks.creativeGive(itemStackToGive, count);
-        Debug.chat(Text.literal("命令执行成功！").formatted(Formatting.GREEN));
+        ParsedArgument<CommandSource, ?> entityArgument = argsMap.get("targets");
+        EntitySelector entitySelector = (EntitySelector) entityArgument.getResult();
+        StringRange range = entityArgument.getRange();
+        if(entitySelector.isSenderOnly() || Objects.equals( mc.player.getNameForScoreboard(), command.substring(range.getStart(), range.getEnd()))){
+            ItemStackArgument itemStack = (ItemStackArgument) argsMap.get("item").getResult();
+            int count = argsMap.containsKey("count") ? (Integer)argsMap.get("count").getResult(): 1;
+            ItemStack itemStackToGive = itemStack.createStack(count, false);
+            InvTasks.creativeGive(itemStackToGive, count);
+            Debug.chat(Text.literal("命令执行成功！").formatted(Formatting.GREEN));
+            return true;
+        }else{
+            Debug.chat(Text.literal("你选中了其他生物,指令转向服务端执行!").formatted(Formatting.YELLOW));
+            return false;
+        }
     }
 
     private static Text getErrorMessage(CommandSyntaxException e) {

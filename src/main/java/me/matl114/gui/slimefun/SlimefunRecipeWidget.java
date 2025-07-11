@@ -1,6 +1,8 @@
 package me.matl114.gui.slimefun;
 
 import com.google.common.base.Preconditions;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import me.matl114.gui.basic.*;
 import me.matl114.hackUtils.InvTasks;
 import me.matl114.hackUtils.ItemEditTasks;
@@ -11,10 +13,12 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.List;
 import java.util.function.BiConsumer;
 
+@Accessors(chain = true)
 public class SlimefunRecipeWidget extends SubScreenWidget {
     ItemStack rtypeIcon;
     String rid ;
@@ -27,6 +31,9 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
     BiConsumer<ItemStack,Boolean> callback1;
     BiConsumer<String,Boolean> callback2;
     Ingredient[] ingredients;
+
+    @Setter
+    Runnable cancelCallback;
     public SlimefunRecipeWidget(int x, int y, SlimefunTasks.RecipeEntry entry, BiConsumer<ItemStack,Boolean> itemClickEvent, BiConsumer<String,Boolean> rtypeClickEvent) {
         super(x, y, DX, DY);
         this.rid = entry.rid();
@@ -50,28 +57,27 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
     private static final List<Text> SAVEITEM_TOOLTIPS = List.of(
         Text.literal("将该物品加入保存物品")
     );
+    protected static Identifier CANCEL_GUI_TEXTURE = new Identifier("minecraft","container/beacon/cancel");
     private final void init0(){
-        DisplayWidget.instance(0,0,DX, DY)
-            .setRenderHandler(PlateElement.instance())
-            .addToSub(this);
+        setExtraDepth(1);
         for (int i=0; i<3; ++i){
             for (int j=0; j<3; ++j){
                 final int index = 3*i + j;
                 ExecutableWidget.instance(15 + 18*j, 5 + 18*i, 18,18)
-                    .setElementHandler(new SlotElement(input, index).withMouseHandler(MouseHandler.isLeft((t)->callback1.accept(input.getStack(index),t))))
+                    .setElementHandler(new SlotElement(input, index).withInputHandler(InputHandler.isLeft((t)->callback1.accept(input.getStack(index),t))))
                     .addToSub(this);
             }
         }
         //
         ExecutableWidget.instance(123 - 14, 23, 18, 18)
-            .setElementHandler(new OutputSlotElement(output).withMouseHandler(MouseHandler.isLeft((t)->callback1.accept(output, t))))
+            .setElementHandler(new OutputSlotElement(output).withInputHandler(InputHandler.isLeft((t)->callback1.accept(output, t))))
             .addToSub(this)
         ;
         ExecutableWidget.instance(78, 23, 18, 18)
             .setElementHandler(
                 SlotElement.instance(rtypeIcon)
                     .setSlotFrame(false)
-                    .withMouseHandler(MouseHandler.isLeft(t->callback2.accept(rid, t)))
+                    .withInputHandler(InputHandler.isLeft(t->callback2.accept(rid, t)))
             )
             .addToSub(this);
         //save item
@@ -122,6 +128,21 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
             )
             .addToSub(this)
             ;
-
+        ExecutableWidget.instance(DX - 16, 0, 16,16)
+            .setElementHandler(
+                IconElement.fixedGui(CANCEL_GUI_TEXTURE, ButtonAction.run(this::cancelGui))
+                    .withTooltips(TooltipHandler.of(List.of(Text.literal("点击关闭当前子界面"))))
+                    .withPresentCondition((i)->cancelCallback != null)
+            )
+            .addToSub(this);
+        ExecutableWidget.instance(0,0,DX, DY)
+            .setElementHandler(PlateElement.catchInteract())
+            .setExtraDepth(-1)
+            .addToSub(this);
+    }
+    private void cancelGui(){
+        if(this.cancelCallback != null){
+            this.cancelCallback.run();
+        }
     }
 }

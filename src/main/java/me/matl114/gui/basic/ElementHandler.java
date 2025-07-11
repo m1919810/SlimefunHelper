@@ -4,7 +4,7 @@ import net.minecraft.client.gui.DrawContext;
 
 import java.util.function.Predicate;
 
-public interface ElementHandler extends MouseHandler, RenderHandler{
+public interface ElementHandler extends InputHandler, RenderHandler{
     default ElementHandler withTooltips(TooltipHandler handler){
         combineAbsoluteRender(handler);
         return this;
@@ -23,6 +23,18 @@ public interface ElementHandler extends MouseHandler, RenderHandler{
                return handlerPredicate.test(ob) && ob.onAction(element, mouseX, mouseY, button, type);
             }
 
+            public boolean onScroll(ExecutableWidget widget, double mouseX, double mouseY, double horizontalAmount, double verticalAmount){
+                return handlerPredicate.test(ob) && ob.onScroll(widget, mouseX, mouseY, horizontalAmount, verticalAmount);
+            }
+
+            public boolean onKey(ExecutableWidget widget, int keyCode, int scanCode, int modifiers, boolean isPress){
+                return handlerPredicate.test(ob) && ob.onKey(widget, keyCode, scanCode, modifiers, isPress);
+            }
+
+            public boolean onTyped(ExecutableWidget widget, char chr, int modifiers){
+                return handlerPredicate.test(ob) && ob.onTyped(widget, chr, modifiers);
+            }
+
             @Override
             public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 if(handlerPredicate.test(ob)){
@@ -35,6 +47,9 @@ public interface ElementHandler extends MouseHandler, RenderHandler{
                 if(handlerPredicate.test(ob)){
                     ob.renderExtraAbsoluteCoord(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
                 }
+            }
+            public boolean canBeSelected(DrawableWidget element){
+                return handlerPredicate.test(ob);
             }
         };
     }
@@ -51,6 +66,20 @@ public interface ElementHandler extends MouseHandler, RenderHandler{
             public boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, Type type) {
                 return handlerPredicate.test(ob) && ob.onAction(element, mouseX, mouseY, button, type);
             }
+
+            public boolean onScroll(ExecutableWidget widget, double mouseX, double mouseY, double horizontalAmount, double verticalAmount){
+                return handlerPredicate.test(ob) && ob.onScroll(widget, mouseX, mouseY, horizontalAmount, verticalAmount);
+            }
+
+            public boolean onKey(ExecutableWidget widget, int keyCode, int scanCode, int modifiers, boolean isPress){
+                return handlerPredicate.test(ob) && ob.onKey(widget, keyCode, scanCode, modifiers, isPress);
+            }
+
+            public boolean onTyped(ExecutableWidget widget, char chr, int modifiers){
+                return handlerPredicate.test(ob) && ob.onTyped(widget, chr, modifiers);
+            }
+
+
 
             @Override
             public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {

@@ -23,6 +23,8 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
+import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.*;
@@ -32,6 +34,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.PlainTextContent;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -173,7 +176,6 @@ public class Tasks {
                     button.visible = true;
                 }
                 if(button.getMessage().getContent() instanceof PlainTextContent && button.getMessage().getString().contains("Options")){
-                    Debug.info(((ButtonWidget) el).getMessage().getString());
                     button.setY(button.getY() + 72);
                 }
 
@@ -429,6 +431,8 @@ public class Tasks {
         if(!instance.ignoreSlotPacketWhileRun(packet)){
             return false;
         }
+
+       // listenSomePacket(packet);
         if(true)
             return true;
         if(packet instanceof EntitySpawnS2CPacket || packet instanceof EntitiesDestroyS2CPacket ){
@@ -453,34 +457,29 @@ public class Tasks {
 //        if(packet instanceof InventoryS2CPacket packet1){
 //            Debug.info("Inventory packet", packet1.getSyncId(), "with client, ", mc.player.currentScreenHandler.syncId);
 //        }
-        if(packet instanceof TeleportConfirmC2SPacket packet1){
-            Debug.info("apply confirm", packet1.getTeleportId());
-        }
+        if(true)return true;
+        listenSomePacket(packet);
+
         return true;
     }
 
     public static boolean doPacketListenOut(Packet<?> packet){
      //   tryTridentDupe(packet);
+//        if(packet instanceof CommonPongC2SPacket || packet instanceof KeepAliveC2SPacket || packet instanceof PlayerMoveC2SPacket){
+//            return true;
+//        }
+       // Debug.info("sending packet", packet.getClass().getSimpleName());
+        if(true)return true;
+
+
         return true;
     }
     public static void listenSomePacket(Packet<?> packetIn){
-        if(packetIn instanceof ParticleS2CPacket || packetIn instanceof EntityPositionS2CPacket || packetIn instanceof EntityTrackerUpdateS2CPacket || packetIn instanceof EntityS2CPacket || packetIn instanceof EntitySetHeadYawS2CPacket || packetIn instanceof EntityVelocityUpdateS2CPacket || packetIn instanceof OverlayMessageS2CPacket || packetIn instanceof WorldTimeUpdateS2CPacket || packetIn instanceof EntityAttributesS2CPacket || packetIn instanceof EntityEquipmentUpdateS2CPacket || packetIn instanceof EntitySpawnS2CPacket || packetIn instanceof EntityStatusS2CPacket || packetIn instanceof EntitiesDestroyS2CPacket || packetIn instanceof BossBarS2CPacket || packetIn instanceof PlayerListS2CPacket || packetIn instanceof PlaySoundS2CPacket || packetIn instanceof ChunkDataS2CPacket || packetIn instanceof CommonPingS2CPacket || packetIn instanceof HealthUpdateS2CPacket || packetIn instanceof UnloadChunkS2CPacket || packetIn instanceof TeamS2CPacket || packetIn instanceof ScoreboardScoreUpdateS2CPacket || packetIn instanceof ScoreboardScoreResetS2CPacket || packetIn instanceof EntityAnimationS2CPacket){
+        if(packetIn instanceof ParticleS2CPacket || packetIn instanceof EntityPositionS2CPacket || packetIn instanceof EntityTrackerUpdateS2CPacket || packetIn instanceof EntityS2CPacket || packetIn instanceof EntitySetHeadYawS2CPacket || packetIn instanceof EntityVelocityUpdateS2CPacket || packetIn instanceof OverlayMessageS2CPacket || packetIn instanceof WorldTimeUpdateS2CPacket || packetIn instanceof EntityAttributesS2CPacket || packetIn instanceof EntityEquipmentUpdateS2CPacket || packetIn instanceof EntitySpawnS2CPacket || packetIn instanceof EntityStatusS2CPacket || packetIn instanceof EntitiesDestroyS2CPacket || packetIn instanceof BossBarS2CPacket || packetIn instanceof PlayerListS2CPacket || packetIn instanceof PlaySoundS2CPacket || packetIn instanceof ChunkDataS2CPacket || packetIn instanceof CommonPingS2CPacket || packetIn instanceof HealthUpdateS2CPacket || packetIn instanceof UnloadChunkS2CPacket || packetIn instanceof TeamS2CPacket || packetIn instanceof ScoreboardScoreUpdateS2CPacket || packetIn instanceof ScoreboardScoreResetS2CPacket || packetIn instanceof ChunkDeltaUpdateS2CPacket || packetIn instanceof BlockUpdateS2CPacket ){
             //ignore useless informations
             return;
         }
-        if(packetIn instanceof BlockEntityUpdateS2CPacket packet){
-            Debug.info("accept blockEntity update at",packet.getPos(),packet.getNbt());
-        }else if(packetIn instanceof BlockUpdateS2CPacket packet){
-            Debug.info("accept block Update at",packet.getPos());
-        }else if(packetIn instanceof WorldEventS2CPacket packet){
-            Debug.info("accept worldEvent at",packet.getPos(),packet.getEventId());
-        }
-//        else if(packetIn instanceof ChunkDataS2CPacket packet){
-//            Debug.info("accept chunk data at",packet.getChunkX(),packet.getChunkZ());
-//        }
-        else{
-            Debug.info("accept packet ",packetIn.getClass().getSimpleName());
-        }
+      Debug.info("Accept packet", packetIn.getClass().getSimpleName());
     }
     public static void tryTridentDupe(Packet<?> packet){
         if(packet instanceof PlayerActionC2SPacket packet1 && packet1.getAction()== PlayerActionC2SPacket.Action.RELEASE_USE_ITEM ){
@@ -614,6 +613,7 @@ public class Tasks {
             MovTasks.init();
             SlimefunTasks.init();
             InteractionTasks.init();
+            AntiGrimTasks.init();
         }else {
             ChatTasks.init();
             SlimefunTasks.init();

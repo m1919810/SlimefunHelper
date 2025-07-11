@@ -60,6 +60,7 @@ public abstract class ClientPacketListenerMixin {
         int id = packet.getSyncId();
         if(MinecraftClient.getInstance().player!=null){
             ClientPlayerAccess access=ClientPlayerAccess.of(MinecraftClient.getInstance().player);
+            access.clearKeepedInventory(false);
             HandledScreen<?> screen = access.getServerHandledScreen();
             //check for open failure
             if(screen != null && screen.getScreenHandler().syncId == id){

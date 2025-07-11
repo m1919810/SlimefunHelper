@@ -98,6 +98,7 @@ public class HotKeys {
     public static final String ITEMEDITOR_OPEN = "open-editor";
     public static final String OPEN_INV_CACHE = "open-inv-cache";
     public static final String WAKE_UP_SCREEN = "wake-up-screen";
+    public static final String TOGGLE_FAKE_FLIGHT = "fake-flight";
     public static final String BUTTON_TASK_1="btask1";
     public static final String BUTTON_TASK_2="btask2";
     public static final String HOTKEY_TEST1="hktest1";
@@ -163,6 +164,16 @@ public class HotKeys {
         getToggleHotKey(ALWAYS_ATTACK,false);
         getToggleHotKey(AUTO_ATTACK,false);
         getToggleHotKey(TOGGLE_FLIGHT,false);
+        hotkeyToggleManager.register(TOGGLE_FAKE_FLIGHT, false);
+        Runnable task = hotkeyToggleManager.getToggle(TOGGLE_FAKE_FLIGHT);
+        new SimpleHotKey(TOGGLE_FAKE_FLIGHT,ModConfig.getToggleHotkeys(TOGGLE_FAKE_FLIGHT),(m -> {
+            ClientPlayerEntity player= m.getClient().player;
+            if(player!=null){
+                task.run();
+                MovTasks.onFakeFlightEnabled();
+            }
+            return true;
+        })).register(SimpleInputManager.getInstance());
         getToggleHotKey(HOTKEY_TEST1,false);
         getToggleHotKey(HOTKEY_TEST2,false);
         getToggleHotKey(HOTKEY_TEST3,false);

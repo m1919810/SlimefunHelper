@@ -115,4 +115,7 @@ public class SlimefunHelper implements ModInitializer {
 	//todo 大饼: 客户端实现/give指令劫持
 	//todo 大饼: 发射器界面实现一键放入+合成(?)+交互合成按钮  有了
 	//todo 大饼: 通过客户端指令listRegisty
+	//todo 大饼 Stats modify
+	//todo 大饼 下单系统
+	//todo 新配置体系
 }
