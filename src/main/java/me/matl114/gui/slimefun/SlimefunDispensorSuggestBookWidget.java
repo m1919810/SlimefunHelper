@@ -12,6 +12,7 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.UtilClass.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
@@ -21,6 +22,7 @@ import net.minecraft.util.math.MathHelper;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
 
@@ -73,17 +75,20 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     protected static final List<Text> MULTIBLOCK_TOOLTIPS_EXECUTE = List.of(
         Text.literal("仅当识别到发射器才可使用,自动搜索多方块结构"),
         Text.literal("点击合成多次(点击数)").formatted(Formatting.YELLOW),
+        Text.literal("Shift点击合成多次(2*点击数)").formatted(Formatting.YELLOW),
         Text.literal("服务端普遍限速点击频率,为9/300ms"),
         Text.literal("点击数可以在配置文件中配置,和自动多方块连点功能相同")
     );
     protected static final List<Text> MULTIBLOCK_TOOLTIPS_EXECUTEONE = List.of(
         Text.literal("仅当识别到发射器才可使用,自动搜索多方块结构"),
-        Text.literal("点击合成1次").formatted(Formatting.YELLOW)
+        Text.literal("点击合成1次").formatted(Formatting.YELLOW),
+        Text.literal("若搜索出多个多方块结构,则都会交互(这可能无法通过反作弊和发包限制)").formatted(Formatting.YELLOW)
     );
     protected static final List<Text> MULTIBLOCK_TOOLTIPS_AUTO =List.of(
         Text.literal("仅当识别到发射器才可使用,自动搜索多方块结构,自动使用"),
         Text.literal("服务端普遍限速点击频率,为9/300ms"),
-        Text.literal("点击数可以在配置文件中配置,和自动多方块连点功能相同")
+        Text.literal("点击数可以在配置文件中配置,和自动多方块连点功能相同"),
+        Text.literal("若搜索出多个多方块结构,则都会交互(这可能无法通过反作弊和发包限制)").formatted(Formatting.YELLOW)
     );
 
     protected static final Text MULTIBLOCK_EXECUTE = Text.literal("合成");
@@ -102,8 +107,8 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     protected ContentDelegateWidget<DrawableWidget> toggleActivateTextField;
     protected ContentDelegateWidget<DrawableWidget> hovering;
 
-    protected List<SlimefunTasks.RecipeEntry> originItems;
-    protected List<SlimefunTasks.RecipeEntry> filterItems;
+    protected volatile List<SlimefunTasks.RecipeEntry> originItems;
+    protected volatile List<SlimefunTasks.RecipeEntry> filterItems;
 
     protected BiConsumer<Integer, SlimefunTasks.RecipeEntry> callback;
     protected boolean onlyShowRelated = true;
@@ -136,10 +141,12 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     }
     protected static boolean activate;
     protected Collection<String> type;
-    public SlimefunDispensorSuggestBookWidget(int x, int y, Collection<String> optionalType, BiConsumer<Integer, SlimefunTasks.RecipeEntry> callback){
+    protected TileInventoryScreen tile;
+    public SlimefunDispensorSuggestBookWidget(TileInventoryScreen tile, int x, int y, Collection<String> optionalType, BiConsumer<Integer, SlimefunTasks.RecipeEntry> callback){
         super(x, y, DX, DY);
         this.callback = callback;
         this.type = optionalType;
+        this.tile = tile;
         init();
     }
     protected void toggleActive(){
@@ -149,7 +156,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     public void refreshActiveState(){
         if(activate){
             this.toggleActivateTextField.setContentDelegate(this.textField);
-            Tasks.scheduleDelayed(this::refreshContents, 5);
+            Tasks.scheduleDelayed(this::refreshContents, 4);
         }else {
             this.toggleActivateTextField.setContentDelegate(null);
         }
@@ -162,10 +169,10 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     }
     public void init(){
         //toggle any autoExecute off
-        if(SlimefunTasks.isMultiBlockAutoExecute()){
-            SlimefunTasks.handleMultiBlockAutoExecuteToggle(MinecraftClient.getInstance().currentScreen, false);
-            Debug.chat(Text.literal("[自动多方块] 已关闭自动执行!"));
-        }
+//        if(SlimefunTasks.isMultiBlockAutoExecute()){
+//            SlimefunTasks.handleMultiBlockAutoExecuteToggle(MinecraftClient.getInstance().currentScreen, false);
+//            Debug.chat(Text.literal("[自动多方块] 已关闭自动执行!"));
+//        }
         toggleBookWidget = ExecutableWidget.instance(0,0,8,8)
             .setElementHandler(
                 SlotElement.instance(BOOK_ICON)
@@ -192,7 +199,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         multiblockExecuteOneWidget = ExecutableWidget.instance(30, 0, 18, 8)
             .setElementHandler(
                 new ButtonElement(TextProvider.of(MULTIBLOCK_EXECUTE), ButtonAction.run(()->{
-                    SlimefunTasks.handleMultiBlockExecute(MinecraftClient.getInstance().currentScreen, false);
+                    SlimefunTasks.handleMultiBlockExecute(MinecraftClient.getInstance().currentScreen, false, false);
                     Tasks.scheduleDelayed(this::refreshContents, 2);
                 }))
                     .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_EXECUTEONE))
@@ -238,7 +245,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         multiblockExecuteWidget = ExecutableWidget.instance(DX - 48,0, 18, 8)
             .setElementHandler(
                 new ButtonElement(TextProvider.of(MULTIBLOCK_EXECUTE), ButtonAction.run(()->{
-                        SlimefunTasks.handleMultiBlockExecute(MinecraftClient.getInstance().currentScreen, true);
+                        SlimefunTasks.handleMultiBlockExecute(MinecraftClient.getInstance().currentScreen, true, Screen.hasShiftDown());
                     Tasks.scheduleDelayed(this::refreshContents, 5);
                     }))
                     .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_EXECUTE))
@@ -250,13 +257,16 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         multiblockAutoExecute = ExecutableWidget.instance(DX - 30,0, 18, 8)
             .setElementHandler(
                 new ButtonElement(TextProvider.of(MULTIBLOCK_AUTO), ((element, widget, mouseButton) -> {
-                    if(SlimefunTasks.isMultiBlockAutoExecute()){
-                        widget.setAlpha(0.4f);
-                        SlimefunTasks.handleMultiBlockAutoExecuteToggle(MinecraftClient.getInstance().currentScreen,false);
-                    }else {
-                        widget.setAlpha(1.0f);
-                        SlimefunTasks.handleMultiBlockAutoExecuteToggle(MinecraftClient.getInstance().currentScreen, true);
+                    if(MinecraftClient.getInstance().currentScreen instanceof TileInventoryScreen handledScreen){
+                        if(SlimefunTasks.isMultiBlockAutoExecute(handledScreen)){
+                            widget.setAlpha(0.4f);
+                            SlimefunTasks.handleMultiBlockAutoExecuteToggle(handledScreen,false);
+                        }else {
+                            widget.setAlpha(1.0f);
+                            SlimefunTasks.handleMultiBlockAutoExecuteToggle(handledScreen, true);
+                        }
                     }
+
                     return true;
                 }))
                     .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_AUTO))
@@ -264,23 +274,28 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                         return MinecraftClient.getInstance().currentScreen instanceof TileInventoryScreen tile && !tile.isVirtual();
                     })
             )
-            .setAlpha(0.4f )
+            .setAlpha(SlimefunTasks.isMultiBlockAutoExecute(this.tile)? 1.0F:0.4f)
             .addToSub(this);
 
 
         for (int i =0 ;i< maxElementInPage; ++i){
             contents[i].addToSub(this);
         }
-        //text Field directly add to screen! so charType and focus can work
-        //text Field use absolute coord
-        textField = McWidgetHelpers.createTextFieldEditBox(this.x+ TEXT_START_DX, this.y +TEXT_START_DY , DX - 2* TEXT_START_DX, DY - TEXT_START_DY,(t, r)->{
-            FilterService.currentUserInput = r;
+
+//        textField = McWidgetHelpers.createTextFieldEditBox( TEXT_START_DX + 1 , TEXT_START_DY , DX - 2* TEXT_START_DX, DY - TEXT_START_DY,(t, r)->{
+//            FilterService.currentUserInput = r;
+//            if(refreshFilter()){
+//                resetPage();
+//            }
+//        }, FilterService.currentUserInput);
+        textField = FilterService.createFilter(()->{
             if(refreshFilter()){
                 resetPage();
             }
-        }, FilterService.currentUserInput);
+        }, TEXT_START_DX + 1 , TEXT_START_DY , DX - 2* TEXT_START_DX, DY - TEXT_START_DY);
         this.toggleActivateTextField = new ContentDelegateWidget<DrawableWidget>(0,0,0,0 )
-            .setContentDelegate(this.activate? this.textField :(DrawableWidget) null)
+            .setContentDelegate(activate? this.textField :(DrawableWidget) null)
+            .addToSub(this)
         ;
         refreshActiveState();
     }
@@ -296,7 +311,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         textField.addToSub(screen);
         return super.addToSub(screen);
     }
-    public void calculateMatchingRecipes(){
+    public synchronized void calculateMatchingRecipes(){
         if(this.onlyShowRelated){
             //impl here
             this.originItems = MinecraftClient.getInstance().player != null? SlimefunTasks.getInventoryRelativeRecipes(MinecraftClient.getInstance().currentScreen, refreshHard): SlimefunTasks.getAllSlimefunRecipeEntry().toList();
@@ -312,10 +327,11 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     }
 
 
-    public boolean refreshFilter(){
+    public synchronized boolean refreshFilter(){
+        List<SlimefunTasks.RecipeEntry> originItems = this.originItems;
         if(FilterService. currentUserInput == null || FilterService.currentUserInput.isEmpty()){
-            if(this.filterItems != this.originItems){
-                this.filterItems = this.originItems;
+            if(this.filterItems != originItems){
+                this.filterItems = originItems;
                 return true;
             }
             return false;
@@ -327,14 +343,15 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         }
     }
     public void resetPage(){
-        if(this.filterItems != null && !this.filterItems.isEmpty()){
+        List<SlimefunTasks.RecipeEntry> filterItems = this.filterItems;
+        if(filterItems != null && !filterItems.isEmpty()){
             int size = filterItems.size();
             maxPage = (size -1)/maxElementInPage +1;
             this.page = MathHelper.clamp(this.page,1, maxPage);
             int startIndex = (this.page - 1)* maxElementInPage;
             for (int i= startIndex ; i< startIndex + maxElementInPage; ++i){
                 if(i < size){
-                    contents[i - startIndex].setContentDelegate(generateRecipeEntry(this.filterItems.get(i)));
+                    contents[i - startIndex].setContentDelegate(generateRecipeEntry(filterItems.get(i)));
                 }else {
                     contents[i - startIndex].setContentDelegate(null);
                 }
@@ -364,13 +381,15 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                               public boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, Type type) {
                                   if(button == 0 || button == 1){
                                       if (type == Type.MOUSE_CLICK && SlimefunDispensorSuggestBookWidget.this.callback != null){
-                                          int amount = button == 0 ? 64 : 1;
+
                                           if(Screen.hasShiftDown()){
+                                              int amount = button == 0 ? 64 : 0;
                                               openInputIntScreen(amount, (i)->{
                                                   SlimefunDispensorSuggestBookWidget.this.callback.accept(i, recipeEntry);
                                                   Tasks.scheduleDelayed(SlimefunDispensorSuggestBookWidget.this::refreshContents, 5);
                                               });
                                           }else {
+                                              int amount = button == 0 ? 64 : 1;
                                               SlimefunDispensorSuggestBookWidget.this.callback.accept(amount, recipeEntry);
                                               //refresh after callback modify the backpack content
                                               Tasks.scheduleDelayed(SlimefunDispensorSuggestBookWidget.this::refreshContents, 5);
@@ -410,7 +429,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
 
     protected void openInputIntScreen(int originValue, IntConsumer intCallback){
         if(this.hovering != null){
-            AttrKeyValue<Integer> integerAttrKeyValue = AttrKeyValue.clampedInt("输入数量", originValue, 1, 64);
+            AttrKeyValue<Integer> integerAttrKeyValue = AttrKeyValue.clampedInt("输入数量", originValue, 0, 64);
             DrawableWidget widget =IntFastInputWidget.instance(
                     integerAttrKeyValue, (attr)->{
                         intCallback.accept((int)attr.getOriginValue());
@@ -440,14 +459,15 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         }
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if( keyCode == 256 &&this.hovering.getDelegate() != null ){
-            this.hovering.setContentDelegate( null);
-            return true;
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers);
-    }
+    //useless: screen exit faster than me
+//    @Override
+//    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+//        if( keyCode == 256 &&this.hovering.getDelegate() != null ){
+//            this.hovering.setContentDelegate( null);
+//            return true;
+//        }
+//        return super.keyPressed(keyCode, scanCode, modifiers);
+//    }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
@@ -457,8 +477,9 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     }
 
     public void refreshContents(){
-        calculateMatchingRecipes();
-        refreshFilter();
-        resetPage();
+       // calculateMatchingRecipes();
+        CompletableFuture.runAsync(this::calculateMatchingRecipes).thenRun(this::refreshFilter).thenRun(this::resetPage);
+//        refreshFilter();
+//        resetPage();
     }
 }

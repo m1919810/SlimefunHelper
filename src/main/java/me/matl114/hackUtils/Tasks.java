@@ -4,46 +4,40 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.access.ClientPlayerAccess;
-import me.matl114.access.ScreenAccess;
-import me.matl114.gui.TestingScreen2;
-import me.matl114.gui.itemEdit.ItemEditScreen;
 import me.matl114.listenerUtils.Listener;
+import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.SlimefunHelper;
-import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.UtilClass.Event;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.Saddleable;
+import net.minecraft.entity.passive.StriderEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.*;
-import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.PlainTextContent;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
@@ -76,8 +70,6 @@ public class Tasks {
         return secondCounter;
     }
    // private static final AtomicInteger tickRandomSource = new AtomicInteger(0);
-    //todo find where is the error when 17 name login
-    //finded ,at packet
     //todo find how to dupe with ITEM
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     private final HashSet<Runnable> tasks = new LinkedHashSet<>();
@@ -95,6 +87,12 @@ public class Tasks {
     public static void doGameTick(ClientPlayerEntity player){
         instance.gameTasks.forEach(i->i.accept(player));
     }
+    public static void onPostTick(Event<Void> v){
+        if(mc.player!=null){
+            Tasks.doGameTick(mc.player);
+        }
+        Tasks.doTick();
+    }
     public static void sendDropAllPacket(){
         instance.sendDropAllPacketInternal();
     }
@@ -107,8 +105,8 @@ public class Tasks {
     private CompletableFuture<Void> future=null;
     private boolean running=false;
     private final Random random=new Random();
-    private final AtomicInteger delay= Configs.TEST_CONFIG.getInt(Configs.TEST_ARGS1);
-    private final AtomicInteger bigDelay= Configs.TEST_CONFIG.getInt(Configs.TEST_ARGS2);
+    private final Config.IntRef delay= Configs.TEST_CONFIG.getInt(Configs.TEST_ARGS1);
+    private final Config.IntRef bigDelay= Configs.TEST_CONFIG.getInt(Configs.TEST_ARGS2);
     private int counter=0;
     public static void sendItemSwapPacket(){
         instance.sendItemSwapPacketInternal();
@@ -195,7 +193,7 @@ public class Tasks {
     }
 
     public void doContainerPacketExplosion(){
-        String value= HotKeys.SHARED_ARGUMENT.get();
+        String value= HotKeys.SHARED_ARGUMENT.getValue();
         int t;
         try{
             t=Integer.parseInt(value);
@@ -205,7 +203,7 @@ public class Tasks {
         }
         int iter;
         try{
-            iter=Integer.parseInt(HotKeys.SHARED_ARGUMENT_2.get());
+            iter=Integer.parseInt(HotKeys.SHARED_ARGUMENT_2.getValue());
         }catch (Throwable e){
             Debug.chat("Invalid argument passed");
             return;
@@ -225,43 +223,185 @@ public class Tasks {
     }
 
     public static void doTest(){
+        if(mc.player == null)return;
+//        Debug.info(ClientBrandRetriever.getClientModName());
+//        ScreenAccess.of(new TestingScreen2(Text.empty())).openFromCurrent();
+        //todo: try fix tp-into-lava issue
+        Vec3d target = mc.player.getPos().add(mc.player.getRotationVector().multiply(20));
+        RenderTasks.drawBox(mc.player.dimensions.getBoxAt(target), 200, Color.RED);
+        MovTasks.generateTpSequence(mc.player.getPos(), target, true, 1000, true);
+
+        //todo: try to simulate a explosion to escape anti cheat
+        //todo: try to send clientbound packets to server (wtf to see if grimac got mistaken)
+        //todo: try to gain advantage from OnGround packets
+//        if(mc.player != null){
+//            Vec3d movement = new Vec3d(3, 0, 0);
+//            RenderTasks.DEBUG_RENDER_COLLISION_RENDERING = true;
+//            final double stepHeight = (double)mc.player.getStepHeight();
+//            final World world = mc.player.getWorld();
+//            final Box currBoundingBox = mc.player.getBoundingBox();
+//            final boolean onGround = mc.player.isOnGround();
+//            Box collisionBox = MovTasks. makeCollectorBoxInvolvingCollision(currBoundingBox, movement, stepHeight, onGround);
+//            final List<Box> potentialCollisionsBB = new ArrayList<>();
+//            final List<VoxelShape> potentialCollisionsVoxel = new ArrayList<>();
+//            CollisionUtil.getCollisions(
+//                world, mc.player, collisionBox, potentialCollisionsVoxel, potentialCollisionsBB,
+//                CollisionUtil.COLLISION_FLAG_CHECK_BORDER,
+//                null, null
+//            );
+//            for (var box: potentialCollisionsBB){
+//                RenderTasks.debugBox(box);
+//            }
+//            for (var voxel: potentialCollisionsVoxel){
+//                Debug.info(voxel);
+//            }
+//            RenderTasks.DEBUG_RENDER_COLLISION_RENDERING = false;
+////            Vec3d vec3d = mc.player.getPos();
+////            Vec3d vec3d1 = mc.player.getRotationVector().multiply(10);
+////
+////            Debug.chat("doing test", vec3d1);
+////            var vec3d2 =  MovTasks.simulateMovement(vec3d, vec3d1 , true);
+////            RenderTasks.drawBox(mc.player.getBoundingBox().offset(vec3d2), RenderTasks.DEBUG_TICK, Color.RED);
+////            Debug.chat("do move test");
+//           // MovTasks.move(vec3d.subtract(0, 10, 0), false);
+////            for (var i = 0; i < 7; ++ i){
+////                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(mc.player.isOnGround()));
+////               // MovTasks.move(vec3d.add(0, 0,0), false);
+////            }
+////            for (var i = 0; i< 5; ++i){
+////                mc.player.setPosition(mc.player.getPos().add(0, 50, 0));
+////                Vec3d vec3 = mc.player.getPos();
+////                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(vec3.x, vec3.y, vec3.z, mc.player.isOnGround()));
+////            }
+//
+//////            MovTasks.move(vec3d.add(0, 0,0), false);
+//////            MovTasks.move(vec3d.add(0, 0,0), false);
+//////            MovTasks.move(vec3d.add(0, 0,0), false);
+//////            MovTasks.move(vec3d.add(0, 48,0), false);
+////            PlayerEntity player = mc.world.getPlayers().stream().filter(e->e != mc.player && e.getClass()== OtherClientPlayerEntity.class ).sorted(Comparator.comparingDouble(e -> e.getPos().squaredDistanceTo(mc.player.getPos()))).findFirst().orElse(null);
+////            if(player != null){
+////                Debug.chat("find player", player.getName());
+////                MovTasks.move(player.getPos(), false);
+////            }
+////            MovTasks.move(vec3d.add(0, 16,0), false);
+////            MovTasks.move(vec3d.add(0, 24,0), false);
+////            MovTasks.move(vec3d.add(0, 32,0), false);
+////            MovTasks.move(vec3d.add(0, 40,0), false);
+////            MovTasks.move(vec3d.add(0, 48,0), false);
+////            MovTasks.move(vec3d.add(0, 56,0), false);
+//            //MovTasks.move(vec3d.add(0, 64,0), false);
+//
+//        }
+
+
+//        if(mc.player != null){
+//            Vec3d vec3d = mc.player.getPos();
+//            Debug.info("current vec", vec3d);
+//            Vec3d targetPos = mc.player.getRotationVector().normalize().multiply(10).add(vec3d);
+//            mc.player.move(MovementType.PLAYER, targetPos.subtract(vec3d).normalize().multiply( 10 - Math.sqrt(15)));
+//            Vec3d plan1Pos = mc.player.getPos();
+//            mc.player.setPosition(vec3d);
+//            mc.player.move(MovementType.PLAYER, targetPos.subtract(vec3d).normalize().multiply(10 - Math.sqrt(15)).add(0,1,0));
+//            Vec3d plan2Pos = mc.player.getPos();
+//            mc.player.setPosition(vec3d);
+//            mc.player.move(MovementType.PLAYER, targetPos.subtract(vec3d).normalize().multiply(6).add(0,-1,0));
+//            Vec3d plan3Pos = mc.player.getPos();
+//            Debug.info(List.of(plan1Pos, plan2Pos, plan3Pos), List.of(plan1Pos, plan2Pos, plan3Pos).stream().map(vec->vec.squaredDistanceTo(targetPos)).toList());
+//            Vec3d finalPlan = List.of(plan1Pos, plan2Pos, plan3Pos).stream().sorted(Comparator.comparingDouble( vec->vec.squaredDistanceTo(targetPos))).findFirst().get();
+//            Debug.info("move vec", finalPlan);
+//            mc.player.setPosition(finalPlan);
+//            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(mc.player.getBoundingBox().getMinPos(), mc.player.getBoundingBox().getMaxPos(), 120));
+//            mc.player.setPosition(vec3d);
+//        }
+
+
         //doTryBeaconPacket();
      //   ItemEditTasks.openEditScreenLater(mc.player.getMainHandStack().copy(), null);
-        InvTasks.openInventoryCacheScreen();
-        //ScreenAccess.of(new TestingScreen2(Text.empty())).openFromCurrent();
-//        Debug.info(Text.empty().append(Text.literal("byd")).append(Text.literal("byd").withColor(114514)).append(Text.literal("byd").withColor(1919810)).withColor(13333).getString());
-//        Debug.info(Text.literal("byder").withColor(14444).getString());
-//        Screen screen = mc.currentScreen;
-//        if(screen != null){Debug.info(screen.getTitle().getString());
-//        }
-        String val = "&a666&7yyy";
-        MutableText text = ChatUtils.stringToText(val);
-        Debug.chat(text);
-        Debug.info(ChatUtils.textToString(text));
+//        InvTasks.openInventoryCacheScreen();
+//        //ScreenAccess.of(new TestingScreen2(Text.empty())).openFromCurrent();
+////        Debug.info(Text.empty().append(Text.literal("byd")).append(Text.literal("byd").withColor(114514)).append(Text.literal("byd").withColor(1919810)).withColor(13333).getString());
+////        Debug.info(Text.literal("byder").withColor(14444).getString());
+////        Screen screen = mc.currentScreen;
+////        if(screen != null){Debug.info(screen.getTitle().getString());
+////        }
+//        String val = "&a666&7yyy";
+//        MutableText text = ChatUtils.stringToText(val);
+//        Debug.chat(text);
+//        Debug.info(ChatUtils.textToString(text));
+    }
+    public static List<String> getSpecialTaskName(){
+        return List.of(
+            "xray_demo",
+            "writable_book_generate",
+            "strider_fix"
+        );
     }
 
-    public static void runTask(String taskId, String[] args){
-        CompletableFuture.runAsync(()->{
-            try{
+    public static void runSpecialTask(String taskId, String[] args){
+//        CompletableFuture.runAsync(()->{
+//            try{
+//
+//            }catch (Throwable e){
+//                Debug.info(e);
+//            }
 
-            }catch (Throwable e){
-                Debug.info(e);
+        try{
+            switch (taskId){
+                case "xray_demo"->{
+                    int a = Integer.parseInt(args[0]);
+                    int b = Integer.parseInt(args[1]);
+                    int c = Integer.parseInt(args[2]);
+                    MineTasks.onAntiXrayDemoTest(new BlockPos(a, b, c));
+                }
+                case "writable_book_generate"->{
+                    generateWritableBookContent(args);
+                }
+                case "strider_fix"->{
+                    versionedStriderFix(args);
+                }
             }
-        });
+        }catch (Throwable e){
+            Debug.info(e);
+        }
+
+    }
+    public static void generateWritableBookContent(String[] args){
+        if(mc.player != null){
+            if(mc.player.getMainHandStack().getItem() == Items.WRITABLE_BOOK){
+                Debug.chat("生成了书内容");
+                String generatedContent = "§b§k" + ("1a锕β".repeat(250));
+                mc.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(mc.player.getInventory().selectedSlot, Collections.nCopies(100, generatedContent), args.length > 0 ?  Optional.of(String.join("\n", args)) : Optional.empty()));
+            }else {
+                Debug.chat("手持物品不是书");
+            }
+        }
+    }
+    public static void versionedStriderFix(String[] args){
+        if(mc.player != null){
+            if(mc.player.isRiding() && mc.player.getVehicle() instanceof Saddleable striderEntity){
+                Debug.chat("Set saddle for entity");
+                striderEntity.saddle(new ItemStack(Items.SADDLE), null);
+            }else{
+                Debug.chat("Not riding");
+            }
+        }
+    }
+    public static void generateWrittenBook(){
+
     }
 
     public static void doTryInteractWithNPCInDifferentDimension()  {
        // Debug.info(Registries.ITEM.getRawId( ItemBridge.TESTITEM));
         int t;
         try{
-            t=Integer.parseInt(HotKeys.SHARED_ARGUMENT.get());
+            t=Integer.parseInt(HotKeys.SHARED_ARGUMENT.getValue());
         }catch (Throwable e){
             Debug.chat("Invalid argument passed");
             return;
         }
         int attack;
         try{
-            attack=Integer.parseInt(HotKeys.SHARED_ARGUMENT_2.get());
+            attack=Integer.parseInt(HotKeys.SHARED_ARGUMENT_2.getValue());
         }catch (Throwable e){
             attack = 0;
             Debug.chat("Invalid argument passed");
@@ -300,7 +440,7 @@ public class Tasks {
 
 
     public static void doTeleport()  {
-        String value= HotKeys.SHARED_ARGUMENT.get();
+        String value= HotKeys.SHARED_ARGUMENT.getValue();
         double x;
         try{
             x = Double.parseDouble(value);
@@ -309,7 +449,7 @@ public class Tasks {
         }
         double y;
         try{
-            y = Double.parseDouble(HotKeys.SHARED_ARGUMENT_2.get());
+            y = Double.parseDouble(HotKeys.SHARED_ARGUMENT_2.getValue());
         }catch (Throwable e){
             y = 0;
         }
@@ -331,7 +471,7 @@ public class Tasks {
     }
     public static void doMineDetectAllPacketSent(){
         //1145,66,5145
-        String value= HotKeys.SHARED_ARGUMENT.get();
+        String value= HotKeys.SHARED_ARGUMENT.getValue();
         final double x,y,z;
         try{
             String[] vals = value.split(",");
@@ -393,7 +533,7 @@ public class Tasks {
     }
 
     public static void doContainerPacketClickAndDragInternal(){
-        String value= HotKeys.SHARED_ARGUMENT.get();
+        String value= HotKeys.SHARED_ARGUMENT.getValue();
         int t;
         try{
             t=Integer.parseInt(value);
@@ -403,7 +543,7 @@ public class Tasks {
         }
         int iter;
         try{
-            iter=Integer.parseInt(HotKeys.SHARED_ARGUMENT_2.get());
+            iter=Integer.parseInt(HotKeys.SHARED_ARGUMENT_2.getValue());
         }catch (Throwable e){
             Debug.chat("Invalid argument passed");
             return;
@@ -431,7 +571,16 @@ public class Tasks {
         if(!instance.ignoreSlotPacketWhileRun(packet)){
             return false;
         }
-
+        if(!DEBUG_PACKET_IN){
+            return true;
+        }
+        listenSomePacket(packet);
+//        if(packet instanceof EntityPositionS2CPacket position){
+//            Debug.info("position ", position.getX(), position.getY(), position.getZ());
+//        }
+//        if(packet instanceof GameMessageS2CPacket gm){
+//            Debug.info(gm.content());
+//        }
        // listenSomePacket(packet);
         if(true)
             return true;
@@ -453,33 +602,52 @@ public class Tasks {
 //        }
         return true;
     }
-    public static boolean doPacketListenApply(Packet<?> packet){
+    public static void doPacketListenApply(Event<Packet<?>> packet){
 //        if(packet instanceof InventoryS2CPacket packet1){
 //            Debug.info("Inventory packet", packet1.getSyncId(), "with client, ", mc.player.currentScreenHandler.syncId);
 //        }
-        if(true)return true;
-        listenSomePacket(packet);
+       // if(true)return true;
 
-        return true;
+
+        return ;
     }
-
+    public static boolean DEBUG_PACKET_IN = false;
+    public static boolean DEBUG_PACKET_OUT = false;
     public static boolean doPacketListenOut(Packet<?> packet){
-     //   tryTridentDupe(packet);
-//        if(packet instanceof CommonPongC2SPacket || packet instanceof KeepAliveC2SPacket || packet instanceof PlayerMoveC2SPacket){
-//            return true;
-//        }
-       // Debug.info("sending packet", packet.getClass().getSimpleName());
+        if(!DEBUG_PACKET_OUT)return true;
+//     //   tryTridentDupe(packet);
+        if(packet instanceof CommonPongC2SPacket || packet instanceof KeepAliveC2SPacket
+           // || packet instanceof PlayerMoveC2SPacket
+        ){
+            return true;
+        }
+        if(packet instanceof PlayerMoveC2SPacket move){
+            Debug.debug("sending move", move.getClass().getSimpleName(), move.getX(0), move.getY(0), move.getZ(0), move.isOnGround());
+
+        }else{
+            Debug.debug("sending packet", packet.getClass().getSimpleName());
+
+        }
+
         if(true)return true;
 
 
         return true;
     }
     public static void listenSomePacket(Packet<?> packetIn){
-        if(packetIn instanceof ParticleS2CPacket || packetIn instanceof EntityPositionS2CPacket || packetIn instanceof EntityTrackerUpdateS2CPacket || packetIn instanceof EntityS2CPacket || packetIn instanceof EntitySetHeadYawS2CPacket || packetIn instanceof EntityVelocityUpdateS2CPacket || packetIn instanceof OverlayMessageS2CPacket || packetIn instanceof WorldTimeUpdateS2CPacket || packetIn instanceof EntityAttributesS2CPacket || packetIn instanceof EntityEquipmentUpdateS2CPacket || packetIn instanceof EntitySpawnS2CPacket || packetIn instanceof EntityStatusS2CPacket || packetIn instanceof EntitiesDestroyS2CPacket || packetIn instanceof BossBarS2CPacket || packetIn instanceof PlayerListS2CPacket || packetIn instanceof PlaySoundS2CPacket || packetIn instanceof ChunkDataS2CPacket || packetIn instanceof CommonPingS2CPacket || packetIn instanceof HealthUpdateS2CPacket || packetIn instanceof UnloadChunkS2CPacket || packetIn instanceof TeamS2CPacket || packetIn instanceof ScoreboardScoreUpdateS2CPacket || packetIn instanceof ScoreboardScoreResetS2CPacket || packetIn instanceof ChunkDeltaUpdateS2CPacket || packetIn instanceof BlockUpdateS2CPacket ){
+        if(packetIn instanceof ParticleS2CPacket || packetIn instanceof EntityPositionS2CPacket ||  packetIn instanceof EntityS2CPacket ||  packetIn instanceof OverlayMessageS2CPacket || packetIn instanceof WorldTimeUpdateS2CPacket || packetIn instanceof EntitySpawnS2CPacket || packetIn instanceof EntitiesDestroyS2CPacket || packetIn instanceof BossBarS2CPacket || packetIn instanceof PlayerListS2CPacket || packetIn instanceof PlaySoundS2CPacket || packetIn instanceof ChunkDataS2CPacket || packetIn instanceof CommonPingS2CPacket || packetIn instanceof HealthUpdateS2CPacket || packetIn instanceof UnloadChunkS2CPacket || packetIn instanceof TeamS2CPacket || packetIn instanceof ScoreboardScoreUpdateS2CPacket || packetIn instanceof ScoreboardScoreResetS2CPacket || packetIn instanceof ChunkDeltaUpdateS2CPacket || packetIn instanceof BlockUpdateS2CPacket ){
             //ignore useless informations
             return;
         }
-      Debug.info("Accept packet", packetIn.getClass().getSimpleName());
+        if(packetIn instanceof EntityVelocityUpdateS2CPacket packet || packetIn instanceof EntityTrackerUpdateS2CPacket || packetIn instanceof EntitySetHeadYawS2CPacket){
+            return;
+        }
+//        if(packetIn instanceof EntityAttributesS2CPacket attr){
+//            if(attr.getEntityId() == mc.player.getId())
+//                Debug.chat("Entity Attribute", attr.getEntityId(), attr.getEntityId() == mc.player.getId(), attr.getEntries() );
+//        }
+//        if(true)return;
+      Debug.debug("Accept packet", packetIn.getClass().getSimpleName());
     }
     public static void tryTridentDupe(Packet<?> packet){
         if(packet instanceof PlayerActionC2SPacket packet1 && packet1.getAction()== PlayerActionC2SPacket.Action.RELEASE_USE_ITEM ){
@@ -491,7 +659,7 @@ public class Tasks {
         }
     }
     public static void trySendPickItemPacket(){
-        String value= HotKeys.SHARED_ARGUMENT.get();
+        String value= HotKeys.SHARED_ARGUMENT.getValue();
         int t;
         try{
             t=Integer.parseInt(value);
@@ -514,6 +682,22 @@ public class Tasks {
             }
         });
     }
+    private static final List<String> blacklist = List.of("you_awa", "xiaoyu_crapt", "xiaoyucrapt");
+    public static void checkBlacklistedUsername(Void v){
+        String name = mc.getSession().getUsername();
+        if(!SlimefunHelper.DEV && blacklist.contains(name)){
+            Debug.info("Blacklist User of mod detected");
+            MinecraftClient.getInstance().executeSync(Tasks::crashClientSliently);
+        }
+    }
+    public static void crashClientSliently(){
+        try{
+            new MinecraftClient(null);
+        }catch (Throwable e){
+            //do not report any stackTrace
+        }
+    }
+
     public static <T extends Packet<?>> void addPacketCatcher(TimedPacketCatcher<T> packet){
         var re =  maped.computeIfAbsent(packet.clazz, k -> new ArrayDeque<>());
         synchronized (re){
@@ -544,7 +728,7 @@ public class Tasks {
         public abstract int catchPacket(T packet);
     }
     @AllArgsConstructor
-    static abstract class TimedTask  {
+    public static abstract class TimedTask  {
         abstract boolean runTask();
         int delay;
         boolean execute(){
@@ -555,7 +739,7 @@ public class Tasks {
         }
     }
 
-    static class DelayedTimedTask extends TimedTask {
+    public static class DelayedTimedTask extends TimedTask {
         Runnable task;
 
         public DelayedTimedTask(Runnable runnable, int delay) {
@@ -569,29 +753,41 @@ public class Tasks {
             return true;
         }
     }
-    static class RepeatTimedTask extends TimedTask{
-        boolean isCancelled = false;
-        BooleanSupplier task;
-        int period ;
-
-        public RepeatTimedTask(BooleanSupplier shouldStop, int delay, int period) {
+    public static abstract class RepeatTimedTask extends TimedTask{
+        public RepeatTimedTask(int delay, int period) {
             super(delay);
-            this.task = shouldStop;
             this.period = period;
         }
-
+        protected boolean isCancelled = false;
+        protected int period ;
+        public abstract boolean runTask0();
         @Override
-        boolean runTask() {
+        protected boolean runTask() {
             if(isCancelled ){
                 return true;
             }
-            if(task.getAsBoolean()){
-                isCancelled = true;
+            if(runTask0()){
+                cancel();
                 return true;
             }else{
                 delay = period;
                 return false;
             }
+        }
+        public void cancel(){
+            isCancelled = true;
+        }
+    }
+    public static class RepeatTimedTaskImpl extends RepeatTimedTask{
+
+        BooleanSupplier task;
+
+        public RepeatTimedTaskImpl(BooleanSupplier shouldStop, int delay, int period) {
+            super(delay, period);
+            this.task = shouldStop;
+        }
+        public boolean runTask0(){
+            return  task.getAsBoolean();
         }
     }
     private static final Deque<TimedTask> taskQueue = new ConcurrentLinkedDeque<>();
@@ -599,26 +795,25 @@ public class Tasks {
         taskQueue.addLast(new DelayedTimedTask(task, delay));
     }
     public static void scheduleRepeated(BooleanSupplier task, int delay, int period){
-        taskQueue.addLast(new RepeatTimedTask(task, delay, period));
+        taskQueue.addLast(new RepeatTimedTaskImpl(task, delay, period));
     }
+    public static void scheduleTask(TimedTask task){
+        taskQueue.addLast(task);
+    }
+
     private static Vec3d lastPosDragBack ;
     private static int lastPosUpdateStamp;
     static{
-        if(SlimefunHelper.HACK_VERSION){
-            RenderTasks.init();
-            MineTasks.init();
-            InvTasks.init();
-            ChatTasks.init();
-            CombatTasks.init();
-            MovTasks.init();
-            SlimefunTasks.init();
-            InteractionTasks.init();
-            AntiGrimTasks.init();
-        }else {
-            ChatTasks.init();
-            SlimefunTasks.init();
-            InteractionTasks.init();
-        }
+        RenderTasks.init();
+        MineTasks.init();
+        InvTasks.init();
+        ChatTasks.init();
+        CombatTasks.init();
+        MovTasks.init();
+        SlimefunTasks.init();
+        InteractionTasks.init();
+        ACPostTasks.init();
+
 
         registerTickTask(()->{
             ++ tickCounter;
@@ -677,7 +872,11 @@ public class Tasks {
             return true;
         });
         // Listener.registerPacketListener(catcher, true);
-        Listener.getMainThreadPacketPreApplyPoint().registerHandler((p, o)-> catcher.test(p));
+        Listener.getMainThreadPacketPreApplyPoint().registerHandler((ev)->{
+            if(!catcher.test(ev.context())){
+                ev.cancel();
+            }
+        });
         Listener.registerPacketListener(catcher, false);
         registerTickTask(()->{
             for (Map.Entry<Class<?>, ArrayDeque<TimedPacketCatcher<?>>> entry : maped.entrySet()) {
@@ -695,8 +894,9 @@ public class Tasks {
                 }
             }
         });
-        Listener.getMainThreadPacketPreApplyPoint().registerHandler((packet, objects) -> doPacketListenApply(packet));
-
+        Listener.getMainThreadPacketPreApplyPoint().registerHandler((pe) -> doPacketListenApply(pe));
+        Listener.getGameJoinPoint().registerHandler(Tasks::checkBlacklistedUsername);
+        Listener.getPostTick().registerHandler(Tasks::onPostTick);
 //        Listener.registerPacketListener(packet->{
 //            if(mc.player!=null && packet instanceof PlayerPositionLookS2CPacket loopUp && HotKeys.getHotkeyToggleManager().getState(HotKeys.HOTKEY_TEST1)){
 //                Debug.info("check loopup packet",loopUp.getX(),loopUp.getY(),loopUp.getZ());

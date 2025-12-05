@@ -45,7 +45,22 @@ public class BukkitMetaItem implements Cloneable , ConfigurationSerializable {
     }
 
     public int getCustomModelData(){
-        return  (Integer) this.attributes.getOrDefault("custom-model-data",0);
+        Object value = this.attributes.get("custom-model-data");
+        if (value instanceof Integer)return (Integer)value;
+        else if(value instanceof BukkitSerializationMock.UnknownSerialization unknown1_21_4){
+            try{
+                if(unknown1_21_4.value.containsKey("floats")){
+                    List floats = (List) unknown1_21_4.value.get("floats");
+                    return floats.isEmpty() ? 0 : (floats.get(0) instanceof Number unm? unm.intValue() : 0);
+                }else {
+                    return 0;
+                }
+            }catch (Throwable e){
+                return 0;
+            }
+        }
+        else return 0;
+      //  return  (Integer) this.attributes.getOrDefault("custom-model-data",0);
     }
 
 

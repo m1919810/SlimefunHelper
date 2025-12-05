@@ -1,5 +1,6 @@
 package me.matl114.mixins.HackMixin;
 
+import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -16,7 +17,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Environment(EnvType.CLIENT)
 @Mixin(value = InGameHud.class, priority = 10)
@@ -32,7 +32,7 @@ public abstract class InGameHudMixin {
     private boolean tmpValue2;
 
     @Unique
-    private static final AtomicBoolean disableWurstHud = Configs.RENDER_CONFIG.getBoolean(Configs.RENDER_REJECT_WURST);
+    private static final Config.FlagRef disableWurstHud = Configs.RENDER_CONFIG.getBoolean(Configs.RENDER_REJECT_WURST);
 
     @Inject(at = @At("HEAD"),
         method = "renderPlayerList(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V")

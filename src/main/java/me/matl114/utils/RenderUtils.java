@@ -7,21 +7,29 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import org.joml.AxisAngle4f;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.lwjgl.opengl.GL11;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.awt.*;
 import java.util.List;
@@ -84,7 +92,55 @@ public class RenderUtils {
 
     //vertexBuffer可以缓存buffer的行为，可以在不同的变换矩阵下重复使用， 使用bind();draw(viewMatrix, projMatrix, shader);unbind();
     //projMatrix从RenderSystem.getProjectionMatrix();获取, shader从RenderSystem.getShader();获取, viewMatrix是正常传参中的玩家位置matrixStack.position
-
+    @Unique
+    public static void renderItemAt(ItemRenderer itemRenderer, MatrixStack matrices, ModelTransformationMode renderMode, ItemStack stack, boolean leftHanded, VertexConsumerProvider vertexConsumers, int overlay){
+        matrices.push();
+        try{
+            final float scale=0.54f;
+            final float scale_ground=0.8f;
+            boolean inGui = false;
+            if(renderMode == ModelTransformationMode.GUI){
+                inGui = true;
+                matrices.translate(0.26,-0.26,1f);
+                matrices. scale(scale, scale, scale);
+            }else if(renderMode == ModelTransformationMode.GROUND){
+                matrices.translate(0.15,-0.15,0);
+                matrices. scale(scale_ground, scale_ground, scale_ground);
+            }else if(renderMode == ModelTransformationMode.FIXED){
+                matrices.translate(-0.25,-0.25,-0.05);
+                matrices. scale(scale_ground, scale_ground, scale_ground);
+            }else if(renderMode == ModelTransformationMode.HEAD) {
+                //seems too wierd, give up
+                return;
+//                    matrices.translate(-0.25,0.5,-0.05);
+//    //                matrices. scale(scale_ground, scale_ground, scale_ground);
+//                    renderMode = ModelTransformationMode.FIXED;
+            }else if(renderMode == ModelTransformationMode.THIRD_PERSON_RIGHT_HAND){
+                //seems too wierd
+//                matrices.translate(0.25,0.25,0.05);
+//               matrices. scale(scale, scale, scale);
+//                renderMode = ModelTransformationMode.GUI;
+                return;
+            }else if(renderMode == ModelTransformationMode.THIRD_PERSON_LEFT_HAND){
+                //seems too wierd
+//                matrices.translate(0.25,0.25,0.05);
+//                matrices. scale(scale, scale, scale);
+//                renderMode = ModelTransformationMode.GUI;
+                return;
+            }else{
+                return;
+            }
+            BakedModel bakedModel=itemRenderer.getModel(stack, mc.world, mc.player, 0);
+            //fixme: renderer error here
+            if(inGui)
+                DiffuseLighting.enableGuiDepthLighting();
+            itemRenderer.renderItem(stack,renderMode,leftHanded,matrices,vertexConsumers,0xF000F0,overlay,bakedModel);
+            if(inGui)
+                DiffuseLighting.disableGuiDepthLighting();
+        }finally {
+            matrices.pop();
+        }
+    }
     public static Vec3d getCameraPos(){
         var d = mc.getBlockEntityRenderDispatcher().camera;
         return d == null? Vec3d.ZERO:d.getPos();
@@ -101,6 +157,15 @@ public class RenderUtils {
     public static Vec3d getClientLookVec(float partialTicks){
         if(mc.player == null)return Vec3d.ZERO;
         return mc.player.getRotationVec(partialTicks);
+    }
+    public static Vec3d getTracerOrigin(float partialTicks)
+    {
+        Vec3d start = getClientLookVec(partialTicks).multiply(10);
+        if(mc.options
+            .getPerspective() == Perspective.THIRD_PERSON_FRONT)
+            start = start.negate();
+
+        return start;
     }
 
     public static RegionPos getCameraRegion()
@@ -387,6 +452,8 @@ public class RenderUtils {
 //        drawOutlinedBox(bufferBuilder, vec3d, vec3d1);
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
     }
+
+
     public static void drawSolidBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to){
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
@@ -403,7 +470,42 @@ public class RenderUtils {
         drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
     }
     public static void setAsShaderColor(Color color, float opacity){
-        RenderSystem.setShaderColor(color.getRed(), color.getGreen(), color.getBlue(), opacity);
+        RenderSystem.setShaderColor(color.getRed() / 255.0F, color.getGreen()/ 255.0F, color.getBlue()/ 255.0F, opacity);
+    }
+
+    //gui
+    public static void drawHighlightFrame(DrawContext context, int x, int y, int dx, int dy, int color){
+        context.fillGradient(RenderLayer.getGuiOverlay(), x, y, x + dx, y + 1, color, color, 0);
+        context.fillGradient(RenderLayer.getGuiOverlay(), x , y, x + 1, y + dy,  color, color,  0);
+        context.fillGradient(RenderLayer.getGuiOverlay(), x + dx - 1, y + 1, x + dx, y + dy,  color, color, 0);
+        context.fillGradient(RenderLayer.getGuiOverlay(), x + 1, y + dy - 1, x + dx, y + dy,  color, color, 0);
+    }
+
+    public static Box getLerpedBox(Entity e, float partialTicks)
+    {
+        // When an entity is removed, it stops moving and its lastRenderX/Y/Z
+        // values are no longer updated.
+        if(e.isRemoved())
+            return e.getBoundingBox();
+
+        Vec3d offset = getLerpedPos(e, partialTicks).subtract(e.getPos());
+        return e.getBoundingBox().offset(offset);
+    }
+
+    public static Vec3d getLerpedPos(Entity e, float partialTicks)
+    {
+        // When an entity is removed, it stops moving and its lastRenderX/Y/Z
+        // values are no longer updated.
+        if(e.isRemoved())
+            return e.getPos();
+
+        double x = MathHelper.lerp(partialTicks, e.lastRenderX, e.getX());
+        double y = MathHelper.lerp(partialTicks, e.lastRenderY, e.getY());
+        double z = MathHelper.lerp(partialTicks, e.lastRenderZ, e.getZ());
+        return new Vec3d(x, y, z);
+    }
+    public static Vec3d getLerpedDelta(Entity e, float partialTicks){
+        return getLerpedPos(e, partialTicks).subtract(e.getPos());
     }
 
 }

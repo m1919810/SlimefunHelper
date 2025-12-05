@@ -187,11 +187,8 @@ public class ModConfig {
         return defaultValue;
     }
     //为什么我要把接下来做的东西放在这？
-    //Todo 挖矿助手
     //@ServerPlayNetworkHandler
     //@ServerPlayerInteractionManager
     //@ClientPlayerInteractionManager
-    //Todo 便捷移动
-    //todo 便捷多方块 自带连点
 
 }

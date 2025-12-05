@@ -11,4 +11,7 @@ public class MathUtils {
         }
         return sum;
     }
+    public static int sgn(int t){
+        return Integer.compare(t, 0);
+    }
 }

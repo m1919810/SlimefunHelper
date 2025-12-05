@@ -86,6 +86,15 @@ shadowJar {
 	finalizedBy(tasks.remapJar)
 }
 
+//loom {
+//	// 禁用自动下载
+//	skipDownloadAssets = true
+//	skipDownloadMcLibraries = true
+//
+////	// 或者设置自定义缓存路径
+////	customMinecraftCache = file("${project.gradle.gradleUserHomeDir}/caches/fabric-loom")
+//}
+
 remapJar {
 	dependsOn shadowJar
 	inputFile = shadowJar.archiveFile.get().asFile
@@ -138,6 +147,27 @@ jar {
 tasks.named("runClient", JavaExec) {
 	jvmArgs("-XX:+AllowEnhancedClassRedefinition", "-XX:-OmitStackTraceInFastThrow")
 }
+//
+//tasks.named('downloadAssets', JavaExec) {
+//	// 设置任务级别的系统属性（不推荐，可能不生效）
+//	systemProperties = [
+//			'https.proxyHost': '127.0.0.1',
+//			'https.proxyPort': '7890',
+//			'http.proxyHost': '127.0.0.1',
+//			'http.proxyPort': '7890'
+//	]
+//}
+
+//tasks.named("build"){
+//	//why can not it be directly accessed, I don't understand
+//	//shit gradle
+//	systemProperties = [
+//			"https.proxyHost": "127.0.0.1",
+//			"https.proxyPort": "7890",
+//			"http.proxyHost": "127.0.0.1",
+//			"http.proxyPort": "7890"
+//	]
+//}
 
 tasks.test {
 	useJUnitPlatform()

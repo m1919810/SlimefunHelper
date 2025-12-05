@@ -1,10 +1,15 @@
 package me.matl114.mixins.HotkeyMixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
 import me.matl114.access.ButtonNotFocusedScreenAccess;
 import me.matl114.access.ScreenAccess;
+import me.matl114.listenerUtils.Listener;
+import me.matl114.utils.UtilClass.Event;
+import me.matl114.utils.UtilClass.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -19,6 +24,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
@@ -97,6 +103,23 @@ public abstract class ScreenMixin extends AbstractParentElement implements Scree
             cir.setReturnValue(false);
         }
     }
+
+    @Inject(method = "close", at = @At(value = "RETURN"))
+    private void onScreenClsoe(CallbackInfo ci){
+        Event<Screen> event = new Event<>((Screen) (AbstractParentElement)this, false, false);
+        Listener.getClientScreenClose().handleValue(event);
+    }
+
+//    @Inject(method = "init(Lnet/minecraft/client/MinecraftClient;II)V", at = @At("HEAD"))
+//    private void onInitializeAndResize(MinecraftClient client, int width, int height, CallbackInfo ci){
+//        if(this == (Object)MinecraftClient.getInstance().currentScreen)
+//            Listener.getCurrentScreenResize().handleValue(new Event<>(new Point(width, height), false, false));
+//    }
+//    @Inject(method = "resize", at = @At("HEAD"))
+//    private void onResize(MinecraftClient client, int width, int height, CallbackInfo ci){
+//        if(this == (Object)MinecraftClient.getInstance().currentScreen)
+//            Listener.getCurrentScreenResize().handleValue(new Event<>(new Point(width, height), false, false));
+//    }
 
 
 }

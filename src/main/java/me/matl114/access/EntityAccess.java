@@ -11,6 +11,12 @@ public interface EntityAccess<T extends Entity> {
     default void setGlow0(boolean glow){
         setDataFlag(6, glow);
     }
+    byte RENDER_LEVEL_DISABLE = 0;
+    byte RENDER_LEVEL_WHITELIST = 1;
+    byte RENDER_LEVEL_FORCE = 2;
+    public byte renderTrackedLevel();
+
+    public void markRenderTracked(byte tracked);
 
     public void addTickWrapper(ProgressWrapper<T> wrapper);
 

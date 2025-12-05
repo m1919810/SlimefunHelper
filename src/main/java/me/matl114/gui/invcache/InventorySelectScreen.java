@@ -12,6 +12,7 @@ import me.matl114.utils.WorldUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
@@ -37,7 +38,6 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
             0,TITLE_OCCUPIED , this.backgroundWidth  ,PAGE_LABEL_HEIGHT, 0, this.backgroundHeight - LABEL_OCCUPIED, -4,16,
             16, 16, handledScreens,this::filterInventory, this::makeIcon
         );
-
     }
     private static final List<Text> RULE_ACCEPT_VIRTUAL = List.of(
       Text.literal(  "点击切换容器过滤规则"),
@@ -84,7 +84,7 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
                         if(l){
                             openInventoryViewScreen(screen);
                         }else if(screen instanceof TileInventoryScreen tile && tile.getPos() !=null && WorldUtils.areWorldEquals(MinecraftClient.getInstance().world, tile.getWorld())){
-                            RenderTasks.registerBlockRenderTask(new RenderTasks.CountingBlockSolidTarget(tile.getPos(), true, 120));
+                            RenderTasks.registerVirtualRenderTask(new RenderTasks.CountingBlockSolidTarget(tile.getPos(), true, 120));
                             this.close();
                         }
                     }))
@@ -94,6 +94,7 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
     protected void openInventoryViewScreen(HandledScreen<?> screen){
         ScreenAccess.of(new InventoryViewScreen(screen)).openFromCurrent();
     }
+
 
     protected boolean filterInventory(String value, HandledScreen<?> screen){
         return (!filterVirtual || (screen instanceof TileInventoryScreen til && !til.isVirtual())) && (FilterService.nameMatch(screen.getTitle().getString().replace("§.", ""), value) || screen.getScreenHandler().

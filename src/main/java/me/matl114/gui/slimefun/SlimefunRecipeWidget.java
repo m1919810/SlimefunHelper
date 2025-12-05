@@ -83,7 +83,7 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
         //save item
         //ExecutableWidget.instance()
         // creative give
-        boolean displayGive = MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().player.isCreative();
+        boolean displayGive = MinecraftClient.getInstance().interactionManager != null && MinecraftClient.getInstance().interactionManager.hasCreativeInventory();
         int buttonAmount =  2 + (displayGive?1:0);
         //中心在 123 - 14 + 9 =118
         // buttonAmount个, 相当于

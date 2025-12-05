@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.ints.AbstractIntSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.Getter;
-import me.matl114.utils.UtilClass.ArgumentListenerPoint;
+
 import me.matl114.utils.UtilClass.ListenerPoint;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.DataTracker;

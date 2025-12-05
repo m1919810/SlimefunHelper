@@ -109,7 +109,7 @@ public class SlimefunCustomModelManager {
                             if( ModConfig.getSlimefunModelPathPattern().asMatchPredicate().test(shouldModelId.toString())){
                                 //custom item
                                 Debug.info("load custom slimefun item model:",shouldModelId);
-                                CUSTOM_PATH_SLIMEFUN_MODEL.put(splits[splits.length-1].toUpperCase(Locale.ROOT),wrappedId);
+                                CUSTOM_PATH_SLIMEFUN_MODEL.put(splits[splits.length-1].toUpperCase(Locale.ROOT), wrappedId);
                             }
 
                             if(Registries.ITEM.get(shouldId)== Items.AIR){
@@ -164,7 +164,7 @@ public class SlimefunCustomModelManager {
             //Debug.info("in resourcepack ",pack.getName());
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
             for(String namespace : namespacess){
-                if(OUR_NAMESPACE.equals(namespace)|| ModConfig.getSlimefunTextureNamespaces().contains(namespace)){
+                if(OUR_NAMESPACE.equals(namespace) || ModConfig.getSlimefunTextureNamespaces().contains(namespace)){
                     Debug.info("Force load TEXTURE in pack",pack.getId(),"and namespace",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
                             String realNamespace=i.getNamespace();

@@ -12,13 +12,14 @@ import me.matl114.utils.UtilClass.PropertyTracker;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.*;
 
 public class GridSelectSubScreen<R> extends SubScreenWidget {
     final PageSwitchSubScreen pageSwitcher;
     GridSubScreen<DrawableWidget> gridSubScreen;
-    final ContentDelegateWidget<TextFieldWidget> textFieldWidget;
-    final TextFieldWidget delegate;
+    final ContentDelegateWidget<SubScreenWidget> textFieldWidget;
+    final SubScreenWidget delegate;
     @Getter
     BiPredicate<String, R> filter;
     List<R> values;
@@ -40,13 +41,18 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
         this.originalValues = origins;
         this.function = function;
         this.pageSwitcher = new PageSwitchSubScreen(
-            0,0, dx, pageHeight,(i)->resetPage()
+            0,0, dx, pageHeight, 100,(i)->resetPage()
         ).addToSub(this);
-        this.textFieldWidget = McWidgetHelpers.createTextFieldEditBox(
-            5, this.baseHeight + gridHeight + this.filterDistance,dx - 10, this.filterHeight, PropertyTracker.event(this.getFilterTask()), FilterService.currentUserInput
-        ).addToSub(this);
-        this.delegate = this.textFieldWidget.getDelegate();
+        this.delegate = FilterService.createFilter(()->this.getFilterTask().accept(FilterService.currentUserInput), 5, 0,dx - 10, this.filterHeight);
+//            McWidgetHelpers.createTextFieldEditBox(
+//            , PropertyTracker.event(this.getFilterTask()), FilterService.currentUserInput
+//        );//.addToSub(this);
+        this.textFieldWidget =  new ContentDelegateWidget(0,0,0,0)
+            .setContentDelegate(this.delegate); //this.textFieldWidget.getDelegate();
+        this.textFieldWidget
+            .addToSub(this);
         setFilter(filter);
+
         resetHeight(pageHeight + page2Grid + gridHeight + grid2Filter + filterHeight);
 
     }
@@ -72,8 +78,7 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
             this.gridSubScreen = new GridSubScreen<DrawableWidget>(
                 0, this.baseHeight, dx, gridHeight, elementX, elementY
             ).addToSub(this);
-            initFilter();
-            resetPage();
+            CompletableFuture.supplyAsync(this::initFilter).thenRun(this::resetPage);
             return true;
         }
         return false;
@@ -88,15 +93,16 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
     }
 
 
-    protected void resetPage() {
+    protected synchronized void resetPage() {
         //reset maxPage when filter or sth reset the page
         this.pageSwitcher.updateMaxPage(Math.max(1, 1+((this.values.size() -1) / this.gridSubScreen.getEntryPerPage()) ));
         int  page = this.pageSwitcher.getPage();//  MathHelper.clamp(this.page ,1, this.maxPage);
         this.gridSubScreen.refreshPage(this.values, this.function, page);
     }
-    public boolean initFilter(){
-        //fixme: input is null does not means escape filter
-        if(this.filter != null && (FilterService. currentUserInput != null && !FilterService. currentUserInput.isEmpty())){
+    public synchronized boolean initFilter(){
+        // input is null does not means escape filter
+        var filter = this.filter;
+        if(this.filter != null){
             values = originalValues.get().stream()
                 .filter(t->filter.test(FilterService. currentUserInput, t))
                 .toList();
@@ -115,12 +121,14 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
             FilterService.currentUserInput = str;
             refresh();
         };
-
     }
     public void refresh(){
-        if(initFilter()){
-            resetPage();
-        }
+        CompletableFuture.supplyAsync(this::initFilter)
+            .thenAccept(i->{
+            if (i){
+                resetPage();
+            }
+        });
     }
 
 }

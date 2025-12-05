@@ -2,14 +2,16 @@ package me.matl114.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import me.matl114.utils.UtilClass.SimpleOrderedTextVisitor;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Language;
+import net.minecraft.util.math.Vec3d;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -226,6 +228,124 @@ public class ChatUtils {
         }
         return out.toString();
     }
+
+    public static String translatedTextToLegacyString(Text component){
+        if (component == null) return "";
+        StringBuilder out = new StringBuilder();
+        final AtomicBoolean hadFormat = new AtomicBoolean(false);
+        component.visit((StringVisitable.StyledVisitor<? extends Object>) (style, str)->{
+            Style modi = style;
+            TextColor color = modi.getColor();
+            if (
+                //c.getContent() != PlainTextContent.EMPTY ||
+                color != null) {
+                if (color != null) {
+                    Formatting format = colorToFormat.get(color);
+                    if (format != null) {
+                        out.append(format);
+                    } else {
+                        out.append('§').append("x");
+                        for (char magic : color.getName().substring(1).toCharArray()) {
+                            out.append('§').append(magic);
+                        }
+                    }
+                    hadFormat.set(true);// = true;
+                } else if (hadFormat.get()) {
+                    out.append("§r");
+                    hadFormat.set(false);// = false;
+                }
+            }
+            if (modi.isBold()) {
+                out.append(Formatting.BOLD);
+                hadFormat.set(true);// = true;
+            }
+            if (modi.isItalic()) {
+                out.append(Formatting.ITALIC);
+                hadFormat.set(true);
+            }
+            if (modi.isUnderlined()) {
+                out.append(Formatting.UNDERLINE);
+                hadFormat.set(true);
+            }
+            if (modi.isStrikethrough()) {
+                out.append(Formatting.STRIKETHROUGH);
+                hadFormat.set(true);
+            }
+            if (modi.isObfuscated()) {
+                out.append(Formatting.OBFUSCATED);
+                hadFormat.set(true);
+            }
+            out.append(str);
+            return Optional.empty();
+        }, Style.EMPTY);
+//        for (var txt : text){
+//            txt.accept(((index, style, codePoint) -> {
+//
+//            }));
+//        }
+        return out.toString();
+    }
+
+    //todo need test
+    public static String orderedTextToLegacyString(OrderedText... text){
+        if (text == null) return "";
+        StringBuilder out = new StringBuilder();
+        MutableObject<Style> currentStyle = new MutableObject<>(null);
+        final AtomicBoolean hadFormat = new AtomicBoolean(false);
+        for (var txt : text){
+            txt.accept(((index, style, codePoint) -> {
+                if(!Objects.equals(style, currentStyle.getValue())){
+                    //update only when change style
+                    currentStyle.setValue(style);
+                    Style modi = style;
+                    TextColor color = modi.getColor();
+                    if (
+                        //c.getContent() != PlainTextContent.EMPTY ||
+                        color != null) {
+                        if (color != null) {
+                            Formatting format = colorToFormat.get(color);
+                            if (format != null) {
+                                out.append(format);
+                            } else {
+                                out.append('§').append("x");
+                                for (char magic : color.getName().substring(1).toCharArray()) {
+                                    out.append('§').append(magic);
+                                }
+                            }
+                            hadFormat.set(true);// = true;
+                        } else if (hadFormat.get()) {
+                            out.append("§r");
+                            hadFormat.set(false);// = false;
+                        }
+                    }
+                    if (modi.isBold()) {
+                        out.append(Formatting.BOLD);
+                        hadFormat.set(true);// = true;
+                    }
+                    if (modi.isItalic()) {
+                        out.append(Formatting.ITALIC);
+                        hadFormat.set(true);
+                    }
+                    if (modi.isUnderlined()) {
+                        out.append(Formatting.UNDERLINE);
+                        hadFormat.set(true);
+                    }
+                    if (modi.isStrikethrough()) {
+                        out.append(Formatting.STRIKETHROUGH);
+                        hadFormat.set(true);
+                    }
+                    if (modi.isObfuscated()) {
+                        out.append(Formatting.OBFUSCATED);
+                        hadFormat.set(true);
+                    }
+                }
+
+                out.appendCodePoint(codePoint);
+                return true;
+            }));
+        }
+        return out.toString();
+    }
     public static String translateAlternateColorCodes(char altColorChar, char translateTo, @NotNull String textToTranslate) {
         Preconditions.checkArgument(textToTranslate != null, "Cannot translate null text");
 
@@ -256,5 +376,70 @@ public class ChatUtils {
         }
     }
 
+    public static Text getDisplayedLocation(Vec3d vec3d){
+        return getDisplayedLocation(vec3d.x, vec3d.y, vec3d.z);
+    }
+    public static Text getDisplayedLocationDouble(Vec3d vec3d){
+        return getDisplayedLocationDouble(vec3d.x, vec3d.y, vec3d.z);
+    }
 
+    public static Text getDisplayedLocationDouble(double x,double y ,double z){
+        return Text.literal("[%.2f,%.2f,%.2f]".formatted(x, y, z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+    }
+    public static Text getDisplayedLong(long l){
+        return Text.literal("[" + Long.toString(l) + "]").setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, Long.toString(l))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+    }
+
+    public static Text getDisplayedLocation(double x,double y ,double z){
+        return Text.literal("[%d,%d,%d]".formatted((int)x, (int)y, (int)z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+    }
+
+    public static MutableText getClickCopyTargetText(String literal){
+        String targetShow = "[%s]".formatted(literal);
+        return  getClickCopyText(targetShow, literal);
+    }
+
+    public static MutableText getClickCopyText(String literal, String copy){
+        return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy text"))).withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, copy)));
+    }
+
+    public static MutableText concatLineText(List<Text> texts){
+        int size = texts.size();
+        MutableText text = Text.empty();
+
+        for (int i = 0; i < size; i++) {
+            Text text0 = texts.get(i);
+            text.append(text0);
+            if (i < size - 1) {
+                text.append("\n");
+            }
+        }
+
+        return text;
+    }
+
+    public static MutableText getHoverShowText(String literal, List<Text> showText){
+        return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, concatLineText(showText))));
+    }
+
+    public static List<Text> parseTooltipsTranslation(String key, String defaultVal){
+        String tooltipValue = Language.getInstance().get(key, defaultVal);
+        String[] splites = tooltipValue.split("\n");
+        return Arrays.stream(splites).map(Text::literal).map(Text.class::cast).toList();
+    }
+
+    public static String getOrderedTextString(OrderedText... text){
+        var re = new SimpleOrderedTextVisitor();
+        for (var txt : text){
+            txt.accept(re);
+        }
+        return re.getContent().toString();
+    }
+
+    public static MutableText copyText(Text text){
+        MutableText newLine = MutableText.of(text.getContent());
+        newLine.setStyle(text.getStyle());
+        text.getSiblings().forEach(newLine::append);
+        return newLine;
+    }
 }

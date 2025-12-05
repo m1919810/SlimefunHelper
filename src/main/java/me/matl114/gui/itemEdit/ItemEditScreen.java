@@ -113,7 +113,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     }
     public void applyChangeToInventory(){
         if(mc.player != null ){
-            if(mc.player.isCreative()){
+            if( mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
                 int slot = mc.player.getInventory().selectedSlot;
                 InvTasks.setCreativeInventory(this.itemStack, slot);
             }else {
@@ -158,6 +158,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     );
     protected static final Identifier GUIDE_TEXTURE = new Identifier("slimefunhelper", "textures/gui/list_tag.png");
     protected ItemProcessingSubScreen currentSubScreen;
+
     ContentDelegateWidget<EditBoxWidget> optionalMultiLine;
     ContentDelegateWidget<ItemProcessingSubScreen> processingSubScreen ;
     protected void setState(State state){
@@ -302,7 +303,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             if(!itemAttrValue.validateAndUpdate()){
                 error();
             }
-            this.widget = this.itemAttrValue.generateEditBox(ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getWidth() - 20, ItemEditScreen.this.processingSubScreen.getHeight() -20).getDelegate();
+            this.widget = this.itemAttrValue.generateEditBox(ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getTextureWidth() - 20, ItemEditScreen.this.processingSubScreen.getTextureHeight() -20).getDelegate();
             this.formatButton = ExecutableWidget.instance(141, -19, 18, 18)
                 .setElementHandler(
                     IconElement.fixed(FORMAT_TEXTURE, ButtonAction.run(()->{
@@ -344,7 +345,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         @Override
         protected void refreshScreen() {
             //refresh widget with absolute coord
-            this.widget = this.itemAttrValue.generateEditBox(ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getWidth() - 20, ItemEditScreen.this.processingSubScreen.getHeight() -20).getDelegate();
+            this.widget = this.itemAttrValue.generateEditBox(ItemEditScreen.this.processingSubScreen.getX() +10,ItemEditScreen.this.processingSubScreen.getY()+10, ItemEditScreen.this.processingSubScreen.getTextureWidth() - 20, ItemEditScreen.this.processingSubScreen.getTextureHeight() -20).getDelegate();
             ItemEditScreen.this.optionalMultiLine.setContentDelegate(this.widget);
         }
     }
@@ -409,7 +410,6 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             return true;
         }
 
-        //fixme 窗口resize之后自下而上对齐的图标混乱
         @Override
         protected void refreshScreen() {
             this.children.clear();
@@ -424,10 +424,10 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     )
                     .addToSub(this);
             }
-            DisplayWidget.instance(30, ItemEditScreen.this.processingSubScreen.getHeight() - 90, 60, 20)
+            DisplayWidget.instance(30, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 90, 60, 20)
                 .setRenderHandler(LabelElement.instance(REFRESH_DISPLAY_LABEL))
                 .addToSub(this);
-            ExecutableWidget.instance(30, ItemEditScreen.this.processingSubScreen.getHeight() - 70, 60,60)
+            ExecutableWidget.instance(30, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 70, 60,60)
                 .setElementHandler(
                     new SlotElement(InventoryUtils.createReadOnlyInventory(()->this.stackTemplate),0,(it,bt)->{
                         this.saveChanges();
@@ -481,7 +481,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         subScreenWidget.addDrawableChild(
                             ExecutableWidget.instance(50 +1 + 20 * index, 1, 20 -2, 20- 2)
                                 .setElementHandler(
-                                    IconElement.stateGuiPredicate(
+                                    IconElement.statedGuiPredicate(
                                         ButtonElement.BUTTON,
                                         ButtonElement.BUTTON_INACTIVE,
                                         ButtonAction.run(()-> sec.setHideFlag(sample, !sec.isHide(sample))),
@@ -599,7 +599,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         20,
                         180
                     ),
-                    10, 40, 260, ItemEditScreen.this.processingSubScreen.getHeight() - 50
+                    10, 40, 260, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 50
                 )
                     .addToSub(this);
             }
@@ -679,7 +679,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         20,
                         180
                     ),
-                    10, 0,260, ItemEditScreen.this.processingSubScreen.getHeight() - 10
+                    10, 0,260, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 10
                 )
                     .addToSub(this);
             }
@@ -795,7 +795,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         ItemAttributeModifierEntry::factory,
                         60, 180
                     ),
-                    10, 0, 260, ItemEditScreen.this.processingSubScreen.getHeight() - 10
+                    10, 0, 260, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 10
                 )
                     .addToSub(this)
                 ;
@@ -979,7 +979,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         ItemComponent::factory,
                         20,
                         180
-                    ),10, 0, 260, ItemEditScreen.this.processingSubScreen.getHeight() - 10
+                    ),10, 0, 260, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 10
                 )
                     .addToSub(this);
             }

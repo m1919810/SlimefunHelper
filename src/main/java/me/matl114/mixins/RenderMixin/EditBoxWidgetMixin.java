@@ -13,6 +13,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.client.gui.widget.ScrollableWidget;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -90,20 +91,31 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
             cir.setReturnValue(true);
         }
     }
-
+    @Unique
+    public boolean canStartDrag(double mouseX, double mouseY){
+        return this.isWithinBounds(mouseX, mouseY) || super.scrollbarDragged;
+    }
     @Unique
     public void dragSelect(int deltaX, int deltaY, boolean shiftDownAction){
-        if(this.isWithinBounds(deltaX, deltaY)){
+//        if(deltaX >= 1 && deltaX <= this.getWidth() -1 && deltaY >= 1 && deltaY <= this.getHeight() -1){
+
+//        }else {
+        //if(deltaY < 0 || deltaY > this.getHeight() || deltaX < 0 || deltaX > this.getWidth()){
+        if(!super.scrollbarDragged){
             this.editBox.setSelecting(true);
-            this.moveCursor(deltaX, deltaY);
+            this.moveCursor(this.getX() + deltaX, this.getY() + deltaY);
             this.editBox.setSelecting(Screen.hasShiftDown());
-        }else {
-            if(deltaY < this.getY()){
-                this.setScrollY(this.getScrollY() - 2.0f * this.getDeltaYPerScroll());
-            }else if(deltaY > this.getY() + this.getHeight()){
-                this.setScrollY(this.getScrollY() + 2.0f * this.getDeltaYPerScroll());
-            }
         }
+
+//            if(deltaY < 0){
+//                this.setScrollY(this.getScrollY() - 2.0f * this.getDeltaYPerScroll());
+//            }else if(deltaY >  this.getHeight()){
+//                this.setScrollY(this.getScrollY() + 2.0f * this.getDeltaYPerScroll());
+//            }else{
+//
+//            }
+//        }
+        //}
     }
     @Unique
     public void resetSelect(){

@@ -107,4 +107,53 @@ public interface ListEntryWidgetController {
             }
         };
     }
+    public static  <W,T extends Element & Drawable & Selectable> ListEntryWidgetController immutable(List<W> originData, Function<W, T> widgetFactory, int height, int width){
+        return new ListEntryWidgetController() {
+            final List<T> cachedWidget = new ArrayList<>();
+            {
+                for (var origini: originData){
+                    cachedWidget.add(widgetFactory.apply( origini));
+                }
+            }
+            @Override
+            public int size() {
+                return originData.size();
+            }
+
+            @Override
+            public int height() {
+                return height;
+            }
+
+            @Override
+            public int width() {
+                return width;
+            }
+
+            @Override
+            public boolean shiftUp(int index) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean shiftDown(int index) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean del(int index) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean insert(int index) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <T extends Element & Drawable & Selectable> T getEntryWidget(int index) {
+                return (T) cachedWidget.get(index);
+            }
+        };
+    }
 }

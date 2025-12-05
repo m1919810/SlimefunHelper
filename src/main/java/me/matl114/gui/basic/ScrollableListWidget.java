@@ -126,9 +126,9 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         boolean selected = false;
         for (var ch: widgets){
             //只有接触了这个界面中的子组件需要渲染
-            //通过计算高度限制这个
+            //通过计算高度限制这个f
             if(ch.getY() + ch.getHeight() > this.currentPose && ch.getY() < this.currentPose + this.dy){
-                //todo 尝试是否要在这里进行selected计算
+                //尝试是否要在这里进行selected计算
                 if(this.selected){
                     boolean disable = true;
                     if(!selected && ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){
@@ -216,7 +216,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 
         if(this.isMouseOver(mouseX, mouseY) || (this.scoll != null && this.scoll.isMouseOver(mouseX, mouseY))){
-            double per =  (verticalAmount * this.maxHeight / 100d) /this.maxHeight;
+            double per =  ((this.dy / 20.0d) * verticalAmount)  / Math.min(100d, (this.maxHeight/5.0d));
             if(this.scroll != null){
                 scroll.setPercentage(scroll.getPercentage() - per);
             }

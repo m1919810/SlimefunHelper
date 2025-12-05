@@ -7,7 +7,7 @@ import me.matl114.renders.implement.NewVersionModelRender;
 import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.renders.implement.SpawnerRender;
 import me.matl114.utils.Debug;
-import me.matl114.utils.UtilClass.ArgumentListenerPoint;
+import me.matl114.utils.UtilClass.Event;
 import me.matl114.utils.UtilClass.ListenerPoint;
 import me.matl114.utils.UtilClass.OrderedSupplier;
 import net.minecraft.client.MinecraftClient;
@@ -109,30 +109,38 @@ public class RenderMain {
     }
     //在屏幕之上渲染的
     @Getter
-    private static final ListenerPoint<MatrixStack> renderLayerTasks = new ListenerPoint<>();
-    public static void renderMoreTasks(MatrixStack stack){
+    private static final ListenerPoint<Event<MatrixStack>> renderLayerTasks = new ListenerPoint<>();
+    public static void renderMoreTasks(MatrixStack stack, float tickDelta){
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
 //        GL11.glEnable(GL11.GL_BLEND);
 //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 //        GL11.glDisable(GL11.GL_DEPTH_TEST);
 
         // This stack start with the position with RenderUtils.getCameraPose();
-        renderLayerTasks.handleValue(stack);
+        Event<MatrixStack> renderEvent = new Event<>(stack, false, false, tickDelta);
+        //TODO: fix this with event
+        renderLayerTasks.handleValue(renderEvent);
 //        GL11.glEnable(GL11.GL_DEPTH_TEST);
 //        GL11.glDisable(GL11.GL_BLEND);
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
 
     }
     @Getter
-    private static final ArgumentListenerPoint<DrawContext> renderSlot = new ArgumentListenerPoint<>();
+    private static final ListenerPoint<Event<DrawContext>> renderSlot = new ListenerPoint<>();
     public static void renderSlotInScreen(DrawContext context, HandledScreen<?> renderer, Slot stack, int mouseX, int mouseY){
-        renderSlot.handleValue(context, renderer, stack, mouseX, mouseY);
+        if(renderSlot.isEmpty())return;
+        Event<DrawContext> contextEvent = new Event<>(context, false, false, renderer, stack, mouseX, mouseY);
+        renderSlot.handleValue(contextEvent);
     }
 
     @Getter
-    private static final ArgumentListenerPoint<DrawContext> renderHandledScreen = new ArgumentListenerPoint<>();
+    private static final ListenerPoint<Event<DrawContext>> renderHandledScreen = new ListenerPoint<>();
     public static void renderHandledScreen(DrawContext context, HandledScreen<?> screen, int mouseX, int mouseY, float delta){
-        renderHandledScreen.handleValue(context, screen, mouseX, mouseY, delta);
+        if(renderHandledScreen.isEmpty()){
+            return;
+        }
+        Event<DrawContext> contextEvent = new Event<>(context, false, false, screen, mouseX, mouseY, delta);
+        renderHandledScreen.handleValue(contextEvent);
     }
 
 //    @Getter

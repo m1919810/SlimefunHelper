@@ -7,6 +7,7 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.Widget;
 import org.apache.commons.compress.utils.Lists;
 
 import java.util.List;
@@ -25,6 +26,13 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
     public ContentDelegateWidget<W> setContentDelegate(W delegate){
         this.delegate = delegate;
         return this;
+    }
+
+    public int getHeight() {
+        return this.delegate instanceof Widget widget ? widget.getHeight() : this.dy;
+    }
+    public int getWidth(){
+        return this.delegate instanceof Widget widget ? widget.getWidth() : this.dx;
     }
 
     @Override

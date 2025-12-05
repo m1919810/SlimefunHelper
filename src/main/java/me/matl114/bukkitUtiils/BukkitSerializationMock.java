@@ -13,7 +13,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 
 public class BukkitSerializationMock {
@@ -145,9 +147,9 @@ public class BukkitSerializationMock {
     public static ConfigurationSerializable deserializeObject(@NotNull Map<String, ?> args, @NotNull Class<? extends ConfigurationSerializable> clazz) {
         return (new BukkitSerializationMock(clazz)).deserialize(args);
     }
-
+    public static final String UNKNOWN_SERIALIZATION_TYPE = "unknown-serialization-type";
     @Nullable
-    public static ConfigurationSerializable deserializeObject(@NotNull Map<String, ?> args) {
+    public static Object deserializeObject(@NotNull Map<String, ?> args) {
         Class<? extends ConfigurationSerializable> clazz = null;
         if (args.containsKey("==")) {
             try {
@@ -158,7 +160,10 @@ public class BukkitSerializationMock {
 
                 clazz = getClassByAlias(alias);
                 if (clazz == null) {
-                    throw new IllegalArgumentException("Specified class does not exist ('" + alias + "')");
+                    //do not throw Exception
+                    //throw new IllegalArgumentException("Specified class does not exist ('" + alias + "')");
+
+                    return new UnknownSerialization(args);
                 }
             } catch (ClassCastException var3) {
                 ClassCastException ex = var3;
@@ -169,6 +174,15 @@ public class BukkitSerializationMock {
             return (new BukkitSerializationMock(clazz)).deserialize(args);
         } else {
             throw new IllegalArgumentException("Args doesn't contain type key ('==')");
+        }
+    }
+    public static class UnknownSerialization{
+        public String type;
+        public Map<String, ?> value ;
+        public UnknownSerialization(Map value){
+            this.value = new LinkedHashMap<>(value);
+            type = (String) value.get("==");
+            this.value.remove("==");
         }
     }
 

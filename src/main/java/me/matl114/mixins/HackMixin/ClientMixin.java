@@ -1,25 +1,29 @@
 package me.matl114.mixins.HackMixin;
 
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.access.ClientAccess;
 import me.matl114.access.ClientPlayerAccess;
 import me.matl114.hackUtils.CombatTasks;
 import me.matl114.hackUtils.RenderTasks;
-import me.matl114.hackUtils.Tasks;
 import me.matl114.listenerUtils.Listener;
+import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
+import me.matl114.utils.UtilClass.Event;
+import me.matl114.utils.UtilClass.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.util.Window;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.profiler.Profiler;
 import org.jetbrains.annotations.Nullable;
@@ -32,8 +36,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Environment(EnvType.CLIENT)
 @Mixin(MinecraftClient.class)
@@ -56,6 +58,12 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     public void setCooldown(int cooldown){
         this.itemUseCooldown = cooldown;
     }
+
+    @Unique
+    public int getCooldown(){
+        return this.itemUseCooldown;
+    }
+
     @ModifyArg(method = "handleInputEvents",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V",ordinal = 1))
     public Screen onRedirectInventoryKeyPress(Screen screen){
         if(HotKeys.getButtonToggleManager().getState(HotKeys.KEEP_INV)){
@@ -70,27 +78,52 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         return screen;
     }
 
+    @Inject(method = "setScreen", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;currentScreen:Lnet/minecraft/client/gui/screen/Screen;", ordinal = 3, shift = At.Shift.BEFORE), cancellable = true)
+    public void onSetScreenPost(Screen screen, CallbackInfo ci){
+        if(!Listener.getPostSetScreen().isEmpty()){
+            Event<Screen> screenEvent = new Event<>(this.currentScreen, true, false);
+            Listener.getPostSetScreen().handleValue(screenEvent);
+            if(screenEvent.isCancelled()){
+                ci.cancel();
+                //FIX: even if post set is cancelled , the screen must be initialized or exception will be thrown
+                if(this.currentScreen != null){
+                    (this.currentScreen).init(MinecraftClient.getInstance(), getWindow().getScaledWidth(), getWindow().getScaledHeight());
+                }
+                return;
+            }
+        }
+    }
+
+    @Inject(method = "onResolutionChanged", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;currentScreen:Lnet/minecraft/client/gui/screen/Screen;", ordinal = 0, shift = At.Shift.BEFORE))
+    public void onResolutionChanged(CallbackInfo ci){
+        Listener.getCurrentScreenResize().handleValue(new Event<>(new Point(MinecraftClient.getInstance().getWindow().getScaledWidth(), MinecraftClient.getInstance().getWindow().getScaledHeight()), false, false));
+    }
+
 
     @Unique
-    private static final AtomicBoolean RIDING_ATTACK= Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_RIDING);
-    @Redirect(method = "doAttack",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isRiding()Z"))
-    public boolean onEnableRidingAttack(ClientPlayerEntity instance) {
+    private static final Config.FlagRef RIDING_ATTACK= Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_RIDING);
+    @ModifyExpressionValue(method = "doAttack",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isRiding()Z"))
+    public boolean onEnableRidingAttack(boolean original) {
 
         if(RIDING_ATTACK.get()){
             //always not riding
             return false;
         }
-        return instance.isRiding();
+        return original;
     }
     //move before the block interaction, so that it will not reset cooldown when interact block or swing hand
     @Inject(method = "doAttack",at = @At(value = "INVOKE", target = "Lnet/minecraft/util/hit/HitResult;getType()Lnet/minecraft/util/hit/HitResult$Type;",shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
     public void onAttackWhenMissedEntity(CallbackInfoReturnable<Boolean> cir) {
-        if(crosshairTarget!=null&& crosshairTarget.getType()!=HitResult.Type.ENTITY){
+        if(crosshairTarget!=null){
             if(HotKeys.getHotkeyToggleManager().getState(HotKeys.ALWAYS_ATTACK)){
+                //todo change to Event
                 if(CombatTasks.autoAttackBest(false)){
                     //return true to cancel block break, because this is going to delay attack
                     //stop another attack-like action before delay attack finish, because another task may reset attack-interval
                     this.attackCooldown = 1;
+                    cir.setReturnValue(false);
+                }else if(crosshairTarget.getType() == HitResult.Type.ENTITY){
+                    this.attackCooldown = 0;
                     cir.setReturnValue(false);
                 }
             }
@@ -104,17 +137,29 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
             CombatTasks.handleShieldPredict(player.getPitch(), player.getYaw());
         }
     }
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;push(Ljava/lang/String;)V", shift = At.Shift.BEFORE, ordinal = 1))
+    public void onPreTick(CallbackInfo ci){
+        Listener.getPreTick().handleValue(new Event<>(null, false, false));
+    }
 
     @Inject(method = "tick",at= @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;pop()V",shift = At.Shift.BEFORE,ordinal = 1),locals = LocalCapture.CAPTURE_FAILSOFT)
-    public void onInjectTickTasks(CallbackInfo ci){
+    public void onPostTick(CallbackInfo ci){
         this.profiler.swap("slimefun-helper-tasks");
-        if(this.player!=null){
-            Tasks.doGameTick(this.player);
-        }
-        Tasks.doTick();
+        Listener.getPostTick().handleValue(new Event<>(null, false, false));
+
     }
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;handleInputEvents()V", shift = At.Shift.BEFORE))
+    public void onPreInputEvent(CallbackInfo ci){
+        Listener.getPreHandleInput().handleValue(new Event<>(null, false, false));
+    }
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;handleInputEvents()V", shift = At.Shift.AFTER))
+    public void onPostInputEvent(CallbackInfo ci){
+        Listener.getPostHandleEvent().handleValue(new Event<>(null, false, false));
+    }
+
+
     @Unique
-    private static final AtomicBoolean USEINGiTEM_ATTACK = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_SHIELDING);
+    private static final Config.FlagRef USEINGiTEM_ATTACK = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_SHIELDING);
     //for attack when using shield
     @Redirect(method = "handleInputEvents",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",ordinal = 0))
     public boolean onAllowingPlayerAttackWhenUseItem(ClientPlayerEntity player) {
@@ -135,8 +180,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         }
         return flag;
     }
-    @Unique
-    private static final AtomicInteger USE_ITEM_NO_COOLDOWN = Configs.INTERACT_CONFIG.getInt(Configs.INTERACT_NO_COOLDOWN);
+
     @Redirect(method = "handleBlockBreaking",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",ordinal = 0))
     public boolean onAllowingPlayerBreakingWhenUseItem(ClientPlayerEntity player) {
         if(USEINGiTEM_ATTACK.get()){
@@ -150,18 +194,33 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
 //
 //    }
     @Unique
-    private static final AtomicBoolean RIDE_USE = Configs.INTERACT_CONFIG.getBoolean(Configs.INTERACT_WHEN_RIDING);
+    private static final Config.FlagRef RIDE_USE = Configs.INTERACT_CONFIG.getBoolean(Configs.INTERACT_WHEN_RIDING);
     @Redirect(method = "doItemUse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isRiding()Z"))
     public boolean onAllowRidingUse(ClientPlayerEntity instance){
         //inject the cooldown, before the riding call
-        int val = USE_ITEM_NO_COOLDOWN.get();
-        if(val >= 0){
-            this.itemUseCooldown = val;
+        Event<Integer> event = new Event<>(null, true, true);
+        Listener.getUseItemCooldownReset().handleValue(event);
+        if(event.isCancelled()){
+            this.itemUseCooldown =0;
+        }else if(event.context() != null){
+            this.itemUseCooldown = event.context();
         }
+
         if(RIDE_USE.get()){
             return false;
         }
         return instance.isRiding();
+    }
+
+    @Inject(method = "doItemUse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;getStackInHand(Lnet/minecraft/util/Hand;)Lnet/minecraft/item/ItemStack;", shift = At.Shift.BEFORE), cancellable = true)
+    private void doItemUseEvent(CallbackInfo ci, @Local Hand hand){
+        if(!Listener.getTriggerRightClick().isEmpty()){
+            Event<Hand> useWithHandEvent = new Event<>(hand, true, false);
+            Listener.getTriggerRightClick().handleValue(useWithHandEvent);
+            if(useWithHandEvent.isCancelled()){
+                ci.cancel();
+            }
+        }
     }
 
 
@@ -181,6 +240,8 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Shadow protected abstract void render(boolean tick);
 
     @Shadow public int attackCooldown;
+
+    @Shadow public abstract Window getWindow();
 
     @Override
     public ClientAccess clone() {
@@ -210,7 +271,15 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         renderer.render(counter, z);
 
     }
+    @Unique
+    private static final Config.FlagRef debugHudEnhance = Configs.RENDER_CONFIG.getBoolean(Configs.RENDER_ENHANCED_DEBUG_HUD);
 
+    @Inject(method = "hasReducedDebugInfo", at = @At("HEAD"), cancellable = true)
+    private void onEnhanceDebug(CallbackInfoReturnable<Boolean> cir){
+        if(debugHudEnhance.get()){
+            cir.setReturnValue(false);
+        }
+    }
 
 //    @Inject(method = "startIntegratedServer",at = @At("HEAD"))
 //    public void onStartIntegratedServer(LevelStorage.Session session, ResourcePackManager dataPackManager, SaveLoader saveLoader, boolean newWorld, CallbackInfo ci) {

@@ -128,7 +128,7 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
             //只有接触了这个界面中的子组件需要渲染
             //通过计算高度限制这个
             if(ch.getY() + ch.getHeight() > this.currentPose && ch.getY() < this.currentPose + this.dy){
-                //todo 尝试是否要在这里进行selected计算
+                //尝试是否要在这里进行selected计算
                 if(this.selected){
                     boolean disable = true;
                     if(!selected && ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){

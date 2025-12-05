@@ -3,6 +3,9 @@ package me.matl114.mixins.AccessMixin;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.access.HandledScreenAccess;
 import me.matl114.access.ScaleSlotAccess;
+import me.matl114.hackUtils.ChatTasks;
+import me.matl114.managers.Config;
+import me.matl114.managers.Configs;
 import me.matl114.renders.RenderMain;
 import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
@@ -17,11 +20,13 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Mixin(HandledScreen.class)
 public abstract class HandledScreenMixin extends Screen implements HandledScreenAccess {
@@ -86,6 +91,10 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     public int getScreenY(){
         return this.y;
     }
+    @Accessor("backgroundWidth")
+    public abstract int getScreenBackgroundX();
+    @Accessor("backgroundHeight")
+    public abstract int getScreenBackgroundY();
     public TextRenderer getTextRenderer(){
         return this.textRenderer;
     }
@@ -214,6 +223,15 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
             return false;
         }
         return isPointOverSlot(slot, pointX, pointY);
+    }
+    private static final Config.FlagRef extraChatWidget = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_CHAT_BOX_IN_GUI);
+
+    @Inject(method = "init", at = @At("RETURN"))
+    private void onInitAdd(CallbackInfo ci){
+        if(!extraChatWidget.get()){
+            return;
+        }
+        addDrawableChild(ChatTasks.createChatInputWidget((HandledScreen<?>)(Screen) this));
     }
 
 }

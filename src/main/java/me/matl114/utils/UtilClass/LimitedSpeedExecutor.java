@@ -1,5 +1,6 @@
 package me.matl114.utils.UtilClass;
 
+import me.matl114.managers.Config;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
@@ -10,8 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class LimitedSpeedExecutor implements Executor {
     private Deque<Runnable> queue;
     private AtomicInteger size;
-    private AtomicInteger count;
-    public LimitedSpeedExecutor(AtomicInteger count) {
+    private Config.IntRef count;
+    public LimitedSpeedExecutor(Config.IntRef count) {
         this.count = count;
 
         this.size=new AtomicInteger(0);

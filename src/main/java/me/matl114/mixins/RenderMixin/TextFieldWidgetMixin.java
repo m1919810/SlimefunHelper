@@ -117,13 +117,17 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
         String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.cast().getInnerWidth());
         this.cast().setCursor(this.textRenderer.trimToWidth(string, i).length() + this.firstCharacterIndex, shiftDownAction);
     }
-
+    @Unique
+    public boolean canStartDrag(double mouseX, double mouseY){
+        return this.isMouseOver(mouseX, mouseY);
+    }
     @Inject(method = "setFocused", at = @At("HEAD"))
     public void resetSelectOnRelease(boolean focused, CallbackInfo ci){
         if(!focused){
             resetSelect();
         }
     }
+
 
     @Unique
     public void resetSelect(){

@@ -1,7 +1,9 @@
 package me.matl114.gui.basic;
 
+import me.matl114.utils.Debug;
 import net.minecraft.client.gui.DrawContext;
 
+import javax.tools.Tool;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +22,10 @@ public class AbstractElement implements ElementHandler {
         if(handlerAbsolute == null)return this;
         if(absoluteRender == null){
             absoluteRender = new ArrayList<>();
+        }
+        if(handlerAbsolute instanceof TooltipHandler handler ){
+            //can only keep one tooltipHandler at a time
+            absoluteRender.removeIf(i -> i instanceof TooltipHandler);
         }
         absoluteRender.add(handlerAbsolute);
         return this;
@@ -55,6 +61,7 @@ public class AbstractElement implements ElementHandler {
         renderExtra0(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
         if(absoluteRender != null){
             for (var h: absoluteRender){
+
                 h.renderExtraAbsoluteCoord(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
             }
         }

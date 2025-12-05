@@ -34,3 +34,27 @@ accessible method net/minecraft/component/ComponentChanges <init> (Lit/unimi/dsi
 accessible field net/minecraft/client/render/GameRenderer buffers Lnet/minecraft/client/render/BufferBuilderStorage;
 accessible field net/minecraft/client/MinecraftClient disconnecting Z
 accessible field net/minecraft/entity/LivingEntity LIVING_FLAGS Lnet/minecraft/entity/data/TrackedData;
+accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/entity/player/PlayerEntity adjustMovementForSneaking (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/entity/Entity findCollisionsForMovement (Lnet/minecraft/entity/Entity;Lnet/minecraft/world/World;Ljava/util/List;Lnet/minecraft/util/math/Box;)Ljava/util/List;
+accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Box;Ljava/util/List;)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/block/AbstractBlock getCollisionShape (Lnet/minecraft/block/BlockState;Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/ShapeContext;)Lnet/minecraft/util/shape/VoxelShape;
+accessible field net/minecraft/util/shape/OffsetDoubleList offset D
+accessible field net/minecraft/util/shape/OffsetDoubleList oldList Lit/unimi/dsi/fastutil/doubles/DoubleList;
+accessible method net/minecraft/util/shape/ArrayVoxelShape <init> (Lnet/minecraft/util/shape/VoxelSet;Lit/unimi/dsi/fastutil/doubles/DoubleList;Lit/unimi/dsi/fastutil/doubles/DoubleList;Lit/unimi/dsi/fastutil/doubles/DoubleList;)V
+accessible method net/minecraft/world/chunk/PalettedContainer get (I)Ljava/lang/Object;
+accessible field net/minecraft/util/shape/BitSetVoxelSet storage Ljava/util/BitSet;
+accessible field net/minecraft/entity/Entity dimensions Lnet/minecraft/entity/EntityDimensions;
+accessible method net/minecraft/client/world/ClientWorld getEntityLookup ()Lnet/minecraft/world/entity/EntityLookup;
+accessible field net/minecraft/world/biome/source/BiomeAccess seed J
+accessible field net/minecraft/server/MinecraftServer session Lnet/minecraft/world/level/storage/LevelStorage$Session;
+accessible field net/minecraft/world/gen/placementmodifier/CountPlacementModifier count Lnet/minecraft/util/math/intprovider/IntProvider;
+accessible field net/minecraft/world/gen/placementmodifier/HeightRangePlacementModifier height Lnet/minecraft/world/gen/heightprovider/HeightProvider;
+accessible field net/minecraft/world/gen/placementmodifier/RarityFilterPlacementModifier chance I
+accessible class net/minecraft/client/world/ClientChunkManager$ClientChunkMap
+accessible field net/minecraft/client/world/ClientChunkManager chunks Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap chunks Ljava/util/concurrent/atomic/AtomicReferenceArray;
+accessible field net/minecraft/client/gui/widget/ScrollableWidget scrollbarDragged Z
+accessible field net/minecraft/client/Mouse eventDeltaHorizontalWheel D
+accessible field net/minecraft/client/Mouse eventDeltaVerticalWheel D
+accessible field net/minecraft/client/Mouse activeButton I

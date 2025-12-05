@@ -3,148 +3,139 @@ package me.matl114.gui.basic;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
+import me.matl114.utils.RenderUtils;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
+import java.awt.*;
 import java.util.function.Predicate;
 
-public abstract class IconElement extends AbstractElement{
-    protected final ButtonAction action;
+@Accessors(chain = true)
+public abstract class IconElement extends BoxElement{
+
+    @Getter
+    @Setter
+    protected Color shaderColor = Color.WHITE;
 
     public abstract boolean isActive();
     public abstract IconElement setActive(boolean active);
 
 
-
-    public static abstract class SimpleIconElement extends IconElement {
+    @Accessors(chain = true)
+    public static  class SimpleIconElement extends IconElement {
         private boolean active = true;
+        @Getter
+        @Setter
+        private Predicate<IconElement> activePredicate = null;
 
-        public SimpleIconElement(ButtonAction action) {
+        @Getter
+        @Setter
+        private boolean guiTexture;
+        @Getter
+        @Setter
+        private Identifier inactiveId;
+        @Getter
+        @Setter
+        private Identifier activeId;
+        public boolean drawGuiTexture(){
+            return guiTexture;
+        }
+        public SimpleIconElement(Identifier inactiveId, Identifier activeId, boolean gui, ButtonAction action) {
             super(action);
+            this.inactiveId = inactiveId;
+            this.activeId = activeId;
+            this.guiTexture = gui;
+
         }
 
         @Override
         public boolean isActive() {
-            return active;
+            return activePredicate == null? active : activePredicate.test(this);
         }
         public IconElement setActive(boolean active){
             this.active = active;
             return this;
         }
+
+        @Override
+        public @Nullable Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight) {
+            return isActive()? activeId : inactiveId;
+        }
     }
 
-    public static abstract class PredicatedIconElement extends IconElement{
-        Predicate<IconElement> predicate;
-        public PredicatedIconElement(ButtonAction action, Predicate<IconElement> element) {
-            super(action);
-            this.predicate = element;
-        }
-        @Override
-        public boolean isActive() {
-            return predicate.test(this);
-        }
-        public IconElement setActive(boolean active){
-            return this;
-        }
-    }
+//    public static abstract class PredicatedIconElement extends IconElement{
+//        Predicate<IconElement> predicate;
+//        public PredicatedIconElement(ButtonAction action, Predicate<IconElement> element) {
+//            super(action);
+//            this.predicate = element;
+//        }
+//        @Override
+//        public boolean isActive() {
+//            return predicate.test(this);
+//        }
+//        public IconElement setActive(boolean active){
+//            return this;
+//        }
+//    }
 
     public static IconElement fixed(Identifier identifier, ButtonAction action){
-        return new SimpleIconElement(action) {
-            @Override
-            public Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight) {
-                return identifier;
-            }
-        };
+        return new SimpleIconElement(identifier, identifier, false, action);
     }
 
     public static IconElement stated(Identifier activeState, Identifier inactiveState, ButtonAction action){
-        return new SimpleIconElement(action) {
-            @Override
-            public @Nullable Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight) {
-                return this.isActive()? activeState: inactiveState;
-            }
-        };
+        return new SimpleIconElement(inactiveState, activeState, false,  action) ;
     }
 
     public static IconElement statePredicate(Identifier activeState, Identifier inactiveState, ButtonAction action, Predicate<IconElement> activation){
-        return new PredicatedIconElement(action, activation) {
-            @Override
-            public @Nullable Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight) {
-                return this.isActive()? activeState: inactiveState;
-            }
-        };
+        return ((SimpleIconElement)stated(activeState, inactiveState, action)).setActivePredicate( activation);
     }
     public static IconElement fixedGui(Identifier identifier, ButtonAction action){
-        return new SimpleIconElement(action) {
-            @Override
-            public @Nullable Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight) {
-                return identifier;
-            }
-            public void renderTexture(DrawContext context, DrawableWidget element, boolean highlight){
-                Identifier id = getTextureId(context, element, highlight);
-                if(id != null){
-                    context.drawGuiTexture(id, 0,0, element.getTextureWidth(), element.getTextureHeight());
-                }
-            }
-        };
+        return new SimpleIconElement(identifier, identifier, true, action) ;
     }
 
-    public static IconElement statedGui(Identifier active, Identifier inactive, ButtonAction action){
-        return new SimpleIconElement(action) {
-            @Override
-            public @Nullable Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight) {
-                return this.isActive() ? active: inactive;
-            }
-            public void renderTexture(DrawContext context, DrawableWidget element, boolean highlight){
-                Identifier id = getTextureId(context, element, highlight);
-                if(id != null){
-                    context.drawGuiTexture(id, 0,0, element.getTextureWidth(), element.getTextureHeight());
-                }
-            }
-        };
+    public static SimpleIconElement statedGui(Identifier active, Identifier inactive, ButtonAction action){
+        return new SimpleIconElement(inactive, active, true,action);
     }
-    public static IconElement stateGuiPredicate(Identifier activeState, Identifier inactiveState, ButtonAction action, Predicate<IconElement> activation){
-        return new PredicatedIconElement(action, activation) {
-            @Override
-            public @Nullable Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight) {
-                return this.isActive()? activeState: inactiveState;
-            }
-            public void renderTexture(DrawContext context, DrawableWidget element, boolean highlight){
-                Identifier id = getTextureId(context, element, highlight);
-                if(id != null){
-                    context.drawGuiTexture(id, 0,0, element.getTextureWidth(), element.getTextureHeight());
-                }
-            }
-        };
+    public static SimpleIconElement statedGuiPredicate(Identifier activeState, Identifier inactiveState, ButtonAction action, Predicate<IconElement> activation){
+        return ((SimpleIconElement)statedGui(activeState, inactiveState, action)).setActivePredicate(activation);
     }
 
 
     public IconElement(ButtonAction action){
-        this.action = action;
+        super(action);
     }
     @Nullable
     public abstract Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight);
-
+    public abstract boolean drawGuiTexture();
     public void renderTexture(DrawContext context, DrawableWidget element, boolean highlight){
         Identifier id = getTextureId(context, element, highlight);
         if(id != null){
-            context.drawTexturedQuad(id, 0,element.getTextureWidth(), 0 , element.getTextureHeight(),0, 0,1,0,1);
+            if(drawGuiTexture()){
+                context.drawGuiTexture(id, 0,0, element.getTextureWidth(), element.getTextureHeight());
+            }else{
+                context.drawTexturedQuad(id, 0,element.getTextureWidth(), 0 , element.getTextureHeight(),0, 0,1,0,1);
+
+            }
+            if(highlight){
+                RenderUtils.drawHighlightFrame(context,0,0, element.getTextureWidth(), element.getTextureHeight(), Colors.WHITE);
+            }
         }
     }
 
     public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
-        context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+        //float[] shaders = RenderSystem.getShaderColor();
+        context.setShaderColor(this.shaderColor.getRed()/255.0f, this.shaderColor.getGreen()/255.0f, this.shaderColor.getBlue()/255.0f, alpha);
         RenderSystem.enableBlend();
         RenderSystem.enableDepthTest();
         renderTexture(context, element, shouldHighlight);
-        context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
-    public boolean onClick(ExecutableWidget element, double mouseX, double mouseY, int button) {
-        return action != null && action.onClick(this, element, button);
-    }
+
     @Override
     public ElementHandler withActiveActionCondition(Predicate<ElementHandler> handlerPredicate){
         IconElement ob = this;

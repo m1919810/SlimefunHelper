@@ -1,6 +1,7 @@
 package me.matl114.hackUtils;
 
 import me.matl114.access.ScreenAccess;
+import me.matl114.gui.basic.SlotElement;
 import me.matl114.gui.itemEdit.ItemEditScreen;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
@@ -33,5 +34,13 @@ public class ItemEditTasks {
             Debug.chat(Text.literal("你不能打开空物品的编辑器!"));return;
         }
         ScreenAccess.of(new ItemEditScreen(Text.empty(), item, callback)).openFromCurrent();
+    }
+
+    public static SlotElement.SlotClickCallback getRightClickOpenEditScreenCallback(){
+        return (item, button) ->{
+            if(button == 1)
+             openEditScreen(item, null);
+            return true;
+        };
     }
 }

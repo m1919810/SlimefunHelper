@@ -33,6 +33,7 @@ hotkeys:
   fast-mov: LEFT_SHIFT,BUTTON_1
   fast-drop: LEFT_SHIFT,Q
   quick-move: W,GRAVE_ACCENT
+  quick-to-wall: W,F1
   toggle-flight-speed: LEFT_CONTROL,LEFT_BRACKET
   pick-item: LEFT_CONTROL,BUTTON_3
   recipe-display-add: LEFT_CONTROL,BUTTON_1
@@ -40,6 +41,7 @@ hotkeys:
   open-editor: LEFT_CONTROL,I
   open-inv-cache: LEFT_CONTROL,J
   wake-up-screen: F11
+
 
 
 hotkeys-toggle:
@@ -51,7 +53,10 @@ hotkeys-toggle:
   always-att: LEFT_CONTROL,K
   auto-att: LEFT_CONTROL,LEFT_SHIFT,APOSTROPHE
   toggle-flight: LEFT_CONTROL,F
-  fake-flight: LEFT_CONTROL,H
+  speed-timer: LEFT_CONTROL,Y
+  bow-aim: LEFT_CONTROL,H
+  scaffold: LEFT_CONTROL,SEMICOLON
+  mine-arua: LEFT_CONTROL,N
   hktest1: LEFT_CONTROL,T,1
   hktest2: LEFT_CONTROL,T,2
   hktest3: LEFT_CONTROL,T,3

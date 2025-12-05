@@ -1,6 +1,7 @@
 package me.matl114.mixins.HackMixin;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -18,13 +19,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Environment(EnvType.CLIENT)
 public class PlayerAbilityMixin {
     @Unique
-    private static final AtomicBoolean overrideFly = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_FLY);
+    private static final Config.FlagRef overrideFly = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_FLY);
 //    @Unique
 //    private static final AtomicBoolean overrideWalk = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_WALK);
     @Unique
-    private static final AtomicDouble flySpeed = Configs.MOV_CONFIG.getDouble(Configs.MOVE_SPEED_FLY_VAL);
+    private static final Config.DoubleRef flySpeed = Configs.MOV_CONFIG.getDouble(Configs.MOVE_SPEED_FLY_VAL);
     @Unique
-    private static final AtomicDouble flySpeedCreative = Configs.MOV_CONFIG.getDouble(Configs.MOVE_SPEED_FLY_VAL_CREATIVE);
+    private static final Config.DoubleRef flySpeedCreative = Configs.MOV_CONFIG.getDouble(Configs.MOVE_SPEED_FLY_VAL_CREATIVE);
     @Shadow
     public boolean creativeMode;
 //    @Unique
@@ -32,7 +33,7 @@ public class PlayerAbilityMixin {
     @Inject(method = "getFlySpeed",at = @At("HEAD"), cancellable = true)
     public void getFlySpeed(CallbackInfoReturnable<Float> cir) {
         if(overrideFly.get()) {
-            cir.setReturnValue(creativeMode? flySpeedCreative.floatValue(): flySpeed.floatValue());
+            cir.setReturnValue((float) (creativeMode? flySpeedCreative.get(): flySpeed.get()));
         }
     }
 //    @Inject(method = "getWalkSpeed",at = @At("HEAD"), cancellable = true)

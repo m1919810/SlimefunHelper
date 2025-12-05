@@ -153,7 +153,7 @@ public class KeyCode {
         return MAP_NAME_TO_KEY.getInt(name);
     }
     public static int getKeyCodeFromMouseAction(int button){
-        return button-100;
+        return button - 100;
     }
     public static void init(){
 

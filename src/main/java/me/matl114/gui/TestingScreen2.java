@@ -50,21 +50,21 @@ public class TestingScreen2 extends SlimefunScreen {
 //                    .setDraggingY(false)
 //            )
 //            .addTo(this);
-//        element3 = McWidgetDelegates.createMultiLineEditBox(this.x+80, this.y+110, 80,90, PropertyTracker.event((val, str)->{
-//                int len = str.length();
-//            }), "byd")
-//            .addTo(this);
+        element3 = McWidgetHelpers.createMultiLineEditBox(this.x+80, this.y+110, 80,90, PropertyTracker.event((val, str)->{
+                int len = str.length();
+            }), "byd");
+        addDrawableChild(((ContentDelegateWidget<?>)element3).getDelegate());
 
 //        element4 = new SlimefunDispensorSuggestBookWidget(this.x , this.y, null,  (shift, recipe)->{
-//            Debug.info("click callback");
-//        }).addTo(this);
-        int width = 200;
-        int height = 20;
-        element5 = new ListModifyWidget(
-            ListEntryWidgetController.mutable(new ArrayList<>(),()-> AttrKeyValue.registry("-", Registries.ITEM, Items.AIR), (str)->new KeyValueInputWidget<>(0,0, width - 4* height, height, 20, str),height, width- 4* height),
-            this.x , this.y, width , 10 * height
-        )
-            .addTo(this);
+////            Debug.info("click callback");
+////        }).addTo(this);
+//        int width = 200;
+//        int height = 20;
+//        element5 = new ListModifyWidget(
+//            ListEntryWidgetController.mutable(new ArrayList<>(),()-> AttrKeyValue.registry("-", Registries.ITEM, Items.AIR), (str)->new KeyValueInputWidget<>(0,0, width - 4* height, height, 20, str),height, width- 4* height),
+//            this.x , this.y, width , 10 * height
+//        )
+//            .addTo(this);
 //        element6 = new ListRegistrySelectScreen<>(Registries.ITEM, (item)->item.getName().getString(), (triplet)->{
 //            return new RegistryDisplayRender(new ItemStack(triplet.getC()), triplet.getC().getName(), triplet.getB());
 //        },this.x, this.y, width, height * 10, height)

@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
@@ -11,6 +12,7 @@ import net.minecraft.util.math.MathHelper;
 import org.joml.Vector4f;
 
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public interface RenderHandler {
     /**
@@ -267,6 +269,27 @@ public interface RenderHandler {
             //
             context.drawCenteredTextWithShadow(textRenderer, text,(int)( ((endX - startX) / 2)/scale), (int)((((endY - startY)/2)/scale  - 7f/2)), color);
             context.getMatrices().pop();
+            context.getMatrices().pop();
+        }
+    }
+
+
+    public static RenderHandler ofSingleItem(Supplier<ItemStack> item, int x, int y, boolean inSlot){
+        return new RenderHandler() {
+            @Override
+            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                drawSingleItem(context, item.get(), x, y, inSlot);
+            }
+        };
+    }
+    public static void drawSingleItem(DrawContext context, ItemStack stack , int x, int y, boolean inSlot){
+        if(!stack.isEmpty()){
+            context.getMatrices().push();
+            context.getMatrices().translate(0,0,100);
+            context.drawItem(stack, x, y, 114514);
+            if(inSlot){
+                context.drawItemInSlot(mc.textRenderer, stack, 1, 1, null);
+            }
             context.getMatrices().pop();
         }
     }

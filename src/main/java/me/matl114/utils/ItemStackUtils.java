@@ -6,6 +6,7 @@ import me.matl114.bukkitUtiils.ItemStackHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
 import net.minecraft.component.ComponentType;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.*;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
@@ -114,7 +115,30 @@ public class ItemStackUtils {
     public static boolean hasInPatch(ItemStack stack){
         if(stack != null && !stack.isEmpty()){
             var map = stack.components.changedComponents;
-            return  map != null && !map.isEmpty();
+            // add compat to via item 1.20.4
+            if(map == null)return false;
+            if(map.isEmpty())return false;
+            if(map.size() >=2 )return true;
+            if(map.containsKey(CUSTOM_DATA)){
+                //check protocol item
+                NbtComponent customData = (NbtComponent) map.get(CUSTOM_DATA).orElse(null);
+                if(customData == null || customData.isEmpty())return false;
+                var nbt = customData.getNbt();
+                Set<String> keys = nbt.getKeys();
+                if(keys.size() > 2)return true;
+                // we only support Damage , because most of these are from damage
+                int val = nbt.getInt("Damage");
+                if(val > 0)return true;
+                for(var key : keys){
+                    //viaversion items
+                    if(Objects.equals("Damage", key) || key.contains( "VV|Protocol")){
+                        continue;
+                    }
+                    return true;
+                }
+                return false;
+            }else return true;
+
         }
         return false;
     }
@@ -167,7 +191,7 @@ public class ItemStackUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     private static DynamicRegistryManager staticRegistry;
 
-    //todo need test
+
     public static <T> Identifier solveDynamic(RegistryEntry<T> entry){
         return entry.getKey().get().getValue();
     }
@@ -372,6 +396,66 @@ public class ItemStackUtils {
 
         return stackCopy;
     }
+
+    public static boolean matchItemWithout(ItemStack stack1, ItemStack stack2, boolean matchDur, boolean matchEnch, boolean matchLore){
+
+        if(stack1.isEmpty()){
+            return stack2.isEmpty();
+        }else if(stack2.isEmpty()){
+            return false;
+        }else if(! stack1.isOf(stack2.getItem()) ){
+            return false;
+        }{
+            //both not empty and with same item
+//            if(matchDur && matchEnch){
+//                return matchLore ? ItemStack.areItemsAndComponentsEqual(stack1, stack2) : matchItemWithoutLore(stack1, stack2);
+//            }else{
+//                // optimize
+//                ItemStack clean1 = getCleanedItem(stack1, matchDur, matchEnch);
+//                ItemStack clean2 = getCleanedItem(stack2, matchDur, matchEnch);
+//                return matchLore ? ItemStack.areItemsAndComponentsEqual(clean1, clean2) : matchItemWithoutLore(clean1, clean2);
+//            }
+            if(matchDur && matchEnch && matchLore){
+                return ItemStack.areItemsAndComponentsEqual(stack1, stack2);
+            }
+            var compound1 = stack1.components.changedComponents;
+            var compound2 = stack2.components.changedComponents;
+            if(compound1 == null || compound2 == null){
+                return compound1 == compound2;
+            }
+
+            Map<ComponentType, Optional> map1 = new HashMap<>(compound1);
+            Map<ComponentType, Optional> map2 = new HashMap<>(compound2);
+            Optional n1;
+            Optional n2;
+            if(!matchLore){
+                n1 = map1.remove(LORE);
+                n2 = map2.remove(LORE);
+                //both having or not having lore
+                if( !((n1 == null)? (n2 == null || n2 == Optional.empty()) : (n2 != null && n2.isPresent()))  ){
+                    return false;
+                }
+            }
+            if(!matchDur){
+                n1 = map1.remove(DAMAGE);
+                n2 = map2.remove(DAMAGE);
+                //both having or not having lore
+                if( !((n1 == null)? (n2 == null || n2 == Optional.empty()) : (n2 != null && n2.isPresent()))  ){
+                    return false;
+                }
+            }
+            if(!matchEnch){
+                n1 = map1.remove(ENCHANTMENTS);
+                n2 = map2.remove(ENCHANTMENTS);
+                //both having or not having lore
+                if( !((n1 == null)? (n2 == null || n2 == Optional.empty()) : (n2 != null && n2.isPresent()))  ){
+                    return false;
+                }
+            }
+            return map1.equals(map2);
+        }
+    }
+
     public static boolean matchItemWithoutLore(ItemStack stack1, ItemStack stack2){
         if(! stack1.isOf(stack2.getItem()) ){
             return false;
@@ -475,7 +559,7 @@ public class ItemStackUtils {
             nbt0 = new NbtCompound();
         }
         nbt.put(BUKKIT_NAMESPACE, nbt0);
-        return nbt;
+        return nbt0;
     }
     private static String getSfIdFromBukkitValues(NbtCompound ntb){
         return ntb == null? null: (ntb.contains(SLIMEFUN_ID_PATH)? ntb.getString(SLIMEFUN_ID_PATH): null);

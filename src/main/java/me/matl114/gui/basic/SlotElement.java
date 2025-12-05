@@ -60,13 +60,7 @@ public class SlotElement extends AbstractElement {
         }
         context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
         ItemStack stack = inventory.getStack(index);
-        if(!stack.isEmpty()){
-            context.getMatrices().push();
-            context.getMatrices().translate(0,0,100);
-            context.drawItem(stack, 1, 1, 114514);
-            context.drawItemInSlot(mc.textRenderer, stack, 1, 1, null);
-            context.getMatrices().pop();
-        }
+        RenderHandler.drawSingleItem(context, stack, 1, 1, true);
         if(shouldHighlight){
             context.fillGradient(RenderLayer.getGuiOverlay(), 1, 1, 1 + 16, 1 + 16, -2130706433, -2130706433, 0);
         }

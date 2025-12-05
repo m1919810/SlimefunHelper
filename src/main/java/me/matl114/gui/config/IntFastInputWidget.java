@@ -197,7 +197,6 @@ public class IntFastInputWidget extends SubScreenWidget {
     }
 
     protected void init(){
-        //todo adjust widget position
         setExtraDepth(1);
         initConfirmButton();
         initBackgroundAndText();

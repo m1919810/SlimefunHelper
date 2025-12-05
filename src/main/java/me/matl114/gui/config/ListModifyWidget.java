@@ -36,10 +36,10 @@ public class ListModifyWidget extends ScrollableListWidget {
     protected <T extends Element & Drawable & Selectable> SubScreenWidget wrapWidget(T widget, int listIndex, int startX, int startY){
         int height = controller.height();
         int width = controller.width();
-        DrawableWidget wrap1 = widget instanceof DrawableWidget www?www: new ContentDelegateWidget<>(0,0,0,0).setContentDelegate(widget);
+        DrawableWidget wrap1 = widget instanceof DrawableWidget www?www: new ContentDelegateWidget<>(0,0,width,height).setContentDelegate(widget);
         int curHeight = startY + height * listIndex;
         int buttonSize = Math.min(20, height);
-        SubScreenWidget entrySubScreen = new SubScreenWidget(
+        return new SubScreenWidget(
             startX , curHeight, width, height
         )
             .addDrawableChild(wrap1)
@@ -89,7 +89,6 @@ public class ListModifyWidget extends ScrollableListWidget {
                             .withTooltips(TooltipHandler.of(NEW_TOOLTIPS))
                     )
             );
-        return entrySubScreen;
     }
     protected ExecutableWidget getListEndAdd(int startX, int startY){
         int height = controller.height();

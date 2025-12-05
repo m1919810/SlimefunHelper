@@ -77,7 +77,7 @@ public abstract class AbstractMainCommand implements ComplexCommandExecutor, Int
         showHelpCommand(var1);
         return false;
     }
-    //todo add argumentException to quick interrupt command process
+
 
 
     public void handleTypeError(ClientPlayerEntity sender, String argument, TypeError.BaseArgumentType type, String input){
@@ -90,7 +90,9 @@ public abstract class AbstractMainCommand implements ComplexCommandExecutor, Int
     public void handleValueAbsent(ClientPlayerEntity sender, String argument){
         sender.sendMessage(ChatUtils.stringToText("&c值缺失: 并未输入参数\"" + argument + "\"的值"));
     }
-
+    public void handleLogicalError(ClientPlayerEntity sender, String fullMessage){
+        sender.sendMessage(ChatUtils.stringToText( "&c执行该指令时出现逻辑错误: "+ fullMessage));
+    }
 
 
     public void showHelpCommand(ClientPlayerEntity sender){

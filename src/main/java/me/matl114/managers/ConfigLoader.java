@@ -10,6 +10,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class ConfigLoader {
 
@@ -95,7 +96,7 @@ public class ConfigLoader {
     public static HashMap<String, Object> loadYamlConfig(Reader reader){
         Yaml yaml = new Yaml();
         HashMap obj= yaml.load(reader);
-        return obj==null?new HashMap():obj;
+        return obj==null?new LinkedHashMap<>():obj;
     }
 
 

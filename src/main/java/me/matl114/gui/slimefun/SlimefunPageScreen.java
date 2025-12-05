@@ -18,11 +18,11 @@ public abstract class SlimefunPageScreen extends SlimefunScreen {
 
     protected static final int PAGE_LABEL_HEIGHT = 12;
 
-
+    protected abstract int getPageContentHeight();
 
     public SlimefunPageScreen(Text title) {
         super(title);
-        this.pageSwitcher = new PageSwitchSubScreen(0,  TITLE_OCCUPIED, this.backgroundWidth, PAGE_LABEL_HEIGHT, i->this.resetPage());
+        this.pageSwitcher = new PageSwitchSubScreen(0,  TITLE_OCCUPIED, this.backgroundWidth, PAGE_LABEL_HEIGHT, getPageContentHeight(), i->this.resetPage());
     }
     protected void initPageButton(){
         this.pageDelegate = new ContentDelegateWidget<>(this.x, this.y, 0,0)

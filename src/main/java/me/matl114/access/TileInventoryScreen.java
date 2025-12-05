@@ -28,4 +28,6 @@ public interface TileInventoryScreen {
     static TileInventoryScreen of(HandledScreen<?> handledScreen){
         return (TileInventoryScreen) handledScreen;
     }
+
+    public HandledScreen<?> castHandled();
 }

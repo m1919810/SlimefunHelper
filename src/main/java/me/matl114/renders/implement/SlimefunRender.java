@@ -175,14 +175,14 @@ public class SlimefunRender {
 
             if(sfid!=null){
                 client.keyboard.setClipboard(sfid);
-                HotKeys.SHARED_ARGUMENT.set(sfid);
+                HotKeys.SHARED_ARGUMENT.setValue(sfid);
                 player.sendMessage(Text.literal("成功将Slimefun ID拷贝至你的剪切板和公共参数! 值: ").formatted(Formatting.GREEN).append(Text.literal(sfid).formatted(Formatting.WHITE)));
 
                 return true;
             }else{
                 String id = Registries.ITEM.getId(heldItem.getItem()).getPath().toUpperCase(Locale.ROOT);
                 client.keyboard.setClipboard(id);
-                HotKeys.SHARED_ARGUMENT.set(id);
+                HotKeys.SHARED_ARGUMENT.setValue(id);
                 player.sendMessage(Text.literal("该物品不是Slimefun物品,拷贝原版ID!").formatted(Formatting.GREEN).append(Text.literal(id).formatted(Formatting.WHITE)));
                 return true;
             }

@@ -5,8 +5,18 @@ import me.matl114.access.HandledScreenAccess;
 import me.matl114.utils.UtilClass.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
+import net.minecraft.client.gui.navigation.GuiNavigationType;
+import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
+import net.minecraft.client.gui.screen.option.KeybindsScreen;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.option.NarratorMode;
+import net.minecraft.client.util.GlfwUtil;
+import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.ScreenshotRecorder;
 import net.minecraft.client.util.Window;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -15,7 +25,10 @@ import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.MathHelper;
 
+import javax.annotation.Nonnull;
 import java.util.Map;
 
 public class ScreenUtils {
@@ -79,4 +92,174 @@ public class ScreenUtils {
         }
         return null;
     }
+
+    public static void simulateKeyAction(Screen screen, int key, int scancode, int action, int modifiers){
+        if (screen != null) {
+            switch (key) {
+                case 258:
+                    mc.setNavigationType(GuiNavigationType.KEYBOARD_TAB);
+                case 259:
+                case 260:
+                case 261:
+                default:
+                    break;
+                case 262:
+                case 263:
+                case 264:
+                case 265:
+                    mc.setNavigationType(GuiNavigationType.KEYBOARD_ARROW);
+            }
+        }
+
+        if (action == 1 && (!(screen instanceof KeybindsScreen) || ((KeybindsScreen)screen).lastKeyCodeUpdateTime <= Util.getMeasuringTimeMs() - 20L)) {
+            if (mc.options.fullscreenKey.matchesKey(key, scancode)) {
+                mc.getWindow().toggleFullscreen();
+                mc.options.getFullscreen().setValue(mc.getWindow().isFullscreen());
+                return;
+            }
+        }
+
+        boolean bl3;
+
+        if (screen != null) {
+            boolean[] bls = new boolean[]{false};
+            Screen.wrapScreenError(() -> {
+                if (action != 1 && action != 2) {
+                    if (action == 0) {
+                        bls[0] = screen.keyReleased(key, scancode, modifiers);
+                    }
+                } else {
+                    screen.applyKeyPressNarratorDelay();
+                    bls[0] = screen.keyPressed(key, scancode, modifiers);
+                }
+
+            }, "keyPressed event handler", screen.getClass().getCanonicalName());
+            if (bls[0]) {
+                return;
+            }
+        }
+
+        InputUtil.Key key2;
+        boolean var10000;
+        label184: {
+            key2 = InputUtil.fromKeyCode(key, scancode);
+            bl3 = screen == null;
+            if (!bl3) {
+                label180: {
+                    Screen var13 = screen;
+                    if (var13 instanceof GameMenuScreen) {
+                        GameMenuScreen gameMenuScreen = (GameMenuScreen)var13;
+                        if (!gameMenuScreen.shouldShowMenu()) {
+                            break label180;
+                        }
+                    }
+
+                    var10000 = false;
+                    break label184;
+                }
+            }
+
+            var10000 = true;
+        }
+
+        boolean bl4 = var10000;
+        if (action == 0) {
+            KeyBinding.setKeyPressed(key2, false);
+
+        } else {
+            boolean bl5 =  InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292);
+
+            if (bl3) {
+                if (bl5) {
+                    KeyBinding.setKeyPressed(key2, false);
+                } else {
+                    KeyBinding.setKeyPressed(key2, true);
+                    KeyBinding.onKeyPressed(key2);
+                }
+            }
+
+        }
+    }
+
+    public static void simulateMouseButton(@Nonnull Screen screen, int button, int action, int mods){
+        if (screen != null) {
+            mc.setNavigationType(GuiNavigationType.MOUSE);
+        }
+
+        boolean bl = action == 1;
+
+        int i = button;
+        if (bl) {
+
+            mc.mouse.activeButton = i;
+        } else if (mc.mouse.activeButton != -1) {
+
+            mc.mouse.activeButton = -1;
+        }
+
+
+        boolean[] bls = new boolean[]{false};
+        if (mc.getOverlay() == null) {
+            double d = mc.mouse.getX() * (double)mc.getWindow().getScaledWidth() / (double)mc.getWindow().getWidth();
+            double e = mc.mouse.getY() * (double)mc.getWindow().getScaledHeight() / (double)mc.getWindow().getHeight();
+            if (bl) {
+                screen.applyMousePressScrollNarratorDelay();
+                Screen.wrapScreenError(() -> {
+                    bls[0] = screen.mouseClicked(d, e, i);
+                }, "mouseClicked event handler", screen.getClass().getCanonicalName());
+            } else {
+                Screen.wrapScreenError(() -> {
+                    bls[0] = screen.mouseReleased(d, e, i);
+                }, "mouseReleased event handler", screen.getClass().getCanonicalName());
+            }
+        }
+
+
+    }
+
+    public static void simulateMouseScroll(@Nonnull Screen screen, double horizontal, double vertical){
+        boolean bl = (Boolean)mc.options.getDiscreteMouseScroll().getValue();
+        double d = (Double)mc.options.getMouseWheelSensitivity().getValue();
+        double e = (bl ? Math.signum(horizontal) : horizontal) * d;
+        double f = (bl ? Math.signum(vertical) : vertical) * d;
+        if (mc.getOverlay() == null) {
+            if (screen != null) {
+                double g = mc.mouse.getX() * (double)mc.getWindow().getScaledWidth() / (double)mc.getWindow().getWidth();
+                double h = mc.mouse.getY() * (double)mc.getWindow().getScaledHeight() / (double)mc.getWindow().getHeight();
+                screen.mouseScrolled(g, h, e, f);
+                screen.applyMousePressScrollNarratorDelay();
+            } else if (mc.player != null) {
+                if (mc.mouse.eventDeltaHorizontalWheel != 0.0 && Math.signum(e) != Math.signum(mc.mouse.eventDeltaHorizontalWheel)) {
+                    mc.mouse.eventDeltaHorizontalWheel = 0.0;
+                }
+
+                if (mc.mouse.eventDeltaVerticalWheel != 0.0 && Math.signum(f) != Math.signum(mc.mouse.eventDeltaVerticalWheel)) {
+                    mc.mouse.eventDeltaVerticalWheel = 0.0;
+                }
+
+                mc.mouse.eventDeltaHorizontalWheel += e;
+                mc.mouse.eventDeltaVerticalWheel += f;
+                int i = (int)mc.mouse.eventDeltaHorizontalWheel;
+                int j = (int)mc.mouse.eventDeltaVerticalWheel;
+                if (i == 0 && j == 0) {
+                    return;
+                }
+
+                mc.mouse.eventDeltaHorizontalWheel -= (double)i;
+                mc.mouse.eventDeltaVerticalWheel -= (double)j;
+                int k = j == 0 ? -i : j;
+                if (mc.player.isSpectator()) {
+                    if (mc.inGameHud.getSpectatorHud().isOpen()) {
+                        mc.inGameHud.getSpectatorHud().cycleSlot(-k);
+                    } else {
+                        float l = MathHelper.clamp(mc.player.getAbilities().getFlySpeed() + (float)j * 0.005F, 0.0F, 0.2F);
+                        mc.player.getAbilities().setFlySpeed(l);
+                    }
+                } else {
+                    mc.player.getInventory().scrollInHotbar((double)k);
+                }
+            }
+        }
+    }
+
 }

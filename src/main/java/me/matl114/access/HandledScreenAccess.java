@@ -37,6 +37,8 @@ public interface HandledScreenAccess extends ScreenAccess{
     public TextRenderer getTextRenderer();
     public int getScreenX();
     public int getScreenY();
+    public int getScreenBackgroundX();
+    public int getScreenBackgroundY();
     public Set<Slot> getExtraSlots();
     public Slot getExtraSlotAt(double var1, double var3);
 }

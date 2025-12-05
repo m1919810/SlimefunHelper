@@ -8,8 +8,6 @@ import me.matl114.gui.basic.TextProvider;
 import me.matl114.hackUtils.InvTasks;
 import me.matl114.managers.HotKeys;
 import me.matl114.SlimefunHelper;
-import me.matl114.utils.Debug;
-import me.matl114.utils.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.Screen;
@@ -26,7 +24,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Environment(EnvType.CLIENT)
 @Mixin(HandledScreen.class)
@@ -84,20 +81,6 @@ public abstract class ScreenButtonMixin extends Screen implements HandledScreenA
         line+=((size2-1)/4)+1;
         int y0=-(buttonHeight+2)*line-6;
         int x0=0;
-        if(SlimefunHelper.HACK_VERSION){
-            sharedArgument=new TextFieldWidget(this.textRenderer,xv,yv+y0-buttonHeight-2,buttonWidth*2,buttonHeight,Text.literal(HotKeys.SHARED_ARGUMENT.getInternal()));
-            sharedArgument.setMaxLength(256);  // 设置最大输入字符数
-            sharedArgument.setEditable(true);
-            sharedArgument.setText(HotKeys.SHARED_ARGUMENT.getInternal());
-            sharedArgument.setChangedListener(HotKeys.SHARED_ARGUMENT::set);
-            addDrawableChild(sharedArgument);
-            sharedArgument2=new TextFieldWidget(this.textRenderer,xv+buttonWidth*2,yv+y0-buttonHeight-2,buttonWidth*2,buttonHeight,Text.literal(HotKeys.SHARED_ARGUMENT_2.getInternal()));
-            sharedArgument2.setMaxLength(256);  // 设置最大输入字符数
-            sharedArgument2.setEditable(true);
-            sharedArgument2.setText(HotKeys.SHARED_ARGUMENT_2.getInternal());
-            sharedArgument2.setChangedListener(HotKeys.SHARED_ARGUMENT_2::set);
-            addDrawableChild(sharedArgument2);
-        }
         for(Map.Entry<String ,Runnable> entry:buttonToggles.entrySet()) {
             final String key = entry.getKey();
             final Runnable stateChange = entry.getValue();

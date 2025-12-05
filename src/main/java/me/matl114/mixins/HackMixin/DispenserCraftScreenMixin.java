@@ -57,6 +57,11 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
         return this.world;
     }
 
+    @Unique
+    public HandledScreen<?> castHandled(){
+        return this;
+    }
+
     public DispenserCraftScreenMixin(ScreenHandler handler, PlayerInventory inventory, Text title) {
         super((Generic3x3ContainerScreenHandler) handler, inventory, title);
     }
@@ -79,7 +84,7 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
             .map(Optional::get)
             .map(SlimefunTasks.CraftingType::id)
             .collect(Collectors.toSet());
-        this.recipeBookWidget = new SlimefunDispensorSuggestBookWidget( 3,  3,co,(bol, entry)-> SlimefunTasks.handleMoveRecipeToSlots(entry, this, bol, true, AVAILABLE_SLOTS));
+        this.recipeBookWidget = new SlimefunDispensorSuggestBookWidget( this,3,  3,co,(bol, entry)-> SlimefunTasks.handleMoveRecipeToSlots(entry, this, bol, true, AVAILABLE_SLOTS));
     }
 
 

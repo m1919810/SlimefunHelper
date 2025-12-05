@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 public class Debug {
     private static Logger logger= LoggerFactory.getLogger("SlimefunHelper");
@@ -44,7 +45,7 @@ public class Debug {
             if(tx instanceof Text){
                 text.append(((Text)tx));
             }else {
-                text.append(Text.literal(tx.toString()));
+                text.append(Text.literal(tx == null ? "null": tx.toString()));
             }
         }
         sendPlayer(text);
@@ -69,4 +70,17 @@ public class Debug {
             Debug.info(stackTraceElement.toString());
         }
     }
+    public static boolean test(Object obj){
+        info(obj);
+        return false;
+    }
+    public static boolean DEBUG_LOG_TO_CHAT = false;
+    public static void debug(Object... objs){
+        if(DEBUG_LOG_TO_CHAT){
+            Debug.chat(objs);
+        }else{
+            Debug.info(objs);
+        }
+    }
+
 }

@@ -1,15 +1,20 @@
 package me.matl114.mixins.HackMixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.access.ButtonNotFocusedScreenAccess;
+import me.matl114.access.ChatScreenAccess;
 import me.matl114.hackUtils.ChatTasks;
-import me.matl114.hackUtils.RenderTasks;
 import me.matl114.hackUtils.Tasks;
+import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.utils.ChatUtils;
+import me.matl114.utils.UtilClass.Event;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -30,10 +35,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ChatScreen.class)
-public abstract class ChatScreenMixin extends Screen implements ButtonNotFocusedScreenAccess {
+public abstract class ChatScreenMixin extends Screen implements ButtonNotFocusedScreenAccess, ChatScreenAccess {
     @Shadow public abstract void sendMessage(String chatText, boolean addToHistory);
 
     @Shadow protected TextFieldWidget chatField;
+
+    @Shadow private int messageHistoryIndex;
+
+    public TextFieldWidget getInputWidget(){
+        return chatField;
+    }
+
     @Unique
     private static Config.StringRef stored=Configs.CHAT_CONFIG.getString(Configs.CHAT_HELPER_CACHE);
     @Unique
@@ -47,9 +59,9 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
         super(title);
     }
     @Unique
-    private static final AtomicBoolean changeInputLimit = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_IGNORE_INPUT_LIMIT);
+    private static final Config.FlagRef changeInputLimit = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_IGNORE_INPUT_LIMIT);
     @Unique
-    private static final AtomicBoolean escapeTrimChatMessage = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_ESCAPE_TRIM);
+    private static final Config.FlagRef escapeTrimChatMessage = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_ESCAPE_TRIM);
     @Inject(method = "init",at = @At("RETURN"))
     private void onInitAdd(CallbackInfo ci) {
         //change input maxLen to 32768, so commands can be executed
@@ -60,7 +72,7 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
         this.helperInputField = new TextFieldWidget(this.textRenderer, this.width - 250, this.height - 56, 140, 20, Text.of(""));
         this.helperInputField.setMaxLength(32768);  // 设置最大输入字符数
         this.helperInputField.setEditable(true);  // 设置为可编辑
-        this.helperInputField.setText(stored.get());  // 设置默认文本
+        this.helperInputField.setText(stored.getValue());  // 设置默认文本
         addDrawableChild(this.helperInputField);
         var but1=ButtonWidget
                 .builder(Text.literal("save and send"), b ->{
@@ -103,7 +115,7 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
                     tranlateInt2char();
                 })
                 .dimensions(this.width - 200 ,this.height-80 , 50, 20).build());
-        String specialChar= specialChars.get();
+        String specialChar= specialChars.getValue();
         int len=specialChar.length();
         int x=0,xm=4;
         int y=0;
@@ -171,28 +183,62 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     public void saveEntryToValues(){
         Configs.CHAT_CONFIG.setValue(this.helperInputField.getText(), Configs.CHAT_HELPER_CACHE);
     }
-    //todo disable pageup and pagedown switch drawables
-    @Inject(method = "keyPressed",at=@At("HEAD"))
-    private void onCheck(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
-        //Debug.info()
-    }
+
+//    @Inject(method = "keyPressed",at=@At("HEAD"))
+//    private void onCheck(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
+//        //Debug.info()
+//    }
     //keep-inv and save config when send
     @Inject(method="keyPressed",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;sendMessage(Ljava/lang/String;Z)V", shift = At.Shift.AFTER), cancellable = true)
     private void onCancelCloseScreenAfterSend(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
         saveEntryToValues();
         if(HotKeys.getSimpleToggleManager().getState(HotKeys.KEEP_CHATINV)){
+            //FIX: reset history index so pgup pgdown can work correctly
+            messageHistoryIndex = MinecraftClient.getInstance().inGameHud.getChatHud().getMessageHistory().size();
             cir.setReturnValue(true);
         }
     }
-    @Redirect(method = "sendMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;normalize(Ljava/lang/String;)Ljava/lang/String;"))
-    private String cancelNormalizeString(ChatScreen instance, String chatText){
+    //fix conflict with nochatreport
+//    @Redirect(method = "sendMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;normalize(Ljava/lang/String;)Ljava/lang/String;"))
+//    private String cancelNormalizeString(ChatScreen instance, String chatText){
+//        if(!escapeTrimChatMessage.get()){
+//            chatText = chatText.trim();
+//        }
+//        if(!changeInputLimit.get()){
+//            chatText = StringHelper.truncateChat(chatText);
+//        }
+//        return chatText;
+//    }
+    @Inject(method = "sendMessage", at = @At("HEAD"), cancellable = true)
+    private void onSendInput(String chatText, boolean addToHistory, CallbackInfo ci, @Local(argsOnly = true)LocalRef<String> chatTextRef){
+        Event<String> stringEvent = new Event<>(chatText, true, true);
+        Listener.getChatScreenSendInput().handleValue(stringEvent);
+        if(stringEvent.isCancelled()){
+            ci.cancel();
+        }
+        chatTextRef.set(stringEvent.context());
+    }
+
+    @Redirect(method = "normalize", at = @At(value = "INVOKE", target = "Ljava/lang/String;trim()Ljava/lang/String;"))
+    private String cancelTrim(String instance){
         if(!escapeTrimChatMessage.get()){
-            chatText = chatText.trim();
+            return instance.trim();
         }
+        return instance;
+    }
+
+
+    @Redirect(method = "normalize", at = @At(value = "INVOKE", target = "Lorg/apache/commons/lang3/StringUtils;normalizeSpace(Ljava/lang/String;)Ljava/lang/String;"))
+    private String cancelNormalize(String actualChar){
+        return actualChar;
+    }
+
+    @Redirect(method = "normalize", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/StringHelper;truncateChat(Ljava/lang/String;)Ljava/lang/String;"))
+    private String cancelTruncate(String text){
         if(!changeInputLimit.get()){
-            chatText = StringHelper.truncateChat(chatText);
+            return StringHelper.truncateChat(text);
         }
-        return chatText;
+        return text;
     }
     //
     public void close(){

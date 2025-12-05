@@ -175,6 +175,14 @@ public class BukkitYaml  {
             return this.constructObject(node);
         }
 
+        protected Map<Object, Object> newMap(MappingNode node){
+            return createDefaultMap(node.getValue().size());
+        }
+        protected List<Object> newList(SequenceNode node){
+            return createDefaultList(node.getValue().size());
+        }
+
+
         private class ConstructCustomObject extends SafeConstructor.ConstructYamlMap {
             private ConstructCustomObject() {
                 super();

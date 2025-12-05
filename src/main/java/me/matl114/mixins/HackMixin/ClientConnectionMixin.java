@@ -1,13 +1,8 @@
 package me.matl114.mixins.HackMixin;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import me.matl114.access.ClientConnectionAccess;
-import me.matl114.hackUtils.HttpTasks;
+import me.matl114.hackUtils.NetworksTasks;
 import me.matl114.listenerUtils.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -22,12 +17,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.net.InetSocketAddress;
-
-import static net.minecraft.network.ClientConnection.CLIENT_IO_GROUP;
-import static net.minecraft.network.ClientConnection.EPOLL_CLIENT_IO_GROUP;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientConnection.class)
@@ -35,12 +24,17 @@ public abstract class ClientConnectionMixin implements ClientConnectionAccess {
 
     @Inject(method = "channelRead0(Lio/netty/channel/ChannelHandlerContext;Lnet/minecraft/network/packet/Packet;)V",at=@At("HEAD"),cancellable = true)
     private void acceptPacket(ChannelHandlerContext channelHandlerContext, Packet<?> packet, CallbackInfo ci) {
+
         if(!Listener.acceptS2CPacket((ClientConnection) (Object)this,packet)){
             ci.cancel();
         }
     }
     @Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V",at=@At("HEAD"),cancellable = true)
     private void sendPacket(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
+        //fix: null values from cancelled send Events
+        if(packet == null){
+            ci.cancel();
+        }
         if(!Listener.sendC2SPacket((ClientConnection) (Object)this,packet)){
             ci.cancel();
         }
@@ -83,7 +77,7 @@ public abstract class ClientConnectionMixin implements ClientConnectionAccess {
     @Inject(method = "addHandlers", at = @At("HEAD"))
     private static void proxyChannelIp(ChannelPipeline pipeline, NetworkSide side, boolean local, PacketSizeLogger packetSizeLogger, CallbackInfo ci){
         if(side == NetworkSide.CLIENTBOUND){
-            HttpTasks.redirectIpPre(pipeline);
+            NetworksTasks.redirectIpPre(pipeline);
         }
     }
 

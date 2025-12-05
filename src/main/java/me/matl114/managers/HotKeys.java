@@ -4,14 +4,10 @@ import lombok.Getter;
 import me.matl114.access.HandledScreenAccess;
 import me.matl114.hackUtils.*;
 import me.matl114.ModConfig;
-import me.matl114.SlimefunHelper;
 import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
@@ -19,9 +15,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import  static me.matl114.SlimefunHelper.HACK_VERSION;
 
 public class HotKeys {
     public static void init(){
@@ -34,11 +30,10 @@ public class HotKeys {
         initSimpleToggles();
         Debug.info("HotKeys enabled!");
     }
-    private static final boolean HACK_VERSION = SlimefunHelper.HACK_VERSION;
     private static SimpleHotKey getToggleHotKey(String key,boolean defaultValue){
         hotkeyToggleManager.register(key, defaultValue);
         Runnable runnable = hotkeyToggleManager.getToggle(key);
-        return new SimpleHotKey(key,ModConfig.getToggleHotkeys(key),(m -> {
+        return new SimpleHotKey("hotkeys-toggle." + key, ModConfig.getToggleHotkeys(key),(m -> {
             ClientPlayerEntity player= m.getClient().player;
             if(player!=null){
                 runnable.run();
@@ -56,7 +51,7 @@ public class HotKeys {
 //        })).register(SimpleInputManager.getInstance());
 //    }
     private static SimpleHotKey getTaskHotKey(String key, Predicate<IInputManager> task){
-        return new SimpleHotKey(key,ModConfig.getFuncHotKeys(key),(task::test)).register(SimpleInputManager.getInstance());
+        return new SimpleHotKey("hotkeys." + key,ModConfig.getFuncHotKeys(key),(task::test)).register(SimpleInputManager.getInstance());
     }
     private static HashMap<String,Boolean> defaultToggles=new HashMap<>();
     @Getter
@@ -74,6 +69,7 @@ public class HotKeys {
     public static final String FAST_MOVE = "fast-mov";
     public static final String FAST_DROP = "fast-drop";
     public static final String FAST_PLAYER_MOVE = "quick-move";
+    public static final String FAST_PLAYER_MOVE_WALL = "quick-to-wall";
     public static final String TOGGLE_FLYSPEED = "toggle-flight-speed";
     public static final String PICK_ITEM = "pick-item";
     public static final String QUICK_MINE="quick-mine";
@@ -98,7 +94,11 @@ public class HotKeys {
     public static final String ITEMEDITOR_OPEN = "open-editor";
     public static final String OPEN_INV_CACHE = "open-inv-cache";
     public static final String WAKE_UP_SCREEN = "wake-up-screen";
-    public static final String TOGGLE_FAKE_FLIGHT = "fake-flight";
+//    public static final String TOGGLE_FAKE_FLIGHT = "fake-flight";
+    public static final String TOGGLE_AUTO_AIM = "bow-aim";
+    public static final String TOGGLE_SPEED_TIMER = "speed-timer";
+    public static final String SCAFFOLD_WALK = "scaffold";
+    public static final String MINEARUA = "mine-arua";
     public static final String BUTTON_TASK_1="btask1";
     public static final String BUTTON_TASK_2="btask2";
     public static final String HOTKEY_TEST1="hktest1";
@@ -164,16 +164,10 @@ public class HotKeys {
         getToggleHotKey(ALWAYS_ATTACK,false);
         getToggleHotKey(AUTO_ATTACK,false);
         getToggleHotKey(TOGGLE_FLIGHT,false);
-        hotkeyToggleManager.register(TOGGLE_FAKE_FLIGHT, false);
-        Runnable task = hotkeyToggleManager.getToggle(TOGGLE_FAKE_FLIGHT);
-        new SimpleHotKey(TOGGLE_FAKE_FLIGHT,ModConfig.getToggleHotkeys(TOGGLE_FAKE_FLIGHT),(m -> {
-            ClientPlayerEntity player= m.getClient().player;
-            if(player!=null){
-                task.run();
-                MovTasks.onFakeFlightEnabled();
-            }
-            return true;
-        })).register(SimpleInputManager.getInstance());
+        getToggleHotKey(TOGGLE_SPEED_TIMER, false);
+        getToggleHotKey(TOGGLE_AUTO_AIM, false);
+        getToggleHotKey(SCAFFOLD_WALK, false);
+        getToggleHotKey(MINEARUA, false);
         getToggleHotKey(HOTKEY_TEST1,false);
         getToggleHotKey(HOTKEY_TEST2,false);
         getToggleHotKey(HOTKEY_TEST3,false);
@@ -207,13 +201,14 @@ public class HotKeys {
             }
             return false;
         });
-        getTaskHotKey(SF_RECIPE_INTERNAL, (manager)->{
-            ClientPlayerEntity player= manager.getClient().player;
-            if(player!=null && manager.getClient().currentScreen instanceof HandledScreen<?> handledScreen && handledScreen.getScreenHandler().getCursorStack().isEmpty()){
-                return SlimefunTasks.clickToAddRecipeDisplay(handledScreen);
-            }
-            return false;
-        });
+        //todo for removal
+//        getTaskHotKey(SF_RECIPE_INTERNAL, (manager)->{
+//            ClientPlayerEntity player= manager.getClient().player;
+//            if(player!=null && manager.getClient().currentScreen instanceof HandledScreen<?> handledScreen && handledScreen.getScreenHandler().getCursorStack().isEmpty()){
+//                return SlimefunTasks.clickToAddRecipeDisplay(handledScreen);
+//            }
+//            return false;
+//        });
         getTaskHotKey(SF_SAVEITEM_INTERNAL, (manager)->SlimefunTasks.clickToSaveItem());
         getTaskHotKey(ITEMEDITOR_OPEN, (iInputManager -> ItemEditTasks.openEditor()));
         getTaskHotKey(OPEN_INV_CACHE, (iInputManager -> InvTasks.openInventoryCacheScreen()));
@@ -242,8 +237,10 @@ public class HotKeys {
             getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
             getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
             getTaskHotKey(FAST_PLAYER_MOVE,(iInputManager -> MovTasks.quickMovFront()));
+            getTaskHotKey(FAST_PLAYER_MOVE_WALL,(iInputManager -> MovTasks.quickMovTowardsWall()));
             getTaskHotKey(TOGGLE_FLYSPEED, (iInputManager -> MovTasks.toggleSpeedOverride()));
             getTaskHotKey(PICK_ITEM, (iInputManager -> InvTasks.pickUpSelectingSlot()));
+
         }
 
     }

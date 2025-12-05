@@ -9,4 +9,6 @@ public interface ClientAccess {
     public ClientAccess clone();
 
     public void setCooldown(int cooldown);
+
+    public int getCooldown();
 }

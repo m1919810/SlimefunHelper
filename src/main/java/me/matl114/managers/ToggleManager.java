@@ -1,6 +1,7 @@
 package me.matl114.managers;
 
 import com.google.common.base.Preconditions;
+import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
@@ -32,7 +33,8 @@ public interface ToggleManager {
             boolean result=!toggle.get();
             toggle.set(result);
             HotKeys.setToggles(value,result);
-            MinecraftClient.getInstance().player.sendMessage(Text.literal("toggle "+value+(result?" on":" off")));
+            Debug.chat("Toggle", Text.translatableWithFallback("toggle." + value, value), (result?"on":"off"));
+
         };
     }
     default HashMap<String ,Runnable> getToggles(){

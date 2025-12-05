@@ -14,17 +14,17 @@ public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
     Registry<T> registry;
     Consumer<T> callback;
     protected static final int WIDTH = 240;
-    protected RegistryChooseScreen(Registry<T> registry, Consumer<T> callback) {
+    public RegistryChooseScreen(Registry<T> registry, Consumer<T> callback) {
         super(Text.empty());
         this.registry = registry;
         this.callback =callback;
         setTitleLabel(Text.literal("从注册表中选择注册项").formatted(Formatting.AQUA));
         //reset user input, so it is more convenient for user to select a registry value,
         FilterService.currentUserInput = "";
-        this.selectSubScreen = ListRegistrySelectScreen.registry(this.registry, 0, CONTENT_START_Y + 20, WIDTH, 240, 20);
+        this.selectSubScreen = ListRegistrySelectWidget.registry(this.registry, 0, CONTENT_START_Y + 20, WIDTH, 240, 20);
     }
-    ListRegistrySelectScreen<T> selectSubScreen;
-    ContentDelegateWidget<ListRegistrySelectScreen<T>> delegate;
+    ListRegistrySelectWidget<T> selectSubScreen;
+    ContentDelegateWidget<ListRegistrySelectWidget<T>> delegate;
 
     @Override
     protected boolean canConfirm(ElementHandler elementHandler) {

@@ -22,6 +22,7 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 
 import net.fabricmc.fabric.impl.client.model.loading.ModelLoaderHooks;
 import net.fabricmc.fabric.impl.client.model.loading.ModelLoadingPluginManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.data.client.BlockStateModelGenerator;
 import net.minecraft.data.client.ItemModelGenerator;
@@ -46,12 +47,20 @@ public class SlimefunHelper implements ModInitializer {
 	@Getter
     public static SlimefunHelper instance;
     public static final boolean HACK_VERSION = true;
+	public static boolean DEV = false;
+	public static void authentication(){
+		Debug.info(MinecraftClient.getInstance().getSession().getUsername());
+		if(Objects.equals( MinecraftClient.getInstance().getSession().getUsername(),"matl114")){
+			DEV = true;
+		}
+	}
 	@Override
 	public void onInitialize() {
 		instance = this;
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
+		authentication();
 		Debug.info("Slimefun, start!");
 		ModConfig.reloadModConfig();
 		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
@@ -111,11 +120,15 @@ public class SlimefunHelper implements ModInitializer {
 	}
 	//todo 接下来要做什么
 	//todo 已知的冲突:
-	//todo 大饼: 实现指令系统，接入聊天框 !!开头
-	//todo 大饼: 客户端实现/give指令劫持
-	//todo 大饼: 发射器界面实现一键放入+合成(?)+交互合成按钮  有了
-	//todo 大饼: 通过客户端指令listRegisty
-	//todo 大饼 Stats modify
-	//todo 大饼 下单系统
-	//todo 新配置体系
+	//大饼: 实现指令系统，接入聊天框 !!开头
+	//大饼: 客户端实现/give指令劫持
+	//大饼: 发射器界面实现一键放入+合成(?)+交互合成按钮  有了
+	//大饼: 通过客户端指令listRegisty
+	//大饼 Stats modify
+	//todo 大饼 下单系统; 需要实现vanilla walk 模块，拉取baritone api
+	//大病: 新配置体系 有了
+	//todo 更多hacks
+	//villager trade utils 有了
+	//todo slimefun textures to sprites
+	//
 }

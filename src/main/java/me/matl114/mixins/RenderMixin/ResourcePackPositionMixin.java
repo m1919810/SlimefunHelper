@@ -23,8 +23,8 @@ public abstract class ResourcePackPositionMixin {
         cir.setReturnValue(false);
 
     }
-    @Inject(method = "required", at = @At("HEAD"), cancellable = true)
-    private void ignoreRequired(CallbackInfoReturnable<Boolean> cir){
-        cir.setReturnValue(false);
-    }
+//    @Inject(method = "required", at = @At("HEAD"), cancellable = true)
+//    private void ignoreRequired(CallbackInfoReturnable<Boolean> cir){
+//       // cir.setReturnValue(false);
+//    }
 }

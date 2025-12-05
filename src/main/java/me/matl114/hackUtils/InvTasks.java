@@ -4,6 +4,7 @@ import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.ints.*;
 import lombok.Getter;
 import me.matl114.access.*;
+import me.matl114.gui.config.ConfigurateNewStyleScreen;
 import me.matl114.gui.config.ConfigureScreen;
 import me.matl114.gui.config.SelectScreen;
 import me.matl114.gui.invcache.InventorySelectScreen;
@@ -68,6 +69,8 @@ public class InvTasks {
     }
     public static final AtomicBoolean OPTIMIZE_SLOT_CLICK_PACKET = new AtomicBoolean(false);
     public static void openSelectScreen(){
+        openConfigNewStyleScreen();
+        if(true)return;
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if(player!=null){
             HashMap<String,Runnable> map = new LinkedHashMap<>();
@@ -77,8 +80,16 @@ public class InvTasks {
             ScreenAccess.of( new SelectScreen(map,4,Text.of(""))).openFromCurrent();
         }
     }
+    public static void openConfigNewStyleScreen(){
+        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        if(player!=null){
+            ScreenAccess.of( new ConfigurateNewStyleScreen(Config.getConfigs().stream().toList())).openFromCurrent();
+        }
+    }
     public static void openConfigScreen(Config config){
-        ScreenAccess.of( new ConfigureScreen(config,Text.of(""))).openFromCurrent();
+        ConfigurateNewStyleScreen newStyleScreen = new ConfigurateNewStyleScreen(Config.getConfigs().stream().toList());
+        newStyleScreen.setConfig(config);
+        ScreenAccess.of( newStyleScreen).openFromCurrent();
     }
 
 
@@ -162,9 +173,9 @@ public class InvTasks {
             }
         }
     }
-    private static final AtomicBoolean applyShiftMove = Configs.INV_CONFIG.getBoolean(Configs.FAST_INV_DO_SHIFT);
+    private static final Config.FlagRef applyShiftMove = Configs.INV_CONFIG.getBoolean(Configs.FAST_INV_DO_SHIFT);
     public static boolean quickMoveAllSelectedItem(){
-        //fixme distinguish backpack move-from-hotbar-to-backpack, add inv check
+
         PlayerEntity player = mc.player;
         if(player == null)return false;
         Screen nowScreen= getCurrentServerScreen(player);
@@ -187,6 +198,7 @@ public class InvTasks {
                     return true;
                 }
             } else if(HotKeys.getButtonToggleManager().getState(HotKeys.LEFT_ONE)){
+                //FIXME: problem, clicking stacked, removing one
                 ScreenHandler handler= handled.getScreenHandler();
                 Point mouseCoord= ScreenUtils.getMouseCoord(mc);
                 Slot slot= HandledScreenAccess.of(handled).reallyGetSlotAt(mouseCoord.x,mouseCoord.y);
@@ -284,7 +296,7 @@ public class InvTasks {
         }
     }
 
-    private static final AtomicBoolean applyShiftDrop = Configs.INV_CONFIG.getBoolean(Configs.FAST_INV_DO_DROP);
+    private static final Config.FlagRef applyShiftDrop = Configs.INV_CONFIG.getBoolean(Configs.FAST_INV_DO_DROP);
     public static boolean quickDropAllSelectedItem(){
         if(mc.player == null)return false;
         if(HotKeys.getButtonToggleManager().getState(HotKeys.FAST_INV) && applyShiftDrop.get()) {
@@ -317,31 +329,38 @@ public class InvTasks {
         RecipeEntry<?> last = PlayerInteractionAccess.of(mc.interactionManager).getLastlyCrafted();
         if(last != null){
             mc.interactionManager.clickRecipe(craftingScreen.getScreenHandler().syncId, last,true);
-            //Debug.info("What's wrong?",doCraft);
             if(doCraft){
-                boolean dropCraft = HotKeys.getSimpleToggleManager().getState(HotKeys.DROP_CRAFT);
-                //Debug.info("Drop craft?",dropCraft);
-                if(dropCraft){
-                    int maxCraft = 64;
-                    for (Ingredient material:last.value().getIngredients()){
-                        for (ItemStack val:material.getMatchingStacks()){
-                            maxCraft = Math.min(maxCraft, val.getMaxCount());
-                        }
+                int maxCraft = 64;
+                for (Ingredient material:last.value().getIngredients()){
+                    for (ItemStack val:material.getMatchingStacks()){
+                        maxCraft = Math.min(maxCraft, val.getMaxCount());
                     }
-                    for (int i=0;i<maxCraft;++i){
-                        clickExecutor.execute(()->{
-                            mc.interactionManager.clickSlot(craftingScreen.getScreenHandler().syncId,craftingScreen.getScreenHandler().getCraftingResultSlotIndex(),0,SlotActionType.THROW,mc.player);});
-                    }
-                }else {
-                    clickExecutor.execute(()->{
-                        mc.interactionManager.clickSlot(craftingScreen.getScreenHandler().syncId,craftingScreen.getScreenHandler().getCraftingResultSlotIndex(),1,SlotActionType.QUICK_MOVE,mc.player);
-                    });
                 }
+                int slot = craftingScreen.getScreenHandler().getCraftingResultSlotIndex();
+                craftAtSlotIndex(craftingScreen, maxCraft, slot);
             }
         }else {
             Debug.chat("Crafting History Is Empty");
         }
     }
+    public static void craftAtSlotIndex(HandledScreen<?> screen,  int maxCraft, int slot){
+        //Debug.info("What's wrong?",doCraft);
+
+        boolean dropCraft = HotKeys.getSimpleToggleManager().getState(HotKeys.DROP_CRAFT);
+        //Debug.info("Drop craft?",dropCraft);
+        if(dropCraft){
+            for (int i=0;i<maxCraft;++i){
+                clickExecutor.execute(()->{
+                    mc.interactionManager.clickSlot(screen.getScreenHandler().syncId, slot,0,SlotActionType.THROW,mc.player);});
+            }
+        }else {
+            clickExecutor.execute(()->{
+                mc.interactionManager.clickSlot(screen.getScreenHandler().syncId, slot,1,SlotActionType.QUICK_MOVE,mc.player);
+            });
+        }
+
+    }
+
     public static boolean pickUpSelectingSlot(){
         PlayerEntity player = mc.player;
         if(player == null)return false;
@@ -381,7 +400,9 @@ public class InvTasks {
 
             for (int i : inputSlot){
                 ItemStack stack = handler.slots.get(i).getStack();
-                if(stack != null && !stack.isEmpty() && stack.getCount() > 1 && stack.getCount() >= stack.getMaxCount() -4){
+                //left one is enough
+                //left two please
+                if(stack != null && !stack.isEmpty() && stack.getCount() >= 4){
                     //when trying to remove full stack, ensure that cursor is empty
                     if(!handler.getCursorStack().isEmpty()){
                         ItemStack stackt = handler.getCursorStack();
@@ -440,7 +461,7 @@ public class InvTasks {
         36, 37,38, 39,40,41,42,43,44,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,45, 5, 6, 7,8, 0, 1, 2, 3, 4
     };
     public static void creativeGive(ItemStack itemStack, int count){
-        if(mc.player != null && mc.player.isCreative()){
+        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;
             int stackMax = itemStack.getMaxCount();
             for (int i: PLAYER_SLOTS){
@@ -471,7 +492,7 @@ public class InvTasks {
         }
     }
     public static void creativeAddItem(ItemStack itemStack, int count){
-        if(mc.player != null && mc.player.isCreative()){
+        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
             int slot = -1;
 
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;
@@ -541,9 +562,12 @@ public class InvTasks {
         builder.append(" ").append(itemStack.getCount());
         return builder.toString();
     }
+    public static boolean isScreenHandlerValid(ScreenHandler handler){
+        return  mc.player != null && mc.player.currentScreenHandler == handler;
+    }
     public static void quickMoveSlotOrDrop(HandledScreen handledScreen, int slot){
         ScreenHandler handler = handledScreen.getScreenHandler();
-        if(mc.player == null || mc.player.currentScreenHandler != handler)return;
+        if(!isScreenHandlerValid(handler))return;
         if(!handler.getCursorStack().isEmpty()){
             mc.interactionManager.clickSlot(handler.syncId,-999,0,SlotActionType.PICKUP,mc.player );
         }
@@ -555,7 +579,7 @@ public class InvTasks {
     public static void moveToSlot(HandledScreen handledScreen, ItemStack itemStack, int toSlot, int toAmountAdd, boolean removeExist, IntList alreadyMatched){
         if(itemStack.isEmpty())return;
         ScreenHandler handler = handledScreen.getScreenHandler();
-        if(mc.player == null || mc.player.currentScreenHandler != handler)return;
+        if(!isScreenHandlerValid(handler))return;
         //操作前先清空指针
         if(!handler.getCursorStack().isEmpty()){
             mc.interactionManager.clickSlot(handler.syncId,-999,0,SlotActionType.PICKUP,mc.player );
@@ -772,7 +796,7 @@ public class InvTasks {
 
 
 
-    private static final AtomicInteger SPEED= Configs.INV_CONFIG.getInt(Configs.INV_CLICK_LIMIT);
+    private static final Config.IntRef SPEED= Configs.INV_CONFIG.getInt(Configs.INV_CLICK_LIMIT);
     @Getter
     private static final LimitedSpeedExecutor clickExecutor=new LimitedSpeedExecutor(SPEED);
     static{

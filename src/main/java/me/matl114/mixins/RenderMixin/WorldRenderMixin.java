@@ -1,5 +1,6 @@
 package me.matl114.mixins.RenderMixin;
 
+import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -16,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Mixin(WorldRenderer.class)
 public abstract class WorldRenderMixin {
     @Unique
-    private static final AtomicBoolean noEffect = Configs.RENDER_CONFIG.getBoolean(Configs.RENDER_NO_EFFECT);
+    private static final Config.FlagRef noEffect = Configs.RENDER_CONFIG.getBoolean(Configs.RENDER_NO_EFFECT);
     @Inject(method = "hasBlindnessOrDarkness",at = @At("HEAD"),cancellable = true)
     public void hasBlindnessOrDarkness(CallbackInfoReturnable<Boolean> cir) {
         if(noEffect.get()) {

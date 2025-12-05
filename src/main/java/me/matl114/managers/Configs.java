@@ -1,8 +1,12 @@
 package me.matl114.managers;
 
 import me.matl114.SlimefunHelper;
+import net.minecraft.text.Text;
+
+import java.util.Locale;
 
 public class Configs {
+    //todo add schema for config
     public static void loadConfigs(){
         if(SlimefunHelper.HACK_VERSION){
             MINE_CONFIG.registerGlobal();
@@ -28,28 +32,67 @@ public class Configs {
         }
 
     }
+    public enum LegalTargetingMode implements Config.ConfigEnum{
+        DELAY_MOVEMENT,
+        USEITEM_PACKET
+        ;
+
+        @Override
+        public Text getDisplay() {
+            return Text.translatable("configenum.legal-targeting-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
+    }
+    public enum BypassMode implements Config.ConfigEnum{
+        NO_BYPASS,
+        BYPASS_GRIM
+        ;
+
+        @Override
+        public Text getDisplay() {
+            return Text.translatable("configenum.bypass-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
+    }
+    static{
+        //load Enums
+        Config.ConfigEnum.register(LegalTargetingMode.class);
+        Config.ConfigEnum.register(BypassMode.class);
+    }
+
     private static boolean init=false;
-    public static final String MINE_BOT_MINE_ABOVE="mine-bot-only-mine-above";
-    public static final String MINE_BOT_MAX_PER_TICK="mine-bot-max-per-tick";
-    //public static final String[] MINE_BOT_ONLY_MINE_ABOVE={"mine-bot","only-mine-above"};
     public static final String[] MINE_BOT_MINE_MIN_DY={"mine-bot","min-dy"};
     public static final String[] MINE_BOT_MINE_MAX_DY={"mine-bot","max-dy"};
     public static final String[] MINE_BOT_DOWN_PRIORITY={"mine-bot","y-low-first"};
     public static final String[] MINE_BOT_MAX_INSTANT_MINE={"mine-bot","max-instant-mine"};
     public static final String[] MINE_ENABLE_FAKE_INSTANT_BREAK={"fast-break","use-fake-instant-break"};
+//    public static final String[] MINE_BYPASS_FAST_BREAK_CHECK = {"fast-break", "bypass-anti-cheat"};
+    public static final String[] MINE_BYPASS_FAST_BREAK_BYPASS_MODE = {"fast-break", "bypass-mode"};
     public static final String[] MINE_BOT_WHITELIST={"mine-bot","whitelist"};
     public static final String[] MINE_BOT_PACKET_MULTIPLE={"mine-bot","multiple-packets"};
+    public static final String[] MINE_BOT_LEGAL_MODE = {"mine-bot", "legal-mode"};
     public static final String[] MINE_ONEBLOCK_PACKET_MULTIPLE={"mine-oneblock","multiple-packets"};
     public static final String[] MINE_FASTBREAK_THRESHOLD={"fast-break","break-threshold"};
     public static final String[] MINE_FASTBREAK_BREAKCOOLDOWN={"fast-break","break-cooldown"};
     public static final String[] MINE_FASTBREAK_REACH={"fast-break","reach-distance"};
     public static final String[] MINE_BOT_RIGHT_CLICK={"mine-bot","right-click"};
+    public static final String[] MINE_BOT_DURABILITY_PROTECT = {"mine-bot", "durability-protect"};
+    public static final String[] MINE_FASTBREAK_SAME_BLOCK_OPTIMIZE = {"fast-break", "same-block-optimize"};
+    public static final String[] XRAY_ENABLE = {"aaxray", "enable"};
+    public static final String[] XRAY_ENABLE_SIMPLE = {"aaxray", "enable-simple"};
+    public static final String[] XRAY_ENABLE_SEED = {"aaxray", "enable-seed"};
+    public static final String[] XRAY_ENABLE_SEED_RADIUS = {"aaxray", "seed-radius"};
+    public static final String[] XRAY_RENDER_FAKE_ORE = {"aaxray", "render-seed-ore"};
+    public static final String[] XRAY_MAKE_CLIENTSIDE_ORE = {"aaxray", "clientside-ore"};
+    public static final String[] XRAY_OVERRIDE_SERVER_ORES = {"aaxray", "clientside-override-ores"};
+    public static final String[] XRAY_ORE_TYPE = {"aaxray", "show-ore-type"};
+    public static final String[] MINEARUA_WHILELIST = {"mine-arua", "block-whitelist"};
+
     public static final Config MINE_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/mine.yml","mine settings")
         .defaultVal(-1,MINE_BOT_MINE_MIN_DY)
         .defaultVal(6,MINE_BOT_MINE_MAX_DY)
         .defaultVal(false,MINE_BOT_DOWN_PRIORITY)
         .defaultVal(30,MINE_BOT_MAX_INSTANT_MINE)
         .defaultVal(true,MINE_ENABLE_FAKE_INSTANT_BREAK)
+        .defaultVal(BypassMode.NO_BYPASS, MINE_BYPASS_FAST_BREAK_BYPASS_MODE)
         .defaultVal("^(cobblestone|stone|.*ore)$",MINE_BOT_WHITELIST)
         .defaultVal(5,MINE_BOT_PACKET_MULTIPLE)
         .defaultVal(1,MINE_ONEBLOCK_PACKET_MULTIPLE)
@@ -57,6 +100,18 @@ public class Configs {
         .defaultVal(0,MINE_FASTBREAK_BREAKCOOLDOWN)
         .defaultVal(5.5,MINE_FASTBREAK_REACH)
         .defaultVal(false,MINE_BOT_RIGHT_CLICK)
+        .defaultVal(false, XRAY_ENABLE)
+        .defaultVal(false, XRAY_ENABLE_SEED)
+        .defaultVal(false, XRAY_ENABLE_SIMPLE)
+        .defaultVal(6, XRAY_ENABLE_SEED_RADIUS)
+        .defaultVal(false, XRAY_RENDER_FAKE_ORE)
+        .defaultVal(false, XRAY_MAKE_CLIENTSIDE_ORE)
+        .defaultVal(false, MINE_BOT_DURABILITY_PROTECT)
+        .defaultVal(false, XRAY_OVERRIDE_SERVER_ORES)
+        .defaultVal("^(diamond)$", XRAY_ORE_TYPE)
+        .defaultVal(false, MINE_BOT_LEGAL_MODE)
+        .defaultVal(false, MINE_FASTBREAK_SAME_BLOCK_OPTIMIZE)
+        .defaultVal("^(.*bed)$", MINEARUA_WHILELIST)
         .save();
     public static final String[] CHAT_HELPER_CACHE={"chat-helper","cached"};
     public static final String[] CHAT_HELPER_PERIOD={"chat-helper","period"};
@@ -67,6 +122,11 @@ public class Configs {
     public static final String[] CHAT_HELPER_CLIENT_GIVE = {"chat-helper","client-side-give"};
     public static final String[] CHAT_HELPER_CHECK_MESSAGE_LENGTH = {"chat-helper","check-chat-len"};
     public static final String[] CHAT_HELPER_CHECK_COMMAND_LENGTH = {"chat-helper","check-command-len"};
+    public static final String[] CHAT_HELPER_CHAT_HISTORY_LENGTH = {"chat-helper", "chat-history-len"};
+    public static final String[] CHAT_HELPER_COMBINE_SAME_CHAT = {"chat-helper", "combine-same-chat"};
+    public static final String[] CHAT_HELPER_ADD_HISTORY_WHE_CLOSE = {"chat-helper", "add-to-history-when-close"};
+    public static final String[] CHAT_HELPER_DO_NOT_SEND_EMPTY_MESSAGE = {"chat-helper", "dont-send-empty-message"};
+    public static final String[] CHAT_HELPER_CHAT_BOX_IN_GUI = {"chat-helper", "chat-box-in-gui"};
     public static final Config CHAT_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/chat.yml","chat settings")
         .defaultVal("",CHAT_HELPER_CACHE)
         .defaultVal(20,CHAT_HELPER_PERIOD)
@@ -77,34 +137,66 @@ public class Configs {
         .defaultVal(false, CHAT_HELPER_CLIENT_GIVE)
         .defaultVal(256, CHAT_HELPER_CHECK_MESSAGE_LENGTH)
         .defaultVal(32760, CHAT_HELPER_CHECK_COMMAND_LENGTH)
+        .defaultVal(-1, CHAT_HELPER_CHAT_HISTORY_LENGTH)
+        .defaultVal(false, CHAT_HELPER_COMBINE_SAME_CHAT)
+        .defaultVal(false, CHAT_HELPER_ADD_HISTORY_WHE_CLOSE)
+        .defaultVal(false, CHAT_HELPER_DO_NOT_SEND_EMPTY_MESSAGE)
+        .defaultVal(false, CHAT_HELPER_CHAT_BOX_IN_GUI)
         .save();
 
     public static final String[] RENDER_DETECT_SPAWN_WHITELIST={"detect-entity","spawn-whitelist"};
     public static final String[] RENDER_LOG_ON_SCREEN= {"detect-entity", "log-to-chat"};
+    public static final String[] RENDER_RAYTRACE_ENTITY = {"detect-entity", "ray-trace-entity"};
+    public static final String[] RENDER_ENTITY_HITBOX = {"detect-entity", "render-trace-hit-box"};
     public static final String[] RENDER_NO_EFFECT = {"render","no-effect"};
     public static final String[] RENDER_NIGHTVISION = {"render","nightvision"};
     public static final String[] RENDER_NO_EFFECT_FORCE = {"render","eff-setting","force-no"};
     public static final String[] RESOURCE_IGNORE_SERVER = {"resource","server","ignore-server-request"};
     public static final String[] CAL_FIREBALL_TRACE = {"detect-entity","cal-fireball"};
     public static final String[] CAL_PROJECTILE_TRACE = {"detect-entity","cal-projectile"};
+    public static final String[] RENDER_FIREBALL_TRACE = {"detect-entity", "render-fireball"};
+    public static final String[] RENDER_PROJECTILE_TRACE = {"detect-entity","render-projectile"};
     public static final String[] RENDER_REJECT_WURST = {"render","disable-wurst-hud"};
-    public static final String[] RESOURCE_IGNORE_RESOUCE_LOCK = {"resouce", "server", "can-move-serverpack"};
+    public static final String[] RENDER_DETECT_PLAYER_IO = {"detect-entity", "log-player-io"};
+    public static final String[] RENDER_ENHANCED_DEBUG_HUD = {"render", "enhanced-debug-hud"};
     public static final Config RENDER_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/render.yml","render settings")
         .defaultVal("player,wither",RENDER_DETECT_SPAWN_WHITELIST)
         .defaultVal(false, RENDER_LOG_ON_SCREEN)
+        .defaultVal(false, RENDER_RAYTRACE_ENTITY)
+        .defaultVal(false, RENDER_ENTITY_HITBOX)
         .defaultVal(true,RENDER_NO_EFFECT)
         .defaultVal(true,RENDER_NIGHTVISION)
         .defaultVal(false,RENDER_NO_EFFECT_FORCE)
         .defaultVal(false,RESOURCE_IGNORE_SERVER)
-        .defaultVal(true,CAL_FIREBALL_TRACE)
+        .defaultVal(false,CAL_FIREBALL_TRACE)
         .defaultVal(false, CAL_PROJECTILE_TRACE)
+        .defaultVal(false, RENDER_FIREBALL_TRACE)
+        .defaultVal(false, RENDER_PROJECTILE_TRACE)
         .defaultVal(false,RENDER_REJECT_WURST)
+        .defaultVal(false, RENDER_DETECT_PLAYER_IO)
+        .defaultVal(true, RENDER_ENHANCED_DEBUG_HUD)
         .save();
     public static final String[] TEST_ARGS1={"test","arg1"};
     public static final String[] TEST_ARGS2={"test","arg2"};
+    public static final String[] TEST_MOVEMENT_TEST = {"test", "movement-test-1"};
+    public static final String[] CLIENT_BRAND_NAME ={"other", "client-brand-name"};
+    public static final String[] IGNORE_PROTOCOL_ERROR = {
+        "other", "no-disconnect-on-network-error"
+    };
+    public static final String[] PORTAL_GUI = {
+        "other", "keep-gui-open-on-portal"
+    };
+    public static final String[] FAKE_SPRINT_TEST = {
+        "test", "fake-sprint"
+    };
     public static final Config TEST_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/test.yml","test settings")
         .defaultVal(480000,TEST_ARGS1)
         .defaultVal(461,TEST_ARGS2)
+        .defaultVal(false, TEST_MOVEMENT_TEST)
+        .defaultVal("", CLIENT_BRAND_NAME)
+        .defaultVal(false, IGNORE_PROTOCOL_ERROR)
+        .defaultVal(true, PORTAL_GUI)
+        .defaultVal(false, FAKE_SPRINT_TEST)
         .save();
 
     public static final String[] COMBAT_INTERVEL={"attack","cancel-interval"};
@@ -115,23 +207,64 @@ public class Configs {
     public static final String[] ATTACK_WHITELISTED={"att-bot","whitelist"};
     public static final String[] ATTACK_PLAYER_FRIENDLIST = {"att-bot","friends"};
     public static final String[] ATTACK_NAMED = {"att-bot","att-named"};
+    public static final String[] ATTACK_TEAMMATE = {"att-bot", "att-teammate"};
     public static final String[] AUTOATTACK_DO_INTERVEL_WEAPON = {"att-bot","respect-cooldown","weapon"};
     public static final String[] AUTOATTACK_DO_INTERVEL_HAND = { "att-bot","respect-cooldown","hand"};
     public static final String[] AUTOATTACK_ONCE_MAX = {"att-bot","max-at-once"};
+    public static final String[] COMBAT_TP_REACH = {"att-bot", "tp-reach"};
     public static final String[] COMBAT_LEGAL_MOD = {"att-bot", "legal-mode"};
+    public static final String[] COMBAT_MACE_HACK = {"att-bot", "mace-height-multiply"};
+    public static final String[] COMBAT_OPPOSITE_ATTACK_MULTIPLY = {"att-bot", "opposite-attack-multiply"};
+    public static final String[] COMBAT_PLAYER_ATTACK_MULTIPLY = {"att-bot", "player-attack-multiply"};
+    public static final String[] COMBAT_EXACT_ATTACK = {"att-bot", "exact-tp"};
+    public static final String[] COMBAT_EXACT_ATTACK_SHIELD = {"att-bot", "exact-tp-anti-shield"};
+    public static final String[] COMBAT_LEGAL_TARGETTING = {"att-bot", "legal-targeting"};
+    public static final String[] COMBAT_CRITIC = {"att-bot", "critic"};
+    public static final String[] COMBAT_RENDER_TARGET = {"att-bot", "render-target"};
+    public static final String[] COMBAT_BOW_TP_TOGGLE = {"projectile", "toggle-tp-accelerate"};
+    public static final String[] COMBAT_PROJECTILE_TP = {"projectile", "tp-accelerate"};
+    public static final String[] COMBAT_BOW_EXACT_TP = {"projectile", "tp-accelerate-exact-tp"};
+    //this is a key error, don't worry about that
+    public static final String[] COMBAT_BOW_AIM_LEGALLY = {"projectile", "bow-tp-legal"};
+    public static final String[] COMBAT_BOW_TICKS_PREDICT = {"projectile", "bow-movement-tick-predict"};
+    public static final String[] COMBAT_BOW_LEGAL_TARGETTING = {"projectile", "legal-targeting"};
+    public static final String[] COMBAT_USE_ITEM_AUTOAIM = {"projectile", "use-item-auto-aim-whitelist"};
+    public static final String[] COMBAT_PEARL_TP = {"projectile", "pearl-tp"};
+    public static final String[] COMBAT_TRIDENT_AUTO_DUPE = {"projectile", "trident-auto-dupe"};
+    public static final String[] COMBAT_PROJECTILE_USE_1_20_4_RULES = {"projectile", "version-lower-than-121"};
     public static final Config COMBAT_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/combat.yml","combat settings")
         .defaultVal(false,COMBAT_INTERVEL)
         .defaultVal(false,COMBAT_RIDING)
         .defaultVal("^(monster|!endermite)$",ATTACK_WHITELISTED)
         .defaultVal("^(.*NPC.*|matl114)$",ATTACK_PLAYER_FRIENDLIST)
-        .defaultVal(6.0f,ATTACK_RANGE)
+        .defaultVal(1.0f,ATTACK_RANGE)
         .defaultVal(true,COMBAT_SHIELDING)
         .defaultVal(true,AUTOATTACK_DO_INTERVEL_WEAPON)
         .defaultVal(false,AUTOATTACK_DO_INTERVEL_HAND)
         .defaultVal(false,ATTACK_NAMED)
+        .defaultVal(true, ATTACK_TEAMMATE)
         .defaultVal(20,AUTOATTACK_ONCE_MAX)
         .defaultVal(true, COMBAT_LEGAL_MOD)
         .defaultVal(false, COMBAT_AUTOSHIELD)
+        .defaultVal(0.0d, COMBAT_TP_REACH)
+        .defaultVal(0.0d, COMBAT_MACE_HACK)
+        .defaultVal(114514.0D, COMBAT_OPPOSITE_ATTACK_MULTIPLY)
+        .defaultVal(0.0D, COMBAT_PLAYER_ATTACK_MULTIPLY)
+        .defaultVal(false, COMBAT_EXACT_ATTACK)
+        .defaultVal(false, COMBAT_EXACT_ATTACK_SHIELD)
+        .defaultVal(false, COMBAT_CRITIC)
+        .defaultVal(false, COMBAT_RENDER_TARGET)
+        .defaultVal( 0.0D, COMBAT_PROJECTILE_TP)
+        .defaultVal(false, COMBAT_BOW_EXACT_TP)
+        .defaultVal(true, COMBAT_BOW_AIM_LEGALLY)
+        .defaultVal(1.0D, COMBAT_BOW_TICKS_PREDICT)
+        .defaultVal(LegalTargetingMode.DELAY_MOVEMENT, COMBAT_LEGAL_TARGETTING)
+        .defaultVal(LegalTargetingMode.DELAY_MOVEMENT, COMBAT_BOW_LEGAL_TARGETTING)
+        .defaultVal("^(LOGITECH_LASER_GUN)$", COMBAT_USE_ITEM_AUTOAIM)
+        .defaultVal(false, COMBAT_BOW_TP_TOGGLE)
+        .defaultVal(false, COMBAT_PEARL_TP)
+        .defaultVal(false, COMBAT_TRIDENT_AUTO_DUPE)
+        .defaultVal(false, COMBAT_PROJECTILE_USE_1_20_4_RULES)
         .save();
 
     public static final String[] INV_CLICK_LIMIT={"inventory","packet-limit"};
@@ -149,9 +282,30 @@ public class Configs {
     public static final String[] MOVE_SPEED_FLY_VAL = {"move-speed","fly-speed"};
     public static final String[] MOVE_SPEED_FLY_VAL_CREATIVE = {"move-speed","fly-speed-creative"};
     public static final String[] QUICK_MOVE_IGNORE_COLLISION = {"quick-move","ignore-move-collision"};
-    public static final String[] MOVE_SPEED_NO_SLOW_DOWN = {"move-speed","no-slowdown"};
+   // public static final String[] MOVE_SPEED_NO_SLOW_DOWN = {"move-speed","no-slowdown"};
+    public static final String[] MOVE_SPEED_NO_SLOW_DOWN_SNEAK = {"move-speed","no-slowdown", "when-sneak"};
+    public static final String[] MOVE_SPEED_NO_SLOW_DOWN_USEITEM = {"move-speed","no-slowdown", "when-use-item"};
+//    public static final String[] MOVE_SPEED_NO_SLOW_DOWN_BLOCK_FRAC = {"move-speed","no-slowdown", "when-walk-on-block"};
+    public static final String[] MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SLOW = {"move-speed","no-slowdown", "when-with-block"};
+    public static final String[] MOVE_SPEED_NO_SLOW_DOWN_BLOCK_FRAC = {"move-speed","no-slowdown", "when-on-block"};
+    public static final String[] MOVE_SPEED_NO_SLOW_DOWN_BLOCK_IN = {"move-speed","no-slowdown", "when-in-block"};
+    public static final String[] MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SPECIAL = {"move-speed","no-slowdown", "when-special-block"};
+    public static final String[] MOVE_LOG_RESYNC_PACKETS = {"move-safety", "log-resync-packets"};
     public static final String[] MOVE_CHECK_SETBACK = {"move-safety","check-setback-packets"};
-    public static final String[] MOVE_NOFALL = {"move-safety", "no-fall"};
+    public static final String[] MOVE_NOFALL = {"move-safety", "no-fall", "toggle"};
+    public static final String[] MOVE_NOFALL_MODE = {"move-safety", "no-fall", "bypass-mode"};
+
+    public static final String[] MOVE_COMPATE_HIGHER_VERSION = {"move-safety", "disable-stepheight-feature"};
+    public static final String[] MOVE_AUTO_TOGGLE_SPRINT = {"move-speed","sprint", "legal-auto-sprint"};
+    public static final String[] MOVE_ALL_DIRECTION_SPRINT = {"move-speed", "sprint", "all-direction-sprint"};
+    public static final String[] MOVE_SPRINT_BYPASS_MODE = {"move-speed", "sprint", "bypass-mode"};
+
+    public static final String[] MOVE_TICK_TIMER = {"move-speed", "timer"};
+    public static final String[] MOVE_UNBREAKABLE_ELYTRA = {"move-safety", "unbreakable-elytra"};
+    public static final String[] MOVE_ENHANCED_STEPHEIGHT = {"move-safety", "enhance-stepheight"};
+    //todo test it in anticheat environment
+    public static final String[] MOVE_DISABLE_SETBACK_VELOCITY_RESET = {"move-safety", "disable-setback-velocity-reset"};
+    public static final String[] MOVE_LEGAL_MODE_MOVE_CORRECTION = {"move-safety", "legal-mode-move-correction"};
     public static final Config MOV_CONFIG =ConfigLoader.loadExternalConfig("sfhelper-configs/mov.yml","mov settings")
         .defaultVal(9.5d, MOV_MAX_DISTANCE)
         .defaultVal(false, MOVE_SPEED_OVERRIDE_WALK)
@@ -160,9 +314,27 @@ public class Configs {
         .defaultVal(0.8d, MOVE_SPEED_FLY_VAL_CREATIVE)
         .defaultVal(0.8d, MOVE_SPEED_FLY_VAL)
         .defaultVal(false,QUICK_MOVE_IGNORE_COLLISION)
-        .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN)
+        .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_SNEAK)
+        .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_USEITEM)
+//        .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_FRAC)
+        .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SLOW)
+        .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_FRAC)
+        .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_IN)
+        .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SPECIAL)
         .defaultVal(false, MOVE_CHECK_SETBACK)
         .defaultVal(false, MOVE_NOFALL)
+        .defaultVal(BypassMode.NO_BYPASS, MOVE_NOFALL_MODE)
+        .defaultVal(false, MOVE_COMPATE_HIGHER_VERSION)
+        .defaultVal(false, MOVE_AUTO_TOGGLE_SPRINT)
+        .defaultVal(false, MOVE_ALL_DIRECTION_SPRINT)
+        .defaultVal(BypassMode.NO_BYPASS, MOVE_SPRINT_BYPASS_MODE)
+        .defaultVal(0, MOVE_TICK_TIMER)
+        .defaultVal(false, MOVE_UNBREAKABLE_ELYTRA)
+        .defaultVal(false, MOVE_LOG_RESYNC_PACKETS)
+        .defaultVal(false, MOVE_ENHANCED_STEPHEIGHT)
+        .defaultVal(false, MOVE_DISABLE_SETBACK_VELOCITY_RESET)
+        //todo need test
+        .defaultVal(true, MOVE_LEGAL_MODE_MOVE_CORRECTION)
         .save();
     public static final String[] HTTP_PROXY_SERVER = {"proxy-server","host"};
     public static final String[] HTTP_PROXY_PORT = {"proxy-server", "port"};
@@ -183,11 +355,19 @@ public class Configs {
 
     public static final String[] INTERACT_NO_COOLDOWN = {"interact-fix", "cool-down-rewrite"};
     public static final String[] INTERACT_WHEN_RIDING = {"interact-fix", "allow-ride-interact"};
+    public static final String[] INTERACT_SCAFFOLD_LEGAL = {"interact-scaffold", "legal-mode"};
+    public static final String[] INTERACT_SCAFFOLD_TARGET_MODE = {"interact-scaffold", "legal-targeting"};
+    public static final String[] INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE = {"interact-scaffold", "scaffold-cooldown-override"};
     public static final Config INTERACT_CONFIG = ConfigLoader.loadExternalConfig(
             "sfhelper-configs/interact.yml","interact settings"
     )
         .defaultVal(-1, INTERACT_NO_COOLDOWN)
         .defaultVal(false, INTERACT_WHEN_RIDING)
+        //todo track to preset command
+        .defaultVal(false, INTERACT_SCAFFOLD_LEGAL)
+        .defaultVal(LegalTargetingMode.DELAY_MOVEMENT, INTERACT_SCAFFOLD_TARGET_MODE)
+        .defaultVal(-1, INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE)
+        //
         .save();
 
 
@@ -196,11 +376,13 @@ public class Configs {
     public static final String[] SLIMEFUN_RECIPE_SAVE = {"recipe-record","save-data"};
     public static final String[] SLIMEFUN_RECIPE_TITLE = {"recipe-record","rp-title"};
     public static final String[] SLIMEFUN_MULTIBLOCK_MATCHER = {"recipe-record", "multiblock-pattern"};
+    public static final String[] SLIMEFUN_LOCK_EXISTING = {"recipe-record", "lock-existing"};
     public static final String[] SLIMEFUN_MULTIBLOCK_CLICKER = {"multi-block-clicker","enable"};
     public static final String[] SLIMEFUN_MB_RATE = {"multi-block-clicker","rate"};
     public static final String[] SLIMEFUN_MB_LEGAL = {"multi-block-clicker","bypass-anticheat"};
-    public static final String[] SLIMEFUN_MATCH_UP_AND_DOWN = {"multi-block-clicker","only-when-at-middle"};
-    public static final String[] SLIMEFUN_AUTO_CLICK_FACING = {"multi-block-clicker","auto-click-facing"};
+    public static final String[] SLIMEFUN_MB_LEGAL_MODE = {"multi-block-clicker", "bypass-targeting-mode"};
+//    public static final String[] SLIMEFUN_MATCH_UP_AND_DOWN = {"multi-block-clicker","only-when-at-middle"};
+//    public static final String[] SLIMEFUN_AUTO_CLICK_FACING = {"multi-block-clicker","auto-click-facing"};
     public static final Config SLIMEFUN_CONFIG = ConfigLoader.loadExternalConfig(
         "sfhelper-configs/slimefun.yml", "slimefun settings"
     )
@@ -211,11 +393,20 @@ public class Configs {
         .defaultVal("^(多方块结构|MultiBlock)$", SLIMEFUN_MULTIBLOCK_MATCHER)
         .defaultVal(false, SLIMEFUN_MULTIBLOCK_CLICKER)
         .defaultVal(12, SLIMEFUN_MB_RATE)
-        .defaultVal(true, SLIMEFUN_MATCH_UP_AND_DOWN)
-        .defaultVal(false,SLIMEFUN_AUTO_CLICK_FACING)
+//        .defaultVal(true, SLIMEFUN_MATCH_UP_AND_DOWN)
+//        .defaultVal(false,SLIMEFUN_AUTO_CLICK_FACING)
         .defaultVal(false, SLIMEFUN_MB_LEGAL)
+        .defaultVal(LegalTargetingMode.DELAY_MOVEMENT, SLIMEFUN_MB_LEGAL_MODE)
+        .defaultVal(false, SLIMEFUN_LOCK_EXISTING)
         .save();
-
+    public static final String[] SEED_MAP = new String[]{"seed", "seed-cache"};
+    public static final Config INTERNAL_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/internal.yml", "internal settings")
+        .defaultVal("{}", SEED_MAP)
+        .save()
+        ;
+    public static final Config HOTKEY_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/hotkeys.yml", "hotkey settings")
+        .save()
+        ;
     static{
        //none
     }

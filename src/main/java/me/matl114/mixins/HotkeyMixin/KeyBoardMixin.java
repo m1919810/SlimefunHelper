@@ -20,4 +20,11 @@ public abstract class KeyBoardMixin {
             ci.cancel();
         }
     }
+
+    @Inject(method = "onChar", cancellable = true, at = @At(value = "FIELD", target = "Lnet/minecraft/client/Keyboard;client:Lnet/minecraft/client/MinecraftClient;", ordinal = 0))
+    private void onChar(long window, int codePoint, int modifiers, CallbackInfo ci){
+        if(SimpleInputManager.getInstance().onCharTyped(codePoint, modifiers)){
+            ci.cancel();
+        }
+    }
 }

@@ -52,6 +52,10 @@ public abstract class ChestScreenMixin  extends HandledScreen<GenericContainerSc
     public ClientWorld getWorld(){
         return this.world;
     }
+    @Unique
+    public HandledScreen<?> castHandled(){
+        return this;
+    }
 
     @Unique
     private ClientWorld world;

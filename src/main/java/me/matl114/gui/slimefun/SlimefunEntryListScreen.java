@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
+    // optimize
+
     protected int entryPerPage;
 
     List<T> recipeEntries;
@@ -23,6 +25,7 @@ public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
     private static final int LABEL_HEIGHT = 64;
     private static final int LABEL_WIDTH = 144;
     private static final int LABEL_MIN_DISTANCE = 4;
+
     protected void resetPage(){
         this.pageSwitcher.updateMaxPage(Math.max(1, 1+((recipeEntries.size() -1) / entryPerPage) ));
         int page = this.pageSwitcher.getPage();
@@ -63,6 +66,9 @@ public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
         }
         resetPage();
         //calculate the maxPage;
+    }
+    protected int getPageContentHeight(){
+        return this.backgroundHeight - LABEL_OCCUPIED - LABEL_MIN_DISTANCE;
     }
 
     public static SlimefunEntryListScreen<SlimefunTasks.RecipeEntry> recipeEntry(List<SlimefunTasks.RecipeEntry> list){
