@@ -76,7 +76,7 @@ public class CombatTasks {
     private static final Config.EnumRef<Configs.LegalTargetingMode> attackBypassMode = Configs.COMBAT_CONFIG.getEnum(Configs.COMBAT_LEGAL_TARGETTING);
     private static final Config.FlagRef critic = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_CRITIC);
     private static final Config.FlagRef renderAttackEntity = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_RENDER_TARGET);
-
+    @ApiMethod
     public static double getAttackRange(){
 
         double d=attackRange.get();
@@ -167,14 +167,16 @@ public class CombatTasks {
     private static boolean considerAntiShield(Entity target){
         return exactAntiShield.get() && target instanceof LivingEntity livingEntity && livingEntity.isUsingItem() && livingEntity.getActiveItem().getItem() instanceof ShieldItem;
     }
+    @ApiMethod
     public static List<Entity> getAttackableEntitiesForPlayer(){
         return StreamSupport.stream( mc.world.getEntities().spliterator(),true).filter(CombatTasks::isAttackable).filter(CombatTasks::isRangeAttackable).filter(CombatTasks::isAttackablePlayerOrElse)
                 .collect(Collectors.toCollection(ArrayList::new));
     }
-    public static boolean canPlayerDirectlySee(Entity entity){
+    private static boolean canPlayerDirectlySee(Entity entity){
         //横向距离小于300
         return entity.getPos().subtract(mc.player.getPos()).horizontalLengthSquared() < 90000 && !RaycastUtils.raycastAnyBlock(mc.player, mc.player.getEyePos(), entity.getEyePos());
     }
+    @ApiMethod
     public static List<Entity> getBowAimableEntitiesForPlayer(){
         return StreamSupport.stream( mc.world.getEntities().spliterator(),true).filter(CombatTasks::isAttackable)
             .filter(CombatTasks::isAttackablePlayerOrElse)
@@ -251,8 +253,8 @@ public class CombatTasks {
             ClientPlayerAccess.of(mc.player).resyncSprint();
         }
     }
-
-    private static boolean attackEntity(PlayerEntity player,Entity target){
+    @ApiMethod
+    public static boolean attackEntity(PlayerEntity player,Entity target){
         //already targeted at
        // Debug.chat("Execute on entity", target);
         final boolean criticSprint = critic.get() && player.isSprinting();
@@ -775,6 +777,7 @@ public class CombatTasks {
     //todo add Auto crystal
     //return whether the attack will execute delay
     //todo: add attack target render, render the attackTarget if attack is on, refresh every two ticks
+    @ApiMethod
     public static Entity searchAttackEntity(boolean auto){
         if(mc.player == null)return null;
         //when tp reach, also attack the targeted entity first
@@ -852,7 +855,7 @@ public class CombatTasks {
 
 
     //todo: add render to best Entity when holding weapon
-
+    @ApiMethod
     public static boolean autoAttackBest(boolean auto){
         PlayerEntity player=mc.player;
         if(player!=null&&mc.world!=null){
@@ -988,6 +991,7 @@ public class CombatTasks {
 //    private static final Config.FlagRef bowAutoAim = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_BOW_AUTOAIM);
     private static final Config.FlagRef bowExact = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_BOW_EXACT_TP);
     // bow tp
+    @ApiMethod
     public static Entity searchBowAimEntity(boolean force, boolean direct){
         if(mc.player == null)return null;
         //when tp reach, also attack the targeted entity first

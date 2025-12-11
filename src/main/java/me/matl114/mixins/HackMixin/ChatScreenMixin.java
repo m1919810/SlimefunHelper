@@ -22,6 +22,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.StringHelper;
+import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -31,6 +32,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Environment(EnvType.CLIENT)
@@ -62,6 +64,8 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     private static final Config.FlagRef changeInputLimit = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_IGNORE_INPUT_LIMIT);
     @Unique
     private static final Config.FlagRef escapeTrimChatMessage = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_ESCAPE_TRIM);
+    @Unique
+    private static final Config.FlagRef escapeNormalize = Configs.CHAT_CONFIG.getBoolean(Configs.CHAT_HELPER_ESCAPE_NORMALIZE_SPACE);
     @Inject(method = "init",at = @At("RETURN"))
     private void onInitAdd(CallbackInfo ci) {
         //change input maxLen to 32768, so commands can be executed
@@ -216,7 +220,9 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
         if(stringEvent.isCancelled()){
             ci.cancel();
         }
-        chatTextRef.set(stringEvent.context());
+        if(!Objects.equals(stringEvent.context, chatText)){
+            chatTextRef.set(stringEvent.context());
+        }
     }
 
     @Redirect(method = "normalize", at = @At(value = "INVOKE", target = "Ljava/lang/String;trim()Ljava/lang/String;"))
@@ -230,6 +236,9 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
 
     @Redirect(method = "normalize", at = @At(value = "INVOKE", target = "Lorg/apache/commons/lang3/StringUtils;normalizeSpace(Ljava/lang/String;)Ljava/lang/String;"))
     private String cancelNormalize(String actualChar){
+        if(!escapeNormalize.get()){
+            return StringUtils.normalizeSpace(actualChar);
+        }
         return actualChar;
     }
 

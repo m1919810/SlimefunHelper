@@ -1,10 +1,16 @@
 package me.matl114.jsApi;
 
+import me.matl114.utils.ApiMethod;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
+@ApiMethod
 public class DataHelper {
+    public static Vec3d createVec(double x, double y, double z) {
+        return new Vec3d(x, y, z);
+    }
+
     public static double getVecX(Vec3d vec3d){
         return vec3d.x;
     }
@@ -17,7 +23,7 @@ public class DataHelper {
         return vec3d.z;
     }
 
-    public static BlockPos alignToBlock(Vec3d vec3d){
+    public static BlockPos vecToBlockPos(Vec3d vec3d){
         return BlockPos.ofFloored(vec3d);
     }
 

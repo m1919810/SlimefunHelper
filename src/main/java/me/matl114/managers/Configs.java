@@ -64,8 +64,9 @@ public class Configs {
     public static final String[] MINE_BOT_DOWN_PRIORITY={"mine-bot","y-low-first"};
     public static final String[] MINE_BOT_MAX_INSTANT_MINE={"mine-bot","max-instant-mine"};
     public static final String[] MINE_ENABLE_FAKE_INSTANT_BREAK={"fast-break","use-fake-instant-break"};
-//    public static final String[] MINE_BYPASS_FAST_BREAK_CHECK = {"fast-break", "bypass-anti-cheat"};
+
     public static final String[] MINE_BYPASS_FAST_BREAK_BYPASS_MODE = {"fast-break", "bypass-mode"};
+
     public static final String[] MINE_BOT_WHITELIST={"mine-bot","whitelist"};
     public static final String[] MINE_BOT_PACKET_MULTIPLE={"mine-bot","multiple-packets"};
     public static final String[] MINE_BOT_LEGAL_MODE = {"mine-bot", "legal-mode"};
@@ -73,9 +74,12 @@ public class Configs {
     public static final String[] MINE_FASTBREAK_THRESHOLD={"fast-break","break-threshold"};
     public static final String[] MINE_FASTBREAK_BREAKCOOLDOWN={"fast-break","break-cooldown"};
     public static final String[] MINE_FASTBREAK_REACH={"fast-break","reach-distance"};
+    public static final String[] MINE_DOUBLE_BREAK = {"fast-break", "double-break"};
     public static final String[] MINE_BOT_RIGHT_CLICK={"mine-bot","right-click"};
     public static final String[] MINE_BOT_DURABILITY_PROTECT = {"mine-bot", "durability-protect"};
     public static final String[] MINE_FASTBREAK_SAME_BLOCK_OPTIMIZE = {"fast-break", "same-block-optimize"};
+    public static final String[] MINE_RENDER_CURRENT_MINING_BLOCK = {"fast-break", "render-current-break-pos"};
+    public static final String[] FAST_BREAK_GRIMAC_THRESHOLD = {"fast-break", "grim-punishment-threshold"};
     public static final String[] XRAY_ENABLE = {"aaxray", "enable"};
     public static final String[] XRAY_ENABLE_SIMPLE = {"aaxray", "enable-simple"};
     public static final String[] XRAY_ENABLE_SEED = {"aaxray", "enable-seed"};
@@ -99,6 +103,7 @@ public class Configs {
         .defaultVal(0.72d,MINE_FASTBREAK_THRESHOLD )
         .defaultVal(0,MINE_FASTBREAK_BREAKCOOLDOWN)
         .defaultVal(5.5,MINE_FASTBREAK_REACH)
+        .defaultVal(false, MINE_DOUBLE_BREAK)
         .defaultVal(false,MINE_BOT_RIGHT_CLICK)
         .defaultVal(false, XRAY_ENABLE)
         .defaultVal(false, XRAY_ENABLE_SEED)
@@ -111,7 +116,9 @@ public class Configs {
         .defaultVal("^(diamond)$", XRAY_ORE_TYPE)
         .defaultVal(false, MINE_BOT_LEGAL_MODE)
         .defaultVal(false, MINE_FASTBREAK_SAME_BLOCK_OPTIMIZE)
+        .defaultVal(false, MINE_RENDER_CURRENT_MINING_BLOCK)
         .defaultVal("^(.*bed)$", MINEARUA_WHILELIST)
+        .defaultVal(750, FAST_BREAK_GRIMAC_THRESHOLD)
         .save();
     public static final String[] CHAT_HELPER_CACHE={"chat-helper","cached"};
     public static final String[] CHAT_HELPER_PERIOD={"chat-helper","period"};
@@ -119,6 +126,8 @@ public class Configs {
     public static final String[] CHAT_HELPER_SPECIALCHARS={"chat-helper","special-chars"};
     public static final String[] CHAT_HELPER_IGNORE_INPUT_LIMIT = {"chat-helper","ignore-chat-len-limit"};
     public static final String[] CHAT_HELPER_ESCAPE_TRIM = {"chat-helper","escape-trim-chat"};
+    public static final String[] CHAT_HELPER_ESCAPE_NORMALIZE_SPACE = {"chat-helper", "escape-normalize-space-chat"};
+
     public static final String[] CHAT_HELPER_CLIENT_GIVE = {"chat-helper","client-side-give"};
     public static final String[] CHAT_HELPER_CHECK_MESSAGE_LENGTH = {"chat-helper","check-chat-len"};
     public static final String[] CHAT_HELPER_CHECK_COMMAND_LENGTH = {"chat-helper","check-command-len"};
@@ -134,13 +143,14 @@ public class Configs {
         .defaultVal("\uD83D\uDE21\uD83E\uDD13\uD83E\uDD75\uD83D\uDE2D\uD83E\uDD21\uD83D\uDE0B\uD83E\uDD24\uD83D\uDE0A\uD83D\uDE04\uD83E\uDD72\uD83D\uDE01\uD83D\uDC49\uD83D\uDC46\uD83E\uDD14\uD83D\uDE0E\uD83D\uDC0D\uD83D\uDE05♂♀",CHAT_HELPER_SPECIALCHARS)
         .defaultVal(true, CHAT_HELPER_IGNORE_INPUT_LIMIT)
         .defaultVal(false, CHAT_HELPER_ESCAPE_TRIM)
+        .defaultVal(false, CHAT_HELPER_ESCAPE_NORMALIZE_SPACE)
         .defaultVal(false, CHAT_HELPER_CLIENT_GIVE)
         .defaultVal(256, CHAT_HELPER_CHECK_MESSAGE_LENGTH)
         .defaultVal(32760, CHAT_HELPER_CHECK_COMMAND_LENGTH)
         .defaultVal(-1, CHAT_HELPER_CHAT_HISTORY_LENGTH)
         .defaultVal(false, CHAT_HELPER_COMBINE_SAME_CHAT)
         .defaultVal(false, CHAT_HELPER_ADD_HISTORY_WHE_CLOSE)
-        .defaultVal(false, CHAT_HELPER_DO_NOT_SEND_EMPTY_MESSAGE)
+        .defaultVal(true, CHAT_HELPER_DO_NOT_SEND_EMPTY_MESSAGE)
         .defaultVal(false, CHAT_HELPER_CHAT_BOX_IN_GUI)
         .save();
 

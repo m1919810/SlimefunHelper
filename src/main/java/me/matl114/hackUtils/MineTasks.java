@@ -47,6 +47,7 @@ import net.minecraft.util.math.*;
 import net.minecraft.util.math.intprovider.ConstantIntProvider;
 import net.minecraft.util.math.intprovider.IntProvider;
 import net.minecraft.util.math.random.ChunkRandom;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.RaycastContext;
@@ -397,6 +398,71 @@ public class MineTasks {
         CACHED_ONE_BLOCK=null;
     }
 
+    private static final Config.FlagRef renderMine = Configs.MINE_CONFIG.getBoolean(Configs.MINE_RENDER_CURRENT_MINING_BLOCK);
+    public static void renderMineBlockTask(Event<MatrixStack> renderEvent){
+        RenderUtils.startDrawVirtual(renderEvent.context);
+        try{
+            if(renderMine.get() && mc.interactionManager != null && mc.player != null && mc.world != null){
+                BlockPos blockPos =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+                Vec3d pos =Vec3d.of(blockPos);
+                //超过200格的不渲染
+                if(mc.player.getPos().squaredDistanceTo(pos) < 40000){
+                    RenderUtils.setAsShaderColor(Color.BLUE, 1.0F);
+                    RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0));
+                    float progress =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningProgress(true);
+                    if(progress > 0.0F){
+                        BlockState state = mc.world.getBlockState(blockPos);
+                        Box box;
+                        if(state.isAir()){
+                            box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+                        }else{
+                            VoxelShape shape = state.getOutlineShape(mc.world, blockPos);
+                            box = shape.isEmpty()? new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0): shape.getBoundingBox();
+                        }
+                        Vec3d vec3 = box.getMaxPos().subtract(box.getMinPos()).multiply(0.5);
+
+                        RenderUtils.setAsShaderColor(Color.YELLOW, 0.25F);
+                        Vec3d vec3d = pos.add(box.getCenter());
+                        float clamped = MathHelper.clamp(progress, 0.0F, 1.0F) ;
+                        RenderUtils.drawSolidBox(renderEvent.context.peek().getPositionMatrix(), vec3d.add(vec3.multiply(-clamped)), vec3d.add(vec3.multiply(clamped)));
+                    }
+                }
+
+
+                BlockPos doubleMinePos =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
+                if(doubleMinePos != null){
+                    Vec3d doubleMineVec = Vec3d.of(doubleMinePos);
+                    if(mc.player.getPos().squaredDistanceTo(doubleMineVec) < 40000 && !Objects.equals(doubleMineVec, pos)){
+                        float progressFail = PlayerInteractionAccess.of(mc.interactionManager).getFailBreakMiningProgress();
+                        RenderUtils.setAsShaderColor(Color.MAGENTA, 1.0F);
+                        RenderUtils.drawOutlinedBox(renderEvent.context, doubleMineVec, doubleMineVec.add(1.0, 1.0, 1.0));
+                        if(progressFail > 0.0F){
+                            BlockState state = mc.world.getBlockState(doubleMinePos);
+                            Box box;
+                            if(state.isAir()){
+                                box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+                            }else{
+                                VoxelShape shape = state.getOutlineShape(mc.world, doubleMinePos);
+                                box = shape.isEmpty()? new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0): shape.getBoundingBox();
+                            }
+                            Vec3d vec3 = box.getMaxPos().subtract(box.getMinPos()).multiply(0.5);
+
+                            RenderUtils.setAsShaderColor(Color.ORANGE, 0.25F);
+                            Vec3d vec3d = doubleMineVec.add(box.getCenter());
+                            float clamped = MathHelper.clamp(progressFail, 0.0F, 1.0F) ;
+                            RenderUtils.drawSolidBox(renderEvent.context.peek().getPositionMatrix(), vec3d.add(vec3.multiply(-clamped)), vec3d.add(vec3.multiply(clamped)));
+                        }
+                    }
+
+                }
+
+            }
+        }finally {
+            RenderUtils.stopDrawVirtual(renderEvent.context);
+        }
+
+    }
+
     //where to place it
     private static BlockPos mineAruaPos;
     public static void onMinearuaStart(){
@@ -409,6 +475,7 @@ public class MineTasks {
     public static void onMinearuaRender(ClientPlayerEntity player){
 
     }
+
 
 
     public static void onAntiXrayDemoTest(BlockPos testPos){
@@ -478,22 +545,25 @@ public class MineTasks {
         Configs.INTERNAL_CONFIG.save();
         onSeedChange(key    );
     }
+    @ApiMethod
     public static void setWorldSeed(long seed){
         seedMap.put(Utils.getWorldName(), seed);
         seedMapChange(Utils.getWorldName());
     }
+    @ApiMethod
     public static void removeWorldSeed(String world){
         seedMap.removeLong(world);
         seedMapChange(world);
     }
-
+    @ApiMethod
     public static boolean isCurrentWorldSeedInputExist(){
         return seedMap.containsKey(Utils.getWorldName());
     }
+    @ApiMethod
     public static long getCurrentWorldSeedInput(){
         return seedMap.getLong(Utils.getWorldName());
     }
-
+    @ApiMethod
     public static void validateCurrentSeed(){
         if(!validateCurrentSeedExist())return;
         long value = seedMap.getLong(Utils.getWorldName());
@@ -518,7 +588,7 @@ public class MineTasks {
             return false;
         }
     }
-
+    @ApiMethod
     public static void doSimpleDetection(){
         int distance = (int) Math.ceil( RANGE.get());
         if(distance > 1){
@@ -557,6 +627,7 @@ public class MineTasks {
             onEnableSeedOre();
         }
     }
+    @ApiMethod
     private static void onEnableSeedOre(){
         if(!validateCurrentSeedExist())return;
         try{
@@ -578,7 +649,7 @@ public class MineTasks {
         }
 
     }
-
+    @ApiMethod
     private static void onDisableSeedOre(){
         if(seedEnable.get()){
             seedEnable.set(false);
@@ -718,6 +789,15 @@ public class MineTasks {
                 }
             }
         }
+    }
+
+    @ApiMethod
+    public static Map<String, Set<Vec3d>> getSeedOres(int x, int z){
+        Map<String, Set<Vec3d>> map = new HashMap<>();
+        for (var entry: chunkSeedCache.getOrDefault(ChunkPos.toLong(x, z), Map.of()).entrySet()){
+            map.put(entry.getKey().active.getKeyName(), entry.getValue());
+        }
+        return map;
     }
 
     private static void updateChunk(Chunk chunk) {
@@ -964,6 +1044,7 @@ public class MineTasks {
         RenderMain.getRenderLayerTasks().registerHandler(MineTasks::onRenderFakeOreTasks);
 //        Listener.getGameJoinPoint().registerHandler(MineTasks::onDimensionChange);
         Listener.getWorldSwitchPoint().registerHandler(MineTasks::onDimensionChange);
+        RenderMain.getRenderLayerTasks().registerHandler(MineTasks::renderMineBlockTask);
     }
     // ====================================
     // Mojang code

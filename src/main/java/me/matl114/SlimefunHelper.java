@@ -5,6 +5,7 @@ import me.matl114.bridge.BridgeMain;
 import me.matl114.bukkitUtiils.BukkitSerializationMock;
 import me.matl114.bukkitUtiils.ItemStackHelper;
 import me.matl114.hackUtils.Tasks;
+import me.matl114.jsApi.SlimefunHelperApi;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.HotKeys;
 import me.matl114.utils.Debug;
@@ -117,6 +118,7 @@ public class SlimefunHelper implements ModInitializer {
 		Tasks.init();
 		Listener.init();
 		BridgeMain.init();
+		SlimefunHelperApi.init();
 	}
 	//todo 接下来要做什么
 	//todo 已知的冲突:

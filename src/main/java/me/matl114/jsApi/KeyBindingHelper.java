@@ -1,5 +1,6 @@
 package me.matl114.jsApi;
 
+import me.matl114.utils.ApiMethod;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
@@ -8,6 +9,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
+@ApiMethod
 public class KeyBindingHelper {
     public static GameOptions options = MinecraftClient.getInstance().options;
     private static final Map<String, KeyBinding> keyBindings = new HashMap<String, KeyBinding>();

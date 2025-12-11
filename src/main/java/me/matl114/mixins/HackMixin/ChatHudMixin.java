@@ -3,6 +3,7 @@ package me.matl114.mixins.HackMixin;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.access.ChatHudAccess;
+import me.matl114.hackUtils.RenderTasks;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
@@ -12,6 +13,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.client.gui.hud.MessageIndicator;
+import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.network.message.MessageSignatureData;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Final;
@@ -22,6 +24,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,6 +75,13 @@ public abstract class ChatHudMixin implements ChatHudAccess {
                 ci.cancel();
             }
             lineLocalRef.set(addMessageEvent.context());
+        }
+    }
+
+    @Inject(method = "isChatFocused", at = @At("HEAD"), cancellable = true)
+    private void onSleepingChatScreenUseChatHud(CallbackInfoReturnable<Boolean> cir){
+        if(RenderTasks.isScreenSleeping() && RenderTasks.getCurrentRenderingSleeping() instanceof ChatScreen chatScreen){
+            cir.setReturnValue(true);
         }
     }
 }

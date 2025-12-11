@@ -1,10 +1,12 @@
 package me.matl114.jsApi;
 
+import me.matl114.utils.ApiMethod;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 
+@ApiMethod
 public class InputHelper {
     static final MinecraftClient mc = MinecraftClient.getInstance();
     public static Keyboard getKeyboard(){

@@ -199,13 +199,15 @@ public class MovTasks {
     }
 
     //teleport module
-
+    @ApiMethod(deprecate = true)
     public static void farawayMoveTo(Vec3d vec3d, boolean updatePlayer){
         farawayMoveFromTo(mc.player.getPos(), vec3d, null, updatePlayer);
     }
+    @ApiMethod(deprecate = true)
     public static void farawayMove(Vec3d vec3d, boolean updatePlayer){
         farawayMoveFromTo(mc.player.getPos(), mc.player.getPos().add(vec3d), null, updatePlayer);
     }
+    @ApiMethod(deprecate = true)
     public static void farawayMoveFromTo(Vec3d from , Vec3d to, Boolean onGroundOverride, boolean updatePlayer){
         Vec3d vec3d = to.subtract(from);
         double len = vec3d.length();
@@ -304,10 +306,37 @@ public class MovTasks {
         }
 
     }
+    @ApiMethod
+    public static MovingContext createMovContext(double a1, double b1, double c1){
+        return MovingContext.create(new Vec3d(a1, b1, c1));
+    }
+    @ApiMethod
+    public static MovingContext createPlayerMovContext(){
+        return MovingContext.create(mc.player.getPos());
+    }
+    @ApiMethod
+    public static MovInfo createNotOnGround(Vec3d vec3){
+        return MovInfo.createNotOnGround(vec3);
+    }
+    @ApiMethod
+    public static MovInfo createMovInfo(Vec3d to){
+        return MovInfo.create(to);
+    }
+    @ApiMethod
+    public static MovInfo createMovInfo(Vec3d to, Boolean onGround, boolean updatePlayerPos, Vec2f rotationOverride){
+        return new MovInfo(to, onGround, updatePlayerPos, rotationOverride);
+    }
+
+
     public static void scheuleFarawayMove(Vec3d from, List<MovInfo> deltaMovements, boolean allowNextTick, boolean considerNoFall){
 
         scheduleFarawayMoveInternal(deltaMovements, allowNextTick, MovingContext.create(from), considerNoFall);
     }
+    @ApiMethod
+    public static void scheduleMoveSequence(MovingContext context, List<MovInfo> deltaMovements, boolean allowNextTick, boolean noFall){
+        scheduleFarawayMoveInternal(deltaMovements, allowNextTick, context, noFall);
+    }
+
     public static void scheduleFarawayMoveInternal(List<MovInfo> deltaMovements, boolean allowNextTick, MovingContext context, boolean considerNoFall){
 //        boolean shouldCheckSpeed = ! mc.player.isFallFlying() || (! mc.world.getGameRules().getBoolean(GameRules.DISABLE_ELYTRA_MOVEMENT_CHECK));
 //        double maxOnceLen = (mc.player.isFallFlying()? (10 * Math.sqrt(3)) : 10) - 1E-2;
@@ -540,6 +569,7 @@ public class MovTasks {
             return levelY - originY;
         }
     }
+    @ApiMethod
     private static boolean checkEnvironmentCollision(Entity entity, Vec3d pos, boolean ignoreChunkBorder){
         // should also consider entity collision, shit shulker
         //set position for bounding box update!
@@ -598,13 +628,14 @@ public class MovTasks {
     public static boolean doingTp = false;
     public static Vec3d LAST_TP_REQUEST ;
     public static Vec3d LAST_TP_FROM;
+    @ApiMethod
     public static void executeTp(Vec3d target, double farawayTp, boolean command, boolean considerNoFall){
         if(mc.player == null)return;
         LAST_TP_FROM = mc.player.getPos();
         LAST_TP_REQUEST = Vec3d.ZERO.add(target);
         scheduleTpInternal(MovingContext.create(mc.player.getPos()), target, farawayTp, command, false, considerNoFall);
     }
-
+    @ApiMethod
     public static List<Vec3d> generateTpSequence(Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment){
         boolean collideAtTarget = checkEnvironmentCollision(mc.player, target, true);
         if(collideAtTarget){
@@ -1058,7 +1089,7 @@ public class MovTasks {
         disableStepHeightFeature.set(stepheightFlag);
         return  useStepheight;
     }
-
+    @ApiMethod
     public static Vec3d simulateMovement(Entity entity, Vec3d from, Vec3d vec3d, boolean serverMode){
        //var simu = startSimulation();
         Entity rootEnity = entity.getRootVehicle();

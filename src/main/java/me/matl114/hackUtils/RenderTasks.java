@@ -3,7 +3,6 @@ package me.matl114.hackUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.VertexSorter;
 import com.mojang.datafixers.util.Pair;
-import lombok.Getter;
 import me.matl114.ModConfig;
 import me.matl114.access.*;
 import me.matl114.gui.basic.*;
@@ -66,7 +65,6 @@ import javax.annotation.Nonnull;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 public class RenderTasks {
@@ -515,14 +513,14 @@ public class RenderTasks {
             return (new Vec3d(x, y, z)).normalize().add(getArrowRand()).multiply((double)power);
         }
         public static ArrowPredictor of(AbstractSkeletonEntity entity, float tickDelta){
-            Vec3d originPos = new Vec3d(entity.getX(), entity.getEyeY() - 0.10000000149011612, entity.getZ()).add(RenderUtils.getLerpedPos(entity, tickDelta));
+            Vec3d originPos = new Vec3d(entity.getX(), entity.getEyeY() - 0.10000000149011612, entity.getZ()).add(RenderUtils.getLerpedDelta(entity, tickDelta));
             Vec3d facing = entity.getRotationVector();
             double d = facing.getX();
             double f = facing.getZ();
             double g = Math.sqrt(d * d + f * f);
 
 //            Debug.info(entity.getTarget());
-            Vec3d vec3d = calculateVelocity(d, facing.y +  g* 0.1  , f, 1.6F);
+            Vec3d vec3d = calculateVelocity(d, facing.y +  g * 0.2  , f, 1.6F);
             return new ArrowPredictor(originPos, vec3d, Type.SKELETON, entity);
         }
         private static float getPullProgress(int useTicks) {
@@ -682,12 +680,12 @@ public class RenderTasks {
 
     private static void renderSkeletonProjectile(MatrixStack stack, AbstractSkeletonEntity entity, float tickDelta){
         if(entity.isUsingItem() && entity.getActiveItem().getItem() instanceof BowItem){
-            drawClassicArrowTrajectory(stack, ArrowPredictor.of(entity, tickDelta).predictLine(400));
+            drawClassicArrowTrajectory(stack, ArrowPredictor.of(entity, tickDelta).predictLine(400), Color.YELLOW);
         }
     }
     private static void renderCrossbowProjectile(MatrixStack stack, CrossbowUser pillagerEntity, float tickDelta){
         if(pillagerEntity instanceof LivingEntity entity && entity.isUsingItem() && entity.getActiveItem().getItem() instanceof RangedWeaponItem crossbow){
-            drawClassicArrowTrajectory(stack,ArrowPredictor.of(pillagerEntity, tickDelta).predictLine(400) );
+            drawClassicArrowTrajectory(stack,ArrowPredictor.of(pillagerEntity, tickDelta).predictLine(400), Color.YELLOW);
             return;
         }
     }
@@ -708,13 +706,13 @@ public class RenderTasks {
         //filter on ground arrows
         if(!arrow.isOnGround() && arrow.getVelocity().lengthSquared() > 1e-5){
             //fix? velocity does not change
-            drawClassicArrowTrajectory(stack,ArrowPredictor.of(arrow, tickDelta).predictLine(400) );
+            drawClassicArrowTrajectory(stack,ArrowPredictor.of(arrow, tickDelta).predictLine(400) , Color.RED   );
         }
     }
-    private static void drawClassicArrowTrajectory(MatrixStack stack, List<Vec3d> vec3ds){
+    private static void drawClassicArrowTrajectory(MatrixStack stack, List<Vec3d> vec3ds, Color clr){
         //escape little traj
         if(vec3ds.size() <= 3)return;
-        RenderUtils.drawStripLineVirtual(stack, vec3ds, Color.RED);
+        RenderUtils.drawStripLineVirtual(stack, vec3ds, clr);
         if(!vec3ds.isEmpty()){
             Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
             RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
@@ -878,6 +876,32 @@ public class RenderTasks {
 
 
     }
+    public static class BoxOutlineRenderingTask extends TickingRenderingTask {
+        final Vec3d startVec;
+        final Vec3d endVec;
+        Color color;
+        public BoxOutlineRenderingTask(Box box, int tick, Color color){
+            this(box.getMinPos(), box.getMaxPos(), tick, color);
+        }
+        public BoxOutlineRenderingTask(Vec3d start, Vec3d end, int tick){
+            this(start, end, tick, Color.GREEN)   ;
+        }
+        public BoxOutlineRenderingTask(Vec3d start, Vec3d end, int tick, Color color){
+            super(tick);
+            this.startVec = start;
+            this.endVec = end;
+            this.color = color;
+        }
+
+        @Override
+        public void renderVirtual(MatrixStack stack) {
+            RenderUtils.setAsShaderColor(color, 1.0F);
+            RenderUtils.drawOutlinedBox(stack, startVec, endVec);
+        }
+
+
+
+    }
     public static class BoxMoveRenderingTask extends TickingRenderingTask implements VirtualRenderTask{
         final Box startBox;
         final Vec3d delta;
@@ -903,9 +927,81 @@ public class RenderTasks {
                 RenderUtils.drawLineVirtual(stack, ver, ver.add(delta), color2);
         }
     }
+    public static class LineToTargetRenderingTask extends TickingRenderingTask{
+        Vec3d vec3d;
+        Color color;
+        public LineToTargetRenderingTask(Vec3d vec3d, int tick, Color color) {
+            super(tick);
+            this.vec3d = vec3d;
+            this.color = color;
+        }
 
+        @Override
+        public void renderVirtual(MatrixStack stack) {
+            Vec3d camera = RenderUtils.getCameraPos();
+            Vec3d camerToBlock = this.vec3d.subtract(camera);
+            Vec3d cursorPos = RenderUtils.getTracerOrigin(1.0f);
+            RenderUtils.drawLineVirtualCameraCoord(stack, cursorPos, camerToBlock, color);
+        }
+    }
+    public static  class EntityRenderingTask extends TickingRenderingTask {
+        final Entity startVec;
+
+        Color color;
+        public EntityRenderingTask(Entity entity, int tick, Color color){
+            super(tick);
+            this.startVec = entity;
+            this.color = color;
+        }
+
+        @Override
+        public void renderVirtual(MatrixStack stack) {
+            RenderUtils.setAsShaderColor(color, 0.25F);
+            RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startVec.getBoundingBox().getMinPos(), startVec.getBoundingBox().getMaxPos());
+        }
+
+
+
+    }
+    public static class EntityOutlinelineRenderingTask extends TickingRenderingTask {
+        final Entity startVec;
+
+        Color color;
+
+        public EntityOutlinelineRenderingTask(Entity entity, int tick, Color color){
+            super(tick);
+            this.startVec = entity;
+            this.color = color;
+        }
+
+        @Override
+        public void renderVirtual(MatrixStack stack) {
+            RenderUtils.setAsShaderColor(color, 1.0F);
+            RenderUtils.drawOutlinedBox(stack, startVec.getBoundingBox().getMinPos(), startVec.getBoundingBox().getMaxPos());
+        }
+
+
+
+    }
+    public static class LineToEntityRenderingTask extends TickingRenderingTask{
+        Entity vec3d;
+        Color color;
+        public LineToEntityRenderingTask(Entity vec3d, int tick, Color color) {
+            super(tick);
+            this.vec3d = vec3d;
+            this.color = color;
+        }
+
+        @Override
+        public void renderVirtual(MatrixStack stack) {
+            Vec3d camera = RenderUtils.getCameraPos();
+            Vec3d camerToBlock = this.vec3d.getBoundingBox().getCenter().subtract(camera);
+            Vec3d cursorPos = RenderUtils.getTracerOrigin(1.0f);
+            RenderUtils.drawLineVirtualCameraCoord(stack, cursorPos, camerToBlock, color);
+        }
+    }
     public static abstract class BlockRenderingTask extends TickingRenderingTask implements VirtualRenderTask {
-        @Getter
+
         final BlockPos pos;
         final boolean shouldLine;
         public BlockRenderingTask(BlockPos pos,  boolean shouldLine, int tick){
@@ -1039,7 +1135,9 @@ public class RenderTasks {
     }
     private static Screen sleepingScreenInstance;
     private static Screen currentRenderingSleeping;
-
+    public static Screen getCurrentRenderingSleeping(){
+        return currentRenderingSleeping;
+    }
     private static class SleepingChatScreen extends ChatScreen{
 
         public SleepingChatScreen(String originalChatText) {
@@ -1057,6 +1155,7 @@ public class RenderTasks {
         @Override
         public void render(DrawContext context, int mouseX, int mouseY, float delta) {
             super.render(context, mouseX, mouseY, delta);
+//            Debug.info(mouseX, mouseY, mc.inGameHud.getChatHud().getTextStyleAt(mouseX, mouseY));
             shouldFreshSleepScreen = true;
         }
 
@@ -1300,9 +1399,10 @@ public class RenderTasks {
     public static void onDisconnect(Void  event){
 
     }
+    //fixme: hoverEvent and clickEvent does not work in SleepingChatScreen
 
 
-
+    //TODO: add status renderer , inGameHud
 
     static {
         EntityUtils.parseEntityWhiteList(RENDER_DETECT_WHITELIST.getValue().replace(',','|'),entityTypes);

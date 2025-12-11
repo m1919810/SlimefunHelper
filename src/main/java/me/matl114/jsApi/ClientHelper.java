@@ -1,5 +1,6 @@
 package me.matl114.jsApi;
 
+import me.matl114.utils.ApiMethod;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
@@ -9,6 +10,7 @@ import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.world.ClientWorld;
 
+@ApiMethod
 public class ClientHelper {
     static MinecraftClient mc = MinecraftClient.getInstance();
     public static MinecraftClient getClient(){

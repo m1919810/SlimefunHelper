@@ -10,13 +10,10 @@ import me.matl114.gui.config.SelectScreen;
 import me.matl114.gui.invcache.InventorySelectScreen;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.*;
-import me.matl114.utils.Debug;
-import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.*;
 import me.matl114.utils.UtilClass.LimitedSpeedExecutor;
-import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.MutableEntry;
 import me.matl114.utils.UtilClass.Point;
-import me.matl114.utils.WorldUtils;
 import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -460,6 +457,7 @@ public class InvTasks {
     private static final int[] PLAYER_SLOTS = new int[]{
         36, 37,38, 39,40,41,42,43,44,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,45, 5, 6, 7,8, 0, 1, 2, 3, 4
     };
+    @ApiMethod
     public static void creativeGive(ItemStack itemStack, int count){
         if(mc.player != null && mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;
@@ -491,6 +489,7 @@ public class InvTasks {
             }
         }
     }
+    @ApiMethod
     public static void creativeAddItem(ItemStack itemStack, int count){
         if(mc.player != null && mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
             int slot = -1;
@@ -518,14 +517,17 @@ public class InvTasks {
             }
         }
     }
+    @ApiMethod
     public static void creativeDrop(ItemStack itemStack, int count){
         if(itemStack.isEmpty())return;
         mc.interactionManager.dropCreativeStack(itemStack.copyWithCount(count));
     }
+    @ApiMethod
     public static void copyGiveCommand(ItemStack itemStack){
 
         mc.keyboard.setClipboard(createGiveCommand(itemStack.copyWithCount(itemStack.getMaxCount())));
     }
+    @ApiMethod
     public static String createGiveCommand(ItemStack itemStack){
         if(itemStack.isEmpty())return "";
         StringBuilder builder = new StringBuilder("/minecraft:give @s ");
@@ -725,6 +727,7 @@ public class InvTasks {
     private static int endCursor = 0;
     private static MutableEntry<Pair<ClientWorld, BlockPos>, HandledScreen<?>>[] caches = new MutableEntry[MAX_INV_CACHE_SIZE];
 
+    @ApiMethod
     public static List<HandledScreen<?>> getCachedInventories(){
         return IntStream.range(startCursor, (endCursor < startCursor)? (endCursor + MAX_INV_CACHE_SIZE) : endCursor)
             .map(i->i%MAX_INV_CACHE_SIZE)
@@ -773,6 +776,7 @@ public class InvTasks {
         startCursor = endCursor = 0;
         Arrays.fill(caches, null);
     }
+    @ApiMethod
     public static boolean openInventoryCacheScreen(){
         if(mc.player == null)return false;
         ScreenAccess.of(new InventorySelectScreen(InvTasks::getCachedInventories)).openFromCurrent();

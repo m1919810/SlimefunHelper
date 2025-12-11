@@ -9,6 +9,7 @@ import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.SlimefunHelper;
+import me.matl114.utils.ApiMethod;
 import me.matl114.utils.Debug;
 import me.matl114.utils.UtilClass.Event;
 import net.minecraft.client.MinecraftClient;
@@ -59,13 +60,14 @@ public class Tasks {
     private static volatile int secondCounter;
     @Getter
     private static volatile int sencondRandom;
+    @ApiMethod
     public static int getTick(){
         return tickCounter;
     }
     public static boolean isPeriod(int period){
         return tickCounter % period == 0;
     }
-
+    @ApiMethod
     public static int getSecond(){
         return secondCounter;
     }
@@ -336,7 +338,7 @@ public class Tasks {
             "strider_fix"
         );
     }
-
+    @ApiMethod
     public static void runSpecialTask(String taskId, String[] args){
 //        CompletableFuture.runAsync(()->{
 //            try{
@@ -378,14 +380,20 @@ public class Tasks {
     }
     public static void versionedStriderFix(String[] args){
         if(mc.player != null){
-            if(mc.player.isRiding() && mc.player.getVehicle() instanceof Saddleable striderEntity){
+            if(mc.player.getVehicle() instanceof Saddleable striderEntity){
                 Debug.chat("Set saddle for entity");
                 striderEntity.saddle(new ItemStack(Items.SADDLE), null);
             }else{
-                Debug.chat("Not riding");
+                Debug.chat("No vehicle");
             }
         }
     }
+    //todo: delay tp
+
+    public static void fillFakeSubChunkWithStone(){
+
+    }
+
     public static void generateWrittenBook(){
 
     }
@@ -791,12 +799,15 @@ public class Tasks {
         }
     }
     private static final Deque<TimedTask> taskQueue = new ConcurrentLinkedDeque<>();
+    @ApiMethod
     public static void scheduleDelayed(Runnable task, int delay){
         taskQueue.addLast(new DelayedTimedTask(task, delay));
     }
+    @ApiMethod
     public static void scheduleRepeated(BooleanSupplier task, int delay, int period){
         taskQueue.addLast(new RepeatTimedTaskImpl(task, delay, period));
     }
+    @ApiMethod
     public static void scheduleTask(TimedTask task){
         taskQueue.addLast(task);
     }

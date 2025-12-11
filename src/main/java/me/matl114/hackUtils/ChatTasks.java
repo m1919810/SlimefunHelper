@@ -554,6 +554,13 @@ public class ChatTasks {
             .register(this);
 
         SubCommand listData = new SubCommand("resource", genArgument("id", "filter"), "!!resource <id> 查看某些原版重要数据"){
+            private void onResource(String name, List datas){
+                Debug.chat(Text.literal(name + "所拥有的数据:").formatted(Formatting.GREEN));
+                for (var identifier1 : datas){
+                    Debug.chat(identifier1);
+                }
+            }
+
             @Override
             public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
                 var re = parseInput(var4).getFirst();
@@ -567,6 +574,7 @@ public class ChatTasks {
                         datas = mc.getNetworkHandler().getWorldKeys().stream().map(RegistryKey::getValue)
                             .filter(u-> filterId == null ||( u.getPath().contains(filterId.getPath()) && (!namespace|| u.getNamespace().contains(filterId.getNamespace()))))
                             .toList();
+                        onResource(val, datas);
                     }
                     case "command"->{
                        datas = mc.getNetworkHandler().getCommandDispatcher().getRoot().getChildren()
@@ -575,15 +583,18 @@ public class ChatTasks {
                             .filter(u->u.contains(filter))
                             .sorted(String::compareTo)
                             .toList();
+                        onResource(val, datas);
                     }
                     case "seed" ->{
                         datas = List.of(
                            Text.literal( "服务端加密种子: ").append(ChatUtils. getDisplayedLong(mc.world.getBiomeAccess().seed)),
                             Text.literal(  "当前绑定种子: ").append(MineTasks.isCurrentWorldSeedInputExist()? ChatUtils. getDisplayedLong(MineTasks.getCurrentWorldSeedInput()): Text.literal("暂未输入"))
                         );
+                        onResource(val, datas);
                     }
                     case "plugins" -> {
                         //todo: add tabing /version as a plan , then appending command namespace
+                        Debug.chat(Text.literal("导出Command Namespace获取的数据:").formatted(Formatting.GREEN));
                         datas = mc.getNetworkHandler().getCommandDispatcher().getRoot().getChildren()
                             .stream()
                             .map(CommandNode::getName)
@@ -596,6 +607,7 @@ public class ChatTasks {
                             .distinct()
                             .sorted(String::compareTo)
                             .toList();
+                        onResource(val, datas);
                     }
 //                    case "gamerule"->{
 //                        datas = mc.world.getGameRules().toNbt().entries.entrySet().stream()
@@ -608,14 +620,11 @@ public class ChatTasks {
                         return false;
                     }
                 }
-                Debug.chat(Text.literal(val + "所拥有的数据:").formatted(Formatting.GREEN));
-                for (var identifier1 : datas){
-                    Debug.chat(identifier1);
-                }
+
                 return true;
             }
         }
-            .setEnum("id", List.of("world", "command", "seed", "plugins"))
+            .setEnum("id", List.of("world", "command", "seed", "plugins", "version"))
             .setDefault("filter","")
             .register(this);
 

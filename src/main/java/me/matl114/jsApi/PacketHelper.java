@@ -1,11 +1,13 @@
 package me.matl114.jsApi;
 
 import me.matl114.listenerUtils.Listener;
+import me.matl114.utils.ApiMethod;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.state.PlayStateFactories;
 import net.minecraft.util.Identifier;
 
+@ApiMethod
 public class PacketHelper {
     static MinecraftClient mc = MinecraftClient.getInstance();
     public static Class<? extends Packet<?>> getPacketType(String packetType, boolean s2c){

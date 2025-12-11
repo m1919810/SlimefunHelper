@@ -1,5 +1,6 @@
 package me.matl114.jsApi;
 
+import me.matl114.utils.ApiMethod;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 
@@ -8,6 +9,7 @@ import net.minecraft.entity.player.PlayerEntity;
  * classes will be obfuscated when at runtime,
  * but invocation or newInstance is ok
  */
+@ApiMethod
 public interface Consts {
     Class<?> Vec3d = net.minecraft.util.math.Vec3d.class;
     Class<?> BlockPos = net.minecraft.util.math.BlockPos.class;
