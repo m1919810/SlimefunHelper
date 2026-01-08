@@ -60,6 +60,7 @@
 		"RenderMixin.AtlasLoaderMixin",
 		"RenderMixin.BackGroundRenderMixin",
 		"RenderMixin.BakedModelManagerMixin",
+		"RenderMixin.CustomArmorTextureMixin",
 		"RenderMixin.CustomNbtItemModelMixin",
 		"RenderMixin.CustomNbtTextureRendererMixin",
 		"RenderMixin.DepthClickableMixin",
@@ -87,6 +88,7 @@
 	"mixins": [
 		"AccessMixin.MoonriseChunkBlockCountingMixin",
 		"FixMixin.EnchantmentLevelFixMixin",
-		"FixMixin.HeightContextNullFix"
+		"FixMixin.HeightContextNullFix",
+		"FixMixin.ScreenHandlerFixMixin"
 	]
 }

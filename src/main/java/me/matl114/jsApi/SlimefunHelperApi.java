@@ -83,8 +83,14 @@ public class SlimefunHelperApi {
             slimefunHelperApi.add( buildLibForJsMacros(libBase, ItemEditTasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, MineTasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, InvTasks.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, Utils.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, JsHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, RegistryHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, Debug.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, ChatUtils.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, InventoryUtils.class));
 //            buildLibForJsMacros(libBase, ClientHelper.class);
-
+        //todo: 适配PacketByteBufferHelper
         }
         return slimefunHelperApi;
     }
@@ -159,6 +165,21 @@ public class SlimefunHelperApi {
                     String fieldDesc = Type.getDescriptor(field.getType());
                     cw.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
                         field.getName(), fieldDesc, null, null);
+                    StringBuilder methodDesc = new StringBuilder("(");
+                    methodDesc.append(")").append(fieldDesc);
+                    var mv = cw.visitMethod(ACC_PUBLIC| ACC_FINAL,
+                        "get" + field.getName(), methodDesc.toString(), null, null
+                        );
+                    mv.visitCode();
+                    mv.visitFieldInsn(
+                        GETSTATIC,
+                        Type.getInternalName(field.getDeclaringClass()),
+                        field.getName(),
+                        ByteCodeUtils.toJvmType(field.getType())
+                    );
+                    ASMUtils.createSuitableReturn(mv, Type.getInternalName(field.getType()));
+                    mv.visitMaxs(0,0);
+                    mv.visitEnd();
                 }
             }
 
@@ -229,7 +250,7 @@ public class SlimefunHelperApi {
             for (java.lang.reflect.Field field : utilityClass.getDeclaredFields()) {
                 int modifiers = field.getModifiers();
                 if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers) &&
-                    targetFields.contains(field.getName())) {
+                    targetFields.contains(field)) {
 
                     // 获取字段值
                     Object fieldValue = field.get(null); // 静态字段

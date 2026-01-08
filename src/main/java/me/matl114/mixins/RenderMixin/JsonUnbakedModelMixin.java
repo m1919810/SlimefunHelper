@@ -1,6 +1,8 @@
 package me.matl114.mixins.RenderMixin;
 
 import me.matl114.ModConfig;
+import me.matl114.managers.Config;
+import me.matl114.managers.Configs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.model.*;
@@ -23,11 +25,12 @@ import java.util.function.Function;
 @Environment(value=EnvType.CLIENT)
 @Mixin(value = JsonUnbakedModel.class,priority = 990)
 public abstract class JsonUnbakedModelMixin implements UnbakedModel {
+    private final Config.FlagRef modelProtect = Configs.MODEL_CONFIG.getBoolean(Configs.MODEL_PROTECT);
     //fix ommc wrongly mixin unbakedModel
     @Inject(method = "bake(Lnet/minecraft/client/render/model/Baker;Lnet/minecraft/client/render/model/json/JsonUnbakedModel;Ljava/util/function/Function;Lnet/minecraft/client/render/model/ModelBakeSettings;Z)Lnet/minecraft/client/render/model/BakedModel;",
             at = @At(value = "HEAD"), cancellable = true)
     private void generateCustomBakedModel(Baker baker, JsonUnbakedModel parent, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings settings, boolean bl, CallbackInfoReturnable<BakedModel> cir) {
-        if(ModConfig.isEnableBlockModelProtect()){
+        if(modelProtect.get()){
            // Debug.info("Fixing OMMC Model Errors");
             cir.setReturnValue(rewriteSafeBkae(baker, parent, textureGetter, settings, bl));
             cir.cancel();

@@ -41,6 +41,7 @@ public class RenderMain {
         modelOverrideFunctions.add(OrderedSupplier.create(1000, function));
         Collections.sort(modelOverrideFunctions);
     }
+    //todo: Model Override by json, use Event
     public static Optional<BakedModel> getCustomItemModel(ItemStack stack) {
         ModelIdentifier overrides = null;
         BakedModel model = null;

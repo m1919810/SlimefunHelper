@@ -16,6 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+
 public class ChatUtils {
     public static boolean isHighSurrogate(char c) {
         return c >= 0xD800 && c <= 0xDBFF;
@@ -70,6 +71,7 @@ public class ChatUtils {
         colorToFormat = new HashMap<>();
         TextColor.FORMATTING_TO_COLOR.forEach((f,t)->colorToFormat.put(t,f));
     }
+    @ApiMethod
     public static MutableText textFromLegacyString(String value){
         if(value == null){
             return Text.empty();
@@ -170,10 +172,11 @@ public class ChatUtils {
         }
         return base;
     }
-
+    @ApiMethod
     public static Stream<Text> textStream(Text comp) {
         return com.google.common.collect.Streams.concat(new Stream[]{Stream.of(comp), comp.getSiblings().stream().flatMap(ChatUtils::textStream)});
     }
+    @ApiMethod
     public static String textToLegacyString(Text component){
         if (component == null) return "";
         StringBuilder out = new StringBuilder();
@@ -346,6 +349,7 @@ public class ChatUtils {
         }
         return out.toString();
     }
+    @ApiMethod
     public static String translateAlternateColorCodes(char altColorChar, char translateTo, @NotNull String textToTranslate) {
         Preconditions.checkArgument(textToTranslate != null, "Cannot translate null text");
 
@@ -358,6 +362,7 @@ public class ChatUtils {
         }
         return new String(b);
     }
+    @ApiMethod
     public static String textToString(Text com){
         try{
             String val = textToLegacyString(com);
@@ -367,6 +372,7 @@ public class ChatUtils {
         }
 
     }
+    @ApiMethod
     public static MutableText stringToText(String origin){
         try{
             String val = translateAlternateColorCodes('&','§', origin);
@@ -375,34 +381,36 @@ public class ChatUtils {
             return Text.empty();
         }
     }
-
+    @ApiMethod
     public static Text getDisplayedLocation(Vec3d vec3d){
         return getDisplayedLocation(vec3d.x, vec3d.y, vec3d.z);
     }
+    @ApiMethod
     public static Text getDisplayedLocationDouble(Vec3d vec3d){
         return getDisplayedLocationDouble(vec3d.x, vec3d.y, vec3d.z);
     }
-
+    @ApiMethod
     public static Text getDisplayedLocationDouble(double x,double y ,double z){
         return Text.literal("[%.2f,%.2f,%.2f]".formatted(x, y, z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
     }
+    @ApiMethod
     public static Text getDisplayedLong(long l){
         return Text.literal("[" + Long.toString(l) + "]").setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, Long.toString(l))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
     }
-
+    @ApiMethod
     public static Text getDisplayedLocation(double x,double y ,double z){
         return Text.literal("[%d,%d,%d]".formatted((int)x, (int)y, (int)z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
     }
-
+    @ApiMethod
     public static MutableText getClickCopyTargetText(String literal){
         String targetShow = "[%s]".formatted(literal);
         return  getClickCopyText(targetShow, literal);
     }
-
+    @ApiMethod
     public static MutableText getClickCopyText(String literal, String copy){
         return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy text"))).withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, copy)));
     }
-
+    @ApiMethod
     public static MutableText concatLineText(List<Text> texts){
         int size = texts.size();
         MutableText text = Text.empty();
@@ -417,7 +425,7 @@ public class ChatUtils {
 
         return text;
     }
-
+    @ApiMethod
     public static MutableText getHoverShowText(String literal, List<Text> showText){
         return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, concatLineText(showText))));
     }
@@ -435,7 +443,7 @@ public class ChatUtils {
         }
         return re.getContent().toString();
     }
-
+    @ApiMethod
     public static MutableText copyText(Text text){
         MutableText newLine = MutableText.of(text.getContent());
         newLine.setStyle(text.getStyle());

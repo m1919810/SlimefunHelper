@@ -6,6 +6,7 @@ import me.matl114.gui.basic.ButtonElement;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.hackUtils.Tasks;
+import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
@@ -91,5 +92,13 @@ public class ConfigurateNewStyleScreen extends GenericScreen {
         if(selectingConfigEdit != null){
             selectingConfigEdit.save();
         }
+    }
+    static{
+        Listener.getHotKeyTriggeredListener().registerHandler(iHotKeyEvent -> {
+            //do not use any hotkeys in configure screen because we may use keyBindConfigurate
+            if(MinecraftClient.getInstance().currentScreen instanceof ConfigurateNewStyleScreen){
+                iHotKeyEvent.cancel();
+            }
+        });
     }
 }

@@ -1,5 +1,6 @@
 package me.matl114.access;
 
+import me.matl114.utils.ApiMethod;
 import me.matl114.utils.UtilClass.ProgressWrapper;
 import net.minecraft.entity.Entity;
 

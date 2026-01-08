@@ -10,6 +10,8 @@ import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.world.ClientWorld;
 
+import java.util.concurrent.locks.LockSupport;
+
 @ApiMethod
 public class ClientHelper {
     static MinecraftClient mc = MinecraftClient.getInstance();
@@ -33,5 +35,24 @@ public class ClientHelper {
         mc.execute(runnable);
     }
 
+
+
+    public static void sleep(long ms, long ns) throws Throwable{
+        if(ms > 0){
+            Thread.sleep(ms);
+        }
+        if(ns > 0){
+            LockSupport.parkNanos(ns);
+        }
+    }
+
+    public static void sleepNs(long ns) throws Throwable{
+        long ms = ns / 1000;
+        sleep(ms, ns % 1000);
+    }
+
+    public static void sleepMs(long ms) throws Throwable{
+        sleep(ms, 0);
+    }
 
 }

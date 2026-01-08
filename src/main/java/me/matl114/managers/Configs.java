@@ -1,9 +1,21 @@
 package me.matl114.managers;
 
 import me.matl114.SlimefunHelper;
+import me.matl114.utils.Debug;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.text.Text;
+import org.yaml.snakeyaml.Yaml;
 
+import java.io.File;
+import java.io.FileReader;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 
 public class Configs {
     //todo add schema for config
@@ -19,11 +31,17 @@ public class Configs {
             HTTP_CONFIG.registerGlobal();
             INTERACT_CONFIG.registerGlobal();
             SLIMEFUN_CONFIG.registerGlobal();
+            MODEL_CONFIG.registerGlobal();
+            HOTKEY_CONFIG.registerGlobal();
+            TOGGLE_CONFIG.registerGlobal();
         }else{
             CHAT_CONFIG.registerGlobal();
             INV_CONFIG.registerGlobal();
             HTTP_CONFIG.registerGlobal();
             SLIMEFUN_CONFIG.registerGlobal();
+            MODEL_CONFIG.registerGlobal();
+            HOTKEY_CONFIG.registerGlobal();
+            TOGGLE_CONFIG.registerGlobal();
         }
         if(init){
             Config.reloadAll();
@@ -52,11 +70,50 @@ public class Configs {
             return Text.translatable("configenum.bypass-mode." + this.name().toLowerCase(Locale.ROOT));
         }
     }
+
+    public enum HttpProxyType implements Config.ConfigEnum{
+        SOCKS,
+        HTTP,
+        HTTPS
+        ;
+        public Text getDisplay() {
+            return Text.literal(name().toLowerCase(Locale.ROOT));
+        }
+    }
     static{
         //load Enums
         Config.ConfigEnum.register(LegalTargetingMode.class);
         Config.ConfigEnum.register(BypassMode.class);
+        Config.ConfigEnum.register(HttpProxyType.class);
     }
+
+    public static final Predicate<String> REGEX_VALIDATOR = x -> {
+        try{
+            Pattern.compile(x);
+            return true;
+        }catch (PatternSyntaxException | NullPointerException pse){
+            return false;
+        }
+    };
+
+    public static Predicate<Integer> intRange(int min, int max){
+        return x -> x >= min && x <= max;
+    }
+
+    public static Predicate<Integer> intHigher(int min){
+        return x -> x >= min;
+    }
+
+    public static Predicate<Integer> intLower(int mAX){
+        return x -> x <= mAX;
+    }
+
+    public static Predicate<Double> doubleRange(double min, double max){
+        return x -> x >= min && x <= max;
+    }
+    public static final Predicate<Integer> INT_POSITIVE = intHigher(0);
+
+
 
     private static boolean init=false;
     public static final String[] MINE_BOT_MINE_MIN_DY={"mine-bot","min-dy"};
@@ -98,9 +155,12 @@ public class Configs {
         .defaultVal(true,MINE_ENABLE_FAKE_INSTANT_BREAK)
         .defaultVal(BypassMode.NO_BYPASS, MINE_BYPASS_FAST_BREAK_BYPASS_MODE)
         .defaultVal("^(cobblestone|stone|.*ore)$",MINE_BOT_WHITELIST)
+        .validator(REGEX_VALIDATOR, MINE_BOT_WHITELIST)
         .defaultVal(5,MINE_BOT_PACKET_MULTIPLE)
         .defaultVal(1,MINE_ONEBLOCK_PACKET_MULTIPLE)
         .defaultVal(0.72d,MINE_FASTBREAK_THRESHOLD )
+        .validator(doubleRange(0.0D, 1.01D), MINE_FASTBREAK_THRESHOLD)
+
         .defaultVal(0,MINE_FASTBREAK_BREAKCOOLDOWN)
         .defaultVal(5.5,MINE_FASTBREAK_REACH)
         .defaultVal(false, MINE_DOUBLE_BREAK)
@@ -114,10 +174,12 @@ public class Configs {
         .defaultVal(false, MINE_BOT_DURABILITY_PROTECT)
         .defaultVal(false, XRAY_OVERRIDE_SERVER_ORES)
         .defaultVal("^(diamond)$", XRAY_ORE_TYPE)
+        .validator(REGEX_VALIDATOR, XRAY_ORE_TYPE)
         .defaultVal(false, MINE_BOT_LEGAL_MODE)
         .defaultVal(false, MINE_FASTBREAK_SAME_BLOCK_OPTIMIZE)
         .defaultVal(false, MINE_RENDER_CURRENT_MINING_BLOCK)
         .defaultVal("^(.*bed)$", MINEARUA_WHILELIST)
+        .validator(REGEX_VALIDATOR, MINEARUA_WHILELIST)
         .defaultVal(750, FAST_BREAK_GRIMAC_THRESHOLD)
         .save();
     public static final String[] CHAT_HELPER_CACHE={"chat-helper","cached"};
@@ -246,7 +308,9 @@ public class Configs {
         .defaultVal(false,COMBAT_INTERVEL)
         .defaultVal(false,COMBAT_RIDING)
         .defaultVal("^(monster|!endermite)$",ATTACK_WHITELISTED)
+        .validator(REGEX_VALIDATOR, ATTACK_WHITELISTED)
         .defaultVal("^(.*NPC.*|matl114)$",ATTACK_PLAYER_FRIENDLIST)
+        .validator(REGEX_VALIDATOR, ATTACK_PLAYER_FRIENDLIST)
         .defaultVal(1.0f,ATTACK_RANGE)
         .defaultVal(true,COMBAT_SHIELDING)
         .defaultVal(true,AUTOATTACK_DO_INTERVEL_WEAPON)
@@ -271,6 +335,7 @@ public class Configs {
         .defaultVal(LegalTargetingMode.DELAY_MOVEMENT, COMBAT_LEGAL_TARGETTING)
         .defaultVal(LegalTargetingMode.DELAY_MOVEMENT, COMBAT_BOW_LEGAL_TARGETTING)
         .defaultVal("^(LOGITECH_LASER_GUN)$", COMBAT_USE_ITEM_AUTOAIM)
+        .validator(REGEX_VALIDATOR, COMBAT_USE_ITEM_AUTOAIM)
         .defaultVal(false, COMBAT_BOW_TP_TOGGLE)
         .defaultVal(false, COMBAT_PEARL_TP)
         .defaultVal(false, COMBAT_TRIDENT_AUTO_DUPE)
@@ -360,7 +425,7 @@ public class Configs {
         .defaultVal(false,HTTP_PROXY_ENABLE)
         .defaultVal("",HTTP_PROXY_USERNAME)
         .defaultVal("",HTTP_PROXY_OPTIONAL_PASSWORD)
-        .defaultVal("socks",HTTP_PROXY_TYPE)
+        .defaultVal(HttpProxyType.SOCKS, HTTP_PROXY_TYPE)
         .save();
 
     public static final String[] INTERACT_NO_COOLDOWN = {"interact-fix", "cool-down-rewrite"};
@@ -400,7 +465,9 @@ public class Configs {
         .defaultVal(false, SLIMEFUN_RECIPE_LOCKED)
         .defaultVal(true, SLIMEFUN_RECIPE_SAVE)
         .defaultVal("^(Slimefun 指南.*)$", SLIMEFUN_RECIPE_TITLE)
+        .validator(REGEX_VALIDATOR, SLIMEFUN_RECIPE_TITLE)
         .defaultVal("^(多方块结构|MultiBlock)$", SLIMEFUN_MULTIBLOCK_MATCHER)
+        .validator(REGEX_VALIDATOR, SLIMEFUN_MULTIBLOCK_MATCHER)
         .defaultVal(false, SLIMEFUN_MULTIBLOCK_CLICKER)
         .defaultVal(12, SLIMEFUN_MB_RATE)
 //        .defaultVal(true, SLIMEFUN_MATCH_UP_AND_DOWN)
@@ -414,10 +481,73 @@ public class Configs {
         .defaultVal("{}", SEED_MAP)
         .save()
         ;
-    public static final Config HOTKEY_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/hotkeys.yml", "hotkey settings")
+
+    public static final String[] MODEL_PROTECT = {"model-config", "enable-block-model-protect"};
+    public static final String[] SLIMEFUN_MODEL_ID = {"model-config", "enable-slimefun-cmd-override"};
+    public static final String[] ITEM_MODEL_OVERRIDE = {"model-config", "enable-item-model-override"};
+    public static final String[] ENABLE_STORAGE_DISPLAY = {"model-config", "enable-storage-display"};
+    public static final String[] ENABLE_SF_TOOLTIPS = {"model-config", "enable-tooltips-display"};
+    public static final String[] CUSTOM_TEXTURE_PATTERN = {"slimefun-models", "namespace-for-slimefun-textures"};
+    public static final String[] AUTO_MODEL_PATTERN = {"slimefun-models", "path-pattern-for-slimefun-model"};
+    public static final Config MODEL_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/models.yml", "model settings")
+        .defaultVal(true, MODEL_PROTECT)
+        .defaultVal(true, SLIMEFUN_MODEL_ID)
+        .defaultVal(true, ITEM_MODEL_OVERRIDE)
+        .defaultVal(true, ENABLE_STORAGE_DISPLAY)
+        .defaultVal(true, ENABLE_SF_TOOLTIPS)
+        .defaultVal(List.of("ae2", "slimefunhelper", "infinityexpansion", "avaritia"), CUSTOM_TEXTURE_PATTERN)
+        .defaultVal(List.of("^slimefunhelper:slimefunitem/.*$", "^slimefunhelper:test/.*$"), AUTO_MODEL_PATTERN)
+        .<List<String>>validator(s -> {
+            try{
+                String pattern = s.stream().map(i->"("+i+")").collect(Collectors.joining("|"));
+                Pattern.compile(pattern);
+                return true;
+            }catch (Throwable e){
+                return false;
+            }
+        }, AUTO_MODEL_PATTERN)
         .save()
         ;
-    static{
-       //none
+
+
+    public static final String[] HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN = new String[]{"hotkey-settings", "only-works-if-no-screen"};
+    public static final Config HOTKEY_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/hotkeys.yml", "hotkey settings")
+        .defaultVal(true, HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN)
+        .save()
+        ;
+    //TODO: add other-hotkeys
+    //TODO: add Shulker display and shulker storage display
+    //TODO: remove recipe display
+    //TODO: add entity inspect in info command
+    //TODO: add thread check or add runInMain in ApiMethod
+    //TODO: parser system
+    //TODO: item editor template
+    //TODO: !!travel add arguments
+    //
+    public static final Config TOGGLE_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/toggles.yml", "toggle settings")
+        .save();
+    static {
+        MODEL_CONFIG.getList(AUTO_MODEL_PATTERN).getElementValidator().add(REGEX_VALIDATOR);
+        try{
+            File file =  FabricLoader.getInstance().getConfigDir().resolve("slimefunhelper-config.yml").toFile();
+            if(file.exists() && file.isFile()){
+                try(var fileReader =  new FileReader(file)){
+                    var obj = (Map)new Yaml().load(fileReader);
+                    if(obj.containsKey("namespace-for-slimefun-texture")){
+                        List<String> list = (List)obj.get("namespace-for-slimefun-texture");
+                        MODEL_CONFIG.setValue(list, CUSTOM_TEXTURE_PATTERN);
+                    }
+                    if (obj.containsKey("path-pattern-for-slimefun-model")){
+                        List<String> list = (List<String>)obj.get("path-pattern-for-slimefun-model");
+                        MODEL_CONFIG.setValue(list ,AUTO_MODEL_PATTERN);
+                    }
+                    MODEL_CONFIG.save();
+                }finally {
+                    file.delete();
+                }
+            }
+        }catch (Throwable e){
+
+        }
     }
 }

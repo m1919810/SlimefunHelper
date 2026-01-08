@@ -24,7 +24,7 @@ public class NetworksTasks {
     static Config.StringRef proxyIp = Configs.HTTP_CONFIG.getString(Configs.HTTP_PROXY_SERVER);
     static Config.StringRef proxyUser = Configs.HTTP_CONFIG.getString(Configs.HTTP_PROXY_USERNAME);
     static Config.StringRef proxyPassword = Configs.HTTP_CONFIG.getString(Configs.HTTP_PROXY_OPTIONAL_PASSWORD);
-    static Config.StringRef proxyType = Configs.HTTP_CONFIG.getString(Configs.HTTP_PROXY_TYPE);
+    static Config.EnumRef<Configs.HttpProxyType> proxyType = Configs.HTTP_CONFIG.getEnum(Configs.HTTP_PROXY_TYPE);
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     public static void redirectIpPre(ChannelPipeline ch){
         if(proxyEnable.get()){
@@ -34,7 +34,7 @@ public class NetworksTasks {
                 boolean userNo = username == null || username.isEmpty();
                 String password = proxyPassword.getValue();
                 switch (proxyType.getValue()){
-                    case "socks":
+                    case Configs.HttpProxyType.SOCKS:
                         if(password == null || password.isEmpty()){
                             ch.addFirst("socks5CLientProxy", new Socks4ProxyHandler(
                                 new InetSocketAddress(proxyIp.getValue(), port),userNo?null :username
@@ -45,12 +45,12 @@ public class NetworksTasks {
                             ));
                         }
                         break;
-                    case "http":
+                    case Configs.HttpProxyType.HTTP:
                         ch.addFirst("httpCLientProxy", new HttpProxyHandler(
                             new InetSocketAddress(proxyIp.getValue(), port),userNo?null :username, (password == null || password.isEmpty())?null:password
                         ));
                         break;
-                    case "https":
+                    case Configs.HttpProxyType.HTTPS:
 //                        try{
 //                            SslContext context = SslContextBuilder.forClient().build();
 //                            ch.pipeline().addFirst("httpCLientProxy",  new HttpProxyHandler(

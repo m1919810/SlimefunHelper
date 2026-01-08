@@ -5,49 +5,71 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.Getter;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.utils.UtilClass.Event;
+import net.minecraft.client.MinecraftClient;
 
-public class SimpleHotKey implements IHotKey {
-    private IntList keyCodes = new IntArrayList(4);
+import java.util.ArrayList;
+import java.util.List;
+
+public class SimpleHotKey implements IHotKey{
+    private final IntList keyCodes = new IntArrayList(4);
     @Getter
     public String identifier;
 //    public int triggerKey;
-    public String defaultKeyCode;
-    public String keyCode;
+    public MultiKeyBind defaultKeyCode;
+    public MultiKeyBind keyCode;
+    private Config.KeyBindRef ref;
     public InputHandler inputHandler;
+    private final List<IInputManager> registeredManagers = new ArrayList<>();
+
+    @Override
+    public <T extends IHotKey> T register(IInputManager manager) {
+        if(!registeredManagers.contains(manager)){
+            registeredManagers.add(manager);
+            return (IHotKey.super.register(manager));
+
+        }return (T) this;
+    }
+
+    public void reload(){
+        for(IInputManager manager : registeredManagers){
+            manager.unregisterHotKeys(this);
+            manager.registerHotKeys(this);
+        }
+    }
+
     public SimpleHotKey(String name, String defaultKeyCode, InputHandler inputHandler) {
         this.identifier = name;
         this.inputHandler = inputHandler;
-        this.defaultKeyCode = defaultKeyCode;
+        this.defaultKeyCode =  new MultiKeyBind(defaultKeyCode);
         bindToConfigs();
     }
 
     public void bindToConfigs(){
         Config config = Configs.HOTKEY_CONFIG;
-        Config.StringRef refs;
         String[] idPath = Config.cutToPath(this.identifier);
-        if(!config.contains(idPath)){
-            config.defaultVal(this.defaultKeyCode, idPath);
-            config.save();
-        }
-        refs = config.getString(idPath);
+
+        config.defaultVal(this.defaultKeyCode, idPath);
+        config.save();
+
+        ref = config.getKeyBind(idPath);
         //load keyCodes
-        setKeyCodes(refs.getValue());
+        setKeyCodes(ref.getValue());
         //set listener
-        refs.addUpdateListener(this::setKeyCodes);
+        ref.addUpdateListener(this::setKeyCodes);
     }
 
-    public void setKeyCodes(String keyCode){
+    public void setKeyCodes(MultiKeyBind keyCode){
         this.keyCode = keyCode;
         setValueFromString(this.keyCode);
     }
 
     @Override
-    public String getDefaultKeyCodes() {
+    public MultiKeyBind getDefaultKeyCodes() {
         return this.defaultKeyCode;
     }
 
     @Override
-    public String getKeyCodes() {
+    public MultiKeyBind getKeyCodes() {
         return keyCode;
     }
 
@@ -97,24 +119,14 @@ public class SimpleHotKey implements IHotKey {
         return keyCodes == null || keyCodes.isEmpty();
     }
 
-    public void setValueFromString(String str)
+    private void setValueFromString(MultiKeyBind str)
     {
+
         this.clearKeys();
-        String[] keys = str.split(",");
-
-        for (String keyName : keys)
-        {
-            keyName = keyName.trim();
-
-            if (!keyName.isEmpty())
-            {
-                int keyCode = KeyCode.getKeyCodeFromName(keyName);
-
-                if (keyCode != KeyCode.KEY_NONE)
-                {
-                    this.addKey(keyCode);
-                }
-            }
+        for (var keycode : str.getKeyCodes()){
+            this.addKey(keycode);
         }
+        this.reload();
+
     }
 }

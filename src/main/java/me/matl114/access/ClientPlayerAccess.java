@@ -32,6 +32,8 @@ public interface ClientPlayerAccess extends LivingEntityAccess<ClientPlayerEntit
         else return MinecraftClient.getInstance().currentScreen instanceof HandledScreen<?> han?han:null;
     }
 
+
+
     public boolean isForceNoFall();
     public void setForceNoFall(boolean fall);
 

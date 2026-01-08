@@ -7,6 +7,7 @@ import me.matl114.bukkitUtiils.ItemStackHelper;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.jsApi.SlimefunHelperApi;
 import me.matl114.listenerUtils.Listener;
+import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.utils.Debug;
 import me.matl114.renders.SlimefunCustomModelManager;
@@ -74,10 +75,9 @@ public class SlimefunHelper implements ModInitializer {
 				Debug.info("reload called");
 				ModConfig.reloadModConfig();
 				SlimefunCustomModelManager.init();
-				if(ModConfig.isEnableSlimefunCmdOverride()){
-					Debug.info("Reloading SlimefunHelper resources");
-					SlimefunCustomModelManager.loadCustomModelDatas();
-				}
+				Debug.info("Reloading SlimefunHelper resources");
+				SlimefunCustomModelManager.loadCustomModelDatas();
+
 			}
 		});
 //		ModelLoadingPluginManager.registerPlugin(new ModelLoadingPlugin() {
@@ -96,7 +96,7 @@ public class SlimefunHelper implements ModInitializer {
 				Debug.info("check plugin work");
 				Debug.info("is it a reload?");
 				ModConfig.reloadModConfig();
-				if(ModConfig.isEnableItemModelOvevrride()) {
+				if(Configs.MODEL_CONFIG.getBoolean(Configs.ITEM_MODEL_OVERRIDE).get()) {
 					Debug.info("Force Load Model enabled");
 					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
 					return SlimefunCustomModelManager.walkThroughResourcePacks(resourceManager,true);
@@ -132,5 +132,8 @@ public class SlimefunHelper implements ModInitializer {
 	//todo 更多hacks
 	//villager trade utils 有了
 	//todo slimefun textures to sprites
+	//todo: generalize sf id to some nbt path -> id
+	//todo: add JsonMapRef , store data as json string
+	//todo: add shulker display and shulker preview
 	//
 }

@@ -635,6 +635,7 @@ public class MovTasks {
         LAST_TP_REQUEST = Vec3d.ZERO.add(target);
         scheduleTpInternal(MovingContext.create(mc.player.getPos()), target, farawayTp, command, false, considerNoFall);
     }
+    //TODO: add height limit: based on world height limit: some world do not want player to reach lower than height limit-or higher than bedrock or sth
     @ApiMethod
     public static List<Vec3d> generateTpSequence(Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment){
         boolean collideAtTarget = checkEnvironmentCollision(mc.player, target, true);
@@ -1725,6 +1726,7 @@ public class MovTasks {
 //    public static final float FORCE_RESET_DISTANCE = 13495702F;
     private static final Config.FlagRef noFall = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_NOFALL);
     private static final Config.EnumRef<Configs.BypassMode> noFallMode = Configs.MOV_CONFIG.getEnum(Configs.MOVE_NOFALL_MODE);
+    @Deprecated
     public static boolean noFallSetbackResponse = false;
     public static boolean nofallWaitSetbackFlag;
     private static final Config.FlagRef setBackDisableVelocity = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_DISABLE_SETBACK_VELOCITY_RESET);
@@ -1833,7 +1835,7 @@ public class MovTasks {
                         if(bypassMode == Configs.BypassMode.NO_BYPASS){
                             //TODO Optimize this calculation NO_BYPASS
                             runningThisTick = true;
-
+                            //TODO LAZY MODE, only if we trigger not onground -> onground should we reset
                             counter = 0;
                             lastOnGroundHeight = args.getY();
 
@@ -2279,8 +2281,11 @@ public class MovTasks {
             }
         }
     }
-    //fake elytra flight figure it out: NO USE, server player pose will not change
+    //TODO: fake elytra flight figure it out: NO USE, server player pose will not change
     //elytra unbreakable?
+
+    //TODO: Elytra Mode: velocity control, fake creative flight, rewrite this elytra unbreakable
+    //TODO: armor flight,
 
     public static boolean runElytraUnbreakable(Entity player){
         if(player == mc.player && elytraUnbreakable.get()){

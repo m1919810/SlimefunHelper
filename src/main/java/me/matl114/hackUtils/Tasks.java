@@ -690,7 +690,7 @@ public class Tasks {
             }
         });
     }
-    private static final List<String> blacklist = List.of("you_awa", "xiaoyu_crapt", "xiaoyucrapt");
+    private static final List<String> blacklist = List.of( "xiaoyu_crapt", "xiaoyucrapt");
     public static void checkBlacklistedUsername(Void v){
         String name = mc.getSession().getUsername();
         if(!SlimefunHelper.DEV && blacklist.contains(name)){

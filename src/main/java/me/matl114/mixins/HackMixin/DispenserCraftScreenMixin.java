@@ -1,6 +1,5 @@
 package me.matl114.mixins.HackMixin;
 
-import lombok.Getter;
 import me.matl114.access.TileInventoryScreen;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
@@ -17,7 +16,6 @@ import net.minecraft.screen.Generic3x3ContainerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -84,7 +82,7 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
             .map(Optional::get)
             .map(SlimefunTasks.CraftingType::id)
             .collect(Collectors.toSet());
-        this.recipeBookWidget = new SlimefunDispensorSuggestBookWidget( this,3,  3,co,(bol, entry)-> SlimefunTasks.handleMoveRecipeToSlots(entry, this, bol, true, AVAILABLE_SLOTS));
+        this.recipeBookWidget = new SlimefunDispensorSuggestBookWidget( this,3,  3,co,(bol, entry)-> SlimefunTasks.moveSlimefunRecipePatternToContainer(entry, this, bol, true, AVAILABLE_SLOTS));
     }
 
 

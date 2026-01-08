@@ -429,7 +429,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 .addToSub(this);
             ExecutableWidget.instance(30, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 70, 60,60)
                 .setElementHandler(
-                    new SlotElement(InventoryUtils.createReadOnlyInventory(()->this.stackTemplate),0,(it,bt)->{
+                    new SlotElement(InventoryUtils.createReadOnlyOneItemInventory(()->this.stackTemplate),0,(it, bt)->{
                         this.saveChanges();
                         return true;
                     } )

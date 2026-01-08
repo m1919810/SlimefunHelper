@@ -72,8 +72,10 @@ public class McWidgetHelpers {
         };
     }
     public static void drawTextWidgetBox(Drawable drawable, DrawContext context, int x, int y, int width, int height, boolean focus, ColorProvider borderColor){
-        int i = borderColor.provideTextColor(drawable, focus);
-        context.fill(x, y, x + width, y + height, i);
+        Integer i = borderColor.provideTextColor(drawable, focus);
+        if (i != null){
+            context.fill(x, y, x + width, y + height, i);
+        }
         context.fill(x + 1, y + 1, x + width - 1, y + height - 1, -16777216);
     }
     public static void drawHighLightBox(DrawContext context, int x, int y, int width, int height, int color){

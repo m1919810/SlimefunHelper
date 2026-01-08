@@ -6,6 +6,7 @@ import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.BidirectionalIterator;
 import lombok.Getter;
 import me.matl114.access.ClientPlayerAccess;
+import me.matl114.hackUtils.InvTasks;
 import me.matl114.hackUtils.MovTasks;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
@@ -25,15 +26,18 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.stat.StatHandler;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
@@ -129,6 +133,8 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Shadow private boolean lastSneaking;
 
     @Shadow public abstract boolean isSneaking();
+
+    @Shadow public abstract void swingHand(Hand hand);
 
     @Unique
     @Getter
@@ -445,4 +451,20 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 //        }
 //        return instance.hasForwardMovement();
 //    }
+
+
+
+
+
+
+    @Unique
+    @Override
+    public ItemEntity dropItem(ItemStack stack, boolean throwRandomly, boolean retainOwnership){
+        if(!stack.isEmpty() && this.getWorld().isClient && InvTasks.SUPPRESS_DROPITEM_SPAWN.get() && !MinecraftClient.getInstance().isOnThread()){
+            this.swingHand(Hand.MAIN_HAND);
+            return null;
+        }else{
+            return super.dropItem(stack, throwRandomly, retainOwnership);
+        }
+    }
 }

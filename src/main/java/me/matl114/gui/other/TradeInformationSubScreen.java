@@ -3,22 +3,16 @@ package me.matl114.gui.other;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import me.matl114.access.MerchantScreenAccess;
-import me.matl114.access.ScreenAccess;
-import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.hackUtils.InvTasks;
 import me.matl114.hackUtils.ItemEditTasks;
 import me.matl114.managers.HotKeys;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.InventoryUtils;
-import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -26,7 +20,6 @@ import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 
 import javax.annotation.Nullable;
-import java.awt.*;
 import java.util.List;
 
 public class TradeInformationSubScreen extends SubScreenWidget {
@@ -60,20 +53,19 @@ public class TradeInformationSubScreen extends SubScreenWidget {
     private boolean active(ElementHandler ignored){
         return getCurrentTrade() != null;
     }
-    private static final Text LABEL_TRADE = Text.literal("交易");
+    private static final Text LABEL_TRADE = Text.translatable("widget.fast-trade.trade");
     private static final List<Text> TOOLTIPS_TRADE = List.of(
-        Text.literal("点击放置交易配方"),
-        Text.literal("Shift点击直接进行交易")
+        Text.translatable("widget.fast-trade.trade.tooltips")
     );
-    private static final Text LABEL_DROP_CRAFT = Text.literal("喷射");
+    private static final Text LABEL_DROP_CRAFT = Text.translatable("widget.fast-trade.toggle-drop");
     private static final List<Text> TOOLTIPS_DROPCRAFT = List.of(
-        Text.literal("点击切换喷射合成")
+        Text.translatable("widget.fast-trade.toggle-drop.tooltips")
     );
     protected void init(){
 
         ExecutableWidget.instance(1, 1, SLOT_WIDTH, SLOT_WIDTH)
             .setElementHandler(
-                new SlotElement(InventoryUtils.createReadOnlyInventory(()->{
+                new SlotElement(InventoryUtils.createReadOnlyOneItemInventory(()->{
                     var trade = getCurrentTrade();
                     return trade == null? ItemStack.EMPTY : trade.getDisplayedFirstBuyItem();
                 }), 0, ItemEditTasks.getRightClickOpenEditScreenCallback())
@@ -82,7 +74,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
             .addToSub(this);
        ExecutableWidget.instance(SLOT_WIDTH +2 + 1, 1, SLOT_WIDTH, SLOT_WIDTH)
             .setElementHandler(
-                new SlotElement(InventoryUtils.createReadOnlyInventory(()->{
+                new SlotElement(InventoryUtils.createReadOnlyOneItemInventory(()->{
                     var trade = getCurrentTrade();
                     return  trade == null? ItemStack.EMPTY : (
                             trade.getDisplayedSecondBuyItem()
@@ -102,8 +94,8 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                         var trade = getCurrentTrade();
                         if (trade == null)return List.of();
                         var builder = ImmutableList.<Text>builder();
-                        builder.add(Text.literal("右键物品以打开物品编辑器").formatted(Formatting.AQUA));
-                        builder.add(Text.literal("交易信息").formatted(Formatting.GREEN));
+                        builder.add(Text.translatable("widget.fast-trade.trade-info.0").formatted(Formatting.AQUA));
+                        builder.add(Text.translatable("widget.fast-trade.trade-info.1").formatted(Formatting.GREEN));
                         builder.add(Text.literal("------------------").formatted(Formatting.GREEN));
                         builder.add(ChatUtils.stringToText("- &7最大交易数: &a%d".formatted(trade.getMaxUses())));
                         builder.add(ChatUtils.stringToText("- &7当前交易数: &a%d".formatted(trade.getUses())));
@@ -118,7 +110,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
             .addToSub(this);
         ExecutableWidget.instance(2* (SLOT_WIDTH + 2) + TRADE_ICON_WIDTH + 1, 0, SLOT_WIDTH, SLOT_WIDTH)
             .setElementHandler(
-                new SlotElement(InventoryUtils.createReadOnlyInventory(()->{
+                new SlotElement(InventoryUtils.createReadOnlyOneItemInventory(()->{
                     var trade = getCurrentTrade();
                     return  trade == null? ItemStack.EMPTY : (
                         trade.getSellItem()
@@ -147,7 +139,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
             .addToSub(this);
         DisplayWidget.instance(10,0, 3 * (SLOT_WIDTH + 2) + TRADE_ICON_WIDTH - 20, 20)
             .setRenderHandler(
-                LabelElement.instance(Text.literal("暂无选中交易").formatted(Formatting.RED))
+                LabelElement.instance(Text.translatable("widget.fast-trade.no-select").formatted(Formatting.RED))
                     .withPresentCondition((v)->!this.active(v))
             )
 

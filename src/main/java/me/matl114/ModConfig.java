@@ -9,6 +9,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +56,9 @@ public class ModConfig {
         }
         return configFile;
     }
+    public static InputStream loadInternal(String configName){
+        return SlimefunHelper.getInstance().getClass().getResourceAsStream("/"+configName);
+    }
     public static void syncKeys(HashMap config,HashMap defaults){
         for(Object key:defaults.keySet()){
             if(config.containsKey(key)){
@@ -68,76 +72,45 @@ public class ModConfig {
             }
         }
     }
-    @Getter
-    private static boolean enableBlockModelProtect=true;
-    @Getter
-    private static boolean enableSlimefunCmdOverride=true;
-    @Getter
-    private static boolean enableItemModelOvevrride=true;
-    @Getter
-    private static boolean enableStorageItemDisplay=true;
-    @Getter
-    private static boolean enableToolTipsDisplay=true;
-    @Getter
-    private static List<String> slimefunTextureNamespaces = new ArrayList<>();
+
+
     @Getter
     private static Pattern slimefunModelPathPattern ;
-    @Getter
-    private static String slimefunIdCopyHotkey="LEFT_CONTROL,C,BUTTON_1";
+
     @Getter
     private static HashMap<String,String> toggleHotKeys=new HashMap<>();
     public static String getToggleHotkeys(String key){
         return toggleHotKeys.get(key);
     }
     @Getter
-    private static HashMap<String,String> funcHotKeys=new HashMap<>();
+    private static HashMap<String, String> funcHotKeys=new HashMap<>();
     public static String getFuncHotKeys(String key){
         return funcHotKeys.get(key);
     }
+    public static String getHotkeys(String key){
+        return key.startsWith("hotkeys-toggle.") ? getToggleHotkeys( key.substring("hotkeys-toggle.".length()) ): (key.startsWith("hotkeys.")? getFuncHotKeys(key.substring("hotkeys.".length()) ): null);
+    }
     public static void reloadModConfig(){
         Debug.info("Reloading Mod Config");
-        File configFile=loadOrUseInternal("slimefunhelper-config.yml");
+        InputStream configFile=loadInternal("slimefunhelper-config.yml");
         Yaml yaml = new Yaml();
         Map<String, Object> data=new HashMap<>();
-        try(FileReader reader = new FileReader(configFile)){
-            data=yaml.load(reader);
-            option_load:{
-                Map<String,Object> modConfig=(Map<String, Object>) data.get("options");
-                if(modConfig==null)break option_load;
-                enableBlockModelProtect=getOrSetDefault(modConfig,"enable-model-protect",true);
-                Debug.info("toggle model protect ",Boolean.toString(enableBlockModelProtect));
-                enableSlimefunCmdOverride=getOrSetDefault(modConfig,"enable-slimefun-cmd-override",true);
-                Debug.info("toggle slimefun cmd override ",Boolean.toString(enableSlimefunCmdOverride));
-                enableItemModelOvevrride=getOrSetDefault(modConfig,"enable-item-model-override",true);
-                Debug.info("toggle item model override ",Boolean.toString(enableItemModelOvevrride));
-                enableStorageItemDisplay=getOrSetDefault(modConfig,"enable-storageitem-display",true);
-                Debug.info("toggle storage display ",Boolean.toString(enableStorageItemDisplay));
-                enableToolTipsDisplay=getOrSetDefault(modConfig,"enable-tooltips-display",true);
-                Debug.info("toggle tooltips display ",Boolean.toString(enableToolTipsDisplay));
+        data=yaml.load(configFile);
+        hotkey_load:{
+            Map<String,Object> modConfig=(Map<String, Object>) data.get("hotkeys");
+            if(modConfig==null)break hotkey_load;
+            for(Map.Entry<String,Object> entry:modConfig.entrySet()){
+                funcHotKeys.put(entry.getKey(),entry.getValue().toString());
             }
-            hotkey_load:{
-                Map<String,Object> modConfig=(Map<String, Object>) data.get("hotkeys");
-                if(modConfig==null)break hotkey_load;
-                for(Map.Entry<String,Object> entry:modConfig.entrySet()){
-                    funcHotKeys.put(entry.getKey(),entry.getValue().toString());
-                }
+        }
+        hotkey_toggle:{
+            Map<String,Object> modConfig=(Map<String, Object>) data.get("hotkeys-toggle");
+            if(modConfig==null)break hotkey_toggle;
+            for(Map.Entry<String,Object> entry:modConfig.entrySet()){
+                toggleHotKeys.put(entry.getKey(),entry.getValue().toString());
             }
-            hotkey_toggle:{
-                Map<String,Object> modConfig=(Map<String, Object>) data.get("hotkeys-toggle");
-                if(modConfig==null)break hotkey_toggle;
-                for(Map.Entry<String,Object> entry:modConfig.entrySet()){
-                    toggleHotKeys.put(entry.getKey(),entry.getValue().toString());
-                }
-            }
-            sf_namespace:{
-                List<String> namespaces = (List) data.get("namespace-for-slimefun-texture");
-                slimefunTextureNamespaces = namespaces;
-            }
-            sf_model:{
-                String patterns = ((List<String>) data.get("path-pattern-for-slimefun-model")).stream().map(i->"("+i+")").collect(Collectors.joining("|"));
-                Debug.info("Load slimefun model path pattern:",patterns);
-                slimefunModelPathPattern = Pattern.compile(patterns);
-            }
+        }
+//
 //            configsValues:{
 //                Map<String,Object> modConfig=(Map<String, Object>) data.get("configValue");
 //                if(modConfig==null)break configsValues;
@@ -162,16 +135,6 @@ public class ModConfig {
 //                    }
 //                }
 //            }
-        }catch (Throwable e){
-            Debug.info("AN INTERNAL ERROR WHILE RELOADING CONFIG");
-            Debug.info(e);
-        }
-        try(FileWriter writer=new FileWriter(configFile)){
-            yaml.dump(data,writer);
-        }catch (Throwable e){
-            Debug.info("AN INTERNAL ERROR WHILE WRITING CONFIG");
-            Debug.info(e);
-        }
         Configs.loadConfigs();
     }
 

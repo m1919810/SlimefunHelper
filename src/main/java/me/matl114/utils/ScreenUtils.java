@@ -10,13 +10,8 @@ import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.gui.screen.option.KeybindsScreen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.option.NarratorMode;
-import net.minecraft.client.util.GlfwUtil;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.ScreenshotRecorder;
 import net.minecraft.client.util.Window;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -24,7 +19,6 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
@@ -79,7 +73,7 @@ public class ScreenUtils {
     }
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    public static ItemStack getSelectingItemOrHand(){
+    public static ItemStack getSelectingOrHandItem(){
         if(mc.player ==null)return null;
         if(mc.currentScreen instanceof HandledScreen<?> s){
             Point mouseCoord= ScreenUtils.getMouseCoord(mc);

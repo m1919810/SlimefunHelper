@@ -3,6 +3,7 @@ package me.matl114.renders;
 import com.google.gson.*;
 import me.matl114.access.BakedModelManagerAccess;
 import me.matl114.ModConfig;
+import me.matl114.managers.Configs;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import net.minecraft.client.MinecraftClient;
@@ -18,6 +19,8 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SlimefunCustomModelManager {
     private static final HashMap<String,Integer> SLIMEFUNITEMS_CUSTOMMODELDATAS=new HashMap<>();
@@ -77,6 +80,9 @@ public class SlimefunCustomModelManager {
         Debug.info("on walkThroughResourcePacks");
         Collection<Identifier> id= new LinkedHashSet<>();
         List<ResourcePack> packs= resourceManager.streamResourcePacks().toList();
+        List<String> modelPathPattern = Configs.MODEL_CONFIG.getList(Configs.AUTO_MODEL_PATTERN).get();
+        String pattern = modelPathPattern.stream().map(i->"("+i+")").collect(Collectors.joining("|"));
+        var predicate = Pattern.compile(pattern).asMatchPredicate();
         for(ResourcePack pack : packs){
             //Debug.info("in resourcepack ",pack.getName());
             Debug.info("check pack", pack);
@@ -106,7 +112,7 @@ public class SlimefunCustomModelManager {
 //                            if(OUR_NAMESPACE.equals(namespace)){
 //                                Debug.info("try test slimefun item model",shouldModelId);
 //                            }
-                            if( ModConfig.getSlimefunModelPathPattern().asMatchPredicate().test(shouldModelId.toString())){
+                            if(predicate.test(shouldModelId.toString())){
                                 //custom item
                                 Debug.info("load custom slimefun item model:",shouldModelId);
                                 CUSTOM_PATH_SLIMEFUN_MODEL.put(splits[splits.length-1].toUpperCase(Locale.ROOT), wrappedId);
@@ -160,11 +166,12 @@ public class SlimefunCustomModelManager {
     }
     public static Collection<Identifier> loadOurselvesCustomModelTexture(ResourceManager manager){
         List<Identifier> textureIds = new ArrayList<>();
+        Set<String> namespaces = new HashSet<>(Configs.MODEL_CONFIG.getList(Configs.CUSTOM_TEXTURE_PATTERN).get());
         for(ResourcePack pack : manager.streamResourcePacks().toList()){
             //Debug.info("in resourcepack ",pack.getName());
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
             for(String namespace : namespacess){
-                if(OUR_NAMESPACE.equals(namespace) || ModConfig.getSlimefunTextureNamespaces().contains(namespace)){
+                if(OUR_NAMESPACE.equals(namespace) || namespaces.contains(namespace)){
                     Debug.info("Force load TEXTURE in pack",pack.getId(),"and namespace",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
                             String realNamespace=i.getNamespace();

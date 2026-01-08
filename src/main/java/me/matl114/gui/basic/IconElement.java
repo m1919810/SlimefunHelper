@@ -16,6 +16,9 @@ import java.util.function.Predicate;
 
 @Accessors(chain = true)
 public abstract class IconElement extends BoxElement{
+    @Getter
+    @Setter
+    private ColorProvider highLightColor;
 
     @Getter
     @Setter
@@ -120,8 +123,9 @@ public abstract class IconElement extends BoxElement{
                 context.drawTexturedQuad(id, 0,element.getTextureWidth(), 0 , element.getTextureHeight(),0, 0,1,0,1);
 
             }
-            if(highlight){
-                RenderUtils.drawHighlightFrame(context,0,0, element.getTextureWidth(), element.getTextureHeight(), Colors.WHITE);
+            Integer color = (highLightColor == null) ? (highlight ? Integer.valueOf(Colors.WHITE) : null) : highLightColor.provideTextColor(element, highlight);
+            if(color != null){
+                RenderUtils.drawHighlightFrame(context,0,0, element.getTextureWidth(), element.getTextureHeight(), color);
             }
         }
     }

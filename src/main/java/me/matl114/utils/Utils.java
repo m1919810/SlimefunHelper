@@ -14,6 +14,7 @@ import java.awt.*;
 import java.io.File;
 
 
+@ApiMethod
 public class Utils {
     public static int parseIntOrDefault(String value,int defaultValue){
         try{
@@ -27,6 +28,23 @@ public class Utils {
         return new Identifier(SlimefunHelper.MOD_ID, id);
     }
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    public static String getServerName(){
+        if(mc.isInSingleplayer()){
+            if (mc.world == null) return "";
+
+            File folder = (mc.getServer()).session.getWorldDirectory(mc.world.getRegistryKey()).toFile();
+            if (folder.toPath().relativize(mc.runDirectory.toPath()).getNameCount() != 2) {
+                folder = folder.getParentFile();
+            }
+            return folder.getName();
+        }
+        if (mc.getCurrentServerEntry() != null) {
+            return (mc.getCurrentServerEntry().isRealm() ? "realms" : mc.getCurrentServerEntry().address);
+        }
+        return "";
+    }
+
     public static String getWorldName() {
         // Singleplayer
         if (mc.isInSingleplayer()) {

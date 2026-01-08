@@ -25,6 +25,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Unique;
 
@@ -40,6 +41,7 @@ public class Listener {
     public static void init(){
 
     }
+    @Getter
     private static final Map<PacketType<?>, Class<? extends Packet<?>>> registeredPacketTypes = new LinkedHashMap<>();
     private static void registerPacketTypesInternal(Class<?> clazz){
         for (var field: clazz.getDeclaredFields()){
@@ -221,6 +223,8 @@ public class Listener {
     @Getter
     private static final ListenerPoint<Void> serverDisconnectPoint  = new ListenerPoint<>();
 
+
+
     @Getter
     private static final ListenerPoint<HandledScreen<?>> screenOpenPoint = new ListenerPoint<>();
 
@@ -346,6 +350,9 @@ public class Listener {
 
     @Getter
     private static final ListenerPoint<Event<Screen>> postSetScreen = new ListenerPoint<>();
+
+    @Getter
+    private static final ListenerPoint<Event<HitResult>> mineBlockAction = new ListenerPoint<>();
 
     static{
         //ConnectionListener.init();

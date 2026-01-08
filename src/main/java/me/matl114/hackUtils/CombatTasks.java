@@ -253,6 +253,7 @@ public class CombatTasks {
             ClientPlayerAccess.of(mc.player).resyncSprint();
         }
     }
+    //TODO: add position predict , if can not , use origin
     @ApiMethod
     public static boolean attackEntity(PlayerEntity player,Entity target){
         //already targeted at
@@ -273,6 +274,7 @@ public class CombatTasks {
                 //mace not enable in legal mode
                 //use Item packet should trigger by a non-empty item
                 //todo: targeting need recal,
+
                 //todo: add movement prediction position targeting option
                 //todo: check if it can pass grimac in real situation
                 boolean useTp = (tpAttackRange.get() > 1E-7 && target.getBoundingBox().squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(getAttackRange()));
@@ -466,6 +468,7 @@ public class CombatTasks {
                 }
             }
             if(currentSuccessful){
+                //TODO: check water , if water, do not mace and log
                 if(processMaceAttack(player, target, movementStack, shouldMoveBackStack)){
                     int maceThreshold = (useExactAttack? 100: 140);
                     if(maceHack.get() > maceThreshold){
@@ -1770,7 +1773,9 @@ public class CombatTasks {
     static {
         updateWhitelist(COMBAT_WHITELISTED.getValue());
         COMBAT_WHITELISTED.addUpdateListener(CombatTasks::updateWhitelist);
+        COMBAT_FRIEND_PATTERN = Pattern.compile(COMBAT_FRIEND.get()).asMatchPredicate();
         COMBAT_FRIEND.addUpdateListener(str->COMBAT_FRIEND_PATTERN = Pattern.compile(str).asMatchPredicate());
+
         EntityTasks.getEntityTickListener().registerHandler(CombatTasks::handlePlayerTickUpdate);
         Listener.registerSinglePacketListener(EntityTrackerUpdateS2CPacket.class, CombatTasks::handleAutoShield);
         Listener.registerSinglePacketListener(CooldownUpdateS2CPacket.class, CombatTasks::handleShieldCooldownFastWrite);

@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+@ApiMethod
 public class Debug {
     private static Logger logger= LoggerFactory.getLogger("SlimefunHelper");
     public static void info(String string){

@@ -1,6 +1,8 @@
 package me.matl114.mixins.RenderMixin;
 
 import me.matl114.ModConfig;
+import me.matl114.managers.Config;
+import me.matl114.managers.Configs;
 import me.matl114.renders.RenderMain;
 import net.minecraft.client.render.item.ItemModels;
 import net.minecraft.client.render.model.BakedModel;
@@ -16,10 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ItemModels.class)
 public abstract class CustomNbtItemModelMixin {
     @Shadow @Final private BakedModelManager modelManager;
-
+    private final Config.FlagRef itemModelOverride = Configs.MODEL_CONFIG.getBoolean(Configs.ITEM_MODEL_OVERRIDE);
     @Inject(method = "getModel(Lnet/minecraft/item/ItemStack;)Lnet/minecraft/client/render/model/BakedModel;",at=@At("HEAD"), cancellable = true)
     public void getCustomItemModel(ItemStack stack, CallbackInfoReturnable<BakedModel> cir) {
-        if(ModConfig.isEnableItemModelOvevrride()){
+        if(itemModelOverride.get()){
             var re= RenderMain.getCustomItemModel(stack);
             if(re.isPresent()){
                 cir.setReturnValue(re.get());

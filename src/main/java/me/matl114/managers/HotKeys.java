@@ -6,13 +6,12 @@ import me.matl114.hackUtils.*;
 import me.matl114.ModConfig;
 import me.matl114.renders.implement.SlimefunRender;
 import me.matl114.utils.Debug;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.*;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -35,7 +34,7 @@ public class HotKeys {
         Runnable runnable = hotkeyToggleManager.getToggle(key);
         return new SimpleHotKey("hotkeys-toggle." + key, ModConfig.getToggleHotkeys(key),(m -> {
             ClientPlayerEntity player= m.getClient().player;
-            if(player!=null){
+            if(player!=null && HotKeyUtils.isValidState()){
                 runnable.run();
             }
             return true;
@@ -53,7 +52,7 @@ public class HotKeys {
     private static SimpleHotKey getTaskHotKey(String key, Predicate<IInputManager> task){
         return new SimpleHotKey("hotkeys." + key,ModConfig.getFuncHotKeys(key),(task::test)).register(SimpleInputManager.getInstance());
     }
-    private static HashMap<String,Boolean> defaultToggles=new HashMap<>();
+//    private static HashMap<String,Boolean> defaultToggles=new HashMap<>();
     @Getter
     private static ToggleManager buttonToggleManager=ToggleManager.of();
     @Getter
@@ -183,104 +182,129 @@ public class HotKeys {
     private static void initButtonTasks(){
         if(!HACK_VERSION){
             buttonTaskManager.register(TAKE_ALL,InvTasks::takeAllContainerItem);
-            buttonTaskManager.register(SAVE_ALL,InvTasks::saveAllPlayerInvItem);
+            buttonTaskManager.register(SAVE_ALL,InvTasks::saveAllPlayerItem);
             buttonTaskManager.register(OPEN_SEI_SCREEN, SlimefunTasks::handleClickGuideIcon);
         }else {
             buttonTaskManager.register(CLEAR_KEEPED, InvTasks::clearKeepedInv);
             buttonTaskManager.register(TAKE_ALL,InvTasks::takeAllContainerItem);
-            buttonTaskManager.register(SAVE_ALL,InvTasks::saveAllPlayerInvItem);
+            buttonTaskManager.register(SAVE_ALL,InvTasks::saveAllPlayerItem);
             buttonTaskManager.register(OPEN_SEI_SCREEN, SlimefunTasks::handleClickGuideIcon);
             //buttonTaskManager.register(BUTTON_TASK_1, Tasks::doButtonTaskTest1);
         }
     }
     private static void initHotkeyTasks(){
-        getTaskHotKey(SLIMEFUNID_COPY,(manager)->{
-            ClientPlayerEntity player= manager.getClient().player;
-            if(player!=null){
-                return SlimefunRender.copySfIdInHand(player,manager.getClient());
-            }
-            return false;
-        });
-        //todo for removal
-//        getTaskHotKey(SF_RECIPE_INTERNAL, (manager)->{
-//            ClientPlayerEntity player= manager.getClient().player;
-//            if(player!=null && manager.getClient().currentScreen instanceof HandledScreen<?> handledScreen && handledScreen.getScreenHandler().getCursorStack().isEmpty()){
-//                return SlimefunTasks.clickToAddRecipeDisplay(handledScreen);
-//            }
-//            return false;
-//        });
+        //internal hotkeys
+        getTaskHotKey(SLIMEFUNID_COPY,(manager)->SlimefunRender.copySfIdInHand());
         getTaskHotKey(SF_SAVEITEM_INTERNAL, (manager)->SlimefunTasks.clickToSaveItem());
         getTaskHotKey(ITEMEDITOR_OPEN, (iInputManager -> ItemEditTasks.openEditor()));
         getTaskHotKey(OPEN_INV_CACHE, (iInputManager -> InvTasks.openInventoryCacheScreen()));
         getTaskHotKey(WAKE_UP_SCREEN, (iInputManager -> RenderTasks.wakeUpScreen()));
-        if(!HACK_VERSION){
-            getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
-            getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
-            getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
-            getTaskHotKey(OPEN_MENU,(manager->{
-                InvTasks.openSelectScreen();
+
+        getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllCursorStack()));
+        getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
+        getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
+        //usage hotkeys need check state
+        getTaskHotKey(OPEN_MENU,(manager->{
+            if (HotKeyUtils.isValidState()){
+                InvTasks.openConfigNewStyleScreen();
                 return true;
-            }));
+            }
+            return false;
+        }));
+        if(!HACK_VERSION){
         }else {
             getTaskHotKey("test-func",(manager -> {
-                if(manager.getClient().player != null){
+                if(manager.getClient().player != null && HotKeyUtils.isValidState()){
                     Debug.chat("Doing Test!!!");
                     Tasks.doTest();
                     return true;
                 }else return false;
             }));
-            getTaskHotKey(OPEN_MENU,(manager->{
-                InvTasks.openSelectScreen();
-                return true;
+            getTaskHotKey(FAST_PLAYER_MOVE,(iInputManager -> {
+                if(HotKeyUtils.isValidState()){
+                    MovTasks.quickMovFront();
+                    return true;
+                }
+                return false;
             }));
-            getTaskHotKey(QUICK_DROP,(iInputManager -> InvTasks.dropAllSelectedItem()));
-            getTaskHotKey(FAST_MOVE,(iInputManager -> InvTasks.quickMoveAllSelectedItem()));
-            getTaskHotKey(FAST_DROP,(iInputManager -> InvTasks.quickDropAllSelectedItem()));
-            getTaskHotKey(FAST_PLAYER_MOVE,(iInputManager -> MovTasks.quickMovFront()));
-            getTaskHotKey(FAST_PLAYER_MOVE_WALL,(iInputManager -> MovTasks.quickMovTowardsWall()));
-            getTaskHotKey(TOGGLE_FLYSPEED, (iInputManager -> MovTasks.toggleSpeedOverride()));
+            getTaskHotKey(FAST_PLAYER_MOVE_WALL,(iInputManager -> {
+                if(HotKeyUtils.isValidState()){
+                    MovTasks.quickMovTowardsWall();
+                    return true;
+                }
+                return false;
+            }));
+            getTaskHotKey(TOGGLE_FLYSPEED, (iInputManager -> {
+                if(HotKeyUtils.isValidState()){
+                    MovTasks.toggleSpeedOverride();
+                    return true;
+                }
+                return false;
+            }));
             getTaskHotKey(PICK_ITEM, (iInputManager -> InvTasks.pickUpSelectingSlot()));
 
         }
 
     }
-    static File toggleSave;
-    private static void save(){
-        try(FileWriter writer=new FileWriter(toggleSave)){
-            Yaml yaml=new Yaml();
-            yaml.dump(defaultToggles,writer);
-        }catch (Throwable e){
-            e.printStackTrace();
-        }
+
+//    static File toggleSave;
+//    private static void save(){
+//        try(FileWriter writer=new FileWriter(toggleSave)){
+//            Yaml yaml=new Yaml();
+//            yaml.dump(defaultToggles,writer);
+//        }catch (Throwable e){
+//            e.printStackTrace();
+//        }
+//    }
+    public static Config.FlagRef getToggleFlag(String key,boolean value){
+        Configs.TOGGLE_CONFIG.defaultVal(value, "toggle", key);
+        return Configs.TOGGLE_CONFIG.getBoolean("toggle", key);
+
+    //        if(defaultToggles.containsKey(key)){
+    //            return defaultToggles.get(key);
+    //        }else {
+    //            setToggles(key,value);
+    //            return value;
+    //        }
     }
-    public static boolean getToggles(String key,boolean value){
-        if(defaultToggles.containsKey(key)){
-            return defaultToggles.get(key);
-        }else {
-            setToggles(key,value);
-            return value;
-        }
-    }
-    public static void setToggles(String key,boolean value){
-        defaultToggles.put(key,value);
-        save();
-    }
+//    public static boolean getToggles(String key,boolean value){
+//        if (!Configs.HOTKEY_CONFIG.contains("toggle", key)){
+//            return Configs.HOTKEY_CONFIG.getBoolean("toggle", key).getValue();
+//        }else{
+//            Configs.HOTKEY_CONFIG.defaultVal(value, "toggle", key);
+//            return value;
+//        }
+////        if(defaultToggles.containsKey(key)){
+////            return defaultToggles.get(key);
+////        }else {
+////            setToggles(key,value);
+////            return value;
+////        }
+//    }
+//    public static void setToggles(String key,boolean value){
+//        Configs.HOTKEY_CONFIG.setValue(value,"toggle", key);
+//    }
     private static void initToggleSaves(){
-        toggleSave= ModConfig.loadOrUseInternal("slimefunhelper-func-toggle.yml");
-        try(FileReader readerConfig=new FileReader(toggleSave)){
-            Yaml yaml=new Yaml();
-            HashMap<String,Object> toggles=yaml.load(readerConfig);
-            if(toggles==null|| toggles.isEmpty()){
-                defaultToggles=new HashMap<>();
-            }else {
-                for (Map.Entry<String,Object> entry:toggles.entrySet()){
-                    defaultToggles.put(entry.getKey(),Boolean.parseBoolean(entry.getValue().toString()));
+        final File configFile = FabricLoader.getInstance().getConfigDir().resolve("slimefunhelper-func-toggle.yml").toFile();
+        if(configFile.exists() && configFile.isFile()){
+            //move to config
+            try(FileReader readerConfig=new FileReader(configFile)){
+                Yaml yaml=new Yaml();
+                HashMap<String,Object> toggles=yaml.load(readerConfig);
+                if(toggles==null|| toggles.isEmpty()){
+                }else {
+                    for (Map.Entry<String,Object> entry:toggles.entrySet()){
+                        Configs.TOGGLE_CONFIG.defaultVal(Boolean.parseBoolean(entry.getValue().toString()), "toggle", entry.getKey());
+                    }
                 }
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } finally {
+                Configs.TOGGLE_CONFIG.save();
+                configFile.delete();
             }
-        }catch (Throwable e){
-            defaultToggles=new HashMap<>();
-            Debug.info("AN INTERNAL ERROR WHILE LOADING DEFAULT CONFIG");
-            e.printStackTrace();
         }
     }
 

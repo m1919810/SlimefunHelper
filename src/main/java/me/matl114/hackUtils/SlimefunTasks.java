@@ -8,8 +8,6 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.JsonOps;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
@@ -92,28 +90,7 @@ public class SlimefunTasks {
 
     }
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    public static record ItemStackSample(ItemStack sample){
-        public static final ItemStackSample EMPTY = new ItemStackSample(ItemStack.EMPTY);
 
-        public static ItemStackSample of(ItemStack stack){
-            if(stack.isEmpty()){
-                return EMPTY;
-            }
-            var st = stack.copy();
-            st.setCount(1);
-            return new ItemStackSample(st);
-        }
-
-        @Override
-        public int hashCode(){
-            return ItemStack.hashCode(sample);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return (o instanceof ItemStackSample sample && ItemStack.areItemsAndComponentsEqual(sample.sample, this.sample)) ||(o instanceof ItemStack item && ItemStack.areItemsAndComponentsEqual(item, this.sample));
-        }
-    }
     public static record ItemStackWithId(ItemStack stack, String identifier){
         public static ItemStackWithId ofNullable(ItemStack item){
             if(item == null || item.isEmpty())return EMPTY;
@@ -164,7 +141,7 @@ public class SlimefunTasks {
 
         @Override
         public JsonElement serialize(ItemStackSample src, Type typeOfSrc, JsonSerializationContext context) {
-            if(src == ItemStackSample.EMPTY || src.sample.isEmpty()){
+            if(src == ItemStackSample.EMPTY || src.sample().isEmpty()){
                 return JsonNull.INSTANCE;
             }
             try{
@@ -342,7 +319,9 @@ public class SlimefunTasks {
             .registerTypeAdapter(CraftingType.class, TYPE_CODEC)
             .registerTypeAdapter(SlimefunRecipeEntry.class, ENTRY_CODED)
             .create();
+        //TODO: check if custom enchantment load fail in certain server. check data save, do not remove original key when data load failure
         private boolean loaded = false;
+        private boolean loadSuccess = false;
         public void loadData(){
             dataOperationLock.lock();
             try{
@@ -391,7 +370,19 @@ public class SlimefunTasks {
                     }
                 }
                 ACTIVE_ID.clear();
-            }finally {
+                loadSuccess = true;
+            } catch (Throwable e){
+                Debug.chat("粘液数据库加载失败,可能是数据库出现了损坏或者服务器版本不支持");
+                Debug.chat("请进入本地存档测试,或者使用日志文件提问");
+                Debug.info("Error while loading slimefun database :");
+                e.printStackTrace();
+                loadSuccess = false;
+                ALL_RECIPE_TYPE = new DirtyMap<>(new Object2ReferenceOpenHashMap<>());
+                ALL_RECIPE_ENTRY = new DirtyMap<>(new Object2ReferenceOpenHashMap<>());
+                SAVED_ITEM_ID = new DirtyCollectionImpl<>(new LinkedHashSet<>());
+                ITEM_SAMPLE_MAP = new DirtyMap<>(new Object2ReferenceOpenHashMap<>());
+                ITEM_SAMPLE_INDEX = new Object2ReferenceOpenHashMap<>();
+            } finally {
                 dataOperationLock.unlock();
             }
 
@@ -400,6 +391,10 @@ public class SlimefunTasks {
         public void saveData(){
             //save async
             //problem occurred, registry access denied
+            if(!loadSuccess){
+                //do not save when data load failure
+                return;
+            }
             if(!loaded)return;
             Map<String, String> savingData = new LinkedHashMap<>();
             if(!Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_SAVE).get()){
@@ -480,6 +475,7 @@ public class SlimefunTasks {
                 MULTIBLOCK_INDEXED_BY_POTENTIALS = new Reference2ReferenceOpenHashMap<>();
             }
         }
+        //private method
         private void addToMultiblockRegistry(SlimefunRecipeEntry entry){
             var newEntry = MultiBlockEntry.of(entry.inputs(), entry.id);
             if(newEntry == null)return;
@@ -531,19 +527,25 @@ public class SlimefunTasks {
             if(id.startsWith("customitems:")){
                 ACTIVE_ID.add(id);
                 var re= ITEM_SAMPLE_INDEX.get(id);
-                return re != null ? re.sample.copy() : ItemStack.EMPTY;
+                return re != null ? re.sample().copy() : ItemStack.EMPTY;
             }else {
                 return new ItemStack(Registries.ITEM.get(Identifier.tryParse(id)));
             }
         }
 
         public void putSlimefunEntry(SlimefunRecipeEntry entry){
+            if(!loadSuccess){
+                return;
+            }
             ALL_RECIPE_ENTRY.put(entry.id(), entry);
             if(MULTIBLOCK_REGEX.asMatchPredicate().test(entry.rid())){
                 check().addToMultiblockRegistry(entry);
             }
         }
         public void validateRecipeType(String rid, ItemStack icon){
+            if (!loadSuccess){
+                return;
+            }
             if(!check().ALL_RECIPE_TYPE.containsKey(rid)){
                 ItemStack ICON = icon.isEmpty()? ITEM_NULL_TYPE.copy(): icon.copy();
                 ICON.setCount(1);
@@ -1766,14 +1768,48 @@ public class SlimefunTasks {
         return results;
     }
 
-    public static void handleMoveRecipeToSlots(RecipeEntry entry, HandledScreen<?> screen, int amount, boolean removeOrigin, int... acceptSlots){
+    @ApiMethod
+    public static InvTasks.SlotMatchingResult getItemStackMatchingSlot(HandledScreen screen, ItemStack stack, boolean weakMatch, int... slots){
+        if(stack.isEmpty()){
+            return InvTasks.getEmptySlots(screen, slots);
+        }
+        if(!weakMatch){
+            return InvTasks.getItemStackMatchingSlot(screen, stack, slots);
+        }
+        var result = new InvTasks.SlotMatchingResult();
+        ItemStack realStack = null;
+        String sampleId = getSfIdOrNull(stack);
+        var allSlots = screen.getScreenHandler().slots;
+        for (int i : slots){
+            Slot slot = allSlots.get(i);
+            if(slot != null && slot.inventory instanceof PlayerInventory && !slot.getStack().isEmpty() ){
+                if(realStack != null){
+                    if( ItemStack.areItemsAndComponentsEqual(slot.getStack(), realStack)){
+                        //all match
+                        result.addMatchingSlot(i, slot);
+                    }
+                }else {
+                    //the first match itemStack will be the realStack template
+                    if(Objects.equals(sampleId,getSfIdOrNull(slot.getStack()) )){
+                        realStack = slot.getStack();
+                        result.setItemSample(realStack);
+                        result.addMatchingSlot(i, slot);
+                    }
+                }
+
+            }
+        }
+        return result;
+    }
+    @ApiMethod
+    public static void moveSlimefunRecipePatternToContainer(RecipeEntry entry, HandledScreen<?> screen, int amount, boolean removeOrigin, int... acceptSlots){
         Preconditions.checkArgument(acceptSlots.length == 9);
         ItemStack[] ingredients = new ItemStack[9];
         Ingredient[] ingre = entry.ingredient();
         Preconditions.checkArgument(ingre.length <= 9);
         //try clear all items first;
-        var handler = screen.getScreenHandler();
-        DefaultedList<Slot> allSlots = handler.slots;
+//        var handler = screen.getScreenHandler();
+//        DefaultedList<Slot> allSlots = handler.slots;
 //        for (var i : acceptSlots){
 //            Slot slot = allSlots.get(i);
 //            if(!slot.getStack().isEmpty()){
@@ -1792,71 +1828,8 @@ public class SlimefunTasks {
         for (var re = ingre.length ;re < 9; ++re){
             ingredients[re] = ItemStack.EMPTY;
         }
-        Map<ItemStackSample, IntList> stackRecipe = new HashMap<>();
-        IntList emptySlots = new IntArrayList();
-        for ( int i=0; i< 9; ++i){
-            ItemStack item = ingredients[i];
-            if(item != null && !item.isEmpty()){
-                ItemStackSample sample = new ItemStackSample(item);
-                int index = i;
-                stackRecipe.compute(sample, (key, list)->{
-                    if(list == null){
-                        list = new IntArrayList();
-                    }
-                    list.add(index);
-                    return list;
-                });
-            }else{
-                emptySlots.add(i);
-            }
-        }
-        for (var mapEntry: stackRecipe.entrySet()){
-            ItemStackSample sample = mapEntry.getKey();
-            String sampleId = getSfIdOrNull(sample.sample());
-            ItemStack realStack = null;
-            int counter = 0;
-            IntList cachedSlots = new IntArrayList();
-            int size = allSlots.size();
-            for (int i=0; i< size; ++i){
-                Slot slot = allSlots.get(i);
-                if(slot != null && slot.inventory instanceof PlayerInventory && !slot.getStack().isEmpty() ){
-                    if(realStack != null){
-                        if( ItemStack.areItemsAndComponentsEqual(slot.getStack(), realStack)){
-                            //all match
-                            cachedSlots.add(i);
-                            counter += slot.getStack().getCount();
-                        }
-                    }else {
-                        //the first match itemStack will be the realStack template
-                        if(Objects.equals(sampleId,getSfIdOrNull(slot.getStack()) )){
-                            realStack = slot.getStack();
-                            cachedSlots.add(i);
-                            counter += slot.getStack().getCount();
-                        }
-                    }
-
-                }
-            }
-            //nothing match this sample, , , counter must be 0, there is no meaning doing left
-            if(realStack == null){
-                continue;
-            }
-            //copy stack to avoid modification
-            realStack = realStack.copy();
-            int needed = 0;
-            for (var i: mapEntry.getValue()){
-                needed += ingredients[i].getCount();
-            }
-            int maxSupply = Math.min( counter/ needed, amount);
-            for (var i: mapEntry.getValue()){
-                int slotNeed = ingredients[i].getCount() * maxSupply;
-                InvTasks.moveToSlot(screen, realStack, acceptSlots[i], slotNeed, removeOrigin, cachedSlots);
-            }
-        }
-        for (var i: emptySlots){
-            InvTasks.quickMoveSlotOrDrop(screen, i);
-        }
-
+        int[] playerInv = InvTasks.getPlayerInventorySlots(screen).toIntArray();
+        InvTasks.moveRecipePatternToContainer(screen, ingredients, acceptSlots, amount, removeOrigin, ((screen1, itemStack) -> getItemStackMatchingSlot(screen1, itemStack, true, playerInv)));
     }
 
 
@@ -1883,7 +1856,7 @@ public class SlimefunTasks {
         ClientPlayerEntity player = mc.player;
         if(player==null)return false;
 
-        ItemStack heldItem = ScreenUtils.getSelectingItemOrHand();
+        ItemStack heldItem = ScreenUtils.getSelectingOrHandItem();
 
         if(heldItem != null && !heldItem.isEmpty()){
             handleSaveItem(heldItem);

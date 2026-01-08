@@ -1,16 +1,19 @@
 package me.matl114.utils.UtilClass;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.AtomicDouble;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 import com.mojang.brigadier.StringReader;
 import com.mojang.datafixers.util.Pair;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import lombok.val;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.config.KeyValueInputWidget;
 import me.matl114.managers.Config;
+import me.matl114.managers.MultiKeyBind;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.nbt.NbtElement;
@@ -24,15 +27,13 @@ import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.lang.reflect.Type;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String> {
     public AttrKeyValue(String key, T value){
@@ -52,12 +53,37 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
     }
 
     @Getter
-    String keyName;
-    @Getter
-    String value;
+    final String keyName;
+    private String value;
+    public String getValue(){
+        return value;
+    }
     @Getter
     @Nullable
-    T originValue;
+    private T originValue;
+    @Getter
+    List<Predicate<T>> validators = new ArrayList<>();
+    private boolean passValidators(T value){
+        try{
+            for (var validator : validators){
+                if(!validator.test(value)){
+                    return false;
+                }
+
+            }
+            return true;
+        }catch (Throwable e){
+            return false;
+        }
+    }
+    public boolean setOriginValue(T value){
+        if(passValidators(value)){
+            this.originValue = value;
+            return true;
+        }
+        return false;
+    }
+
     @Getter
     boolean validate = true;
     public T validateValue(){
@@ -66,13 +92,17 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
     }
     public abstract boolean validateAndUpdate();
 
-    public abstract String updateValue(T val);
+    protected abstract String updateValue(T val);
 
     public abstract Class identifier();
     @Override
     public void valueChange(Object selectable, String string) {
         this.value = string;
         validateValue();
+    }
+
+    public void valueChangeInternal(Object selectable, T val){
+        valueChange(selectable, updateValue(val));
     }
     public SubScreenWidget generateKeyValueInput(int x, int y, int keyDx, int blankDx, int inputDx, int dy){
         return new KeyValueInputWidget<>(x, y, keyDx + blankDx + inputDx, dy, keyDx, blankDx, inputDx, this);
@@ -87,6 +117,9 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
     public ContentDelegateWidget<TextFieldWidget> generateTextField(int x, int y, int dx, int dy){
         return McWidgetHelpers.createTextFieldEditBox(x, y, dx, dy, (ed, val)->valueChange(null, val), this.value, McWidgetHelpers.getWrongRedTextBoxColorProvider(()->validate));
     }
+
+
+
 
     public static  AttrKeyValue<?> ofConfigValue(String key, Object object){
         //todo need fix
@@ -123,17 +156,15 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
 
         @Override
         public boolean validateAndUpdate() {
-            switch (this.value){
+            switch (this.getValue()){
                 case "true"->{
-                    this.originValue = true;
-                    return true;
+                    return setOriginValue(true);
                 }
                 case "false"->{
-                    this.originValue = false;
-                    return true;
+                    return setOriginValue(false);
                 }
                 default -> {
-                    return true;
+                    return false;
                 }
             }
         }
@@ -163,8 +194,7 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         @Override
         public boolean validateAndUpdate() {
             try{
-                this.originValue = Integer.parseInt(this.value);
-                return true;
+                return setOriginValue(Integer.parseInt(this.getValue()));
             }catch (Throwable e){
                 return false;
             }
@@ -186,32 +216,19 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
 
     public static class ClampedIntAttrKeyValue extends IntAttrKeyValue{
         @Getter
-        int min;
+        final int min;
         @Getter
-        int max;
+        final int max;
 
         public ClampedIntAttrKeyValue(String key, int value, int min, int max) {
             super(key, value);
             this.min = min;
             this.max  = max;
+            getValidators().add(i -> i >= this.min && i <= this.max);
         }
 
         public int clampInput(int val){
             return MathHelper.clamp(val, min, max);
-        }
-
-        @Override
-        public boolean validateAndUpdate() {
-            try{
-                int val = Integer.parseInt(this.value);
-                if(val >= min && val <= max){
-                    this.originValue = val;
-                    return true;
-                }
-                return false;
-            }catch (Throwable e){
-                return false;
-            }
         }
     }
 
@@ -228,8 +245,7 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             @Override
             public boolean validateAndUpdate() {
                 try {
-                    this.originValue = Double.parseDouble(this.value);
-                    return true;
+                    return setOriginValue(Double.parseDouble(this.getValue()));
                 }catch (Throwable e){
                     return false;
                 }
@@ -262,8 +278,8 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         return new AttrKeyValue<String>(key, val) {
             @Override
             public boolean validateAndUpdate() {
-                this.originValue = this.value;
-                return true;
+                return setOriginValue(this.getValue());
+
             }
 
             @Override
@@ -282,14 +298,86 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         return new EnumAttrKeyValue<>(key, val, finiteValueMap).setIdentifier(val == null? Enum.class : val.getClass());
     }
 
+    public static  AttrKeyValue<MultiKeyBind> keyBind(String key, MultiKeyBind keyBind){
+        return new AttrKeyValue<MultiKeyBind>(key, keyBind) {
+            @Override
+            public boolean validateAndUpdate() {
+                if(getValue().startsWith("hotkey:")){
+                    try{
+                        return setOriginValue(new MultiKeyBind(getValue()));
+                    }catch (Throwable e){ }
+                }
+                return false;
+            }
+
+            @Override
+            public String updateValue(MultiKeyBind val) {
+                return val.asString();
+            }
+
+            @Override
+            public Class identifier() {
+                return MultiKeyBind.class;
+            }
+        };
+    }
+    public static class ListAttrKeyValue extends AttrKeyValue<List<String>> {
+        static final Gson gson = new Gson();
+        static final Type LIST_TYPE = new TypeToken<List<String>>() {}.getType();
+        @Getter
+        private final List<Predicate<String>> elementValidators = new ArrayList<>();
+
+        public List<AttrKeyValue<String>> createAttrKeyValueForElements(){
+            var list = getOriginValue();
+            var size = list.size();
+            List<AttrKeyValue<String >> res = new ArrayList<>();
+            for (int i = 0; i <size ; ++ i){
+                AttrKeyValue<String> str = AttrKeyValue.str(this.getKeyName(), list.get(i));
+                str.getValidators().addAll(elementValidators);
+                res.add(str);
+            }
+            return res;
+        }
+        public AttrKeyValue<String> createNewAttrKeyValueElement(){
+            AttrKeyValue<String> str = AttrKeyValue.str(this.getKeyName(), "");
+            str.getValidators().addAll(elementValidators);
+            return str;
+        }
+        public ListAttrKeyValue(String key, List<String> value) {
+            super(key, value);
+        }
+
+        @Override
+        public boolean validateAndUpdate() {
+            try {
+                List<String> json = gson.fromJson(this.getValue(), LIST_TYPE);
+                return setOriginValue(json);
+            }catch (Throwable e){
+                return false;
+            }
+        }
+
+        @Override
+        protected String updateValue(List<String> val) {
+            return gson.toJson(val);
+        }
+
+        @Override
+        public Class identifier() {
+            return List.class;
+        }
+    }
+    public static AttrKeyValue<List<String>> list(String key, List<String> list){
+        return new ListAttrKeyValue(key, list);
+    }
+
     public static <T> AttrKeyValue<T> computeNonnull(String keyName, String value, Function<String, T> valueMapper){
         return new AttrKeyValue<T>(keyName, Optional.ofNullable(value), valueMapper.apply(value)) {
             @Override
             public boolean validateAndUpdate() {
-                T val = valueMapper.apply(this.value);
+                T val = valueMapper.apply(this.getValue());
                 if(val != null){
-                    this.originValue = val;
-                    return true;
+                    return setOriginValue(val);
                 }
                 return false;
             }
@@ -319,12 +407,11 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         @Override
         public boolean validateAndUpdate() {
             try{
-                int index = this.value.indexOf(":");
+                int index = this.getValue().indexOf(":");
                 if(index <= 0)return false;
-                Identifier id =  Identifier.tryParse(this.value);
+                Identifier id =  Identifier.tryParse(this.getValue().substring(0,index), this.getValue().substring(index+1));
                 if(id != null){
-                    this.originValue = id;
-                    return true;
+                    return setOriginValue(id);
                 }else return false;
             }catch (Throwable e){
                 return false;
@@ -358,16 +445,11 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         @Override
         public boolean validateAndUpdate() {
             try{
-                int index = this.value.indexOf(":");
+                int index = this.getValue().indexOf(":");
                 if(index >=0){
-                    Identifier id = new Identifier(this.value.substring(0,index), this.value.substring(index+1));
+                    Identifier id = new Identifier(this.getValue().substring(0,index), this.getValue().substring(index+1));
                     var val = registry.getOrEmpty(id);
-                    if(val.isPresent()){
-                        this.originValue = val.get();
-                        return true;
-                    }else {
-                        return false;
-                    }
+                    return val.filter(this::setOriginValue).isPresent();
                 }else return false;
             }catch (Throwable e){
                 return false;
@@ -400,10 +482,9 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
 
         @Override
         public boolean validateAndUpdate() {
-            T val = finiteValueMap.get(this.value);
+            T val = finiteValueMap.get(this.getValue());
             if(val != null){
-                this.originValue = val;
-                return true;
+                return setOriginValue(val);
             }
             return false;
         }
@@ -492,7 +573,7 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
 
         private boolean extraParse(){
             try{
-                nbtParser.apply(this.originValue);
+                nbtParser.apply(this.getOriginValue());
                 return true;
             }catch (Throwable e){
                 return false;
@@ -502,8 +583,8 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         public void applyFormatting(Consumer<String> callback){
             if(validate){
                 try{
-                    this.value = new NbtOrderedStringFormatter().apply(this.originValue);
-                    callback.accept(this.value);
+                    valueChange(null, new NbtOrderedStringFormatter().apply(this.getOriginValue()));
+                    callback.accept(this.getValue());
                 }catch (Throwable e){
                 }
             }
@@ -513,14 +594,13 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         public boolean validateAndUpdate() {
             try{
                 if(enableNull){
-                    if(this.value == null|| this.value.isEmpty()){
-                        this.originValue = null;
-                        return extraParse();
+                    if(this.getValue() == null|| this.getValue().isEmpty()){
+
+                        return setOriginValue(null) && extraParse();
                     }
                 }
-                this.originValue = (new StringNbtReader(new StringReader(this.value))).parseElement();
-                this.validate = true;
-                return extraParse();
+                this.validate = setOriginValue((new StringNbtReader(new StringReader(this.getValue()))).parseElement()) && extraParse();
+                return this.validate;
             }catch (Throwable e){
                 this.validate = false;
                 return false;
@@ -542,10 +622,13 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
 //            widget.setText(this.value);
 //            widget.setChangeListener((val)->valueChange(null, val));
 //            TextFieldAccess.of(widget).setBorderColorProvider();
-            return McWidgetHelpers.createMultiLineEditBox(x, y, dx, dy, (ed, val)->valueChange(null, val), this.value, McWidgetHelpers.getWrongRedTextBoxColorProvider(()->validate));
+            return McWidgetHelpers.createMultiLineEditBox(x, y, dx, dy, (ed, val)->valueChange(null, val), this.getValue(), McWidgetHelpers.getWrongRedTextBoxColorProvider(()->validate));
 //            return widget;
         }
     }
+
+
+
 
 
 }

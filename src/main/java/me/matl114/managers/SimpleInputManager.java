@@ -1,6 +1,7 @@
 package me.matl114.managers;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.utils.UtilClass.Event;
@@ -17,7 +18,7 @@ public class SimpleInputManager implements IInputManager{
         this.mc=MinecraftClient.getInstance();
     }
     protected final Map<String, IHotKey> hotkeyRegistry = new HashMap<>();
-    protected final Multimap<Integer, IHotKey> keyBindings= ArrayListMultimap.<Integer, IHotKey>create();
+    protected final Multimap<Integer, IHotKey> keyBindings= LinkedHashMultimap.<Integer, IHotKey>create();
     public IHotKey getHotkey(String id){
         return hotkeyRegistry.get(id);
     }
@@ -26,6 +27,10 @@ public class SimpleInputManager implements IInputManager{
         for (Integer i:key.getRelatedKeyCode()){
             keyBindings.put(i,key);
         }
+    }
+    public void unregisterHotKeys(IHotKey key){
+        hotkeyRegistry.remove(key.getIdentifier());
+        keyBindings.entries().removeIf(e-> e.getValue() == key);
     }
     public static SimpleInputManager getInstance() {
         return instance;

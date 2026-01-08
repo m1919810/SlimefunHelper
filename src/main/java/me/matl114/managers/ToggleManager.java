@@ -12,27 +12,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface ToggleManager {
     public static ToggleManager of(){
-        final HashMap<String ,AtomicBoolean> toggles = new LinkedHashMap<>();
+        final HashMap<String ,Config.FlagRef> toggles = new LinkedHashMap<>();
         return ()->toggles;
     }
-    public static ToggleManager of(HashMap<String,AtomicBoolean> map){
+    public static ToggleManager of(HashMap<String,Config.FlagRef> map){
         return ()->map;
     }
-    HashMap<String,AtomicBoolean> getRaw();
-    static AtomicBoolean FALSE = new AtomicBoolean(false);
+    HashMap<String,Config.FlagRef> getRaw();
+    static Config.FlagRef FALSE = new Config.FlagRef(false);
     @Nonnull
-    default AtomicBoolean getInternal(String value){
+    default Config.FlagRef getInternal(String value){
        return getRaw().getOrDefault(value,FALSE);
     }
     default boolean getState(String value){
         return getInternal(value).get();
     }
     default Runnable getToggle(String value){
-        final AtomicBoolean toggle = getInternal(value);
+        final Config.FlagRef toggle = getInternal(value);
         return toggle == FALSE ?()->{} :() ->{
             boolean result=!toggle.get();
             toggle.set(result);
-            HotKeys.setToggles(value,result);
+            Configs.TOGGLE_CONFIG.save();
             Debug.chat("Toggle", Text.translatableWithFallback("toggle." + value, value), (result?"on":"off"));
 
         };
@@ -47,6 +47,6 @@ public interface ToggleManager {
     default void register(String value, boolean defaultValue){
         Preconditions.checkArgument(!getRaw().containsKey(value));
 
-        getRaw().put(value, new AtomicBoolean(HotKeys.getToggles(value,defaultValue)));
+        getRaw().put(value, HotKeys.getToggleFlag(value,defaultValue));
     }
 }

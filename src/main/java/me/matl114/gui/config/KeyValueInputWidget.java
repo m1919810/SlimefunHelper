@@ -2,10 +2,13 @@ package me.matl114.gui.config;
 
 import com.google.common.base.Preconditions;
 import com.mojang.datafixers.util.Pair;
+import me.matl114.ModConfig;
 import me.matl114.access.ScreenAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
+import me.matl114.hackUtils.SlimefunTasks;
 import me.matl114.managers.Config;
+import me.matl114.managers.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -98,6 +101,33 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
 
         }else if(Enum.class.isAssignableFrom(id)){
             ((AttrKeyValue.EnumAttrKeyValue)this.keyValueHolder).generateSwitchingButton(this.dkey + this.dblank, 0, this.dvalue, this.dy, Consumers.nop()).addToSub(this);
+        }else if(id == MultiKeyBind.class){
+            String defaultHotkeys = ModConfig.getHotkeys(keyValueHolder.getKeyName());
+            new KeyBindConfigurateWidget(this.dkey + this.dblank + 1, 1, this.dvalue - 2, this.dy - 2, (AttrKeyValue<MultiKeyBind>) this.keyValueHolder, new MultiKeyBind(defaultHotkeys == null? "" : defaultHotkeys)).addToSub(this);
+        }else if(id == List.class){
+            //add a Edit in gui setting
+            AttrKeyValue.ListAttrKeyValue listKeyValueHolder = (AttrKeyValue.ListAttrKeyValue) this.keyValueHolder;
+            this.interactPlace = new SubScreenWidget(
+                dkey  + dblank, 0, dvalue, dy
+            )
+                .addDrawableChild(
+                    McWidgetHelpers.createTextFieldEditBox(
+                        1, 1, dvalue -2 - dy , dy -2, this.keyValueHolder, this.keyValueHolder.getValue(), McWidgetHelpers.getWrongRedTextBoxColorProvider(this.keyValueHolder::isValidate)
+                    )
+                )
+                .addDrawableChild(
+                    ExecutableWidget.instance(dvalue - dy + 1, 1, dy -2, dy - 2)
+                        .setElementHandler(
+                            IconElement.fixed(new Identifier("slimefunhelper", "textures/gui/list_tag.png"), ButtonAction.run(()->{
+                                    ScreenAccess.of(new ListModifyScreen(listKeyValueHolder, listAttrKeyValue -> {
+                                        listKeyValueHolder.setOriginValue(listAttrKeyValue.getOriginValue());
+                                    })).openFromCurrent();
+                                }))
+                                .withTooltips(TooltipHandler.of(List.of(Text.literal("点击打开 列表编辑界面"))))
+                        )
+
+                )
+                .addToSub(this);
         }
         else{
             this.interactPlace = McWidgetHelpers.createTextFieldEditBox(

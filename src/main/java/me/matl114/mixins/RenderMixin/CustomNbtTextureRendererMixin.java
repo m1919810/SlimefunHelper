@@ -2,6 +2,8 @@ package me.matl114.mixins.RenderMixin;
 
 import me.matl114.access.ItemRendererAccess;
 import me.matl114.ModConfig;
+import me.matl114.managers.Config;
+import me.matl114.managers.Configs;
 import me.matl114.renders.RenderMain;
 import me.matl114.utils.Debug;
 import me.matl114.renders.SlimefunCustomModelManager;
@@ -46,7 +48,6 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
     @Shadow public abstract ItemModels getModels();
     @Shadow public abstract BakedModel getModel(ItemStack stack, @Nullable World world, @Nullable LivingEntity entity, int seed);
 
-    @Shadow @Final private MinecraftClient client;
 
 //    public void printInfo(){
 //        ObjectCollection<ModelIdentifier> mod= models.modelIds.values();
@@ -55,12 +56,13 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
 //        }
 //
 //    }
+    private final Config.FlagRef sfCmdOverride = Configs.MODEL_CONFIG.getBoolean(Configs.MODEL_PROTECT);
     @ModifyVariable(method =
 //            "Lnet.minecraft.client.render.item.ItemRender;getModel(Lnet.minecraft.item.ItemStack;Lnet.minecraft.world.World;Lnet.minecraft.entity.LivingEntity;I)Lnet.minecraft.client.render.model.BakedModel;"
             "getModel"
             , at = @At("HEAD"), index = 1, argsOnly = true)
     public ItemStack onItemModelLoad(ItemStack stack){
-        if(ModConfig.isEnableSlimefunCmdOverride()){
+        if(sfCmdOverride.get()){
             int specialCmd = SlimefunCustomModelManager.getOverridingModelData(stack);
             if(specialCmd > 0){
                 ItemStack cloned=stack.copy();
@@ -94,10 +96,11 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
 //            ci.cancel();
 //        }
 //    }
+    private final Config.FlagRef enableStorageItemDisplay = Configs.MODEL_CONFIG.getBoolean(Configs.ENABLE_STORAGE_DISPLAY);
 
     @Inject(method = "renderItem",at = @At("RETURN"))
     public void onItemRender(ItemStack item, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model,CallbackInfo ci){
-        if(ModConfig.isEnableStorageItemDisplay()){
+        if(enableStorageItemDisplay.get()){
             ItemStack stack=null;
             try{
                 stack= RenderMain.getContainedItemInfo(item);

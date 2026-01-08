@@ -14,6 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ConstantModifyMixin {
     @Inject(method = "isValidChar",at = @At("HEAD"),cancellable = true)
     private static void isValidChar(char c, CallbackInfoReturnable<Boolean> cir) {
-        cir.setReturnValue(true);
+        cir.setReturnValue(c >= ' ' && c != 127);
     }
 }

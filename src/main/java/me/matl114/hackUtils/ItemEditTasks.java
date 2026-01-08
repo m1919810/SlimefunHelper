@@ -25,7 +25,7 @@ public class ItemEditTasks {
     }
 
     public static void openEditor(ClientPlayerEntity entity){
-        ItemStack stack = ScreenUtils.getSelectingItemOrHand();
+        ItemStack stack = ScreenUtils.getSelectingOrHandItem();
         if (stack != null){
             openEditScreen(stack, null);
         }else {

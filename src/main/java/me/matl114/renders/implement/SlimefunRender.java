@@ -158,7 +158,9 @@ public class SlimefunRender {
     public static Text modShow(){
         return SLIMEFUN_MODID.copy();
     }
-    public static boolean copySfIdInHand(ClientPlayerEntity player,MinecraftClient client){
+    public static boolean copySfIdInHand(){
+        var client = MinecraftClient.getInstance();
+        var player = MinecraftClient.getInstance().player;
         if(player==null||client==null)return false;
         ItemStack heldItem=null;
         if(client.currentScreen instanceof HandledScreen<?> s){

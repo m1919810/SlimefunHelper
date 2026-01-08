@@ -1,9 +1,13 @@
 package me.matl114.gui.config;
 
+import me.matl114.gui.FilterService;
+import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.managers.Config;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
+import me.matl114.utils.UtilClass.PropertyTracker;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
 import java.util.*;
@@ -25,6 +29,7 @@ public class ConfigureListWidget extends SubScreenWidget {
     private Map<String, ListEntryWidgetController> cache = new HashMap<>();
     private static final Map<String, String> cachedConfigUserSelectIndex = new HashMap<>();
     private ListUnmodifiableWidget indexListWidget;
+    private ContentDelegateWidget<TextFieldWidget> filterInputWidget;
     private ContentDelegateWidget<ListUnmodifiableWidget> displayedList;
     private int indexDx;
     private int buttonDy;
@@ -62,7 +67,10 @@ public class ConfigureListWidget extends SubScreenWidget {
         this.indexListWidget = new ListUnmodifiableWidget(
             controller, 0,0, this.indexDx + 4, this.dy
         ).addToSub(this);
-        this.displayedList = new ContentDelegateWidget<>(this.indexDx + 20,0, this.dx - this.indexDx - 10, this.dy )
+        this.filterInputWidget = McWidgetHelpers.createTextFieldEditBox(this.indexDx + 20, 1, this.dx - this.indexDx - 10, this.buttonDy - 2, PropertyTracker.event(this::refreshFilter), "")
+            .addToSub(this);
+        ;
+        this.displayedList = new ContentDelegateWidget<>(this.indexDx + 20,this.buttonDy, this.dx - this.indexDx - 10, this.dy - this.buttonDy)
             .addToSub(this);
         String userHistory = cachedConfigUserSelectIndex.get(this.config.getConfigName());
         if(userHistory != null){
@@ -71,13 +79,31 @@ public class ConfigureListWidget extends SubScreenWidget {
     }
     private void selectIndexToDisplay(String key){
         cachedConfigUserSelectIndex.put(this.config.getConfigName(), key);
-        ListEntryWidgetController controller = this.cache.computeIfAbsent(key, (str)-> listFactory.apply(this.originValueWithIndex.getOrDefault(str, Map.of()).values().stream().toList()));
+        ListEntryWidgetController controller = this.cache.computeIfAbsent(key, (str)-> listFactory.apply(this.originValueWithIndex.getOrDefault(str, Map.of()).values().stream().filter(this::applyFilter).toList()));
         this.displayedList.setContentDelegate(
             new ListUnmodifiableWidget(
                 controller,
                 0,0, this.dx - this.indexDx - 10, this.dy
             )
         );
+    }
+    private boolean applyFilter(AttrKeyValue<?> keyValue){
+        String filter = filterInputWidget.getDelegate().getText();
+        if (filter.isEmpty()){
+            return true;
+        }else{
+            return FilterService.nameMatch(Text.translatableWithFallback(keyValue.getKeyName(), keyValue.getKeyName()).getString(), filter);
+        }
+    }
+    private void refreshFilter(String filter){
+        String value = cachedConfigUserSelectIndex.get(this.config.getConfigName());
+        if(value != null){
+            recreateIndexWidget(value);
+            selectIndexToDisplay(value);
+        }
+    }
+    private void recreateIndexWidget(String key){
+        this.cache.remove(key);
     }
     public void save(){
         for(var entry: this.originValueWithIndex.values()) {

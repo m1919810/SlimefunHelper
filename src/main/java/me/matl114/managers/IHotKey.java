@@ -7,13 +7,12 @@ import java.util.List;
 
 public interface IHotKey {
     public boolean handleKeyInput(IInputManager manager, int keyCode, boolean isStateChanged,boolean isClicked);
-    public void setKeyCodes(String keyCode);
 
     public String getIdentifier();
 
-    public String getDefaultKeyCodes();
+    public MultiKeyBind getDefaultKeyCodes();
 
-    public String getKeyCodes();
+    public MultiKeyBind getKeyCodes();
 
     public IntList getRelatedKeyCode();
 

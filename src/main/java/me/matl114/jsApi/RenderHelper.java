@@ -2,7 +2,6 @@ package me.matl114.jsApi;
 
 import me.matl114.hackUtils.RenderTasks;
 import me.matl114.utils.ApiMethod;
-import me.matl114.utils.RenderUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 
@@ -35,14 +34,17 @@ public class RenderHelper {
 
     public static void renderEntity(Object jsEntity , int tick, boolean line, boolean solid, Color color, Color lineColor){
         Entity entity = JsHelper.unwrap(jsEntity, Entity.class);
-        RenderTasks.registerVirtualRenderTask(solid? new RenderTasks.EntityOutlinelineRenderingTask(entity, tick, color): new RenderTasks.EntityRenderingTask(
-            entity, tick, color
-        ));
-        if(line){
-            RenderTasks.registerVirtualRenderTask(
-                new RenderTasks.LineToEntityRenderingTask(entity, tick, lineColor)
-            );
-        }
+        JsHelper.runOnMainThread(()->{
+            RenderTasks.registerVirtualRenderTask(solid? new RenderTasks.EntityRenderingTask(entity, tick, color): new RenderTasks.EntityOutlineRenderingTask(
+                entity, tick, color
+            ));
+            if(line){
+                RenderTasks.registerVirtualRenderTask(
+                    new RenderTasks.LineToEntityRenderingTask(entity, tick, lineColor)
+                );
+            }
+        });
+
     }
 
     public static void renderBox(double x, double y, double z, double x1, double y1, double z1, int tick, boolean line, boolean solid){
@@ -50,10 +52,19 @@ public class RenderHelper {
     }
 
     public static void renderBox(double x, double y, double z, double x1, double y1, double z1, int tick, boolean line, boolean solid, Color color  , Color lineColor){
-        RenderTasks.registerVirtualRenderTask(
-            solid? new RenderTasks.BoxRenderingTask(new Vec3d(x, y, z), new Vec3d(x1, y1, z1) , tick, color) : new RenderTasks.BoxOutlineRenderingTask(new Vec3d(x, y, z), new Vec3d(x1, y1, z1) , tick, color)
+        JsHelper.runOnMainThread(()->{
+            RenderTasks.registerVirtualRenderTask(
+                solid? new RenderTasks.BoxRenderingTask(new Vec3d(x, y, z), new Vec3d(x1, y1, z1) , tick, color) : new RenderTasks.BoxOutlineRenderingTask(new Vec3d(x, y, z), new Vec3d(x1, y1, z1) , tick, color)
 
-        );
+            );
+            if(line){
+                RenderTasks.registerVirtualRenderTask(
+                    new RenderTasks.LineToTargetRenderingTask(new Vec3d(x + x1 , y + y1, z + z1).multiply(0.5), tick, lineColor)
+                );
+            }
+        });
+
+
 
     }
 }

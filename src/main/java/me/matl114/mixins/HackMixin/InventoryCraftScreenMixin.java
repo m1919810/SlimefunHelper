@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.PlayerScreenHandler;
@@ -51,16 +52,22 @@ public abstract class InventoryCraftScreenMixin extends AbstractInventoryScreen<
     private ButtonWidget toggleDropButton = null;
     @Unique
     private void addButton(){
-        this.putLastRecipeButton = ButtonWidget.builder(Text.literal("合成"),(button -> {
+        this.putLastRecipeButton = ButtonWidget.builder(Text.translatable("widget.fast-craft.craft"),(button -> {
             InvTasks.placeLastCraftingRecipe((InventoryScreen)(Object)this,  Screen.hasShiftDown());
-        })).dimensions(this.x+150,this.height / 2 -38,24,12).build();
+        }))
+            .tooltip(Tooltip.of(Text.translatable("widget.fast-craft.craft.tooltips")))
+            .dimensions(this.x+150,this.height / 2 -38,24,12).build();
         this.addDrawableChild(this.putLastRecipeButton);
-        this.toggleLockButton = ButtonWidget.builder(Text.literal("锁"),(button)->{
+        this.toggleLockButton = ButtonWidget.builder(Text.translatable("widget.fast-craft.lock"),(button)->{
             PlayerInteractionAccess.of(MinecraftClient.getInstance().interactionManager).toggleRecipeLock();
-        }).dimensions(this.x+150,this.height / 2 -25,24,12).build();
+        })
+            .tooltip(Tooltip.of(Text.translatable("widget.fast-craft.lock.tooltips")))
+            .dimensions(this.x+150,this.height / 2 -25,24,12).build();
         this.addDrawableChild(this.toggleLockButton);
         Runnable toggle = HotKeys.getSimpleToggleManager().getToggle(HotKeys.DROP_CRAFT);
-        this.toggleDropButton = ButtonWidget.builder(Text.literal("喷射"),(button)-> toggle.run()).dimensions(this.x+150,this.height / 2 -72,24,12).build();
+        this.toggleDropButton = ButtonWidget.builder(Text.translatable("widget.fast-craft.toggle-drop"),(button)-> toggle.run())
+            .tooltip(Tooltip.of(Text.translatable("widget.fast-craft.toggle-drop.tooltips")))
+            .dimensions(this.x+150,this.height / 2 -72,24,12).build();
         this.addDrawableChild(this.toggleDropButton);
     }
     @Unique

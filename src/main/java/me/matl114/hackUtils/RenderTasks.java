@@ -959,16 +959,18 @@ public class RenderTasks {
             RenderUtils.setAsShaderColor(color, 0.25F);
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startVec.getBoundingBox().getMinPos(), startVec.getBoundingBox().getMaxPos());
         }
-
+        public boolean stillRender(){
+            return super.stillRender() && !startVec.isRemoved();
+        }
 
 
     }
-    public static class EntityOutlinelineRenderingTask extends TickingRenderingTask {
+    public static class EntityOutlineRenderingTask extends TickingRenderingTask {
         final Entity startVec;
 
         Color color;
 
-        public EntityOutlinelineRenderingTask(Entity entity, int tick, Color color){
+        public EntityOutlineRenderingTask(Entity entity, int tick, Color color){
             super(tick);
             this.startVec = entity;
             this.color = color;
@@ -978,6 +980,10 @@ public class RenderTasks {
         public void renderVirtual(MatrixStack stack) {
             RenderUtils.setAsShaderColor(color, 1.0F);
             RenderUtils.drawOutlinedBox(stack, startVec.getBoundingBox().getMinPos(), startVec.getBoundingBox().getMaxPos());
+        }
+
+        public boolean stillRender(){
+            return super.stillRender() && !startVec.isRemoved();
         }
 
 
@@ -998,6 +1004,9 @@ public class RenderTasks {
             Vec3d camerToBlock = this.vec3d.getBoundingBox().getCenter().subtract(camera);
             Vec3d cursorPos = RenderUtils.getTracerOrigin(1.0f);
             RenderUtils.drawLineVirtualCameraCoord(stack, cursorPos, camerToBlock, color);
+        }
+        public boolean stillRender(){
+            return super.stillRender() && !vec3d.isRemoved();
         }
     }
     public static abstract class BlockRenderingTask extends TickingRenderingTask implements VirtualRenderTask {
@@ -1405,7 +1414,7 @@ public class RenderTasks {
     //TODO: add status renderer , inGameHud
 
     static {
-        EntityUtils.parseEntityWhiteList(RENDER_DETECT_WHITELIST.getValue().replace(',','|'),entityTypes);
+        EntityUtils.parseEntityWhiteList(RENDER_DETECT_WHITELIST.getValue().replace(',','|'), entityTypes);
         RENDER_DETECT_WHITELIST.addUpdateListener((str)->{
             EntityUtils.parseEntityWhiteList(str.replace(',','|'),entityTypes);
         });

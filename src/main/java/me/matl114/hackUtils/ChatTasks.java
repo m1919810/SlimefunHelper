@@ -404,7 +404,7 @@ public class ChatTasks {
                     case "saved"->Tasks.scheduleDelayed( SlimefunTasks::handleClickSaveItemIcon,1);
                     case "itemedit" -> Tasks.scheduleDelayed(ItemEditTasks::openEditor, 1);
                     case "invcache" -> Tasks.scheduleDelayed(InvTasks::openInventoryCacheScreen, 1);
-                    case "config" -> Tasks.scheduleDelayed(InvTasks::openSelectScreen, 1);
+                    case "config" -> Tasks.scheduleDelayed(InvTasks::openConfigNewStyleScreen, 1);
                     default -> Tasks.scheduleDelayed(SlimefunTasks::handleClickGuideIcon,1);
                 }
                 Debug.chat(Text.literal("成功打开界面").formatted(Formatting.GREEN));
@@ -415,14 +415,24 @@ public class ChatTasks {
                 "guide","rtype","vanilla","saved", "itemedit", "invcache", "config"
             ))
             .register(this);
-        SubCommand configCommand = new SubCommand("config", genArgument(),"!!config 打开配置文件界面"){
+        SubCommand configCommand = new SubCommand("config", genArgument("operation"),"!!config 打开配置文件界面"){
             @Override
             public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
-                Tasks.scheduleDelayed(InvTasks::openSelectScreen, 1);
-                Debug.chat(Text.literal("成功打开配置文件界面").formatted(Formatting.GREEN));
+                String next = parseInput(var4).getFirst().nextNonnull();
+                switch (next){
+                    case "open" ->{
+                        Tasks.scheduleDelayed(InvTasks::openConfigNewStyleScreen, 1);
+                        Debug.chat(Text.literal("成功打开配置文件界面").formatted(Formatting.GREEN));
+                    }
+                    case "reload" ->{
+                        Tasks.scheduleDelayed(Config::reloadAll, 1);
+                        Debug.chat(Text.literal("成功重载配置文件").formatted(Formatting.GREEN));
+                    }
+                }
                 return true;
             }
         }
+            .setEnum("operation", "open", List.of("open", "reload"))
             .register(this);
         SubCommand listResourceCommand = new SubCommand("list",genArgument("resource"),"!!list <resource> 查看某些资源的值"){
             @Override
@@ -602,7 +612,7 @@ public class ChatTasks {
                                 var sp = n.split(":");
                                 return  sp.length >=2 ? sp[0] : null;
                             })
-                            .filter(Objects::nonNull)
+                            .filter(Objects::<String>nonNull)
                             .filter(u->u.contains(filter))
                             .distinct()
                             .sorted(String::compareTo)

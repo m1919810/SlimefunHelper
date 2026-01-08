@@ -42,6 +42,7 @@ import net.minecraft.registry.entry.RegistryEntryList;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.intprovider.ConstantIntProvider;
@@ -132,9 +133,9 @@ public class MineTasks {
     }
     private static boolean isMineable(World world,BlockPos pos){
         BlockState state=world.getBlockState(pos);
-        if(!state.isAir()){
+        if(!state.isAir() && !state.isLiquid()){
             Block block=state.getBlock();
-            if(isWhitelisted(block)){
+            if(block.getHardness() >= 0.0F &&  isWhitelisted(block)){
                 return true;
             }
         }
@@ -152,13 +153,13 @@ public class MineTasks {
         }
         return false;
     }
-    private static int[] dx=new int[4096];
-    private static int[] dy=new int[4096];
-    private static int[] dz=new int[4096];
-    private static int[] x_=new int[1024];
-    private static int[] y_=new int[1024];
-    private static int length;
-    private static int length2;
+    private static final int[] dx=new int[4096];
+    private static final int[] dy=new int[4096];
+    private static final int[] dz=new int[4096];
+    private static final int[] x_=new int[1024];
+    private static final int[] y_=new int[1024];
+    private static final int length;
+    private static final int length2;
     public static AtomicBoolean isWorking=new AtomicBoolean(false);
     static {
         List<int[]> points = new ArrayList<>();
@@ -172,7 +173,7 @@ public class MineTasks {
             }
         }
         var counter=new AtomicInteger(0);
-        Collections.sort(points, Comparator.comparingDouble(p -> Math.sqrt(p[0] * p[0] + p[1] * p[1]+ p[2]*p[2])));
+        points.sort(Comparator.comparingDouble(p -> Math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2])));
         points.forEach(p ->{
             int index=counter.getAndIncrement();
             dx[index]=p[0];
@@ -187,7 +188,7 @@ public class MineTasks {
             }
         }
         counter.set(0);
-        Collections.sort(points, Comparator.comparingDouble(p -> Math.sqrt(p[0] * p[0] + p[1] * p[1])));
+        points.sort(Comparator.comparingDouble(p -> Math.sqrt(p[0] * p[0] + p[1] * p[1])));
         points.forEach(p ->{
             int index=counter.getAndIncrement();
             x_[index]=p[0];
@@ -464,17 +465,74 @@ public class MineTasks {
     }
 
     //where to place it
-    private static BlockPos mineAruaPos;
-    public static void onMinearuaStart(){
+    private static BlockPos mineAruaPosCache;
+    private static int lastRefreshMineAruaTick = 0;
+    private static final Config.StringRef whitelist = Configs.MINE_CONFIG.getString(Configs.MINEARUA_WHILELIST);
+    private static String cachedMinearuaWhitelist;
+    private static HashSet<Block> minearuaBlock = new HashSet<>();
+    private static Set<Block> minearuaWhitelist(){
+        if(!Objects.equals(cachedMinearuaWhitelist, whitelist.get())){
+            cachedMinearuaWhitelist = whitelist.get();
+            for(Block block1:Registries.BLOCK){
+                if(Pattern.matches(cachedMinearuaWhitelist, Registries.BLOCK.getId(block1).getPath())){
+                    minearuaBlock.add(block1);
+                }
+            }
+        }
+        return minearuaBlock;
+    }
+    private static boolean isMineAruaTarget(World world,BlockPos pos){
+        BlockState state=world.getBlockState(pos);
+        if(state != null &&  !state.isAir() && !state.isLiquid()){
+            Block block=state.getBlock();
+            if(block.getHardness() >= 0.0F &&  minearuaWhitelist().contains(block)){
+                return true;
+            }
+        }
+        return false;
+    }
+    private static BlockPos refreshMineAruaTarget(){
+        if(mc.player != null && mc.world != null){
+            //every time check if current cache is here
+            Vec3d eyepos = mc.player.getEyePos();
+            if(mineAruaPosCache != null && isMineAruaTarget(mc.world, mineAruaPosCache) && !distanceOut(mineAruaPosCache, eyepos)){
+                return mineAruaPosCache;
+            }
+            //refresh only 4 ticks once
+            if(Tasks.getTick() >= lastRefreshMineAruaTick + 4){
+                BlockPos currentBlockPos = mc.player.getBlockPos();
+                for (var i = 0 ; i < length; ++ i){
+                    BlockPos pos = currentBlockPos.add(dx[i], dy[i], dz[i]);
+                    if(isMineAruaTarget(mc.world, pos) && !distanceOut(pos, eyepos)){
+                        return pos;
+                    }
+                }
+            }
+
+        }
+        return null;
+    }
+    private static void onMinearuaRedirect(Event<HitResult> hitResultEvent){
+        if(mc.player != null && HotKeys.getHotkeyToggleManager().getState(HotKeys.MINEARUA)){
+            BlockPos pos = refreshMineAruaTarget();
+            if(pos != mineAruaPosCache){
+                if(pos != null){
+                    Debug.chat(Text.literal("[Mine Arua] Redirect mine target ").append(ChatUtils.getDisplayedLocation(Vec3d.of(pos))).formatted(Formatting.GREEN));
+                }
+                mineAruaPosCache = pos;
+                lastRefreshMineAruaTick = Tasks.getTick();
+            }
+
+            if(mineAruaPosCache != null){
+                Direction dir = Direction.getFacing(mineAruaPosCache.toCenterPos().subtract(mc.player.getEyePos())).getOpposite();
+                HitResult hitResult = new BlockHitResult(Vec3d.of(mineAruaPosCache), dir, mineAruaPosCache, false);
+                hitResultEvent.context(hitResult);
+            }
+        }
 
     }
 
-    public static void onMinearuaTick(ClientPlayerEntity player){
 
-    }
-    public static void onMinearuaRender(ClientPlayerEntity player){
-
-    }
 
 
 
@@ -1045,6 +1103,7 @@ public class MineTasks {
 //        Listener.getGameJoinPoint().registerHandler(MineTasks::onDimensionChange);
         Listener.getWorldSwitchPoint().registerHandler(MineTasks::onDimensionChange);
         RenderMain.getRenderLayerTasks().registerHandler(MineTasks::renderMineBlockTask);
+        Listener.getMineBlockAction().registerHandler(MineTasks::onMinearuaRedirect);
     }
     // ====================================
     // Mojang code

@@ -14,17 +14,12 @@ import java.util.function.Predicate;
 
 public class ButtonElement extends IconElement.SimpleIconElement {
     private final TextProvider provider;
-    @Getter
-    private ColorProvider color;
+
 
 
     public static final Identifier BUTTON=new Identifier("minecraft","widget/button");
     public static final Identifier BUTTON_HIGHLIGHT= new Identifier("minecraft","widget/button_highlighted");
     public static final Identifier BUTTON_INACTIVE =new Identifier("minecraft","widget/button_disabled");
-    public ButtonElement setColorProvider(ColorProvider provider){
-        this.color = provider;
-        return this;
-    }
 
 
     public ButtonElement(TextProvider provider, ButtonAction action) {

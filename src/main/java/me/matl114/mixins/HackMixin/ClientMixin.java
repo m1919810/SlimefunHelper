@@ -189,6 +189,24 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
             return player.isUsingItem();
         }
     }
+    private HitResult cacheHitResult = null;
+    @Inject(method = "handleBlockBreaking", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;crosshairTarget:Lnet/minecraft/util/hit/HitResult;", ordinal = 0, shift = At.Shift.BEFORE))
+    private void onBlockBreak(boolean breaking, CallbackInfo ci){
+        Event<HitResult> hitResultEvent = new Event<>(this.crosshairTarget, true, true);
+        Listener.getMineBlockAction().handleValue(hitResultEvent);
+        if(hitResultEvent.isCancelled() || hitResultEvent.context != crosshairTarget){
+            cacheHitResult = crosshairTarget;
+            crosshairTarget = hitResultEvent.isCancelled()? null:  hitResultEvent.context;
+        }
+    }
+    @Inject(method = "handleBlockBreaking", at = @At("RETURN"))
+    private void onRestoreHitResult(CallbackInfo ci){
+        if(cacheHitResult != null){
+            this.crosshairTarget = cacheHitResult;
+        }
+        cacheHitResult = null;
+    }
+
 //    @Redirect(method = "doItemUse", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;itemUseCooldown:I"))
 //    public void onRewriteItemCooldown1(MinecraftClient instance, int value){
 //

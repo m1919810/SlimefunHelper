@@ -2,11 +2,11 @@ package me.matl114.managers;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -59,13 +59,28 @@ Config {
     private String configName;
     public static abstract class Ref<T>{
         private final List<Consumer<T>> updated=new ArrayList<>();
-
+        private final List<Predicate<T>> validators=new ArrayList<>();
         public abstract T getValue();
         public abstract void setValue(T value);
         public void addUpdateListener(Consumer<T> updateListener){
             this.updated.add(updateListener);
         }
 
+        public void addValidator(Predicate<T> validator){
+            this.validators.add(validator);
+        }
+        public boolean validateUpdateValue(T val){
+            try{
+                for(Predicate<T> updateListener : validators){
+                    if(!updateListener.test(val)){
+                        return false;
+                    }
+                }
+                return true;
+            }catch (Throwable e){
+                return false;
+            }
+        }
         public void callUpdate(){
             T val = getValue();
             try{
@@ -78,7 +93,13 @@ Config {
 
         public abstract <W> boolean copyValueTo(Ref<W> otherRef);
 
-        public abstract AttrKeyValue<T> createKeyValue(String key);
+        public final AttrKeyValue<T> createKeyValue(String key){
+            AttrKeyValue<T> keyValue = _createKeyValue0(key);
+            keyValue.getValidators().addAll(validators);
+            return keyValue;
+        }
+
+        protected abstract AttrKeyValue<T> _createKeyValue0(String key);
     }
     @AllArgsConstructor
     public static class FlagRef extends Ref<Boolean>{
@@ -126,13 +147,15 @@ Config {
         }
 
         @Override
-        public AttrKeyValue<Boolean> createKeyValue(String key) {
+        public AttrKeyValue<Boolean> _createKeyValue0(String key) {
             return AttrKeyValue.bool(key, this.flag);
         }
 
         public void set(boolean val){
-            this.flag = val;
-            callUpdate();
+            if(validateUpdateValue(val)){
+                this.flag = val;
+                callUpdate();
+            }
         }
     }
     @AllArgsConstructor
@@ -179,13 +202,16 @@ Config {
         }
 
         @Override
-        public AttrKeyValue<Integer> createKeyValue(String key) {
+        public AttrKeyValue<Integer> _createKeyValue0(String key) {
             return AttrKeyValue.integer(key, this.value);
         }
 
         public void set(int value){
-            this.value = value;
-            callUpdate();
+            if(validateUpdateValue(value)){
+                this.value = value;
+                callUpdate();
+            }
+
         }
     }
     @AllArgsConstructor
@@ -230,13 +256,15 @@ Config {
         }
 
         @Override
-        public AttrKeyValue<Double> createKeyValue(String key) {
+        public AttrKeyValue<Double> _createKeyValue0(String key) {
             return AttrKeyValue.doub(key, this.value);
         }
 
         public void set(double va){
-            this.value = va;
-            callUpdate();
+            if(validateUpdateValue(va)){
+                this.value = va;
+                callUpdate();
+            }
         }
     }
     @AllArgsConstructor
@@ -262,13 +290,17 @@ Config {
         @Override
         public abstract  <W> boolean copyValueTo(Ref<W> otherRef);
         @Override
-        public abstract AttrKeyValue<T> createKeyValue(String key);
+        public abstract AttrKeyValue<T> _createKeyValue0(String key);
 
         protected abstract T validateAndCast(Object val);
 
         public void set(T val){
-            this.object = validateAndCast(val);
-            callUpdate();
+            T cas = validateAndCast(val);
+            if(validateUpdateValue(cas)){
+                this.object = cas;
+                callUpdate();
+            }
+
         }
 
         public static class JustOnlyObjectRef extends ObjectRef<Object>{
@@ -287,7 +319,7 @@ Config {
             }
 
             @Override
-            public AttrKeyValue<Object> createKeyValue(String key) {
+            public AttrKeyValue<Object> _createKeyValue0(String key) {
                 throw new UnsupportedOperationException();
             }
 
@@ -321,7 +353,7 @@ Config {
         }
 
         @Override
-        public AttrKeyValue<String> createKeyValue(String key) {
+        public AttrKeyValue<String> _createKeyValue0(String key) {
             return AttrKeyValue.str(key, this.object);
         }
 
@@ -331,6 +363,47 @@ Config {
         }
     }
 
+    public static class KeyBindRef extends ObjectRef<MultiKeyBind>{
+
+        public KeyBindRef(MultiKeyBind object) {
+            super(object);
+        }
+
+        @Override
+        public Object getAsPrimitive() {
+            return object.asString();
+        }
+
+        @Override
+        public <W> boolean copyValueTo(Ref<W> otherRef) {
+            if(otherRef instanceof KeyBindRef stringRef){
+                this.object = stringRef.object;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public AttrKeyValue<MultiKeyBind> _createKeyValue0(String key) {
+            //todo
+            return AttrKeyValue.keyBind(key, this.object);
+        }
+
+        @Override
+        protected MultiKeyBind validateAndCast(Object val) {
+            return (MultiKeyBind) val;
+        }
+
+        public static KeyBindRef fromString(String val){
+            if(val.startsWith("hotkey:")){
+                try{
+                    return new KeyBindRef(new MultiKeyBind(val));
+                }catch (Throwable e){
+                }
+            }
+            return null;
+        }
+    }
 
     public static interface ConfigEnum extends StringIdentifiable, Displayable {
         public static Map<String, Map<String, ConfigEnum>> registeredConfigs = new HashMap<>();
@@ -355,6 +428,10 @@ Config {
             return registeredConfigs.get(this.getConfigEnumType());
         }
     }
+
+
+
+
     public static class EnumRef<T extends ConfigEnum> extends ObjectRef<T>{
         public String enumType;
         public EnumRef(ConfigEnum enumR){
@@ -408,10 +485,60 @@ Config {
         }
 
         @Override
-        public AttrKeyValue<T> createKeyValue(String key) {
+        public AttrKeyValue<T> _createKeyValue0(String key) {
             return (AttrKeyValue<T>) AttrKeyValue.enumMap(key, this.getValue(), this.getValue().getMap());
         }
     }
+    //TODO: RegistryRef
+    //TODO: RegistrySetRef
+    //TODO: ListRef
+
+    public static class ListRef extends ObjectRef<List<String>>{
+        @Getter
+        public List<Predicate<String>> elementValidator = new ArrayList<>();
+
+        public ListRef(List<String> object) {
+            super(object);
+            addValidator(this::validateInternal);
+        }
+        public boolean validateElement(String val){
+            for(Predicate<String> validator : elementValidator){
+                if(!validator.test(val)){
+                    return false;
+                }
+            }
+            return true;
+        }
+        private boolean validateInternal(List<String> v){
+            return v.stream().allMatch(this::validateElement);
+        }
+
+        @Override
+        public Object getAsPrimitive() {
+            return object.stream().map(Object::toString).toList();
+        }
+
+        @Override
+        public <W> boolean copyValueTo(Ref<W> otherRef) {
+            if(otherRef instanceof ListRef listRef){
+                listRef.set(new ArrayList<>(this.object));
+                return true;
+
+            }
+            return false;
+        }
+
+        @Override
+        public AttrKeyValue<List<String>> _createKeyValue0(String key) {
+            return AttrKeyValue.list(key, this.object);
+        }
+
+        @Override
+        protected List<String> validateAndCast(Object val) {
+            return (List<String>) val;
+        }
+    }
+
     public static class RegistryRef<T> extends Ref<T>{
         //todo not implement yet
         @Override
@@ -440,7 +567,7 @@ Config {
         }
 
         @Override
-        public AttrKeyValue<T> createKeyValue(String key) {
+        public AttrKeyValue<T> _createKeyValue0(String key) {
             throw new UnsupportedOperationException();
         }
     }
@@ -470,15 +597,20 @@ Config {
             .add(new TypedReferenceBuilder<>(Integer.class, List.of(IntRef::new)))
             .add(new TypedReferenceBuilder<>(Float.class, List.of(DoubleRef::of)))
             .add(new TypedReferenceBuilder<>(Double.class, List.of(DoubleRef::of)))
+            .add(new TypedReferenceBuilder<>(ConfigEnum.class, List.of(EnumRef::new)))
+            .add(new TypedReferenceBuilder<>(MultiKeyBind.class, List.of(KeyBindRef::new)))
+            .add(new TypedReferenceBuilder<>(List.class, List.of(ListRef::new)))
             .add(new TypedReferenceBuilder<>(
                 String.class,
                 ImmutableList.<Function<String, Ref<?>>>builder()
                     .add(EnumRef::fromString)
+                    .add(KeyBindRef::fromString)
                     .add(FlagRef::fromString)
                     .add(IntRef::fromString)
                     .add(StringRef::new)
                     .build())
             )
+            //TODO: add List
             .add(new TypedReferenceBuilder<Object>(Object.class, List.of(
                 ObjectRef.JustOnlyObjectRef::new
             )))
@@ -490,6 +622,8 @@ Config {
         if(value instanceof Ref<?> ref){
             return ref;
         }else{
+
+            //Enum should be written
             for (var typedBuilder : referenceBuilders){
                 Ref<?> ref = typedBuilder.tryBuild(value);
                 if(ref != null){
@@ -506,10 +640,13 @@ Config {
             if(entry.getValue() instanceof Map map) {
                 newConfig.put(entry.getKey(), transferConfig(map));
             }else {
-                Ref<?> wrapped = wrapInstance(entry.getValue());
-                if(wrapped != null){
-                    newConfig.put(entry.getKey(), wrapped);
+                if(entry.getValue() != null){
+                    Ref<?> wrapped = wrapInstance(entry.getValue());
+                    if(wrapped != null){
+                        newConfig.put(entry.getKey(), wrapped);
+                    }
                 }
+
             }
 
 
@@ -713,7 +850,7 @@ Config {
             parent.put(path[path.length-1],value);
         }else {
             if(!setValueInternal(node,value)){
-                parent.put(path[path.length-1],value);
+                parent.put(path[path.length-1], wrapInstance( value));
             }
         }
         if(autoSave){
@@ -764,11 +901,18 @@ Config {
 
 
     public Config defaultVal(Object defaultValue,String ...path ){
-        getOrCreate(()-> wrapInstance(defaultValue),path);
+        getOrCreate(Objects.requireNonNull(wrapInstance(defaultValue)),path);
         return this;
     }
+
+    public <T> Config validator(Predicate<T> validator, String... path){
+        Ref<T> ref = (Ref<T>) get(path);
+        ref.addValidator(validator);
+        return this;
+    }
+
     @NonnullDefault
-    public Object getOrCreate(Supplier<Object> defaultValue, @Nonnull String... path) {
+    public Object getOrCreate(Ref defaultValue, @Nonnull String... path) {
         Object node=this.fileConfig;
         boolean changed=false;
         for(int i=0; i< path.length ;i++){
@@ -777,11 +921,16 @@ Config {
                 var next = ((HashMap)node).get(p);
                 //of course it is not a leaf
                 if(next == null || next instanceof HashMap notALeaf ){
-                    var newLeaf = defaultValue.get();
+                    var newLeaf = defaultValue;
                     ((HashMap) node).put(p, newLeaf);
                     node = newLeaf;
                     changed=true;
                 }else{
+                    //fix: Ref should be same class as default value
+                    if(next.getClass() != defaultValue.getClass()){
+                        next = defaultValue;
+                        ((HashMap) node).put(p, next);
+                    }
                     node = next;
                 }
             }else{
@@ -840,6 +989,25 @@ Config {
     public StringRef getString(@Nonnull String... path) {
         Object node=get(path);
         if(node instanceof StringRef ref ){
+            return ref;
+        }else{
+
+            return null;
+        }
+    }
+
+    public KeyBindRef getKeyBind(String... path){
+        Object node=get(path);
+        if(node instanceof KeyBindRef ref ){
+            return ref;
+        }else{
+
+            return null;
+        }
+    }
+    public ListRef getList(String... path){
+        Object node=get(path);
+        if(node instanceof ListRef ref ){
             return ref;
         }else{
 
