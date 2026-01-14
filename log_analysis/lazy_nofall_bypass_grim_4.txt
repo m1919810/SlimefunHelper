@@ -1,0 +1,79 @@
+[02:40:16] [Render thread/INFO] (Minecraft) [CHAT] <matl_test> 1
+[02:40:17] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 48.949582738826685 83.0 54.18810722980115 true
+[02:40:17] [Render thread/INFO] (SlimefunHelper) sending move LookAndOnGround 0.0 0.0 0.0 true
+[02:40:17] [Render thread/INFO] (SlimefunHelper) sending move LookAndOnGround 0.0 0.0 0.0 true
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending packet ClientCommandC2SPacket
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 48.96686144774879 83.0 54.06188437470551 true
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 48.993574332838165 83.0 53.866743832722676 true
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.02543827871318 83.0 53.63397422932872 true
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.0872398332075 83.41999998688698 53.18250712650357 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.124439227219604 83.7531999805212 52.910761491965516 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move Full 49.16174641808501 84.00133597911214 52.63822838964529 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.19915170408974 84.16610926093821 52.36497869162264 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.236646256673836 84.24918707874468 52.09107689149199 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.27422204184749 84.25220334025373 51.81658167842595 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.31187174867977 84.17675927506424 51.54154645957315 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.349588724223345 84.02442408821369 51.26601983544023 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending packet ClientCommandC2SPacket
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.38391117295716 83.79673560066871 51.01529060025331 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.41514460220508 83.49520087700593 50.78712698965757 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.443567023639815 83.1212968405392 50.57949809803162 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.46943142789083 82.67647087614428 50.39055580120672 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.49296803643758 82.162141421027 50.218618306140854 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.51438635083239 81.57969854367613 50.062155181121675 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.53387701749338 80.93050451123717 49.919773733250814 false
+[02:40:18] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.55161352466605 80.21589434553873 49.790206611954225 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.56775374665834 79.43717636799826 49.6723005281763 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.582441349094616 78.59563273362987 49.565005988846174 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.595807067696825 77.69251995437179 49.46736795524185 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.607969871975364 76.72906941194748 49.378517342101254 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.619038024187816 75.70648786046942 49.297663281813115 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) TriggerNoFall
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.619038024187816 75.70648787046942 49.297663281813115 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.62911004299142 75.0 49.224086084830425 true
+[02:40:19] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [49.63,75.00,49.22]
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move Full 49.62911004299142 75.0000001 49.224086084830425 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.63823504299142 75.0000001 49.15721108483042 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) TriggerNoFall
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.63823504299142 75.00000010999999 49.15721108483042 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.64321729357012 75.0000001 49.12069733058925 true
+[02:40:19] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [49.64,75.00,49.12]
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move Full 49.64321729357012 75.0000001 49.12069733058925 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.64771729357012 75.0000001 49.08757233058925 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) TriggerNoFall
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.64771729357012 75.00000010999999 49.08757233058925 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.64771729357012 75.0000001 49.06948607848849 true
+[02:40:19] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [49.65,75.00,49.07]
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move Full 49.65017429385551 75.0000001 49.06948607848849 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.05311107848849 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) TriggerNoFall
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.00000010999999 49.05311107848849 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.04417032745 true
+[02:40:19] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [49.65,75.00,49.04]
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move Full 49.65017429385551 75.0000001 49.044170327450004 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.036045327450005 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) TriggerNoFall
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.00000010999999 49.036045327450005 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.03160907693472 true
+[02:40:19] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [49.65,75.00,49.03]
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move Full 49.65017429385551 75.0000001 49.03160907693472 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.02760907693472 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) TriggerNoFall
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.00000010999999 49.02760907693472 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
+[02:40:19] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [49.65,75.00,49.03]
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move Full 49.65017429385551 75.0000001 49.025425076681046 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.025425076681046 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) TriggerNoFall
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.00000010999999 49.025425076681046 false
+[02:40:19] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
+[02:40:20] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.025425076681046 true
+[02:40:21] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.025425076681046 true
+[02:40:22] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.025425076681046 true
+[02:40:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 49.65017429385551 75.0000001 49.025425076681046 true

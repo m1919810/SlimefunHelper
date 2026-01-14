@@ -1,0 +1,47 @@
+movementManagerEvent.context.playerStatus.restorePos();
+player.setPosition(player.getX(), player.getY() + 1E-8, player.getZ());
+** must be OnGroundOnly(true) **
+在grimac的预测中, 当前状态应该即将着地, 若使用Onground = false 则会触发onGround不匹配
+最终结果:
+client:  onGround(true)  jump() .............(............(............(  client resync on ground
+            |       |
+grimac:   predict at ground, (accepted predict) let client resync to ground /    accept resync tp
+            x       √                √             v                     √
+server   do not reset     reset fall distance           ...............................
+为什么是onground = true
+grim的不同setback模式
+onground = true会导致resync = true, simulate = true
+对方将resync packets传输到咱们这里 是(a, b + 1E-7, c, false)
+咱们设置为了false
+[04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 78.59016863897678 28.941366735922244 false
+[04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 75.46476221959249 28.941366735922244 false
+[04:06:06] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 false
+[04:06:06] [Render thread/INFO] (SlimefunHelper) trigger jump tick
+[04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 74.41999998688698 28.941366735922244 false
+[04:06:06] [Netty Client IO #8/INFO] (Minecraft) [CHAT] Pos Resync [51.46,74.00,28.94]
+[04:06:06] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl114 触发了 GroundSpoof (x2) claimed false
+[04:06:06] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[04:06:06] [Render thread/INFO] (Minecraft) [CHAT] [anti-grim] 检测到反作弊回弹! tp号:-1034761362
+[04:06:06] [Render thread/INFO] (SlimefunHelper) sending move Full 51.459339812018335 74.0000001 28.941366735922244 false
+[04:06:06] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl114 触发了 Simulation (x2) .420000 /gl 82 <-这里 他认为我们是从75.46476221959249 移动到74.0000001, 这是不合法的
+[04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 74.0000001 28.941366735922244 true
+[04:06:06] [Render thread/INFO] (Minecraft) [CHAT] matl114从高处摔了下来
+正常情况是
+[04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 84.79200176125546 29.17552569387324 false
+[04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 81.69935880076793 29.17552569387324 false
+[04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 78.59016863897678 29.17552569387324 false
+[04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.46476221959249 29.17552569387324 false
+[04:08:02] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
+[04:08:02] [Render thread/INFO] (SlimefunHelper) trigger jump tick
+[04:08:02] [Netty Client IO #8/INFO] (Minecraft) [CHAT] Pos Resync [51.05,74.00,29.18]
+[04:08:02] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[04:08:02] [Render thread/INFO] (Minecraft) [CHAT] [anti-grim] 检测到反作弊回弹! tp号:-2093209308
+[04:08:02] [Render thread/INFO] (SlimefunHelper) sending move Full 51.04938473524123 74.0000001 29.17552569387324 false
+[04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 74.42000008688697 29.17552569387324 false
+<-这里 他认为我们是从75.46476221959249 移动到74.0000001, 但是 由于上面触发的非常巧妙,是resync packets, 这里的运动偏差会被直接无视
+<- 同时 这里的movement会被认为是knockback， 可以通过后续的resync，？？？？？？？？？
+todo: 需要进一步查看 这也太离谱了
+
+[04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 74.7532000805212 29.17552569387324 false
+[04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.00133607911214 29.17552569387324 false
+[04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.16610936093821 29.17552569387324 false

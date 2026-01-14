@@ -10,19 +10,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class ListModifyScreen extends ConfirmingBigScreen{
-    AttrKeyValue.ListAttrKeyValue listAttrKeyValue;
-    List<AttrKeyValue<String>> list;
-    Consumer<AttrKeyValue.ListAttrKeyValue> consumer;
+public class ListModifyScreen<T> extends ConfirmingBigScreen{
+    AttrKeyValue.ListAttrKeyValue<T> listAttrKeyValue;
+    List<AttrKeyValue<T>> list;
+    Consumer<AttrKeyValue.ListAttrKeyValue<T>> consumer;
     ListEntryWidgetController controller;
     private static final int WIDTH = 240;
 
-    protected ListModifyScreen(AttrKeyValue.ListAttrKeyValue list, Consumer<AttrKeyValue.ListAttrKeyValue> consumer) {
+    protected ListModifyScreen(AttrKeyValue.ListAttrKeyValue<T> list, Consumer<AttrKeyValue.ListAttrKeyValue<T>> consumer) {
         super(Text.empty());
         setTitleLabel(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
         this.listAttrKeyValue = list;
         this.list =new ArrayList<>(this.listAttrKeyValue.createAttrKeyValueForElements());
         this.consumer = consumer;
+        //todo: add WidgetBuilder
+        //todo: add more acceptable
         this.controller = ListEntryWidgetController.mutable(
             this.list,
             this.listAttrKeyValue::createNewAttrKeyValueElement,

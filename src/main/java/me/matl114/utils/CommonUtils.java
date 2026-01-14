@@ -3,19 +3,18 @@ package me.matl114.utils;
 import me.matl114.SlimefunHelper;
 import me.matl114.utils.UtilClass.ChunkIterator;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.DimensionOptions;
 import net.minecraft.world.dimension.DimensionType;
 
-import java.awt.*;
 import java.io.File;
+import java.util.List;
 
 
 @ApiMethod
-public class Utils {
+public class CommonUtils {
     public static int parseIntOrDefault(String value,int defaultValue){
         try{
             return Integer.parseInt(value);
@@ -96,5 +95,9 @@ public class Utils {
         return () -> new ChunkIterator(onlyWithLoadedNeighbours);
     }
 
+
+    public static List<String> filterString(List<String> str, String str2){
+        return str.stream().filter(s -> s.contains(str2)).toList();
+    }
 
 }

@@ -6,13 +6,15 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.screen.ScreenHandler;
-import org.spongepowered.asm.mixin.gen.Accessor;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public interface ClientPlayerAccess extends LivingEntityAccess<ClientPlayerEntity> {
     public LegalMovementManager getLegalMovementManager();
+    @Nullable
     public HandledScreen getKeepedInv();
+    @Nullable
     public ScreenHandler getKeepedInvHandler();
     public void clearKeepedInventory(boolean closeInv);
     public void resyncSprint();
@@ -27,9 +29,15 @@ public interface ClientPlayerAccess extends LivingEntityAccess<ClientPlayerEntit
         return (ClientPlayerAccess) player;
     }
     //get the Screen object which handler related to the server(should)
-    default HandledScreen getServerHandledScreen(){
+    default HandledScreen getServerOpeningScreen(){
         if(getKeepedInv() !=null)return getKeepedInv();
         else return MinecraftClient.getInstance().currentScreen instanceof HandledScreen<?> han?han:null;
+    }
+
+    @Nonnull
+    default ScreenHandler getServerScreenHandler(){
+        if(getKeepedInvHandler() != null)return getKeepedInvHandler();
+        else  return ((ClientPlayerEntity)this).currentScreenHandler;
     }
 
 

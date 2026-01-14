@@ -46,7 +46,7 @@ public class InputHelper {
      *                  示例：检查Ctrl+Shift组合
      *                  {@code if ((modifiers & (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) != 0)}
      *
-     * @threadSafety 必须从GLFW回调线程调用，内部会自动切换到Minecraft主线程执行。
+     * @threadSafety 内部会自动切换到Minecraft主线程执行。
      */
     public static void keyAction(int key, int scancode, int action, int modifiers){
         mc.execute(()->{

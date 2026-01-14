@@ -92,6 +92,7 @@ public class ConfigurateNewStyleScreen extends GenericScreen {
         if(selectingConfigEdit != null){
             selectingConfigEdit.save();
         }
+        Config.launchSaveTasks();
     }
     static{
         Listener.getHotKeyTriggeredListener().registerHandler(iHotKeyEvent -> {

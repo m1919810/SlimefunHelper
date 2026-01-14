@@ -18,6 +18,7 @@ import me.matl114.access.*;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.gui.invcache.InventoryViewScreen;
 import me.matl114.gui.other.ChatLikeInputSubScreen;
+import me.matl114.hackUtils.modules.move.NoFallModule;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
@@ -355,19 +356,20 @@ public class ChatTasks {
     public static class SlimefunHelperMainCommand extends AbstractMainCommand{
         SubCommand mainCommand = genMainCommand("");
 
-        SubCommand reloadCommand = new SubCommand("reload", genArgument("what"),"!!reload <what: default main> 重载指令实例"){
+        SubCommand reloadCommand = new SubCommand("reload", genArgument("what"),"!!reload <what: default main> 重载模块"){
             @Override
             public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
                 var re = parseInput(var4).getFirst().nextNonnull();
                 switch (re){
-                    case "main"->Tasks.scheduleDelayed(ChatTasks::reloadAllCommand,1);
-                    case "vanilla" -> Tasks.scheduleDelayed(ChatTasks::reloadVanillaClientCommand, 1);
+                    case "command"->Tasks.scheduleDelayed(ChatTasks::reloadAllCommand,1);
+                    //case "vanilla" -> Tasks.scheduleDelayed(ChatTasks::reloadVanillaClientCommand, 1);
+                    case "module" -> Tasks.scheduleDelayed(HackModules.getManager()::reloadModules, 1);
                     default -> Debug.chat("不支持的参数类型: " + re);
                 }
                 return true;
             }
         }
-            .setEnum("what","main",List.of("vanilla","main"))
+            .setEnum("what","command",List.of("command", "module"))
             .register(this);
         SubCommand helpCommand = new SubCommand("help", genArgument("subcommand", "!!help <optional> 获得帮助")){
             @Override
@@ -605,19 +607,27 @@ public class ChatTasks {
                     case "plugins" -> {
                         //todo: add tabing /version as a plan , then appending command namespace
                         Debug.chat(Text.literal("导出Command Namespace获取的数据:").formatted(Formatting.GREEN));
-                        datas = mc.getNetworkHandler().getCommandDispatcher().getRoot().getChildren()
-                            .stream()
-                            .map(CommandNode::getName)
+                        datas = Tasks.getServerCommands().stream()
                             .map(n -> {
                                 var sp = n.split(":");
                                 return  sp.length >=2 ? sp[0] : null;
                             })
                             .filter(Objects::<String>nonNull)
-                            .filter(u->u.contains(filter))
+                            .filter(u-> ((String) u).contains(filter))
                             .distinct()
                             .sorted(String::compareTo)
                             .toList();
                         onResource(val, datas);
+                        Debug.chat(Text.literal("导出Version Tab获取的数据:").formatted(Formatting.GREEN));
+                        Tasks.getServerPluginResources().thenAccept((list)->{
+                            onResource(val, list.stream()
+                                .map(str -> str.toLowerCase(Locale.ROOT))
+                                .filter(u->u.contains(filter))
+                                .distinct()
+                                .sorted(String::compareTo)
+                                .toList()
+                            );
+                        });
                     }
 //                    case "gamerule"->{
 //                        datas = mc.world.getGameRules().toNbt().entries.entrySet().stream()
@@ -783,10 +793,10 @@ public class ChatTasks {
                     var1.sendMessage(Text.literal("找不到上一个位置"));
                     yield null;
                 }
-                case "resync" ->{
-                    if(MovTasks.LAST_RESYNC_POS != null){
-                        var1.sendMessage(Text.literal("使用上次客户端同步之前的位置").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_RESYNC_POS)));
-                        yield MovTasks.LAST_RESYNC_POS;
+                case "desync" ->{
+                    if(MovTasks.setBackLog.lastDesyncPos != null){
+                        var1.sendMessage(Text.literal("使用上次客户端同步之前的位置").append(ChatUtils. getDisplayedLocationDouble(MovTasks.setBackLog.lastDesyncPos)));
+                        yield MovTasks.setBackLog.lastDesyncPos;
                     }
                     var1.sendMessage(Text.literal("找不到上一次的客户端同步记录"));
                     yield null;
@@ -819,7 +829,7 @@ public class ChatTasks {
             };
         }
         private List<String> specialPositionType(){
-            return List.of("#mark","#near",  "#this", "#back", "#death", "#resync", "#lasttp");
+            return List.of("#mark","#near",  "#this", "#back", "#death", "#desync", "#lasttp");
         }
 
         SubCommand specialTp = new SubCommand("tpa", genArgument("target", "far"), "!!tpa <target> 传送到特殊目标位置"){
@@ -1260,16 +1270,22 @@ public class ChatTasks {
                         configureVulcanEnvHacks();
                         //
                     }
+                    case "ac-matrix" ->{
+                        configureCommonACHacks();
+                        configureMatrixEnvHacks();
+                    }
                     default -> {
                         return true;
                     }
                 }
+                Config.launchSaveTasks();
                 Debug.info("已经加载", preset, "配置预设");
                 return true;
             }
+            //todo: add Event to this
             private void configureNoACEnvHacks(){
                 //NO FALL
-                MOV_CONFIG.setValueNoNew(true, MOVE_NOFALL);
+                MOV_CONFIG.setValueNoNew(true, NoFallModule.MOVE_NOFALL);
                 //NO SLOW
                 MOV_CONFIG.setValueNoNew(true, MOVE_SPEED_NO_SLOW_DOWN_SNEAK);
                 MOV_CONFIG.setValueNoNew(true, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SLOW);
@@ -1277,11 +1293,12 @@ public class ChatTasks {
                 MOV_CONFIG.setValueNoNew(true, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_FRAC);
                 MOV_CONFIG.setValueNoNew(true, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_IN);
                 MOV_CONFIG.setValueNoNew(true, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SPECIAL);
+                //flight
+                MOV_CONFIG.setValueNoNew(true, MOVE_FLIGHT_ANTIKICK);
                 //sprint
                 MOV_CONFIG.setValueNoNew(true, MOVE_AUTO_TOGGLE_SPRINT);
 
                 MOV_CONFIG.setValueNoNew(BypassMode.NO_BYPASS, MOVE_SPRINT_BYPASS_MODE);
-                MOV_CONFIG.setValueNoNew(BypassMode.NO_BYPASS, MOVE_NOFALL_MODE);
 //                        MOV_CONFIG.setValueNoNew(true, MOVE_SPEED_OVERRIDE_WALK);
 //                        MOV_CONFIG.setValueNoNew(true, MOVE_SPEED_OVERRIDE_FLY);
                 MOV_CONFIG.save();
@@ -1303,26 +1320,32 @@ public class ChatTasks {
                     HotKeys.getHotkeyToggleManager().getToggle(HotKeys.TOGGLE_FLIGHT).run();
                     ;
                 }
+
+                INTERACT_CONFIG.setValueNoNew(false, INTERACT_SCAFFOLD_LEGAL);
+                INTERACT_CONFIG.save();
             }
             private void configureGrimACEnvHacks(){
                 //grimac mode of nofall works
-                MOV_CONFIG.setValueNoNew(true, MOVE_NOFALL);
-                MOV_CONFIG.setValueNoNew(BypassMode.BYPASS_GRIM, MOVE_NOFALL_MODE);
+                MOV_CONFIG.setValueNoNew(NoFallModule.NofallBypassMode.BYPASS_GRIM, NoFallModule.MOVE_NOFALL_MODE);
                 MOV_CONFIG.save();
                 MINE_CONFIG.setValueNoNew(BypassMode.BYPASS_GRIM, MINE_BYPASS_FAST_BREAK_BYPASS_MODE);
                 MINE_CONFIG.save();
             }
             private void configureVulcanEnvHacks(){
                 //vanilla nofall can bypass vulcan
-                MOV_CONFIG.setValueNoNew(true, MOVE_NOFALL);
-                MOV_CONFIG.save();
+
                 //vanilla kill can bypass vulcan
                 COMBAT_CONFIG.setValueNoNew(false, COMBAT_LEGAL_MOD);
                 COMBAT_CONFIG.setValueNoNew(false, COMBAT_BOW_AIM_LEGALLY);
                 COMBAT_CONFIG.save();
             }
+            private void configureMatrixEnvHacks(){
+               //todo: wait to test
+
+            }
             private void configureCommonACHacks(){
-                MOV_CONFIG.setValueNoNew(false, MOVE_NOFALL);
+                MOV_CONFIG.setValueNoNew(NoFallModule.NofallBypassMode.LAZY_MODE, NoFallModule. MOVE_NOFALL_MODE);
+                MOV_CONFIG.setValueNoNew(true, NoFallModule. MOVE_NOFALL);
                 //noslow
                 MOV_CONFIG.setValueNoNew(false, MOVE_SPEED_NO_SLOW_DOWN_SNEAK);
                 MOV_CONFIG.setValueNoNew(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SLOW);
@@ -1355,9 +1378,16 @@ public class ChatTasks {
                 if(HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT)){
                     HotKeys.getHotkeyToggleManager().getToggle(HotKeys.TOGGLE_FLIGHT).run();;
                 }
+                //mines
+                MINE_CONFIG.setValueNoNew(BypassMode.NO_BYPASS, MINE_BYPASS_FAST_BREAK_BYPASS_MODE);
+                MINE_CONFIG.save();
+
+                // interact
+                INTERACT_CONFIG.setValueNoNew(true, INTERACT_SCAFFOLD_LEGAL);
+                INTERACT_CONFIG.save();
             }
         }
-            .setEnum("preset", List.of("vanilla", "hacking", "ac-common", "ac-grim", "ac-vulcan"))
+            .setEnum("preset", List.of("vanilla", "hacking", "ac-common", "ac-grim", "ac-vulcan", "ac-matrix"))
             .register(this);
 
         //todo not complete
@@ -1412,6 +1442,7 @@ public class ChatTasks {
                     }
                 }
                 COMBAT_CONFIG.save();
+                Config.launchSaveTasks();
                 return true;
             }
         }

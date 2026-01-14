@@ -6,6 +6,8 @@ import net.minecraft.entity.Entity;
 
 public interface EntityAccess<T extends Entity> {
     public void setDataFlag(int flag, boolean val);
+
+    public boolean getDataFlag(int index);
     static <T extends Entity> EntityAccess<T> of(T entity){
         return (EntityAccess) entity;
     }

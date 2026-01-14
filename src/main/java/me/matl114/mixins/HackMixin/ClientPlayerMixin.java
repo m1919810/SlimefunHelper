@@ -19,6 +19,7 @@ import me.matl114.utils.UtilClass.ProgressWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
@@ -35,6 +36,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.Hand;
@@ -51,6 +53,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import javax.annotation.Nonnull;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Environment(EnvType.CLIENT)
@@ -136,10 +139,11 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Shadow public abstract void swingHand(Hand hand);
 
-    @Unique
     @Getter
+    @Unique
     public HandledScreen keepedInv=null;
     @Getter
+    @Unique
     public ScreenHandler keepedInvHandler=null;
     @Unique boolean forceCloseInv=false;
     @Unique
@@ -174,8 +178,9 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Inject(method="closeHandledScreen",at=@At(value = "HEAD"),cancellable = true)
     public void closeHandledScreen(CallbackInfo ci) {
         if(!this.forceCloseInv&& HotKeys.getButtonToggleManager().getState(HotKeys.KEEP_INV)) {
-            if(this.client.currentScreen instanceof HandledScreen handled) {
-                keepedInv= handled;
+            //do not keep the inventory handler because we can get accessed to it any time
+            if(this.client.currentScreen instanceof HandledScreen handled && !(handled.getScreenHandler() instanceof PlayerScreenHandler) && !(handled.getScreenHandler() instanceof CreativeInventoryScreen.CreativeScreenHandler) ) {
+                keepedInv = handled;
                 this.keepedInvHandler=((ClientPlayerEntity)(Object)this).currentScreenHandler;
                 this.closeScreen();
                 ci.cancel();

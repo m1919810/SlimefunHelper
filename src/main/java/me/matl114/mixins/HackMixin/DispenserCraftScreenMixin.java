@@ -82,7 +82,7 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
             .map(Optional::get)
             .map(SlimefunTasks.CraftingType::id)
             .collect(Collectors.toSet());
-        this.recipeBookWidget = new SlimefunDispensorSuggestBookWidget( this,3,  3,co,(bol, entry)-> SlimefunTasks.moveSlimefunRecipePatternToContainer(entry, this, bol, true, AVAILABLE_SLOTS));
+        this.recipeBookWidget = new SlimefunDispensorSuggestBookWidget( this,3,  3,co,(bol, entry)-> SlimefunTasks.moveSlimefunRecipePatternToContainer(entry, this.getScreenHandler(), bol, true, AVAILABLE_SLOTS));
     }
 
 

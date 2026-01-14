@@ -460,14 +460,27 @@ public class RenderUtils {
         BufferBuilder bufferBuilder = tessellator
             .begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
         drawSolidBox(matrix, bufferBuilder, from, to);
-//        Vec3d vec3d = new Vec3d(matrix.transformPosition((float) from.x, (float) from.y, (float) from.z, new Vector3f()));
-//        Vec3d vec3d1 = new Vec3d(matrix.transformPosition((float) to.x, (float) to.y, (float) to.z, new Vector3f()));
-//        drawOutlinedBox(bufferBuilder, vec3d, vec3d1);
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
     }
     public static void drawSolidBox(Matrix4f matrix, Vec3d from, Vec3d to){
         Vec3d vec3d = getCameraPos();
         drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
+    }
+
+    public static void drawQuadCameraCoord(Matrix4f matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d){
+        Tessellator tessellator = RenderSystem.renderThreadTesselator();
+        RenderSystem.setShader(GameRenderer::getPositionProgram);
+        BufferBuilder bufferBuilder = tessellator
+            .begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
+        bufferBuilder.vertex(matrix4f, (float) a.x, (float) a.y, (float) a.z);
+        bufferBuilder.vertex(matrix4f, (float) b.x, (float) b.y, (float) b.z);
+        bufferBuilder.vertex(matrix4f, (float) c.x, (float) c.y, (float) c.z);
+        bufferBuilder.vertex(matrix4f, (float) d.x, (float) d.y, (float) d.z);
+        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
+    }
+    public static void drawQuad(Matrix4f matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d){
+        Vec3d vec3d = getCameraPos();
+        drawQuadCameraCoord(matrix4f, a.subtract(vec3d), b.subtract(vec3d), c.subtract(vec3d), d.subtract(vec3d));
     }
     public static void setAsShaderColor(Color color, float opacity){
         RenderSystem.setShaderColor(color.getRed() / 255.0F, color.getGreen()/ 255.0F, color.getBlue()/ 255.0F, opacity);

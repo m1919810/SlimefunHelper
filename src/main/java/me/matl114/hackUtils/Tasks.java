@@ -1,5 +1,8 @@
 package me.matl114.hackUtils;
 
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.suggestion.Suggestion;
+import com.mojang.brigadier.tree.CommandNode;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,7 +22,6 @@ import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Saddleable;
-import net.minecraft.entity.passive.StriderEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
@@ -414,7 +416,7 @@ public class Tasks {
             attack = 0;
             Debug.chat("Invalid argument passed");
         }
-        var screen = ClientPlayerAccess.of(mc.player).getServerHandledScreen();
+        var screen = ClientPlayerAccess.of(mc.player).getServerOpeningScreen();
         var handler = screen.getScreenHandler();
         mc.getNetworkHandler().sendPacket(new ClickSlotC2SPacket(handler.syncId, handler.getRevision(), t, 0, SlotActionType.PICKUP,handler.getCursorStack(),new Int2ObjectOpenHashMap<>()));
         mc.getNetworkHandler().sendPacket(new ClickSlotC2SPacket(handler.syncId, handler.getRevision(), attack, 0, SlotActionType.PICKUP,handler.getCursorStack(),new Int2ObjectOpenHashMap<>()));
@@ -812,6 +814,26 @@ public class Tasks {
         taskQueue.addLast(task);
     }
 
+    public static List<String> getServerCommands(){
+        return mc.getNetworkHandler().getCommandDispatcher().getRoot().getChildren()
+            .stream()
+            .map(CommandNode::getName)
+            .toList();
+    }
+
+    @ApiMethod
+    public static CompletableFuture<List<String>> getServerPluginResources(){
+        String command = "/version ";
+        StringReader ojReader = new StringReader(command);
+        ojReader.skip();
+        var dispatcher= mc.getNetworkHandler().getCommandDispatcher();
+        var parseResult = dispatcher.parse(ojReader, mc.getNetworkHandler().getCommandSource());
+        return mc.getNetworkHandler().getCommandDispatcher().getCompletionSuggestions(parseResult)
+            .thenApply((suggestions -> {
+                    return suggestions.getList().stream().map(Suggestion::getText).sorted().toList();
+                }));
+    }
+
     private static Vec3d lastPosDragBack ;
     private static int lastPosUpdateStamp;
     static{
@@ -905,7 +927,7 @@ public class Tasks {
                 }
             }
         });
-        Listener.getMainThreadPacketPreApplyPoint().registerHandler((pe) -> doPacketListenApply(pe));
+        Listener.getMainThreadPacketPreApplyPoint().registerHandler(Tasks::doPacketListenApply);
         Listener.getGameJoinPoint().registerHandler(Tasks::checkBlacklistedUsername);
         Listener.getPostTick().registerHandler(Tasks::onPostTick);
 //        Listener.registerPacketListener(packet->{

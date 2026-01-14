@@ -2,11 +2,10 @@ package me.matl114.utils;
 
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.DynamicOps;
-import me.matl114.bukkitUtiils.ItemStackHelper;
+import me.matl114.bukkitUtiils.BukkitItemStackUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
 import net.minecraft.component.ComponentType;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.*;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
@@ -494,7 +493,7 @@ public class ItemStackUtils {
         ItemStack stacked = new ItemStack(typed);
         if(typedString.length == 2 ){
             if(typed == Items.PLAYER_HEAD){
-                setOrRemoveChange(stacked, PROFILE, ItemStackHelper.buildPlayerHeadProfileCSCoreLib(typedString[1]));
+                setOrRemoveChange(stacked, PROFILE, BukkitItemStackUtils.buildPlayerHeadProfileCSCoreLib(typedString[1]));
             }
         }
         if(id!=null && !"null".equals(id)){

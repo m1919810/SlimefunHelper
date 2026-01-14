@@ -47,6 +47,7 @@ public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedSc
         super.init();
         if(configs != null){
             configs.save();
+            Config.launchSaveTasks();
         }
         configs = ConfigureListWidget.createConfigConfigure(this.config, 0, 10, buttonWidth ,buttonWidth, 20, buttonWidth, buttonHeight,this.width - 20, this.height - 40);
         addDrawableChild(configs);
@@ -117,6 +118,7 @@ public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedSc
         if(configs != null){
             configs.save();
         }
+        Config.launchSaveTasks();
     }
 
 }

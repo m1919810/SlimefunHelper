@@ -2,14 +2,11 @@ package me.matl114.jsApi;
 
 import me.matl114.hackUtils.*;
 import me.matl114.utils.*;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.passive.StriderEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.SpectatorTeleportC2SPacket;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.Method;
+import xyz.wagyourtail.jsmacros.core.Core;
+import xyz.wagyourtail.jsmacros.core.library.BaseLibrary;
+import xyz.wagyourtail.jsmacros.core.library.LibraryRegistry;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -22,24 +19,15 @@ import static me.matl114.utils.ASMUtils.*;
  * JsMacros is fucking great
  */
 public class SlimefunHelperApi {
-    private static Object jsMacrosInstance;
-    private static Object jsLibRegistry;
     private static void initTask(){
         try{
-            Class<?> targetClass = Class.forName("xyz.wagyourtail.jsmacros.core.Core");
-            Field field= targetClass.getDeclaredField("instance");
-            field.setAccessible(true);
-            jsMacrosInstance = field.get(null);
-            Field libRegistry = targetClass.getDeclaredField("libraryRegistry");
-            libRegistry.setAccessible(true);
-            jsLibRegistry = libRegistry.get(jsMacrosInstance);
-            Class<?> baseLib = Class.forName("xyz.wagyourtail.jsmacros.core.library.BaseLibrary");
-            java.lang.reflect.Method registerMethod = jsLibRegistry.getClass().getMethod("addLibrary", Class.class);
+            Core jsMacrosInstance = Core.getInstance();
+            LibraryRegistry registry = jsMacrosInstance.libraryRegistry;
+            Class<?> baseLib = BaseLibrary.class;
 
             List<Class<?>> clazzes = createSlimefunHelperApi(baseLib);
-
             for (var clazz : clazzes){
-                registerMethod.invoke(jsLibRegistry, clazz);
+                registry.addLibrary((Class<? extends BaseLibrary>) clazz);
             }
             Debug.info("Successfully injected jsMacros library");
         }catch (Throwable e){
@@ -83,12 +71,21 @@ public class SlimefunHelperApi {
             slimefunHelperApi.add( buildLibForJsMacros(libBase, ItemEditTasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, MineTasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, InvTasks.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, Utils.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, CommonUtils.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, JsHelper.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, RegistryHelper.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, Debug.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, ChatUtils.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, InventoryUtils.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, ItemStackHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, CollectionUtils.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, FileHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, RaycastUtils.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, WorldHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, NBTHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, EnumHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, EntityHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, ScreenHelper.class));
 //            buildLibForJsMacros(libBase, ClientHelper.class);
         //todo: 适配PacketByteBufferHelper
         }
@@ -220,11 +217,11 @@ public class SlimefunHelperApi {
                     }
 
                     // 调用原始静态方法
-                    mv.visitMethodInsn(Opcodes.INVOKESTATIC,
+                    mv.visitMethodInsn(  Opcodes.INVOKESTATIC,
                         utilityClassInternalName,
                         method.getName(),
                         methodDesc.toString(),
-                        false);
+                        utilityClass.isInterface());
 
                     // 返回结果
                     createSuitableReturn(mv, Type.getInternalName(method.getReturnType()));

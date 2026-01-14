@@ -55,4 +55,8 @@ public class ClientHelper {
         sleep(ms, 0);
     }
 
+    public static boolean isOnThread(){
+        return mc.isOnThread();
+    }
+
 }

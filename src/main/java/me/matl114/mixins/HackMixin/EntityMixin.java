@@ -54,8 +54,15 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
     @Shadow
     protected abstract void setFlag(int index, boolean value);
 
+    @Shadow
+    protected abstract boolean getFlag(int index);
+    @Unique
     public void setDataFlag(int index, boolean val){
         this.setFlag(index, val);
+    }
+    @Unique
+    public boolean getDataFlag(int index){
+        return getFlag(index);
     }
 
     @Unique
@@ -104,7 +111,7 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
     private Vec3d onModifyVelocity(Vec3d original){
         if(checkNotClientPlayer())return original;
         Event<Vec3d> vec3d = new Event<>(original, true, true);
-        Listener.getPlayerVelocityUpdate().handleValue(vec3d);
+        Listener.getPlayerVelocityTick().handleValue(vec3d);
         if(vec3d.isCancelled()){
             return Vec3d.ZERO;
         }else{

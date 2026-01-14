@@ -1,13 +1,9 @@
 package me.matl114.gui.config;
 
-import com.google.common.base.Preconditions;
-import com.mojang.datafixers.util.Pair;
 import me.matl114.ModConfig;
 import me.matl114.access.ScreenAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
-import me.matl114.hackUtils.SlimefunTasks;
-import me.matl114.managers.Config;
 import me.matl114.managers.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
@@ -19,11 +15,8 @@ import net.minecraft.util.Language;
 import org.apache.commons.lang3.function.Consumers;
 
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class KeyValueInputWidget<T> extends SubScreenWidget {
     AttrKeyValue<T> keyValueHolder;
@@ -110,6 +103,7 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
             this.interactPlace = new SubScreenWidget(
                 dkey  + dblank, 0, dvalue, dy
             )
+                //todo: move list to front, increase size
                 .addDrawableChild(
                     McWidgetHelpers.createTextFieldEditBox(
                         1, 1, dvalue -2 - dy , dy -2, this.keyValueHolder, this.keyValueHolder.getValue(), McWidgetHelpers.getWrongRedTextBoxColorProvider(this.keyValueHolder::isValidate)
@@ -120,7 +114,7 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
                         .setElementHandler(
                             IconElement.fixed(new Identifier("slimefunhelper", "textures/gui/list_tag.png"), ButtonAction.run(()->{
                                     ScreenAccess.of(new ListModifyScreen(listKeyValueHolder, listAttrKeyValue -> {
-                                        listKeyValueHolder.setOriginValue(listAttrKeyValue.getOriginValue());
+                                        listKeyValueHolder.setOriginValue(((AttrKeyValue.ListAttrKeyValue) listAttrKeyValue).getOriginValue());
                                     })).openFromCurrent();
                                 }))
                                 .withTooltips(TooltipHandler.of(List.of(Text.literal("点击打开 列表编辑界面"))))

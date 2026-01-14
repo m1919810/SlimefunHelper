@@ -19,6 +19,7 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.Iterator;
 import java.util.List;
@@ -47,8 +48,14 @@ public class PacketHelper {
     }
 
 
-    public void sendInventoryPacket(int slotId, int button, String actionTypeStr) {
+    public static void sendInventoryPacket(int slotId, int button, String actionTypeStr) {
         InvTasks.clickSlotAsync(slotId, button, SlotActionType.valueOf(actionTypeStr.toUpperCase(Locale.ROOT)));
     }
+    //todo ; interactionManager methods
+    public static void sendAttackBlock(int x, int y, int z, String direction, boolean offhand) {
 
+    }
+    public static void sendAttackBlock(Object pos, String direction, boolean offhand) {
+
+    }
 }

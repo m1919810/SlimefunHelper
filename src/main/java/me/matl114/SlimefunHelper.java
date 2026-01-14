@@ -3,32 +3,25 @@ package me.matl114;
 import lombok.Getter;
 import me.matl114.bridge.BridgeMain;
 import me.matl114.bukkitUtiils.BukkitSerializationMock;
-import me.matl114.bukkitUtiils.ItemStackHelper;
+import me.matl114.bukkitUtiils.BukkitItemStackUtils;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.jsApi.SlimefunHelperApi;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
+import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
 import me.matl114.renders.SlimefunCustomModelManager;
 import me.matl114.renders.RenderMain;
-import me.matl114.utils.Utils;
 import net.fabricmc.api.ModInitializer;
 
 
-import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin;
-import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 
-import net.fabricmc.fabric.impl.client.model.loading.ModelLoaderHooks;
 import net.fabricmc.fabric.impl.client.model.loading.ModelLoadingPluginManager;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.model.ModelLoader;
-import net.minecraft.data.client.BlockStateModelGenerator;
-import net.minecraft.data.client.ItemModelGenerator;
-import net.minecraft.data.client.ModelProvider;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
@@ -36,8 +29,6 @@ import net.minecraft.util.Identifier;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 
 
 public class SlimefunHelper implements ModInitializer {
@@ -51,7 +42,6 @@ public class SlimefunHelper implements ModInitializer {
     public static final boolean HACK_VERSION = true;
 	public static boolean DEV = false;
 	public static void authentication(){
-		Debug.info(MinecraftClient.getInstance().getSession().getUsername());
 		if(Objects.equals( MinecraftClient.getInstance().getSession().getUsername(),"matl114")){
 			DEV = true;
 		}
@@ -63,12 +53,12 @@ public class SlimefunHelper implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 		authentication();
-		Debug.info("Slimefun, start!");
+		Debug.info("SlimefunHelper, start!");
 		ModConfig.reloadModConfig();
 		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
 			@Override
 			public Identifier getFabricId() {
-				return Utils.getNamespaceKey("reload_listener");
+				return CommonUtils.getNamespaceKey("reload_listener");
 			}
 			@Override
 			public void reload(ResourceManager manager) {
@@ -111,8 +101,7 @@ public class SlimefunHelper implements ModInitializer {
         );
 
 		BukkitSerializationMock.init();
-		Debug.info("loading bukkitMock!");
-		ItemStackHelper.init();
+		BukkitItemStackUtils.init();
 		RenderMain.init();
 		HotKeys.init();
 		Tasks.init();
@@ -136,4 +125,6 @@ public class SlimefunHelper implements ModInitializer {
 	//todo: add JsonMapRef , store data as json string
 	//todo: add shulker display and shulker preview
 	//
+
+	//todo: js dev: tp+ litematica, tp + breakblock
 }

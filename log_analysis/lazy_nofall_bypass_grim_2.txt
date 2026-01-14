@@ -1,0 +1,35 @@
+场景2： 玩家在落地时无横向动量
+
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.38171147050953 84.79200176125546 28.68917300827834 false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.38171147050953 81.69935880076793 28.68917300827834 false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.38171147050953 78.59016863897678 28.68917300827834 false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.38171147050953 75.46476221959249 28.68917300827834 false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Ex true false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Trigger onGround
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.38171147050953 75.46476222959248 28.68917300827834 false
+//这里是已经true了
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.38171147050953 74.0 28.68917300827834 true
+[16:09:45] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [51.38,74.00,28.69]
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+//对方尝试拉回到74 + 1E-8
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move Full 51.38171147050953 74.0000001 28.68917300827834 false
+//对方检测到了我的发包
+[16:09:45] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl_test 触发了 GroundSpoof (x3) claimed false
+[16:09:45] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl_test 触发了 Simulation (x3) 1.464762 /gl 122
+[16:09:45] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl_test 触发了 GroundSpoof (x4) claimed true
+[16:09:45] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl_test 触发了 Simulation (x4) 1.386362 /gl 123
+//这里发现了onGround从true变成了false， 因为什么 因为对面setBack了
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Ex false true
+//这又byd是为什么
+//这里发出的onGround为什么呢 因为byd 移动1E-8太小了以至于客户端觉得这没移动 客户端就在74+ 1E-8悬空了 但是对面setBack了 要考虑一下对面的感受 所以给一个false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Ex true false
+[16:09:45] [Render thread/INFO] (SlimefunHelper) Trigger onGround
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.38171147050953 74.00000010999999 28.68917300827834 false
+//这里是正常落地 对面没有察觉
+[16:09:45] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
+[16:09:46] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.3817114

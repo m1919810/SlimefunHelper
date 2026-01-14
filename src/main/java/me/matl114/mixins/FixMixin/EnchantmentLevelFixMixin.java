@@ -13,7 +13,7 @@ public abstract class EnchantmentLevelFixMixin {
         return MathHelper.clamp(instance.getIntValue(),0, 255);
     }
 
-    @ModifyArg(method = "<clinit>", at = @At(value = "INVOKE", target = "Lcom/mojang/serialization/Codec;intRange(II)Lcom/mojang/serialization/Codec;"), index = 1)
+     @ModifyArg(method = "<clinit>", at = @At(value = "INVOKE", target = "Lcom/mojang/serialization/Codec;intRange(II)Lcom/mojang/serialization/Codec;"), index = 1)
     private static int rewriteLevel(int maxInclusive){
         return Integer.MAX_VALUE;
     }

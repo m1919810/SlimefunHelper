@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+@ApiMethod
 public class RaycastUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     public static boolean raycastAnyBlock(Entity e, Vec3d from, Vec3d to){
@@ -187,5 +188,7 @@ public class RaycastUtils {
             );
         };
     }
+
+    //todo: add EntityHitResult;
 
 }

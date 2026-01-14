@@ -927,6 +927,37 @@ public class RenderTasks {
                 RenderUtils.drawLineVirtual(stack, ver, ver.add(delta), color2);
         }
     }
+    public static class MultiLineRenderingTask extends TickingRenderingTask{
+        List<Vec3d> multiLine;
+        Color color1;
+        public MultiLineRenderingTask(List<Vec3d> vec3ds, int tick, Color color) {
+            super(tick);
+            this.multiLine = Collections.unmodifiableList(vec3ds);
+            this.color1 = color;
+        }
+
+        @Override
+        public void renderVirtual(MatrixStack stack) {
+            RenderUtils.drawLineVirtual(stack, multiLine, color1);
+        }
+    }
+
+    public static class QuadRenderingTask  extends TickingRenderingTask{
+        Vec3d[] abcd;
+        Color color1;
+        public QuadRenderingTask(Vec3d a, Vec3d b, Vec3d c, Vec3d d, int tick, Color color) {
+            super(tick);
+            this.abcd = new Vec3d[]{a, b, c, d};
+            this.color1 = color;
+        }
+
+        @Override
+        public void renderVirtual(MatrixStack stack) {
+            RenderUtils.setAsShaderColor(color1, 0.25F);
+            RenderUtils.drawQuad(stack.peek().getPositionMatrix(), abcd[0], abcd[1], abcd[2], abcd[3]);
+        }
+    }
+
     public static class LineToTargetRenderingTask extends TickingRenderingTask{
         Vec3d vec3d;
         Color color;
@@ -1414,8 +1445,7 @@ public class RenderTasks {
     //TODO: add status renderer , inGameHud
 
     static {
-        EntityUtils.parseEntityWhiteList(RENDER_DETECT_WHITELIST.getValue().replace(',','|'), entityTypes);
-        RENDER_DETECT_WHITELIST.addUpdateListener((str)->{
+        RENDER_DETECT_WHITELIST.addUpdateListenerWithUpdate((str)->{
             EntityUtils.parseEntityWhiteList(str.replace(',','|'),entityTypes);
         });
         //Listener.registerPacketListener(RenderTasks::onDetect,true);

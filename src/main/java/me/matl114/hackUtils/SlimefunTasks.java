@@ -26,6 +26,7 @@ import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.ConfigLoader;
 import me.matl114.managers.Configs;
+import me.matl114.managers.ScheduleService;
 import me.matl114.utils.*;
 import me.matl114.utils.UtilClass.*;
 import net.minecraft.block.Block;
@@ -57,6 +58,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
@@ -1769,7 +1771,7 @@ public class SlimefunTasks {
     }
 
     @ApiMethod
-    public static InvTasks.SlotMatchingResult getItemStackMatchingSlot(HandledScreen screen, ItemStack stack, boolean weakMatch, int... slots){
+    public static InvTasks.SlotMatchingResult getItemStackMatchingSlot(ScreenHandler screen, ItemStack stack, boolean weakMatch, int... slots){
         if(stack.isEmpty()){
             return InvTasks.getEmptySlots(screen, slots);
         }
@@ -1779,7 +1781,7 @@ public class SlimefunTasks {
         var result = new InvTasks.SlotMatchingResult();
         ItemStack realStack = null;
         String sampleId = getSfIdOrNull(stack);
-        var allSlots = screen.getScreenHandler().slots;
+        var allSlots = screen.slots;
         for (int i : slots){
             Slot slot = allSlots.get(i);
             if(slot != null && slot.inventory instanceof PlayerInventory && !slot.getStack().isEmpty() ){
@@ -1802,7 +1804,7 @@ public class SlimefunTasks {
         return result;
     }
     @ApiMethod
-    public static void moveSlimefunRecipePatternToContainer(RecipeEntry entry, HandledScreen<?> screen, int amount, boolean removeOrigin, int... acceptSlots){
+    public static void moveSlimefunRecipePatternToContainer(RecipeEntry entry, ScreenHandler screen, int amount, boolean removeOrigin, int... acceptSlots){
         Preconditions.checkArgument(acceptSlots.length == 9);
         ItemStack[] ingredients = new ItemStack[9];
         Ingredient[] ingre = entry.ingredient();
@@ -2087,14 +2089,13 @@ public class SlimefunTasks {
     }
     private static final Set<?> SCREEN_TYPES = Set.of(ScreenHandlerType.GENERIC_9X6, ScreenHandlerType.GENERIC_9X3, ScreenHandlerType.GENERIC_9X4,ScreenHandlerType.GENERIC_9X5);
     static{
-        TITLE_PATTERN.addUpdateListener((str)->{
+        TITLE_PATTERN.addUpdateListenerWithUpdate((str)->{
             TITLE_REGEX = Pattern.compile(str);
         });
-        TITLE_REGEX = Pattern.compile(TITLE_PATTERN.getValue());
-        MULTIBLOCK_PATTERN.addUpdateListener((str)->{
+
+        MULTIBLOCK_PATTERN.addUpdateListenerWithUpdate((str)->{
             MULTIBLOCK_REGEX = Pattern.compile(str);
         });
-        MULTIBLOCK_REGEX = Pattern.compile(MULTIBLOCK_PATTERN.getValue());
         Tasks.scheduleDelayed(()->{
             //post init tasks
             Debug.info("Running Slimefun Post Setup Tasks");
@@ -2102,7 +2103,8 @@ public class SlimefunTasks {
         }, 1);
 
         //定时保存
-        Tasks.scheduleRepeated(SlimefunTasks::scheduledSave, 20* 60, 20*60* 5);
+        ScheduleService.launchAsyncRepeatTask(SlimefunTasks::saveImmediately, 1000 * 60, 1000 * 60 * 5);
+//        Tasks.scheduleRepeated(SlimefunTasks::scheduledSave, 20* 60, 20*60* 5);
         //退出服务器时保存
         Listener.getServerDisconnectPoint().registerHandler((v)->{
             Debug.info("Save Slimefun Data...");

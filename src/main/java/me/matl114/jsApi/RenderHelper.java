@@ -6,6 +6,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 
 import java.awt.*;
+import java.util.List;
 
 @ApiMethod
 public class RenderHelper {
@@ -63,8 +64,23 @@ public class RenderHelper {
                 );
             }
         });
-
-
-
     }
+
+
+    public static void renderLine(List<Vec3d> list, int tick, Color color){
+        JsHelper.runOnMainThread(()->{
+            RenderTasks.registerVirtualRenderTask(
+                new RenderTasks.MultiLineRenderingTask(list, tick, color)
+            );
+        });
+    }
+
+    public static void renderQuad(Vec3d a, Vec3d b, Vec3d c, Vec3d d, int tick, Color color){
+        JsHelper.runOnMainThread(()->{
+            RenderTasks.registerVirtualRenderTask(
+                new RenderTasks.QuadRenderingTask(a, b, c, d, tick, color)
+            );
+        });
+    }
+
 }

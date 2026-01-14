@@ -52,10 +52,9 @@ public class SimpleHotKey implements IHotKey{
         config.save();
 
         ref = config.getKeyBind(idPath);
-        //load keyCodes
-        setKeyCodes(ref.getValue());
-        //set listener
-        ref.addUpdateListener(this::setKeyCodes);
+
+        //set listener with current call
+        ref.addUpdateListenerWithUpdate(this::setKeyCodes);
     }
 
     public void setKeyCodes(MultiKeyBind keyCode){

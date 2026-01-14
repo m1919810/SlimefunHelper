@@ -23,7 +23,7 @@ public class InventoryUtils {
 
             @Override
             public boolean isEmpty() {
-                return false;
+                return itemStackSupplier.get().isEmpty();
             }
 
             @Override

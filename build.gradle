@@ -59,6 +59,9 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	modImplementation files("libs/jsmacros-1.21-1.9.3.jar")
+	modImplementation files("libs/jsmacros-1.21-js-extension.jar")
+	modImplementation files("libs/graal-sdk-23.0.1.jar")
 
 	api 'com.github.houbb:pinyin:0.4.0'
 	api 'io.netty:netty-handler-proxy:4.1.97.Final'

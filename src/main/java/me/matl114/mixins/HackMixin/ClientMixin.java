@@ -20,6 +20,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
@@ -54,6 +55,10 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
 
     @Shadow
     static MinecraftClient instance;
+    @Final
+    @Shadow
+    public GameOptions options;
+
     @Unique
     public void setCooldown(int cooldown){
         this.itemUseCooldown = cooldown;
@@ -68,7 +73,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     public Screen onRedirectInventoryKeyPress(Screen screen){
         if(HotKeys.getButtonToggleManager().getState(HotKeys.KEEP_INV)){
             ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            if(player!=null&&ClientPlayerAccess.of(player).getKeepedInvHandler()!=null&& ClientPlayerAccess.of(player).getKeepedInv()!=null){
+            if(player!=null&&ClientPlayerAccess.of(player).getKeepedInvHandler()!=null&& ClientPlayerAccess.of(player).getKeepedInv() != null){
                 HandledScreen screen1= ClientPlayerAccess.of(player).getKeepedInv();
                 player.currentScreenHandler=ClientPlayerAccess.of(player).getKeepedInvHandler();
                 ClientPlayerAccess.of(player).clearKeepedInventory(false);
@@ -155,6 +160,25 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;handleInputEvents()V", shift = At.Shift.AFTER))
     public void onPostInputEvent(CallbackInfo ci){
         Listener.getPostHandleEvent().handleValue(new Event<>(null, false, false));
+    }
+
+    @Inject(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;", shift = At.Shift.BEFORE))
+    public void onInputEventIfScreenOpen(CallbackInfo ci){
+        if(MinecraftClient.getInstance().currentScreen != null || MinecraftClient.getInstance().getOverlay() != null){
+            this.profiler.swap("Keybindings");
+            handleInputEventWhenScreenOpen();
+
+        }
+    }
+    @Unique
+    private void handleInputEventWhenScreenOpen(){
+        //check in game and do the tick
+        if(MinecraftClient.getInstance().player != null){
+            this.handleBlockBreaking(false );
+            if (this.attackCooldown > 0) {
+                --this.attackCooldown;
+            }
+        }
     }
 
 

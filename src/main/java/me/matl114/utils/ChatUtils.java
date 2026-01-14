@@ -9,6 +9,7 @@ import net.minecraft.util.Language;
 import net.minecraft.util.math.Vec3d;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -430,6 +431,17 @@ public class ChatUtils {
         return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, concatLineText(showText))));
     }
 
+    @ApiMethod
+    @Nullable
+    public static String parseTranslation(String key){
+        return Language.getInstance().get(key, key);
+    }
+
+    public static boolean hasTranslation(String key){
+        return Language.getInstance().hasTranslation(key);
+    }
+
+    @ApiMethod
     public static List<Text> parseTooltipsTranslation(String key, String defaultVal){
         String tooltipValue = Language.getInstance().get(key, defaultVal);
         String[] splites = tooltipValue.split("\n");
@@ -449,5 +461,15 @@ public class ChatUtils {
         newLine.setStyle(text.getStyle());
         text.getSiblings().forEach(newLine::append);
         return newLine;
+    }
+
+    @ApiMethod
+    public static String textToJsonString(Text text){
+        return Text.Serialization.toJsonString(text, ItemStackUtils.delegate());
+    }
+
+    @ApiMethod
+    public static Text textFromJsonString(String text){
+        return Text.Serialization.fromJson(text, ItemStackUtils.delegate());
     }
 }

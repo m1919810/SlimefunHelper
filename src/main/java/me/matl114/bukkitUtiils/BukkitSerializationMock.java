@@ -21,18 +21,8 @@ import java.util.Objects;
 public class BukkitSerializationMock {
     public static BukkitItemFactory ITEM_FACTORY_INSTANCE=new BukkitItemFactory();
     public static void init(){
-        try{
+        Debug.info("loading bukkitMock!");
 
-            Debug.info(BukkitConfigDeserializor.deserializeItemFromStringTest(BukkitConfigDeserializor.TEST_CASE));
-
-        }catch (Throwable e){
-            throw new RuntimeException(e);
-        }
-        try{
-            Debug.info(ItemStackHelper.DATATYPE_MOCKITEMSTACK.fromPrimitive(ConfigurationSerializableDataType.TEST_CASE));
-        }catch (Throwable e){
-            throw new RuntimeException(e);
-        }
     }
     public static void initTest(){
 

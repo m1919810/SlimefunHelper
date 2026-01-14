@@ -465,6 +465,7 @@ public class MineTasks {
     }
 
     //where to place it
+    //todo: minearua conflict with optimize
     private static BlockPos mineAruaPosCache;
     private static int lastRefreshMineAruaTick = 0;
     private static final Config.StringRef whitelist = Configs.MINE_CONFIG.getString(Configs.MINEARUA_WHILELIST);
@@ -601,12 +602,13 @@ public class MineTasks {
         String element = new Gson().toJson(new HashMap<>(seedMap));
         seedMapString.setValue(element);
         Configs.INTERNAL_CONFIG.save();
-        onSeedChange(key    );
+        Config.launchSaveTasks();
+        onSeedChange(key);
     }
     @ApiMethod
     public static void setWorldSeed(long seed){
-        seedMap.put(Utils.getWorldName(), seed);
-        seedMapChange(Utils.getWorldName());
+        seedMap.put(CommonUtils.getWorldName(), seed);
+        seedMapChange(CommonUtils.getWorldName());
     }
     @ApiMethod
     public static void removeWorldSeed(String world){
@@ -615,16 +617,16 @@ public class MineTasks {
     }
     @ApiMethod
     public static boolean isCurrentWorldSeedInputExist(){
-        return seedMap.containsKey(Utils.getWorldName());
+        return seedMap.containsKey(CommonUtils.getWorldName());
     }
     @ApiMethod
     public static long getCurrentWorldSeedInput(){
-        return seedMap.getLong(Utils.getWorldName());
+        return seedMap.getLong(CommonUtils.getWorldName());
     }
     @ApiMethod
     public static void validateCurrentSeed(){
         if(!validateCurrentSeedExist())return;
-        long value = seedMap.getLong(Utils.getWorldName());
+        long value = seedMap.getLong(CommonUtils.getWorldName());
         Debug.chat(Text.literal("[世界种子] 核验当前世界种子中:").formatted(Formatting.GREEN));
         Debug.chat(Text.literal("[世界种子] 输入的种子: " ).formatted(Formatting.GREEN).append(ChatUtils.getDisplayedLong(value)));
         long hashed = mc.world.getBiomeAccess().seed;
@@ -639,7 +641,7 @@ public class MineTasks {
         if(isCurrentWorldSeedInputExist()){
             return true;
         }else {
-            Debug.chat(Text.literal("[世界种子] 暂时没有设置 %s 世界的种子".formatted(Utils.getWorldName())).formatted(Formatting.RED));
+            Debug.chat(Text.literal("[世界种子] 暂时没有设置 %s 世界的种子".formatted(CommonUtils.getWorldName())).formatted(Formatting.RED));
             if(seedEnable.get()){
                 onDisableSeedOre();
             }
@@ -675,7 +677,7 @@ public class MineTasks {
 
     private static void onSeedChange(String key){
         if(!validateCurrentSeedExist())return;
-        if(Objects.equals(Utils.getWorldName(), key) && seedEnable.get()){
+        if(Objects.equals(CommonUtils.getWorldName(), key) && seedEnable.get()){
             Debug.chat("[种子矿透] 重载Seed Ore Simulation功能");
             onEnableSeedOre();
         }
@@ -691,6 +693,7 @@ public class MineTasks {
         try{
             seedEnable.set(true);
             Configs.MINE_CONFIG.save();
+            Config.launchSaveTasks();
             onClearCachedResults();
             oreConfig = Ore.getRegistry();
             if(mc.player != null && mc.world != null){
@@ -704,6 +707,7 @@ public class MineTasks {
                 Debug.chat(Text.literal("[种子矿透] 启用时出现报错, 已关闭..."));
             seedEnable.set(false);
             Configs.MINE_CONFIG.save();
+            Config.launchSaveTasks();
         }
 
     }
@@ -712,23 +716,25 @@ public class MineTasks {
         if(seedEnable.get()){
             seedEnable.set(false);
             Configs.MINE_CONFIG.save();
+            Config.launchSaveTasks();
             oreConfig = null;
             if(mc.player != null && mc.world != null){
                 Debug.chat(Text.literal("[种子矿透] 禁用该功能").formatted(Formatting.RED));
                 onRemoveFakeOreVisibleChunks();
             }
+
         }
     }
 
     private static void onLoadCurrentVisibleChunks(){
         if(mc.world == null)return;
-        for (Chunk chunk : Utils.chunks(false)){
+        for (Chunk chunk : CommonUtils.chunks(false)){
             updateChunk(chunk);
         }
     }
     private static void onReloadFakeOreVisibleChunks(){
         if(mc.world == null)return;
-        for (Chunk chunk : Utils.chunks(false)){
+        for (Chunk chunk : CommonUtils.chunks(false)){
             long key = chunk.getPos().toLong();
             var map = chunkSeedCache.get(key);
             if(map != null && !map.isEmpty()){
@@ -738,7 +744,7 @@ public class MineTasks {
     }
     private static void onRemoveFakeOreVisibleChunks(){
         if(mc.world == null)return;
-        for (Chunk chunk : Utils.chunks(false)){
+        for (Chunk chunk : CommonUtils.chunks(false)){
             long key = chunk.getPos().toLong();
             var map = fakeOres.remove(key);
             if(map != null && !map.isEmpty()){
@@ -1028,7 +1034,7 @@ public class MineTasks {
                             val = Long.parseLong(na);
                         }
                         setWorldSeed(val);
-                        Debug.chat("[世界种子] 设置", Utils.getWorldName(), "的种子为", val);
+                        Debug.chat("[世界种子] 设置", CommonUtils.getWorldName(), "的种子为", val);
                     }
                     case "remove" ->{
                         String key = re.nextNonnull();
@@ -1059,6 +1065,7 @@ public class MineTasks {
                 boolean val = parseInput(var4).getFirst().nextBoolean();
                 renderOreSimResult.set(val);
                 Configs.MINE_CONFIG.save();
+                Config.launchSaveTasks();
                 Debug.chat("[种子矿透] 切换渲染:", val);
                 return true;
             }
@@ -1088,6 +1095,7 @@ public class MineTasks {
                         onReloadFakeOreVisibleChunks();
                     }
                 }
+                Config.launchSaveTasks();
                 return true;
             }
         }
@@ -1292,8 +1300,7 @@ public class MineTasks {
         public static final  List<AttrKeyValue<Boolean>>   oreSettings = new ArrayList<>(Arrays.asList(coal, iron, gold, redstone, diamond, lapis, copper, emerald, quartz, debris));
         private static Config.StringRef oreWhiteList = Configs.MINE_CONFIG.getString(Configs.XRAY_ORE_TYPE);
         static{
-            oreWhiteList.addUpdateListener(Ore::reloadOreSettings);
-            reloadOreSettings(oreWhiteList.getValue());
+            oreWhiteList.addUpdateListenerWithUpdate(Ore::reloadOreSettings);
         }
         public static void reloadOreSettings(String value){
             try{
@@ -1317,7 +1324,7 @@ public class MineTasks {
             RegistryWrapper.WrapperLookup registry = BuiltinRegistries.createWrapperLookup();
             RegistryWrapper.Impl<PlacedFeature> features = registry.getWrapperOrThrow(RegistryKeys.PLACED_FEATURE);
             var reg = registry.getWrapperOrThrow(RegistryKeys.WORLD_PRESET).getOrThrow(WorldPresets.DEFAULT).value().createDimensionsRegistryHolder().dimensions();
-            RegistryKey<DimensionOptions> options = Utils.getCurrentDimensionOption();
+            RegistryKey<DimensionOptions> options = CommonUtils.getCurrentDimensionOption();
             var dim = reg.get(options);
 
             var biomes = dim.chunkGenerator().getBiomeSource().getBiomes();

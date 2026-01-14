@@ -1,6 +1,9 @@
 package me.matl114.hackUtils;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import me.matl114.access.*;
+import me.matl114.hackUtils.modules.ModuleManager;
+import me.matl114.hackUtils.modules.move.*;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
@@ -46,6 +49,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static me.matl114.utils.CollisionUtil.*;
@@ -291,6 +295,10 @@ public class MovTasks {
         public static MovInfo createNoUpdate(Vec3d to){
             return new MovInfo(to, null, false, null);
         }
+
+        public boolean isEmptyTo(Vec3d currentPos){
+            return vec3d.squaredDistanceTo(currentPos) < 1e-4 && rotationOverride == null && oGroundOverride == null;
+        }
     }
     public static record MovingContext(MutableObject<Vec3d> from, MutableObject<Vec3d> tickFirstGoodVec,  AtomicInteger currentTokenLimit, AtomicInteger currentTokenInTick){
         public static MovingContext create(Vec3d from){
@@ -326,6 +334,21 @@ public class MovTasks {
     public static MovInfo createMovInfo(Vec3d to, Boolean onGround, boolean updatePlayerPos, Vec2f rotationOverride){
         return new MovInfo(to, onGround, updatePlayerPos, rotationOverride);
     }
+    @ApiMethod
+    public static List<MovInfo> createMovInfoList(List<Vec3d> vec3ds){
+        return vec3ds.stream().map(MovTasks::createMovInfo).collect(Collectors.toCollection(ArrayList::new));
+    }
+
+
+    @ApiMethod
+    public static List<MovInfo> createMovInfoList(List<Vec3d> vec3ds, boolean onGround, boolean updateplayerpos, Vec2f rotation){
+        return vec3ds.stream().map(v -> MovTasks.createMovInfo(v, onGround, updateplayerpos, rotation)).collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    @ApiMethod
+    public static List<MovInfo> createNotOnGroundList(List<Vec3d> vec3ds){
+        return vec3ds.stream().map(MovTasks::createNotOnGround).collect(Collectors.toCollection(ArrayList::new));
+    }
 
 
     public static void scheuleFarawayMove(Vec3d from, List<MovInfo> deltaMovements, boolean allowNextTick, boolean considerNoFall){
@@ -338,8 +361,46 @@ public class MovTasks {
     }
 
     public static void scheduleFarawayMoveInternal(List<MovInfo> deltaMovements, boolean allowNextTick, MovingContext context, boolean considerNoFall){
+
 //        boolean shouldCheckSpeed = ! mc.player.isFallFlying() || (! mc.world.getGameRules().getBoolean(GameRules.DISABLE_ELYTRA_MOVEMENT_CHECK));
 //        double maxOnceLen = (mc.player.isFallFlying()? (10 * Math.sqrt(3)) : 10) - 1E-2;
+        //filter front not-needed packets
+        List<StepActionBundle> bundleList = createMovingPacketsForMovSequence(context, deltaMovements, allowNextTick, considerNoFall);
+        for (int i=0; i < bundleList.size() ; ++i){
+            if(bundleList.get(i).success){
+                bundleList.get(i).run();
+            }else{
+                if(allowNextTick){
+                    List<MovInfo> leftTasks = deltaMovements.subList(i, deltaMovements.size());
+                    Tasks.scheduleDelayed(()->{
+                        scheduleFarawayMoveInternal(leftTasks, allowNextTick, context.resetTick(), considerNoFall);
+                    }, 1);
+                    return;
+                }else{
+                    bundleList.get(i).run();
+                }
+            }
+        }
+        if(true){
+            return;
+        }
+        {
+            boolean startFirstMove = false;
+            List<MovInfo> moveList = new ArrayList<>();
+            Vec3d currentVec330 = context.from.getValue();
+            for (int i = 0; i < deltaMovements.size(); ++i){
+                //filter packets that are not removing at the front
+                if(!startFirstMove && deltaMovements.get(i).vec3d().subtract(currentVec330).lengthSquared() < 1E-4){
+                    continue;
+                }else{
+                    startFirstMove = true;
+                    moveList.add(deltaMovements.get(i));
+                }
+            }
+            if(moveList.isEmpty())return;
+            deltaMovements = moveList;
+        }
+
         boolean firstMove = true;
         Vec3d originalPositionTick = context.tickFirstGoodVec.getValue();
         boolean riding = mc.player.hasVehicle();
@@ -347,6 +408,7 @@ public class MovTasks {
         double deltaY = rootEntity.getY() - mc.player.getY();
         double minY = context.from.getValue().y;
         double maxY = minY;
+        //calculate current tokens if it is the first move of the tick
         if(context.currentTokenInTick.get() == 0){
             //gain tokens
             int maxTokenNeeded = 0;
@@ -356,6 +418,7 @@ public class MovTasks {
                 packetCount += 1;
                 Vec3d movingPos = move.vec3d();
                 Vec3d movement = movingPos.subtract(lastPos);
+
                 lastPos = movingPos;
                 double d7 = movement.length();
                 double d8 = movingPos.subtract(originalPositionTick).length();
@@ -387,6 +450,7 @@ public class MovTasks {
                 }
             }
         }
+        //calculate tokens depends on paper sourceocode
         var iter = deltaMovements.iterator();
         while (iter.hasNext()){
             MovInfo info = iter.next();
@@ -487,6 +551,228 @@ public class MovTasks {
                 mc.player.setOnGround(false);
             }
         }
+    }
+
+    public static final class StepActionBundle{
+        public ArrayList<Packet<?>> packets = new ArrayList<>(4);
+        public ArrayList<Runnable> tasks = new ArrayList<>(1) ;
+        public ArrayList<Runnable> postTasks = new ArrayList<>(1);
+        public boolean success = true;
+        public void failure(){
+            success = false;
+        }
+        public StepActionBundle(){
+
+        }
+        public void add(Packet<?> packet){
+            packets.add(packet);
+        }
+
+        public void add(Runnable task){
+            tasks.add(task);
+        }
+
+        public void addPost(Runnable task){
+            tasks.add(task);
+        }
+
+        public void run(){
+            tasks.forEach(Runnable::run);
+            for (var packet: packets){
+                mc.getNetworkHandler().sendPacket(packet);
+            }
+            postTasks.forEach(Runnable::run);
+            //post move task
+        }
+    }
+
+    //todo reconstruct the fucking project
+    //return a N + 1 size of StepActionBundle
+    @ApiMethod
+    public static List<StepActionBundle> createMovingPacketsForMovSequence(MovingContext context, List<MovInfo> deltaMovements, boolean allowFailure, boolean considerNoFall){
+//        boolean shouldCheckSpeed = ! mc.player.isFallFlying() || (! mc.world.getGameRules().getBoolean(GameRules.DISABLE_ELYTRA_MOVEMENT_CHECK));
+//        double maxOnceLen = (mc.player.isFallFlying()? (10 * Math.sqrt(3)) : 10) - 1E-2;
+        //filter front not-needed packets
+        List<StepActionBundle> packets = new ArrayList<>();
+        int emptyMoveCnt = 0;
+        //prepare for all movements,
+        for(int i= 0; i <= deltaMovements.size(); ++i){
+            packets.add(new StepActionBundle());
+        }
+        {
+            boolean startFirstMove = false;
+            List<MovInfo> moveList = new ArrayList<>();
+            Vec3d currentVec330 = context.from.getValue();
+            for (int i = 0; i < deltaMovements.size(); ++i){
+                //filter packets that are not removing at the front
+                if(!startFirstMove && deltaMovements.get(i).isEmptyTo(currentVec330)){
+                    emptyMoveCnt += 1;
+                    continue;
+                }else{
+                    startFirstMove = true;
+                    moveList.add(deltaMovements.get(i));
+                }
+            }
+            if(moveList.isEmpty())return packets;
+            deltaMovements = moveList;
+        }
+
+        Vec3d originalPositionTick = context.tickFirstGoodVec.getValue();
+        boolean riding = mc.player.hasVehicle();
+        Entity rootEntity = mc.player.getRootVehicle();
+        double deltaY = rootEntity.getY() - mc.player.getY();
+        double minY = context.from.getValue().y;
+        double maxY = minY;
+        boolean currentOnGround = mc.player.isOnGround();
+        Vec2f currentPitchYaw = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+        //calculate current tokens if it is the first move of the tick
+        if(context.currentTokenInTick.get() == 0){
+            //gain tokens
+            int maxTokenNeeded = 0;
+            Vec3d lastPos = originalPositionTick;
+            int packetCount = 0;
+            for (var move: deltaMovements){
+                packetCount += 1;
+                Vec3d movingPos = move.vec3d();
+                Vec3d movement = movingPos.subtract(lastPos);
+
+                lastPos = movingPos;
+                double d7 = movement.length();
+                double d8 = movingPos.subtract(originalPositionTick).length();
+                double d10  = Math.max(d7, d8);
+                //比如
+                //使用 9 9 9 9 9作为移动的， 每次packet + 1
+                //即使不用token,d10也不会超过packetNum * (...)
+
+                int tokenNeeded = ((int) Math.ceil (d10/ 9.9)) - packetCount;
+                maxTokenNeeded = Math.max(maxTokenNeeded, tokenNeeded);
+            }
+//            Debug.info("check ", maxTokenNeeded);
+            if(maxTokenNeeded > 0){
+                //粗略估计
+                //remove check, just do it 对的
+//                if(maxTokenNeeded > 20 - deltaMovements.size()){
+//                    //unable to reach so faraway
+////                    Debug.info("UnReachable ");
+//                    return packets;
+//                }
+                for (int  i = 0; i < maxTokenNeeded; ++i){
+                    context.currentTokenLimit.set(20);
+                    context.currentTokenInTick.incrementAndGet();
+                    //  Debug.chat("send zero packet !",context.currentTokenInTick.get(), context.currentTokenLimit.get());
+                    if(riding){
+                        packets.get(emptyMoveCnt).add(new VehicleMoveC2SPacket(rootEntity));
+
+                    }else{
+                        packets.get(emptyMoveCnt).add(new PlayerMoveC2SPacket.OnGroundOnly(currentOnGround));
+//                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(mc.player.isOnGround()));
+                    }
+                }
+            }
+        }
+        //calculate tokens depends on paper sourceocode
+
+        for (int i = 0; i < deltaMovements.size(); ++i){
+            MovInfo info = deltaMovements.get(i);
+            Vec3d fromNow = context.from.getValue();
+            Vec3d vec3d = info.vec3d().subtract(fromNow);
+            maxY = Math.max(maxY, info.vec3d().y);
+            minY = Math.min(minY, info.vec3d().y);
+            double len = vec3d.length();
+            double len2 = originalPositionTick.subtract(info.vec3d()).length();
+            double speedArg = 9.8;
+            if(len == 0 && len2 == 0){
+                //d10 is 0 server side, can regain token
+                context.currentTokenLimit.set(20);
+                context.currentTokenInTick.incrementAndGet();
+                if(info.oGroundOverride != null){
+                    currentOnGround = info.oGroundOverride;
+                    final boolean of = currentOnGround;
+                    packets.get(i + emptyMoveCnt).add(()-> mc.player.setOnGround(of));
+//                    mc.player.setOnGround(info.oGroundOverride);
+                }
+                boolean hasRot = info.rotationOverride != null && Objects.equals(info.rotationOverride, currentPitchYaw);
+                if(hasRot){
+                    currentPitchYaw = new Vec2f(info.rotationOverride.x, info.rotationOverride.y);
+                    final float px = currentPitchYaw.x;
+                    final float py = currentPitchYaw.y;
+                    packets.get(i + emptyMoveCnt).add(()-> {
+                        mc.player.setPitch(px);
+                        mc.player.setYaw(py);
+                    });
+                }
+                if(riding){
+                    packets.get(i + emptyMoveCnt).add(new VehicleMoveC2SPacket(rootEntity));
+                }else{
+                    if(hasRot){
+                        packets.get(i + emptyMoveCnt).add(new PlayerMoveC2SPacket.LookAndOnGround(currentPitchYaw.y, currentPitchYaw.x, currentOnGround));
+                    }else{
+                        packets.get(i + emptyMoveCnt).add(new PlayerMoveC2SPacket.OnGroundOnly(currentOnGround));
+                    }
+                }
+            }else{
+                int ExtraTokenNeeded = (int)Math.ceil (((Math.max(len, len2))/speedArg));;
+                //+1代表这个包发出去之后的结果
+                int tokenNow = context.currentTokenInTick.get() + 1;
+//            tokenLimit = Math.max(tokenLimit, 1);
+                //超出了tokenLimit, 会被强制重置为1（server side)
+                //需要把剩下的移动到下一个tick执行
+                if((Math.min( ExtraTokenNeeded, tokenNow) >= Math.max(5, context.currentTokenLimit.get()))){
+                    if(allowFailure && context.currentTokenInTick.get() > Math.max(5, context.currentTokenLimit.get())){
+                        //
+                        packets.get(i + emptyMoveCnt).failure();
+                    }
+                }
+                context.currentTokenLimit.decrementAndGet();
+                context.currentTokenInTick.incrementAndGet();
+                //  Debug.chat("before move", context.currentTokenInTick.get(), context.currentTokenLimit.get());
+                if(info.oGroundOverride() != null){
+                    currentOnGround = info.oGroundOverride();
+                    final boolean of = currentOnGround;
+                    packets.get(i + emptyMoveCnt).add(()-> mc.player.setOnGround(of));
+                }
+                boolean hasRot = info.rotationOverride != null && Objects.equals(info.rotationOverride, currentPitchYaw);
+                if(hasRot){
+                    currentPitchYaw = new Vec2f(info.rotationOverride.x, info.rotationOverride.y);
+                    final float px = currentPitchYaw.x;
+                    final float py = currentPitchYaw.y;
+                    packets.get(i + emptyMoveCnt).add(()->{
+                        mc.player.setPitch(px);
+                        mc.player.setYaw(py);
+                    });
+                }
+                Vec3d to = info.vec3d();
+                if(riding){
+                    packets.get(i + emptyMoveCnt).add(()->{
+                        rootEntity.setPosition(to.add(0, deltaY, 0));
+                        if(info.updatePlayer()){
+                            mc.player.setPosition(to);
+                        }
+                    });
+                    packets.get(i + emptyMoveCnt).add(new VehicleMoveC2SPacket(rootEntity));
+                    context.from.setValue(to);
+                }else{
+                    var packet = hasRot ? new PlayerMoveC2SPacket.Full(to.getX(), to.getY(), to.getZ(), currentPitchYaw.y,  currentPitchYaw.x, currentOnGround): new PlayerMoveC2SPacket.PositionAndOnGround(to.getX(), to.getY(), to.getZ(), currentOnGround);
+                    packets.get(i + emptyMoveCnt).add(packet);
+                    if(info.updatePlayer()){
+                        packets.get(i + emptyMoveCnt).add(()->{
+                            mc.player.setPosition(to);
+                        });
+                    }
+                    context.from.setValue(to);
+                }
+            }
+        }
+        if(considerNoFall){
+            if(Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1){
+                packets.get(packets.size() - 1).add(()->{
+                    ClientPlayerAccess.of( mc.player).setForceNoFall(true);// = MovTasks. FORCE_RESET_DISTANCE;
+                    //in case that resync packet cause OnGround falldamage
+                    mc.player.setOnGround(false);
+                });
+            }
+        }
+        return packets;
     }
 
 
@@ -637,6 +923,10 @@ public class MovTasks {
     }
     //TODO: add height limit: based on world height limit: some world do not want player to reach lower than height limit-or higher than bedrock or sth
     @ApiMethod
+    public static List<Vec3d> generateTpSequence(MovingContext context, Vec3d target,  boolean considerEnvironment){
+        return generateTpSequence(context.from().getValue(), target, false, 200, considerEnvironment);
+    }
+    @ApiMethod
     public static List<Vec3d> generateTpSequence(Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment){
         boolean collideAtTarget = checkEnvironmentCollision(mc.player, target, true);
         if(collideAtTarget){
@@ -773,7 +1063,7 @@ public class MovTasks {
         return List.of(vec3d1, vec3d2, vec3d3, vec3d4);
     }
 
-
+    @ApiMethod
     public static void scheduleTpInternal(MovingContext context, Vec3d target,  double farawayThreshold, boolean command, boolean fastMode, boolean considerNoFall){
         if(mc.player == null)return;
         if(command)
@@ -1405,14 +1695,7 @@ public class MovTasks {
             player.setVelocity(v.x / currentSpeed * maxSpeed, v.y,
                 v.z / currentSpeed * maxSpeed);
     }
-    //antikick module
-    private static int antiKickCount = 0;
-    private static final int antiKickPeriod = 60;
-    private static final double antiKickOffset = 0.032D;
-    private static double antiKickOffset0 ;
-    private static boolean escapeMotionReset = false;
-    private static double preservedLastMotion = 0.0D;
-    private static boolean waitingForServerResponse;
+
 
     private static boolean noBlocksAround(Entity entity) {
         // Paper start - stop using streams, this is already a known fixed problem in Entity#move
@@ -1445,211 +1728,88 @@ public class MovTasks {
     }
     public static boolean seenAsFloating(){
         //add serverPacket result, if toggle flight at server, stop seen as floating, no need to antiKick
-        return  !serverPacketAllowFlight && mc.player.getVelocity().y >= -0.03125D && mc.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR  && !mc.player.hasStatusEffect(StatusEffects.LEVITATION) && !mc.player.isFallFlying() && !mc.player.isUsingRiptide() && !mc.player.isSleeping() && !mc.player.isRiding() && !mc.player.isDead() && noBlocksAround(mc.player) ;
-    }
-    public static void antiKick(ClientPlayerEntity player){
-        if(seenAsFloating()){
-            antiKickCount++;
-        }else {
-            antiKickCount = 0;
-        }
-        if(antiKickCount > antiKickPeriod){
-            antiKickCount = 0;
-            escapeMotionReset = false;
-            preservedLastMotion = player.getVelocity().y;
-            setMotionY(- antiKickOffset);
-            //randomly fall down twice
-            waitingForServerResponse = true; //Tasks.getTickRandom()%3 == 0;
-            antiKickOffset0 = antiKickOffset - 0.008;
-            return;
-        }
-       // int tickCounter = Tasks.getTick()%antiKickPeriod;
-//        if(tickCounter == 0){
-//            if(mc.options.sneakKey.isPressed()
-//                && !mc.options.jumpKey.isPressed()){
-//                escapeMotionReset = true;
-//            }
-//            else
-//            if( !seenAsFloating() ){
-//                escapeMotionReset = true;
-//            }
-//            else{
-//                escapeMotionReset = false;
-//
-//            }
-//        }else if(tickCounter < 5 ){
-        if( !escapeMotionReset){
-            if(waitingForServerResponse){
-                setMotionY(- antiKickOffset);
-                antiKickOffset0 += antiKickOffset - 0.008;
-                //there is no fucking packet for response
-                waitingForServerResponse = false;
-
-                //continue fall down til server respond
-            }else {
-                setMotionY( antiKickOffset0 + preservedLastMotion - 0.0);
-                antiKickOffset0 = 0D;
-                preservedLastMotion = 0.0D;
-                Tasks.scheduleDelayed(MovTasks::restoreKeyPresses,1);
-                //set end
-                escapeMotionReset = true;
-            }
-        }
-
-//        }
-
-    }
-    private static void setMotionY(double motionY)
-    {
-
-        mc.options.sneakKey.setPressed(false);
-        mc.options.jumpKey.setPressed(false);
-        Vec3d velocity = mc.player.getVelocity();
-        mc.player.setVelocity(velocity.x, motionY, velocity.z);
+        return  !creativeFlight.serverSideCanFly && mc.player.getVelocity().y >= -0.03125D && mc.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR  && !mc.player.hasStatusEffect(StatusEffects.LEVITATION) && !mc.player.isFallFlying() && !mc.player.isUsingRiptide() && !mc.player.isSleeping() && !mc.player.isRiding() && !mc.player.isDead() && noBlocksAround(mc.player) ;
     }
 
-    private static void restoreKeyPresses()
-    {
-        //bugfix when shift click in screen, this key is reset to fall
-        if(mc.currentScreen == null){
-
-            KeyBindAccess.of(mc.options.jumpKey).resetKeyState();
-            KeyBindAccess.of(mc.options.sneakKey).resetKeyState();
-        }
-
-    }
 
     private static final Config.FlagRef overrideFly = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_FLY);
     private static final Config.FlagRef overrideWalk = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_WALK);
-    private static boolean serverPacketAllowFlight = false;
+//    private static boolean serverPacketAllowFlight = false;
 
-    public static boolean onPacketFlyToggle(PlayerAbilitiesS2CPacket packet1){
-        Tasks.scheduleDelayed(()->{
+//    public static boolean onPacketFlyToggle(PlayerAbilitiesS2CPacket packet1){
+//        Tasks.scheduleDelayed(()->{
+//
+//            serverPacketAllowFlight = packet1.allowFlying();
+//            if(mc.player != null){
+//                PlayerAbilities abilities = mc.player.getAbilities();
+//                //abilities.allowFlying = abilities.allowFlying;
+//                abilities.creativeMode = packet1.isCreativeMode();
+//                abilities.invulnerable = packet1.isInvulnerable();
+//                if(! HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT)){
+//                    abilities.allowFlying = packet1.allowFlying();
+//                }
+//                if(!overrideFly.get()){
+//                    abilities.setFlySpeed(packet1.getFlySpeed());
+//                }
+//                abilities.setWalkSpeed(packet1.getWalkSpeed());
+//                //mc.player.getAbilities().flying = isFly;
+//            }
+//
+//        },1);
+//        return false;
+//    }
 
-            serverPacketAllowFlight = packet1.allowFlying();
-            if(mc.player != null){
-                PlayerAbilities abilities = mc.player.getAbilities();
-                //abilities.allowFlying = abilities.allowFlying;
-                abilities.creativeMode = packet1.isCreativeMode();
-                abilities.invulnerable = packet1.isInvulnerable();
-                if(! HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT)){
-                    abilities.allowFlying = packet1.allowFlying();
-                }
-                if(!overrideFly.get()){
-                    abilities.setFlySpeed(packet1.getFlySpeed());
-                }
-                abilities.setWalkSpeed(packet1.getWalkSpeed());
-                //mc.player.getAbilities().flying = isFly;
-            }
+//    public static boolean onPacketFly(UpdatePlayerAbilitiesC2SPacket packet){
+//
+//        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT) && !serverPacketAllowFlight){
+//            return false;
+//        }
+//        return true;
+//
+//    }
 
-        },1);
-        return false;
-    }
-
-    public static boolean onPacketFly(UpdatePlayerAbilitiesC2SPacket packet){
-
-        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT) && !serverPacketAllowFlight){
-            return false;
-        }
-        return true;
-
-    }
-
-    public static LegalMovementManager.MovementModifier configureCreativeFlyAbility(){
-        return new LegalMovementManager.MovementModifier() {
-            @Override
-            public boolean mayModifyPos() {
-                return false;
-            }
-
-            @Override
-            public boolean mayModifyRotation() {
-                return false;
-            }
-
-            @Override
-            public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-                if( HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT)){
-                    if( !player.getAbilities().allowFlying ){
-                        player.getAbilities().allowFlying = true;
-                    }
-                    antiKick(player);
-                }else {
-                    player.getAbilities().allowFlying = serverPacketAllowFlight;
-                }
-            }
-
-            @Override
-            public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                return false;
-            }
-        };
-    }
+//    public static LegalMovementManager.MovementModifier configureCreativeFlyAbility(){
+//        return new LegalMovementManager.MovementModifier() {
+//            @Override
+//            public boolean mayModifyPos() {
+//                return false;
+//            }
+//
+//            @Override
+//            public boolean mayModifyRotation() {
+//                return false;
+//            }
+//
+//            @Override
+//            public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+//                ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+//                if( HotKeys.getHotkeyToggleManager().getState(HotKeys.TOGGLE_FLIGHT)){
+//                    if( !player.getAbilities().allowFlying ){
+//                        player.getAbilities().allowFlying = true;
+//                    }
+//                    antiKick(player);
+//                }else {
+//                    player.getAbilities().allowFlying = creativeFlight.serverSideCanFly;
+//                }
+//            }
+//
+//            @Override
+//            public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+//                return true;
+//            }
+//        };
+//    }
 
     //fixme: fake flight causes fallflying fly
 
-    private static final Config.FlagRef shouldCheckSetback = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_CHECK_SETBACK);
-    private static void listenAntiCheatSetBack(TeleportConfirmC2SPacket packet1){
-        //WHEN IN hack version, detect grimac backteleport with negative random teleport id
-        if(shouldCheckSetback.get() &&  packet1.getTeleportId() <  -10){
-//            Debug.info("apply confirm", packet1.getTeleportId());
-            if(mc.player != null){
-                Debug.chat(Text.literal("[AC] 检测到反作弊回弹! tp号:" + packet1.getTeleportId()).formatted(Formatting.RED));
-                //fixme : list possible reasons like sprinting in hungry
-            }
-        }
 
-    }
+    @ApiMethod
     public static void setupAutoResync(Vec3d pos, int timeoutTick){
-        autoResyncTillTick = Tasks.getTick() + timeoutTick;
-        AUTO_RESYNC_POS = pos;
-    }
-    public static long autoResyncTillTick = 0;
-    public static Vec3d AUTO_RESYNC_POS;
-    public static Vec3d LAST_RESYNC_POS;
-    //need test
-    public static int MAXINUM_TP_ID = 0;
-    private static final Config.FlagRef LOG_RESYNC = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_LOG_RESYNC_PACKETS);
-    private static boolean listenPositionResync(PlayerPositionLookS2CPacket packet1){
-      //  if(packet1.getTeleportId() > 1){
-        //most probably the packet is from vanilla if the tp id is positive
-        //todo need test
-        MAXINUM_TP_ID = Math.max(packet1.getTeleportId(), MAXINUM_TP_ID);
-        //debug:
-        //fix: log before player enter
-        if(LOG_RESYNC.get()){
-            Debug.chat("Pos Resync", ChatUtils.getDisplayedLocationDouble(packet1.getX(), packet1.getY(), packet1.getZ()));
+        if(autoResyncTp != null){
+            autoResyncTp.setAutoResyncSchedule(pos, timeoutTick);
         }
-        if(mc.player != null){
-            LAST_RESYNC_POS = mc.player.getPos();
-
-            //execute auto resync
-            if(autoResyncTillTick > Tasks.getTick() && AUTO_RESYNC_POS != null){
-                //auto resync
-                Vec3d resyncPos = new Vec3d(packet1.getX(), packet1.getY(), packet1.getZ());
-                double sqdistance = resyncPos.squaredDistanceTo(mc.player.getPos());
-                double sqdistance2 = resyncPos.squaredDistanceTo(AUTO_RESYNC_POS);
-                if(sqdistance > 1E-4 && sqdistance < MathUtils.s2(128) && sqdistance2 > 1E-4 && sqdistance2 < MathUtils.s2(128)){
-                    //don't so far, it may be a real teleport
-                    Debug.chat("Auto Resync triggered!");
-                    mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.getTeleportId()));
-                    mc.player.setPosition(resyncPos);
-//                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(), false));
-                    executeTp(AUTO_RESYNC_POS, 180, false, true);
-                    autoResyncTillTick = -1;
-                    AUTO_RESYNC_POS = null;
-                    return false;
-                }
-            }
-        }
-
-        return true;
-
-
-
-        //}
     }
+
     private static boolean fixPositionSetBackFallDamage(Event<Packet<?>> packet){
         if(packet.context() instanceof PlayerPositionLookS2CPacket setBackPackets){
             //real setback , not a tp
@@ -1724,11 +1884,12 @@ public class MovTasks {
     //FIX: do not use falldistance as flag anymore
 
 //    public static final float FORCE_RESET_DISTANCE = 13495702F;
-    private static final Config.FlagRef noFall = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_NOFALL);
-    private static final Config.EnumRef<Configs.BypassMode> noFallMode = Configs.MOV_CONFIG.getEnum(Configs.MOVE_NOFALL_MODE);
-    @Deprecated
-    public static boolean noFallSetbackResponse = false;
-    public static boolean nofallWaitSetbackFlag;
+//    private static final Config.FlagRef noFall = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_NOFALL);
+//    private static final Config.EnumRef<Configs.NofallBypassMode> noFallMode = Configs.MOV_CONFIG.getEnum(Configs.MOVE_NOFALL_MODE);
+//    @Deprecated
+//    public static boolean noFallSetbackResponse = false;
+//    public static boolean nofallWaitSetbackFlag;
+//    public static boolean afterSetbackFlag = false;
     private static final Config.FlagRef setBackDisableVelocity = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_DISABLE_SETBACK_VELOCITY_RESET);
     public static void configurateTeleportBackVelocityUpdate(Event<Vec3d> vcUpdate){
         if(setBackDisableVelocity.get()){
@@ -1736,287 +1897,335 @@ public class MovTasks {
             return;
         }
     }
+
+    //Removed
+    //move to NoFallModule.class
     //avoid player
-    public static void onSetBackResponseAction(Event<MovInfo> event){
-        nofallWaitSetbackFlag = false;
-        if(noFallMode.getValue() == Configs.BypassMode.NO_BYPASS && (event.context.oGroundOverride == null || noFallSetbackResponse != (boolean)event.context.oGroundOverride)){
-            var info = event.context();
-            event.context(new MovInfo(info.vec3d, noFallSetbackResponse, false, info.rotationOverride));
-        }
-        noFallSetbackResponse = false;
-    }
+//    public static void onSetBackResponseAction(Event<MovInfo> event){
+//        afterSetbackFlag = true;
+//        nofallWaitSetbackFlag = false;
+//        if(noFallMode.getValue() == Configs.NofallBypassMode.NO_BYPASS && (event.context.oGroundOverride == null || noFallSetbackResponse != (boolean)event.context.oGroundOverride)){
+//            var info = event.context();
+//            event.context(new MovInfo(info.vec3d, noFallSetbackResponse, false, info.rotationOverride));
+//        }
+//        noFallSetbackResponse = false;
+//    }
 //    private boolean canStartSprinting(ClientPlayerEntity player) {
 //        return !player.isSprinting() && player.isWalking() && this.canSprint() && !this.isUsingItem() && !this.hasStatusEffect(StatusEffects.BLINDNESS) && (!this.hasVehicle() || this.canVehicleSprint(this.getVehicle())) && !this.isFallFlying();
 //    }
-    private static LegalMovementManager.MovementModifier configureNoFall(){
-        return new LegalMovementManager.MovementModifier() {
-            double lastOnGroundHeight = Integer.MIN_VALUE;
-            double lastHeight;
-            int counter = 0;
-            boolean holdingMace  = false;
-            boolean runningThisTick = false;
-            @Override
-            public int priority() {
-                //lower than tp mask ,should run like "background tasks"
-                return 1;
-            }
-            @Override
-            public boolean mayModifyPos() {
-                //it will not modify pos in default mode
-                //if it is configurated to be a legal mode or something, then it may need a modify
-                return false;
-            }
-            boolean canDoJump = false;
-            boolean doJump = false;
-
-            int waitTimeout = 0;
-
-            public void preTick(Event<LegalMovementManager> movementManagerEvent){
-
-            }
-            @Override
-            public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-                //filter creative playerGaming
-                if(mc.player.getAbilities().invulnerable){
-                    return;
-                }
-                holdingMace = args.getMainHandStack().getItem() instanceof MaceItem;
-                Vec3d pos = args.getPos();
-                if(pos == null)return;
-                if(canDoJump){
-//                    mc.player.addVelocityInternal(new Vec3d(0, 8, 0));
-                    if(!nofallWaitSetbackFlag){
-                        //a nofall packet comes
-                        doJump = true;
-                        canDoJump =false;
-//                        Debug.info("trigger jump tick");
-                        mc.player.setOnGround(true);
-                        //TODO 1.21.2+ may need this, check code then
-                        mc.options.jumpKey.setPressed(true);
-//                        Vec3d vc = mc.player.getVelocity();
-//                        mc.player.setVelocity(vc.x, 0.1, vc.z);
-                    }else{
-                        //should not send onGround
-                        //do not send pos
-                        waitTimeout += 1;
-                        if(waitTimeout >= 2){
-                            waitTimeout = 0;
-                            canDoJump = false;
-                            nofallWaitSetbackFlag = false;
-                            mc.player.setOnGround(true);
-                        }else{
-                            mc.player.setOnGround(false);
-                        }
-
-                    }
-
-                }
-//                Vec3d pos2 = args.getVelocity();
-//                if(pos2 == null)return;
-//                if(pos2.y < -0.67){
-//                    args.setVelocity(pos2.x, -0.67, pos2.z);
+//    private static LegalMovementManager.MovementModifier configureNoFall(){
+//        return new LegalMovementManager.MovementModifier() {
+//            double lastOnGroundHeight = Integer.MIN_VALUE;
+//            double lastHeight;
+//            int counter = 0;
+//            boolean holdingMace  = false;
+//            boolean runningThisTick = false;
+//            @Override
+//            public int priority() {
+//                //lower than tp mask ,should run like "background tasks"
+//                return 1;
+//            }
+//            @Override
+//            public boolean mayModifyPos() {
+//                //it will not modify pos in default mode
+//                //if it is configurated to be a legal mode or something, then it may need a modify
+//                return false;
+//            }
+//            boolean canDoJump = false;
+//            boolean doJump = false;
+//            Boolean shouldApplyOnGroundReverseNextTick = null;
+//
+//            int waitTimeout = 0;
+//            int noFallCnt = -1;
+//
+//            public void preTick(Event<LegalMovementManager> movementManagerEvent){
+//
+//            }
+//            @Override
+//            public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+//                ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+//                //filter creative playerGaming
+//                if(args.getAbilities().invulnerable){
+//                    return;
 //                }
-//                if(doJump){
-//                    args.setOnGround(true);
+//                if(noFallCnt >= 0){
+//                    noFallCnt -= 1;
+//                    args.input.movementSideways = 0.0F;
+//                    args.input.movementForward = 0.0F;
 //                }
-                boolean forceNoFall = ClientPlayerAccess.of( mc.player).isForceNoFall();
-                if((!holdingMace && noFall.get()) || forceNoFall){
-                    lastHeight = args.getY();
-
-                    // lastOnGround = args.isOnGround();
-                    double safeDistance = args.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) ;
-
-                    if( forceNoFall ||  lastHeight <= lastOnGroundHeight -  safeDistance ){
-                        //this is a signal from other functional
-
-                        var bypassMode = noFallMode.getValue();
-
-                        if(bypassMode == Configs.BypassMode.NO_BYPASS){
-                            //TODO Optimize this calculation NO_BYPASS
-                            runningThisTick = true;
-                            //TODO LAZY MODE, only if we trigger not onground -> onground should we reset
-                            counter = 0;
-                            lastOnGroundHeight = args.getY();
-
-                            args.setPosition(args.getPos().add(0, + 1E-8, 0));
-                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround()));
-                            noFallSetbackResponse = true;
-
-
-                        }else if(bypassMode == Configs.BypassMode.BYPASS_GRIM){
-                            if(!args.isOnGround()){
-                                runningThisTick = true;
-                            }
-                            //resync lastOnGroundHeigth in this method
-                            counter = 0;
-                        }
-                        //todo implement other mode
-                        if(forceNoFall){
-                            ClientPlayerAccess.of(args).setForceNoFall(false);
-                        }
-                        //args.setOnGround(true);
-                    }else if(lastHeight > lastOnGroundHeight){
-                        lastOnGroundHeight = lastHeight;
-                        counter = 0;
-                    }
-                    else if(args.isOnGround()){
-                        //todo check if this is at risk
-                        if(noFallMode.getValue() == Configs.BypassMode.BYPASS_GRIM){
-                            lastOnGroundHeight = lastHeight;
-                        }
-                    }
-                    else {
-                        counter ++;
-                    }
-                    if(counter > 100){
-                        //whatever , reset this flag
-                        noFallSetbackResponse = false;
-                    }
-                }
-            }
-
-            @Override
-            public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-                if(canDoJump){
-                    //wait for set back packets to do jump
-                    movementManagerEvent.cancel();
-                    //restore pos
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    return;
-                }
-                if(noFallMode.getValue() == Configs.BypassMode.BYPASS_GRIM && runningThisTick){
-//                    movementManagerEvent.cancel();
-//                    movementManagerEvent.context().playerStatus.restorePos();
-                    ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-//                    if(waitingForSetback && waitForSetbackId == waitForSetBack){
+//                holdingMace = args.getMainHandStack().getItem() instanceof MaceItem;
+//                Vec3d pos = args.getPos();
+//                if(pos == null)return;
+//                if(canDoJump){
+////                    mc.player.addVelocityInternal(new Vec3d(0, 8, 0));
+//                    if(!nofallWaitSetbackFlag){
+//                        //a nofall packet comes
+//                        doJump = true;
+//                        canDoJump =false;
+////                        Debug.info("trigger jump tick");
+//                        mc.player.setOnGround(true);
+//                        //TODO 1.21.2+ may need this, check code then
+//                        mc.options.jumpKey.setPressed(true);
+////                        Vec3d vc = mc.player.getVelocity();
+////                        mc.player.setVelocity(vc.x, 0.1, vc.z);
+//                    }else{
+//                        //should not send onGround
+//                        //do not send pos
 //                        waitTimeout += 1;
-//                        if(waitTimeout >= 5){
-//                            waitingForSetback = false;
-//                            player.fallDistance = 0.0f;
-//                            lastOnGroundHeight = player.getY();
-//                            return;
+//                        if(waitTimeout >= 2){
+//                            waitTimeout = 0;
+//                            canDoJump = false;
+//                            nofallWaitSetbackFlag = false;
+//                            mc.player.setOnGround(true);
 //                        }else{
-//                            movementManagerEvent.cancel();
-//                            movementManagerEvent.context.playerStatus.restorePos();
-//                            return;
+//                            mc.player.setOnGround(false);
+//                        }
+//
+//                    }
+//
+//                }
+////                Vec3d pos2 = args.getVelocity();
+////                if(pos2 == null)return;
+////                if(pos2.y < -0.67){
+////                    args.setVelocity(pos2.x, -0.67, pos2.z);
+////                }
+////                if(doJump){
+////                    args.setOnGround(true);
+////                }
+//                boolean forceNoFall = ClientPlayerAccess.of( args).isForceNoFall();
+//                lastHeight = args.getY();
+//                //reset onground height when in water
+//                if(args.isOnGround() || args.isInsideWaterOrBubbleColumn()){
+//                    lastOnGroundHeight = lastHeight;
+//                }
+//                if((noFall.get()) || forceNoFall){
+//
+//                    // lastOnGround = args.isOnGround();
+//                    double safeDistance = args.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) ;
+//
+//                    if( forceNoFall ||  lastHeight <= lastOnGroundHeight -  safeDistance ){
+//                        //this is a signal from other functional
+//
+//                        var bypassMode = noFallMode.getValue();
+//
+//                        if(bypassMode == Configs.NofallBypassMode.NO_BYPASS){
+//                            if(!holdingMace){
+//                                //TODO Optimize this calculation NO_BYPASS
+//                                runningThisTick = true;
+//                                //TODO LAZY MODE, only if we trigger not onground -> onground should we reset
+//                                counter = 0;
+//                                lastOnGroundHeight = args.getY();
+//
+//                                args.setPosition(args.getPos().add(0, + 1E-8, 0));
+//                                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround()));
+//                                noFallSetbackResponse = true;
+//
+//                            }
+//
+//                        } else if(bypassMode == Configs.NofallBypassMode.LAZY_MODE){
+//                            if(forceNoFall){
+//                                runningThisTick = true;
+//                                //TODO LAZY MODE, only if we trigger not onground -> onground should we reset
+//                                counter = 0;
+//                                lastOnGroundHeight = args.getY();
+//
+//                                args.setPosition(args.getPos().add(0, + 1E-8, 0));
+//                                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), false));
+//                                noFallSetbackResponse = true;
+//                            }
+//                        }
+//                        else if(bypassMode == Configs.NofallBypassMode.BYPASS_GRIM){
+//                            if(!args.isOnGround()){
+//                                runningThisTick = true;
+//                            }
+//                            //resync lastOnGroundHeigth in this method
+//                            counter = 0;
+//                        }
+//                        //todo implement other mode
+//                        if(forceNoFall){
+//                            ClientPlayerAccess.of(args).setForceNoFall(false);
+//                        }
+//                        //args.setOnGround(true);
+//                    }else if(lastHeight > lastOnGroundHeight){
+//                        lastOnGroundHeight = lastHeight;
+//                        counter = 0;
+//                    }
+//                    else if(args.isOnGround()){
+//                        //todo check if this is at risk
+//                        if(noFallMode.getValue() == Configs.NofallBypassMode.BYPASS_GRIM){
+//                            lastOnGroundHeight = lastHeight;
 //                        }
 //                    }
-                    if(player.isOnGround()){
-                        //onGround
-                        //collide on ground should be
-                        runningThisTick = true;
-
-//                        player.setPos(player.getX(), player.getY() + 5E-2, player.getZ());
-//                        Debug.info(player.getVelocity());
-//                        player.setPos(player.getX(), player.getY() + 1E-8, player.getZ());
-
-//                        player.setOnGround(false);
-                        //cancel , do not restore pos
-                        movementManagerEvent.cancel();
-//                        movementManagerEvent.context.playerStatus.restorePos();
-//                        player.setPosition(player.getX(), player.getY() + 1E-8, player.getZ());
-                        //** must be OnGroundOnly(true) **
-                        //在grimac的预测中, 当前状态应该即将着地, 若使用Onground = false 则会触发onGround不匹配
-                        //最终结果:
-                        //client:  onGround(true)  jump() .............(............(............(  client resync on ground
-                        //                    |       |
-                        //grimac:   predict at ground, (accepted predict) let client resync to ground /    accept resync tp
-                        //                    x       √                √             v                     √
-                        //server   do not reset     reset fall distance           ...............................
-                        //为什么是onground = true
-                        //grim的不同setback模式
-                        //onground = true会导致resync = true, simulate = true
-                        //对方将resync packets传输到咱们这里 是(a, b + 1E-7, c, false)
-                        //咱们设置为了false
-//                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 78.59016863897678 28.941366735922244 false
-//                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 75.46476221959249 28.941366735922244 false
-//                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 false
-//                            [04:06:06] [Render thread/INFO] (SlimefunHelper) trigger jump tick
-//[04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 74.41999998688698 28.941366735922244 false
-//                            [04:06:06] [Netty Client IO #8/INFO] (Minecraft) [CHAT] Pos Resync [51.46,74.00,28.94]
-//[04:06:06] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl114 触发了 GroundSpoof (x2) claimed false
-//                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
-//[04:06:06] [Render thread/INFO] (Minecraft) [CHAT] [anti-grim] 检测到反作弊回弹! tp号:-1034761362
-//                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move Full 51.459339812018335 74.0000001 28.941366735922244 false
-//                            [04:06:06] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl114 触发了 Simulation (x2) .420000 /gl 82 <-这里 他认为我们是从75.46476221959249 移动到74.0000001, 这是不合法的
-//                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 74.0000001 28.941366735922244 true
-//                            [04:06:06] [Render thread/INFO] (Minecraft) [CHAT] matl114从高处摔了下来
-                        //正常情况是
-//                        [04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 84.79200176125546 29.17552569387324 false
-//                            [04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 81.69935880076793 29.17552569387324 false
-//                            [04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 78.59016863897678 29.17552569387324 false
-//                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.46476221959249 29.17552569387324 false
-//                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
-//                            [04:08:02] [Render thread/INFO] (SlimefunHelper) trigger jump tick
-                            //[04:08:02] [Netty Client IO #8/INFO] (Minecraft) [CHAT] Pos Resync [51.05,74.00,29.18]
-                            //[04:08:02] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
-                            //[04:08:02] [Render thread/INFO] (Minecraft) [CHAT] [anti-grim] 检测到反作弊回弹! tp号:-2093209308
-//                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move Full 51.04938473524123 74.0000001 29.17552569387324 false
-//                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 74.42000008688697 29.17552569387324 false
-                //        <-这里 他认为我们是从75.46476221959249 移动到74.0000001, 但是 由于上面触发的非常巧妙,是resync packets, 这里的运动偏差会被直接无视
-                        //<- 同时 这里的movement会被认为是knockback， 可以通过后续的resync，？？？？？？？？？
-                        //todo: 需要进一步查看 这也太离谱了
-
-//                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 74.7532000805212 29.17552569387324 false
-//                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.00133607911214 29.17552569387324 false
-//                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.16610936093821 29.17552569387324 false
-                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
-                        //包吃住 不要过
-                        noFallSetbackResponse = false;
-                        ClientPlayerAccess.of(player).setForceNoFall(false);
-                        lastOnGroundHeight = player.getY();
-
-                        nofallWaitSetbackFlag = true;
-                        canDoJump = true;
-                        waitTimeout = 0;
-                        runningThisTick = false;
-//                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(player.getX(), player.getY(), player.getZ(),false));
-
-
-                    }else {
-                        runningThisTick = false;
-                    }
-                }
-            }
-
-            @Override
-            public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                //skip and kept working
-
-                if(canDoJump)return true;
-                ClientPlayerEntity player = movementManagerEvent.context().playerStatus.entity;
-                if(doJump){
-
-                    mc.options.jumpKey.setPressed(false);
-                    doJump = false;
-                    player.setOnGround(false);
-                }
-
-                runningThisTick = false;
-
-                return true;
-            }
-        };
-//        EntityAccess.of(entity).addTickWrapper(new ProgressWrapper<ClientPlayerEntity>() {
+//                    else {
+//                        counter ++;
+//                    }
+//                    if(counter > 100){
+//                        //whatever , reset this flag
+//                        noFallSetbackResponse = false;
+//                    }
+//                }
+//            }
 //
 //            @Override
-//            public void preProgress(ClientPlayerEntity args) {
+//            public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+//                if(canDoJump){
+//                    //wait for set back packets to do jump
+//                    movementManagerEvent.cancel();
+//                    //restore pos
+//                    movementManagerEvent.context.playerStatus.restorePos();
+//                    return;
+//                }
+//                if(noFall.get()){
+//                    //todo: how do it pass grimac?? I don't understand
+//                    if(noFallMode.getValue() == Configs.NofallBypassMode.LAZY_MODE){
+//                        double safeDistance = movementManagerEvent.context.playerStatus.entity.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) ;
+//                        var entity = movementManagerEvent.context.playerStatus;
+//                        // LAZY MODE, only if we trigger not onground -> onground should we reset fall height
+//                        if(afterSetbackFlag || (entity.entity.getY() <= lastOnGroundHeight -  safeDistance)){
+//                            if(!runningThisTick){
+//                                //apply only once
+//
+//                                if(!entity.onGround && entity.entity.isOnGround()){
+//                                    afterSetbackFlag = false;
+//                                    runningThisTick = true;
+//                                    counter = 0;
+//                                    lastOnGroundHeight = entity.pos.getY();
+////todo: try send it eariler
+//                                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false));
+//                                    //todo: 测试终止横向动量 减少grimac发包
+////                                    entity.entity.setPos(entity.pos.getX(), entity.entity.getY() , entity.pos.getZ());
+//                                    entity.entity.input.movementSideways = 0.0F;
+//                                    entity.entity.input.movementForward = 0.0F;
+//                                    noFallSetbackResponse = true;
+//                                    noFallCnt = 2;
+//                                    return;
+//                                }
+//                            }
+//                        }
+//                    } else if(noFallMode.getValue() == Configs.NofallBypassMode.BYPASS_GRIM && runningThisTick){
+////                    movementManagerEvent.cancel();
+////                    movementManagerEvent.context().playerStatus.restorePos();
+//                        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+////                    if(waitingForSetback && waitForSetbackId == waitForSetBack){
+////                        waitTimeout += 1;
+////                        if(waitTimeout >= 5){
+////                            waitingForSetback = false;
+////                            player.fallDistance = 0.0f;
+////                            lastOnGroundHeight = player.getY();
+////                            return;
+////                        }else{
+////                            movementManagerEvent.cancel();
+////                            movementManagerEvent.context.playerStatus.restorePos();
+////                            return;
+////                        }
+////                    }
+//                        if(player.isOnGround()){
+//                            //onGround
+//                            //collide on ground should be
+//                            runningThisTick = true;
+//
+////                        player.setPos(player.getX(), player.getY() + 5E-2, player.getZ());
+////                        Debug.info(player.getVelocity());
+////                        player.setPos(player.getX(), player.getY() + 1E-8, player.getZ());
+//
+////                        player.setOnGround(false);
+//                            //cancel , do not restore pos
+//                            movementManagerEvent.cancel();
+////                        movementManagerEvent.context.playerStatus.restorePos();
+////                        player.setPosition(player.getX(), player.getY() + 1E-8, player.getZ());
+//                            //** must be OnGroundOnly(true) **
+//                            //在grimac的预测中, 当前状态应该即将着地, 若使用Onground = false 则会触发onGround不匹配
+//                            //最终结果:
+//                            //client:  onGround(true)  jump() .............(............(............(  client resync on ground
+//                            //                    |       |
+//                            //grimac:   predict at ground, (accepted predict) let client resync to ground /    accept resync tp
+//                            //                    x       √                √             v                     √
+//                            //server   do not reset     reset fall distance           ...............................
+//                            //为什么是onground = true
+//                            //grim的不同setback模式
+//                            //onground = true会导致resync = true, simulate = true
+//                            //对方将resync packets传输到咱们这里 是(a, b + 1E-7, c, false)
+//                            //咱们设置为了false
+////                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 78.59016863897678 28.941366735922244 false
+////                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 75.46476221959249 28.941366735922244 false
+////                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 false
+////                            [04:06:06] [Render thread/INFO] (SlimefunHelper) trigger jump tick
+////[04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 74.41999998688698 28.941366735922244 false
+////                            [04:06:06] [Netty Client IO #8/INFO] (Minecraft) [CHAT] Pos Resync [51.46,74.00,28.94]
+////[04:06:06] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl114 触发了 GroundSpoof (x2) claimed false
+////                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+////[04:06:06] [Render thread/INFO] (Minecraft) [CHAT] [anti-grim] 检测到反作弊回弹! tp号:-1034761362
+////                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move Full 51.459339812018335 74.0000001 28.941366735922244 false
+////                            [04:06:06] [Render thread/INFO] (Minecraft) [CHAT] Grim » matl114 触发了 Simulation (x2) .420000 /gl 82 <-这里 他认为我们是从75.46476221959249 移动到74.0000001, 这是不合法的
+////                            [04:06:06] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.459339812018335 74.0000001 28.941366735922244 true
+////                            [04:06:06] [Render thread/INFO] (Minecraft) [CHAT] matl114从高处摔了下来
+//                            //正常情况是
+////                        [04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 84.79200176125546 29.17552569387324 false
+////                            [04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 81.69935880076793 29.17552569387324 false
+////                            [04:08:01] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 78.59016863897678 29.17552569387324 false
+////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.46476221959249 29.17552569387324 false
+////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
+////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) trigger jump tick
+//                            //[04:08:02] [Netty Client IO #8/INFO] (Minecraft) [CHAT] Pos Resync [51.05,74.00,29.18]
+//                            //[04:08:02] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+//                            //[04:08:02] [Render thread/INFO] (Minecraft) [CHAT] [anti-grim] 检测到反作弊回弹! tp号:-2093209308
+////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move Full 51.04938473524123 74.0000001 29.17552569387324 false
+////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 74.42000008688697 29.17552569387324 false
+//                            //        <-这里 他认为我们是从75.46476221959249 移动到74.0000001, 但是 由于上面触发的非常巧妙,是resync packets, 这里的运动偏差会被直接无视
+//                            //<- 同时 这里的movement会被认为是knockback， 可以通过后续的resync，？？？？？？？？？
+//                            //todo: 需要进一步查看 这也太离谱了
+//
+////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 74.7532000805212 29.17552569387324 false
+////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.00133607911214 29.17552569387324 false
+////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.16610936093821 29.17552569387324 false
+//                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+//                            //包吃住 不要过
+//                            noFallSetbackResponse = false;
+//                            ClientPlayerAccess.of(player).setForceNoFall(false);
+//                            lastOnGroundHeight = player.getY();
+//
+//                            nofallWaitSetbackFlag = true;
+//                            canDoJump = true;
+//                            waitTimeout = 0;
+//                            runningThisTick = false;
+////                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(player.getX(), player.getY(), player.getZ(),false));
+//
+//
+//                        }else {
+//                            runningThisTick = false;
+//                        }
+//                    }
+//                }
 //
 //            }
 //
 //            @Override
-//            public void postProgress(ClientPlayerEntity args) {
-//                //Debug.info("current : ", args.isOnGround());
+//            public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+//                //skip and kept working
+//                if(shouldApplyOnGroundReverseNextTick != null){
+//                    if(!runningThisTick){
+//                        movementManagerEvent.context.playerStatus.entity.setOnGround(shouldApplyOnGroundReverseNextTick);
+//                    }
+//                    shouldApplyOnGroundReverseNextTick = null;
+//                }
+//                if(runningThisTick && noFallMode.get() == Configs.NofallBypassMode.LAZY_MODE){
+//                   // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
+//                }
+//                if(canDoJump)return true;
+//                ClientPlayerEntity player = movementManagerEvent.context().playerStatus.entity;
+//                if(doJump){
 //
-//            }
+//                    mc.options.jumpKey.setPressed(false);
+//                    doJump = false;
+//                    player.setOnGround(false);
+//                }
 //
-//            @Override
-//            public boolean stillWrap(ClientPlayerEntity args) {
+//                runningThisTick = false;
+//
 //                return true;
 //            }
-//        });
-    }
+//        };
+//    }
     private static final Config.FlagRef enhanceStepheight = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_ENHANCED_STEPHEIGHT);
     //todo add trigger condition
     private static Runnable jumpTriggerStepHeight;
@@ -2162,11 +2371,11 @@ public class MovTasks {
 
     public static void configurePipelinesForPlayer(ClientPlayerEntity player){
         var legalMovement = ClientPlayerAccess.of(player).getLegalMovementManager();
-        PLAYER_PIPELINE_0.resetForNewPlayer();
+        PLAYER_PIPELINE_0.resetForNewPlayer(player);
         legalMovement.addMovementModifier(PLAYER_PIPELINE_0);
-        PLAYER_PIPELINE_ROT.resetForNewPlayer();
+        PLAYER_PIPELINE_ROT.resetForNewPlayer(player);
         legalMovement.addMovementModifier(PLAYER_PIPELINE_ROT);
-        PLAYER_PIPELINE_POS.resetForNewPlayer();
+        PLAYER_PIPELINE_POS.resetForNewPlayer(player);
         legalMovement.addMovementModifier(PLAYER_PIPELINE_POS);
     }
 
@@ -2367,26 +2576,45 @@ public class MovTasks {
 //    }
     //    @Unique
 //    private static final Config.FlagRef overrideWalk = Configs.MOV_CONFIG.getBoolean(Configs.MOVE_SPEED_OVERRIDE_WALK);
+    public static NoFallModule noFallModule;
+    public static SetBackLog setBackLog;
+    public static AutoResyncTp autoResyncTp;
+    public static CreativeFlight creativeFlight;
+    public static SprintModule sprintModule;
+    private static void initMoveModules(ModuleManager m){
+        //move
+        noFallModule = new NoFallModule()
+            .register(m);
+        setBackLog = new SetBackLog()
+            .register(m);
+        autoResyncTp = new AutoResyncTp()
+            .register(m);
+        creativeFlight = new CreativeFlight()
+            .register(m);
+        sprintModule = new SprintModule()
+            .register(m);
+    }
     static{
         //basic structure
         Listener.getPlayerInitConfiguration().registerHandler(MovTasks::configurePipelinesForPlayer);
-        //creative fly bad packets
-        Listener.registerSinglePacketListener(UpdatePlayerAbilitiesC2SPacket.class, MovTasks::onPacketFly);
-        //block server ability resync about flying
-        Listener.registerSinglePacketListener(PlayerAbilitiesS2CPacket.class, MovTasks::onPacketFlyToggle);
+        Listener.getPlayerInitConfiguration().registerHandler(MovTasks::configureTpMaskPlayer);
+
+//        //creative fly bad packets
+//        Listener.registerSinglePacketListener(UpdatePlayerAbilitiesC2SPacket.class, MovTasks::onPacketFly);
+//        //block server ability resync about flying
+//        Listener.registerSinglePacketListener(PlayerAbilitiesS2CPacket.class, MovTasks::onPacketFlyToggle);
         //force set ability flight
-        PLAYER_PIPELINE_0.addMovementModifierFactory(MovTasks::configureCreativeFlyAbility);
+//        PLAYER_PIPELINE_0.addMovementModifierFactory(MovTasks::configureCreativeFlyAbility);
         PLAYER_PIPELINE_0.addMovementModifierFactory(MovTasks::configureFakeSprint);
 
         //watch setback packets
-        Listener.registerSinglePacketListener(TeleportConfirmC2SPacket.class, MovTasks::listenAntiCheatSetBack);
+      //  Listener.registerSinglePacketListener(TeleportConfirmC2SPacket.class, MovTasks::listenAntiCheatSetBack);
 
         //teleport management
-        Listener.getPlayerInitConfiguration().registerHandler(MovTasks::configureTpMaskPlayer);
 
         //nofall
-        Listener.getTeleportConfirmResponsePoint().registerHandler(MovTasks::onSetBackResponseAction);
-        PLAYER_PIPELINE_POS.addMovementModifierFactory(MovTasks::configureNoFall);
+        //Listener.getTeleportConfirmResponsePoint().registerHandler(MovTasks::onSetBackResponseAction);
+        //PLAYER_PIPELINE_POS.addMovementModifierFactory(MovTasks::configureNoFall);
         //sprint
         PLAYER_PIPELINE_ROT.addMovementModifierFactory(MovTasks::configureLegalDirectionalSprint);
         //stepheight
@@ -2395,13 +2623,16 @@ public class MovTasks {
         //setback function
         Listener.getTeleportConfirmVelocityUpdatePoint().registerHandler(MovTasks::configurateTeleportBackVelocityUpdate);
 
-        Listener.registerSinglePacketListener(PlayerPositionLookS2CPacket.class, MovTasks::listenPositionResync);
+//        Listener.registerSinglePacketListener(PlayerPositionLookS2CPacket.class, MovTasks::listenPositionResync);
         Listener.registerSinglePacketListener(PlayerMoveC2SPacket.class, MovTasks::doIntercepteMovingPacketsWhileTp);
         Listener.getClientPlayerSendMovementPoint().registerHandler(MovTasks::doStopPlayerSendMovementPackets);
         Tasks.registerTickTask(MovTasks::runToggleLegalSprint);
     //        Listener.registerSinglePacketListener(EntityTrackerUpdateS2CPacket.class, MovTasks::handleFakeGlide);
         Listener.getEntityTrackDataUpdate().registerHandler(MovTasks::handleEntityDataUpdate);
         Listener.getMainThreadPacketPreApplyPoint().registerHandler(MovTasks::fixPositionSetBackFallDamage);
+
+
+        HackModules.getManager().registerFactories(MovTasks::initMoveModules);
     }
 
 }

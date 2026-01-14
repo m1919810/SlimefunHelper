@@ -3,6 +3,7 @@ package me.matl114.access;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Vec3d;
 
 public interface EntityInternalAccess<T> {
     static <T extends Entity> EntityInternalAccess<T> of(T entity){
@@ -19,5 +20,9 @@ public interface EntityInternalAccess<T> {
 
     default boolean checkNotClientPlayer(){
         return !checkClientPlayer();
+    }
+
+    default Vec3d predictPosition(int ticksLater, int interpolateMethod){
+       return ((Entity)this).getLerpedPos(ticksLater);
     }
 }

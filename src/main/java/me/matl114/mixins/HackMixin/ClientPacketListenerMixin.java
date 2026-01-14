@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import com.mojang.brigadier.CommandDispatcher;
 import me.matl114.access.ClientPlayerAccess;
-import me.matl114.hackUtils.ChatTasks;
 import me.matl114.hackUtils.MovTasks;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.utils.UtilClass.Event;
@@ -16,17 +15,14 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.command.CommandSource;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.*;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -36,7 +32,6 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayNetworkHandler.class)
@@ -78,7 +73,7 @@ public abstract class ClientPacketListenerMixin {
         if(MinecraftClient.getInstance().player!=null){
             ClientPlayerAccess access=ClientPlayerAccess.of(MinecraftClient.getInstance().player);
             access.clearKeepedInventory(false);
-            HandledScreen<?> screen = access.getServerHandledScreen();
+            HandledScreen<?> screen = access.getServerOpeningScreen();
             //check for open failure
             if(screen != null && screen.getScreenHandler().syncId == id){
                 Listener.getScreenOpenPoint().handleValue(screen);
@@ -236,4 +231,22 @@ public abstract class ClientPacketListenerMixin {
     private void onPlayerRemoveAndOffline(PlayerRemoveS2CPacket packet, CallbackInfo ci, @Local PlayerListEntry playerListEntry){
         Listener.getOtherPlayerExitPoint().handleValue(playerListEntry);
     }
+
+    @Redirect(method = "onEntityVelocityUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocityClient(DDD)V"))
+    private void onEntityVelocityUpdateEvent(Entity instance, double x, double y, double z){
+        if(!Listener.getEntityClientVelocityUpdate().isEmpty()){
+            Vec3d vec3d = new Vec3d(x, y, z);
+            Event<Vec3d> vcUpdate = new Event<>(vec3d  , true, true, instance);
+            Listener.getEntityClientVelocityUpdate().handleValue(vcUpdate);
+            if(vcUpdate.isCancelled()){
+                return;
+            }else{
+                Vec3d vec3d1 = vcUpdate.context();
+                instance.setVelocityClient(vec3d1.getX(), vec3d1.getY(), vec3d1.getZ());
+            }
+        }else {
+            instance.setVelocityClient(x, y, z);
+        }
+    }
+
 }

@@ -55,6 +55,8 @@ public class InvTasks {
     public static void init(){
 
     }
+    private static final Random inventorRandom = new Random();
+
     private static MinecraftClient mc = MinecraftClient.getInstance();
     public static void clearKeepedInv(){
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
@@ -89,7 +91,7 @@ public class InvTasks {
         }
         Screen nowScreen= null;
         if(player instanceof ClientPlayerAccess access){
-            nowScreen = access.getServerHandledScreen();
+            nowScreen = access.getServerOpeningScreen();
         }else{
             nowScreen= MinecraftClient.getInstance().currentScreen;
         }
@@ -102,34 +104,33 @@ public class InvTasks {
 
     @ApiMethod
     public static boolean dropAllCursorStack(){
-        PlayerEntity player = mc.player;
+        ClientPlayerEntity player = mc.player;
         if(player == null)return false;
-        Screen nowScreen= getCurrentServerScreen(player);
-        if( nowScreen instanceof HandledScreen<?> handled){
-            ScreenHandler handler= handled.getScreenHandler();
-            if(handler.getCursorStack()!=null&&handler.getCursorStack().getItem()!= Items.AIR){
-                ItemStack cleanedCursor= ItemStackUtils.getCleanedItem( handler.getCursorStack(),false,false);
-                clickExecutor.execute(()->{
-                    MinecraftClient.getInstance().interactionManager.clickSlot(handler.syncId,-999,0,SlotActionType.PICKUP,player );
-                });
-                for (int i=0;i<handler.slots.size();i++){
-                    ItemStack slot=handler.getSlot(i).getStack();
-                    if(!ItemStack.areItemsEqual(slot,cleanedCursor)){
-                        continue;
-                    }
-                    ItemStack cleaned= ItemStackUtils.getCleanedItem( slot,false,false);
-                    if(ItemStack.areItemsAndComponentsEqual(cleaned,cleanedCursor)){
-                        final  int index=i;
-                        clickExecutor.execute(()->{
-                            MinecraftClient.getInstance().interactionManager.clickSlot(handler.syncId,index,1,SlotActionType.THROW,player );
-                        });
 
-                    }
+        ScreenHandler handler= ClientPlayerAccess.of(player).getServerScreenHandler();
+        if(handler.getCursorStack()!=null&&handler.getCursorStack().getItem()!= Items.AIR){
+            ItemStack cleanedCursor= ItemStackUtils.getCleanedItem( handler.getCursorStack(),false,false);
+            clickExecutor.execute(()->{
+                MinecraftClient.getInstance().interactionManager.clickSlot(handler.syncId,-999,0,SlotActionType.PICKUP,player );
+            });
+            for (int i=0;i<handler.slots.size();i++){
+                ItemStack slot=handler.getSlot(i).getStack();
+                if(!ItemStack.areItemsEqual(slot,cleanedCursor)){
+                    continue;
                 }
-                return true;
-            }
+                ItemStack cleaned= ItemStackUtils.getCleanedItem( slot,false,false);
+                if(ItemStack.areItemsAndComponentsEqual(cleaned,cleanedCursor)){
+                    final  int index=i;
+                    clickExecutor.execute(()->{
+                        MinecraftClient.getInstance().interactionManager.clickSlot(handler.syncId,index,1,SlotActionType.THROW,player );
+                    });
 
+                }
+            }
+            return true;
         }
+
+
         return false;
     }
     @ApiMethod
@@ -460,6 +461,40 @@ public class InvTasks {
             }
         }
     }
+    private static final Config.FlagRef autoTotem = Configs.INV_CONFIG.getBoolean(Configs.AUTO_INV_AUTO_TOTEM);
+    private static final Config.EnumRef<Configs.AutoInvMode> autoTotemMode = Configs.INV_CONFIG.getEnum(Configs.AUTO_INV_TOTEM_MODE);
+    //fixme: do not grab menu
+    public static void autoTotem(ClientPlayerEntity player, Screen screen, int time){
+        if(autoTotem.get()){
+            ScreenHandler handled = screen instanceof HandledScreen<?> h ? h.getScreenHandler(): player.currentScreenHandler;
+            int offHandSlot = screen instanceof HandledScreen<?> h ? -1: 40;
+            if(autoTotemMode.get() == Configs.AutoInvMode.LAZY){
+                if(player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING){
+
+                    List<Slot> slots = handled.slots;
+                    for (var i = 0; i < slots.size(); ++ i){
+                        if(slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING){
+                            clickSlotAsync(i, 40, SlotActionType.SWAP);
+                            return;
+                        }
+                    }
+
+                }
+            }else if(autoTotemMode.get() == Configs.AutoInvMode.TICK){
+                IntList totemList = new IntArrayList();
+                List<Slot> slots = handled.slots;
+                for (var i = 0; i < slots.size(); ++ i){
+                    if(slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING && i != offHandSlot){
+                        totemList.add(i);
+                    }
+                }
+                if(!totemList.isEmpty()){
+                    int random = totemList.getInt(inventorRandom.nextInt(totemList.size()));
+                    clickSlotAsync(random, 40, SlotActionType.SWAP);
+                }
+            }
+        }
+    }
 
     private static int anyMatch(DefaultedList<Slot> slots, ItemStack stack, int amount, int... index){
         for (int i : index){
@@ -477,6 +512,8 @@ public class InvTasks {
         if(screen instanceof HandledScreen<?> inventory){
             autoStack(player, inventory);
         }
+        autoTotem(player, screen, 2);
+
     }
 
     public static void setCreativeInventory(ItemStack itemStack, int slot){
@@ -622,8 +659,7 @@ public class InvTasks {
         return  mc.player != null && mc.player.currentScreenHandler == handler;
     }
     @ApiMethod
-    public static void quickMoveSlotOrDrop(HandledScreen handledScreen, int slot){
-        ScreenHandler handler = handledScreen.getScreenHandler();
+    public static void quickMoveSlotOrDrop(ScreenHandler handler, int slot){
         if(!isScreenHandlerValid(handler))return;
         if(!handler.getCursorStack().isEmpty()){
             mc.interactionManager.clickSlot(handler.syncId,-999,0,SlotActionType.PICKUP,mc.player );
@@ -682,9 +718,9 @@ public class InvTasks {
     }
 
     @ApiMethod
-    public static SlotMatchingResult getPlayerInventorySlots(HandledScreen handledScreen){
+    public static SlotMatchingResult getPlayerInventorySlots(ScreenHandler handledScreen){
         var result = new SlotMatchingResult();
-        var allSlots = handledScreen.getScreenHandler().slots;
+        var allSlots = handledScreen.slots;
         int size = allSlots.size();
         for (int i=0; i< size; ++i){
             Slot slot = allSlots.get(i);
@@ -698,9 +734,9 @@ public class InvTasks {
     }
 
     @ApiMethod
-    public static SlotMatchingResult getEmptySlots(HandledScreen handledScreen, int... slots){
+    public static SlotMatchingResult getEmptySlots(ScreenHandler handledScreen, int... slots){
         var result = new SlotMatchingResult();
-        var allSlots = handledScreen.getScreenHandler().slots;
+        var allSlots = handledScreen.slots;
         for (int i : slots){
             Slot slot = allSlots.get(i);
             if(slot != null && slot.getStack().isEmpty()){
@@ -714,11 +750,11 @@ public class InvTasks {
     }
 
     @ApiMethod
-    public static SlotMatchingResult getItemStackMatchingSlot(HandledScreen screen, ItemStack stack, int... list){
+    public static SlotMatchingResult getItemStackMatchingSlot(ScreenHandler screen, ItemStack stack, int... list){
         if(stack.isEmpty())return getEmptySlots(screen, list);
         var result = new SlotMatchingResult();
         result.setItemSample(stack);
-        var allSlots = screen.getScreenHandler().slots;
+        var allSlots = screen.slots;
         for (int i : list){
             Slot slot = allSlots.get(i);
             if(slot != null && !slot.getStack().isEmpty()){
@@ -740,7 +776,7 @@ public class InvTasks {
      * @param removeExist
      */
     @ApiMethod
-    public static void moveStackToSlotRanged(HandledScreen handledScreen, ItemStack itemStack, int toSlot, int toAmountAdd, boolean removeExist, int fromRange, int toRange){
+    public static void moveStackToSlotRanged(ScreenHandler handledScreen, ItemStack itemStack, int toSlot, int toAmountAdd, boolean removeExist, int fromRange, int toRange){
         moveStackToSlot(handledScreen, itemStack, toSlot, toAmountAdd, removeExist, IntStream.range(fromRange, toRange).toArray());
     }
 
@@ -754,9 +790,9 @@ public class InvTasks {
      * @param trustedSlotIndexList
      */
     @ApiMethod
-    public static void moveStackToSlot(HandledScreen handledScreen, ItemStack itemStack, int toSlot, int toAmountAdd, boolean removeExist, int... trustedSlotIndexList){
+    public static void moveStackToSlot(ScreenHandler handledScreen, ItemStack itemStack, int toSlot, int toAmountAdd, boolean removeExist, int... trustedSlotIndexList){
         if(itemStack.isEmpty())return;
-        ScreenHandler handler = handledScreen.getScreenHandler();
+        ScreenHandler handler = handledScreen;
         if(!isScreenHandlerValid(handler))return;
         //操作前先清空指针
         if(!handler.getCursorStack().isEmpty()){
@@ -817,12 +853,12 @@ public class InvTasks {
         }
     }
     @ApiMethod
-    public static void moveRecipePatternToContainer(HandledScreen screen, ItemStack[] ingredients, int[] slot, int patternAmount, boolean removeOrigin){
+    public static void moveRecipePatternToContainer(ScreenHandler screen, ItemStack[] ingredients, int[] slot, int patternAmount, boolean removeOrigin){
         int[] playerInv = getPlayerInventorySlots(screen).toIntArray();
         moveRecipePatternToContainer(screen, ingredients, slot, patternAmount, removeOrigin, ((screen1, itemStack) -> getItemStackMatchingSlot(screen1, itemStack, playerInv)));
     }
 
-    public static void moveRecipePatternToContainer(HandledScreen screen, ItemStack[] ingredients, int[] slot, int patternAmount, boolean removeOrigin, BiFunction<HandledScreen, ItemStack, SlotMatchingResult> slotMatchProvider){
+    public static void moveRecipePatternToContainer(ScreenHandler screen, ItemStack[] ingredients, int[] slot, int patternAmount, boolean removeOrigin, BiFunction<ScreenHandler, ItemStack, SlotMatchingResult> slotMatchProvider){
         int size = ingredients.length;
         Preconditions.checkArgument(slot.length == size);
         Map<ItemStackSample, IntList> stackRecipe = new HashMap<>();
@@ -1033,7 +1069,7 @@ public class InvTasks {
     private static String lastServerName = null;
     //TODO: add cached if server same
     private static void refreshInventoryCache(Void v){
-        String serverName = Utils.getServerName();
+        String serverName = CommonUtils.getServerName();
         if (!Objects.equals(serverName, lastServerName)){
             //refresh
             startCursor = endCursor = 0;
@@ -1067,9 +1103,8 @@ public class InvTasks {
 
     public static void clickSlotAsync(int slotId, int button, SlotActionType actionType){
         if(mc.player == null)return;
-        HandledScreen<?> screen = ClientPlayerAccess.of(mc.player).getServerHandledScreen();
         //handler or player inv
-        ScreenHandler screenHandler = screen == null ? mc.player.currentScreenHandler : screen.getScreenHandler();
+        ScreenHandler screenHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
         int syncId = screenHandler.syncId;
         DefaultedList<Slot> defaultedList = screenHandler.slots;
         int i = defaultedList.size();

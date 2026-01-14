@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
 
 import me.matl114.access.ClientPlayerAccess;
+import me.matl114.access.EntityInternalAccess;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
@@ -12,6 +13,7 @@ import me.matl114.renders.RenderMain;
 import me.matl114.utils.*;
 import me.matl114.utils.UtilClass.Event;
 import me.matl114.utils.UtilClass.LegalMovementManager;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
@@ -76,6 +78,8 @@ public class CombatTasks {
     private static final Config.EnumRef<Configs.LegalTargetingMode> attackBypassMode = Configs.COMBAT_CONFIG.getEnum(Configs.COMBAT_LEGAL_TARGETTING);
     private static final Config.FlagRef critic = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_CRITIC);
     private static final Config.FlagRef renderAttackEntity = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_RENDER_TARGET);
+    private static final Config.IntRef attackInterpolationTicks = Configs.COMBAT_CONFIG.getInt(Configs.ATTACK_POS_PREDICT_TICK);
+    private static final Config.FlagRef macePassTotem = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_MACE_PASS_TOTEM);
     @ApiMethod
     public static double getAttackRange(){
 
@@ -128,6 +132,9 @@ public class CombatTasks {
 
         }
         return true;
+    }
+    private static boolean shouldPassTotem(Entity e){
+        return macePassTotem.get() && e instanceof LivingEntity entity && Streams.stream( entity.getHandItems()).anyMatch(i -> i != null && i.getItem() == Items.TOTEM_OF_UNDYING);
     }
     private static boolean isAttackable(Entity e){
         return e!=null&&e!=mc.player && (!(e instanceof LivingEntity) || ((LivingEntity) e).getHealth() > 0) && passWhitelistCheck(e) && passExtraCheck(e);
@@ -223,13 +230,16 @@ public class CombatTasks {
                 }
             }
             return null;
-        }else {
+        } else {
             //fixme use player facing when considerShield
             boolean considerAntiShield = considerAntiShield(target);
             Vec3d deltaMovments;
             if(considerAntiShield){
                 deltaMovments = target.getRotationVector().normalize().multiply(-0.2);
-            }else{
+            } else if(target instanceof PlayerEntity playerEntity){
+                Vec3d predictedPosition = EntityInternalAccess.of(playerEntity).predictPosition(attackInterpolationTicks.get(), 2);
+                deltaMovments = predictedPosition.subtract(target.getPos());
+            } else{
                 Vec3d targetFacing = player.getPos().subtract(target.getPos());
                 Vec3d targetFacingHorizontal = new Vec3d(targetFacing.x, 0.0d, targetFacing.z);
                 double multiply =  0.5;
@@ -242,7 +252,8 @@ public class CombatTasks {
         }
 
     }
-    private static void attackWithCritic(PlayerEntity player, Entity target, boolean criticSprint){
+    @ApiMethod
+    public static void attackWithCritic(PlayerEntity player, Entity target, boolean criticSprint){
         if(criticSprint){
             mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
         }
@@ -253,7 +264,7 @@ public class CombatTasks {
             ClientPlayerAccess.of(mc.player).resyncSprint();
         }
     }
-    //TODO: add position predict , if can not , use origin
+
     @ApiMethod
     public static boolean attackEntity(PlayerEntity player,Entity target){
         //already targeted at
@@ -262,7 +273,7 @@ public class CombatTasks {
         if(legalMode.get()){
             Vec3d vec3d = mc.player.getPos();
             //do not add mace or tp attack in legal mode
-
+            //todo: add hand swapping logic
             if(mc.crosshairTarget instanceof EntityHitResult entity && entity.getEntity() == target){
                 //already actioned in caller
                 //may not actioned in caller, fix it
@@ -437,7 +448,10 @@ public class CombatTasks {
 
             }
         }else {
-
+            //todo LacrmirArua
+            //todo MaceMissLite
+            //todo: tpBot
+            //todo: AntiMiss how
             boolean alreadyAtTarget = mc.crosshairTarget instanceof EntityHitResult entity && entity.getEntity() == target;
             //rewrite tp system
             Deque<MovTasks.MovInfo> movementStack = new ArrayDeque<>();
@@ -451,6 +465,9 @@ public class CombatTasks {
             boolean currentSuccessful = true;
             boolean vanillaSuccessful = false;
             boolean exactSuccessful = false;
+            //todo: add special attack logic,  special attack logic should before any attack logic
+            //todo: remake configuration, use CustomRef
+            //todo: add hand swapping logic
             if(currentSuccessful){
                 vanillaSuccessful = processVanillaAttack(player, target, movementStack, shouldMoveBackStack, alreadyAtTarget);
             }
@@ -467,9 +484,10 @@ public class CombatTasks {
                     currentSuccessful &= processCommonTpAttack(player, target, movementStack, shouldMoveBackStack, alreadyAtTarget);
                 }
             }
+            boolean maceAttack = false;
             if(currentSuccessful){
-                //TODO: check water , if water, do not mace and log
                 if(processMaceAttack(player, target, movementStack, shouldMoveBackStack)){
+                    maceAttack = true;
                     int maceThreshold = (useExactAttack? 100: 140);
                     if(maceHack.get() > maceThreshold){
                         Debug.chat(Text.literal("[Attack Bot] 当前参数中,不建议将MaceHack范围设置在%d以上!".formatted(maceThreshold)));
@@ -479,9 +497,10 @@ public class CombatTasks {
 
 
             //attacking creative player with mace at same height will cause falldamage calculate(caused by the shit code below: we should resetHeight even if backStack.size() = 1
-            Vec3d lastlyPos = movementStack.peekLast().vec3d();
+//            Vec3d lastlyPos = movementStack.peekLast().vec3d();
             //final pos lies in attack range
-            if(currentSuccessful && (alreadyAtTarget || (target.getBoundingBox().squaredMagnitude(lastlyPos.add(0, mc.player.getStandingEyeHeight(), 0)) < MathUtils.s2(getAttackRange())))){
+            //remove final pos check because already checked
+            if(currentSuccessful){
                 //start execute
                 var iter = movementStack.iterator();
                 Preconditions.checkArgument(iter.hasNext());
@@ -491,6 +510,7 @@ public class CombatTasks {
                 iter.forEachRemaining(moveInfos::add);
                 MovTasks.scheduleFarawayMoveInternal(moveInfos, false, movingContext, false);
                 //attack
+                processDuplicateAttack(player, target, moveInfos, movingContext, maceAttack);
                 attackWithCritic(player, target, criticSprint);
 
                 //already at first, remove duplicate stack
@@ -574,6 +594,11 @@ public class CombatTasks {
             double maxMace = maceHack.get();
             player.setOnGround(false);
             Vec3d playerPos = movementStack.peekLast().vec3d();
+            // do not mace attack into water, water will reset fall distance
+            if(mc.world.getBlockState(BlockPos.ofFloored(playerPos)).getBlock() == Blocks.WATER){
+                Debug.chat(Text.literal("[Attack Bot] 目标攻击位置位于水中,无法执行MaceAttack!"));
+                return false;
+            }
             double deltaY = target.getY() - playerPos.y;
             //error: down search returns negative value
             double height = MovTasks.searchFirstNoCollisionSpaceYHeight(playerPos.add(0, maxMace, 0), 0, maxMace - 2 - deltaY, false);
@@ -604,6 +629,20 @@ public class CombatTasks {
         }
         return false;
     }
+
+    private static void processDuplicateAttack(PlayerEntity player, Entity target, List<MovTasks.MovInfo> movementStack, MovTasks.MovingContext context, boolean maceAttack){
+        if(maceAttack && shouldPassTotem(target)){
+            if(movementStack.size() > 1){
+                MovTasks.MovInfo currentPos = movementStack.get(movementStack.size() - 1);
+                MovTasks.MovInfo macePos = movementStack.get(movementStack.size() - 2);
+                for(var i =0 ;i < 2; ++i){
+                    attackWithCritic(player, target, false);
+                    MovTasks.scheduleFarawayMoveInternal(List.of(macePos, currentPos), false, context, false);
+                }
+            }
+        }
+    }
+
     private static boolean processVanillaAttack(PlayerEntity player, Entity target, Deque<MovTasks.MovInfo> movementStack, Deque<MovTasks.MovInfo> shouldMoveBackStack , boolean alreadAtTarget){
         Vec3d top = movementStack.peekLast().vec3d();
         if(alreadAtTarget){
@@ -671,6 +710,7 @@ public class CombatTasks {
             //pass
             return true;
         }
+        //todo: get this better
         else if(tpAttackRange.get()> 1E-7 && target.getBoundingBox().squaredMagnitude(vec3d.add(0, mc.player.getStandingEyeHeight(), 0)) > MathUtils.s2(getAttackRange())){
 
             List<Vec3d> sequence = MovTasks.tpAttackSearch(vec3d, target.getBoundingBox(), getAttackRange() - 0.25, 135, 1);
@@ -857,7 +897,6 @@ public class CombatTasks {
     }
 
 
-    //todo: add render to best Entity when holding weapon
     @ApiMethod
     public static boolean autoAttackBest(boolean auto){
         PlayerEntity player=mc.player;
@@ -1288,7 +1327,7 @@ public class CombatTasks {
 //    }
     private static final AtomicBoolean delayPacketFlag = new AtomicBoolean(false);
     private static final Config.FlagRef legalBowAction = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_BOW_AIM_LEGALLY);
-    private static final Config.DoubleRef bowTargetLerp = Configs.COMBAT_CONFIG.getDouble(Configs.COMBAT_BOW_TICKS_PREDICT);
+
     private static final Config.EnumRef<Configs.LegalTargetingMode> bowBypassMode = Configs.COMBAT_CONFIG.getEnum(Configs.COMBAT_BOW_LEGAL_TARGETTING);
     private static final Config.FlagRef autoTridentDupe = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_TRIDENT_AUTO_DUPE);
     private static final Config.FlagRef lowerVersionFeature = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_PROJECTILE_USE_1_20_4_RULES);
@@ -1301,7 +1340,9 @@ public class CombatTasks {
         Vec3d estimatedDelta = entity.getPos().subtract(mc.player.getPos());
         double estimateSpeed = Math.max( estimatedDelta.length() / (velocity + (useBow? Math.max(bowTpRange.get(), 0): 0)), 1);
         int tickNeeded = Math.min((int)estimateSpeed, 5);
-        return entity.getEyePos().subtract(entity.getPos()).multiply(0.75).add(entity.getLerpedPos((float) (2.0f + bowTargetLerp.get() * tickNeeded)));
+
+        return entity.getEyePos().subtract(entity.getPos()).multiply(0.75).add(
+            EntityInternalAccess.of(entity).predictPosition(attackInterpolationTicks.get(), 1));
     }
     public static boolean handleBowActionBeforeShoot(PlayerActionC2SPacket actionPacket){
         //fixme: figure out why server-side 1.21- act like that, figureout how to
@@ -1603,7 +1644,7 @@ public class CombatTasks {
     private static final Config.FlagRef pearlTp = Configs.COMBAT_CONFIG.getBoolean(Configs.COMBAT_PEARL_TP);
 
     static{
-        useItemAutoAimId.addUpdateListener((str)->{
+        useItemAutoAimId.addUpdateListenerWithUpdate((str)->{
             try{
                 precompileRegexUseItemId = Pattern.compile(str).asMatchPredicate();
             }catch (Throwable e){
@@ -1611,7 +1652,6 @@ public class CombatTasks {
                 precompileRegexUseItemId = null;
             }
         });
-        useItemAutoAimId.setValue(useItemAutoAimId.getValue());
     }
     private static boolean passUseItemIdCheck(ItemStack stack){
         if(precompileRegexUseItemId == null)return false;
@@ -1771,10 +1811,8 @@ public class CombatTasks {
     //todo: 自动搭路
 
     static {
-        updateWhitelist(COMBAT_WHITELISTED.getValue());
-        COMBAT_WHITELISTED.addUpdateListener(CombatTasks::updateWhitelist);
-        COMBAT_FRIEND_PATTERN = Pattern.compile(COMBAT_FRIEND.get()).asMatchPredicate();
-        COMBAT_FRIEND.addUpdateListener(str->COMBAT_FRIEND_PATTERN = Pattern.compile(str).asMatchPredicate());
+        COMBAT_WHITELISTED.addUpdateListenerWithUpdate(CombatTasks::updateWhitelist);
+        COMBAT_FRIEND.addUpdateListenerWithUpdate(str->COMBAT_FRIEND_PATTERN = Pattern.compile(str).asMatchPredicate());
 
         EntityTasks.getEntityTickListener().registerHandler(CombatTasks::handlePlayerTickUpdate);
         Listener.registerSinglePacketListener(EntityTrackerUpdateS2CPacket.class, CombatTasks::handleAutoShield);

@@ -40,3 +40,4 @@ replay_*.log
 *.jfr
 
 Slimefun-ResourcePack_1.20.x/
+logs/

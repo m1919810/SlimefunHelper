@@ -45,14 +45,20 @@ public class ConfigureListWidget extends SubScreenWidget {
         this.originValueWithIndex = new LinkedHashMap<>();
 
         for (var path : config.getPaths()){
-            String[] cut = Config.cutToPath(path);
             //todo: can we generate the widget by Ref, not attrKeyValue
-            AttrKeyValue<?> keyValue = AttrKeyValue.ofConfigValue(path,  config.get(cut));
-            //assert not empty
-            String index = cut[0];
-            this.originValueWithIndex.computeIfAbsent(index, (k)-> new LinkedHashMap<>()).put(path, keyValue);
+            if(ChatUtils.hasTranslation(path)){
+                String[] cut = Config.cutToPath(path);
+                AttrKeyValue<?> keyValue = AttrKeyValue.ofConfigValue(path,  config.get(cut));
+                //assert not empty
+                String index = cut[0];
+                this.originValueWithIndex.computeIfAbsent(index, (k)-> new LinkedHashMap<>()).put(path, keyValue);
+            }
+
         }
-        List<String> indexList = this.originValueWithIndex.keySet().stream().toList();
+        //todo: 是否要过滤没有翻译键的配置项来弃用legacy配置键值
+        List<String> indexList = this.originValueWithIndex.keySet()
+            .stream()
+            .toList();
         ListEntryWidgetController controller = ListEntryWidgetController.immutable(
             indexList, (str)-> ExecutableWidget.instance(0, 0, this.indexDx , this.buttonDy)
                 .setElementHandler(
@@ -106,7 +112,7 @@ public class ConfigureListWidget extends SubScreenWidget {
         this.cache.remove(key);
     }
     public void save(){
-        for(var entry: this.originValueWithIndex.values()) {
+        for(var entry : this.originValueWithIndex.values()) {
             for (var value: entry.entrySet()){
                 config.setValueNoNew(value.getValue().getOriginValue(), Config.cutToPath(value.getKey()));
             }

@@ -1,14 +1,14 @@
 package me.matl114.managers;
 
 import me.matl114.SlimefunHelper;
-import me.matl114.utils.Debug;
+import me.matl114.hackUtils.modules.move.NoFallModule;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.ApiStatus;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.FileReader;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -60,6 +60,8 @@ public class Configs {
             return Text.translatable("configenum.legal-targeting-mode." + this.name().toLowerCase(Locale.ROOT));
         }
     }
+
+
     public enum BypassMode implements Config.ConfigEnum{
         NO_BYPASS,
         BYPASS_GRIM
@@ -80,11 +82,17 @@ public class Configs {
             return Text.literal(name().toLowerCase(Locale.ROOT));
         }
     }
+    public enum AutoInvMode implements Config.ConfigEnum{
+        LAZY,
+        TICK
+        ;
+        public Text getDisplay(){
+            return Text.translatable("configenum.auto-inv-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
+    }
     static{
         //load Enums
-        Config.ConfigEnum.register(LegalTargetingMode.class);
-        Config.ConfigEnum.register(BypassMode.class);
-        Config.ConfigEnum.register(HttpProxyType.class);
+
     }
 
     public static final Predicate<String> REGEX_VALIDATOR = x -> {
@@ -274,6 +282,7 @@ public class Configs {
     public static final String[] COMBAT_INTERVEL={"attack","cancel-interval"};
     public static final String[] COMBAT_RIDING={"attack","riding-attack"};
     public static final String[] ATTACK_RANGE={"attack","att-range"};
+    public static final String[] ATTACK_POS_PREDICT_TICK = {"attack", "pos-predict-tick"};
     public static final String[] COMBAT_SHIELDING = {"attack","shielding-attack"};
     public static final String[] COMBAT_AUTOSHIELD = {"attack","no-grim-shield-setback"};
     public static final String[] ATTACK_WHITELISTED={"att-bot","whitelist"};
@@ -286,6 +295,7 @@ public class Configs {
     public static final String[] COMBAT_TP_REACH = {"att-bot", "tp-reach"};
     public static final String[] COMBAT_LEGAL_MOD = {"att-bot", "legal-mode"};
     public static final String[] COMBAT_MACE_HACK = {"att-bot", "mace-height-multiply"};
+    public static final String[] COMBAT_MACE_PASS_TOTEM = {"att-bot", "mace-pass-totem"};
     public static final String[] COMBAT_OPPOSITE_ATTACK_MULTIPLY = {"att-bot", "opposite-attack-multiply"};
     public static final String[] COMBAT_PLAYER_ATTACK_MULTIPLY = {"att-bot", "player-attack-multiply"};
     public static final String[] COMBAT_EXACT_ATTACK = {"att-bot", "exact-tp"};
@@ -307,6 +317,7 @@ public class Configs {
     public static final Config COMBAT_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/combat.yml","combat settings")
         .defaultVal(false,COMBAT_INTERVEL)
         .defaultVal(false,COMBAT_RIDING)
+        .defaultVal(2, ATTACK_POS_PREDICT_TICK)
         .defaultVal("^(monster|!endermite)$",ATTACK_WHITELISTED)
         .validator(REGEX_VALIDATOR, ATTACK_WHITELISTED)
         .defaultVal("^(.*NPC.*|matl114)$",ATTACK_PLAYER_FRIENDLIST)
@@ -322,6 +333,7 @@ public class Configs {
         .defaultVal(false, COMBAT_AUTOSHIELD)
         .defaultVal(0.0d, COMBAT_TP_REACH)
         .defaultVal(0.0d, COMBAT_MACE_HACK)
+        .defaultVal(false, COMBAT_MACE_PASS_TOTEM)
         .defaultVal(114514.0D, COMBAT_OPPOSITE_ATTACK_MULTIPLY)
         .defaultVal(0.0D, COMBAT_PLAYER_ATTACK_MULTIPLY)
         .defaultVal(false, COMBAT_EXACT_ATTACK)
@@ -331,7 +343,7 @@ public class Configs {
         .defaultVal( 0.0D, COMBAT_PROJECTILE_TP)
         .defaultVal(false, COMBAT_BOW_EXACT_TP)
         .defaultVal(true, COMBAT_BOW_AIM_LEGALLY)
-        .defaultVal(1.0D, COMBAT_BOW_TICKS_PREDICT)
+//        .defaultVal(1.0D, COMBAT_BOW_TICKS_PREDICT)
         .defaultVal(LegalTargetingMode.DELAY_MOVEMENT, COMBAT_LEGAL_TARGETTING)
         .defaultVal(LegalTargetingMode.DELAY_MOVEMENT, COMBAT_BOW_LEGAL_TARGETTING)
         .defaultVal("^(LOGITECH_LASER_GUN)$", COMBAT_USE_ITEM_AUTOAIM)
@@ -341,14 +353,24 @@ public class Configs {
         .defaultVal(false, COMBAT_TRIDENT_AUTO_DUPE)
         .defaultVal(false, COMBAT_PROJECTILE_USE_1_20_4_RULES)
         .save();
+    static{
+        if(COMBAT_CONFIG.contains(COMBAT_BOW_TICKS_PREDICT)){
+            COMBAT_CONFIG.setValue(null, COMBAT_BOW_TICKS_PREDICT);
+            COMBAT_CONFIG.save();
+        }
+    }
 
     public static final String[] INV_CLICK_LIMIT={"inventory","packet-limit"};
     public static final String[] FAST_INV_DO_SHIFT = {"fastinv","apply-shift"};
     public static final String[] FAST_INV_DO_DROP ={"fastinv","apply-drop"};
+    public static final String[] AUTO_INV_AUTO_TOTEM = {"auto-inv", "auto-totem"};
+    public static final String[] AUTO_INV_TOTEM_MODE = {"auto-inv", "auto-totem-mode"};
     public static final Config INV_CONFIG=ConfigLoader.loadExternalConfig("sfhelper-configs/inv.yml","inv settings")
         .defaultVal(40,INV_CLICK_LIMIT)
         .defaultVal(true,FAST_INV_DO_SHIFT)
         .defaultVal(false,FAST_INV_DO_DROP)
+        .defaultVal(false, AUTO_INV_AUTO_TOTEM)
+        .defaultVal(AutoInvMode.LAZY, AUTO_INV_TOTEM_MODE)
         .save();
     public static final String[] MOV_MAX_DISTANCE = {"move-distance","max-distance"};
     public static final String[] MOVE_SPEED_OVERRIDE_WALK = {"move-speed","walk-speed-override"};
@@ -365,11 +387,10 @@ public class Configs {
     public static final String[] MOVE_SPEED_NO_SLOW_DOWN_BLOCK_FRAC = {"move-speed","no-slowdown", "when-on-block"};
     public static final String[] MOVE_SPEED_NO_SLOW_DOWN_BLOCK_IN = {"move-speed","no-slowdown", "when-in-block"};
     public static final String[] MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SPECIAL = {"move-speed","no-slowdown", "when-special-block"};
-    public static final String[] MOVE_LOG_RESYNC_PACKETS = {"move-safety", "log-resync-packets"};
-    public static final String[] MOVE_CHECK_SETBACK = {"move-safety","check-setback-packets"};
-    public static final String[] MOVE_NOFALL = {"move-safety", "no-fall", "toggle"};
-    public static final String[] MOVE_NOFALL_MODE = {"move-safety", "no-fall", "bypass-mode"};
+    //todo: add move safety tp y limit , later
 
+
+    public static final String[] MOVE_FLIGHT_ANTIKICK = {"move-safety", "flight", "antikick"};
     public static final String[] MOVE_COMPATE_HIGHER_VERSION = {"move-safety", "disable-stepheight-feature"};
     public static final String[] MOVE_AUTO_TOGGLE_SPRINT = {"move-speed","sprint", "legal-auto-sprint"};
     public static final String[] MOVE_ALL_DIRECTION_SPRINT = {"move-speed", "sprint", "all-direction-sprint"};
@@ -396,16 +417,12 @@ public class Configs {
         .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_FRAC)
         .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_IN)
         .defaultVal(false, MOVE_SPEED_NO_SLOW_DOWN_BLOCK_SPECIAL)
-        .defaultVal(false, MOVE_CHECK_SETBACK)
-        .defaultVal(false, MOVE_NOFALL)
-        .defaultVal(BypassMode.NO_BYPASS, MOVE_NOFALL_MODE)
         .defaultVal(false, MOVE_COMPATE_HIGHER_VERSION)
         .defaultVal(false, MOVE_AUTO_TOGGLE_SPRINT)
         .defaultVal(false, MOVE_ALL_DIRECTION_SPRINT)
         .defaultVal(BypassMode.NO_BYPASS, MOVE_SPRINT_BYPASS_MODE)
         .defaultVal(0, MOVE_TICK_TIMER)
         .defaultVal(false, MOVE_UNBREAKABLE_ELYTRA)
-        .defaultVal(false, MOVE_LOG_RESYNC_PACKETS)
         .defaultVal(false, MOVE_ENHANCED_STEPHEIGHT)
         .defaultVal(false, MOVE_DISABLE_SETBACK_VELOCITY_RESET)
         //todo need test

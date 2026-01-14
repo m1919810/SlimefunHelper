@@ -7,7 +7,7 @@ import com.mojang.serialization.DataResult;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import me.matl114.access.ScreenAccess;
-import me.matl114.bukkitUtiils.ItemStackHelper;
+import me.matl114.bukkitUtiils.BukkitItemStackUtils;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.config.ConfirmingBigScreen;
@@ -514,7 +514,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 String hash = "";
 
                 if(component != null){
-                    hash = ItemStackHelper.getHashFromProfile(component);
+                    hash = BukkitItemStackUtils.getHashFromProfile(component);
                 }
                 if(hash == null)hash = "";
                 this.skullHashProfile = AttrKeyValue.str("CSCoreLib", hash);
@@ -549,12 +549,12 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 String hash = this.skullHashProfile.getOriginValue();
                 if(hash != null && !hash.isEmpty()){
                     if(lastComponent != null){
-                        PropertyMap map = ItemStackHelper.buildPropertyMap(lastComponent.properties(), hash);
+                        PropertyMap map = BukkitItemStackUtils.buildPropertyMap(lastComponent.properties(), hash);
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE,
                             new ProfileComponent(lastComponent.name(), lastComponent.id(), map));
                     }else {
                         //generate empty
-                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, new ProfileComponent(Optional.empty(), Optional.empty(), ItemStackHelper.buildPropertyMap(new PropertyMap(), hash)));
+                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, new ProfileComponent(Optional.empty(), Optional.empty(), BukkitItemStackUtils.buildPropertyMap(new PropertyMap(), hash)));
                     }
                 }else {
                     //empty hash remove

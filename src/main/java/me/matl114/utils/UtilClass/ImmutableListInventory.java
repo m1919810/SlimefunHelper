@@ -18,7 +18,7 @@ public class ImmutableListInventory extends ImmutableInventory {
 
     @Override
     public boolean isEmpty() {
-        return size() == 0;
+        return itemStacks.stream().allMatch(ItemStack::isEmpty);
     }
 
     @Override

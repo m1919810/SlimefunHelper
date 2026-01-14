@@ -22,7 +22,7 @@ public class MutableInventory implements Inventory {
 
     @Override
     public boolean isEmpty() {
-        return stacks.isEmpty();
+        return stacks.stream().allMatch(ItemStack::isEmpty);
     }
 
     @Override

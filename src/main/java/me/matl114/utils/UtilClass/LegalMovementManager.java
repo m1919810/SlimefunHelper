@@ -239,6 +239,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         //tick both
         //
         public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick);
+
         default int compareTo(MovementModifier var1){
             return this.priority() - var1.priority();
         }
@@ -246,23 +247,106 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
 
     }
 
+    public static class DelegateMovementModifier implements MovementModifier{
+        public Supplier<MovementModifier> getDelegate(){
+            return delegate;
+        }
+        public void setDelegate(Supplier<MovementModifier> movementModifierSupplier){
+            this.delegate= movementModifierSupplier;
+        }
+        public Supplier<MovementModifier> delegate;
+        public DelegateMovementModifier(Supplier<MovementModifier> delegate){
+            this.delegate = delegate;
+        }
+
+        @Override
+        public int priority() {
+            return delegate.get().priority();
+        }
+
+        @Override
+        public boolean mayModify() {
+            return delegate.get().mayModify();
+        }
+
+        @Override
+        public boolean mayModifyPos() {
+            return delegate.get().mayModifyPos();
+        }
+
+        @Override
+        public boolean mayModifyRotation() {
+            return delegate.get().mayModifyRotation();
+        }
+
+        @Override
+        public boolean conflictCheck(LegalMovementManager movementManager) {
+            return delegate.get().conflictCheck(movementManager);
+        }
+
+        @Override
+        public boolean shouldApply(Event<LegalMovementManager> movementManagerEvent) {
+            return delegate.get().shouldApply(movementManagerEvent);
+        }
+
+        @Override
+        public void preTick(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().preTick(movementManagerEvent);
+        }
+
+        @Override
+        public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().applyPreTickModify(movementManagerEvent);
+        }
+
+        @Override
+        public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().applyAfterInputTick(movementManagerEvent);
+        }
+
+        @Override
+        public void applyBeforeInputPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().applyBeforeInputPacketModify(movementManagerEvent);
+        }
+
+        @Override
+        public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().applyBeforeMovementPacketModify(movementManagerEvent);
+        }
+
+        @Override
+        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            return delegate.get().postModify(movementManagerEvent, enabledThisTick);
+        }
+
+        @Override
+        public int compareTo(MovementModifier var1) {
+            return delegate.get().compareTo(var1);
+        }
+    }
+
+
     public static class ModifierPipeline implements MovementModifier{
 
         public ModifierPipeline(int p){
             this.priority = p;
         }
-
+        private ClientPlayerEntity current;
         private final int priority;
         private final List<Supplier<MovementModifier>> factories = new ArrayList<>();
         private final List<MovementModifier> pipeline = new ArrayList<>();
-        public void resetForNewPlayer(){
+        public void resetForNewPlayer(ClientPlayerEntity currentEntity){
             pipeline.clear();
+            current = currentEntity;
             for (var factory : factories){
                 MovementModifier movementModifier = factory.get();
                 addPipelineInternal(movementModifier);
             }
         }
         private void addPipelineInternal(MovementModifier movementModifier){
+            if(movementModifier == null || current == null){
+                return;
+            }
             int p = movementModifier.priority();
             int index = 0;
             while (index < pipeline.size() && pipeline.get(index).priority() <= p) {
@@ -277,6 +361,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         //NOTE: the pipeline will not be removed
         public void addMovementModifierFactory(Supplier<MovementModifier> movementModifier){
            factories.add(movementModifier);
+           //be safe to add, because it will be
            addPipelineInternal(movementModifier.get());
 
         }
@@ -313,6 +398,13 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         }
 
         @Override
+        public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
+            for(var re : pipeline){
+                re.applyAfterInputTick(movementManagerEvent);
+            }
+        }
+
+        @Override
         public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
             for (var re: pipeline){
                 re.applyBeforeMovementPacketModify(movementManagerEvent);
@@ -333,6 +425,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
             }
             return true;
         }
+
     }
 
 }

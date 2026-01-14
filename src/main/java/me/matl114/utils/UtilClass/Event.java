@@ -29,6 +29,10 @@ public class Event<T> {
         this.context = val;
         return this;
     }
+
+    public <W> W getArgs(int idx){
+        return (W)this.extraArgs[idx];
+    }
     public boolean isCancelled(){
         return this.cancel;
     }

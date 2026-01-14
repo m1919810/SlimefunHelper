@@ -3,7 +3,7 @@ package me.matl114.renders.implement;
 import me.matl114.access.HandledScreenAccess;
 import me.matl114.bukkitUtiils.BukkitConfigDeserializor;
 import me.matl114.bukkitUtiils.BukkitItemStack;
-import me.matl114.bukkitUtiils.ItemStackHelper;
+import me.matl114.bukkitUtiils.BukkitItemStackUtils;
 import me.matl114.hackUtils.Tasks;
 import me.matl114.managers.HotKeys;
 import me.matl114.renders.RenderMain;
@@ -12,7 +12,6 @@ import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.UtilClass.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -59,18 +58,18 @@ public class SlimefunRender {
                     NbtCompound storageNbt=tag.getCompound(NETWORK_STORAGE_PATH);
                     if(storageNbt!=null&&storageNbt.contains(NETWORK_STORAGE_ITEM_PATH)){
                         byte[] byteStream=storageNbt.getByteArray(NETWORK_STORAGE_ITEM_PATH);
-                        BukkitItemStack stored= ItemStackHelper.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
+                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                         return stored;
                     }
                 }else if(tag.contains(NETWORK_MOVER_ITEM_PATH)) {
                     byte[] byteStream=tag.getByteArray(NETWORK_MOVER_ITEM_PATH);
-                    BukkitItemStack stored= ItemStackHelper.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
+                    BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                     return stored;
                 } else if (tag.contains(OLD_NETWORK_STORAGE_PATH)) {
                     NbtCompound storageNbt=tag.getCompound(OLD_NETWORK_STORAGE_PATH);
                     if(storageNbt!=null&&storageNbt.contains(OLD_NETWORK_STORAGE_ITEM_PATH)){
                         byte[] byteStream=storageNbt.getByteArray(OLD_NETWORK_STORAGE_ITEM_PATH);
-                        BukkitItemStack stored= ItemStackHelper.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
+                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                         return stored;
                     }
                 }
@@ -87,14 +86,14 @@ public class SlimefunRender {
                     NbtCompound storageNbt=tag.getCompound(NETWORK_BLUEPRINT_PATH);
                     if(storageNbt!=null&&storageNbt.contains(NETWORK_BLUEPRINT_ITEM_PATH)){
                         byte[] byteStream=storageNbt.getByteArray(NETWORK_BLUEPRINT_ITEM_PATH);
-                        BukkitItemStack stored= ItemStackHelper.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
+                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                         return stored;
                     }
                 }else if(tag.contains(OLD_NETWORK_BLUEPRINT_ITEM_PATH)) {
                     NbtCompound storageNbt=tag.getCompound(OLD_NETWORK_BLUEPRINT_PATH);
                     if(storageNbt!=null&&storageNbt.contains(OLD_NETWORK_BLUEPRINT_ITEM_PATH)){
                         byte[] byteStream=storageNbt.getByteArray(OLD_NETWORK_BLUEPRINT_ITEM_PATH);
-                        BukkitItemStack stored= ItemStackHelper.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
+                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                         return stored;
                     }
                 }
@@ -111,7 +110,7 @@ public class SlimefunRender {
                     NbtCompound storageNbt=tag.getCompound(LOGITECH_SINGULARITY_PATH);
                     if(storageNbt!=null&&storageNbt.contains(LOGITECH_SINGULARITY_ITEM_PATH)){
                         byte[] byteStream=storageNbt.getByteArray(LOGITECH_SINGULARITY_ITEM_PATH);
-                        BukkitItemStack stored= ItemStackHelper.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
+                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                         return stored;
                     }
                 }
@@ -681,7 +680,7 @@ public class SlimefunRender {
                 }else{
                     return null;
                 }
-                return ItemStackHelper.getAsDisplayItem(stored);
+                return BukkitItemStackUtils.getAsDisplayItem(stored);
             }
             return null;
         });

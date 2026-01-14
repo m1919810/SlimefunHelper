@@ -1,0 +1,206 @@
+场景3： 玩家有动量的时候尝试落地后开启飞行模式
+
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.706512752332074 75.46476231959248 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.544582553806514 72.3234639674576 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex true false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Trigger onGround
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.544582553806514 72.32346397745759 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.39722606890146 71.0 26.75322122923212 true
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [40.40,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 40.39722606890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false true
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex true false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Trigger onGround
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.39722606890146 71.00000010999999 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [40.26,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 40.26322606890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false true
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.26322606890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [40.14,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 40.14135106890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.14135106890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [40.07,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 40.07485106890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.07485106890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [40.01,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 40.01435106890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 40.01435106890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.96,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 39.95935106890146 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet UpdatePlayerAbilitiesC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 39.95935106890146 71.15000010596046 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.91,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 39.909351068901465 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.909351068901465 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.86,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 39.86385106890147 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.86385106890147 71.0000001 26.75322122923212 false
+[16:04:23] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.82,71.00,26.75]
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:23] [Render thread/INFO] (SlimefunHelper) sending move Full 39.822476068901466 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.822476068901466 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.78,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.78485106890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.78485106890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.75,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.750726068901464 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.750726068901464 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.72,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.719726068901466 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.719726068901466 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.69,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.69160106890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.69160106890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.67,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.66610106890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.66610106890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.64,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.64297606890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.64297606890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.62,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.62197606890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.62197606890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.60,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.60297606890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.60297606890146 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.59,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.585726068901465 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.585726068901465 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.57,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.570101068901465 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.570101068901465 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.56,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.555976068901465 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.555976068901465 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.54,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.54322606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.54322606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.53,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.53172606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.53172606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.52,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.52135106890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.52135106890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.51,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.51197606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.51197606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.50,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.50347606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.50347606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.50,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.49585106890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.49585106890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.49,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.48897606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.48897606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.48,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.48272606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.48272606890147 71.0000001 26.75322122923212 false
+[16:04:24] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.48,71.00,26.75]
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:24] [Render thread/INFO] (SlimefunHelper) sending move Full 39.47710106890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.47710106890147 71.15000010596046 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.47,71.00,26.75]
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move Full 39.472101068901466 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.472101068901466 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.47,71.00,26.75]
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move Full 39.467601068901466 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending packet UpdatePlayerAbilitiesC2SPacket
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.467601068901466 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.46,71.00,26.75]
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move Full 39.46360106890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.46360106890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.46,71.00,26.75]
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move Full 39.45997606890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.45997606890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.46,71.00,26.75]
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move Full 39.45672606890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.45672606890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.46,71.00,26.75]
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move Full 39.45672606890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex false false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex true false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Trigger onGround
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.45672606890147 71.00000010999999 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
+[16:04:25] [Render thread/INFO] (Minecraft) [CHAT] Pos Resync [39.46,71.00,26.75]
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending packet TeleportConfirmC2SPacket
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move Full 39.45672606890147 71.0000001 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex false true
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Ex true false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) Trigger onGround
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.45672606890147 71.00000010999999 26.75322122923212 false
+[16:04:25] [Render thread/INFO] (SlimefunHelper) sending move OnGroundOnly 0.0 0.0 0.0 true
+[16:04:26] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.45672606890147 71.0000001 26.75322122923212 true
+[16:04:27] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.45672606890147 71.0000001 26.75322122923212 true
+[16:04:28] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.45672606890147 71.0000001 26.75322122923212 true
+[16:04:29] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 39.45672606890147 71.0000001 26.75322122923212 true

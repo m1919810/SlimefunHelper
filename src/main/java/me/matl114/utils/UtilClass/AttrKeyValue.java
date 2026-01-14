@@ -8,7 +8,6 @@ import com.mojang.datafixers.util.Pair;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import lombok.val;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.config.KeyValueInputWidget;
@@ -33,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String> {
     public AttrKeyValue(String key, T value){
@@ -121,13 +119,10 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
 
 
 
-    public static  AttrKeyValue<?> ofConfigValue(String key, Object object){
+    public static  AttrKeyValue<?> ofConfigValue(String key, Config.Ref<?> object){
         //todo need fix
-        if(object instanceof Config.Ref<?> refs){
-            return refs.createKeyValue(key);
-        }else {
-            throw new UnsupportedOperationException();
-        }
+
+            return object.createKeyValue(key);
 //        if(object instanceof AtomicBoolean bool){
 //            return bool(key, bool.get());
 //        }else if(object instanceof AtomicInteger integer){
@@ -321,11 +316,28 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             }
         };
     }
-    public static class ListAttrKeyValue extends AttrKeyValue<List<String>> {
+
+    public static abstract class ListAttrKeyValue<T> extends AttrKeyValue<List<T>> {
         static final Gson gson = new Gson();
-        static final Type LIST_TYPE = new TypeToken<List<String>>() {}.getType();
         @Getter
-        private final List<Predicate<String>> elementValidators = new ArrayList<>();
+        protected final List<Predicate<T>> elementValidators = new ArrayList<>();
+
+        public ListAttrKeyValue(String key, List<T> value) {
+            super(key, value);
+        }
+
+        public abstract List<AttrKeyValue<T>> createAttrKeyValueForElements();
+
+        public abstract AttrKeyValue<T> createNewAttrKeyValueElement();
+
+        @Override
+        public final Class identifier() {
+            return List.class;
+        }
+    }
+
+    public static class StringListAttrKeyValue extends ListAttrKeyValue<String> {
+        static final Type LIST_TYPE = new TypeToken<List<String>>() {}.getType();
 
         public List<AttrKeyValue<String>> createAttrKeyValueForElements(){
             var list = getOriginValue();
@@ -343,7 +355,7 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             str.getValidators().addAll(elementValidators);
             return str;
         }
-        public ListAttrKeyValue(String key, List<String> value) {
+        public StringListAttrKeyValue(String key, List<String> value) {
             super(key, value);
         }
 
@@ -361,14 +373,9 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
         protected String updateValue(List<String> val) {
             return gson.toJson(val);
         }
-
-        @Override
-        public Class identifier() {
-            return List.class;
-        }
     }
     public static AttrKeyValue<List<String>> list(String key, List<String> list){
-        return new ListAttrKeyValue(key, list);
+        return new StringListAttrKeyValue(key, list);
     }
 
     public static <T> AttrKeyValue<T> computeNonnull(String keyName, String value, Function<String, T> valueMapper){
@@ -504,55 +511,73 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
                 Map<String, Displayable> valueMap = (Map<String, Displayable>) (this).getValueMap();
                 List<Pair<String, Displayable>> flattenMap = valueMap.entrySet().stream().map((entry)-> new Pair<>(entry.getKey(), entry.getValue())).toList();
                 int choices = flattenMap.size();
-                Preconditions.checkArgument(choices > 0);
-                String val = this.getValue();
-                int index = -1;
-                for (int i=0 ; i< choices; ++ i){
-                    if(Objects.equals(val, flattenMap.get(i).getFirst())){
-                        index = i;
-                        break;
+                if(choices > 0){
+                    String val = this.getValue();
+                    int index = -1;
+                    for (int i=0 ; i< choices; ++ i){
+                        if(Objects.equals(val, flattenMap.get(i).getFirst())){
+                            index = i;
+                            break;
+                        }
                     }
+                    if(index == -1){
+                        this.valueChange(this, flattenMap.get(0).getFirst());
+                        index = 0;
+                    }
+                    AtomicInteger integer = new AtomicInteger();
+                    integer.set(index);
+                    return ExecutableWidget.instance(x + 1, y + 1, dx -2, dy -2)
+                        .setElementHandler(
+                            new ButtonElement((ign)-> flattenMap.get(integer.get()).getSecond().getDisplay(), ButtonAction.run(()->{
+                                int index0 = integer.get();
+                                index0 = (index0 +1)%choices;
+                                integer.set(index0);
+                                this.valueChange(this, flattenMap.get(index0).getFirst());
+                                changelistener.accept(this);
+                            }))
+                                .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName()))))
+                        );
+                }else{
+                    // no choice
+                    return ExecutableWidget.instance(x + 1, y + 1, dx -2, dy -2)
+                        .setElementHandler(
+                            //todo: add translatable here
+                            new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
+                                .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName()))))
+                        );
                 }
-                if(index == -1){
-                    this.valueChange(this, flattenMap.get(0).getFirst());
-                    index = 0;
-                }
-                AtomicInteger integer = new AtomicInteger();
-                integer.set(index);
-                return ExecutableWidget.instance(x + 1, y + 1, dx -2, dy -2)
-                    .setElementHandler(
-                        new ButtonElement((ign)-> flattenMap.get(integer.get()).getSecond().getDisplay(), ButtonAction.run(()->{
-                            int index0 = integer.get();
-                            index0 = (index0 +1)%choices;
-                            integer.set(index0);
-                            this.valueChange(this, flattenMap.get(index0).getFirst());
-                            changelistener.accept(this);
-                        }))
-                            .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName()))))
-                    );
+
                    // .addToSub(this);
             }else {
                 List<String> flattenMap = ((AttrKeyValue.EnumAttrKeyValue<T>)this).getValueMap().keySet().stream().toList();
                 int choices = flattenMap.size();
-                Preconditions.checkArgument(choices > 0);
-                int index = flattenMap.indexOf(this.getValue());
-                if(index == -1){
-                    this.valueChange(this, flattenMap.get(0));
-                    index = 0;
+                if(choices > 0){
+                    int index = flattenMap.indexOf(this.getValue());
+                    if(index == -1){
+                        this.valueChange(this, flattenMap.get(0));
+                        index = 0;
+                    }
+                    AtomicInteger integer = new AtomicInteger();
+                    integer.set(index);
+                    return ExecutableWidget.instance(x + 1, y +1, dx -2, dy -2)
+                        .setElementHandler(
+                            new ButtonElement((ign)-> Text.literal(flattenMap.get(integer.get())), ButtonAction.run(()->{
+                                int index0 = integer.get();
+                                index0 = (index0 +1)%choices;
+                                integer.set(index0);
+                                this.valueChange(this, flattenMap.get(index0));
+                                changelistener.accept(this);
+                            }))
+                                .withTooltips(TooltipHandler.of(List.of(Text.literal(this.getKeyName()))))
+                        );
+                }else {
+                    return ExecutableWidget.instance(x + 1, y +1, dx -2, dy -2)
+                        .setElementHandler(
+                            new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
+                                .withTooltips(TooltipHandler.of(List.of(Text.literal(this.getKeyName()))))
+                        );
                 }
-                AtomicInteger integer = new AtomicInteger();
-                integer.set(index);
-                return ExecutableWidget.instance(x + 1, y +1, dx -2, dy -2)
-                    .setElementHandler(
-                        new ButtonElement((ign)-> Text.literal(flattenMap.get(integer.get())), ButtonAction.run(()->{
-                            int index0 = integer.get();
-                            index0 = (index0 +1)%choices;
-                            integer.set(index0);
-                            this.valueChange(this, flattenMap.get(index0));
-                            changelistener.accept(this);
-                        }))
-                            .withTooltips(TooltipHandler.of(List.of(Text.literal(this.getKeyName()))))
-                    );
+
 
             }
         }
@@ -629,6 +654,6 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
 
 
 
-
+    //todo: 增加Custom,
 
 }

@@ -7,7 +7,6 @@ import me.matl114.managers.IHotKey;
 import me.matl114.utils.UtilClass.*;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -15,6 +14,7 @@ import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.command.CommandSource;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
@@ -24,6 +24,7 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Language;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
@@ -81,10 +82,11 @@ public class Listener {
     }
 
 
-    private static final HashSet<BiPredicate<ClientConnection,Packet<?>>> listenerS2C = new LinkedHashSet<>();
-    private static final HashSet<BiPredicate<ClientConnection,Packet<?>>> listenerC2S = new LinkedHashSet<>();
-    private static final Map<Class<?>,HashSet< BiPredicate<ClientConnection,Packet<?>>>> packetListener = new ConcurrentHashMap<>();
-    private static final Map<Class<?>, Deque<BiPredicate<ClientConnection, Packet<?>>>> packetCatcher = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, ListenerPoint<Event<?>>> packetListener = new ConcurrentHashMap<>();
+    public static <T extends Packet<?>> ListenerPoint<Event<T>> getPacketListenerPoint(Class<T> clazz){
+        return (ListenerPoint<Event<T>>)(Object) packetListener.computeIfAbsent(getMappedPacketClass(clazz), (s) -> new ListenerPoint<>());
+    }
+//    private static final Map<Class<?>, CatcherPoint<Event<Packet<?>>>> packetCatcher = new ConcurrentHashMap<>();
     private static final Map<Class<? extends Packet<?>>, Class<? extends Packet<?>>> mappedPacketClass = new ConcurrentHashMap<>();
     public static <T extends Packet<?>, W extends Packet<?>> Class<W> getMappedPacketClass(Class<T> packet){
         return (Class<W>) mappedPacketClass.computeIfAbsent((Class<? extends Packet<?>>) packet, Listener::getPacketClass);
@@ -96,41 +98,77 @@ public class Listener {
         }
         return (Class<W>) clazz1;
     }
+
+    protected static <T extends Packet<?>> Consumer<Event<T>> wrapListener(Predicate<T> w){
+        return (packetEvent -> {
+            if(packetEvent.isCancelled()){
+                return;
+            }
+            boolean how = w.test(packetEvent.context());
+            if(!how){
+                packetEvent.cancel();
+            }
+        });
+    }
+
+    protected static <T extends Packet<?>> Consumer<Event<T>> wrapListener(BiPredicate<ClientConnection, T> w){
+        return (packetEvent -> {
+            if(packetEvent.isCancelled()){
+                return;
+            }
+            boolean how = w.test(packetEvent.getArgs(0), packetEvent.context());
+            if(!how){
+                packetEvent.cancel();
+            }
+        });
+    }
+    protected static <T> Consumer<Event<T>> wrapListener(Consumer<T> w){
+        return (packetEvent -> {
+            if(packetEvent.isCancelled()){
+                return;
+            }
+            w.accept( packetEvent.context());
+        });
+    }
     public static void registerPacketListener(Consumer<Packet<?>> packetListener,boolean isS2C){
-        registerPacketListener((c)->{packetListener.accept(c);return true;},isS2C);
+        if(isS2C){
+            packetAcceptPoint.registerHandler(wrapListener(packetListener));
+        }else {
+            packetSendPoint.registerHandler(wrapListener(packetListener));
+        }
     }
     public static void registerPacketListener(Predicate<Packet<?>> packetListener,boolean isS2C){
         if(isS2C){
-            listenerS2C.add((conn,pack)->packetListener.test(pack));
+            packetAcceptPoint.registerHandler(wrapListener(packetListener));
         }else {
-            listenerC2S.add((conn,pack)->packetListener.test(pack));
+            packetSendPoint.registerHandler(wrapListener(packetListener));
         }
     }
     public static void registerPacketListener(BiPredicate<ClientConnection,Packet<?>> packetListener,boolean isS2C){
         if(isS2C){
-            listenerS2C.add(packetListener);
+            packetAcceptPoint.registerHandler(wrapListener(packetListener));
         }else {
-            listenerC2S.add(packetListener);
+            packetSendPoint.registerHandler(wrapListener(packetListener));
         }
     }
     public static <T extends Packet<?>> void registerSinglePacketListener(Class<T> clazz, Consumer< T> predicate){
-        registerSinglePacketListener(clazz, ((connection, t) -> {predicate.accept(t);return true;}));
+        getPacketListenerPoint(clazz).registerHandler(wrapListener(predicate));
     }
     public static <T extends Packet<?>> void registerSinglePacketListener(Class<T> clazz, Predicate< T> predicate){
-        registerSinglePacketListener(clazz, ((connection, t) -> predicate.test(t)));
+        getPacketListenerPoint(clazz).registerHandler(wrapListener(predicate));
     }
     public static <T extends Packet<?>> void registerSinglePacketListener(Class<T> clazz, BiPredicate<ClientConnection, T> predicate){
-        packetListener.computeIfAbsent((Class<?>) clazz, (c)->new LinkedHashSet<>()).add((BiPredicate<ClientConnection, Packet<?>>) predicate);
+        getPacketListenerPoint(clazz).registerHandler(wrapListener(predicate));
     }
-    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz){
-        registerSinglePacketCatcher(clazz, ((connection, t) -> {return true;}));
-    }
-    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz, Predicate< T> predicate){
-        registerSinglePacketCatcher(clazz, ((connection, t) -> predicate.test(t)));
-    }
-    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz, BiPredicate<ClientConnection, T> predicate){
-        packetCatcher.computeIfAbsent((Class<?>) clazz, (c)->new ArrayDeque<>()).add((BiPredicate<ClientConnection, Packet<?>>) predicate);
-    }
+//    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz){
+//        registerSinglePacketCatcher(clazz, ((connection, t) -> {return true;}));
+//    }
+//    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz, Predicate< T> predicate){
+//        registerSinglePacketCatcher(clazz, ((connection, t) -> predicate.test(t)));
+//    }
+//    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz, BiPredicate<ClientConnection, T> predicate){
+//        packetCatcher.computeIfAbsent((Class<?>) clazz, (c)->new ArrayDeque<>()).add((BiPredicate<ClientConnection, Packet<?>>) predicate);
+//    }
 
 
     public static boolean acceptS2CPacket(ClientConnection connection,Packet<?> packet){
@@ -145,7 +183,7 @@ public class Listener {
 
 
     @Unique
-    private static boolean onSinglePacketListen(ClientConnection connection,Packet<?> packet, boolean s2c, Set<BiPredicate<ClientConnection,Packet<?>>> listeners){
+    private static boolean onSinglePacketListen(ClientConnection connection,Packet<?> packet, boolean s2c){
         Event<Packet<?>> packetEvent = new Event<>(packet, true, false, connection);
         if(s2c){
             getPacketAcceptPoint().handleValue(packetEvent);
@@ -156,32 +194,13 @@ public class Listener {
             return false;
         }
 
-        for(BiPredicate<ClientConnection,Packet<?>> listener:listeners){
-            if(!listener.test(connection,packet)){
-                return false;
-            }
-        }
-
         Class<?> t =  getMappedPacketClass(packet.getClass());
-        var re2 = packetCatcher.get(t);
-        boolean result =true;
-        if(re2 != null && !re2.isEmpty()){
-            Iterator<BiPredicate<ClientConnection, Packet<?>>> predicateIterator = re2.iterator();
-            while (predicateIterator.hasNext()){
-                var re3 = predicateIterator.next();
-                if(re3.test(connection, packet)){
-                    result = false;
-                }
-                predicateIterator.remove();
-            }
-        }
-        if(!result)return false;
+        if(packetEvent.isCancelled())return false;
         var re = packetListener.get(t);
         if(re != null && !re.isEmpty()){
-            for (BiPredicate<ClientConnection,Packet<?>> predicate :re){
-                if(!predicate.test(connection, packet)){
-                    return false;
-                }
+            re.handleValue(packetEvent);
+            if(packetEvent.isCancelled()){
+                return false;
             }
         }
 
@@ -198,7 +217,7 @@ public class Listener {
             }
             return true;
         }else{
-            return onSinglePacketListen(connection,packet, isS2C,isS2C?listenerS2C:listenerC2S);
+            return onSinglePacketListen(connection,packet, isS2C);
         }
     }
     @Getter
@@ -268,7 +287,7 @@ public class Listener {
 
     //movement
     @Getter
-    private static final ListenerPoint<Event<Vec3d>> playerVelocityUpdate = new ListenerPoint<>();
+    private static final ListenerPoint<Event<Vec3d>> playerVelocityTick = new ListenerPoint<>();
     @Getter
     private static final ListenerPoint<Event<Input>> playerKeyboardInputTick = new ListenerPoint<>();
 
@@ -353,6 +372,11 @@ public class Listener {
 
     @Getter
     private static final ListenerPoint<Event<HitResult>> mineBlockAction = new ListenerPoint<>();
+
+    @Getter
+    private static final ListenerPoint<Event<Vec3d>> entityClientVelocityUpdate = new ListenerPoint<>();
+
+    private static final ListenerPoint<Language> languageReloadEvent = new ListenerPoint<>();
 
     static{
         //ConnectionListener.init();

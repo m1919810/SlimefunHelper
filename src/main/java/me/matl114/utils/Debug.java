@@ -1,6 +1,7 @@
 package me.matl114.utils;
 
 
+import lombok.Getter;
 import me.matl114.hackUtils.ChatTasks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.MutableText;
@@ -13,6 +14,7 @@ import java.util.function.Supplier;
 
 @ApiMethod
 public class Debug {
+    @Getter
     private static Logger logger= LoggerFactory.getLogger("SlimefunHelper");
     public static void info(String string){
         logger.info(string);
@@ -28,7 +30,11 @@ public class Debug {
     }
     public static void sendPlayer(Text text){
         if(MinecraftClient.getInstance().player != null){
-            MinecraftClient.getInstance().player.sendMessage(text);
+            //do not log async
+            MinecraftClient.getInstance().execute(()->{
+                MinecraftClient.getInstance().player.sendMessage(text);
+
+            });
         }else {
             ChatTasks.sendDelayChatMessage(text);
         }

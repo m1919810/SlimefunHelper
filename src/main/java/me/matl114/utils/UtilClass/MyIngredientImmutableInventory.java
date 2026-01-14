@@ -7,6 +7,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.math.MathHelper;
 
+import java.util.Arrays;
+
 public class MyIngredientImmutableInventory implements Inventory {
     public MyIngredientImmutableInventory(Ingredient[] val){
         this.ingredients = val;
@@ -19,7 +21,7 @@ public class MyIngredientImmutableInventory implements Inventory {
 
     @Override
     public boolean isEmpty() {
-        return ingredients.length > 0;
+        return Arrays.stream(ingredients).allMatch(Ingredient::isEmpty);
     }
     public ItemStack getCurrentItemStack(Ingredient ingredient) {
         ItemStack[] itemStacks = ingredient.getMatchingStacks();

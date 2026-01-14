@@ -106,7 +106,7 @@ public class HotKeys {
     public static final String HOTKEY_TEST4="hktest4";
 
     public static final String OPEN_SEI_SCREEN = "slime guide";
-
+    @Deprecated
     public static final Config.StringRef SHARED_ARGUMENT=new Config.StringRef(""){
         @Override
         public String get() {
@@ -115,6 +115,7 @@ public class HotKeys {
             return val;
         }
     };
+    @Deprecated
     public static final Config.StringRef SHARED_ARGUMENT_2=new Config.StringRef(""){
         @Override
         public String get() {
@@ -260,30 +261,8 @@ public class HotKeys {
         Configs.TOGGLE_CONFIG.defaultVal(value, "toggle", key);
         return Configs.TOGGLE_CONFIG.getBoolean("toggle", key);
 
-    //        if(defaultToggles.containsKey(key)){
-    //            return defaultToggles.get(key);
-    //        }else {
-    //            setToggles(key,value);
-    //            return value;
-    //        }
     }
-//    public static boolean getToggles(String key,boolean value){
-//        if (!Configs.HOTKEY_CONFIG.contains("toggle", key)){
-//            return Configs.HOTKEY_CONFIG.getBoolean("toggle", key).getValue();
-//        }else{
-//            Configs.HOTKEY_CONFIG.defaultVal(value, "toggle", key);
-//            return value;
-//        }
-////        if(defaultToggles.containsKey(key)){
-////            return defaultToggles.get(key);
-////        }else {
-////            setToggles(key,value);
-////            return value;
-////        }
-//    }
-//    public static void setToggles(String key,boolean value){
-//        Configs.HOTKEY_CONFIG.setValue(value,"toggle", key);
-//    }
+
     private static void initToggleSaves(){
         final File configFile = FabricLoader.getInstance().getConfigDir().resolve("slimefunhelper-func-toggle.yml").toFile();
         if(configFile.exists() && configFile.isFile()){
@@ -305,6 +284,8 @@ public class HotKeys {
                 Configs.TOGGLE_CONFIG.save();
                 configFile.delete();
             }
+            Config.launchSaveTasks();
+
         }
     }
 
