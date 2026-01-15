@@ -1,4 +1,4 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.lists;
 
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
@@ -6,7 +6,6 @@ import net.minecraft.client.gui.Selectable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 

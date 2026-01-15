@@ -46,7 +46,7 @@ public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedSc
     protected void init() {
         super.init();
         if(configs != null){
-            configs.save();
+            configs.saveSelected();
             Config.launchSaveTasks();
         }
         configs = ConfigureListWidget.createConfigConfigure(this.config, 0, 10, buttonWidth ,buttonWidth, 20, buttonWidth, buttonHeight,this.width - 20, this.height - 40);
@@ -116,7 +116,7 @@ public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedSc
     @Override
     public void saveEntryToValues() {
         if(configs != null){
-            configs.save();
+            configs.saveSelected();
         }
         Config.launchSaveTasks();
     }

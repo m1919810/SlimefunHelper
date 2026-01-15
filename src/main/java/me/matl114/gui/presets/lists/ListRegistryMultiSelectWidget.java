@@ -1,8 +1,9 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.lists;
 
 import com.mojang.datafixers.util.Pair;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.RenderHandler;
+import me.matl114.gui.config.RegistryDisplayRender;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
 import net.minecraft.enchantment.Enchantment;

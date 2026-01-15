@@ -7,6 +7,7 @@ import me.matl114.access.ClientAccess;
 import me.matl114.access.ClientPlayerAccess;
 import me.matl114.hackUtils.CombatTasks;
 import me.matl114.hackUtils.RenderTasks;
+import me.matl114.hackUtils.Tasks;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
@@ -25,6 +26,7 @@ import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
 import net.minecraft.util.Hand;
+import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.profiler.Profiler;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +38,8 @@ import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+
+import java.io.File;
 
 
 @Environment(EnvType.CLIENT)
@@ -320,6 +324,18 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     private void onEnhanceDebug(CallbackInfoReturnable<Boolean> cir){
         if(debugHudEnhance.get()){
             cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "printCrashReport(Lnet/minecraft/client/MinecraftClient;Ljava/io/File;Lnet/minecraft/util/crash/CrashReport;)V", at = @At(value = "INVOKE", target = "Ljava/lang/System;exit(I)V", shift = At.Shift.BEFORE), cancellable = true)
+    private static void onSystemExit(MinecraftClient client, File runDirectory, CrashReport crashReport, CallbackInfo ci){
+        Tasks.crashReport = crashReport;
+        if(!Listener.getClientMainExit().isEmpty()){
+            Event<MinecraftClient> exitEvent = new Event<>(client, client.isRunning(), false, crashReport);
+            Listener.getClientMainExit().handleValue(exitEvent);
+            if(exitEvent.isCancelled()){
+                ci.cancel();
+            }
         }
     }
 

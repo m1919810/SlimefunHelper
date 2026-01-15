@@ -1,4 +1,4 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.single;
 
 import lombok.Setter;
 import lombok.experimental.Accessors;

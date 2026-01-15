@@ -33,6 +33,8 @@ import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.PlainTextContent;
+import net.minecraft.util.crash.CrashException;
+import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.*;
 
 import java.awt.*;
@@ -337,7 +339,8 @@ public class Tasks {
         return List.of(
             "xray_demo",
             "writable_book_generate",
-            "strider_fix"
+            "strider_fix",
+            "client_crash"
         );
     }
     @ApiMethod
@@ -362,6 +365,9 @@ public class Tasks {
                 }
                 case "strider_fix"->{
                     versionedStriderFix(args);
+                }
+                case "client_crash"->{
+                    clientCrash(args);
                 }
             }
         }catch (Throwable e){
@@ -389,6 +395,16 @@ public class Tasks {
                 Debug.chat("No vehicle");
             }
         }
+    }
+
+    public static CrashReport crashReport = null;
+
+    public static void clientCrash(String[] args){
+        mc.player = null;
+        CompletableFuture.runAsync(()->{
+            mc.execute(()->{throw new CrashException(new CrashReport("test crash", new NullPointerException()));});
+        });
+
     }
     //todo: delay tp
 
@@ -846,7 +862,7 @@ public class Tasks {
         SlimefunTasks.init();
         InteractionTasks.init();
         ACPostTasks.init();
-
+        ExtraTasks.init();
 
         registerTickTask(()->{
             ++ tickCounter;

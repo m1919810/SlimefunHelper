@@ -1,4 +1,4 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.lists;
 
 import me.matl114.gui.FilterService;
 import me.matl114.gui.McWidgetHelpers;
@@ -10,7 +10,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class ListSelectWidget<W> extends ScrollableListWidget {
-    W selected;
+    protected W selected;
     List<W> list;
     int entryHeight;
     List<W> filterList;

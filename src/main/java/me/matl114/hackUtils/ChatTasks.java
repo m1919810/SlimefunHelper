@@ -493,6 +493,7 @@ public class ChatTasks {
                 return true;
             }
         }
+            .setEnum("taskid", Tasks.getSpecialTaskName())
             .register(this);
 
         SubCommand recipesDataCommand = new SubCommand("recipes", genArgument("action"),"!!recipes <action> 管理配方系统"){

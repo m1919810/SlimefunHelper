@@ -687,7 +687,7 @@ Config {
 
             public  <W> boolean copyValueTo(Ref<W> otherRef) {
                 if(otherRef.getClass() == JustOnlyObjectRef.class){
-                    this.set(((ObjectRef<W>) otherRef).object);
+                    ((JustOnlyObjectRef) otherRef).set(this.get());
                     return true;
                 }else {
                     return false;
@@ -732,7 +732,7 @@ Config {
         @Override
         public <W> boolean copyValueTo(Ref<W> otherRef) {
             if(otherRef instanceof StringRef stringRef){
-                this.set(stringRef.get());  ;
+                stringRef.set(this.get());
                 return true;
             }
             return false;
@@ -768,7 +768,7 @@ Config {
         @Override
         public <W> boolean copyValueTo(Ref<W> otherRef) {
             if(otherRef instanceof KeyBindRef stringRef){
-                this.set(stringRef.get());
+                stringRef.set(this.get());
                 return true;
             }
             return false;
@@ -1217,6 +1217,8 @@ Config {
         } catch (IOException var3) {
             IOException e = var3;
             this.logger.log(Level.SEVERE, "Exception while saving a Config file", e);
+        } finally {
+            markForSave = false;
         }
 
     }

@@ -1,6 +1,8 @@
 package me.matl114.utils;
 
 
+import com.mojang.datafixers.util.Pair;
+
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -98,5 +100,9 @@ public class CollectionUtils {
         }else{
             throw new IllegalArgumentException("Invalid path: " + path);
         }
+    }
+
+    public static <A, B> Pair<A, B> entryToPair(Map.Entry<A, B> entry){
+        return Pair.of(entry.getKey(), entry.getValue());
     }
 }

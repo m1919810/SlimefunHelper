@@ -1,7 +1,8 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.lists;
 
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.config.RegistryDisplayRender;
 import me.matl114.utils.ItemStackUtils;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.attribute.EntityAttribute;

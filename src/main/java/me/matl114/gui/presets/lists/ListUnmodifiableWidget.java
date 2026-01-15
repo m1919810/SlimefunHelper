@@ -1,4 +1,4 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.lists;
 
 import me.matl114.gui.basic.*;
 import net.minecraft.client.gui.Drawable;

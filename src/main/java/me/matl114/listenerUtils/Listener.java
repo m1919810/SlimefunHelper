@@ -376,7 +376,12 @@ public class Listener {
     @Getter
     private static final ListenerPoint<Event<Vec3d>> entityClientVelocityUpdate = new ListenerPoint<>();
 
-    private static final ListenerPoint<Language> languageReloadEvent = new ListenerPoint<>();
+    @Getter
+    private static final ListenerPoint<Event<Language>> languageReload = new ListenerPoint<>();
+
+    @Getter
+    private static final ListenerPoint<Event<MinecraftClient>> clientMainExit = new ListenerPoint<>();
+
 
     static{
         //ConnectionListener.init();

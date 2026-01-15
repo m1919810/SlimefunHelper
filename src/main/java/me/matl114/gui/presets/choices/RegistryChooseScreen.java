@@ -1,9 +1,10 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.choices;
 
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.basic.ElementHandler;
 
+import me.matl114.gui.presets.lists.ListRegistrySelectWidget;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;

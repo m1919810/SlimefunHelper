@@ -1,18 +1,15 @@
 package me.matl114.gui.slimefun;
 
 import com.google.common.collect.ImmutableList;
-import com.sun.jna.platform.win32.WinNT;
 import me.matl114.access.ScreenAccess;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.config.GridSelectSubScreen;
-import me.matl114.gui.config.RegistrySelectScreen;
+import me.matl114.gui.presets.grids.GridSelectSubScreen;
+import me.matl114.gui.presets.choices.RegistrySelectScreen;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.UtilClass.AttrKeyValue;
 import me.matl114.utils.UtilClass.Displayable;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;

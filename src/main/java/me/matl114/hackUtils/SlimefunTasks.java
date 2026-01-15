@@ -16,10 +16,10 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import me.matl114.access.*;
 import me.matl114.gui.basic.InputHandler;
+import me.matl114.gui.presets.choices.QuestionScreen;
 import me.matl114.gui.slimefun.SavedItemWidget;
 import me.matl114.gui.slimefun.SlimefunChoiceScreen;
 import me.matl114.gui.slimefun.SlimefunEntryListScreen;
-import me.matl114.gui.slimefun.SlimefunQuestionScreen;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.SlotElement;
 import me.matl114.listenerUtils.Listener;
@@ -1436,26 +1436,24 @@ public class SlimefunTasks {
         Configs.SLIMEFUN_CONFIG.save();
         Debug.chat("配方自动记录功能已开启,请使用ctrl+G打开Slimefun settings设置具体参数");
         Debug.chat(Text.literal("注意: 在1.20.5以上的物品数据和1.20.4及以下不互通,如果你进入了via支持的服务器,请注意这一点!").formatted(Formatting.YELLOW));
-        mc.setScreen(null);
     }
     private static boolean reject = false;
     public static void handleRejectEnable(){
         Debug.chat("您仍旧可以继续使用GUIDE功能,在这次启动中该弹窗将不再弹出");
         reject = true;
-        mc.setScreen(null);
     }
     private static final Text QUESTION_NOT_ENABLE = Text.literal("您当前并未启用配方记录功能,无法体验完整版GUIDE功能,请问您该如何选择?");
-    private static final List<SlimefunQuestionScreen.Solution> QUESTION_SOLUTIONS = List.of(
-        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable),
-        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,但不启用"), SlimefunTasks::handleRejectEnable),
-        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable),
-        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,但不启用"), SlimefunTasks::handleRejectEnable),
-        SlimefunQuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable)
+    private static final List<QuestionScreen.Solution> QUESTION_SOLUTIONS = List.of(
+        QuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable),
+        QuestionScreen.Solution.of(Text.literal("我已知晓该功能,但不启用"), SlimefunTasks::handleRejectEnable),
+        QuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable),
+        QuestionScreen.Solution.of(Text.literal("我已知晓该功能,但不启用"), SlimefunTasks::handleRejectEnable),
+        QuestionScreen.Solution.of(Text.literal("我已知晓该功能,一键启用"), SlimefunTasks::handleAutoEnable)
     );
     public static boolean handleNotEnable(){
         //没有启用recipe或者没有启用
         if((!ENABLE_RECIPE.get()|| !Configs.SLIMEFUN_CONFIG.getBoolean(Configs.SLIMEFUN_RECIPE_SAVE).get() )&& !reject){
-            openOrSwitch(new SlimefunQuestionScreen(QUESTION_NOT_ENABLE, QUESTION_SOLUTIONS));
+            openOrSwitch(new QuestionScreen(QUESTION_NOT_ENABLE, QUESTION_SOLUTIONS));
             return true;
         }
         return false;

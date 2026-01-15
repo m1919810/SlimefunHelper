@@ -1,11 +1,9 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.single;
 
 import me.matl114.gui.basic.*;
-import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.KeyCode;
 import me.matl114.managers.MultiKeyBind;
 import me.matl114.utils.UtilClass.AttrKeyValue;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;

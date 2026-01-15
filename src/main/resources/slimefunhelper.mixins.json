@@ -45,6 +45,7 @@
 		"HackMixin.InventoryCraftScreenMixin",
 		"HackMixin.ItemStackModifyMixin",
 		"HackMixin.LivingEntityMixin",
+		"HackMixin.MainMixin",
 		"HackMixin.NetworkThreadUtilsMixin",
 		"HackMixin.PlayerAbilityMixin",
 		"HackMixin.PlayerEntityMixin",

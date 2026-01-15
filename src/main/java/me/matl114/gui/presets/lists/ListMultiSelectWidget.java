@@ -1,16 +1,14 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.lists;
 
 import me.matl114.gui.FilterService;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.utils.Debug;
 import me.matl114.utils.UtilClass.AttrKeyValue;
-import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 

@@ -1,10 +1,8 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.choices;
 
 import me.matl114.gui.GenericBackGroundScreen;
-import me.matl114.gui.GenericScreen;
 import me.matl114.gui.basic.*;
 import net.minecraft.text.Text;
-import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
 
 public abstract class ConfirmingBigScreen extends GenericBackGroundScreen {

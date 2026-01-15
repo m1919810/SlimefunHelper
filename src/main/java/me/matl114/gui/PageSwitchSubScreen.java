@@ -1,9 +1,8 @@
 package me.matl114.gui;
 
 import me.matl114.gui.basic.*;
-import me.matl114.gui.config.IntFastInputWidget;
+import me.matl114.gui.presets.single.IntFastInputWidget;
 import me.matl114.utils.UtilClass.AttrKeyValue;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.math.MathHelper;

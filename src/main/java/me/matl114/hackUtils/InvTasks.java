@@ -77,7 +77,7 @@ public class InvTasks {
     @ApiMethod
     public static void openConfigScreen(Config config){
         ConfigurateNewStyleScreen newStyleScreen = new ConfigurateNewStyleScreen(Config.getConfigs().stream().toList());
-        newStyleScreen.setConfig(config);
+        newStyleScreen.setGlobal(config);
         ScreenAccess.of( newStyleScreen).openFromCurrent();
     }
 

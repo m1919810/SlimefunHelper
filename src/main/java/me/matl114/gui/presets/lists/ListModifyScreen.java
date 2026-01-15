@@ -1,7 +1,9 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.lists;
 
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ElementHandler;
+import me.matl114.gui.config.ListModifyWidget;
+import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.utils.UtilClass.AttrKeyValue;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -10,14 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class ListModifyScreen<T> extends ConfirmingBigScreen{
+public class ListModifyScreen<T> extends ConfirmingBigScreen {
     AttrKeyValue.ListAttrKeyValue<T> listAttrKeyValue;
     List<AttrKeyValue<T>> list;
     Consumer<AttrKeyValue.ListAttrKeyValue<T>> consumer;
     ListEntryWidgetController controller;
     private static final int WIDTH = 240;
 
-    protected ListModifyScreen(AttrKeyValue.ListAttrKeyValue<T> list, Consumer<AttrKeyValue.ListAttrKeyValue<T>> consumer) {
+    public ListModifyScreen(AttrKeyValue.ListAttrKeyValue<T> list, Consumer<AttrKeyValue.ListAttrKeyValue<T>> consumer) {
         super(Text.empty());
         setTitleLabel(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
         this.listAttrKeyValue = list;

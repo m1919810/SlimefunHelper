@@ -1,6 +1,7 @@
 package me.matl114.gui.config;
 
 import me.matl114.gui.basic.*;
+import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;

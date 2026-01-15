@@ -1,15 +1,12 @@
-package me.matl114.gui.config;
+package me.matl114.gui.presets.grids;
 
 import lombok.Getter;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.GridSubScreen;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.PageSwitchSubScreen;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.SubScreenWidget;
-import me.matl114.utils.UtilClass.PropertyTracker;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
