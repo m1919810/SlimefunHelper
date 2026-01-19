@@ -38,8 +38,6 @@ public class BeaconHackMixin  extends HandledScreen<BeaconScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
 
     }
-    private static final Text TEXT_LEVEL_1 = Text.literal("第一等级: ");
-    private static final Text TEXT_LEVEL_2 = Text.literal("第二等级: ");
     @Unique
     private static BeaconEffectSelectButton buttonLevel1 ;
     @Unique
@@ -47,12 +45,12 @@ public class BeaconHackMixin  extends HandledScreen<BeaconScreenHandler> {
     @Inject(method = "init", at = @At("RETURN"))
     public void onBeaconScreenInit(CallbackInfo ci){
         int scx = this.x; int scy = this.y;
-        buttonLevel1 = new BeaconEffectSelectButton(scx + 167 - 23, scy + 47 + 26, 22, 22, TEXT_LEVEL_1);
+        buttonLevel1 = new BeaconEffectSelectButton(scx + 167 - 23, scy + 47 + 26, 22, 22, Text.literal("第一等级: "));
         addDrawableChild(buttonLevel1);
-         buttonLevel2 = new BeaconEffectSelectButton(scx + 167  +1, scy + 47 + 26, 22, 22, TEXT_LEVEL_2);
+         buttonLevel2 = new BeaconEffectSelectButton(scx + 167  +1, scy + 47 + 26, 22, 22,  Text.literal("第二等级: "));
         addDrawableChild(buttonLevel2);
         AtomicReference<ButtonWidget> buttonTrigger = new AtomicReference<>(
-            ButtonWidget.builder(Text.literal("Sent packet"),
+            ButtonWidget.builder(Text.literal("Send packet"),
                     (b)->{
                         MinecraftClient.getInstance().getNetworkHandler().sendPacket(new UpdateBeaconC2SPacket(Optional.ofNullable(buttonLevel1.getCurrentEffect()),Optional.ofNullable(buttonLevel2.getCurrentEffect()) ));
                         Debug.chat(Text.literal("成功发送了信标设置!"));

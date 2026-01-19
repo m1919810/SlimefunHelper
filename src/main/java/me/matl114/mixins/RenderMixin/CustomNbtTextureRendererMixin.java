@@ -56,7 +56,7 @@ public abstract class CustomNbtTextureRendererMixin implements ItemRendererAcces
 //        }
 //
 //    }
-    private final Config.FlagRef sfCmdOverride = Configs.MODEL_CONFIG.getBoolean(Configs.MODEL_PROTECT);
+    private final Config.FlagRef sfCmdOverride = Configs.MODEL_CONFIG.getBoolean(Configs.SLIMEFUN_MODEL_ID);
     @ModifyVariable(method =
 //            "Lnet.minecraft.client.render.item.ItemRender;getModel(Lnet.minecraft.item.ItemStack;Lnet.minecraft.world.World;Lnet.minecraft.entity.LivingEntity;I)Lnet.minecraft.client.render.model.BakedModel;"
             "getModel"

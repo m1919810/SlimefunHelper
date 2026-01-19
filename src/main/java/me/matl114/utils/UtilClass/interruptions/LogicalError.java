@@ -1,4 +1,4 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.UtilClass.interruptions;
 
 import org.bukkit.command.CommandSender;
 

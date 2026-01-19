@@ -1,4 +1,4 @@
-package me.matl114.utils.UtilClass;
+package me.matl114.utils.UtilClass.commands;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

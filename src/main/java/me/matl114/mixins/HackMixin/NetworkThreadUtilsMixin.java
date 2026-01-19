@@ -1,10 +1,12 @@
 package me.matl114.mixins.HackMixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.hackUtils.NetworksTasks;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
+import me.matl114.utils.UtilClass.Event;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.network.NetworkThreadUtils;
@@ -30,12 +32,14 @@ public abstract class NetworkThreadUtilsMixin {
     private static void applyListenerToPacketPost(PacketListener packetListener, Packet packet, CallbackInfo ci){
         Listener.postPacketListenerApplyPoint(packet, packetListener);
     }
-    private static final Config.FlagRef hijackException = Configs.TEST_CONFIG.getBoolean(Configs.IGNORE_PROTOCOL_ERROR);
     @Inject(method = "method_11072", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/listener/PacketListener;onPacketException(Lnet/minecraft/network/packet/Packet;Ljava/lang/Exception;)V", shift = At.Shift.BEFORE), cancellable = true)
     private static void hijackExceptionDisconnection(PacketListener packetListener, Packet packet, CallbackInfo ci, @Local Exception exception){
-        if(hijackException.get()){
-            NetworksTasks.handlePacketExceptionSoft(packetListener, packet, exception);
-            ci.cancel();
+        if(!Listener.getPacketListenerException().isEmpty()){
+            Event<Packet<?>> exevent = new Event<>(packet, true, false, packetListener, exception);
+            Listener.getPacketListenerException().handleValue(exevent);
+            if(exevent.isCancelled()){
+                ci.cancel();
+            }
         }
     }
 

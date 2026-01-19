@@ -1,13 +1,17 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.UtilClass.interruptions;
 
-import me.matl114.matlib.common.lang.exceptions.Abort;
-import me.matl114.matlib.common.lang.exceptions.RuntimeAbort;
-import org.bukkit.command.CommandSender;
+import net.minecraft.entity.player.PlayerEntity;
 
-public abstract class ArgumentException extends RuntimeAbort {
+public abstract class ArgumentException extends RuntimeException {
     public ArgumentException() {
         super();
     }
 
-    public abstract void handleAbort(CommandSender sender, InterruptionHandler command);
+    public abstract void handleAbort(PlayerEntity sender, InterruptionHandler command);
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        // override this method to avoid fill stacktrace when create Abort
+        return this;
+    }
 }

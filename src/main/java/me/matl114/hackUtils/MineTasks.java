@@ -9,16 +9,17 @@ import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import me.matl114.access.PlayerInteractionAccess;
+import me.matl114.hackUtils.modules.ModuleManager;
+import me.matl114.hackUtils.modules.mine.*;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
 import me.matl114.managers.HotKeys;
 import me.matl114.renders.RenderMain;
 import me.matl114.utils.*;
-import me.matl114.utils.UtilClass.AbstractMainCommand;
+import me.matl114.utils.UtilClass.commands.*;
 import me.matl114.utils.UtilClass.AttrKeyValue;
 import me.matl114.utils.UtilClass.Event;
-import me.matl114.utils.UtilClass.SubCommand;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -81,6 +82,7 @@ import java.util.stream.Stream;
 
 public class MineTasks {
    // public static void init(){}
+    //todo: remove line
    public static void init(){
 
    }
@@ -235,7 +237,7 @@ public class MineTasks {
         return null;
     }
     private static int no_block_mention=0;
-    private static int NO_BLOCK_MENTION_LIMIT=400;
+    private static final int NO_BLOCK_MENTION_LIMIT=400;
     public static void onMineBotStart(ClientPlayerEntity player,ClientPlayerInteractionManager manager){
         //int runTime=tickCounter.getAndIncrement();
         //int matched=
@@ -1000,107 +1002,150 @@ public class MineTasks {
 
 
     public static class MineCommand extends AbstractMainCommand{
-        SubCommand mainCommand = genMainCommand("mine");
-        SubCommand seedToggle = new SubCommand("seedore", genArgument("toggle"), "!!mine seedore <toggle> 切换是否启动seed ore simulation"){
-            @Override
-            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
-                boolean var  =parseInput(var4).getFirst().nextBoolean();
-                if(var){
-                    if(!seedEnable.get()){
-                        onEnableSeedOre();
-                    }
-                }else{
-                    if(seedEnable.get()){
-                        onDisableSeedOre();
-                    }
+        TreeSubCommand main = mainBuilder()
+            .name("mine")
+            .build();
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                .name("seedore")
+                .helper("<toggle> 切换是否启动seed ore simulation")
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("toggle")
+                        .bool()
+                        .build()
+                )
+                .post(e -> e.executor(CommandContext.run(this::onSeedOre)))
+                .complete();
+        }
+        public void onSeedOre(ArgumentInputStream re){
+            boolean var  = re.nextBoolean();
+            if(var){
+                if(!seedEnable.get()){
+                    onEnableSeedOre();
                 }
-                return true;
+            }else{
+                if(seedEnable.get()){
+                    onDisableSeedOre();
+                }
             }
         }
-            .setTabCompletor("toggle", ()->List.of("true", "false"))
-            .register(this);
-        SubCommand seedInput = new SubCommand("seed", genArgument("operation", "seed"), "!!mine seed <operation> <seed> 进行seed操作"){
-            @Override
-            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
-                var re = parseInput(var4).getFirst();
-                String op = re.nextNonnull();
-                switch (op){
-                    case "set" -> {
-                        String na = re.nextNonnull();
-                        long val;
-                        if(seedMap.containsKey(na)){
-                            val = seedMap.getLong(na);
-                        }else{
-                            val = Long.parseLong(na);
-                        }
-                        setWorldSeed(val);
-                        Debug.chat("[世界种子] 设置", CommonUtils.getWorldName(), "的种子为", val);
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                .name("seedore")
+                .helper("<operation> <seed> 进行seed操作")
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("operation")
+                        .select(List.of("set", "remove", "validate", "list"))
+                        .build()
+                )
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("seed")
+                        .select(List.of("0", "114514"))
+                        .tabSupplier(()->seedMap.keySet().stream())
+                        .build()
+                )
+                .post(e -> e.executor(CommandContext.run(this::onSeed)))
+                .complete();
+        }
+        public void onSeed(ArgumentInputStream re){
+            String op = re.nextNonnull();
+            switch (op){
+                case "set" -> {
+                    String na = re.nextNonnull();
+                    long val;
+                    if(seedMap.containsKey(na)){
+                        val = seedMap.getLong(na);
+                    }else{
+                        val = Long.parseLong(na);
                     }
-                    case "remove" ->{
-                        String key = re.nextNonnull();
-                        removeWorldSeed(key);
+                    setWorldSeed(val);
+                    Debug.chat("[世界种子] 设置", CommonUtils.getWorldName(), "的种子为", val);
+                }
+                case "remove" ->{
+                    String key = re.nextNonnull();
+                    removeWorldSeed(key);
+                }
+                case "list" ->{
+                    Debug.chat("[世界种子] 列表");
+                    for (var entry : seedMap.object2LongEntrySet()){
+                        Debug.chat(entry.getKey(), ":",ChatUtils.getDisplayedLong(entry.getLongValue()));
                     }
-                    case "list" ->{
-                        Debug.chat("[世界种子] 列表");
-                        for (var entry : seedMap.object2LongEntrySet()){
-                            Debug.chat(entry.getKey(), ":",ChatUtils.getDisplayedLong(entry.getLongValue()));
-                        }
-                    }
-                    case "validate"->{
+                }
+                case "validate"->{
 
-                        validateCurrentSeed();
+                    validateCurrentSeed();
 
-                    }
                 }
-                return true;
             }
         }
-            .setEnum("operation", List.of("set", "remove", "validate", "list"))
-            .setDefault("seed", "0")
-            .setTabCompletor("seed", ()-> Streams.concat(Stream.of("0", "114514"), seedMap.keySet().stream()).toList())
-            .register(this);
-        SubCommand toggleRender = new SubCommand("orerender", genArgument("toggle"), "!!mine orerender <toggle> 切换是否渲染sim ore"){
-            @Override
-            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
-                boolean val = parseInput(var4).getFirst().nextBoolean();
-                renderOreSimResult.set(val);
-                Configs.MINE_CONFIG.save();
-                Config.launchSaveTasks();
-                Debug.chat("[种子矿透] 切换渲染:", val);
-                return true;
-            }
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                .name("orerender")
+                .helper("<toggle> 切换是否渲染sim ore")
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("toggle")
+                        .bool()
+                        .build()
+                )
+                .post(e -> e.executor(CommandContext.run(this::onOreRender)))
+                .complete();
         }
-            .setTabCompletor("toggle", ()->List.of("true", "false"))
-            .register(this)
-            ;
-        SubCommand toggleFakeOre = new SubCommand("fakeore", genArgument("operation"), "!!mine fakeore <operation> 进行假矿渲染切换"){
-            @Override
-            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
-                String val = parseInput(var4).getFirst().nextNonnull();
-                switch (val){
-                    case "on"->{
-                        Debug.chat("[种子矿透] 切换假矿: true");
-                        chunkSeedMakeFakeOre.set(true);
-                        Configs.MINE_CONFIG.save();
-                        onReloadFakeOreVisibleChunks();
-                    }
-                    case "off"->{
-                        Debug.chat("[种子矿透] 切换假矿: false");
-                        chunkSeedMakeFakeOre.set(false);
-                        Configs.MINE_CONFIG.save();
-                        onRemoveFakeOreVisibleChunks();
-                    }
-                    case "reload"->{
-                        Debug.chat("[种子矿透] 重载可视距离内的假矿");
-                        onReloadFakeOreVisibleChunks();
-                    }
+
+        public void onOreRender(ArgumentInputStream re){
+            boolean val = re.nextBoolean();
+            renderOreSimResult.set(val);
+            Configs.MINE_CONFIG.save();
+            Config.launchSaveTasks();
+            Debug.chat("[种子矿透] 切换渲染:", val);
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                .name("fakeore")
+                .helper("<operation> 进行假矿渲染切换")
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("operation")
+                        .select(List.of("on", "off", "reload"))
+                        .build()
+                )
+                .post(e -> e.executor(CommandContext.run(this::onFakeOre)))
+                .complete();
+        }
+        public void onFakeOre(ArgumentInputStream re){
+            String val = re.nextNonnull();
+            switch (val){
+                case "on"->{
+                    Debug.chat("[种子矿透] 切换假矿: true");
+                    chunkSeedMakeFakeOre.set(true);
+                    Configs.MINE_CONFIG.save();
+                    onReloadFakeOreVisibleChunks();
                 }
-                Config.launchSaveTasks();
-                return true;
+                case "off"->{
+                    Debug.chat("[种子矿透] 切换假矿: false");
+                    chunkSeedMakeFakeOre.set(false);
+                    Configs.MINE_CONFIG.save();
+                    onRemoveFakeOreVisibleChunks();
+                }
+                case "reload"->{
+                    Debug.chat("[种子矿透] 重载可视距离内的假矿");
+                    onReloadFakeOreVisibleChunks();
+                }
             }
+            Config.launchSaveTasks();
         }
-            .setEnum("operation", List.of("on", "off", "reload"))
-            .register(this);
+    }
+    public static MineBot mineBot;
+    public static PacketMine packetMine;
+    public static SeedOre seedOre;
+    public static MineArua mineArua;
+    public static AntiAXray antiAXray;
+    private static void initModules(ModuleManager m){
+
     }
     static{
         Ore.init();
@@ -1112,6 +1157,7 @@ public class MineTasks {
         Listener.getWorldSwitchPoint().registerHandler(MineTasks::onDimensionChange);
         RenderMain.getRenderLayerTasks().registerHandler(MineTasks::renderMineBlockTask);
         Listener.getMineBlockAction().registerHandler(MineTasks::onMinearuaRedirect);
+        HackModules.getManager().registerFactories(MineTasks::initModules);
     }
     // ====================================
     // Mojang code

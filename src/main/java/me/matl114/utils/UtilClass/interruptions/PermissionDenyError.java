@@ -1,9 +1,9 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.UtilClass.interruptions;
 
 import java.util.Optional;
 import lombok.AllArgsConstructor;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.UtilClass.commands.ArgumentReader;
+import net.minecraft.entity.player.PlayerEntity;
 
 @AllArgsConstructor
 public class PermissionDenyError extends ArgumentException {
@@ -11,7 +11,7 @@ public class PermissionDenyError extends ArgumentException {
     ArgumentReader currentCommandInput;
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(PlayerEntity sender, InterruptionHandler command) {
         command.handlePermissionDenied(sender, permission, currentCommandInput);
     }
 }

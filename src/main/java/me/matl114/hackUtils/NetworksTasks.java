@@ -72,23 +72,5 @@ public class NetworksTasks {
     }
 
 
-    public static void createFakeClient(){
-        //MinecraftClient client = new MinecraftClient(MinecraftClient.getInstance());
-    }
-
-    public static void handlePacketExceptionSoft(PacketListener listener, Packet<?> packet, Exception exception){
-        if(mc.player != null){
-            Debug.chat(Text.literal("Error while handling a network packet: ").formatted(Formatting.RED).append(Text.literal(packet.getClass().getSimpleName())));
-            Debug.chat(Text.literal( exception.getMessage() == null ? "Exception: null": exception.getMessage()));
-        }
-        Debug.info("Packet Exception INFO :" );
-        Debug.info("  PacketListener : ", listener);
-        Debug.info("  Packet :", packet);
-        Debug.info("Exception StackTrace:");
-        Debug.info(exception);
-    }
-
-
-
 
 }

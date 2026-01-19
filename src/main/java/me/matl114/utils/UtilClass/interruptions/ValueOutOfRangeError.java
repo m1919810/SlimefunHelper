@@ -1,7 +1,7 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.UtilClass.interruptions;
 
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.UtilClass.commands.ArgumentReader;
+import net.minecraft.entity.player.PlayerEntity;
 
 public class ValueOutOfRangeError extends ArgumentException {
     ArgumentReader reader;
@@ -43,7 +43,7 @@ public class ValueOutOfRangeError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(PlayerEntity sender, InterruptionHandler command) {
         command.handleValueOutOfRange(sender, this.reader, this.name, this.type, this.from, this.to, this.value);
     }
 }

@@ -1,15 +1,12 @@
-package me.matl114.matlib.utils.command.interruption;
-
+package me.matl114.utils.UtilClass.interruptions;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import me.matl114.matlib.common.lang.annotations.Note;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.SimpleCommandArgs;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.UtilClass.commands.ArgumentReader;
+import me.matl114.utils.UtilClass.commands.SimpleCommandArgs;
+import net.minecraft.entity.player.PlayerEntity;
 
 @Getter
 @AllArgsConstructor
-@Note("interrupt when input type not match")
 public class TypeError extends ArgumentException {
     ArgumentReader reader;
     String argument;
@@ -28,7 +25,7 @@ public class TypeError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(PlayerEntity sender, InterruptionHandler command) {
         command.handleTypeError(sender, reader, argument, typeName, input);
     }
 

@@ -33,6 +33,7 @@ import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.PlainTextContent;
+import net.minecraft.util.NetworkUtils;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.*;
@@ -96,6 +97,7 @@ public class Tasks {
     public static void onPostTick(Event<Void> v){
         if(mc.player!=null){
             Tasks.doGameTick(mc.player);
+            Listener.getGameTick().handleValue(new Event<>(mc.player, false, false));
         }
         Tasks.doTick();
     }
@@ -730,6 +732,7 @@ public class Tasks {
             re.addLast(packet);
         }
     }
+    //todo: turn to predicate use Task.getTick() as timer
     @AllArgsConstructor
     public static abstract class TimedPacketCatcher<T extends Packet<?>>{
         Class<T> clazz;
@@ -899,6 +902,7 @@ public class Tasks {
         });
         Listener.registerPacketListener(Tasks::doPacketListenIn,true);
         Listener.registerPacketListener(Tasks::doPacketListenOut,false);
+        //todo: remove this, use ListenerPoint instead
         Predicate<Packet<?>> catcher = (packet -> {
             var identifier = Listener.getMappedPacketClass(packet.getClass());
             var handlers = maped.get(identifier);

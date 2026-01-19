@@ -508,20 +508,38 @@ public class CombatTasks {
                 MovTasks.MovingContext movingContext = MovTasks.MovingContext.create(vec3d1);
                 List<MovTasks.MovInfo> moveInfos = new ArrayList<>();
                 iter.forEachRemaining(moveInfos::add);
-                MovTasks.scheduleFarawayMoveInternal(moveInfos, false, movingContext, false);
-                //attack
-                processDuplicateAttack(player, target, moveInfos, movingContext, maceAttack);
-                attackWithCritic(player, target, criticSprint);
-
-                //already at first, remove duplicate stack
                 shouldMoveBackStack.removeFirst();
+                int movingToBundleCnt = moveInfos.size();
+                moveInfos.addAll(shouldMoveBackStack);
+//                MovTasks.scheduleFarawayMoveInternal(moveInfos, false, movingContext, false);
+                //attack
+                List<MovTasks.StepActionBundle> actionBundles = MovTasks.createMovingPacketsForMovSequence(movingContext, moveInfos, true, false);
+                for (int i = 0 ;i < movingToBundleCnt; ++i){
+                    actionBundles.get(i).run();
+                }
+               // processDuplicateAttack(player, target, moveInfos, movingContext, maceAttack);
+                attackWithCritic(player, target, criticSprint);
+                for(int i = movingToBundleCnt; i < actionBundles.size(); ++i){
+                    if(actionBundles.get(i).success){
+                        actionBundles.get(i).run();
+
+                    }else{
+                        List<MovTasks.MovInfo> leftTasks = moveInfos.subList(i, moveInfos.size());
+                        Tasks.scheduleDelayed(()->{
+                            MovTasks.scheduleFarawayMoveInternal(leftTasks, false,movingContext.resetTick(), true);
+                        }, 1);
+                        break;
+                    }
+                }
+                //already at first, remove duplicate stack
 //                Debug.info(movementStack);
 //                Debug.info(shouldMoveBackStack);
-                var inviter = shouldMoveBackStack.stream().toList();
-                MovTasks.scheduleFarawayMoveInternal(inviter, true, movingContext,
-                    //calculate nofall down there in this argument, no need to consider
-                    false
-                );
+//                var inviter = shouldMoveBackStack.stream().toList();
+//                MovTasks.scheduleFarawayMoveInternal(inviter, true, movingContext,
+//                    //calculate nofall down there in this argument, no need to consider
+//                    false
+//                );
+
                 //force resync position to origin
                 if(!shouldMoveBackStack.isEmpty()){
                     Vec3d finalId = shouldMoveBackStack.peekLast().vec3d();

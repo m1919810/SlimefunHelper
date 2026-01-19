@@ -7,9 +7,12 @@ import me.matl114.hackUtils.modules.BaseModule;
 import me.matl114.listenerUtils.Listener;
 import me.matl114.managers.Config;
 import me.matl114.managers.Configs;
+import me.matl114.utils.Debug;
 import me.matl114.utils.UtilClass.Event;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.network.listener.PacketListener;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -23,18 +26,26 @@ public class ClientExtra extends BaseModule {
     public static final String[] TEST_NO_CRASH = {
         "other", "no-client-crash"
     };
-
+    public static final String[] IGNORE_PROTOCOL_ERROR = {
+        "other", "no-disconnect-on-network-error"
+    };
     public final Config.FlagRef noCrash = Configs.TEST_CONFIG
         .builder(Boolean.class)
         .path(TEST_NO_CRASH)
         .defaultValue(false)
         .build();
 
+    public final Config.FlagRef noNtwException = Configs.TEST_CONFIG
+        .builder(Boolean.class)
+        .path(IGNORE_PROTOCOL_ERROR)
+        .defaultValue(false)
+        .build();
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getClientMainExit(), this::onCrash);
+        registerListener(Listener.getPacketListenerException(), this::onNetworkException);
     }
     private final Text questionCrash = Text.literal("你的游戏刚才因为未知原因崩溃,但是SlimefunHelper拦截了它").formatted(Formatting.RED);
     private final List<QuestionScreen.Solution> crashSolutions = List.of(
@@ -51,6 +62,23 @@ public class ClientExtra extends BaseModule {
             //must disconnect from server here
             QuestionScreen screen = new QuestionScreen(questionCrash, crashSolutions);
             checkClientData(screen);
+        }
+    }
+
+    public void onNetworkException(Event<Packet<?>> event){
+        if(noNtwException.get()){
+            Packet<?> packet = event.context();
+            PacketListener listener = event.getArgs(0);
+            Exception exception = event.getArgs(1);
+            if(mc.player != null){
+                Debug.chat(Text.literal("Error while handling a network packet: ").formatted(Formatting.RED).append(Text.literal(packet.getClass().getSimpleName())));
+                Debug.chat(Text.literal( exception.getMessage() == null ? "Exception: null": exception.getMessage()));
+            }
+            Debug.info("Packet Exception INFO :" );
+            Debug.info("  PacketListener : ", listener);
+            Debug.info("  Packet :", packet);
+            Debug.info("Exception StackTrace:");
+            Debug.info(exception);
         }
     }
 

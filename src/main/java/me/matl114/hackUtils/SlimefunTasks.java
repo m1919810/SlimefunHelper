@@ -29,6 +29,8 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.ScheduleService;
 import me.matl114.utils.*;
 import me.matl114.utils.UtilClass.*;
+import me.matl114.utils.UtilClass.commands.AbstractMainCommand;
+import me.matl114.utils.UtilClass.commands.SubCommand;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -2162,7 +2164,7 @@ public class SlimefunTasks {
         }
     }
 
-    public static class SlimefunCommands extends AbstractMainCommand{
+    public static class SlimefunCommands extends AbstractMainCommand {
         public SubCommand main = genMainCommand("sf");
         public SubCommand give = new SubCommand("give", genArgument("id","amount"), "sf give <id> <amount:default 1> 获取粘液物品(以指令形式)"){
             @Override

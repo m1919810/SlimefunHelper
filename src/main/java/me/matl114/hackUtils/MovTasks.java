@@ -365,23 +365,23 @@ public class MovTasks {
 //        boolean shouldCheckSpeed = ! mc.player.isFallFlying() || (! mc.world.getGameRules().getBoolean(GameRules.DISABLE_ELYTRA_MOVEMENT_CHECK));
 //        double maxOnceLen = (mc.player.isFallFlying()? (10 * Math.sqrt(3)) : 10) - 1E-2;
         //filter front not-needed packets
-        List<StepActionBundle> bundleList = createMovingPacketsForMovSequence(context, deltaMovements, allowNextTick, considerNoFall);
-        for (int i=0; i < bundleList.size() ; ++i){
-            if(bundleList.get(i).success){
-                bundleList.get(i).run();
-            }else{
-                if(allowNextTick){
-                    List<MovInfo> leftTasks = deltaMovements.subList(i, deltaMovements.size());
-                    Tasks.scheduleDelayed(()->{
-                        scheduleFarawayMoveInternal(leftTasks, allowNextTick, context.resetTick(), considerNoFall);
-                    }, 1);
-                    return;
-                }else{
+        if(true){
+            List<StepActionBundle> bundleList = createMovingPacketsForMovSequence(context, deltaMovements, allowNextTick, considerNoFall);
+            for (int i=0; i < bundleList.size() ; ++i){
+                if(bundleList.get(i).success){
                     bundleList.get(i).run();
+                }else{
+                    if(allowNextTick){
+                        List<MovInfo> leftTasks = deltaMovements.subList(i, deltaMovements.size());
+                        Tasks.scheduleDelayed(()->{
+                            scheduleFarawayMoveInternal(leftTasks, allowNextTick, context.resetTick(), considerNoFall);
+                        }, 1);
+                        return;
+                    }else{
+                        bundleList.get(i).run();
+                    }
                 }
             }
-        }
-        if(true){
             return;
         }
         {
@@ -573,7 +573,7 @@ public class MovTasks {
         }
 
         public void addPost(Runnable task){
-            tasks.add(task);
+            postTasks.add(task);
         }
 
         public void run(){
@@ -656,6 +656,11 @@ public class MovTasks {
 ////                    Debug.info("UnReachable ");
 //                    return packets;
 //                }
+                if(maxTokenNeeded > 20 - deltaMovements.size()){
+                    //unable to reach so faraway
+//                    Debug.info("UnReachable ");
+                    return packets;
+                }
                 for (int  i = 0; i < maxTokenNeeded; ++i){
                     context.currentTokenLimit.set(20);
                     context.currentTokenInTick.incrementAndGet();
@@ -671,7 +676,6 @@ public class MovTasks {
             }
         }
         //calculate tokens depends on paper sourceocode
-
         for (int i = 0; i < deltaMovements.size(); ++i){
             MovInfo info = deltaMovements.get(i);
             Vec3d fromNow = context.from.getValue();
@@ -691,7 +695,7 @@ public class MovTasks {
                     packets.get(i + emptyMoveCnt).add(()-> mc.player.setOnGround(of));
 //                    mc.player.setOnGround(info.oGroundOverride);
                 }
-                boolean hasRot = info.rotationOverride != null && Objects.equals(info.rotationOverride, currentPitchYaw);
+                boolean hasRot = info.rotationOverride != null && ! Objects.equals(info.rotationOverride, currentPitchYaw);
                 if(hasRot){
                     currentPitchYaw = new Vec2f(info.rotationOverride.x, info.rotationOverride.y);
                     final float px = currentPitchYaw.x;
@@ -721,6 +725,19 @@ public class MovTasks {
                     if(allowFailure && context.currentTokenInTick.get() > Math.max(5, context.currentTokenLimit.get())){
                         //
                         packets.get(i + emptyMoveCnt).failure();
+                        if(considerNoFall && i > 0){
+                            if(Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1){
+
+//                                mc.player.fallDistance = MovTasks. FORCE_RESET_DISTANCE;
+                                //in case that resync packet cause OnGround falldamage
+                                packets.get( i - 1 + emptyMoveCnt).addPost(()->{
+                                    ClientPlayerAccess.of(mc.player).setForceNoFall(true);
+                                    mc.player.setOnGround(false);
+                                });
+                            }
+                        }
+                        //return here because of MovingContext currentPosition
+                        return packets;
                     }
                 }
                 context.currentTokenLimit.decrementAndGet();
@@ -731,7 +748,7 @@ public class MovTasks {
                     final boolean of = currentOnGround;
                     packets.get(i + emptyMoveCnt).add(()-> mc.player.setOnGround(of));
                 }
-                boolean hasRot = info.rotationOverride != null && Objects.equals(info.rotationOverride, currentPitchYaw);
+                boolean hasRot = info.rotationOverride != null && ! Objects.equals(info.rotationOverride, currentPitchYaw);
                 if(hasRot){
                     currentPitchYaw = new Vec2f(info.rotationOverride.x, info.rotationOverride.y);
                     final float px = currentPitchYaw.x;

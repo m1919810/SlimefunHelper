@@ -21,6 +21,7 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.crash.CrashException;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
@@ -112,18 +113,25 @@ public class RenderMain {
     @Getter
     private static final ListenerPoint<Event<MatrixStack>> renderLayerTasks = new ListenerPoint<>();
     public static void renderMoreTasks(MatrixStack stack, float tickDelta){
+
+
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
 //        GL11.glEnable(GL11.GL_BLEND);
 //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 //        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        try{
+            // This stack start with the position with RenderUtils.getCameraPose();
+            Event<MatrixStack> renderEvent = new Event<>(stack, false, false, tickDelta);
+            //TODO: fix this with event
+            renderLayerTasks.handleValue(renderEvent);
+        }catch (ConcurrentModificationException | NullPointerException | CrashException e){
+            Debug.info("Error while handling Render Event:", e.getMessage());
+        }finally {
+            GL11.glDisable(GL11.GL_LINE_SMOOTH);
+        }
 
-        // This stack start with the position with RenderUtils.getCameraPose();
-        Event<MatrixStack> renderEvent = new Event<>(stack, false, false, tickDelta);
-        //TODO: fix this with event
-        renderLayerTasks.handleValue(renderEvent);
 //        GL11.glEnable(GL11.GL_DEPTH_TEST);
 //        GL11.glDisable(GL11.GL_BLEND);
-        GL11.glDisable(GL11.GL_LINE_SMOOTH);
 
     }
     @Getter

@@ -260,9 +260,7 @@ public class Configs {
     public static final String[] TEST_ARGS2={"test","arg2"};
     public static final String[] TEST_MOVEMENT_TEST = {"test", "movement-test-1"};
     public static final String[] CLIENT_BRAND_NAME ={"other", "client-brand-name"};
-    public static final String[] IGNORE_PROTOCOL_ERROR = {
-        "other", "no-disconnect-on-network-error"
-    };
+
     public static final String[] PORTAL_GUI = {
         "other", "keep-gui-open-on-portal"
     };
@@ -275,7 +273,6 @@ public class Configs {
         .defaultVal(461,TEST_ARGS2)
         .defaultVal(false, TEST_MOVEMENT_TEST)
         .defaultVal("", CLIENT_BRAND_NAME)
-        .defaultVal(false, IGNORE_PROTOCOL_ERROR)
         .defaultVal(true, PORTAL_GUI)
         .defaultVal(false, FAKE_SPRINT_TEST)
         .save();
@@ -499,6 +496,7 @@ public class Configs {
         .defaultVal("{}", SEED_MAP)
         .save()
         ;
+
 
     public static final String[] MODEL_PROTECT = {"model-config", "enable-block-model-protect"};
     public static final String[] SLIMEFUN_MODEL_ID = {"model-config", "enable-slimefun-cmd-override"};

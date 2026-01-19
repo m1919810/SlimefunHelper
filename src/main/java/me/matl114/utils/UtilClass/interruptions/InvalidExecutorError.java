@@ -1,6 +1,6 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.UtilClass.interruptions;
 
-import org.bukkit.command.CommandSender;
+import net.minecraft.entity.player.PlayerEntity;
 
 public class InvalidExecutorError extends ArgumentException {
     boolean s;
@@ -10,7 +10,7 @@ public class InvalidExecutorError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(PlayerEntity sender, InterruptionHandler command) {
         command.handleExecutorInvalid(sender, s);
     }
 }

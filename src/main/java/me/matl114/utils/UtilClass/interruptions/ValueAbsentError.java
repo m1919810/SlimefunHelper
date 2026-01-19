@@ -1,14 +1,14 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.UtilClass.interruptions;
 
 import lombok.AllArgsConstructor;
-import me.matl114.matlib.common.lang.annotations.Note;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.SimpleCommandArgs;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.UtilClass.commands.ArgumentReader;
+import me.matl114.utils.UtilClass.commands.SimpleCommandArgs;
+import net.minecraft.entity.player.PlayerEntity;
+
 
 import javax.annotation.Nullable;
 
-@Note("interrupt when no value present at this argument")
+
 @AllArgsConstructor
 public class ValueAbsentError extends ArgumentException {
     @Nullable
@@ -24,7 +24,7 @@ public class ValueAbsentError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(PlayerEntity sender, InterruptionHandler command) {
         command.handleValueAbsent(sender, reader, argument);
     }
 }

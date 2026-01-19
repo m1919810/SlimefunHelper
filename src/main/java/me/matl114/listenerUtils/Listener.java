@@ -315,6 +315,10 @@ public class Listener {
     private static final ListenerPoint<Event<Void>> preTick = new ListenerPoint<>();
     @Getter
     private static final ListenerPoint<Event<Void>> postTick = new ListenerPoint<>();
+
+    @Getter
+    private static final ListenerPoint<Event<ClientPlayerEntity>> gameTick = new ListenerPoint<>();
+
     @Getter
     private static final ListenerPoint<Event<Void>> preHandleInput = new ListenerPoint<>();
     @Getter
@@ -381,6 +385,9 @@ public class Listener {
 
     @Getter
     private static final ListenerPoint<Event<MinecraftClient>> clientMainExit = new ListenerPoint<>();
+
+    @Getter
+    private static final ListenerPoint<Event<Packet<?>>> packetListenerException = new ListenerPoint<>();
 
 
     static{
