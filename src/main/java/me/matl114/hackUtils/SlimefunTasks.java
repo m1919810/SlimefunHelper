@@ -29,8 +29,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.ScheduleService;
 import me.matl114.utils.*;
 import me.matl114.utils.UtilClass.*;
-import me.matl114.utils.UtilClass.commands.AbstractMainCommand;
-import me.matl114.utils.UtilClass.commands.SubCommand;
+import me.matl114.utils.UtilClass.commands.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -2165,45 +2164,65 @@ public class SlimefunTasks {
     }
 
     public static class SlimefunCommands extends AbstractMainCommand {
-        public SubCommand main = genMainCommand("sf");
-        public SubCommand give = new SubCommand("give", genArgument("id","amount"), "sf give <id> <amount:default 1> 获取粘液物品(以指令形式)"){
-            @Override
-            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
-                var re = parseInput(var4).getFirst();
-                String id = re.nextNonnull();
-                if(check().ALL_RECIPE_ENTRY.containsKey(id)){
-                    SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(id);
-                    ItemStack itemStack = entry.output().copyWithCount(re.nextInt());
-                    String giveCommand = InvTasks.createGiveCommand(itemStack);
-                    ChatTasks.sendMessage(giveCommand, true);
-                }else {
-                    Debug.chat("不存在的id: ", id);
-                }
-                return true;
+
+        public TreeSubCommand main = mainBuilder()
+            .name("sf")
+            .build();
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                .name("give")
+                .helper("<id> <amount:default 1> 获取粘液物品(以指令形式)")
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("id")
+                        .tabSupplier(()-> check().ALL_RECIPE_ENTRY.keySet().stream())
+                        .build()
+                ).arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("amount")
+                        .intValue(1)
+                        .build()
+                ).post(e -> e.executor(CommandContext.run(this::onGive)))
+                .complete();
+        }
+        public void onGive(ArgumentInputStream re){
+            String id = re.nextNonnull();
+            if(check().ALL_RECIPE_ENTRY.containsKey(id)){
+                SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(id);
+                ItemStack itemStack = entry.output().copyWithCount(re.nextInt());
+                String giveCommand = InvTasks.createGiveCommand(itemStack);
+                ChatTasks.sendMessage(giveCommand, true);
+            }else {
+                Debug.chat("不存在的id: ", id);
             }
         }
-            .setTabCompletor("id", ()->check().ALL_RECIPE_ENTRY.keySet().stream().toList())
-            .setInt("amount", 1)
-            .register(this);
-        public SubCommand view = new SubCommand("view", genArgument("id"), "sf view <id> 打开对应物品的配方展示页面"){
-            @Override
-            public boolean onCommand(ClientPlayerEntity var1, String var3, String[] var4) {
-                var re = parseInput(var4).getFirst();
-                String id = re.nextNonnull();
-                if(check().ALL_RECIPE_ENTRY.containsKey(id)){
-                    SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(id);
-                    if(entry != null)
-                        handleOpenRecipeEntryScreen(entry);
-                    else
-                        Debug.chat("未知错误!");
-                }else {
-                    Debug.chat("不存在的id: ", id);
-                }
-                return true;
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                .name("view")
+                .helper("<id> 打开对应物品的配方展示页面")
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("id")
+                        .tabSupplier(()-> check().ALL_RECIPE_ENTRY.keySet().stream())
+                        .build()
+                ).post(e -> e.executor(CommandContext.run(this::onView)))
+                .complete();
+        }
+
+        public void onView(ArgumentInputStream re){
+            String id = re.nextNonnull();
+            if(check().ALL_RECIPE_ENTRY.containsKey(id)){
+                SlimefunRecipeEntry entry = check().ALL_RECIPE_ENTRY.get(id);
+                if(entry != null)
+                    handleOpenRecipeEntryScreen(entry);
+                else
+                    Debug.chat("未知错误!");
+            }else {
+                Debug.chat("不存在的id: ", id);
             }
         }
-            .setTabCompletor("id", ()->check().ALL_RECIPE_ENTRY.keySet().stream().toList())
-            .register(this);
+
+
     }
     static{
         ChatTasks.registerSubCommands("sf", SlimefunCommands::new);

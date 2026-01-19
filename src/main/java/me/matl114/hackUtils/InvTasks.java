@@ -464,6 +464,7 @@ public class InvTasks {
     private static final Config.FlagRef autoTotem = Configs.INV_CONFIG.getBoolean(Configs.AUTO_INV_AUTO_TOTEM);
     private static final Config.EnumRef<Configs.AutoInvMode> autoTotemMode = Configs.INV_CONFIG.getEnum(Configs.AUTO_INV_TOTEM_MODE);
     //fixme: do not grab menu
+    //todo: move to combat
     public static void autoTotem(ClientPlayerEntity player, Screen screen, int time){
         if(autoTotem.get()){
             ScreenHandler handled = screen instanceof HandledScreen<?> h ? h.getScreenHandler(): player.currentScreenHandler;
@@ -473,7 +474,7 @@ public class InvTasks {
 
                     List<Slot> slots = handled.slots;
                     for (var i = 0; i < slots.size(); ++ i){
-                        if(slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING){
+                        if(slots.get(i).inventory instanceof PlayerInventory && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING){
                             clickSlotAsync(i, 40, SlotActionType.SWAP);
                             return;
                         }
@@ -484,7 +485,7 @@ public class InvTasks {
                 IntList totemList = new IntArrayList();
                 List<Slot> slots = handled.slots;
                 for (var i = 0; i < slots.size(); ++ i){
-                    if(slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING && i != offHandSlot){
+                    if(slots.get(i).inventory instanceof PlayerInventory && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING && i != offHandSlot){
                         totemList.add(i);
                     }
                 }

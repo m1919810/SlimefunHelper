@@ -1,6 +1,7 @@
 package me.matl114.utils.UtilClass.interruptions;
 
-import org.bukkit.command.CommandSender;
+
+import net.minecraft.entity.player.PlayerEntity;
 
 public class LogicalError extends ArgumentException {
     String message;
@@ -10,7 +11,7 @@ public class LogicalError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(PlayerEntity sender, InterruptionHandler command) {
         command.handleLogicalError(sender, message);
     }
 }
