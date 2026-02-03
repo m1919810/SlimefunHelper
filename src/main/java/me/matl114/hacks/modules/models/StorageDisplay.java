@@ -85,12 +85,17 @@ public class StorageDisplay extends BaseModule {
     private final Map<ItemStack, ItemStackWithTimeStamp> storageItemStackCache = new Object2ReferenceOpenCustomHashMap<>(new Hash.Strategy<ItemStack>() {
         @Override
         public int hashCode(ItemStack o) {
-            return ItemStack.hashCode(o);
+            return o != null ? ItemStack.hashCode(o) : 0;
         }
 
         @Override
         public boolean equals(ItemStack a, ItemStack b) {
-            return ItemStack.areItemsAndComponentsEqual(a, b);
+            if(a != null && b != null){
+                return ItemStack.areItemsAndComponentsEqual(a, b);
+            }else{
+                return a == b;
+            }
+
         }
     });
     private final long updateIntervalMs = 1000;
@@ -106,6 +111,7 @@ public class StorageDisplay extends BaseModule {
                 ItemStackWithTimeStamp timeStamp = storageItemStackCache.get(stack);
                 if(timeStamp == null || timeStamp.lastUpdated < System.currentTimeMillis() - updateIntervalMs){
                     BukkitItemStack stored;
+
                     if((stored=getNetworkStoraged(tag))!=null){
 
                     }

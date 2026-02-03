@@ -57,38 +57,41 @@ public class AttackArua extends BaseModule {
 
     public void onTick(Event<ClientPlayerEntity> tickEvent){
         if(mc.player == null)return;
-        Attack attack = CombatTasks.getAttack();
-        boolean holdingWeapon = CombatTasks.isHoldingWeapon(mc.player);
-        //force consider attack interval legal mode
-        if(attack.legalMode.get()){
-            if(++interval <= 2){
-                return;
-            }
-        }
-        interval = 0;
-        if(attack.legalMode.get() || ((holdingWeapon && cooldownWeapon.get()) ||(!holdingWeapon && cooldownHand.get()))){
-            //do not attack because of legal mode
-
-            if(mc.player.getAttackCooldownProgress(0.5F) > 0.98){
-                //ready for attack
-                //force attack
-                //十分之七的概率当前攻击， 以此制作概率性的攻击时延
-                if(timeRandom.nextInt(10) > 6){
-                    attack.tryAttack(true);
+        if(enable.get()){
+            Attack attack = CombatTasks.getAttack();
+            boolean holdingWeapon = CombatTasks.isHoldingWeapon(mc.player);
+            //force consider attack interval legal mode
+            if(attack.legalMode.get()){
+                if(++interval <= 2){
+                    return;
                 }
             }
-        }else{
-            //attack! attack! attack!
-            List<Entity> targets = attack.getCurrentRangeEntities();
-            int max = maxTargetPerTick.get();
-            if(!targets.isEmpty()) {
-                for (Entity target : targets) {
-                    if(attack.attackEntity(target))break;
-                    if( -- max <= 0){
-                        return;
+            interval = 0;
+            if(attack.legalMode.get() || ((holdingWeapon && cooldownWeapon.get()) ||(!holdingWeapon && cooldownHand.get()))){
+                //do not attack because of legal mode
+
+                if(mc.player.getAttackCooldownProgress(0.5F) > 0.98){
+                    //ready for attack
+                    //force attack
+                    //十分之七的概率当前攻击， 以此制作概率性的攻击时延
+                    if(timeRandom.nextInt(10) > 6){
+                        attack.tryAttack(true);
+                    }
+                }
+            }else{
+                //attack! attack! attack!
+                List<Entity> targets = attack.getCurrentRangeEntities();
+                int max = maxTargetPerTick.get();
+                if(!targets.isEmpty()) {
+                    for (Entity target : targets) {
+                        if(attack.attackEntity(target))break;
+                        if( -- max <= 0){
+                            return;
+                        }
                     }
                 }
             }
         }
+
     }
 }

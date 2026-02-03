@@ -70,6 +70,7 @@ public class RenderExtra extends BaseModule {
     public final StringRef noEffectTypes = builder(Configs.RENDER_CONFIG, RENDER_NO_EFFECT_TYPES, String.class)
         .defaultValue("^(blindness|darkness|nausea)$")
         .validator(Configs.REGEX_VALIDATOR)
+        .updateListener(this::parseEffects)
         .build();
 
 

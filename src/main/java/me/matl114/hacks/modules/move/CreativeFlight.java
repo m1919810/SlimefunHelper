@@ -43,9 +43,11 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         }
         instance.setDelegate(this::cast);
     }
-    public final FlagRef canFly = builder(Configs.TOGGLE_CONFIG, Boolean.class)
-        .path(TOGGLE_FLIGHT)
+    public final FlagRef canFly = toggle(TOGGLE_FLIGHT)
         .defaultValue(false)
+        .build();
+
+    public final KeyBindRef keybind = toggleHotkey(TOGGLE_FLIGHT, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_F))
         .build();
 
     public final FlagRef doAntiKick = builder(Configs.MOV_CONFIG
@@ -71,8 +73,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         .defaultValue(0.4)
         .build();
 
-    public final KeyBindRef overridingSpeedKeybind = builder(Configs.MOV_CONFIG, MultiKeyBind.class)
-        .path(MOVE_SPEED_OVERRIDE_TASK)
+    public final KeyBindRef overridingSpeedKeybind = hotkey(MOVE_SPEED_OVERRIDE_TASK)
         .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL,KeyCode.KEY_LEFT_BRACKET))
         .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleSpeed))
         .build();

@@ -9,6 +9,7 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 
 
 import javax.annotation.Nonnull;
@@ -17,7 +18,7 @@ import static me.matl114.utils.ItemStackUtils.*;
 
 public class BukkitItemStackUtils {
     public static ConfigurationSerializableDataType<BukkitItemStack> DATATYPE_MOCKITEMSTACK=new ConfigurationSerializableDataType(BukkitItemStack.class);
-   // public static ItemStack STACK_FORBIDDEN=new ItemStack(Items.BARRIER,1);
+    public static ItemStack STACK_FORBIDDEN=new ItemStack(Items.BARRIER,1);
     public static void init(){
         Debug.info("Bukkit ItemStack Utils enabled");
     }

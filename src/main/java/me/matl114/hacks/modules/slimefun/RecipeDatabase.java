@@ -389,6 +389,10 @@ public class RecipeDatabase extends BaseModule {
     public static record CraftingType(String id, ItemStackDataWithAmount icon){
         public static final CraftingType EMPTY = new CraftingType("NULL", new ItemStackDataWithAmount(ItemStackData.wrapCopy(ITEM_NULL_TYPE), 1));
 
+        private CraftingType(Optional<String> id, Optional<ItemStackDataWithAmount> con){
+            this(id.orElse(""), con.orElse(ItemStackDataWithAmount.EMPTY));
+        }
+
         public ItemStack iconStack(){
             return icon.getAsItemStack();
         }
@@ -396,8 +400,8 @@ public class RecipeDatabase extends BaseModule {
 
         public static Codec<CraftingType> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                Codec.STRING.fieldOf("rid").forGetter(CraftingType::id),
-                InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC.fieldOf("icon").forGetter(CraftingType::icon)
+                Codec.STRING.optionalFieldOf("rid").forGetter(v -> Optional.of(v.id())),
+                InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC.optionalFieldOf("icon").forGetter(v -> Optional.of(v.icon()))
             ).apply(instance, CraftingType::new)
         );
     }
@@ -418,6 +422,10 @@ public class RecipeDatabase extends BaseModule {
         final ItemStack[] finalizedIngredients;
        final   ItemStack finalizedOutput;
 
+        private SlimefunRecipeEntry(Optional<String> rid, Optional<String> id, Optional<List<ItemStackDataWithAmount>> ingredientEntry, Optional<ItemStackDataWithAmount> output){
+            this(rid.orElse(""), id.orElse(""), ingredientEntry.orElseGet(List::of), output.orElse(ItemStackDataWithAmount.EMPTY));
+        }
+
         public SlimefunRecipeEntry(String rid, String id, List<ItemStackDataWithAmount> ingredientEntry, @NonNull ItemStackDataWithAmount output){
             this.rid = rid;
             this.id = id;
@@ -432,7 +440,6 @@ public class RecipeDatabase extends BaseModule {
             finalizedIngredients = itemStacks;
             this.output = output;
             this.finalizedOutput = output.getAsItemStack();
-
         }
 
 
@@ -463,10 +470,10 @@ public class RecipeDatabase extends BaseModule {
 
         public static final Codec<SlimefunRecipeEntry> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                Codec.STRING.fieldOf("rid").forGetter(SlimefunRecipeEntry::rid),
-                Codec.STRING.fieldOf("id").forGetter(SlimefunRecipeEntry::id),
-                Codec.list(InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC).fieldOf("ingredient").forGetter(SlimefunRecipeEntry::getIngredientData),
-                InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC.fieldOf("output").forGetter(SlimefunRecipeEntry::getOutputData)
+                Codec.STRING.optionalFieldOf("rid").forGetter(v -> Optional.of(v.rid())),
+                Codec.STRING.optionalFieldOf("id").forGetter(v -> Optional.of(v.id())),
+                Codec.list(InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC).optionalFieldOf("ingredient").forGetter(v -> Optional.of(v.getIngredientData())),
+                InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC.optionalFieldOf("output").forGetter(v -> Optional.of(v.getOutputData()))
             ).apply(instance, SlimefunRecipeEntry::new)
         );
     }

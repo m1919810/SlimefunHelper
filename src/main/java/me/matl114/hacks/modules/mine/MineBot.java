@@ -187,7 +187,8 @@ public class MineBot  extends BaseModule {
                 }
                 durabilityLimit = (durMultiply * (instaMine ? maxInstaMine.get() : 2)) / multiply;
             }else{
-                durabilityLimit = 0;
+                // it is not a tool
+                return true;
             }
             int max = Math.max(minDurLimit , durabilityLimit);
             if(!item.isEmpty() && item.getDamage() > item.getMaxDamage() - max){

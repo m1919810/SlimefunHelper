@@ -126,7 +126,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 //                }
 
         if(isActive()){
-            if(toggleRunning ){
+            if(toggleRunning){
                 //5刻后达到最高点
                 runTicks += 1;
                 if(runTicks >= ticksEnd){
