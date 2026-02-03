@@ -6,6 +6,7 @@ import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.combat.*;
 import me.matl114.utils.*;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
@@ -44,12 +45,7 @@ public class CombatTasks {
 
     public static boolean notSuitableForAttack(ItemStack item){
         return item.isEmpty() || (!ItemStackUtils.hasInPatch(item, DataComponentTypes.ATTRIBUTE_MODIFIERS)
-            && notSuitableForAttack(item.getItem()));
-    }
-    public static boolean notSuitableForAttack(Item item){
-        return ((item instanceof MiningToolItem && !(item instanceof AxeItem))||
-            //非重锤 非工具
-            (!(item instanceof MaceItem) &&!(item instanceof ToolItem))) ;
+            && (!VItem.getInstance().isWeapon(item)));
     }
 
 

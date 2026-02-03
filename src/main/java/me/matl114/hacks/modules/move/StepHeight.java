@@ -9,6 +9,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.events.Event;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Vec3d;
@@ -133,7 +134,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 
                     ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
                     if(!player.isOnGround()){
-                        Vec3d vec3d2 = new Vec3d((double)player.input.movementSideways, 0.0, (double)player.input.movementForward);
+                        Vec3d vec3d2 = new Vec3d((double)player.sidewaysSpeed, 0.0, (double)player.forwardSpeed);
                         Vec3d vec3d0 = player.getVelocity();
                         Vec3d movement = //new Vec3d(vec3d0.x, 0, vec3d0.z)
                             vec3d0.add( EntityUtils.movementInputToVelocity(vec3d2, player.getMovementSpeed(), player.getYaw()));
@@ -147,7 +148,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 //                        movementManagerEvent.context.playerStatus.restorePos();
                             //fixme: optimize this check
                             movementManagerEvent.context.playerStatus.entity.setOnGround(true);
-                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+                            mc.getNetworkHandler().sendPacket(VPacket.newOnGroundOnly(true, player.horizontalCollision));
                             return;
                         }player.setOnGround(false);
                     }

@@ -11,6 +11,7 @@ import me.matl114.utils.*;
 import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.events.Event;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -82,11 +83,11 @@ public class MovTasks {
                 //boolean mc.world.getGameRules().get()
                 if(packetNum > 0)
                     for (var p = 0 ; p <= packetNum; ++p)
-                        mc.getNetworkHandler().sendPacket(new VehicleMoveC2SPacket(vehicle));
+                        mc.getNetworkHandler().sendPacket(VPacket.newVehicleMove(vehicle));
             }
             double deltaY = vehicle.getY() - mc.player.getY();
             vehicle.setPosition(to.add(0, deltaY, 0));
-            mc.getNetworkHandler().sendPacket(new VehicleMoveC2SPacket(vehicle));
+            mc.getNetworkHandler().sendPacket(VPacket.newVehicleMove(vehicle));
             if(updatePlayer){
                 mc.player.setPosition(to);
             }
@@ -100,13 +101,13 @@ public class MovTasks {
                 //boolean mc.world.getGameRules().get()
                 if(packetNum > 0)
                     for (var p = 0 ; p <= packetNum; ++p)
-                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(mc.player.isOnGround()));
+                        mc.getNetworkHandler().sendPacket(VPacket.newOnGroundOnly(mc.player.isOnGround(), false));
             }
 
             if(onGroundOverride != null){
                 mc.player.setOnGround(onGroundOverride);
             }
-            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(to.getX(), to.getY(), to.getZ(), mc.player.isOnGround()));
+            mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(to.getX(), to.getY(), to.getZ(), mc.player.isOnGround(), false));
             if(updatePlayer)
                 mc.player.setPosition(to);
         }
@@ -115,9 +116,9 @@ public class MovTasks {
         Entity entity = mc.player.getRootVehicle();
         if(Objects.equals(to, mc.player.getPos())){
             if(mc.player.hasVehicle()){
-                mc.getNetworkHandler().sendPacket(new VehicleMoveC2SPacket(entity));
+                mc.getNetworkHandler().sendPacket(VPacket.newVehicleMove(entity));
             }else{
-                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(onGroundOverride != null ? onGroundOverride :   mc.player.isOnGround()));
+                mc.getNetworkHandler().sendPacket(VPacket.newOnGroundOnly(onGroundOverride != null ? onGroundOverride :   mc.player.isOnGround(), false));
             }
         }else{
             double deltaY = entity.getY() - mc.player.getY();
@@ -126,9 +127,9 @@ public class MovTasks {
             entity.setPosition(to.add(0, deltaY, 0));
             mc.player.setPosition(to);
             if(mc.player.hasVehicle()){
-                mc.getNetworkHandler().sendPacket(new VehicleMoveC2SPacket(entity));
+                mc.getNetworkHandler().sendPacket(VPacket.newVehicleMove(entity));
             }else{
-                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(to.getX(), to.getY(), to.getZ(),onGroundOverride != null ? onGroundOverride :   mc.player.isOnGround()));
+                mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(to.getX(), to.getY(), to.getZ(),onGroundOverride != null ? onGroundOverride :   mc.player.isOnGround(), false));
             }
         }
 
@@ -232,173 +233,6 @@ public class MovTasks {
                 }
             }
             return;
-        }
-        {
-            boolean startFirstMove = false;
-            List<MovInfo> moveList = new ArrayList<>();
-            Vec3d currentVec330 = context.from.getValue();
-            for (int i = 0; i < deltaMovements.size(); ++i){
-                //filter packets that are not removing at the front
-                if(!startFirstMove && deltaMovements.get(i).vec3d().subtract(currentVec330).lengthSquared() < 1E-4){
-                    continue;
-                }else{
-                    startFirstMove = true;
-                    moveList.add(deltaMovements.get(i));
-                }
-            }
-            if(moveList.isEmpty())return;
-            deltaMovements = moveList;
-        }
-
-        boolean firstMove = true;
-        Vec3d originalPositionTick = context.tickFirstGoodVec.getValue();
-        boolean riding = mc.player.hasVehicle();
-        Entity rootEntity = mc.player.getRootVehicle();
-        double deltaY = rootEntity.getY() - mc.player.getY();
-        double minY = context.from.getValue().y;
-        double maxY = minY;
-        //calculate current tokens if it is the first move of the tick
-        if(context.currentTokenInTick.get() == 0){
-            //gain tokens
-            int maxTokenNeeded = 0;
-            Vec3d lastPos = originalPositionTick;
-            int packetCount = 0;
-            for (var move: deltaMovements){
-                packetCount += 1;
-                Vec3d movingPos = move.vec3d();
-                Vec3d movement = movingPos.subtract(lastPos);
-
-                lastPos = movingPos;
-                double d7 = movement.length();
-                double d8 = movingPos.subtract(originalPositionTick).length();
-                double d10  = Math.max(d7, d8);
-                //比如
-                //使用 9 9 9 9 9作为移动的， 每次packet + 1
-                //即使不用token,d10也不会超过packetNum * (...)
-
-                int tokenNeeded = ((int) Math.ceil (d10/ 9.9)) - packetCount;
-                maxTokenNeeded = Math.max(maxTokenNeeded, tokenNeeded);
-            }
-//            Debug.info("check ", maxTokenNeeded);
-            if(maxTokenNeeded > 0){
-                //粗略估计
-                if(maxTokenNeeded > 20 - deltaMovements.size()){
-                    //unable to reach so faraway
-//                    Debug.info("UnReachable ");
-                    return;
-                }
-                for (int  i = 0; i < maxTokenNeeded; ++i){
-                    context.currentTokenLimit.set(20);
-                    context.currentTokenInTick.incrementAndGet();
-                    //  Debug.chat("send zero packet !",context.currentTokenInTick.get(), context.currentTokenLimit.get());
-                    if(riding){
-                        mc.getNetworkHandler().sendPacket(new VehicleMoveC2SPacket(rootEntity));
-                    }else{
-                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(mc.player.isOnGround()));
-                    }
-                }
-            }
-        }
-        //calculate tokens depends on paper sourceocode
-        var iter = deltaMovements.iterator();
-        while (iter.hasNext()){
-            MovInfo info = iter.next();
-            Vec3d fromNow = context.from.getValue();
-            Vec3d vec3d = info.vec3d().subtract(fromNow);
-            maxY = Math.max(maxY, info.vec3d().y);
-            minY = Math.min(minY, info.vec3d().y);
-            double len = vec3d.length();
-            double len2 = originalPositionTick.subtract(info.vec3d()).length();
-            double speedArg = 9.8;
-            if(len == 0 && len2 == 0){
-                //d10 is 0 server side, can regain token
-                context.currentTokenLimit.set(20);
-                context.currentTokenInTick.incrementAndGet();
-                if(info.oGroundOverride != null){
-                    mc.player.setOnGround(info.oGroundOverride);
-                }
-                boolean hasRot = info.rotationOverride != null;
-                if(hasRot){
-                    mc.player.setPitch(info.rotationOverride.x);
-                    mc.player.setYaw(info.rotationOverride.y);
-                }
-                if(riding){
-                    mc.getNetworkHandler().sendPacket(new VehicleMoveC2SPacket(rootEntity));
-                }else{
-                    if(hasRot){
-                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(mc.player.getYaw(), mc.player.getPitch(), mc.player.isOnGround()));
-                    }else{
-                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(mc.player.isOnGround()));
-                    }
-
-                }
-            }else{
-                int ExtraTokenNeeded = (int)Math.ceil (((Math.max(len, len2))/speedArg));;
-                //+1代表这个包发出去之后的结果
-                int tokenNow = context.currentTokenInTick.get() + 1;
-//            tokenLimit = Math.max(tokenLimit, 1);
-                //超出了tokenLimit, 会被强制重置为1（server side)
-                //需要把剩下的移动到下一个tick执行
-                if((Math.min( ExtraTokenNeeded, tokenNow) >= Math.max(5, context.currentTokenLimit.get()))){
-                    if(allowNextTick && context.currentTokenInTick.get() > Math.max(5, context.currentTokenLimit.get())){
-                        //
-                        if(firstMove)return;
-                        List<MovInfo> leftTasks = Stream.concat(Stream.of(info), Streams.of(deltaMovements)).toList();
-                        Tasks.scheduleDelayed(()->{
-                            scheduleFarawayMoveInternal(leftTasks, allowNextTick, context.resetTick(), considerNoFall);
-                        }, 1);
-                        if(considerNoFall){
-                            if(Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1){
-                                ClientPlayerAccess.of(mc.player).setForceNoFall(true);
-//                                mc.player.fallDistance = MovTasks. FORCE_RESET_DISTANCE;
-                                //in case that resync packet cause OnGround falldamage
-                                mc.player.setOnGround(false);
-                            }
-                        }
-                        return;
-                    }
-                }
-                context.currentTokenLimit.decrementAndGet();
-                context.currentTokenInTick.incrementAndGet();
-                //  Debug.chat("before move", context.currentTokenInTick.get(), context.currentTokenLimit.get());
-                if(info.oGroundOverride() != null){
-                    mc.player.setOnGround(info.oGroundOverride());
-                }
-                boolean hasRot = info.rotationOverride != null;
-                if(hasRot){
-                    mc.player.setPitch(info.rotationOverride.x);
-                    mc.player.setYaw(info.rotationOverride.y);
-                }
-                Vec3d to = info.vec3d();
-                if(riding){
-                    rootEntity.setPosition(to.add(0, deltaY, 0));
-                    var packet = new VehicleMoveC2SPacket(rootEntity);
-                    mc.getNetworkHandler().sendPacket(packet);
-                    context.from.setValue(to);
-                    if(info.updatePlayer()){
-                        mc.player.setPosition(to);
-                    }
-                }else{
-                    var packet = hasRot ? new PlayerMoveC2SPacket.Full(to.getX(), to.getY(), to.getZ(), mc.player.getYaw(), mc.player.getPitch(), mc.player.isOnGround()): new PlayerMoveC2SPacket.PositionAndOnGround(to.getX(), to.getY(), to.getZ(), mc.player.isOnGround());
-                    mc.getNetworkHandler().sendPacket(packet);
-                    //Debug.info("send packet schedule", packet.getX(0), packet.getY(0), packet.getZ(0), packet.isOnGround());
-                    context.from.setValue(to);
-                    if(info.updatePlayer())
-                        mc.player.setPosition(to);
-                }
-
-                //real first move
-                //zero packets is not seen as movement
-                firstMove = false;
-
-            }
-        }
-        if(considerNoFall){
-            if(Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1){
-               ClientPlayerAccess.of( mc.player).setForceNoFall(true);// = MovTasks. FORCE_RESET_DISTANCE;
-                //in case that resync packet cause OnGround falldamage
-                mc.player.setOnGround(false);
-            }
         }
     }
 
@@ -515,11 +349,11 @@ public class MovTasks {
                     context.currentTokenInTick.incrementAndGet();
                     //  Debug.chat("send zero packet !",context.currentTokenInTick.get(), context.currentTokenLimit.get());
                     if(riding){
-                        packets.get(emptyMoveCnt).add(new VehicleMoveC2SPacket(rootEntity));
+                        packets.get(emptyMoveCnt).add(VPacket.newVehicleMove(rootEntity));
 
                     }else{
-                        packets.get(emptyMoveCnt).add(new PlayerMoveC2SPacket.OnGroundOnly(currentOnGround));
-//                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(mc.player.isOnGround()));
+                        packets.get(emptyMoveCnt).add(VPacket.newOnGroundOnly(currentOnGround, false));
+//                        mc.getNetworkHandler().sendPacket(VPacket.newOnGroundOnly(mc.player.isOnGround()));
                     }
                 }
             }
@@ -555,12 +389,12 @@ public class MovTasks {
                     });
                 }
                 if(riding){
-                    packets.get(i + emptyMoveCnt).add(new VehicleMoveC2SPacket(rootEntity));
+                    packets.get(i + emptyMoveCnt).add(VPacket.newVehicleMove(rootEntity));
                 }else{
                     if(hasRot){
-                        packets.get(i + emptyMoveCnt).add(new PlayerMoveC2SPacket.LookAndOnGround(currentPitchYaw.y, currentPitchYaw.x, currentOnGround));
+                        packets.get(i + emptyMoveCnt).add(VPacket.newLookAndOnGround(currentPitchYaw.y, currentPitchYaw.x, currentOnGround, false));
                     }else{
-                        packets.get(i + emptyMoveCnt).add(new PlayerMoveC2SPacket.OnGroundOnly(currentOnGround));
+                        packets.get(i + emptyMoveCnt).add(VPacket.newOnGroundOnly(currentOnGround, false));
                     }
                 }
             }else{
@@ -615,10 +449,10 @@ public class MovTasks {
                             mc.player.setPosition(to);
                         }
                     });
-                    packets.get(i + emptyMoveCnt).add(new VehicleMoveC2SPacket(rootEntity));
+                    packets.get(i + emptyMoveCnt).add(VPacket.newVehicleMove(rootEntity));
                     context.from.setValue(to);
                 }else{
-                    var packet = hasRot ? new PlayerMoveC2SPacket.Full(to.getX(), to.getY(), to.getZ(), currentPitchYaw.y,  currentPitchYaw.x, currentOnGround): new PlayerMoveC2SPacket.PositionAndOnGround(to.getX(), to.getY(), to.getZ(), currentOnGround);
+                    var packet = hasRot ? VPacket.newFull(to.getX(), to.getY(), to.getZ(), currentPitchYaw.y,  currentPitchYaw.x, currentOnGround, false): VPacket.newPositionAndOnGround(to.getX(), to.getY(), to.getZ(), currentOnGround, false);
                     packets.get(i + emptyMoveCnt).add(packet);
                     if(info.updatePlayer()){
                         packets.get(i + emptyMoveCnt).add(()->{
@@ -1839,7 +1673,7 @@ public class MovTasks {
 //                                lastOnGroundHeight = args.getY();
 //
 //                                args.setPosition(args.getPos().add(0, + 1E-8, 0));
-//                                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround()));
+//                                mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround()));
 //                                noFallSetbackResponse = true;
 //
 //                            }
@@ -1852,7 +1686,7 @@ public class MovTasks {
 //                                lastOnGroundHeight = args.getY();
 //
 //                                args.setPosition(args.getPos().add(0, + 1E-8, 0));
-//                                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), false));
+//                                mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(args.getX(), args.getY() , args.getZ(), false));
 //                                noFallSetbackResponse = true;
 //                            }
 //                        }
@@ -1913,7 +1747,7 @@ public class MovTasks {
 //                                    counter = 0;
 //                                    lastOnGroundHeight = entity.pos.getY();
 ////todo: try send it eariler
-//                                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false));
+//                                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false));
 //                                    //todo: 测试终止横向动量 减少grimac发包
 ////                                    entity.entity.setPos(entity.pos.getX(), entity.entity.getY() , entity.pos.getZ());
 //                                    entity.entity.input.movementSideways = 0.0F;
@@ -2000,7 +1834,7 @@ public class MovTasks {
 ////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 74.7532000805212 29.17552569387324 false
 ////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.00133607911214 29.17552569387324 false
 ////                            [04:08:02] [Render thread/INFO] (SlimefunHelper) sending move PositionAndOnGround 51.04938473524123 75.16610936093821 29.17552569387324 false
-//                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+//                            mc.getNetworkHandler().sendPacket(VPacket.newOnGroundOnly(true));
 //                            //包吃住 不要过
 //                            noFallSetbackResponse = false;
 //                            ClientPlayerAccess.of(player).setForceNoFall(false);
@@ -2010,7 +1844,7 @@ public class MovTasks {
 //                            canDoJump = true;
 //                            waitTimeout = 0;
 //                            runningThisTick = false;
-////                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(player.getX(), player.getY(), player.getZ(),false));
+////                        mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(player.getX(), player.getY(), player.getZ(),false));
 //
 //
 //                        }else {

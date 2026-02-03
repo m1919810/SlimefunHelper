@@ -21,6 +21,7 @@ import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
+import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigLoader;
 import me.matl114.managers.config.FlagRef;
@@ -389,10 +390,6 @@ public class RecipeDatabase extends BaseModule {
     public static record CraftingType(String id, ItemStackDataWithAmount icon){
         public static final CraftingType EMPTY = new CraftingType("NULL", new ItemStackDataWithAmount(ItemStackData.wrapCopy(ITEM_NULL_TYPE), 1));
 
-        private CraftingType(Optional<String> id, Optional<ItemStackDataWithAmount> con){
-            this(id.orElse(""), con.orElse(ItemStackDataWithAmount.EMPTY));
-        }
-
         public ItemStack iconStack(){
             return icon.getAsItemStack();
         }
@@ -400,8 +397,8 @@ public class RecipeDatabase extends BaseModule {
 
         public static Codec<CraftingType> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                Codec.STRING.optionalFieldOf("rid").forGetter(v -> Optional.of(v.id())),
-                InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC.optionalFieldOf("icon").forGetter(v -> Optional.of(v.icon()))
+                Codec.STRING.optionalFieldOf("rid", "").forGetter(CraftingType::id),
+                InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC.optionalFieldOf("icon", ItemStackDataWithAmount.EMPTY).forGetter(CraftingType::icon)
             ).apply(instance, CraftingType::new)
         );
     }
@@ -421,10 +418,6 @@ public class RecipeDatabase extends BaseModule {
        final   ItemStackDataWithAmount output;
         final ItemStack[] finalizedIngredients;
        final   ItemStack finalizedOutput;
-
-        private SlimefunRecipeEntry(Optional<String> rid, Optional<String> id, Optional<List<ItemStackDataWithAmount>> ingredientEntry, Optional<ItemStackDataWithAmount> output){
-            this(rid.orElse(""), id.orElse(""), ingredientEntry.orElseGet(List::of), output.orElse(ItemStackDataWithAmount.EMPTY));
-        }
 
         public SlimefunRecipeEntry(String rid, String id, List<ItemStackDataWithAmount> ingredientEntry, @NonNull ItemStackDataWithAmount output){
             this.rid = rid;
@@ -447,13 +440,13 @@ public class RecipeDatabase extends BaseModule {
         public ItemStack[] inputs(){
             return finalizedIngredients;
         }
-        public Ingredient[] ingredient(){
-            Ingredient[] items = new Ingredient[9];
+        public RecipeIngredient[] ingredient(){
+            RecipeIngredient[] items = new RecipeIngredient[9];
             for (int i=0; i < finalizedIngredients.length; ++i){
-                items[i] = Ingredient.ofStacks( finalizedIngredients[i]) ;
+                items[i] = new RecipeIngredient( finalizedIngredients[i]) ;
             }
             for (int i = finalizedIngredients.length; i<9 ;++i){
-                items[i] = Ingredient.EMPTY;
+                items[i] = RecipeIngredient.EMPTY;
             }
             return items;
         }
@@ -468,12 +461,13 @@ public class RecipeDatabase extends BaseModule {
             return "SlimefunRecipeEntry[ rid = "+rid +" , id = "+id +" , ingredient = "+ ingredients.toString() + ", output = "+ output +" ]";
         }
 
+
         public static final Codec<SlimefunRecipeEntry> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                Codec.STRING.optionalFieldOf("rid").forGetter(v -> Optional.of(v.rid())),
-                Codec.STRING.optionalFieldOf("id").forGetter(v -> Optional.of(v.id())),
-                Codec.list(InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC).optionalFieldOf("ingredient").forGetter(v -> Optional.of(v.getIngredientData())),
-                InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC.optionalFieldOf("output").forGetter(v -> Optional.of(v.getOutputData()))
+                Codec.STRING.optionalFieldOf("rid", "").forGetter(SlimefunRecipeEntry::rid),
+                Codec.STRING.optionalFieldOf("id", "").forGetter(SlimefunRecipeEntry::id),
+                Codec.list(InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC).optionalFieldOf("ingredient", List.of()).forGetter(SlimefunRecipeEntry::getIngredientData),
+                InvTasks.CUSTOM_AMOUNT_ITEM_DATA_CODEC.optionalFieldOf("output", ItemStackDataWithAmount.EMPTY).forGetter(SlimefunRecipeEntry::getOutputData)
             ).apply(instance, SlimefunRecipeEntry::new)
         );
     }

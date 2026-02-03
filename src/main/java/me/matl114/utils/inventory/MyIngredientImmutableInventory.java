@@ -1,6 +1,7 @@
 package me.matl114.utils.inventory;
 
 import me.matl114.hacks.Tasks;
+import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -10,10 +11,10 @@ import net.minecraft.util.math.MathHelper;
 import java.util.Arrays;
 
 public class MyIngredientImmutableInventory implements Inventory {
-    public MyIngredientImmutableInventory(Ingredient[] val){
+    public MyIngredientImmutableInventory(RecipeIngredient[] val){
         this.ingredients = val;
     }
-    Ingredient[] ingredients;
+    RecipeIngredient[] ingredients;
     @Override
     public int size() {
         return ingredients.length;
@@ -21,10 +22,10 @@ public class MyIngredientImmutableInventory implements Inventory {
 
     @Override
     public boolean isEmpty() {
-        return Arrays.stream(ingredients).allMatch(Ingredient::isEmpty);
+        return Arrays.stream(ingredients).allMatch(RecipeIngredient::isEmpty);
     }
-    public ItemStack getCurrentItemStack(Ingredient ingredient) {
-        ItemStack[] itemStacks = ingredient.getMatchingStacks();
+    public ItemStack getCurrentItemStack(RecipeIngredient ingredient) {
+        ItemStack[] itemStacks = ingredient.matchingStack();
         return itemStacks.length == 0 ? ItemStack.EMPTY : itemStacks[MathHelper.floor(Tasks.getTick() / 30.0F) % itemStacks.length];
     }
     @Override

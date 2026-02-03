@@ -20,6 +20,7 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RaycastUtils;
 import me.matl114.events.Event;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.BlockItem;
@@ -143,7 +144,7 @@ public class Scaffold extends BaseModule {
 
     private void placeBlockMovement(Hand hand, BlockHitResult result){
         Vec2f rotation = EntityUtils.rotationToPitchYaw( result.getBlockPos().toCenterPos().subtract(mc.player.getEyePos()).normalize());
-        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(rotation.y, rotation.x, mc.player.isOnGround()));
+        mc.getNetworkHandler().sendPacket(VPacket.newLookAndOnGround(rotation.y, rotation.x, mc.player.isOnGround(), mc.player.horizontalCollision));
         InteractionTasks.placeBlock(hand, result);
     }
 

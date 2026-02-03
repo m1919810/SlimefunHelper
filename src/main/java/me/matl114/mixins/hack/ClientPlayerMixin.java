@@ -261,39 +261,39 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         this.lastYaw = 0;
     }
 
-    @Unique
-    public void syncLocationPackets(){
-        double d = this.getX() - this.lastX;
-        double e = this.getY() - this.lastBaseY;
-        double f = this.getZ() - this.lastZ;
-        double g = (double)(this.getYaw() - this.lastYaw);
-        double h = (double)(this.getPitch() - this.lastPitch);
-
-        boolean bl2 = MathHelper.squaredMagnitude(d, e, f) > MathHelper.square(2.0E-4) || this.ticksSinceLastPositionPacketSent > 20;
-        boolean bl3 = g != 0.0 || h != 0.0;
-        if (bl2 && bl3) {
-            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch(), this.isOnGround()));
-        } else if (bl2) {
-            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(this.getX(), this.getY(), this.getZ(), this.isOnGround()));
-        } else if (bl3) {
-            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(this.getYaw(), this.getPitch(), this.isOnGround()));
-        } else if (this.lastOnGround != this.isOnGround()) {
-            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(this.isOnGround()));
-        }
-
-        if (bl2) {
-            this.lastX = this.getX();
-            this.lastBaseY = this.getY();
-            this.lastZ = this.getZ();
-            this.ticksSinceLastPositionPacketSent = 0;
-        }
-
-        if (bl3) {
-            this.lastYaw = this.getYaw();
-            this.lastPitch = this.getPitch();
-        }
-        this.lastOnGround = this.isOnGround();
-    }
+//    @Unique
+//    public void syncLocationPackets(){
+//        double d = this.getX() - this.lastX;
+//        double e = this.getY() - this.lastBaseY;
+//        double f = this.getZ() - this.lastZ;
+//        double g = (double)(this.getYaw() - this.lastYaw);
+//        double h = (double)(this.getPitch() - this.lastPitch);
+//
+//        boolean bl2 = MathHelper.squaredMagnitude(d, e, f) > MathHelper.square(2.0E-4) || this.ticksSinceLastPositionPacketSent > 20;
+//        boolean bl3 = g != 0.0 || h != 0.0;
+//        if (bl2 && bl3) {
+//            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch(), this.isOnGround()));
+//        } else if (bl2) {
+//            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(this.getX(), this.getY(), this.getZ(), this.isOnGround()));
+//        } else if (bl3) {
+//            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(this.getYaw(), this.getPitch(), this.isOnGround()));
+//        } else if (this.lastOnGround != this.isOnGround()) {
+//            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(this.isOnGround()));
+//        }
+//
+//        if (bl2) {
+//            this.lastX = this.getX();
+//            this.lastBaseY = this.getY();
+//            this.lastZ = this.getZ();
+//            this.ticksSinceLastPositionPacketSent = 0;
+//        }
+//
+//        if (bl3) {
+//            this.lastYaw = this.getYaw();
+//            this.lastPitch = this.getPitch();
+//        }
+//        this.lastOnGround = this.isOnGround();
+//    }
 
 
 

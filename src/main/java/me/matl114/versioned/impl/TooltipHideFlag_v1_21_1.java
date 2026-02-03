@@ -1,6 +1,7 @@
 package me.matl114.versioned.impl;
 
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.api.VHideFlag;
 import net.minecraft.component.type.AttributeModifiersComponent;
 import net.minecraft.component.type.DyedColorComponent;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
@@ -15,7 +16,7 @@ import static net.minecraft.component.DataComponentTypes.*;
 import static net.minecraft.component.DataComponentTypes.STORED_ENCHANTMENTS;
 import static me.matl114.utils.ItemStackUtils.*;
 
-public enum TooltipHideFlag_v1_21_1 implements ItemStackUtils.HideFlag{
+public enum TooltipHideFlag_v1_21_1 implements VHideFlag {
     HIDE_ALL("全部", componentPredicate(HIDE_TOOLTIP), ItemStackUtils.TooltipsToggle.byComponent(HIDE_TOOLTIP)),
     HIDE_ADDITIONAL("额外", componentPredicate(HIDE_ADDITIONAL_TOOLTIP), ItemStackUtils.TooltipsToggle.byComponent(HIDE_ADDITIONAL_TOOLTIP)),
     HIDE_ENCHANT("附魔", componentPredicate(ENCHANTMENTS, (i)->!i.showInTooltip, false), ItemStackUtils.TooltipsToggle.onComponent(ENCHANTMENTS, ItemEnchantmentsComponent::withShowInTooltip)),

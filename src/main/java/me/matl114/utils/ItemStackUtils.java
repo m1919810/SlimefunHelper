@@ -5,6 +5,7 @@ import com.google.gson.*;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import me.matl114.bukkit.BukkitItemStackUtils;
+import me.matl114.versioned.api.VHideFlag;
 import me.matl114.versioned.impl.TooltipHideFlag_v1_21_1;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
@@ -14,9 +15,10 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.*;
-import net.minecraft.item.trim.ArmorTrim;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtInt;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Style;
@@ -39,13 +41,9 @@ import static net.minecraft.component.DataComponentTypes.*;
 
 @ApiMethod
 public class ItemStackUtils {
-    public interface HideFlag{
-        public boolean isHide(ItemStack stack);
-        public void setHideFlag(ItemStack stack,  boolean hide);
-        public String name();
-    }
 
-    public static HideFlag[] getHideFlags(){
+
+    public static VHideFlag[] getHideFlags(){
         return TooltipHideFlag_v1_21_1.values();
     }
 
@@ -114,7 +112,7 @@ public class ItemStackUtils {
                 Set<String> keys = nbt.getKeys();
                 if(keys.size() > 2)return true;
                 // we only support Damage , because most of these are from damage
-                int val = nbt.getInt("Damage");
+                int val = nbt.get("Damage") instanceof NbtInt nbtInt ? nbtInt.intValue() : 0;
                 if(val > 0)return true;
                 for(var key : keys){
                     //viaversion items
@@ -526,21 +524,20 @@ public class ItemStackUtils {
         return getBukkitValue(compound);
     }
     public static NbtCompound getBukkitValue(@Nonnull NbtCompound nbt){
-        return nbt.contains(BUKKIT_NAMESPACE, NbtElement.COMPOUND_TYPE) ? nbt.getCompound(BUKKIT_NAMESPACE): null;
+        return nbt.contains(BUKKIT_NAMESPACE, NbtElement.COMPOUND_TYPE) ? (nbt.get(BUKKIT_NAMESPACE) instanceof NbtCompound cpd? cpd : null): null;
     }
     private static NbtCompound createBukkitValue(NbtCompound nbt){
         NbtCompound nbt0 ;
-        if(nbt.contains(BUKKIT_NAMESPACE, NbtElement.COMPOUND_TYPE)){
-            nbt0 = nbt.getCompound(BUKKIT_NAMESPACE);
-            if(nbt0 != null)return nbt0;
-        }else {
-            nbt0 = new NbtCompound();
+        if(nbt.get(BUKKIT_NAMESPACE) instanceof NbtCompound nbt2){
+            return nbt2;
         }
+        nbt0 = new NbtCompound();
+
         nbt.put(BUKKIT_NAMESPACE, nbt0);
         return nbt0;
     }
     public static String getSfIdFromBukkitValues(NbtCompound ntb){
-        return ntb == null? null: (ntb.contains(SLIMEFUN_ID_PATH)? ntb.getString(SLIMEFUN_ID_PATH): null);
+        return ntb == null? null: (ntb.get(SLIMEFUN_ID_PATH) instanceof NbtString nbtString ? nbtString.asString() : null);
     }
     public static String getSfId(NbtCompound nbt){
         NbtCompound bukkitValues=getBukkitValue(nbt);
@@ -587,5 +584,6 @@ public class ItemStackUtils {
         Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT);
         return component.getLevel (enchantmentRegistry.getEntry(Enchantments.SHARPNESS).orElse(null));
     }
+
 
 }

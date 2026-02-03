@@ -1,6 +1,7 @@
 package me.matl114.hacks;
 
 import me.matl114.events.Listener;
+import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.SynchronizeRecipesS2CPacket;
@@ -57,9 +58,9 @@ public class RecipeTasks {
         }
         CACHE = null;
     }
-    public static record RecipeRecord(Identifier identifier, Recipe<?> instance, RecipeType<?> type, ItemStack output, Ingredient[] ingredients) implements me.matl114.hacks.utils.recipes.RecipeEntry {
+    public static record RecipeRecord(Identifier identifier, Recipe<?> instance, RecipeType<?> type, ItemStack output, RecipeIngredient[] ingredients) implements me.matl114.hacks.utils.recipes.RecipeEntry {
         public static RecipeRecord of(RecipeEntry<?> instance, RecipeType type){
-            return new RecipeRecord(instance.id(), (Recipe<?>) (Object)instance.value(), type, instance.value().getResult( mc.world.getRegistryManager()), SlimefunTasks.transfer3x3RecipeDisplay(instance.value(), instance.value().getIngredients().toArray(Ingredient[]::new)));
+            return new RecipeRecord(instance.id(), (Recipe<?>) (Object)instance.value(), type, instance.value().getResult( mc.world.getRegistryManager()), SlimefunTasks.transfer3x3RecipeDisplay(instance.value(), instance.value().getIngredients().stream().map(v -> new RecipeIngredient(v.getMatchingStacks())).toArray(RecipeIngredient[]::new)));
         }
         @Override
         public String rid() {
@@ -72,7 +73,7 @@ public class RecipeTasks {
         }
 
         @Override
-        public Ingredient[] ingredient() {
+        public RecipeIngredient[] ingredient() {
             return ingredients;
         }
 

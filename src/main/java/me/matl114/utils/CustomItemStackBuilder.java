@@ -2,6 +2,7 @@ package me.matl114.utils;
 
 import com.mojang.authlib.properties.PropertyMap;
 import me.matl114.bukkit.BukkitItemStackUtils;
+import me.matl114.versioned.api.VHideFlag;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
 import net.minecraft.component.type.ProfileComponent;
@@ -71,7 +72,7 @@ public class CustomItemStackBuilder {
         return this;
     }
 
-    public CustomItemStackBuilder hideFlag(ItemStackUtils.HideFlag flag){
+    public CustomItemStackBuilder hideFlag(VHideFlag flag){
         flag.setHideFlag(this.stack, true);
         return this;
     }

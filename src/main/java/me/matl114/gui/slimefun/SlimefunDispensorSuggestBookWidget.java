@@ -1,5 +1,6 @@
 package me.matl114.gui.slimefun;
 
+import com.google.common.collect.Streams;
 import lombok.Getter;
 import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.gui.FilterService;
@@ -19,11 +20,13 @@ import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
+import java.util.stream.Stream;
 
 public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
 
@@ -311,18 +314,25 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         textField.addToSub(screen);
         return super.addToSub(screen);
     }
+
     public synchronized void calculateMatchingRecipes(){
+        List<RecipeEntry> recipeEntries = new ArrayList<>();
+        List<RecipeEntry> recipes ;
         if(this.onlyShowRelated){
             //impl here
-            this.originItems = MinecraftClient.getInstance().player != null? SlimefunTasks.getInventoryRelativeRecipes(MinecraftClient.getInstance().currentScreen, refreshHard): SlimefunTasks.getAllSlimefunRecipeEntry().toList();
+            //todo: add a empty recipe to clear the slots in one click
+            recipes = MinecraftClient.getInstance().player != null? SlimefunTasks.getInventoryRelativeRecipes(MinecraftClient.getInstance().currentScreen, refreshHard): SlimefunTasks.getAllSlimefunRecipeEntry().toList();
         }else {
-            this.originItems = SlimefunTasks.getAllSlimefunRecipeEntry().toList();
+            recipes = SlimefunTasks.getAllSlimefunRecipeEntry().toList();
         }
         if(this.type != null && !this.type.isEmpty()){
-            this.originItems = this.originItems.stream()
+            recipes = recipes.stream()
                 .filter(it->this.type.contains(it.rid()))
                 .toList();
         }
+        recipeEntries.add(RecipeEntry.EMPTY);
+        recipeEntries.addAll(recipes);
+        this.originItems = recipeEntries;
 
     }
 
@@ -336,8 +346,12 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
             }
             return false;
         }else {
-            this.filterItems = originItems.stream()
-                .filter(t->FilterService.RECIPE_FILTER.test(FilterService. currentUserInput, t))
+            //append Empty to every Filter
+            this.filterItems = Streams.concat(
+                    Stream.of(RecipeEntry.EMPTY),
+                    originItems.stream()
+                    .filter(t->FilterService.RECIPE_FILTER.test(FilterService. currentUserInput, t))
+                )
                 .toList();
             return true;
         }

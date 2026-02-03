@@ -16,6 +16,7 @@ import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourcePack;
@@ -92,10 +93,10 @@ public class SlimefunModels extends BaseModule {
             NbtCompound nbt= ItemStackUtils.getCustomDataReadOnly(stack);
             try{
                 String model=null;
-                if(nbt.contains("item_model")){
-                    model=nbt.getString("item_model");
-                }else if(nbt.contains("minecraft:item_model")){
-                    model=nbt.getString("minecraft:item_model");
+                if(nbt.get("item_model") instanceof NbtString string){
+                    model = string.asString();
+                }else if(nbt.get("minecraft:item_model") instanceof NbtString string){
+                    model = string.asString();
                 }
                 if(model!=null){
                     String[] namespaceCheck=model.split(":");

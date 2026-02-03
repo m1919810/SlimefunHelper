@@ -139,7 +139,7 @@ public class RenderTasks {
 
         @Override
         public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsShaderColor(color, 0.25F);
+            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startVec, endVec);
         }
 
@@ -165,7 +165,7 @@ public class RenderTasks {
 
         @Override
         public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsShaderColor(color, 1.0F);
+            RenderUtils.setAsCurrentShaderColor(color, 1.0F);
             RenderUtils.drawOutlinedBox(stack, startVec, endVec);
         }
 
@@ -190,7 +190,7 @@ public class RenderTasks {
 
         @Override
         public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsShaderColor(color1, 0.25F);
+            RenderUtils.setAsCurrentShaderColor(color1, 0.25F);
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startBox.getMinPos(), startBox.getMaxPos());
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startBox.getMinPos().add(delta), startBox.getMaxPos().add(delta));
             for (var ver: CollisionUtil.getBoxVertices(startBox))
@@ -223,7 +223,7 @@ public class RenderTasks {
 
         @Override
         public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsShaderColor(color1, 0.25F);
+            RenderUtils.setAsCurrentShaderColor(color1, 0.25F);
             RenderUtils.drawQuad(stack.peek().getPositionMatrix(), abcd[0], abcd[1], abcd[2], abcd[3]);
         }
     }
@@ -257,7 +257,7 @@ public class RenderTasks {
 
         @Override
         public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsShaderColor(color, 0.25F);
+            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startVec.getBoundingBox().getMinPos(), startVec.getBoundingBox().getMaxPos());
         }
         public boolean stillRender(){
@@ -279,7 +279,7 @@ public class RenderTasks {
 
         @Override
         public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsShaderColor(color, 1.0F);
+            RenderUtils.setAsCurrentShaderColor(color, 1.0F);
             RenderUtils.drawOutlinedBox(stack, startVec.getBoundingBox().getMinPos(), startVec.getBoundingBox().getMaxPos());
         }
 
@@ -380,7 +380,7 @@ public class RenderTasks {
 
         @Override
         public void setBlockShaderData() {
-            RenderUtils.setAsShaderColor(Color.GREEN,1.0f);
+            RenderUtils.setAsCurrentShaderColor(Color.GREEN,1.0f);
             //RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
         }
     }
@@ -402,7 +402,7 @@ public class RenderTasks {
 
         @Override
         public void setBlockShaderData() {
-            RenderUtils.setAsShaderColor(Color.GREEN,0.25f);
+            RenderUtils.setAsCurrentShaderColor(Color.GREEN,0.25f);
         }
     }
 

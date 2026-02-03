@@ -163,7 +163,7 @@ public class Attack extends BaseModule {
                 if(entity != null){
                     float dist = entity.distanceTo(mc.player);
                     float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
-                    RenderUtils.setAsShaderColor(Color.GREEN, opacity);
+                    RenderUtils.setAsCurrentShaderColor(Color.GREEN, opacity);
                     Box box = RenderUtils.getLerpedBox(entity, tickDelta);
                     RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), box.getMinPos(), box.getMaxPos());
                 }
