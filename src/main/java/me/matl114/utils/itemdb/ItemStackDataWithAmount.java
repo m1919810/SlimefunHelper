@@ -1,8 +1,8 @@
-package me.matl114.utils.impl.itemdb;
+package me.matl114.utils.itemdb;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import me.matl114.utils.impl.codecs.NullCodec;
+import me.matl114.utils.codecs.NullCodec;
 import net.minecraft.item.ItemStack;
 
 public record ItemStackDataWithAmount(ItemStackData stackReference, int count) {

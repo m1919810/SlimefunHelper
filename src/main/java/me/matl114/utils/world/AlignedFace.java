@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.world;
+package me.matl114.utils.world;
 
 import lombok.Getter;
 import net.minecraft.util.math.MathHelper;

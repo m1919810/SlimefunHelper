@@ -3,7 +3,7 @@ package me.matl114.mixins.events;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.Listener;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.collections.Point;
+import me.matl114.utils.collections.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;

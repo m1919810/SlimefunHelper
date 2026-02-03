@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.tasks;
+package me.matl114.utils.tasks;
 
 import me.matl114.managers.config.IntRef;
 import org.jetbrains.annotations.NotNull;

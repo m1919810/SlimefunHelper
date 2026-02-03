@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.commands;
+package me.matl114.utils.commands;
 
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;

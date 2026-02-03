@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.chat;
+package me.matl114.utils.chat;
 
 import net.minecraft.text.CharacterVisitor;
 import net.minecraft.text.Style;

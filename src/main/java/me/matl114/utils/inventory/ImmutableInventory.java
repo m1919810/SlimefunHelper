@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.inventory;
+package me.matl114.utils.inventory;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;

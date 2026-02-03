@@ -1,7 +1,7 @@
 package me.matl114.utils;
 
 import me.matl114.SlimefunHelper;
-import me.matl114.utils.impl.world.ChunkIterator;
+import me.matl114.utils.world.ChunkIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;

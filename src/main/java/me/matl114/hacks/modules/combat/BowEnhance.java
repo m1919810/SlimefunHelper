@@ -20,7 +20,7 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.entity.LegalMovementManager;
+import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;

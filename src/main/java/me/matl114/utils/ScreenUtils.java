@@ -2,7 +2,7 @@ package me.matl114.utils;
 
 import com.google.common.collect.Maps;
 import me.matl114.accessors.access.HandledScreenAccess;
-import me.matl114.utils.impl.collections.Point;
+import me.matl114.utils.collections.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.navigation.GuiNavigationType;

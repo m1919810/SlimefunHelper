@@ -15,7 +15,7 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
-import me.matl114.utils.impl.itemdb.ItemStackData;
+import me.matl114.utils.itemdb.ItemStackData;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;

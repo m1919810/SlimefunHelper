@@ -3,7 +3,7 @@ package me.matl114.gui.presets.single;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.basic.*;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;

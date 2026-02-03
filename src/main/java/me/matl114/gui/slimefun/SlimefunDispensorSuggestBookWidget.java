@@ -9,7 +9,7 @@ import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.Tasks;
 import me.matl114.hacks.modules.slimefun.MultiBlockHelper;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;

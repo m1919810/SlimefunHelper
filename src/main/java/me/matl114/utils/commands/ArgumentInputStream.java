@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.commands;
+package me.matl114.utils.commands;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -8,9 +8,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import me.matl114.utils.impl.interruptions.TypeError;
-import me.matl114.utils.impl.interruptions.ValueAbsentError;
-import me.matl114.utils.impl.interruptions.ValueOutOfRangeError;
+import me.matl114.utils.interruptions.TypeError;
+import me.matl114.utils.interruptions.ValueAbsentError;
+import me.matl114.utils.interruptions.ValueOutOfRangeError;
 import net.minecraft.entity.player.PlayerEntity;
 import org.jetbrains.annotations.Nullable;
 

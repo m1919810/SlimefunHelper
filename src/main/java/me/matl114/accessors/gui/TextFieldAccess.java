@@ -1,7 +1,7 @@
 package me.matl114.accessors.gui;
 
 import me.matl114.gui.basic.ColorProvider;
-import me.matl114.utils.impl.config.PropertyTracker;
+import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.gui.widget.ClickableWidget;
 
 public interface TextFieldAccess {

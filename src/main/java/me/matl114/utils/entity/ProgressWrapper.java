@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.entity;
+package me.matl114.utils.entity;
 
 public interface ProgressWrapper<ARGUMENT> {
     public void preProgress(ARGUMENT args);

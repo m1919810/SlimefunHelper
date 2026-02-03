@@ -21,7 +21,7 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.component.ComponentChanges;

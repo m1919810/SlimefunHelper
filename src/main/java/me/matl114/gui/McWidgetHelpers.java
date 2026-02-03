@@ -3,7 +3,7 @@ package me.matl114.gui;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ContentDelegateWidget;
-import me.matl114.utils.impl.config.PropertyTracker;
+import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;

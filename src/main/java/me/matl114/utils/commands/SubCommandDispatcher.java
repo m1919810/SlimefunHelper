@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.commands;
+package me.matl114.utils.commands;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,9 +6,9 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.Streams;
 import com.mojang.brigadier.Command;
-import me.matl114.utils.impl.interruptions.ArgumentException;
-import me.matl114.utils.impl.interruptions.PermissionDenyError;
-import me.matl114.utils.impl.interruptions.ValueUnexpectedError;
+import me.matl114.utils.interruptions.ArgumentException;
+import me.matl114.utils.interruptions.PermissionDenyError;
+import me.matl114.utils.interruptions.ValueUnexpectedError;
 import net.minecraft.entity.player.PlayerEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

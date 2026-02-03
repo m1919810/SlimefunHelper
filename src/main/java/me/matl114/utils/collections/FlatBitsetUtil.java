@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.collections;
+package me.matl114.utils.collections;
 
 public class FlatBitsetUtil {
     private static final int LOG2_LONG = 6;

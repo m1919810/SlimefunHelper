@@ -1,6 +1,6 @@
-package me.matl114.utils.impl.interruptions;
+package me.matl114.utils.interruptions;
 
-import me.matl114.utils.impl.commands.ArgumentReader;
+import me.matl114.utils.commands.ArgumentReader;
 import net.minecraft.entity.player.PlayerEntity;
 
 import javax.annotation.Nonnull;

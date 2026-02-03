@@ -1,8 +1,8 @@
-package me.matl114.utils.impl.commands;
+package me.matl114.utils.commands;
 
 import com.google.common.base.Supplier;
-import me.matl114.utils.impl.interruptions.TypeError;
-import me.matl114.utils.impl.interruptions.ValueOutOfRangeError;
+import me.matl114.utils.interruptions.TypeError;
+import me.matl114.utils.interruptions.ValueOutOfRangeError;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;

@@ -15,7 +15,7 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.events.RenderListener;
 import me.matl114.utils.*;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.events.Event;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;

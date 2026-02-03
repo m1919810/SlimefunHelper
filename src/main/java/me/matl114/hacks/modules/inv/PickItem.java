@@ -9,7 +9,7 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
-import me.matl114.utils.impl.collections.Point;
+import me.matl114.utils.collections.Point;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerEntity;

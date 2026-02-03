@@ -15,7 +15,7 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.containers.MetaData;
+import me.matl114.utils.containers.MetaData;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.CrossbowUser;
 import net.minecraft.entity.Entity;

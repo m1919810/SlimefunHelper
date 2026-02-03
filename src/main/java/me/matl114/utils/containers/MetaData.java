@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.containers;
+package me.matl114.utils.containers;
 
 import java.util.Map;
 import java.util.WeakHashMap;

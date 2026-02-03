@@ -10,7 +10,7 @@ import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;

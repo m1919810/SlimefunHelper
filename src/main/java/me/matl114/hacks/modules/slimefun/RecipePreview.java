@@ -3,7 +3,7 @@ package me.matl114.hacks.modules.slimefun;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.matl114.accessors.access.HandledScreenAccess;
-import me.matl114.utils.impl.collections.HolderWithState;
+import me.matl114.utils.collections.HolderWithState;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;

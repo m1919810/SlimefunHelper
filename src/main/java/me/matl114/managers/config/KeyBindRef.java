@@ -1,7 +1,7 @@
 package me.matl114.managers.config;
 
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 
 public class KeyBindRef extends ObjectRef<MultiKeyBind>{
     public static final Class<MultiKeyBind> TYPE = MultiKeyBind.class;

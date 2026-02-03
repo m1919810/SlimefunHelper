@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.world;
+package me.matl114.utils.world;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientChunkManager;

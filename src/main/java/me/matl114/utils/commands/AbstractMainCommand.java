@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.commands;
+package me.matl114.utils.commands;
 
 import com.google.common.base.Supplier;
 
@@ -11,7 +11,7 @@ import javax.annotation.Nullable;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.Command;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.impl.interruptions.*;
+import me.matl114.utils.interruptions.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.player.PlayerEntity;

@@ -1,8 +1,8 @@
 package me.matl114.accessors.events;
 
 import me.matl114.accessors.access.LivingEntityAccess;
-import me.matl114.utils.impl.entity.LegalMovementManager;
-import me.matl114.utils.impl.entity.ProgressWrapper;
+import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.ProgressWrapper;
 import net.minecraft.client.network.ClientPlayerEntity;
 
 import javax.annotation.Nonnull;

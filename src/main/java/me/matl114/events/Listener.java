@@ -9,7 +9,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.IInputManager;
 
-import me.matl114.utils.impl.collections.Point;
+import me.matl114.utils.collections.Point;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;

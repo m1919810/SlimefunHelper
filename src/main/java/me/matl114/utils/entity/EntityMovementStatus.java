@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.entity;
+package me.matl114.utils.entity;
 
 import me.matl114.utils.EntityUtils;
 import net.minecraft.entity.Entity;

@@ -16,7 +16,7 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.entity.LegalMovementManager;
+import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;

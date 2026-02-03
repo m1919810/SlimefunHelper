@@ -12,7 +12,7 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CommonUtils;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.collections.MutableEntry;
+import me.matl114.utils.collections.MutableEntry;
 import me.matl114.utils.WorldUtils;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;

@@ -1,7 +1,7 @@
 package me.matl114.utils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.matl114.utils.impl.world.RegionPos;
+import me.matl114.utils.world.RegionPos;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.gui.DrawContext;

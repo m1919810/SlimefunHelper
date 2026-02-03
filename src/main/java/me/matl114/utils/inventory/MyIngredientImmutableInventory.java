@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.inventory;
+package me.matl114.utils.inventory;
 
 import me.matl114.hacks.Tasks;
 import net.minecraft.entity.player.PlayerEntity;

@@ -11,7 +11,7 @@ import me.matl114.utils.ClientUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.collections.Point;
+import me.matl114.utils.collections.Point;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;

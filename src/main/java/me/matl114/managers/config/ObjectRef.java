@@ -1,7 +1,7 @@
 package me.matl114.managers.config;
 
 import lombok.AllArgsConstructor;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 
 @AllArgsConstructor
 public abstract class ObjectRef<T> extends Ref<T>{

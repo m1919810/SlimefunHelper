@@ -1,7 +1,7 @@
 package me.matl114.accessors.moonrise;
 
-import me.matl114.utils.impl.world.CachedShapeData;
-import me.matl114.utils.impl.world.CachedToAABBs;
+import me.matl114.utils.world.CachedShapeData;
+import me.matl114.utils.world.CachedToAABBs;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.shape.VoxelShape;
 

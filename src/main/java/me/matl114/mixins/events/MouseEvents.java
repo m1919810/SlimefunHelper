@@ -5,7 +5,7 @@ import me.matl114.events.Listener;
 import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.collections.Point;
+import me.matl114.utils.collections.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.Screen;

@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.collections;
+package me.matl114.utils.collections;
 
 import lombok.AllArgsConstructor;
 import net.minecraft.component.ComponentType;

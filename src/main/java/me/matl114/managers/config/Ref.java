@@ -1,6 +1,6 @@
 package me.matl114.managers.config;
 
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 
 import java.util.ArrayList;
 import java.util.List;

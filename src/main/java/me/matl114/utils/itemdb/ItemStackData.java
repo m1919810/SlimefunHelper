@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.itemdb;
+package me.matl114.utils.itemdb;
 
 import com.google.gson.*;
 import com.mojang.brigadier.StringReader;

@@ -5,7 +5,7 @@ import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.utils.RenderUtils;
-import me.matl114.utils.impl.config.PropertyTracker;
+import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatInputSuggestor;

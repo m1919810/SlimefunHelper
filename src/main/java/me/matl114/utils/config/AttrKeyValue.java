@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.config;
+package me.matl114.utils.config;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;

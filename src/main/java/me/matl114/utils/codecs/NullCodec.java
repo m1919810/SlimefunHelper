@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.codecs;
+package me.matl114.utils.codecs;
 
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;

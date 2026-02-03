@@ -2,7 +2,7 @@ package me.matl114.managers.config;
 
 import com.google.common.base.Preconditions;
 import me.matl114.utils.Debug;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 
 import java.util.Locale;
 import java.util.Map;

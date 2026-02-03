@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.config;
+package me.matl114.utils.config;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;

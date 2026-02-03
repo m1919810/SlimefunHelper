@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.interruptions;
+package me.matl114.utils.interruptions;
 
 
 import net.minecraft.entity.player.PlayerEntity;

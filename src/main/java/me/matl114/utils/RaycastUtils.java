@@ -1,7 +1,7 @@
 package me.matl114.utils;
 
 import com.mojang.datafixers.util.Pair;
-import me.matl114.utils.impl.world.AlignedFace;
+import me.matl114.utils.world.AlignedFace;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;

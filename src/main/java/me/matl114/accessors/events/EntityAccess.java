@@ -1,6 +1,6 @@
 package me.matl114.accessors.events;
 
-import me.matl114.utils.impl.entity.ProgressWrapper;
+import me.matl114.utils.entity.ProgressWrapper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 

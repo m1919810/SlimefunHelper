@@ -1,8 +1,8 @@
-package me.matl114.utils.impl.interruptions;
+package me.matl114.utils.interruptions;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import me.matl114.utils.impl.commands.ArgumentReader;
-import me.matl114.utils.impl.commands.SimpleCommandArgs;
+import me.matl114.utils.commands.ArgumentReader;
+import me.matl114.utils.commands.SimpleCommandArgs;
 import net.minecraft.entity.player.PlayerEntity;
 
 @Getter

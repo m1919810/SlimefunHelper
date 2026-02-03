@@ -8,7 +8,7 @@ import me.matl114.gui.presets.grids.GridSelectSubScreen;
 import me.matl114.gui.presets.choices.RegistrySelectScreen;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.api.Displayable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.Item;

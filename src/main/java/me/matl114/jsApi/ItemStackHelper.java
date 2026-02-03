@@ -4,7 +4,7 @@ import com.mojang.serialization.JavaOps;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.impl.inventory.MutableInventory;
+import me.matl114.utils.inventory.MutableInventory;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentType;
 import net.minecraft.entity.player.PlayerEntity;

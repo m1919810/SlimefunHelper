@@ -5,7 +5,7 @@ import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.collections.LazyList;
+import me.matl114.utils.collections.LazyList;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;

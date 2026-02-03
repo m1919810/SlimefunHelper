@@ -7,7 +7,7 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.mine.*;
 import me.matl114.managers.config.Config;
 import me.matl114.utils.*;
-import me.matl114.utils.impl.commands.*;
+import me.matl114.utils.commands.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.hit.HitResult;

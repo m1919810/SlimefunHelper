@@ -10,8 +10,8 @@ import me.matl114.gui.presets.lists.ListUnmodifiableWidget;
 import me.matl114.managers.config.Config;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CollectionUtils;
-import me.matl114.utils.impl.config.AttrKeyValue;
-import me.matl114.utils.impl.config.PropertyTracker;
+import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 

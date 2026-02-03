@@ -11,7 +11,7 @@ import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.slimefun.*;
 import me.matl114.utils.*;
-import me.matl114.utils.impl.commands.*;
+import me.matl114.utils.commands.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;

@@ -1,6 +1,6 @@
 package me.matl114.managers.config;
 
-import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.config.AttrKeyValue;
 
 public class StringRef extends ObjectRef<String>{
     public static final Class<String> TYPE = String.class;

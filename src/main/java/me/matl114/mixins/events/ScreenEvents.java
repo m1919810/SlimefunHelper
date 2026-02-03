@@ -2,7 +2,7 @@ package me.matl114.mixins.events;
 
 import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.events.Listener;
-import me.matl114.utils.impl.containers.MetaData;
+import me.matl114.utils.containers.MetaData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;

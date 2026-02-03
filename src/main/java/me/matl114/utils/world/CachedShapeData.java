@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.world;
+package me.matl114.utils.world;
 
 public record CachedShapeData(
     int sizeX, int sizeY, int sizeZ,

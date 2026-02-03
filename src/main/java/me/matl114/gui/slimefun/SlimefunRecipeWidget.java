@@ -7,7 +7,7 @@ import me.matl114.gui.basic.*;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
-import me.matl114.utils.impl.inventory.MyIngredientImmutableInventory;
+import me.matl114.utils.inventory.MyIngredientImmutableInventory;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;

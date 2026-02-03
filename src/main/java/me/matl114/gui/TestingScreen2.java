@@ -2,7 +2,7 @@ package me.matl114.gui;
 
 import me.matl114.gui.basic.*;
 import me.matl114.gui.slimefun.SlimefunScreen;
-import me.matl114.utils.impl.config.PropertyTracker;
+import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.text.Text;
 
 public class TestingScreen2 extends SlimefunScreen {

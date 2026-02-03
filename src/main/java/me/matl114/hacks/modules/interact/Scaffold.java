@@ -19,7 +19,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RaycastUtils;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.entity.LegalMovementManager;
+import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.BlockItem;

@@ -1,4 +1,4 @@
-package me.matl114.utils.impl.commands;
+package me.matl114.utils.commands;
 
 import com.mojang.datafixers.util.Pair;
 import lombok.Getter;

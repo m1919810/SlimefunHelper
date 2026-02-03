@@ -11,7 +11,7 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.Configs;
 import me.matl114.utils.Debug;
 import me.matl114.events.Event;
-import me.matl114.utils.impl.entity.LegalMovementManager;
+import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.MaceItem;

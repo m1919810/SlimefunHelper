@@ -5,7 +5,7 @@ import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
 import me.matl114.accessors.moonrise.MoonriseChunkBlockCountingAccess;
 import me.matl114.accessors.moonrise.MoonriseVoxelShapeAccess;
 import me.matl114.hacks.RenderTasks;
-import me.matl114.utils.impl.world.CachedShapeData;
+import me.matl114.utils.world.CachedShapeData;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.Entity;
