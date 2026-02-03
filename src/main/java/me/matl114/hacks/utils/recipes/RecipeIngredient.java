@@ -11,4 +11,20 @@ public record RecipeIngredient(ItemStack[] matchingStack) {
     public boolean isEmpty(){
         return matchingStack.length == 0;
     }
+
+    public boolean testItemType(ItemStack itemStack){
+        if (itemStack == null) {
+            return false;
+        } else if (this.isEmpty()) {
+            return itemStack.isEmpty();
+        } else {
+            for (ItemStack itemStack2 : this.matchingStack()) {
+                if (itemStack2.isOf(itemStack.getItem())) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
 }

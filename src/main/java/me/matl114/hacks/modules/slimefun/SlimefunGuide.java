@@ -285,13 +285,13 @@ public class SlimefunGuide extends BaseModule {
             for (var re :RecipeTasks.getAllRecipe().values()){
                 for (var ingre : re.ingredient()){
                     if(shiftDown){
-                        if(ingre.test(item)){
+                        if(ingre.testItemType(item)){
                             resultToDisplay.add(re);
                             continue search;
                         }
                     }else{
                         if(!item.isEmpty()){
-                            for(var matchingStack : ingre.getMatchingStacks()){
+                            for(var matchingStack : ingre.matchingStack()){
                                 if(ItemStackUtils.matchItemWithout(matchingStack, item, false, false, false)){
                                     resultToDisplay.add(re);
                                     continue  search;

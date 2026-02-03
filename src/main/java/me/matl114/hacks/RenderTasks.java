@@ -9,6 +9,7 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.render.*;
 import me.matl114.utils.*;
 import me.matl114.events.Event;
+import me.matl114.versioned.impl.Render_v1_21_1;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
@@ -372,8 +373,8 @@ public class RenderTasks {
         @Override
         public VertexBuffer createStatic() {
             var vertexBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
-            RenderUtils.cacheVertexAction(vertexBuffer, VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION, (b)->{
-                RenderUtils.drawOutlinedBox(b, FROM, TO);
+            Render_v1_21_1.cacheVertexAction(vertexBuffer, VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION, (b)->{
+                Render_v1_21_1.drawOutlinedBox(b, FROM, TO);
             });
             return vertexBuffer;
         }
@@ -394,8 +395,8 @@ public class RenderTasks {
         @Override
         public VertexBuffer createStatic() {
             var vertexBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
-            RenderUtils.cacheVertexAction(vertexBuffer, VertexFormat.DrawMode.QUADS, VertexFormats.POSITION, (b)->{
-                RenderUtils.drawSolidBox(b, FROM, TO);
+            Render_v1_21_1.cacheVertexAction(vertexBuffer, VertexFormat.DrawMode.QUADS, VertexFormats.POSITION, (b)->{
+                Render_v1_21_1.drawSolidBox(b, FROM, TO);
             });
             return vertexBuffer;
         }
