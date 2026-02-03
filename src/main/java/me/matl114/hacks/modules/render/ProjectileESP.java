@@ -86,7 +86,7 @@ public class ProjectileESP extends BaseModule {
                     EntityAccess<ExplosiveProjectileEntity> access = EntityAccess.of(fireball);
                     if (access.getMetadata().get(this, flagCalculateProjectile) == null) {
                         access.getMetadata().put(this, flagCalculateProjectile, Boolean.TRUE);
-                        calLineTrace(fireball.getPos(), vec);
+                        calLineTrace(fireball.getEntityPos(), vec);
                     }
                 }
             }
@@ -152,7 +152,7 @@ public class ProjectileESP extends BaseModule {
     public static void calArrowTrace(PersistentProjectileEntity arrow){
         if(mc.player != null){
             if(arrow.getOwner() == mc.player)return;
-            if(mc.player.getPos().squaredDistanceTo(arrow.getPos()) < 0.1){
+            if(mc.player.getEntityPos().squaredDistanceTo(arrow.getEntityPos()) < 0.1){
                 //might be shot by player using something
                 return;
             }
@@ -160,7 +160,7 @@ public class ProjectileESP extends BaseModule {
             Vec3d vec3d = arrow.getVelocity();
             Vec3d vecDirection = vec3d.normalize();
             var playerPos = mc.player.getEyePos();
-            var deltaTo = playerPos.subtract(arrow.getPos());
+            var deltaTo = playerPos.subtract(arrow.getEntityPos());
             //求出玩家位置在行进方向上的投影长度
             var projLen = deltaTo.dotProduct(vecDirection);
             if(projLen > 0){
@@ -474,7 +474,7 @@ public class ProjectileESP extends BaseModule {
 
     public static ArrayList<Vec3d> predictFireballTrace(ExplosiveProjectileEntity fireball){
         ArrayList<Vec3d> trace = new ArrayList<>();
-        Vec3d startpos = fireball.getPos();
+        Vec3d startpos = fireball.getEntityPos();
         Vec3d lastPos = startpos;
         var access = ExplosiveProjectileAccess.of(fireball);
         float drag = access.getDragCommon();

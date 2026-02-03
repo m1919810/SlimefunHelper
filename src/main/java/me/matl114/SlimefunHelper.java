@@ -71,10 +71,11 @@ public class SlimefunHelper implements ModInitializer {
             (resourceManager, executor) -> CompletableFuture.supplyAsync(()->{
 				Debug.info("check model plugin work");
 				ModConfig.reloadModConfig();
-				return RenderListener.getReloadingResources(resourceManager);
+				return RenderListener.getReloadingResources(resourceManager.getResourceManager());
 			}),
             (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {
-				pluginContext.addModels(data);
+				// no longer need this anymore
+//				pluginContext.addModels(data);
             }
 
         );

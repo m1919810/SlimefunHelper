@@ -239,7 +239,7 @@ public class EntityUtils {
 
     public static Vec3d lookCoordTooAbsolutePos(Entity source, double x, double y, double z) {
         Vec2f vec2f = source.getRotationClient();
-        Vec3d vec3d = source.getPos();
+        Vec3d vec3d = source.;
         float f = MathHelper.cos((vec2f.y + 90.0F) * 0.017453292F);
         float g = MathHelper.sin((vec2f.y + 90.0F) * 0.017453292F);
         float h = MathHelper.cos(-vec2f.x * 0.017453292F);

@@ -57,7 +57,7 @@ public class PositionPredict extends BaseModule {
         if(target instanceof ShulkerEntity){
             //consider wtf shit , this entity collides with player
             //consider all collisions use bounding box not directions
-            Vec3d vec3 = target.getPos();
+            Vec3d vec3 = target.getEntityPos();
 //            BlockPos posAt = BlockPos.ofFloored(vec3);
             Box boundingBox = target.getBoundingBox();
             for (Direction dir : Direction.values()){
@@ -85,15 +85,15 @@ public class PositionPredict extends BaseModule {
                 deltaMovments = target.getRotationVector().normalize().multiply(-0.2);
             } else if(target instanceof PlayerEntity playerEntity){
                 Vec3d predictedPosition = predictPosition(playerEntity);
-                deltaMovments = predictedPosition.subtract(target.getPos());
+                deltaMovments = predictedPosition.subtract(target.getEntityPos());
             } else{
-                Vec3d targetFacing = mc.player.getPos().subtract(target.getPos());
+                Vec3d targetFacing = mc.player.getEntityPos().subtract(target.getEntityPos());
                 Vec3d targetFacingHorizontal = new Vec3d(targetFacing.x, 0.0d, targetFacing.z);
                 double multiply =  0.5;
                 deltaMovments = targetFacingHorizontal.normalize().multiply(multiply);
             }
 
-            Vec3d targetPos = target.getPos();
+            Vec3d targetPos = target.getEntityPos();
             Vec3d actualMove =  MovTasks.ENGIN.simulateMovement(mc.player, targetPos, deltaMovments);
             return targetPos.add(actualMove);
         }
@@ -101,7 +101,7 @@ public class PositionPredict extends BaseModule {
     }
 
     public Vec3d predictAimPositionForEntity(Entity entity, float finalVelocity){
-        Vec3d estimatedDelta = entity.getPos().subtract(mc.player.getPos());
+        Vec3d estimatedDelta = entity.getEntityPos().subtract(mc.player.getEntityPos());
         double estimateSpeed =  estimatedDelta.length() / (finalVelocity);
         int estimateTick ;
         if(estimateSpeed < 2.0){
@@ -112,7 +112,7 @@ public class PositionPredict extends BaseModule {
             estimateTick = (int) (estimateSpeed - 2.0D);
         }
 
-        return entity.getEyePos().subtract(entity.getPos()).multiply(0.75).add(
+        return entity.getEyePos().subtract(entity.getEntityPos()).multiply(0.75).add(
             EntityInternalAccess.of(entity).predictPosition((attackPredictTick.get() + estimateTick), predictMode.get().ordinal())
         );
     }

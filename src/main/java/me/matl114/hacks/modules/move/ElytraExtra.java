@@ -44,12 +44,12 @@ public class ElytraExtra extends BaseModule {
         if(enableUnbreakableElytra.get() && tickEvent.context() >= 18){
             fakeGlideTime += 1;
             fakeGlidePoseTime += 1;
-            if(mc.player != null && mc.player.isFallFlying()){
+            if(mc.player != null && mc.player.isGliding()){
                 mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
 //                Debug.info("send stop glide");
             }
             Tasks.scheduleDelayed(()->{
-                if(mc.player != null && mc.player.isFallFlying() && !mc.player.isOnGround()){
+                if(mc.player != null && mc.player.isGliding() && !mc.player.isOnGround()){
                     mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
 //                    Debug.info("send restart glide");
                 }else{
@@ -65,7 +65,7 @@ public class ElytraExtra extends BaseModule {
     public void handleEntityDataUpdate(Event<DataTracker.SerializedEntry<?>> serializedEntryMutableObject){
         if(serializedEntryMutableObject.isCancelled())return;
         //only when elytra unbreakable do
-        if(enableUnbreakableElytra.get() && serializedEntryMutableObject.extraArgs().length > 0 && serializedEntryMutableObject.extraArgs()[0] instanceof ClientPlayerEntity player && player == mc.player && player.isFallFlying() && !player.isOnGround() && !player.isTouchingWater() && !player.hasStatusEffect(StatusEffects.LEVITATION)){
+        if(enableUnbreakableElytra.get() && serializedEntryMutableObject.extraArgs().length > 0 && serializedEntryMutableObject.extraArgs()[0] instanceof ClientPlayerEntity player && player == mc.player && player.isGliding() && !player.isOnGround() && !player.isTouchingWater() && !player.hasStatusEffect(StatusEffects.LEVITATION)){
             ItemStack itemStack = player.getEquippedStack(EquipmentSlot.CHEST);
             //do all the checks to avoid ghost gliding
             if (itemStack.isOf(Items.ELYTRA) && ElytraItem.isUsable(itemStack)) {
@@ -88,7 +88,7 @@ public class ElytraExtra extends BaseModule {
                 }else if(val.id() == 6){
                     //standing pose
                     EntityPose pose = (EntityPose) val.value();
-                    if(fakeGlidePoseTime >0 && pose != EntityPose.FALL_FLYING && player.getPose() == EntityPose.FALL_FLYING){
+                    if(fakeGlidePoseTime >0 && pose != EntityPose.GLIDING && player.getPose() == EntityPose.GLIDING){
                         //cancel pose sync
                         fakeGlidePoseTime -= 1;
 

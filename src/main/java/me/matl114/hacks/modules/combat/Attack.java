@@ -223,7 +223,7 @@ public class Attack extends BaseModule {
         if(player == null)return false;
         final boolean criticSprint = critic.get() && player.isSprinting();
         final double attackRange = CombatTasks.getCombatExtra().getAttackRange();
-        Vec3d vec3d = mc.player.getPos();
+        Vec3d vec3d = mc.player.getEntityPos();
         //do not add mace or tp attack in legal mode
         //todo: add hand swapping logic
         if(mc.crosshairTarget instanceof EntityHitResult entity && entity.getEntity() == target){
@@ -255,7 +255,7 @@ public class Attack extends BaseModule {
                 }
                 if(hand != null){
                     Vec3d eyePos = target.getEyePos();
-                    Vec3d targetPos = target.getPos();
+                    Vec3d targetPos = target.getEntityPos();
                     double percentage = attackOffsetRand.nextDouble(0.75d, 0.95d);
                     Vec3d attackOffsetted = targetPos.add(eyePos.subtract(targetPos).multiply(percentage));
                     attackOffsetted.add(
@@ -298,7 +298,7 @@ public class Attack extends BaseModule {
                         //step back our position
                         velocity = args.getVelocity();
 
-                        Vec3d vec3d = args.getPos();
+                        Vec3d vec3d = args.getEntityPos();
 
                         if(tpRange.get()> 1E-7 && target.getBoundingBox().squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(attackRange)){
                             //need tp attack
@@ -331,7 +331,7 @@ public class Attack extends BaseModule {
                         //after move player, do target
                         if(distancePassAttack){
                             Vec3d eyePos = target.getEyePos();
-                            Vec3d targetPos = target.getPos();
+                            Vec3d targetPos = target.getEntityPos();
                             double percentage = attackOffsetRand.nextDouble(0.75d, 0.95d);
                             Vec3d attackOffsetted = targetPos.add(eyePos.subtract(targetPos).multiply(percentage));
                             attackOffsetted.add(
@@ -369,11 +369,11 @@ public class Attack extends BaseModule {
                             });
                             movementManagerEvent.context.playerStatus.restoreRotation();
                             if(posDelta != Vec3d.ZERO){
-                                Vec3d trueDelta = args.getPos().subtract(posDelta2);//.subtract(0, 0.2, 0);// = args.getPos().subtract(posDelta);
+                                Vec3d trueDelta = args.getEntityPos().subtract(posDelta2);//.subtract(0, 0.2, 0);// = args.getEntityPos().subtract(posDelta);
                                 //Debug.chat("true move", RenderTasks.getDisplayedLocationDouble(trueDelta));
                                 //args.setPosition(posDelta);
                                 args.setPosition(posDelta);
-                                // args.move(MovementType.PLAYER, posDelta.subtract(args.getPos()));
+                                // args.move(MovementType.PLAYER, posDelta.subtract(args.getEntityPos()));
                                 args.move(MovementType.PLAYER, trueDelta);
                                 //Debug.chat("final pos", RenderTasks.getDisplayedLocationDouble(args.getPos()));
                                 //Debug.chat("TpReach back", RenderTasks.getDisplayedLocationDouble(args.getPos()));
@@ -415,8 +415,8 @@ public class Attack extends BaseModule {
         //rewrite tp system
         Deque<MovTasks.MovInfo> movementStack = new ArrayDeque<>();
         Deque<MovTasks.MovInfo> shouldMoveBackStack = new ArrayDeque<>();
-        movementStack.addLast(MovTasks.MovInfo.createNoUpdate( mc.player.getPos()));
-        shouldMoveBackStack.addFirst(MovTasks.MovInfo.createNoUpdate( mc.player.getPos()));
+        movementStack.addLast(MovTasks.MovInfo.createNoUpdate( mc.player.getEntityPos()));
+        shouldMoveBackStack.addFirst(MovTasks.MovInfo.createNoUpdate( mc.player.getEntityPos()));
         boolean alreadyInRange = alreadyAtTarget || target.getBoundingBox().squaredMagnitude(player.getEyePos()) < MathUtils.s2(attackRange);
         //mace hack、
         boolean useExactAttack = exactAttack.get() && (!alreadyInRange || CombatTasks.getPositionPredict().considerAntiShield(target));
@@ -520,7 +520,7 @@ public class Attack extends BaseModule {
                     minY = Math.min(minY, movementList.get(i).vec3d().y);
                 }
                 //calculate max deltaY
-                if(Math.abs(maxY - minY) > player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1){
+                if(Math.abs(maxY - minY) > player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) - 1){
                     ClientPlayerAccess.of((ClientPlayerEntity) player).setForceNoFall(true);
                     //in case that resync packet cause OnGround falldamage
                     player.setOnGround(false);
@@ -561,11 +561,11 @@ public class Attack extends BaseModule {
 //            player.setOnGround(false);
 //            double deltaY = Math.max(target.getY() - mc.player.getY(),0);
 //            //error: down search returns negative value
-//            double height = MovTasks.searchFirstNoCollisionSpaceYHeight(mc.player.getPos().add(0, maxMace, 0), 0, maxMace - 2 - deltaY, false);
+//            double height = MovTasks.searchFirstNoCollisionSpaceYHeight(mc.player.getEntityPos().add(0, maxMace, 0), 0, maxMace - 2 - deltaY, false);
 //
 //            double maceHeightMultiplier = maxMace + height;
 //            //attack space
-//            double minAvailableHeight = MovTasks.searchFirstNoCollisionSpaceYHeight(mc.player.getPos(), deltaY , maxMace, true);
+//            double minAvailableHeight = MovTasks.searchFirstNoCollisionSpaceYHeight(mc.player.getEntityPos(), deltaY , maxMace, true);
 //
 //            if(maceHeightMultiplier - minAvailableHeight > 1.5){
 //                Debug.chat(Text.literal("Mace Attack Simulation: simulate height %.2f, target height: %.2f".formatted(maceHeightMultiplier, minAvailableHeight)).formatted(Formatting.GREEN));
@@ -637,7 +637,7 @@ public class Attack extends BaseModule {
             }
         }
         double range = getTpSelectRange();
-        Vec3d current = player.getPos();
+        Vec3d current = player.getEntityPos();
         //feat : teleporting position should met the need of antishield
         Vec3d targetPos = positionPredict.getExactAttackPosition(target);
 

@@ -117,7 +117,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-//                Vec3d vec3 = movementManagerEvent.context.playerStatus.entity.getPos();
+//                Vec3d vec3 = movementManagerEvent.context.playerStatus.entity.getEntityPos();
 ////                if(vec3.getY() != 0){
 ////                    Debug.info(vec3);
 ////                }
@@ -133,7 +133,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 
                     ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
                     if(!player.isOnGround()){
-                        Vec3d vec3d2 = new Vec3d((double)player.input.movementSideways, 0.0, (double)player.input.movementForward);
+                        Vec3d vec3d2 = new Vec3d((double)player.sidewaysSpeed, 0.0, (double)player.forwardSpeed);
                         Vec3d vec3d0 = player.getVelocity();
                         Vec3d movement = //new Vec3d(vec3d0.x, 0, vec3d0.z)
                             vec3d0.add( EntityUtils.movementInputToVelocity(vec3d2, player.getMovementSpeed(), player.getYaw()));

@@ -174,7 +174,7 @@ public class Scaffold extends BaseModule {
             // Debug.chat("tick", ClientAccess.of(mc).getCooldown());
             //check if we can have any scaffold
             //todo add lerp to config
-            Vec3d playerPos = mc.player.getLerpedPos(2.0F);//mc.player.getPos();
+            Vec3d playerPos = mc.player.getLerpedPos(2.0F);//mc.player.getEntityPos();
             //do not predict y level
             playerPos = new Vec3d(playerPos.x, mc.player.getY(), playerPos.z);
 
@@ -198,7 +198,7 @@ public class Scaffold extends BaseModule {
             if(supportingState.isReplaceable()){
                 BlockHitResult hitResult = guessTheBestPlacePositionForTargetingBlock(supportingPos);
                 if(hitResult != null){
-                    //Debug.chat("interact", hitResult.getBlockPos(), hitResult.getSide(), hitResult.getPos());
+                    //Debug.chat("interact", hitResult.getBlockPos(), hitResult.getSide(), hitResult.getEntityPos());
                     placeBlockLegally(hand, hitResult);
                     int cool = cooldownOverride.get();
                     if(cool >= 0){

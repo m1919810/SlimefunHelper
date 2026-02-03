@@ -183,7 +183,7 @@ public class ProjectileEnhance extends BaseModule {
                             Vec3d facingNorm = facing.normalize();
                             Vec3d oppositeFacing = Vec3d.ZERO.subtract(facingNorm);
                             Vec3d finalMove = Vec3d.ZERO;
-                            Vec3d currentPlayerPos = mc.player.getPos();
+                            Vec3d currentPlayerPos = mc.player.getEntityPos();
 
                             test_tp_position:
                             {
@@ -248,7 +248,7 @@ public class ProjectileEnhance extends BaseModule {
 
                                     MovTasks.scheduleFarawayMoveInternal(movements, false, MovTasks.MovingContext.create(currentPlayerPos), true);
 
-                                    MovTasks.setupAutoResync(mc.player.getPos() , 10);
+                                    MovTasks.setupAutoResync(mc.player.getEntityPos() , 10);
                                     break pearl_tp;
                                 }
 

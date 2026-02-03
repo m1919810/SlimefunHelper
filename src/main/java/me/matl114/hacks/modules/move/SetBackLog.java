@@ -54,19 +54,21 @@ public class SetBackLog extends BaseModule {
     public int maxTpId = -1;
     public Vec3d lastDesyncPos = Vec3d.ZERO;
     public void onSetBack(Event<PlayerPositionLookS2CPacket> event){
-        PlayerPositionLookS2CPacket packet = event.context;
-        int tpId = packet.getTeleportId();
+        PlayerPositionLookS2CPacket packet0 = event.context;
+        int tpId = packet0.teleportId();
         maxTpId = Math.max(maxTpId, tpId);
         if(mc.player != null){
-            lastDesyncPos = mc.player.getPos();
+            lastDesyncPos = mc.player.getEntityPos();
         }
+        var packet = packet0.change().position();
+
         if(logResync.get()){
             String logFormat = logResyncFormat.get();
             try{
                 var text = ChatUtils.stringToText(logFormat.formatted(packet.getX(), packet.getY(), packet.getZ()));
                 text.setStyle(text.getStyle()
-                    .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(packet.getX(),packet.getY(),packet.getZ())))
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))
+                    .withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(packet.getX(),packet.getY(),packet.getZ())))
+                    .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord")))
                 )
                 ;
                 Debug.chat(

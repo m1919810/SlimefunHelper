@@ -6,6 +6,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.collections.Point;
 import net.minecraft.client.MinecraftClient;
@@ -51,13 +52,13 @@ public class CopyId extends BaseModule {
 
             if(sfid!=null){
                 client.keyboard.setClipboard(sfid);
-                player.sendMessage(Text.literal("成功将Slimefun ID拷贝至你的剪切板和公共参数! 值: ").formatted(Formatting.GREEN).append(Text.literal(sfid).formatted(Formatting.WHITE)));
+                Debug.chat(Text.literal("成功将Slimefun ID拷贝至你的剪切板和公共参数! 值: ").formatted(Formatting.GREEN).append(Text.literal(sfid).formatted(Formatting.WHITE)));
 
                 return true;
             }else{
                 String id = Registries.ITEM.getId(heldItem.getItem()).getPath().toUpperCase(Locale.ROOT);
                 client.keyboard.setClipboard(id);
-                player.sendMessage(Text.literal("该物品不是Slimefun物品,拷贝原版ID!").formatted(Formatting.GREEN).append(Text.literal(id).formatted(Formatting.WHITE)));
+                Debug.chat(Text.literal("该物品不是Slimefun物品,拷贝原版ID!").formatted(Formatting.GREEN).append(Text.literal(id).formatted(Formatting.WHITE)));
                 return true;
             }
         }

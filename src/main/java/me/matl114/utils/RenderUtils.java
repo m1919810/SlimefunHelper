@@ -1,6 +1,7 @@
 package me.matl114.utils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import me.matl114.utils.world.RegionPos;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
@@ -398,7 +399,7 @@ public class RenderUtils {
         if(e.isRemoved())
             return e.getBoundingBox();
 
-        Vec3d offset = getLerpedPos(e, partialTicks).subtract(e.getPos());
+        Vec3d offset = getLerpedPos(e, partialTicks).subtract(e.);
         return e.getBoundingBox().offset(offset);
     }
 
@@ -407,7 +408,7 @@ public class RenderUtils {
         // When an entity is removed, it stops moving and its lastRenderX/Y/Z
         // values are no longer updated.
         if(e.isRemoved())
-            return e.getPos();
+            return e.;
 
         double x = MathHelper.lerp(partialTicks, e.lastRenderX, e.getX());
         double y = MathHelper.lerp(partialTicks, e.lastRenderY, e.getY());
@@ -415,7 +416,7 @@ public class RenderUtils {
         return new Vec3d(x, y, z);
     }
     public static Vec3d getLerpedDelta(Entity e, float partialTicks){
-        return getLerpedPos(e, partialTicks).subtract(e.getPos());
+        return getLerpedPos(e, partialTicks).subtract(e.);
     }
 
 }

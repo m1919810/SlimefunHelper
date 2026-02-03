@@ -72,17 +72,20 @@ public class ShowIdTooltips extends BaseModule {
                 try{
                     NbtCompound tag= getCustomDataReadOnly(stack);
                     if((tag=getBukkitValue(tag))!=null  && tag.contains(GCE_CHICKEN_PATH)){
-                        int[] dna=tag.getIntArray(GCE_CHICKEN_PATH);
-                        int len=dna.length;
-                        StringBuilder sb=new StringBuilder();
-                        for(int i=0;i<6;i++){
-                            if(len>i&& dna[i]==0||dna[i]==1||dna[i]==3){
-                                sb.append(dna[i]%2==0?GCE_GENE_DISPLAY_L[i]:GCE_GENE_DISPLAY_U[i]).append(dna[i]/2==0?GCE_GENE_DISPLAY_L[i]:GCE_GENE_DISPLAY_U[i]);
-                            }else{
-                                sb.append("??");
+                        int[] dna=tag.getIntArray(GCE_CHICKEN_PATH).orElse(null);
+                        if(dna!=null){
+                            int len=dna.length;
+                            StringBuilder sb=new StringBuilder();
+                            for(int i=0;i<6;i++){
+                                if(len>i&& dna[i]==0||dna[i]==1||dna[i]==3){
+                                    sb.append(dna[i]%2==0?GCE_GENE_DISPLAY_L[i]:GCE_GENE_DISPLAY_U[i]).append(dna[i]/2==0?GCE_GENE_DISPLAY_L[i]:GCE_GENE_DISPLAY_U[i]);
+                                }else{
+                                    sb.append("??");
+                                }
                             }
+                            lores.add(Text.literal("基因工程: ").formatted(Formatting.GRAY).append(Text.literal(sb.toString()).formatted(Formatting.DARK_PURPLE)));
                         }
-                        lores.add(Text.literal("基因工程: ").formatted(Formatting.GRAY).append(Text.literal(sb.toString()).formatted(Formatting.DARK_PURPLE)));
+
                     }
                 }catch (Throwable e){
                 }

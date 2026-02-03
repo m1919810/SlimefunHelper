@@ -257,7 +257,7 @@ public class RecipeDatabase extends BaseModule {
                     Tasks.addPacketCatcher(new Tasks.TimedPacketCatcher<InventoryS2CPacket>(InventoryS2CPacket.class, 20) {
                         @Override
                         public int catchPacket(InventoryS2CPacket packet) {
-                            if(packet.getSyncId() == container.getScreenHandler().syncId){
+                            if(packet.syncId() == container.getScreenHandler().syncId){
                                 //execute immediately after the update of menu
                                 mc.executeSync(()->{
                                     onScreenContent(container);

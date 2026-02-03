@@ -88,7 +88,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements LivingEn
     @Unique
     public Vec3d predictPosition(int ticksLater, int interpolateMethod){
         if(ticksLater <= 0){
-            return getPos();
+            return getEntityPos();
         }
         Vec3d[] vec3ds;
         int current;
@@ -97,7 +97,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements LivingEn
             current = currentCursor;
         }
         if(vec3ds[current] == null){
-            return getPos();
+            return ;
         }
         Vec3d[] vec3ds1 = new Vec3d[HISTORY_LEN];
         for(var i = 0 ; i < HISTORY_LEN ; i++){

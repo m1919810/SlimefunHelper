@@ -70,7 +70,7 @@ public class BukkitItemStackUtils {
 
 
     public static String getHashFromProfile(ProfileComponent profileComponent){
-        var pps= profileComponent.properties().get("textures");
+        var pps= profileComponent.getGameProfile().properties().get("textures");
         if(pps == null || pps.isEmpty())return null;
         Property ppt = Iterables.getFirst(pps,null);
         if(ppt == null)return null;

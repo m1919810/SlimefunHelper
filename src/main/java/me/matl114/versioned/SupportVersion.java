@@ -41,7 +41,7 @@ public class SupportVersion {
     }
 
     public static SupportVersion create() {
-        String version = SharedConstants.VERSION_NAME;
+        String version = "1.21.11";
         String[] versions = version.split("\\.");
         try{
             return new SupportVersion(Integer.parseInt(versions[versions.length- 2]), Integer.parseInt(versions[versions.length - 1]));

@@ -576,7 +576,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                     }
                     if(client.player != null){
                         //leave too far
-                        if(client.player.getPos().squaredDistanceTo(currentBreakingPos.toCenterPos()) > 225){
+                        if(client.player.getEntityPos().squaredDistanceTo(currentBreakingPos.toCenterPos()) > 225){
                             currentFailBreakPos = null;
                             break resetFailBreak;
                         }

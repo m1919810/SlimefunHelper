@@ -297,7 +297,7 @@ public class MultiBlockHelper extends BaseModule {
         }
         BlockPos pos = tile.getPos();
         Block block = tile.getBlockType();
-        if(pos.toCenterPos().squaredDistanceTo(mc.player.getPos()) > 50){
+        if(pos.toCenterPos().squaredDistanceTo(mc.player.getEntityPos()) > 50){
             Debug.chat(Text.literal("[多方块执行] 你离着自动执行的多方块太远了,已关闭自动执行"));
             toggleMultiBlockAutoExecuteState(tile, false);
             return;

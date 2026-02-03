@@ -54,11 +54,11 @@ public class MovTasks {
     //teleport module
     @ApiMethod(deprecate = true)
     public static void farawayMoveTo(Vec3d vec3d, boolean updatePlayer){
-        farawayMoveFromTo(mc.player.getPos(), vec3d, null, updatePlayer);
+        farawayMoveFromTo(mc.player.getEntityPos(), vec3d, null, updatePlayer);
     }
     @ApiMethod(deprecate = true)
     public static void farawayMove(Vec3d vec3d, boolean updatePlayer){
-        farawayMoveFromTo(mc.player.getPos(), mc.player.getPos().add(vec3d), null, updatePlayer);
+        farawayMoveFromTo(mc.player.getEntityPos(), mc.player.getEntityPos().add(vec3d), null, updatePlayer);
     }
     @ApiMethod(deprecate = true)
     public static void farawayMoveFromTo(Vec3d from , Vec3d to, Boolean onGroundOverride, boolean updatePlayer){
@@ -113,7 +113,7 @@ public class MovTasks {
     }
     public static void moveToWithPackets(Vec3d to, Boolean onGroundOverride){
         Entity entity = mc.player.getRootVehicle();
-        if(Objects.equals(to, mc.player.getPos())){
+        if(Objects.equals(to, mc.player.getEntityPos())){
             if(mc.player.hasVehicle()){
                 mc.getNetworkHandler().sendPacket(new VehicleMoveC2SPacket(entity));
             }else{
@@ -121,8 +121,8 @@ public class MovTasks {
             }
         }else{
             double deltaY = entity.getY() - mc.player.getY();
-//            Vec3d curr = entity.getPos();
-//            Vec3d currPlayer = mc.player.getPos();
+//            Vec3d curr = entity.getEntityPos();
+//            Vec3d currPlayer = mc.player.getEntityPos();
             entity.setPosition(to.add(0, deltaY, 0));
             mc.player.setPosition(to);
             if(mc.player.hasVehicle()){
@@ -169,7 +169,7 @@ public class MovTasks {
     }
     @ApiMethod
     public static MovingContext createPlayerMovContext(){
-        return MovingContext.create(mc.player.getPos());
+        return MovingContext.create(mc.player.getEntityPos());
     }
     @ApiMethod
     public static MovInfo createNotOnGround(Vec3d vec3){
@@ -753,14 +753,14 @@ public class MovTasks {
     }
 //    public static boolean isPlayerPassable(Vec3d pos){
 //        boolean passMoveTest = false;
-//        Vec3d vecpos = mc.player.getPos();
+//        Vec3d vecpos = mc.player.getEntityPos();
 //        Vec3d savedPosition = new Vec3d(vecpos.x, vecpos.y, vecpos.z);
 //        try{
 ////            if(isPassMovement()){
 ////                passMoveTest = true;
 ////            }else {
 ////                mc.player.move(MovementType.PLAYER, pos.subtract(savedPosition));
-////                if(mc.player.getPos().squaredDistanceTo(pos) < 0.0625){
+////                if(mc.player.getEntityPos().squaredDistanceTo(pos) < 0.0625){
 ////                    passMoveTest = true;
 ////                }
 ////            }
@@ -779,9 +779,9 @@ public class MovTasks {
     @ApiMethod
     public static void executeTp(Vec3d target, double farawayTp, boolean command, boolean considerNoFall){
         if(mc.player == null)return;
-        LAST_TP_FROM = mc.player.getPos();
+        LAST_TP_FROM = mc.player.getEntityPos();
         LAST_TP_REQUEST = Vec3d.ZERO.add(target);
-        scheduleTpInternal(MovingContext.create(mc.player.getPos()), target, farawayTp, command, false, considerNoFall);
+        scheduleTpInternal(MovingContext.create(mc.player.getEntityPos()), target, farawayTp, command, false, considerNoFall);
     }
     //TODO: add height limit: based on world height limit: some world do not want player to reach lower than height limit-or higher than bedrock or sth
     @ApiMethod
@@ -1120,7 +1120,7 @@ public class MovTasks {
         final Box currBoundingBox = entity.getBoundingBox();
         final List<Box> potentialCollisionsBB = new ArrayList<>();
         final List<VoxelShape> potentialCollisionsVoxel = new ArrayList<>();
-        collectBoxInvolvingInMovements(entity, entity.getPos(), movement, potentialCollisionsBB, potentialCollisionsVoxel, true);
+        collectBoxInvolvingInMovements(entity, entity.getEntityPos(), movement, potentialCollisionsBB, potentialCollisionsVoxel, true);
 //        if (CollisionUtil.isEmpty(currBoundingBox)) {
 //            return movement;
 //        }
@@ -1249,7 +1249,7 @@ public class MovTasks {
         Entity rootEnity = entity.getRootVehicle();
         double deltaY = rootEnity.getY() - entity.getY();
 //        entity.setPosition(from);
-        Vec3d rootVec = rootEnity.getPos();
+        Vec3d rootVec = rootEnity.getEntityPos();
         rootEnity.setPosition(from.add(0, deltaY, 0));
         //allow down velocity
 //
@@ -1296,7 +1296,7 @@ public class MovTasks {
         List<Vec3d> vec = new ArrayList<>();
         //store player information
         Vec3d playerVec = mc.player.getVelocity();
-        Vec3d playerPos = mc.player.getPos();
+        Vec3d playerPos = mc.player.getEntityPos();
 
         Vec3d currentPos = from;
         for_loop:
@@ -1436,7 +1436,7 @@ public class MovTasks {
         public Vec3d simulateMovement(Entity entity, Vec3d currentPos, Vec3d currentTry){
             Entity rootEntity = entity.getRootVehicle();
           //  double y = entity.getY() - rootEntity.getY();
-//            Vec3d originRoot = rootEntity.getPos();
+//            Vec3d originRoot = rootEntity.getEntityPos();
 //            rootEntity.setPosition(currentPos);
             RenderTasks.DEBUG_RENDER_COLLISION_RENDERING = true;
             Vec3d simu = collideWithTrustedList(rootEntity.dimensions.getBoxAt(currentPos), currentTry, this.intoVoxels, this.intoAABBs, rootEntity.getStepHeight(), rootEntity.isOnGround());
@@ -1660,7 +1660,7 @@ public class MovTasks {
             //real setback , not a tp
             Vec3d target = new Vec3d(setBackPackets.getX(), setBackPackets.getY(), setBackPackets.getZ());
             //len < 200, may be the set back of a single movement
-            double lenSqr = mc.player.getPos().squaredDistanceTo(target);
+            double lenSqr = mc.player.getEntityPos().squaredDistanceTo(target);
             // len > 3, not be setback packets of anticheat
             if (lenSqr < 60000 && lenSqr > 10) {
                 double deltaY = target.y -  mc.player.getY();
@@ -1776,7 +1776,7 @@ public class MovTasks {
 //                    args.input.movementForward = 0.0F;
 //                }
 //                holdingMace = args.getMainHandStack().getItem() instanceof MaceItem;
-//                Vec3d pos = args.getPos();
+//                Vec3d pos = args.getEntityPos();
 //                if(pos == null)return;
 //                if(canDoJump){
 ////                    mc.player.addVelocityInternal(new Vec3d(0, 8, 0));
@@ -1838,7 +1838,7 @@ public class MovTasks {
 //                                counter = 0;
 //                                lastOnGroundHeight = args.getY();
 //
-//                                args.setPosition(args.getPos().add(0, + 1E-8, 0));
+//                                args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
 //                                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround()));
 //                                noFallSetbackResponse = true;
 //
@@ -1851,7 +1851,7 @@ public class MovTasks {
 //                                counter = 0;
 //                                lastOnGroundHeight = args.getY();
 //
-//                                args.setPosition(args.getPos().add(0, + 1E-8, 0));
+//                                args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
 //                                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), false));
 //                                noFallSetbackResponse = true;
 //                            }

@@ -14,7 +14,6 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.*;
-import net.minecraft.item.trim.ArmorTrim;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.*;
@@ -110,11 +109,11 @@ public class ItemStackUtils {
                 //check protocol item
                 NbtComponent customData = (NbtComponent) map.get(CUSTOM_DATA).orElse(null);
                 if(customData == null || customData.isEmpty())return false;
-                var nbt = customData.getNbt();
+                var nbt = customData.nbt;
                 Set<String> keys = nbt.getKeys();
                 if(keys.size() > 2)return true;
                 // we only support Damage , because most of these are from damage
-                int val = nbt.getInt("Damage");
+                int val = nbt.getInt("Damage", 0);
                 if(val > 0)return true;
                 for(var key : keys){
                     //viaversion items
@@ -184,9 +183,6 @@ public class ItemStackUtils {
         return entry.getKey().get().getValue();
     }
 
-    public static <T> RegistryEntry<T> findEntry(Registry<T> registry, Identifier id){
-        return registry.getOrEmpty(id).map(registry::getEntry).orElse(null);
-    }
 
     public static class DelegateRegistryWrapperLookup implements RegistryWrapper.WrapperLookup{
         protected static final DelegateRegistryWrapperLookup INSTANCE = new DelegateRegistryWrapperLookup();
@@ -196,19 +192,13 @@ public class ItemStackUtils {
         }
 
         @Override
-        public <T> Optional<RegistryWrapper.Impl<T>> getOptionalWrapper(RegistryKey<? extends Registry<? extends T>> registryRef) {
-            return registry().getOptionalWrapper(registryRef);
+        public <T> Optional<? extends RegistryWrapper.Impl<T>> getOptional(RegistryKey<? extends Registry<? extends T>> registryRef) {
+            return registry().getOptional(registryRef);
         }
 
-        public  <T> RegistryWrapper.Impl<T> getWrapperOrThrow(RegistryKey<? extends Registry<? extends T>> registryRef){
-            return registry().getWrapperOrThrow(registryRef);
-        }
+
         public  <V> RegistryOps<V> getOps(DynamicOps<V> delegate) {
             return registry().getOps(delegate);
-        }
-
-        public RegistryEntryLookup.RegistryLookup createRegistryLookup() {
-            return registry().createRegistryLookup();
         }
     }
 
@@ -285,9 +275,9 @@ public class ItemStackUtils {
         return hasInPatch(stack, UNBREAKABLE);
     }
     public static void setUnbreakable(ItemStack stack, boolean ub){
-        UnbreakableComponent component = getInPatch(stack, UNBREAKABLE);
+        Unit component = getInPatch(stack, UNBREAKABLE);
         if(component == null){
-            setOrRemoveChange(stack, UNBREAKABLE, ub? new UnbreakableComponent(true): null);
+            setOrRemoveChange(stack, UNBREAKABLE, ub? Unit.INSTANCE: null);
         }else {
             if(!ub){
                 setOrRemoveChange(stack, UNBREAKABLE, null);
@@ -487,7 +477,7 @@ public class ItemStackUtils {
     private static final NbtCompound EMPTY = new NbtCompound(ImmutableMap.of());
     public static NbtCompound getCustomDataReadOnly(ItemStack itemStack){
         NbtComponent customData = getInPatch(itemStack, CUSTOM_DATA);
-        return customData == null? EMPTY: customData.getNbt();
+        return customData == null? EMPTY: customData.nbt;
     }
     public static void mapCustomData(ItemStack itemStack, UnaryOperator<NbtCompound> updater){
         NbtComponent customData = getInPatch(itemStack, CUSTOM_DATA);
@@ -526,12 +516,12 @@ public class ItemStackUtils {
         return getBukkitValue(compound);
     }
     public static NbtCompound getBukkitValue(@Nonnull NbtCompound nbt){
-        return nbt.contains(BUKKIT_NAMESPACE, NbtElement.COMPOUND_TYPE) ? nbt.getCompound(BUKKIT_NAMESPACE): null;
+        return nbt.get(BUKKIT_NAMESPACE) instanceof NbtCompound cpd ? cpd: null;
     }
     private static NbtCompound createBukkitValue(NbtCompound nbt){
         NbtCompound nbt0 ;
-        if(nbt.contains(BUKKIT_NAMESPACE, NbtElement.COMPOUND_TYPE)){
-            nbt0 = nbt.getCompound(BUKKIT_NAMESPACE);
+        if(nbt.get(BUKKIT_NAMESPACE) instanceof NbtCompound cpd){
+            nbt0 = cpd;
             if(nbt0 != null)return nbt0;
         }else {
             nbt0 = new NbtCompound();
@@ -540,7 +530,7 @@ public class ItemStackUtils {
         return nbt0;
     }
     public static String getSfIdFromBukkitValues(NbtCompound ntb){
-        return ntb == null? null: (ntb.contains(SLIMEFUN_ID_PATH)? ntb.getString(SLIMEFUN_ID_PATH): null);
+        return ntb == null? null: (ntb.contains(SLIMEFUN_ID_PATH)? ntb.getString(SLIMEFUN_ID_PATH, null): null);
     }
     public static String getSfId(NbtCompound nbt){
         NbtCompound bukkitValues=getBukkitValue(nbt);
@@ -579,13 +569,16 @@ public class ItemStackUtils {
 
 
     public static void setCustomModelData(ItemStack stack,int customModelData){
-        setOrRemoveChange(stack, CUSTOM_MODEL_DATA, new CustomModelDataComponent(customModelData));
+        setOrRemoveChange(stack, CUSTOM_MODEL_DATA, new CustomModelDataComponent(
+            List.<Float>of((float)customModelData), List.of(), List.of(), List.of()
+
+        ));
     }
 
 
     public static int getEnchantmentLevel(ItemEnchantmentsComponent component, RegistryKey<Enchantment> key){
-        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT);
-        return component.getLevel (enchantmentRegistry.getEntry(Enchantments.SHARPNESS).orElse(null));
+        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().getOrThrow(RegistryKeys.ENCHANTMENT);
+        return component.getLevel (enchantmentRegistry.getOptional(Enchantments.SHARPNESS).orElse(null));
     }
 
 }

@@ -13,10 +13,12 @@ import me.matl114.utils.Debug;
 import me.matl114.events.Event;
 import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.MaceItem;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
+import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -151,7 +153,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         runningDelegate = getDelegate();
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-        Vec3d pos = args.getPos();
+        Vec3d pos = args.getEntityPos();
         if(pos == null){
             entityStage = ENTITY_STAGE_INITIALIZING;
             return;
@@ -169,9 +171,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         entityStage = ENTITY_STAGE_ALIVE;
         holdingMace = args.getMainHandStack().getItem() instanceof MaceItem;
         lastHeight = args.getY();
-        safeDistance =  args.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) + noFallSafeDistance.get() ;
+        safeDistance =  args.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) + noFallSafeDistance.get() ;
         //reset
-        if(args.isOnGround() || args.isInsideWaterOrBubbleColumn()){
+        if(args.isOnGround() || args.isTouchingWater()){
             lastOnGroundHeight = lastHeight;
             runningDelegate.counter = 0;
         }
@@ -250,8 +252,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                         counter = 0;
                         module.lastOnGroundHeight = args.getY();
 
-                        args.setPosition(args.getPos().add(0, + 1E-8, 0));
-                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround()));
+                        args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
+                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround(), args.horizontalCollision));
                         noFallSetbackResponse = true;
                     }
                 }else{
@@ -303,8 +305,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 counter = 0;
                 module.lastOnGroundHeight = args.getY();
 
-                args.setPosition(args.getPos().add(0, + 1E-8, 0));
-                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), false));
+                args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
+                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), false, args.horizontalCollision));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
             }else if(module.isActive()){
@@ -331,7 +333,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             counter = 0;
                             //use history y
                             module.lastOnGroundHeight = entity.pos.getY();
-                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false));
+                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false, ));
                             //todo: 测试终止横向动量 减少grimac发包
 //                                    entity.entity.setPos(entity.pos.getX(), entity.entity.getY() , entity.pos.getZ());
                             noFallSetbackResponse = true;
@@ -570,7 +572,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 counter = 0;
                 module.lastOnGroundHeight = args.getY();
 
-                args.setPosition(args.getPos().add(0, + 1E-8, 0));
+                args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
                 mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), false));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
@@ -588,9 +590,12 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if(module.isActive() && duplicateCount >= 1){
                 //do not make velocity input
                 //Debug.info("check input");
-                var input = movementManagerEvent.context.playerStatus.entity.input;
-                input.movementForward = 0;
-                input.movementSideways = 0;
+                ClientPlayerEntity entity = movementManagerEvent.context.playerStatus.entity;
+                var input = entity.input;
+                var input0 = input.playerInput;
+                input.playerInput = new PlayerInput(false, false, input0.left(), input0.right(), input0.jump(), input0.sneak(), input0.sprint());
+//                input.movementForward = 0;
+//                input.movementSideways = 0;
             }
         }
 
@@ -601,7 +606,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 duplicatingNoFall = false;
                 if(lastNoFallPos != null){
                     //near
-                    if(Math.abs(lastNoFallPos.y - entity.entity.getY()) < 1e-2 && entity.entity.getPos().squaredDistanceTo(lastNoFallPos) < 1 && lastNoFall + latency >= Tasks.getTick()){
+                    if(Math.abs(lastNoFallPos.y - entity.entity.getY()) < 1e-2 && entity.entity.getEntityPos().squaredDistanceTo(lastNoFallPos) < 1 && lastNoFall + latency >= Tasks.getTick()){
                         duplicatingNoFall = true;
                     }
                 }
@@ -649,7 +654,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             lastNoFall = Tasks.getTick();
                             counter = 0;
                             //use history y //todo try use nofall pos as this
-                            lastNoFallPos = entity.entity.getPos();
+                            lastNoFallPos = entity.entity.getEntityPos();
                             //todo figure out why sync flood happens
 //todo: try send it eariler
 

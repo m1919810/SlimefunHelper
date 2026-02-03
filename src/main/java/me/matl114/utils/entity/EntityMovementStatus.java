@@ -12,7 +12,7 @@ public class EntityMovementStatus<T extends Entity>{
         horizontalCollision = entity.horizontalCollision;
         verticalCollision = entity.verticalCollision;
         groundCollision = entity.groundCollision;
-        pos = entity.getPos();
+        pos = entity.getEntityPos();
         pitch = entity.getPitch();
         yaw = entity.getYaw();
         vec = entity.getVelocity();

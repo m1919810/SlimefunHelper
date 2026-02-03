@@ -188,7 +188,7 @@ public class BowEnhance extends BaseModule {
         Vec2f playerPitchYaw = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         var facing = entity == null ? mc.player.getRotationVector().normalize() : CombatTasks.getPositionPredict().predictAimPositionForEntity(entity, 3600000).subtract(mc.player.getEyePos());
         Entity nowMePointingTheEntity = (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY)? ((EntityHitResult)mc.crosshairTarget).getEntity() : null;
-        if(nowMePointingTheEntity != null && nowMePointingTheEntity.getPos().squaredDistanceTo(mc.player.getEyePos()) > 50){
+        if(nowMePointingTheEntity != null && nowMePointingTheEntity.getEntityPos().squaredDistanceTo(mc.player.getEyePos()) > 50){
             nowMePointingTheEntity = null;
         }
         boolean makeAim = enableAim.get();
@@ -202,7 +202,7 @@ public class BowEnhance extends BaseModule {
                 Vec3d facingNorm = facing.normalize();
                 Vec3d oppositeFacing = Vec3d.ZERO.subtract(facingNorm);
                 Vec3d finalMove = Vec3d.ZERO;
-                Vec3d currentPlayerPos = mc.player.getPos();
+                Vec3d currentPlayerPos = mc.player.getEntityPos();
                 boolean shouldResetRotation = true;
                 test_tp_position:
                 {
@@ -282,7 +282,7 @@ public class BowEnhance extends BaseModule {
                         //todo: check if there is any problem
                         MovTasks.scheduleFarawayMoveInternal(movements, false, MovTasks.MovingContext.create(currentPlayerPos), true);
 
-                        MovTasks.setupAutoResync(mc.player.getPos() , 10);
+                        MovTasks.setupAutoResync(mc.player.getEntityPos() , 10);
                         //disable later autoAim because we have sent the pitchYaw
                         makeAim = false;
                         break make_movements;
@@ -366,7 +366,7 @@ public class BowEnhance extends BaseModule {
         Vec2f playerPitchYaw = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         var facing = entity == null ? mc.player.getRotationVector().normalize() : CombatTasks.getPositionPredict().predictAimPositionForEntity(entity, 3600000).subtract(mc.player.getEyePos());
         Entity nowMePointingTheEntity = (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY)? ((EntityHitResult)mc.crosshairTarget).getEntity() : null;
-        if(nowMePointingTheEntity != null && nowMePointingTheEntity.getPos().squaredDistanceTo(mc.player.getEyePos()) > 50){
+        if(nowMePointingTheEntity != null && nowMePointingTheEntity.getEntityPos().squaredDistanceTo(mc.player.getEyePos()) > 50){
             nowMePointingTheEntity = null;
         }
         boolean makeAim = enableAim.get();
@@ -380,7 +380,7 @@ public class BowEnhance extends BaseModule {
                 Vec3d facingNorm = facing.normalize();
                 Vec3d oppositeFacing = Vec3d.ZERO.subtract(facingNorm);
                 Vec3d finalMove = Vec3d.ZERO;
-                Vec3d currentPlayerPos = mc.player.getPos();
+                Vec3d currentPlayerPos = mc.player.getEntityPos();
                 boolean shouldResetRotation = true;
                 test_tp_position:
                 {
@@ -449,7 +449,7 @@ public class BowEnhance extends BaseModule {
                         //todo: check if there is any problem
                         MovTasks.scheduleFarawayMoveInternal(movements, false, MovTasks.MovingContext.create(currentPlayerPos), true);
 
-                        MovTasks.setupAutoResync(mc.player.getPos() , 10);
+                        MovTasks.setupAutoResync(mc.player.getEntityPos() , 10);
                         //disable later autoAim because we have sent the pitchYaw
                         break make_movements;
                     }

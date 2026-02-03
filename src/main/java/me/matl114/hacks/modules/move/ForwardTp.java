@@ -49,7 +49,7 @@ public class ForwardTp extends BaseModule {
     public boolean quickMovFront(){
         ClientPlayerEntity player = mc.player;
         if (player == null) return false;
-        Vec3d vec3d = player.getPos();
+        Vec3d vec3d = player.getEyePos();
         Vec3d lookat = player.getRotationVector().normalize();
         Vec3d lastAvailablePos = calculateAvailableMovPlace(mc.player, vec3d, lookat, distance, maxDistance.get());
 //        DEBUG_RENDER_COLLISION_RENDERING = true;
@@ -74,7 +74,7 @@ public class ForwardTp extends BaseModule {
     public boolean quickMovTowardsWall(){
         ClientPlayerEntity player = mc.player;
         if (player == null) return false;
-        Vec3d vec3d = player.getPos();
+        Vec3d vec3d = player.getEntityPos();
         Vec3d lookat = player.getRotationVector().normalize();
         Vec3d lastAvailablePos = calculateNextWallPosition(mc.player, vec3d, lookat, distance, maxDistance.get());
         if(lastAvailablePos !=  vec3d){
