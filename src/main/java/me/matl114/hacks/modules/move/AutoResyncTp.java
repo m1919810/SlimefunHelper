@@ -61,7 +61,11 @@ public class AutoResyncTp extends BaseModule {
             }
         }
     }
+
     public boolean hasMove(PlayerPositionLookS2CPacket packet){
-        packet1.relatives().contains(PositionFlag.X)
+        boolean bl = packet.relatives().contains(PositionFlag.X);
+        boolean bl2 = packet.relatives().contains(PositionFlag.Y);
+        boolean bl3 = packet.relatives().contains(PositionFlag.Z);
+        return bl || bl2 || bl3;
     }
 }

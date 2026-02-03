@@ -116,7 +116,7 @@ public class NewStyleModel extends BaseModule {
         return stack;
     }
     public static boolean isNewVersion(ItemStack stack) {
-        return ItemStackUtils.getCustomDataReadOnly(stack).getBoolean(PATH_OF_NEW_VERSION);
+        return ItemStackUtils.getCustomDataReadOnly(stack).contains(PATH_OF_NEW_VERSION);
     }
 
     public ModelIdentifier resolveNewModel(ItemStack stack) {

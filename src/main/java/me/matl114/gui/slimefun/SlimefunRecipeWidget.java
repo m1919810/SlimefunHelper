@@ -7,6 +7,7 @@ import me.matl114.gui.basic.*;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
+import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import me.matl114.utils.inventory.MyIngredientImmutableInventory;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.inventory.Inventory;
@@ -30,7 +31,7 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
     protected static final int DY = 64;
     BiConsumer<ItemStack,Boolean> callback1;
     BiConsumer<String,Boolean> callback2;
-    Ingredient[] ingredients;
+    RecipeIngredient[] ingredients;
 
     @Setter
     Runnable cancelCallback;

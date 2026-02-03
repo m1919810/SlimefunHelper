@@ -10,6 +10,7 @@ import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -108,10 +109,17 @@ public class EntityUtils {
     }
     public static Identifier getSpawnedEntityId(NbtCompound nbt, String spawnDataKey) {
         if (nbt.contains(spawnDataKey, 10)) {
-            String string = nbt.getCompound(spawnDataKey).getCompound("entity").getString("id");
-            if(string != null && !string.isEmpty()){
-                return Identifier.tryParse(string);
+            if(nbt.get(spawnDataKey) instanceof NbtCompound cp1){
+                if(cp1.get("entity") instanceof NbtCompound cp2){
+                    if(cp2.get("id") instanceof NbtString nbt3){
+                        String string = nbt3.asString();
+                        if(string != null && !string.isEmpty()){
+                            return Identifier.tryParse(string);
+                        }
+                    }
+                }
             }
+
             return null;
         } else {
 

@@ -23,6 +23,7 @@ import me.matl114.utils.RaycastUtils;
 import me.matl114.events.Event;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.containers.MetaData;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.Screen;
@@ -255,7 +256,7 @@ public class MultiBlockHelper extends BaseModule {
     }
 
     public void clickMovement(BlockHitResult result, Vec2f pitchYaw, int clickRate){
-        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(pitchYaw.y, pitchYaw.x, mc.player.isOnGround()));
+        mc.getNetworkHandler().sendPacket(VPacket.newLookAndOnGround(pitchYaw.y, pitchYaw.x, mc.player.isOnGround(), mc.player.horizontalCollision));
         for(int i=0 ; i< clickRate; ++i){
             mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, result, sequence)));
         }

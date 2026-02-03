@@ -21,6 +21,7 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.events.Event;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
@@ -30,7 +31,6 @@ import net.minecraft.item.RangedWeaponItem;
 import net.minecraft.item.TridentItem;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.EntityHitResult;
@@ -173,7 +173,7 @@ public class BowEnhance extends BaseModule {
                 try{
                     Entity entity = CombatTasks.getTargetSelector().searchAimableEntity(itemInUse.getItem() instanceof BowItem);
                     if(entity != null){
-                        RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
+                        RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
                         Box box = RenderUtils.getLerpedBox(entity, tickDelta);
                         RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), box.getMinPos(), box.getMaxPos());
                     }
@@ -301,7 +301,7 @@ public class BowEnhance extends BaseModule {
             if(Float.isNaN(red.x) || Float.isInfinite(red.x) || Float.isNaN(red.y) || Float.isInfinite(red.y)){
                 Debug.chat("[Bow Aim] Arrow failed to reach the target");
             }else{
-                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(red.y, red.x, mc.player.isOnGround()));
+                mc.getNetworkHandler().sendPacket(VPacket.newLookAndOnGround(red.y, red.x, mc.player.isOnGround(), mc.player.horizontalCollision));
             }
 
 

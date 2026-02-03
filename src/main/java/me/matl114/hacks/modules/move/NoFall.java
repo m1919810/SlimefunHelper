@@ -12,13 +12,13 @@ import me.matl114.managers.Configs;
 import me.matl114.utils.Debug;
 import me.matl114.events.Event;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.MaceItem;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
-import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -173,7 +173,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         lastHeight = args.getY();
         safeDistance =  args.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) + noFallSafeDistance.get() ;
         //reset
-        if(args.isOnGround() || args.isTouchingWater()){
+        if(args.isOnGround() || args.isTouchingWater() || args.getBlockStateAtPos().isOf(Blocks.BUBBLE_COLUMN)){
             lastOnGroundHeight = lastHeight;
             runningDelegate.counter = 0;
         }
@@ -253,7 +253,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                         module.lastOnGroundHeight = args.getY();
 
                         args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
-                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround(), args.horizontalCollision));
+                        mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround(), args.horizontalCollision));
                         noFallSetbackResponse = true;
                     }
                 }else{
@@ -306,7 +306,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 module.lastOnGroundHeight = args.getY();
 
                 args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
-                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), false, args.horizontalCollision));
+                mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(args.getX(), args.getY() , args.getZ(), false, args.horizontalCollision));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
             }else if(module.isActive()){
@@ -333,7 +333,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             counter = 0;
                             //use history y
                             module.lastOnGroundHeight = entity.pos.getY();
-                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false, ));
+                            mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false, entity.horizontalCollision));
                             //todo: 测试终止横向动量 减少grimac发包
 //                                    entity.entity.setPos(entity.pos.getX(), entity.entity.getY() , entity.pos.getZ());
                             noFallSetbackResponse = true;
@@ -465,7 +465,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                         //cancel , do not restore pos
                         movementManagerEvent.cancel();
 
-                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+                        mc.getNetworkHandler().sendPacket(VPacket.newOnGroundOnly(true, player.horizontalCollision));
                         //包吃住 不要过
                         noFallSetbackResponse = false;
                         ClientPlayerAccess.of(player).setForceNoFall(false);
@@ -475,7 +475,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                         canDoJump = true;
                         waitTimeout = 0;
                         runningThisTick = false;
-//                        mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(player.getX(), player.getY(), player.getZ(),false));
+//                        mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(player.getX(), player.getY(), player.getZ(),false));
 
 
                     }else {
@@ -573,7 +573,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 module.lastOnGroundHeight = args.getY();
 
                 args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
-                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(args.getX(), args.getY() , args.getZ(), false));
+                mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(args.getX(), args.getY() , args.getZ(), false, args.horizontalCollision));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
             }else if(module.isActive()){
@@ -660,7 +660,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
                             //Debug.info("update 4");
                             module.lastOnGroundHeight = entity.pos.getY();
-                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false));
+                            mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(entity.pos.getX(), entity.pos.getY() + 1E-8, entity.pos.getZ(), false, entity.horizontalCollision));
 //                            entity.entity.setPos(entity.pos.getX(), entity.entity.getY(), entity.pos.getZ());
 //                            entity.entity.setVelocity(0.0, 0.0, 0.0);
                             noFallSetbackResponse = true;

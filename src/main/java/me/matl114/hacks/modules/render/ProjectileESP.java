@@ -449,7 +449,7 @@ public class ProjectileESP extends BaseModule {
         RenderUtils.drawStripLineVirtual(stack, vec3ds, clr);
         if(!vec3ds.isEmpty()){
             Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
-            RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
+            RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), finalPosition.add(RenderTasks.SMALL_FROM), finalPosition.add(RenderTasks.SMALL_TO));
         }
     }
@@ -459,11 +459,11 @@ public class ProjectileESP extends BaseModule {
         if(!vec3ds.isEmpty()){
             if(result == null || result.getType() != HitResult.Type.ENTITY){
                 Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
-                RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
+                RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
                 RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), finalPosition.add(RenderTasks.SMALL_FROM), finalPosition.add(RenderTasks.SMALL_TO));
             }else{
                 Entity hitEntity = ((EntityHitResult)result).getEntity();
-                RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
+                RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
                 Box box = RenderUtils.getLerpedBox(hitEntity, tickDelta);
                 RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), box.getMinPos(), box.getMaxPos());
             }

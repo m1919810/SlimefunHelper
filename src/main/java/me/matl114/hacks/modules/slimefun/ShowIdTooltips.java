@@ -7,6 +7,8 @@ import me.matl114.utils.ItemStackUtils;
 import me.matl114.events.Event;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtInt;
+import net.minecraft.nbt.NbtIntArray;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -71,21 +73,18 @@ public class ShowIdTooltips extends BaseModule {
             if(stack!=null&& ItemStackUtils.hasCustomData(stack)){
                 try{
                     NbtCompound tag= getCustomDataReadOnly(stack);
-                    if((tag=getBukkitValue(tag))!=null  && tag.contains(GCE_CHICKEN_PATH)){
-                        int[] dna=tag.getIntArray(GCE_CHICKEN_PATH).orElse(null);
-                        if(dna!=null){
-                            int len=dna.length;
-                            StringBuilder sb=new StringBuilder();
-                            for(int i=0;i<6;i++){
-                                if(len>i&& dna[i]==0||dna[i]==1||dna[i]==3){
-                                    sb.append(dna[i]%2==0?GCE_GENE_DISPLAY_L[i]:GCE_GENE_DISPLAY_U[i]).append(dna[i]/2==0?GCE_GENE_DISPLAY_L[i]:GCE_GENE_DISPLAY_U[i]);
-                                }else{
-                                    sb.append("??");
-                                }
+                    if((tag=getBukkitValue(tag))!=null  && tag.get(GCE_CHICKEN_PATH) instanceof NbtIntArray intArray){
+                        int[] dna= intArray.getIntArray();
+                        int len=dna.length;
+                        StringBuilder sb=new StringBuilder();
+                        for(int i=0;i<6;i++){
+                            if(len>i&& dna[i]==0||dna[i]==1||dna[i]==3){
+                                sb.append(dna[i]%2==0?GCE_GENE_DISPLAY_L[i]:GCE_GENE_DISPLAY_U[i]).append(dna[i]/2==0?GCE_GENE_DISPLAY_L[i]:GCE_GENE_DISPLAY_U[i]);
+                            }else{
+                                sb.append("??");
                             }
-                            lores.add(Text.literal("基因工程: ").formatted(Formatting.GRAY).append(Text.literal(sb.toString()).formatted(Formatting.DARK_PURPLE)));
                         }
-
+                        lores.add(Text.literal("基因工程: ").formatted(Formatting.GRAY).append(Text.literal(sb.toString()).formatted(Formatting.DARK_PURPLE)));
                     }
                 }catch (Throwable e){
                 }
@@ -107,16 +106,19 @@ public class ShowIdTooltips extends BaseModule {
                 if(tag!=null){
                     try{
                         if(tag.contains(CLT_SEED_PATH)){
-                            tag=tag.getCompound(CLT_SEED_PATH);
-                            int level=tag.getInt(CLT_SEED_DROP_PATH);
-                            int speed=tag.getInt(CLT_SEED_GROWTH_PATH);
-                            int strength=tag.getInt(CLT_SEED_STRENGTH_PATH);
-                            info.append(Text.literal("等级: ").formatted(Formatting.YELLOW));
-                            info.append(Text.literal(String.valueOf(level)).formatted(Formatting.GRAY));
-                            info.append(Text.literal(" 速率: ").formatted(Formatting.YELLOW));
-                            info.append(Text.literal(String.valueOf(speed)).formatted(Formatting.GRAY));
-                            info.append(Text.literal(" 强度: ").formatted(Formatting.YELLOW));
-                            info.append(Text.literal(String.valueOf(strength)).formatted(Formatting.GRAY));
+                            if(tag.get(CLT_SEED_PATH) instanceof NbtCompound nbt){
+
+                                int level = nbt.get(CLT_SEED_DROP_PATH) instanceof NbtInt it ? it.intValue() : 0;
+                                int speed = nbt.get(CLT_SEED_GROWTH_PATH) instanceof NbtInt it ? it.intValue() : 0;
+                                int strength = nbt.get(CLT_SEED_STRENGTH_PATH) instanceof NbtInt it ? it.intValue() : 0;
+                                info.append(Text.literal("等级: ").formatted(Formatting.YELLOW));
+                                info.append(Text.literal(String.valueOf(level)).formatted(Formatting.GRAY));
+                                info.append(Text.literal(" 速率: ").formatted(Formatting.YELLOW));
+                                info.append(Text.literal(String.valueOf(speed)).formatted(Formatting.GRAY));
+                                info.append(Text.literal(" 强度: ").formatted(Formatting.YELLOW));
+                                info.append(Text.literal(String.valueOf(strength)).formatted(Formatting.GRAY));
+                            }
+
                         }else {
                             info.append(Text.literal("未初始化属性").formatted(Formatting.RED));
                         }

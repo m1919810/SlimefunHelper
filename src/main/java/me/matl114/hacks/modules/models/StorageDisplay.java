@@ -19,7 +19,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
@@ -213,22 +213,21 @@ public class StorageDisplay extends BaseModule {
         try{
             if(tag!=null){
                 if(tag.contains(NETWORK_STORAGE_PATH)){
-                    NbtCompound storageNbt=tag.getCompound(NETWORK_STORAGE_PATH);
-                    if(storageNbt!=null&&storageNbt.contains(NETWORK_STORAGE_ITEM_PATH)){
-                        byte[] byteStream=storageNbt.getByteArray(NETWORK_STORAGE_ITEM_PATH);
-                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
-                        return stored;
+                    if(tag.get(NETWORK_STORAGE_PATH) instanceof NbtCompound storageNbt && storageNbt.get(NETWORK_STORAGE_ITEM_PATH) instanceof NbtByteArray byteArray){
+                        byte[] byteStream = byteArray.getByteArray();
+                        return BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                     }
                 }else if(tag.contains(NETWORK_MOVER_ITEM_PATH)) {
-                    byte[] byteStream=tag.getByteArray(NETWORK_MOVER_ITEM_PATH);
-                    BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
-                    return stored;
+                    //todo: check correct
+                    if(tag.get(NETWORK_MOVER_ITEM_PATH) instanceof NbtByteArray byteArray){
+                        byte[] byteStream = byteArray.getByteArray();
+                        return BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
+                    }
+
                 } else if (tag.contains(OLD_NETWORK_STORAGE_PATH)) {
-                    NbtCompound storageNbt=tag.getCompound(OLD_NETWORK_STORAGE_PATH);
-                    if(storageNbt!=null&&storageNbt.contains(OLD_NETWORK_STORAGE_ITEM_PATH)){
-                        byte[] byteStream=storageNbt.getByteArray(OLD_NETWORK_STORAGE_ITEM_PATH);
-                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
-                        return stored;
+                    if(tag.get(OLD_NETWORK_STORAGE_PATH) instanceof NbtCompound storageNbt && storageNbt.get(OLD_NETWORK_STORAGE_ITEM_PATH) instanceof NbtByteArray byteArray){
+                        byte[] byteStream= byteArray.getByteArray();
+                        return BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                     }
                 }
             }
@@ -241,18 +240,16 @@ public class StorageDisplay extends BaseModule {
         try{
             if(tag!=null){
                 if(tag.contains(NETWORK_BLUEPRINT_PATH)){
-                    NbtCompound storageNbt=tag.getCompound(NETWORK_BLUEPRINT_PATH);
-                    if(storageNbt!=null&&storageNbt.contains(NETWORK_BLUEPRINT_ITEM_PATH)){
-                        byte[] byteStream=storageNbt.getByteArray(NETWORK_BLUEPRINT_ITEM_PATH);
-                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
-                        return stored;
+                    if (tag.get(NETWORK_BLUEPRINT_PATH) instanceof NbtCompound storageNbt &&
+                        storageNbt.get(NETWORK_BLUEPRINT_ITEM_PATH) instanceof NbtByteArray byteArray) {
+                        byte[] byteStream = byteArray.getByteArray();
+                        return BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                     }
                 }else if(tag.contains(OLD_NETWORK_BLUEPRINT_ITEM_PATH)) {
-                    NbtCompound storageNbt=tag.getCompound(OLD_NETWORK_BLUEPRINT_PATH);
-                    if(storageNbt!=null&&storageNbt.contains(OLD_NETWORK_BLUEPRINT_ITEM_PATH)){
-                        byte[] byteStream=storageNbt.getByteArray(OLD_NETWORK_BLUEPRINT_ITEM_PATH);
-                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
-                        return stored;
+                    if (tag.get(OLD_NETWORK_BLUEPRINT_PATH) instanceof NbtCompound storageNbt &&
+                        storageNbt.get(OLD_NETWORK_BLUEPRINT_ITEM_PATH) instanceof NbtByteArray byteArray) {
+                        byte[] byteStream = byteArray.getByteArray();
+                        return BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                     }
                 }
             }
@@ -265,12 +262,12 @@ public class StorageDisplay extends BaseModule {
         try{
             if(tag!=null){
                 if(tag.contains(LOGITECH_SINGULARITY_PATH)){
-                    NbtCompound storageNbt=tag.getCompound(LOGITECH_SINGULARITY_PATH);
-                    if(storageNbt!=null&&storageNbt.contains(LOGITECH_SINGULARITY_ITEM_PATH)){
-                        byte[] byteStream=storageNbt.getByteArray(LOGITECH_SINGULARITY_ITEM_PATH);
-                        BukkitItemStack stored= BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
-                        return stored;
+                    if (tag.get(LOGITECH_SINGULARITY_PATH) instanceof NbtCompound storageNbt &&
+                        storageNbt.get(LOGITECH_SINGULARITY_ITEM_PATH) instanceof NbtByteArray byteArray) {
+                        byte[] byteStream = byteArray.getByteArray();
+                        return BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                     }
+
                 }
             }
             return null;
@@ -282,8 +279,10 @@ public class StorageDisplay extends BaseModule {
         try{
             if(tag!=null){
                 if(tag.contains(INFINTY_STORAGE_ITEM_PATH)){
-                    String config=tag.getString(INFINTY_STORAGE_ITEM_PATH);
-                    return BukkitConfigDeserializor.deserializeItemFromString(config);
+                    if (tag.get(INFINTY_STORAGE_ITEM_PATH) instanceof NbtString nbtString) {
+                        String config = nbtString.value();
+                        return BukkitConfigDeserializor.deserializeItemFromString(config);
+                    }
                 }
             }
             return null;
@@ -295,11 +294,15 @@ public class StorageDisplay extends BaseModule {
         try{
             if(tag!=null){
                 if(tag.contains(FINALTECH_STORAGE_ITEM_OLD)){
-                    String config=tag.getString(FINALTECH_STORAGE_ITEM_OLD);
-                    return BukkitConfigDeserializor.deserializeItemFromString(config);
+                    if (tag.get(FINALTECH_STORAGE_ITEM_OLD) instanceof NbtString nbtString) {
+                        String config = nbtString.asString();
+                        return BukkitConfigDeserializor.deserializeItemFromString(config);
+                    }
                 }else if(tag.contains(FINALTECH_STORAGE_ITEM_NEW)){
-                    String config=tag.getString(FINALTECH_STORAGE_ITEM_NEW);
-                    return BukkitConfigDeserializor.deserializeItemFromString(config);
+                    if (tag.get(FINALTECH_STORAGE_ITEM_NEW) instanceof NbtString nbtString) {
+                        String config = nbtString.asString();
+                        return BukkitConfigDeserializor.deserializeItemFromString(config);
+                    }
                 }
             }
             return null;
@@ -467,21 +470,24 @@ public class StorageDisplay extends BaseModule {
         String val = getSfId(tag);
         if(val!=null && val.startsWith("GCE_") &&( tag=getBukkitValue(tag))!=null && tag.contains(GCE_CHICKEN_PATH)){
             try{
-                int[] dna=tag.getIntArray(GCE_CHICKEN_PATH);
-                int len=dna.length;
-                StringBuilder sb=new StringBuilder();
-                for(int i=0;i<6;i++){
-                    if(len>i&& dna[i]==0||dna[i]==1||dna[i]==3){
-                        if(dna[i] == 0){
-                            sb.append(GCE_GENE_DISPLAY_L[i]).append(GCE_GENE_DISPLAY_L[i]);
+                if(tag.get(GCE_CHICKEN_PATH) instanceof NbtIntArray intArray){
+                    int[] dna = intArray.getIntArray();
+                    int len=dna.length;
+                    StringBuilder sb=new StringBuilder();
+                    for(int i=0;i<6;i++){
+                        if(len>i&& dna[i]==0||dna[i]==1||dna[i]==3){
+                            if(dna[i] == 0){
+                                sb.append(GCE_GENE_DISPLAY_L[i]).append(GCE_GENE_DISPLAY_L[i]);
+                            }else{
+                                sb.append(GCE_GENE_DISPLAY_U[i]).append(GCE_GENE_DISPLAY_U[i]);
+                            }
                         }else{
-                            sb.append(GCE_GENE_DISPLAY_U[i]).append(GCE_GENE_DISPLAY_U[i]);
+                            sb.append("??");
                         }
-                    }else{
-                        sb.append("??");
                     }
+                    return sb.toString();
                 }
-                return sb.toString();
+
             }catch (Throwable e){
             }
         }

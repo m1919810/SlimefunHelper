@@ -189,7 +189,7 @@ public class EntityESP extends BaseModule {
                             RenderUtils.drawLineVirtualCameraCoord(stack, cursorPos, center.subtract(RenderUtils.getCameraPos()), getShaderColorByEntityType(entity));
                         }
                         if(doBoxTrace){
-                            RenderUtils.setAsShaderColor(getShaderColorByEntityType(entity), 1.0F);
+                            RenderUtils.setAsCurrentShaderColor(getShaderColorByEntityType(entity), 1.0F);
                             RenderUtils.drawOutlinedBox(stack, box.getMinPos(), box.getMaxPos());
                         }
                     }

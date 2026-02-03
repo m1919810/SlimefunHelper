@@ -417,7 +417,7 @@ public class SeedOre extends BaseModule {
 
             for (Map.Entry<Ore, Set<Vec3d>> oreRenders : chunk.entrySet()) {
                 if (oreRenders.getKey().active.getOriginValue() == Boolean.TRUE) {
-                    RenderUtils.setAsShaderColor(
+                    RenderUtils.setAsCurrentShaderColor(
                         oreRenders.getKey().color
                         , 1.0F);
                     for (Vec3d pos : oreRenders.getValue()) {

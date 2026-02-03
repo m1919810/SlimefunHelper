@@ -58,7 +58,7 @@ public class CopyId extends BaseModule {
             }else{
                 String id = Registries.ITEM.getId(heldItem.getItem()).getPath().toUpperCase(Locale.ROOT);
                 client.keyboard.setClipboard(id);
-                Debug.chat(Text.literal("该物品不是Slimefun物品,拷贝原版ID!").formatted(Formatting.GREEN).append(Text.literal(id).formatted(Formatting.WHITE)));
+               Debug.chat(Text.literal("该物品不是Slimefun物品,拷贝原版ID!").formatted(Formatting.GREEN).append(Text.literal(id).formatted(Formatting.WHITE)));
                 return true;
             }
         }

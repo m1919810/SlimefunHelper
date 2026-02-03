@@ -10,6 +10,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.slimefun.*;
+import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.*;
 import net.minecraft.client.MinecraftClient;
@@ -271,7 +272,7 @@ public class SlimefunTasks {
     public static void moveSlimefunRecipePatternToContainer(RecipeEntry entry, ScreenHandler screen, int amount, boolean removeOrigin, int... acceptSlots){
         Preconditions.checkArgument(acceptSlots.length == 9);
         ItemStack[] ingredients = new ItemStack[9];
-        Ingredient[] ingre = entry.ingredient();
+        RecipeIngredient[] ingre = entry.ingredient();
         Preconditions.checkArgument(ingre.length <= 9);
         //try clear all items first;
 //        var handler = screen.getScreenHandler();
@@ -284,11 +285,11 @@ public class SlimefunTasks {
 //        }
         for (var re = 0 ;re < ingre.length; ++re){
 
-            Ingredient var = ingre[re];
+            RecipeIngredient var = ingre[re];
             if(var.isEmpty()){
                 ingredients[re] = ItemStack.EMPTY;
             }else {
-                ingredients[re] = var.getMatchingStacks()[0];
+                ingredients[re] = var.matchingStack()[0];
             }
         }
         for (var re = ingre.length ;re < 9; ++re){
@@ -298,12 +299,12 @@ public class SlimefunTasks {
         InvTasks.moveRecipePatternToContainer(screen, ingredients, acceptSlots, amount, removeOrigin, ((screen1, itemStack) -> getItemStackMatchingSlot(screen1, itemStack, true, playerInv)));
     }
 
-    public static Ingredient[] transfer3x3RecipeDisplay(RecipeTasks.RecipeRecord recipeRecord){
+    public static RecipeIngredient[] transfer3x3RecipeDisplay(RecipeTasks.RecipeRecord recipeRecord){
         return recipeRecord.ingredients();
     }
-    public static Ingredient[] transfer3x3RecipeDisplay(Recipe<?> instance, Ingredient[] ingred){
+    public static RecipeIngredient[] transfer3x3RecipeDisplay(Recipe<?> instance, RecipeIngredient[] ingred){
 
-        Ingredient[] ingredients = new Ingredient[9];
+        RecipeIngredient[] ingredients = new RecipeIngredient[9];
 
         if(instance instanceof ShapedRecipe shaped){
             List<Ingredient> raw = shaped.getIngredients();
@@ -312,17 +313,16 @@ public class SlimefunTasks {
             for (int i=0; i< 3; ++i){
                 for(int j = 0; j< 3; ++j){
                     if(i < height && j < width){
-                        ingredients[3*i + j] = raw.get(width * i + j);
+                        ingredients[3*i + j] = new RecipeIngredient( raw.get(width * i + j).getMatchingStacks());
                     }else {
-                        ingredients[3*i + j] = Ingredient.EMPTY;
+                        ingredients[3*i + j] = RecipeIngredient.EMPTY;
                     }
                 }
             }
         }else {
-            Ingredient[] raw = ingred;
-            System.arraycopy(raw, 0, ingredients, 0, raw.length);
-            for (int i=raw.length; i<9 ;++i){
-                ingredients[i] = Ingredient.EMPTY;
+            System.arraycopy(ingred, 0, ingredients, 0, ingred.length);
+            for (int i = ingred.length; i<9 ; ++i){
+                ingredients[i] = RecipeIngredient.EMPTY;
             }
         }
         return ingredients;

@@ -9,6 +9,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.events.Event;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Vec3d;
@@ -117,7 +118,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-//                Vec3d vec3 = movementManagerEvent.context.playerStatus.entity.getEntityPos();
+//                Vec3d vec3 = movementManagerEvent.context.playerStatus.entity.getPos();
 ////                if(vec3.getY() != 0){
 ////                    Debug.info(vec3);
 ////                }
@@ -147,7 +148,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 //                        movementManagerEvent.context.playerStatus.restorePos();
                             //fixme: optimize this check
                             movementManagerEvent.context.playerStatus.entity.setOnGround(true);
-                            mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+                            mc.getNetworkHandler().sendPacket(VPacket.newOnGroundOnly(true, player.horizontalCollision));
                             return;
                         }player.setOnGround(false);
                     }

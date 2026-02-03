@@ -6,6 +6,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.events.Event;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EquipmentSlot;
@@ -60,6 +61,9 @@ public class ElytraExtra extends BaseModule {
             tickEvent.context(0);
         }
     }
+    public static boolean isUsable(ItemStack stack) {
+        return stack.getDamage() < stack.getMaxDamage() - 1;
+    }
 
     //may cause fake gliding !!! must be careful
     public void handleEntityDataUpdate(Event<DataTracker.SerializedEntry<?>> serializedEntryMutableObject){
@@ -68,7 +72,7 @@ public class ElytraExtra extends BaseModule {
         if(enableUnbreakableElytra.get() && serializedEntryMutableObject.extraArgs().length > 0 && serializedEntryMutableObject.extraArgs()[0] instanceof ClientPlayerEntity player && player == mc.player && player.isGliding() && !player.isOnGround() && !player.isTouchingWater() && !player.hasStatusEffect(StatusEffects.LEVITATION)){
             ItemStack itemStack = player.getEquippedStack(EquipmentSlot.CHEST);
             //do all the checks to avoid ghost gliding
-            if (itemStack.isOf(Items.ELYTRA) && ElytraItem.isUsable(itemStack)) {
+            if (VItem.getInstance().canGlide(itemStack) && isUsable(itemStack)) {
                 var val = serializedEntryMutableObject.context();
 
                 if(val.id() == 0){
