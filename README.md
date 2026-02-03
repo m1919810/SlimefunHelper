@@ -71,3 +71,44 @@
 
 目前还在开发中
 
+## 模组支持
+slimefunHelper目前对jsMacros提供了拓展支持
+slimefunHelper对jsMacros的脚本运行环境注入了部分lib和utils,同时提供了有用的工具
+目前的提供的工具lib列表
+- ClientHelper
+- DataHelper
+
+- InputHelper
+
+- KeyBindingHelper
+
+- PacketHelper
+
+- RenderHelper
+
+- ReflectHelper
+- JsHelper
+- RegistryHelper
+- NBTHelper
+- EnumHelper
+- EntityHelper
+- ScreenHelper
+- ItemStackHelper
+- FileHelper
+- WorldHelper
+- MovTasks
+- Tasks
+- CombatTasks
+- MineTasks
+- InvTasks
+- CommonUtils
+- ChatUtils
+- InventoryUtils
+- CollectionUtils
+- RaycastUtils
+- ItemStackUtils
+- Consts        
+- Debug        
+- 等
+
+其中Consts之中还提供了方法用于向js运行环境导入所有的常用java类
