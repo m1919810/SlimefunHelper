@@ -1,13 +1,12 @@
 package me.matl114.utils;
 
 
-import me.matl114.access.MoonriseBlockStateBaseAccess;
-import me.matl114.access.MoonriseChunkBlockCountingAccess;
-import me.matl114.access.MoonriseVoxelShapeAccess;
-import me.matl114.hackUtils.RenderTasks;
-import me.matl114.utils.UtilClass.CachedShapeData;
+import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
+import me.matl114.accessors.moonrise.MoonriseChunkBlockCountingAccess;
+import me.matl114.accessors.moonrise.MoonriseVoxelShapeAccess;
+import me.matl114.hacks.RenderTasks;
+import me.matl114.utils.impl.world.CachedShapeData;
 import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.ShulkerEntity;
@@ -19,11 +18,9 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.EmptyBlockView;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.PalettedContainer;
-import static me.matl114.hackUtils.RenderTasks.*;
 
-import java.awt.*;
+import static me.matl114.hacks.RenderTasks.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;

@@ -1,20 +1,9 @@
 package me.matl114.gui;
 
 import me.matl114.gui.basic.*;
-import me.matl114.gui.config.*;
-import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.gui.slimefun.SlimefunScreen;
-import me.matl114.hackUtils.SlimefunTasks;
-import me.matl114.utils.Debug;
-import me.matl114.utils.UtilClass.AttrKeyValue;
-import me.matl114.utils.UtilClass.PropertyTracker;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
+import me.matl114.utils.impl.config.PropertyTracker;
 import net.minecraft.text.Text;
-
-import java.util.ArrayList;
 
 public class TestingScreen2 extends SlimefunScreen {
     public TestingScreen2(Text text){

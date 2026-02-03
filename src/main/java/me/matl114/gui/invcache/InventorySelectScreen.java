@@ -1,13 +1,13 @@
 package me.matl114.gui.invcache;
 
-import me.matl114.access.ScreenAccess;
-import me.matl114.access.TileInventoryScreen;
+import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.grids.GridSelectSubScreen;
-import me.matl114.hackUtils.InvTasks;
-import me.matl114.hackUtils.RenderTasks;
+import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.RenderTasks;
 import me.matl114.utils.WorldUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -65,7 +65,7 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
         description.add(Text.literal("右键点击渲染容器位置(如果有)"));
         description.add(Text.empty());
         if(screen instanceof TileInventoryScreen tile && !tile.isVirtual()){
-            icon = InvTasks.generateInvIcon(screen);
+            icon = InvTasks.generateIconForScreen(screen);
 
             BlockPos pos = tile.getPos();
             description.add(Text.literal("记录位置: " ).append(Text.literal("[%d, %d, %d]".formatted(pos.getX(), pos.getY(), pos.getZ())).formatted(Formatting.GREEN)));

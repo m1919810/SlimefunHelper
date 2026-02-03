@@ -1,23 +1,21 @@
 package me.matl114.gui.config;
 
 import com.mojang.datafixers.util.Pair;
-import lombok.val;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.index.IndexedSubScreen;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.lists.ListUnmodifiableWidget;
-import me.matl114.managers.Config;
+import me.matl114.managers.config.Config;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CollectionUtils;
-import me.matl114.utils.UtilClass.AttrKeyValue;
-import me.matl114.utils.UtilClass.PropertyTracker;
+import me.matl114.utils.impl.config.AttrKeyValue;
+import me.matl114.utils.impl.config.PropertyTracker;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
 import java.util.*;
-import java.util.function.Function;
 
 public class ConfigureListWidget extends IndexedSubScreen<Pair<String, Map<String, AttrKeyValue<?>>>, ListUnmodifiableWidget> {
     // ...                | fliter
@@ -99,7 +97,7 @@ public class ConfigureListWidget extends IndexedSubScreen<Pair<String, Map<Strin
         for (var path : config.getPaths()){
             //todo: can we generate the widget by Ref, not attrKeyValue
             if(ChatUtils.hasTranslation(path)){
-                String[] cut = me.matl114.managers.Config.cutToPath(path);
+                String[] cut = Config.cutToPath(path);
                 AttrKeyValue<?> keyValue = AttrKeyValue.ofConfigValue(path,  config.get(cut));
                 //assert not empty
                 String index = cut[0];
@@ -127,7 +125,7 @@ public class ConfigureListWidget extends IndexedSubScreen<Pair<String, Map<Strin
                 config.setValueNoNew(value.getValue().getOriginValue(), Config.cutToPath(value.getKey()));
             }
         }
-        config.save();
+        config.markForSave();
         Config.launchSaveTasks();
     }
 

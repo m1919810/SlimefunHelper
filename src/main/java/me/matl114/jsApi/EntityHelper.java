@@ -1,6 +1,6 @@
 package me.matl114.jsApi;
 
-import me.matl114.access.EntityAccess;
+import me.matl114.accessors.events.EntityAccess;
 import me.matl114.utils.ApiMethod;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;

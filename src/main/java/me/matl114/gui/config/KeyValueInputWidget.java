@@ -1,15 +1,16 @@
 package me.matl114.gui.config;
 
-import me.matl114.ModConfig;
-import me.matl114.access.ScreenAccess;
+import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.single.KeyBindConfigurateWidget;
 import me.matl114.gui.presets.lists.ListModifyScreen;
 import me.matl114.gui.presets.choices.RegistryChooseScreen;
-import me.matl114.managers.MultiKeyBind;
+import me.matl114.managers.input.IHotKey;
+import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.UtilClass.AttrKeyValue;
+import me.matl114.utils.impl.config.AttrKeyValue;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
@@ -98,8 +99,10 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
         }else if(Enum.class.isAssignableFrom(id)){
             ((AttrKeyValue.EnumAttrKeyValue)this.keyValueHolder).generateSwitchingButton(this.dkey + this.dblank, 0, this.dvalue, this.dy, Consumers.nop()).addToSub(this);
         }else if(id == MultiKeyBind.class){
-            String defaultHotkeys = ModConfig.getHotkeys(keyValueHolder.getKeyName());
-            new KeyBindConfigurateWidget(this.dkey + this.dblank + 1, 1, this.dvalue - 2, this.dy - 2, (AttrKeyValue<MultiKeyBind>) this.keyValueHolder, new MultiKeyBind(defaultHotkeys == null? "" : defaultHotkeys)).addToSub(this);
+            IHotKey hotkey = SimpleInputManager.getInstance().getHotkey(keyValueHolder.getKeyName());
+
+            MultiKeyBind defaultHotkeys = (hotkey != null)? hotkey.getDefaultKeyCodes() : new MultiKeyBind();
+            new KeyBindConfigurateWidget(this.dkey + this.dblank + 1, 1, this.dvalue - 2, this.dy - 2, (AttrKeyValue<MultiKeyBind>) this.keyValueHolder, defaultHotkeys).addToSub(this);
         }else if(id == List.class){
             //add a Edit in gui setting
             AttrKeyValue.ListAttrKeyValue listKeyValueHolder = (AttrKeyValue.ListAttrKeyValue) this.keyValueHolder;

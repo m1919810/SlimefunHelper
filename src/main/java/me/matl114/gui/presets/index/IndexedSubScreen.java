@@ -1,22 +1,13 @@
 package me.matl114.gui.presets.index;
 
-import me.matl114.gui.FilterService;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.lists.ListUnmodifiableWidget;
-import me.matl114.managers.Config;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.UtilClass.AttrKeyValue;
-import me.matl114.utils.UtilClass.PropertyTracker;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
 
 import java.util.*;
-import java.util.function.Function;
 
 public abstract class IndexedSubScreen<T, W extends Element & Drawable & Selectable> extends SubScreenWidget {
     protected List<T> list;

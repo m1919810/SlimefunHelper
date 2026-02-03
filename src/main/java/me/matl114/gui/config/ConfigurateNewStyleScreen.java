@@ -2,9 +2,8 @@ package me.matl114.gui.config;
 
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.index.IndexedScreen;
-import me.matl114.hackUtils.Tasks;
-import me.matl114.listenerUtils.Listener;
-import me.matl114.managers.Config;
+import me.matl114.events.Listener;
+import me.matl114.managers.config.Config;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 

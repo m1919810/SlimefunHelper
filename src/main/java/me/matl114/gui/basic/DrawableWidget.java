@@ -1,6 +1,6 @@
 package me.matl114.gui.basic;
 
-import me.matl114.access.ScreenAccess;
+import me.matl114.accessors.gui.ScreenAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.*;

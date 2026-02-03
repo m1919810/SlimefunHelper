@@ -1,6 +1,6 @@
 package me.matl114.jsApi;
 
-import me.matl114.hackUtils.*;
+import me.matl114.hacks.*;
 import me.matl114.utils.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.Method;
@@ -68,7 +68,6 @@ public class SlimefunHelperApi {
             slimefunHelperApi.add( buildLibForJsMacros(libBase, MovTasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, Tasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, CombatTasks.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, ItemEditTasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, MineTasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, InvTasks.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, CommonUtils.class));
@@ -86,6 +85,8 @@ public class SlimefunHelperApi {
             slimefunHelperApi.add( buildLibForJsMacros(libBase, EnumHelper.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, EntityHelper.class));
             slimefunHelperApi.add( buildLibForJsMacros(libBase, ScreenHelper.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, ClientUtils.class));
+            slimefunHelperApi.add( buildLibForJsMacros(libBase, ItemStackUtils.class));
 //            buildLibForJsMacros(libBase, ClientHelper.class);
         //todo: 适配PacketByteBufferHelper
         }
@@ -143,44 +144,9 @@ public class SlimefunHelperApi {
             }
             // 收集需要处理的方法和字段
             Set<java.lang.reflect.Method> targetMethods = new HashSet<>();
+            Set<String> getterMethods = new HashSet<>();
             Set<Field> targetFields = new HashSet<>();
 
-            // 处理字段
-            for (java.lang.reflect.Field field : utilityClass.getDeclaredFields()) {
-                int modifiers = field.getModifiers();
-                // 只处理public static字段
-                if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers)) {
-                    // 检查是否需要根据@ApiMethod过滤
-                    if (!hasApiMethodAnnotation) {
-                        if (field.getAnnotation(ApiMethod.class) == null) {
-                            continue; // 没有@ApiMethod注解，跳过
-                        }
-                    }
-                    targetFields.add(field);
-
-                    // 创建对应的实例字段
-                    String fieldDesc = Type.getDescriptor(field.getType());
-                    cw.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
-                        field.getName(), fieldDesc, null, null);
-                    StringBuilder methodDesc = new StringBuilder("(");
-                    methodDesc.append(")").append(fieldDesc);
-                    var mv = cw.visitMethod(ACC_PUBLIC| ACC_FINAL,
-                        "get" + field.getName(), methodDesc.toString(), null, null
-                        );
-                    mv.visitCode();
-                    mv.visitFieldInsn(
-                        GETSTATIC,
-                        Type.getInternalName(field.getDeclaringClass()),
-                        field.getName(),
-                        ByteCodeUtils.toJvmType(field.getType())
-                    );
-                    ASMUtils.createSuitableReturn(mv, Type.getInternalName(field.getType()));
-                    mv.visitMaxs(0,0);
-                    mv.visitEnd();
-                }
-            }
-
-            // 处理方法
             for (java.lang.reflect.Method method : utilityClass.getDeclaredMethods()) {
                 int modifiers = method.getModifiers();
                 // 只处理public static方法
@@ -192,6 +158,9 @@ public class SlimefunHelperApi {
                         }
                     }
                     targetMethods.add(method);
+                    if(method.getParameterCount() == 0 && method.getReturnType() != void.class && method.getName().startsWith("get")){
+                        getterMethods.add(method.getName());
+                    }
 
                     // 创建对应的实例方法
                     Method asmMethod = Method.getMethod(method);
@@ -230,6 +199,52 @@ public class SlimefunHelperApi {
                     mv.visitEnd();
                 }
             }
+
+            // 处理字段
+            for (java.lang.reflect.Field field : utilityClass.getDeclaredFields()) {
+                int modifiers = field.getModifiers();
+                // 只处理public static字段
+                if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers)) {
+                    // 检查是否需要根据@ApiMethod过滤
+                    if (!hasApiMethodAnnotation) {
+                        if (field.getAnnotation(ApiMethod.class) == null) {
+                            continue; // 没有@ApiMethod注解，跳过
+                        }
+                    }
+
+                    // 创建对应的实例字段
+                    //todo: 只有当不存在getter时才创建getter
+                    //todo: 只有当field为final的时候才创建field
+                    String fieldDesc = Type.getDescriptor(field.getType());
+                    if(Modifier.isFinal(modifiers)) {
+                        targetFields.add(field);
+                        cw.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
+                            field.getName(), fieldDesc, null, null);
+                    }
+
+                    String getterMethodName = "get" + field.getName();
+                    //create getter if no exist
+                    if(!getterMethods.contains(getterMethodName)){
+                        getterMethods.add(getterMethodName);
+                        var mv = cw.visitMethod(ACC_PUBLIC| ACC_FINAL,
+                            getterMethodName, "()" + fieldDesc, null, null
+                        );
+                        mv.visitCode();
+                        mv.visitFieldInsn(
+                            GETSTATIC,
+                            Type.getInternalName(field.getDeclaringClass()),
+                            field.getName(),
+                            ByteCodeUtils.toJvmType(field.getType())
+                        );
+                        ASMUtils.createSuitableReturn(mv, Type.getInternalName(field.getType()));
+                        mv.visitMaxs(0,0);
+                        mv.visitEnd();
+                    }
+
+                }
+            }
+
+            // 处理方法
 
             // 生成构造函数，初始化final字段
             MethodVisitor constructor = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);

@@ -1,18 +1,15 @@
 package me.matl114.gui.invcache;
 
 import com.google.common.collect.Streams;
-import me.matl114.access.TileInventoryScreen;
+import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.GridSubScreen;
 import me.matl114.gui.basic.*;
-import me.matl114.hackUtils.InvTasks;
-import me.matl114.hackUtils.ItemEditTasks;
-import me.matl114.hackUtils.SlimefunTasks;
+import me.matl114.hacks.InvTasks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.EnderChestInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -35,7 +32,7 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
         this(handledScreen.getScreenHandler().slots
             .stream()
             .filter(i->!(i.inventory instanceof PlayerInventory))
-            .toList(), handledScreen.getTitle(), InvTasks.generateInvIcon(handledScreen));
+            .toList(), handledScreen.getTitle(), InvTasks.generateIconForScreen(handledScreen));
         if(handledScreen instanceof TileInventoryScreen tile && !tile.isVirtual()){
             blockPos = tile.getPos();
             this.blockWorld = tile.getWorld();
@@ -119,7 +116,7 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
 
     }
     protected void rightClickItem(ItemStack stack){
-        ItemEditTasks.openEditScreen(stack, null);
+        InvTasks.openEditScreen(stack, null);
     }
 
 }

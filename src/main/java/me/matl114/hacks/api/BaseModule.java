@@ -1,0 +1,328 @@
+package me.matl114.hacks.api;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import me.matl114.gui.basic.SubScreenWidget;
+import me.matl114.hacks.utils.Named;
+import me.matl114.hacks.utils.NamedConsumer;
+import me.matl114.hacks.utils.NamedPredicate;
+import me.matl114.managers.*;
+import me.matl114.managers.config.*;
+import me.matl114.managers.input.IHotKey;
+import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.managers.input.SimpleHotKey;
+import me.matl114.managers.input.SimpleInputManager;
+import me.matl114.events.ListenerPoint;
+import net.minecraft.client.MinecraftClient;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
+
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+
+public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
+    protected static final MinecraftClient mc = MinecraftClient.getInstance();
+    public String name;
+    public BaseModule(){
+        this.name = this.getClass().getSimpleName();
+    }
+
+    public BaseModule(String name){
+        this.name = name;
+    }
+    protected boolean lastActiveFlag = false;
+    protected boolean removed = false;
+    public boolean isActive(){
+        return lastActiveFlag;
+    }
+    public boolean isRemoved(){
+        return removed;
+    }
+    protected FlagRef bindedFlag = null;
+    protected static final String REASON_BIND = "flag binding";
+    protected static final String REASON_LISTENER = "event listener";
+    protected static final String REASON_VALIDATOR = "config validator";
+    protected static final String REASON_UPDATE_LISTENER = "config update listener";
+    protected static final String REASON_CUSTOM ="custom wrapper";
+    public static String[] makePath(String c){
+        return c.split("\\.");
+    }
+    // bind the Module's status to the Flag
+    public final void bindFlag(FlagRef flagRef){
+        if(bindedFlag != null){
+            removeBind();
+        }
+        bindedFlag = flagRef;
+        if(flagRef != null){
+            flagRef.addUpdateListenerWithUpdate(new NamedConsumer<>(this, this::updateActiveStatus, REASON_BIND));
+        }
+
+    }
+
+    private void removeBind(){
+        if(bindedFlag != null){
+            bindedFlag.removeUpdateListener(s -> this.isOwner(s, REASON_BIND) );
+            bindedFlag = null;
+        }
+    }
+    // this is called via the bindedFlag
+    protected final void updateActiveStatus(boolean active){
+        if(lastActiveFlag != active){
+            lastActiveFlag = active;
+            if(active){
+                onEnableModule();
+            }else{
+                onDisableModule();
+            }
+        }
+    }
+    //module enable and disable
+    //note that it might be called outside the game, so you have check basic vars
+    @MustBeInvokedByOverriders
+    public  void onEnableModule(){
+
+    }
+    @MustBeInvokedByOverriders
+    public  void onDisableModule(){
+
+    }
+    //this is managed by ModuleManager
+    @MustBeInvokedByOverriders
+    public void onCreate(){
+        registerAll();
+    }
+    @MustBeInvokedByOverriders
+    public void onRemove(){
+        if(removed){
+            throw new IllegalStateException("Removed twice");
+        }
+        removeBind();
+        unregisterAll();
+        removed = true;
+    }
+
+    //this is for convenience
+    @MustBeInvokedByOverriders
+    public final <T extends BaseModule> T register(ModuleManager manager){
+        manager.registerModule(this);
+        return (T)this;
+    }
+    @MustBeInvokedByOverriders
+    public final void unregister(ModuleManager manager){
+        manager.unregisterModule(this);
+    }
+    //this is also for convenience
+    private final Set<ListenerPoint<?>> registeredPoints = new LinkedHashSet<>();
+    public <W> void registerListener(ListenerPoint<W> listener, Consumer<W> handler){
+        registerListener(listener, handler, 0);
+    }
+
+    public <W> void registerListener(ListenerPoint<W> listener, Predicate<W> handler){
+        registerListener(listener, handler, 0);
+    }
+
+
+
+    public <W> void registerListener(ListenerPoint<W> listener, Consumer<W> handler, int p){
+        listener.registerHandler(new NamedConsumer<>(this, handler, REASON_LISTENER), p);
+        registeredPoints.add(listener);
+    }
+
+    public <W> void registerListener(ListenerPoint<W> listener, Predicate<W> handler, int p){
+        listener.registerHandler(new NamedPredicate<>(this, handler, REASON_LISTENER), p);
+        registeredPoints.add(listener);
+    }
+    // you should put listeners here
+    @MustBeInvokedByOverriders
+    public void registerAll(){
+
+    }
+    // listeners will be automatically unregistered in onRemove
+    public <W> void unregisterAll(){
+        registeredPoints.forEach(s -> s.unregisterHandler(this::isOwner));
+        registeredPoints.clear();
+        registeredConfigRefs.forEach(s -> s.ref.removeUpdateListener(this::isOwner));
+        registeredConfigRefs.forEach(s -> s.ref.removeValidator(this::isOwner));
+        registeredConfigRefs.forEach(s -> {
+            if(s.ref instanceof ListRef list){
+                list.removeElementValidator(this::isOwner);
+            }
+        });
+        registeredConfigRefs.clear();
+        registeredHotkeys.forEach(s -> s.setInputHandler(SimpleHotKey.InputHandler.EMPTY));
+        registeredHotkeys.clear();
+    }
+    private final Set<WrapperConfigRef<?>> registeredConfigRefs = new LinkedHashSet<>();
+
+    private final Set<IHotKey> registeredHotkeys = new LinkedHashSet<>();
+
+    public <T> WrapperSettingBuilder<T> builder(Config config, Class<T> type){
+        return new WrapperSettingBuilder<>(config.asRef(), config, type, this);
+    }
+
+    public <T> WrapperSettingBuilder<T> builder(Config config, String[] path, Class<T> type){
+        return new WrapperSettingBuilder<>(config.asRef(), config, type, this).path(path);
+    }
+
+    public WrapperSettingBuilder<Boolean> flagBuilder(Config config, String... path){
+        return builder(config, Boolean.class).path(path).defaultValue(false);
+    }
+
+    public  WrapperSettingBuilder<MultiKeyBind> hotkey(String... path){
+        return builder(Configs.HOTKEY_CONFIG, MultiKeyBind.class)
+            .path(path);
+    }
+    public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(String[] path, MultiKeyBind defaultValue){
+        return builder(Configs.HOTKEY_CONFIG, MultiKeyBind.class)
+            .path(path)
+            .defaultValue(defaultValue)
+            .registerHotkey(TaskManagers.getToggleHandler(path));
+    }
+
+    public WrapperSettingBuilder<Boolean> toggle(String... path){
+        //automatically hide toggle flags because they are always internal,
+        return builder(Configs.TOGGLE_CONFIG, Boolean.class).path(path).defaultValue(false).hideConfig();
+    }
+
+    public <T extends Ref<?>> T registerConfig(T ref){
+        registerConfigWrapper(new WrapperConfigRef(ref));
+        return ref;
+    }
+
+    public <T> void registerConfigWrapper(WrapperConfigRef<T> ref){
+        registeredConfigRefs.add(ref);
+    }
+
+    public void registerHotkey(IHotKey register){
+        registeredHotkeys.add(register);
+    }
+
+    // for removal convenience
+    protected <W> boolean isOwner(Object c){
+        return (c instanceof Named named && named.getOwner() == this);
+    }
+
+    protected <W> boolean isOwner(Object c, String name){
+        return (c instanceof Named named && named.getOwner() == this && Objects.equals(name, named.getRegisterReason()));
+    }
+
+    protected <W> Consumer<W> wrap(Consumer<W> consumer){
+        return new NamedConsumer<>(this, consumer, REASON_CUSTOM);
+    }
+    protected <W> Predicate<W> wrap(Predicate<W> predicate){
+        return new NamedPredicate<>(this, predicate, REASON_CUSTOM);
+    }
+
+    //todo: remake config screen
+    @Override
+    public SubScreenWidget createGui(int x, int y, int dx, int dy) {
+        return null;
+    }
+
+    @Override
+    public void saveGui(SubScreenWidget gui) {
+
+    }
+
+    // named consumer to mark who's owner
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    public static class WrapperConfigRef<T> {
+        Ref<T> ref;
+        boolean hideInConfig = false;
+        public WrapperConfigRef(Ref<T> ref){
+            this.ref = ref;
+        }
+    }
+
+    public static class WrapperSettingBuilder<W> extends Config.SettingBuilder<W> {
+        BaseModule module;
+        WrapperConfigRef<W> wrapperConfig;
+        IHotKey hotkey;
+        public WrapperConfigRef<W> getWrapper(){
+            if(wrapperConfig == null){
+                wrapperConfig = new WrapperConfigRef<>(getRef());
+            }
+            return wrapperConfig;
+        }
+
+        public WrapperSettingBuilder(MapRef ref, Config rootConfig, Class<W> clazz, BaseModule module) {
+            super(ref, rootConfig, clazz);
+            this.module = module;
+
+        }
+
+        public WrapperSettingBuilder<W> listValidator(Predicate<String> va){
+            if(getRef() instanceof ListRef lsR){
+                lsR.addElementValidator(new NamedPredicate<>(this.module, va, REASON_VALIDATOR));
+            }else {
+                throw new UnsupportedOperationException("Not a list");
+            }
+            return this;
+        }
+
+        public WrapperSettingBuilder<W> validator(Predicate<W> va){
+            getRef().addValidator(new NamedPredicate<>(this.module, va, REASON_VALIDATOR));
+            return this;
+        }
+
+        public WrapperSettingBuilder<W> updateListener(Consumer<W> va){
+            getRef().addUpdateListenerWithUpdate(new NamedConsumer<>(this.module, va, REASON_UPDATE_LISTENER));
+            return this;
+        }
+
+        @Override
+        public WrapperSettingBuilder<W> path(String... path) {
+            return (WrapperSettingBuilder<W>) super.path(path);
+        }
+
+        @Override
+        public WrapperSettingBuilder<W> defaultValue(W val) {
+            return (WrapperSettingBuilder<W>) super.defaultValue(val);
+        }
+
+        public WrapperSettingBuilder<W> registerHotkey(SimpleHotKey.InputHandler path){
+            var re= (WrapperSettingBuilder<W>) super.registerHotkey(path);
+            this.hotkey = SimpleInputManager.getInstance().getHotkey(String.join(".", this.path));
+            return re;
+        }
+
+
+
+        @Override
+        public <W1 extends Ref<W>> WrapperSettingBuilder<W> apply(Consumer<W1> va) {
+            return (WrapperSettingBuilder<W>) super.apply(va);
+        }
+
+        //for gui building
+        //todo: create it later
+        public WrapperSettingBuilder<W> hideConfig(){
+            getWrapper().hideInConfig = true;
+            return this;
+        }
+
+        public WrapperSettingBuilder<W> showConfig(){
+            getWrapper().hideInConfig = false;
+            return this;
+        }
+
+
+        //
+
+        @Override
+        public <W1 extends Ref<W>> W1 build() {
+            W1 re = super.build();
+            this.module.registerConfigWrapper(this.getWrapper());
+            if(this.hotkey != null){
+                this.module.registerHotkey(this.hotkey);
+            }
+            return re;
+        }
+    }
+    public <T> T cast(){
+        return (T)this;
+    }
+}

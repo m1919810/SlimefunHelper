@@ -1,9 +1,8 @@
 package me.matl114.gui.slimefun;
 
 import me.matl114.gui.basic.*;
-import me.matl114.hackUtils.InvTasks;
-import me.matl114.hackUtils.ItemEditTasks;
-import me.matl114.hackUtils.SlimefunTasks;
+import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.SlimefunTasks;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
@@ -56,7 +55,7 @@ public class SavedItemWidget extends SubScreenWidget{
         ;
         ExecutableWidget.instance(75, 12,  25,  16)
             .setElementHandler(
-                new ButtonElement(TextProvider.of(Text.literal("Editor")), ButtonAction.run(()->ItemEditTasks.openEditScreen(itemStack, null)))
+                new ButtonElement(TextProvider.of(Text.literal("Editor")), ButtonAction.run(()->InvTasks.openEditScreen(itemStack, null)))
                     .withTooltips(TooltipHandler.of(OPENEDITOR_TOOLTIPS))
             )
             .addToSub(this)
@@ -79,7 +78,7 @@ public class SavedItemWidget extends SubScreenWidget{
 
         ExecutableWidget.instance(105, 12,  25,  16)
             .setElementHandler(
-                new ButtonElement(TextProvider.of(Text.literal("Remove")), ButtonAction.run(()->SlimefunTasks.handleRemoveSaveItem(this.itemStack)))
+                new ButtonElement(TextProvider.of(Text.literal("Remove")), ButtonAction.run(()->InvTasks.getSaveItem().removeSavedItem(this.itemStack)))
                     .withTooltips(TooltipHandler.of(DELITEM_TOOLTIPS))
             )
             .addToSub(this)

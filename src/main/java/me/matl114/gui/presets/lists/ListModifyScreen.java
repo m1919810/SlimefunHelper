@@ -4,7 +4,7 @@ import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.config.ListModifyWidget;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
-import me.matl114.utils.UtilClass.AttrKeyValue;
+import me.matl114.utils.impl.config.AttrKeyValue;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 

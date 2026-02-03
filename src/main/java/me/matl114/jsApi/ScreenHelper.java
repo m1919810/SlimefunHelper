@@ -1,6 +1,6 @@
 package me.matl114.jsApi;
 
-import me.matl114.access.ClientPlayerAccess;
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.utils.ApiMethod;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ChatScreen;
@@ -16,7 +16,6 @@ import xyz.wagyourtail.jsmacros.client.api.classes.inventory.Inventory;
 import xyz.wagyourtail.jsmacros.client.api.classes.inventory.PlayerInventory;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.List;
 
 @ApiMethod

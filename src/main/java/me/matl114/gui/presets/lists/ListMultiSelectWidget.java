@@ -4,7 +4,7 @@ import me.matl114.gui.FilterService;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.utils.Debug;
-import me.matl114.utils.UtilClass.AttrKeyValue;
+import me.matl114.utils.impl.config.AttrKeyValue;
 import net.minecraft.util.Colors;
 
 import java.util.*;

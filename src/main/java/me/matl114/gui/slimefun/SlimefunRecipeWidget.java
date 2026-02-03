@@ -4,10 +4,10 @@ import com.google.common.base.Preconditions;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.basic.*;
-import me.matl114.hackUtils.InvTasks;
-import me.matl114.hackUtils.ItemEditTasks;
-import me.matl114.hackUtils.SlimefunTasks;
-import me.matl114.utils.UtilClass.MyIngredientImmutableInventory;
+import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.SlimefunTasks;
+import me.matl114.hacks.utils.recipes.RecipeEntry;
+import me.matl114.utils.impl.inventory.MyIngredientImmutableInventory;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -34,7 +34,7 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
 
     @Setter
     Runnable cancelCallback;
-    public SlimefunRecipeWidget(int x, int y, SlimefunTasks.RecipeEntry entry, BiConsumer<ItemStack,Boolean> itemClickEvent, BiConsumer<String,Boolean> rtypeClickEvent) {
+    public SlimefunRecipeWidget(int x, int y, RecipeEntry entry, BiConsumer<ItemStack,Boolean> itemClickEvent, BiConsumer<String,Boolean> rtypeClickEvent) {
         super(x, y, DX, DY);
         this.rid = entry.rid();
         this.rtypeIcon = SlimefunTasks.getRecipeTypeIcon(rid);
@@ -109,7 +109,7 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
             .setElementHandler(
                 new  ButtonElement(TextProvider.of(Text.literal("E")),
                     ButtonAction.run(()->{
-                        ItemEditTasks.openEditScreen(output.copy(), null);
+                        InvTasks.openEditScreen(output.copy(), null);
                     })
                 )
                     .withTooltips(TooltipHandler.of(OPENEDITOR_TOOLTIPS))
@@ -121,7 +121,7 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
             .setElementHandler(
                 new  ButtonElement(TextProvider.of(Text.literal("+")),
                     ButtonAction.run(()->{
-                        SlimefunTasks.handleSaveItem(output.copy());
+                        InvTasks.getSaveItem().removeSavedItem(output.copy());
                     })
                 )
                     .withTooltips(TooltipHandler.of(SAVEITEM_TOOLTIPS))

@@ -2,17 +2,15 @@ package me.matl114;
 
 import lombok.Getter;
 import me.matl114.bridge.BridgeMain;
-import me.matl114.bukkitUtiils.BukkitSerializationMock;
-import me.matl114.bukkitUtiils.BukkitItemStackUtils;
-import me.matl114.hackUtils.Tasks;
+import me.matl114.bukkit.BukkitSerializationMock;
+import me.matl114.bukkit.BukkitItemStackUtils;
+import me.matl114.events.RenderListener;
+import me.matl114.hacks.Tasks;
 import me.matl114.jsApi.SlimefunHelperApi;
-import me.matl114.listenerUtils.Listener;
-import me.matl114.managers.Configs;
-import me.matl114.managers.HotKeys;
+import me.matl114.events.Listener;
+import me.matl114.managers.TaskManagers;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
-import me.matl114.renders.SlimefunCustomModelManager;
-import me.matl114.renders.RenderMain;
 import net.fabricmc.api.ModInitializer;
 
 
@@ -39,7 +37,7 @@ public class SlimefunHelper implements ModInitializer {
     //public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 	@Getter
     public static SlimefunHelper instance;
-    public static final boolean HACK_VERSION = true;
+
 	public static boolean DEV = false;
 	public static void authentication(){
 		if(Objects.equals( MinecraftClient.getInstance().getSession().getUsername(),"matl114")){
@@ -62,37 +60,18 @@ public class SlimefunHelper implements ModInitializer {
 			}
 			@Override
 			public void reload(ResourceManager manager) {
-				Debug.info("reload called");
+				Debug.info("Resource reload called for SlimefunHelper");
 				ModConfig.reloadModConfig();
-				SlimefunCustomModelManager.init();
-				Debug.info("Reloading SlimefunHelper resources");
-				SlimefunCustomModelManager.loadCustomModelDatas();
+				RenderListener.onResourceReload(manager);
+
 
 			}
 		});
-//		ModelLoadingPluginManager.registerPlugin(new ModelLoadingPlugin() {
-//			@Override
-//			public void onInitializeModelLoader(Context pluginContext) {
-//				ModConfig.reloadModConfig();
-//				if(ModConfig.isEnableItemModelOvevrride()) {
-//					Debug.info("Force Load Model enabled");
-//					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
-//					pluginContext.addModels(SlimefunItemModelManager.walkThroughResourcePacks(MinecraftClient.getInstance().getResourceManager()));
-//				}
-//			}
-//		});
 		ModelLoadingPluginManager.<Collection<Identifier>>registerPlugin(
             (resourceManager, executor) -> CompletableFuture.supplyAsync(()->{
-				Debug.info("check plugin work");
-				Debug.info("is it a reload?");
+				Debug.info("check model plugin work");
 				ModConfig.reloadModConfig();
-				if(Configs.MODEL_CONFIG.getBoolean(Configs.ITEM_MODEL_OVERRIDE).get()) {
-					Debug.info("Force Load Model enabled");
-					//pluginContext.addModels(new Identifier("networks","ntw_grid"));
-					return SlimefunCustomModelManager.walkThroughResourcePacks(resourceManager,true);
-				}else{
-					return SlimefunCustomModelManager.walkThroughResourcePacks(resourceManager,false);
-				}
+				return RenderListener.getReloadingResources(resourceManager);
 			}),
             (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {
 				pluginContext.addModels(data);
@@ -102,10 +81,11 @@ public class SlimefunHelper implements ModInitializer {
 
 		BukkitSerializationMock.init();
 		BukkitItemStackUtils.init();
-		RenderMain.init();
-		HotKeys.init();
-		Tasks.init();
+
+		TaskManagers.init();
 		Listener.init();
+		RenderListener.init();
+		Tasks.init();
 		BridgeMain.init();
 		SlimefunHelperApi.init();
 	}

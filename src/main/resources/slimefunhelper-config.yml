@@ -24,43 +24,43 @@
 
 #暂时不能重载这部分功能
 
-hotkeys:
+#hotkeys:
   #复制粘液id的热键
-  slimefunid-copy: LEFT_CONTROL,C,BUTTON_1
-  test-func: LEFT_CONTROL,T
-  open-menu: LEFT_CONTROL,G
-  quick-drop: LEFT_SHIFT,Q,BUTTON_1
-  fast-mov: LEFT_SHIFT,BUTTON_1
-  fast-drop: LEFT_SHIFT,Q
-  quick-move: W,GRAVE_ACCENT
-  quick-to-wall: W,F1
-  toggle-flight-speed: LEFT_CONTROL,LEFT_BRACKET
-  pick-item: LEFT_CONTROL,BUTTON_3
-  recipe-display-add: LEFT_CONTROL,BUTTON_1
-  save-slot-item: LEFT_CONTROL,A,BUTTON_1
-  open-editor: LEFT_CONTROL,I
-  open-inv-cache: LEFT_CONTROL,J
-  wake-up-screen: F11
+#  slimefunid-copy: LEFT_CONTROL,C,BUTTON_1
+#  test-func: LEFT_CONTROL,T
+#  open-menu: LEFT_CONTROL,G
+ # quick-drop: LEFT_SHIFT,Q,BUTTON_1
+#  fast-mov: LEFT_SHIFT,BUTTON_1
+#  fast-drop: LEFT_SHIFT,Q
+#  quick-move: W,GRAVE_ACCENT
+#  quick-to-wall: W,F1
+#  toggle-flight-speed: LEFT_CONTROL,LEFT_BRACKET
+#  pick-item: LEFT_CONTROL,BUTTON_3
+
+#  save-slot-item: LEFT_CONTROL,A,BUTTON_1
+#  open-editor: LEFT_CONTROL,I
+#  open-inv-cache: LEFT_CONTROL,J
+#  wake-up-screen: F11
 
 
 
-hotkeys-toggle:
-  quick-mine: LEFT_CONTROL,M
-  reach: LEFT_CONTROL,R
-  mine-bot: LEFT_CONTROL,B
-  mine-oneblock: LEFT_CONTROL,O
-  detect-entity: LEFT_CONTROL,P
-  always-att: LEFT_CONTROL,K
-  auto-att: LEFT_CONTROL,LEFT_SHIFT,APOSTROPHE
-  toggle-flight: LEFT_CONTROL,F
-  speed-timer: LEFT_CONTROL,Y
-  bow-aim: LEFT_CONTROL,H
-  scaffold: LEFT_CONTROL,SEMICOLON
-  mine-arua: LEFT_CONTROL,N
-  hktest1: LEFT_CONTROL,T,1
-  hktest2: LEFT_CONTROL,T,2
-  hktest3: LEFT_CONTROL,T,3
-  hktest4: LEFT_CONTROL,T,4
+#hotkeys-toggle:
+#  quick-mine: LEFT_CONTROL,M
+#  reach: LEFT_CONTROL,R
+#  mine-bot: LEFT_CONTROL,B
+#  mine-oneblock: LEFT_CONTROL,O
+#  detect-entity: LEFT_CONTROL,P
+#  always-att: LEFT_CONTROL,K
+#  auto-att: LEFT_CONTROL,LEFT_SHIFT,APOSTROPHE
+#  toggle-flight: LEFT_CONTROL,F
+#  speed-timer: LEFT_CONTROL,Y
+#  bow-aim: LEFT_CONTROL,H
+#  scaffold: LEFT_CONTROL,SEMICOLON
+#  mine-arua: LEFT_CONTROL,N
+#  hktest1: LEFT_CONTROL,T,1
+#  hktest2: LEFT_CONTROL,T,2
+#  hktest3: LEFT_CONTROL,T,3
+#  hktest4: LEFT_CONTROL,T,4
 
 #可以重载这部分功能
 

@@ -1,0 +1,72 @@
+package me.matl114.hacks.modules.mine;
+
+import me.matl114.accessors.hacks.PlayerInteractionAccess;
+import me.matl114.events.Listener;
+import me.matl114.hacks.api.BaseModule;
+import me.matl114.managers.*;
+import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.KeyCode;
+import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.MathUtils;
+import me.matl114.events.Event;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+
+public class PacketMine extends BaseModule {
+    public static final String[] MINE_ONEBLOCK_PACKET_MULTIPLE={"mine-oneblock","multiple-packets"};
+    public static final String[] MINE_ONEBLOCK_PACKET_LAZY={"mine-oneblock","lazy-mode"};
+    public static final String[] MINE_ONEBLOCK_PACKET_PICKAXE = {"mine-oneblock","auto-pickaxe"};
+    public static final String[] MINE_ONEBLOCK_HOTKEY = {"hotkeys-toggle", "mine-oneblock"};
+
+    public PacketMine() {
+        bindFlag(autoEnable);
+    }
+
+    public final FlagRef autoEnable = toggle(MINE_ONEBLOCK_HOTKEY)
+        .build();
+
+    public final KeyBindRef hotkey = toggleHotkey(MINE_ONEBLOCK_HOTKEY, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_O))
+        .build();
+
+    public final IntRef multiplePackets = builder(Configs.MINE_CONFIG, Integer.class)
+        .path(MINE_ONEBLOCK_PACKET_MULTIPLE)
+        .defaultValue(1)
+        .validator(Configs.INT_POSITIVE)
+        .build();
+
+
+    @Override
+    public void registerAll() {
+        super.registerAll();
+        registerListener(Listener.getGameTick(), this::onTick);
+    }
+
+    public void onTick(Event<ClientPlayerEntity> tickEvent){
+        if(isActive()){
+            if(mc.interactionManager != null && mc.player != null){
+                BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+                //todo: add predicted speed
+                //todo: add pickaxe switch
+                if(pos != null){
+                    double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
+                    if(lenSq <= MathUtils.s2(mc. player.getBlockInteractionRange() +1 )){
+                        Vec3d shouldFacing = pos.toCenterPos().subtract( mc.player.getEyePos() );
+                        Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+                        for(int i=0 ; i < multiplePackets.get() ; ++i){
+                            PlayerInteractionAccess.of(mc.interactionManager).sendStopBreakPacket(pos, dir);
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
+
+
+}

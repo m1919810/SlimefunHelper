@@ -1,6 +1,7 @@
 package me.matl114.gui.basic;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.inventory.Inventory;
@@ -9,6 +10,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.util.Identifier;
+
+import java.util.function.Supplier;
 
 public class SlotElement extends AbstractElement {
     final Inventory inventory;
@@ -33,6 +36,13 @@ public class SlotElement extends AbstractElement {
         this(new SimpleInventory(itemStack),0, callback);
     }
 
+    public SlotElement(Supplier<ItemStack> sup){
+        this(InventoryUtils.createReadOnlyOneItemInventory(sup));
+    }
+
+    public SlotElement(Inventory inventory){
+        this(inventory, 0, SlotClickCallback.DEFAULT);
+    }
     public SlotElement(Inventory inventory, int index){
         this(inventory, index, SlotClickCallback.DEFAULT);
     }
@@ -60,7 +70,7 @@ public class SlotElement extends AbstractElement {
         }
         context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
         ItemStack stack = inventory.getStack(index);
-        RenderHandler.drawSingleItem(context, stack, 1, 1, true);
+        RenderHandler.drawSingleItem(context, stack, 1, 1, isInSlot);
         if(shouldHighlight){
             context.fillGradient(RenderLayer.getGuiOverlay(), 1, 1, 1 + 16, 1 + 16, -2130706433, -2130706433, 0);
         }
@@ -68,8 +78,13 @@ public class SlotElement extends AbstractElement {
 
     }
     private boolean slotFrame = true;
+    private boolean isInSlot = true;
     public SlotElement setSlotFrame(boolean slot){
         this.slotFrame = slot;
+        return this;
+    }
+    public SlotElement setInSlot(boolean slot){
+        this.isInSlot = slot;
         return this;
     }
     private boolean tooltips = true;

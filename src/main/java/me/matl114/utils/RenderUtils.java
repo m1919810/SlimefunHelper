@@ -1,35 +1,20 @@
 package me.matl114.utils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.matl114.access.DrawContextAccess;
-import me.matl114.utils.UtilClass.RegionPos;
+import me.matl114.utils.impl.world.RegionPos;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.*;
-import net.minecraft.client.render.item.ItemRenderer;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.crash.CrashException;
-import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
-import org.joml.AxisAngle4f;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 import org.lwjgl.opengl.GL11;
-import org.spongepowered.asm.mixin.Unique;
 
 import java.awt.*;
 import java.util.List;
@@ -37,45 +22,6 @@ import java.util.function.Consumer;
 
 public class RenderUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    public static void drawItem(DrawContext context, @Nullable LivingEntity entity, @Nullable World world, ItemStack stack, float scale, int x, int y, int seed, int z, int dz) {
-        if (stack.isEmpty()) {
-            return;
-        }
-        DrawContextAccess access=DrawContextAccess.of(context);
-        BakedModel bakedModel =access.getMinecraftClient().getItemRenderer().getModel(stack, world, entity, seed);
-        access.getMatrixStack().push();
-        access.getMatrixStack().translate(x + 8, y + 8, 150+dz + (bakedModel.hasDepth() ? z : 0));
-        try {
-            boolean bl;
-            access.getMatrixStack().multiplyPositionMatrix(new Matrix4f().scaling(1.0f, -1.0f, 1.0f));
-            access.getMatrixStack().scale(16.0f*scale, 16.0f*scale, 16.0f*scale);
-            boolean bl2 = bl = !bakedModel.isSideLit();
-            if (bl) {
-                DiffuseLighting.disableGuiDepthLighting();
-            }
-            access.getMinecraftClient().getItemRenderer().renderItem(stack, ModelTransformationMode.GUI, false, access.getMatrixStack(), context.getVertexConsumers(), 0xF000F0, OverlayTexture.DEFAULT_UV, bakedModel);
-            context.draw();
-            if (bl) {
-                DiffuseLighting.enableGuiDepthLighting();
-            }
-        } catch (Throwable throwable) {
-            CrashReport crashReport = CrashReport.create((Throwable)throwable, (String)"Rendering item");
-            CrashReportSection crashReportSection = crashReport.addElement("Item being rendered");
-            crashReportSection.add("Item Type", () -> String.valueOf(stack.getItem()));
-            crashReportSection.add("Item Damage", () -> String.valueOf(stack.getDamage()));
-            crashReportSection.add("Item Foil", () -> String.valueOf(stack.hasGlint()));
-            throw new CrashException(crashReport);
-        }
-        access.getMatrixStack().pop();
-    }
-    public static void drawSlotLikeItemAt(DrawContext context, TextRenderer textRenderer, ItemStack item, int x, int y, int depth, float scale, int seed){
-        context.getMatrices().push();
-
-        drawItem(context, MinecraftClient.getInstance().player,MinecraftClient.getInstance().world, item,scale, x, y, seed, 0 ,depth);
-
-        context.drawItemInSlot(textRenderer, item, x, y, null);
-        context.getMatrices().pop();
-    }
     //说明：
     //LINES 两点绘制一个线段
     //LINE_STRIP 折线
@@ -92,55 +38,6 @@ public class RenderUtils {
 
     //vertexBuffer可以缓存buffer的行为，可以在不同的变换矩阵下重复使用， 使用bind();draw(viewMatrix, projMatrix, shader);unbind();
     //projMatrix从RenderSystem.getProjectionMatrix();获取, shader从RenderSystem.getShader();获取, viewMatrix是正常传参中的玩家位置matrixStack.position
-    @Unique
-    public static void renderItemAt(ItemRenderer itemRenderer, MatrixStack matrices, ModelTransformationMode renderMode, ItemStack stack, boolean leftHanded, VertexConsumerProvider vertexConsumers, int overlay){
-        matrices.push();
-        try{
-            final float scale=0.54f;
-            final float scale_ground=0.8f;
-            boolean inGui = false;
-            if(renderMode == ModelTransformationMode.GUI){
-                inGui = true;
-                matrices.translate(0.26,-0.26,1f);
-                matrices. scale(scale, scale, scale);
-            }else if(renderMode == ModelTransformationMode.GROUND){
-                matrices.translate(0.15,-0.15,0);
-                matrices. scale(scale_ground, scale_ground, scale_ground);
-            }else if(renderMode == ModelTransformationMode.FIXED){
-                matrices.translate(-0.25,-0.25,-0.05);
-                matrices. scale(scale_ground, scale_ground, scale_ground);
-            }else if(renderMode == ModelTransformationMode.HEAD) {
-                //seems too wierd, give up
-                return;
-//                    matrices.translate(-0.25,0.5,-0.05);
-//    //                matrices. scale(scale_ground, scale_ground, scale_ground);
-//                    renderMode = ModelTransformationMode.FIXED;
-            }else if(renderMode == ModelTransformationMode.THIRD_PERSON_RIGHT_HAND){
-                //seems too wierd
-//                matrices.translate(0.25,0.25,0.05);
-//               matrices. scale(scale, scale, scale);
-//                renderMode = ModelTransformationMode.GUI;
-                return;
-            }else if(renderMode == ModelTransformationMode.THIRD_PERSON_LEFT_HAND){
-                //seems too wierd
-//                matrices.translate(0.25,0.25,0.05);
-//                matrices. scale(scale, scale, scale);
-//                renderMode = ModelTransformationMode.GUI;
-                return;
-            }else{
-                return;
-            }
-            BakedModel bakedModel=itemRenderer.getModel(stack, mc.world, mc.player, 0);
-            //fixme: renderer error here
-            if(inGui)
-                DiffuseLighting.enableGuiDepthLighting();
-            itemRenderer.renderItem(stack,renderMode,leftHanded,matrices,vertexConsumers,0xF000F0,overlay,bakedModel);
-            if(inGui)
-                DiffuseLighting.disableGuiDepthLighting();
-        }finally {
-            matrices.pop();
-        }
-    }
     public static Vec3d getCameraPos(){
         var d = mc.getBlockEntityRenderDispatcher().camera;
         return d == null? Vec3d.ZERO:d.getPos();

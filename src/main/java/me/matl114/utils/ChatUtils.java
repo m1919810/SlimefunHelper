@@ -2,7 +2,7 @@ package me.matl114.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import me.matl114.utils.UtilClass.SimpleOrderedTextVisitor;
+import me.matl114.utils.impl.chat.SimpleOrderedTextVisitor;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;

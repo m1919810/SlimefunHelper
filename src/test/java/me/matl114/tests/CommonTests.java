@@ -1,6 +1,6 @@
 package me.matl114.tests;
 
-import me.matl114.bukkitUtiils.*;
+import me.matl114.bukkit.*;
 import me.matl114.utils.Debug;
 import org.junit.jupiter.api.Test;
 

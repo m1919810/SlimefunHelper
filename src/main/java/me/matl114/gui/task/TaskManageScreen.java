@@ -5,12 +5,10 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.index.IndexedScreen;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.lists.ListUnmodifiableWidget;
-import me.matl114.managers.TaskManager;
-import me.matl114.utils.ChatUtils;
+import me.matl114.managers.task.TaskManager;
 import me.matl114.utils.CollectionUtils;
 import net.minecraft.text.Text;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 

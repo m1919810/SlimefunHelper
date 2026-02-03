@@ -1,8 +1,11 @@
 package me.matl114.utils;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.*;
 import com.mojang.serialization.DynamicOps;
-import me.matl114.bukkitUtiils.BukkitItemStackUtils;
+import com.mojang.serialization.JsonOps;
+import me.matl114.bukkit.BukkitItemStackUtils;
+import me.matl114.versioned.impl.TooltipHideFlag_v1_21_1;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
 import net.minecraft.component.ComponentType;
@@ -18,6 +21,7 @@ import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Unit;
@@ -33,38 +37,21 @@ import java.util.stream.Stream;
 
 import static net.minecraft.component.DataComponentTypes.*;
 
+@ApiMethod
 public class ItemStackUtils {
-    public enum TooltipHideFlag{
-        HIDE_ALL("全部", component(HIDE_TOOLTIP), TooltipsToggle.byComponent(HIDE_TOOLTIP)),
-        HIDE_ADDITIONAL("额外", component(HIDE_ADDITIONAL_TOOLTIP), TooltipsToggle.byComponent(HIDE_ADDITIONAL_TOOLTIP)),
-        HIDE_ENCHANT("附魔", componentPredicate(ENCHANTMENTS, (i)->!i.showInTooltip, false), TooltipsToggle.onComponent(ENCHANTMENTS, ItemEnchantmentsComponent::withShowInTooltip)),
-        HIDE_ATTRIBUTE("属性", componentPredicate(ATTRIBUTE_MODIFIERS, inv(AttributeModifiersComponent::showInTooltip), false), TooltipsToggle.onComponent(ATTRIBUTE_MODIFIERS, AttributeModifiersComponent::withShowInTooltip)),
-        HIDE_UNBREAKABLE("无法破坏",componentPredicate(UNBREAKABLE, inv(UnbreakableComponent::showInTooltip), false), TooltipsToggle.onComponent(UNBREAKABLE, UnbreakableComponent::withShowInTooltip)),
-        HIDE_DESTROYS("可破坏", componentPredicate(CAN_BREAK, inv(BlockPredicatesChecker::showInTooltip),false), TooltipsToggle.onComponent(CAN_BREAK, BlockPredicatesChecker::withShowInTooltip)),
-        HIDE_PLACED_ON("可放置", componentPredicate(CAN_PLACE_ON, inv(BlockPredicatesChecker::showInTooltip),false), TooltipsToggle.onComponent(CAN_PLACE_ON, BlockPredicatesChecker::withShowInTooltip)),
-        HIDE_DYE("染色", componentPredicate(DYED_COLOR, inv(DyedColorComponent::showInTooltip),false),TooltipsToggle.onComponent(DYED_COLOR, DyedColorComponent::withShowInTooltip)),
-        HIDE_ARMOR_TRIM("盔甲纹饰", componentPredicate(TRIM, inv(armorTrim ->armorTrim.showInTooltip),false), TooltipsToggle.onComponent(TRIM,ArmorTrim::withShowInTooltip)),
-        HIDE_STORED_ENCHANTS("附魔书",componentPredicate(STORED_ENCHANTMENTS, i->!i.showInTooltip, false),TooltipsToggle.onComponent(STORED_ENCHANTMENTS, ItemEnchantmentsComponent::withShowInTooltip))
-        ;
-        public String display;
-        public Predicate<ItemStack> hideFlagGetter;
-        public TooltipsToggle toggle;
-        TooltipHideFlag(String display ,Predicate<ItemStack> stack, TooltipsToggle toggle){
-            this.hideFlagGetter = stack;
-            this.toggle = toggle;
-        }
-        private static <T> Predicate<T> inv(Predicate<T> tt){
-            return (val)->!tt.test(val);
-        }
-        public boolean isHide(ItemStack stack){
-            return hideFlagGetter.test(stack);
-        }
-        public void setHideFlag(ItemStack stack,  boolean hide){
-            this.toggle.apply(stack, !hide);
-        }
+    public interface HideFlag{
+        public boolean isHide(ItemStack stack);
+        public void setHideFlag(ItemStack stack,  boolean hide);
+        public String name();
     }
-    public static Predicate<ItemStack> component(ComponentType<?> type){
-        return (stack)->hasInPatch(stack, type);
+
+    public static HideFlag[] getHideFlags(){
+        return TooltipHideFlag_v1_21_1.values();
+    }
+
+
+    public static Predicate<ItemStack> componentPredicate(ComponentType<?> type){
+        return (stack)-> hasInPatch(stack, type);
     }
     public static <T>  Predicate<ItemStack> componentPredicate(ComponentType<T> type,  Predicate<T> test, boolean nullDefault){
         return (stack)->{
@@ -101,6 +88,7 @@ public class ItemStackUtils {
     public interface ComponentTooltipsToggle<T>{
         T toggle(T val, boolean showInToolTips);
     }
+
     @SuppressWarnings("all")
     public static <T> T getInPatch(ItemStack stack, ComponentType<T> type){
         if(stack != null && !stack.isEmpty()){
@@ -149,6 +137,7 @@ public class ItemStackUtils {
         }
         return false;
     }
+
 
     public static <T> void setOrRemoveChange(ItemStack stack,  ComponentType<T> type,@Nullable T val){
         if(stack != null && !stack.isEmpty()){
@@ -238,10 +227,12 @@ public class ItemStackUtils {
             return staticRegistry;
         }
     }
+    private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     public static Text jsonRawToText(String jsonRaw){
         try{
             if(jsonRaw == null)return null;
-            return Text.Serialization.fromJson(jsonRaw, registry());
+            JsonElement jsonElement = JsonParser.parseString(jsonRaw);
+            return jsonElement == null ? null : TextCodecs.CODEC.parse(registry().getOps(JsonOps.INSTANCE), jsonElement).getOrThrow(JsonParseException::new);
         }catch (Throwable e){
             return null;
         }
@@ -249,7 +240,8 @@ public class ItemStackUtils {
     public static String textToJsonRaw(Text text){
         if(text == null)return null;
         try{
-            return Text.Serialization.toJsonString(text, registry());
+            var re = TextCodecs.CODEC.encodeStart(registry().getOps(JsonOps.INSTANCE), text).getOrThrow(JsonParseException::new);
+            return GSON.toJson(re);
         }catch (Throwable e){
             return null;
         }
@@ -264,19 +256,6 @@ public class ItemStackUtils {
     public static void setCustomName(ItemStack stack,  Text text){
         setOrRemoveChange(stack, CUSTOM_NAME , Objects.equals(text, Text.empty()) ? null : text);
     }
-
-//    @Nonnull
-//    public static List<Text> getLore(ItemStack stack){
-//        var nbt = getDisplay(stack);
-//        List<Text> lore = new ArrayList<>();
-//        if(nbt == null)return lore;
-//        NbtList list = nbt.getList("Lore", NbtElement.STRING_TYPE);
-//        for (var re: list){
-//            String loreI = re.asString();
-//            lore.add(jsonRawToText(loreI));
-//        }
-//        return lore;
-//    }
 
 
     public static void applyItemEnchant(ItemStack stack,  ItemEnchantmentsComponent ench){
@@ -560,7 +539,7 @@ public class ItemStackUtils {
         nbt.put(BUKKIT_NAMESPACE, nbt0);
         return nbt0;
     }
-    private static String getSfIdFromBukkitValues(NbtCompound ntb){
+    public static String getSfIdFromBukkitValues(NbtCompound ntb){
         return ntb == null? null: (ntb.contains(SLIMEFUN_ID_PATH)? ntb.getString(SLIMEFUN_ID_PATH): null);
     }
     public static String getSfId(NbtCompound nbt){

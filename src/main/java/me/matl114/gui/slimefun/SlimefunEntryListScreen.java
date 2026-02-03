@@ -1,12 +1,11 @@
 package me.matl114.gui.slimefun;
 
-import me.matl114.gui.basic.AbstractElement;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.basic.DrawableWidget;
-import me.matl114.gui.basic.TooltipHandler;
-import me.matl114.hackUtils.SlimefunTasks;
+import me.matl114.hacks.SlimefunTasks;
+import me.matl114.hacks.modules.slimefun.SlimefunGuide;
+import me.matl114.hacks.utils.recipes.RecipeEntry;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
 
 import java.util.List;
 import java.util.function.Function;
@@ -49,7 +48,7 @@ public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
 
     @Override
     protected List<Text> provideTitleTooltips(DrawableWidget widget) {
-        return SlimefunTasks.TOOLTIPS_ITEM_RULE;
+        return SlimefunGuide.TOOLTIPS_ITEM_RULE;
     }
 
     protected void init(){
@@ -71,10 +70,10 @@ public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
         return this.backgroundHeight - LABEL_OCCUPIED - LABEL_MIN_DISTANCE;
     }
 
-    public static SlimefunEntryListScreen<SlimefunTasks.RecipeEntry> recipeEntry(List<SlimefunTasks.RecipeEntry> list){
-        return new SlimefunEntryListScreen<SlimefunTasks.RecipeEntry>(list) {
+    public static SlimefunEntryListScreen<RecipeEntry> recipeEntry(List<RecipeEntry> list){
+        return new SlimefunEntryListScreen<RecipeEntry>(list) {
             @Override
-            public DrawableWidget generateEntryContentDelegate(SlimefunTasks.RecipeEntry entry) {
+            public DrawableWidget generateEntryContentDelegate(RecipeEntry entry) {
                 return generateRecipeEntryContentDelegate(entry);
             }
         };
@@ -92,11 +91,11 @@ public abstract class SlimefunEntryListScreen<T>  extends SlimefunPageScreen{
 
 
 
-    public static SlimefunRecipeWidget generateRecipeEntryContentDelegate(SlimefunTasks.RecipeEntry entry){
-        return new SlimefunRecipeWidget(0,0, entry,SlimefunTasks::handleClickItemStack, SlimefunTasks::handleClickRecipeTypeIcon);
+    public static SlimefunRecipeWidget generateRecipeEntryContentDelegate(RecipeEntry entry){
+        return new SlimefunRecipeWidget(0,0, entry, SlimefunTasks.getSlimefunGuide()::onClickItemStack, SlimefunTasks.getSlimefunGuide()::onClickRecipeType);
     }
-    public static SlimefunRecipeWidget generateRecipeEntryContent(SlimefunTasks.RecipeEntry entry, int x, int y){
-        return new SlimefunRecipeWidget(x,y, entry,SlimefunTasks::handleClickItemStack, SlimefunTasks::handleClickRecipeTypeIcon);
+    public static SlimefunRecipeWidget generateRecipeEntryContent(RecipeEntry entry, int x, int y){
+        return new SlimefunRecipeWidget(x,y, entry, SlimefunTasks.getSlimefunGuide()::onClickItemStack, SlimefunTasks.getSlimefunGuide()::onClickRecipeType);
     }
 
 

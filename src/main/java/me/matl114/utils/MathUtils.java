@@ -1,11 +1,8 @@
 package me.matl114.utils;
 
 import lombok.AllArgsConstructor;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix2f;
 import org.joml.Matrix3d;
-import org.joml.Matrix3f;
 import org.joml.Vector3d;
 
 import java.util.ArrayList;
@@ -276,11 +273,13 @@ public class MathUtils {
         }
     }
     //指数加权移动平均
-    public static class Predictor{
+    //copied from NumberVector
+    //todo: test if it works well
+    public static class NVPredictor {
         private final Vec3d[] pointList;
         private final IntSupplier supplier;
 
-        public Predictor(Vec3d[] historyStack, IntSupplier currentIndex) {
+        public NVPredictor(Vec3d[] historyStack, IntSupplier currentIndex) {
             pointList = historyStack;
             supplier = currentIndex;
         }

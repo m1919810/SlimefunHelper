@@ -1,11 +1,9 @@
 package me.matl114.gui;
 
-import me.matl114.access.TextFieldAccess;
+import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ContentDelegateWidget;
-import me.matl114.gui.basic.DrawableWidget;
-import me.matl114.gui.itemEdit.ItemEditScreen;
-import me.matl114.utils.UtilClass.PropertyTracker;
+import me.matl114.utils.impl.config.PropertyTracker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
@@ -15,7 +13,6 @@ import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
-import net.minecraft.util.math.MathHelper;
 
 import java.util.function.BooleanSupplier;
 

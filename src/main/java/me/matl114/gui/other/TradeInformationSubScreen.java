@@ -2,11 +2,11 @@ package me.matl114.gui.other;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import me.matl114.access.MerchantScreenAccess;
+import me.matl114.accessors.access.MerchantScreenAccess;
 import me.matl114.gui.basic.*;
-import me.matl114.hackUtils.InvTasks;
-import me.matl114.hackUtils.ItemEditTasks;
-import me.matl114.managers.HotKeys;
+import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.modules.inv.FastCraft;
+import me.matl114.managers.TaskManagers;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.MinecraftClient;
@@ -42,7 +42,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
     public TradeOffer getCurrentTrade(){
         MerchantScreenAccess access = MerchantScreenAccess.of(this.screen);
         int index = access.getSelectedIndex();
-        TradeOfferList list = access.getTradingRecipes();
+        TradeOfferList list = this.screen.getScreenHandler().getRecipes();;
         if(index < 0 || index >= list.size()){
             return null;
         }else{
@@ -68,7 +68,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                 new SlotElement(InventoryUtils.createReadOnlyOneItemInventory(()->{
                     var trade = getCurrentTrade();
                     return trade == null? ItemStack.EMPTY : trade.getDisplayedFirstBuyItem();
-                }), 0, ItemEditTasks.getRightClickOpenEditScreenCallback())
+                }), 0, InvTasks.getRightClickOpenEditScreenCallback())
                     .withPresentCondition(this::active)
             )
             .addToSub(this);
@@ -79,7 +79,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                     return  trade == null? ItemStack.EMPTY : (
                             trade.getDisplayedSecondBuyItem()
                         );
-                }), 0, ItemEditTasks.getRightClickOpenEditScreenCallback())
+                }), 0, InvTasks.getRightClickOpenEditScreenCallback())
                     .withPresentCondition(this::active)
             )
             .addToSub(this);
@@ -115,7 +115,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                     return  trade == null? ItemStack.EMPTY : (
                         trade.getSellItem()
                     );
-                }), 0, ItemEditTasks.getRightClickOpenEditScreenCallback())
+                }), 0, InvTasks.getRightClickOpenEditScreenCallback())
                     .withPresentCondition(this::active)
             )
             .addToSub(this);
@@ -133,7 +133,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
             .addToSub(this);
         ExecutableWidget.instance(3 * (SLOT_WIDTH + 2) + TRADE_ICON_WIDTH  + 1, 4+ BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
             .setElementHandler(
-                new ButtonElement(TextProvider.of(LABEL_DROP_CRAFT), ButtonAction.run(HotKeys.getSimpleToggleManager().getToggle(HotKeys.DROP_CRAFT)))
+                new ButtonElement(TextProvider.of(LABEL_DROP_CRAFT), ButtonAction.run(TaskManagers.getToggleTask(FastCraft.TOGGLE_DROP_CRAFT)))
                     .withTooltips(TooltipHandler.of(TOOLTIPS_DROPCRAFT))
             )
             .addToSub(this);
@@ -160,7 +160,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                 if(!output.isEmpty()){
                     int maxCraft = (int)Math.ceil( (float)output.getMaxCount() / (float) output.getCount());
                     maxCraft = Math.min(maxCraft, offer.getMaxUses() - offer.getUses());
-                    InvTasks.craftAtSlotIndex(this.screen, maxCraft, 2);
+                    InvTasks.getFastCraft().craftAtSlotIndex(this.screen, maxCraft, 2);
                 }
             }
         }

@@ -1,12 +1,11 @@
 package me.matl114.utils;
 
-import me.matl114.utils.UtilClass.ImmutableInventory;
-import me.matl114.utils.UtilClass.ImmutableListInventory;
-import me.matl114.utils.UtilClass.MutableInventory;
+import me.matl114.utils.impl.inventory.ImmutableInventory;
+import me.matl114.utils.impl.inventory.ImmutableListInventory;
+import me.matl114.utils.impl.inventory.MutableInventory;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 
 import java.util.List;

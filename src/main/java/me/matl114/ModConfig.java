@@ -56,9 +56,7 @@ public class ModConfig {
         }
         return configFile;
     }
-    public static InputStream loadInternal(String configName){
-        return SlimefunHelper.getInstance().getClass().getResourceAsStream("/"+configName);
-    }
+
     public static void syncKeys(HashMap config,HashMap defaults){
         for(Object key:defaults.keySet()){
             if(config.containsKey(key)){
@@ -74,84 +72,10 @@ public class ModConfig {
     }
 
 
-    @Getter
-    private static Pattern slimefunModelPathPattern ;
 
-    @Getter
-    private static HashMap<String,String> toggleHotKeys=new HashMap<>();
-    public static String getToggleHotkeys(String key){
-        return toggleHotKeys.get(key);
-    }
-    @Getter
-    private static HashMap<String, String> funcHotKeys=new HashMap<>();
-    public static String getFuncHotKeys(String key){
-        return funcHotKeys.get(key);
-    }
-    public static String getHotkeys(String key){
-        return key.startsWith("hotkeys-toggle.") ? getToggleHotkeys( key.substring("hotkeys-toggle.".length()) ): (key.startsWith("hotkeys.")? getFuncHotKeys(key.substring("hotkeys.".length()) ): null);
-    }
+
     public static void reloadModConfig(){
         Debug.info("Reloading Mod Config");
-        InputStream configFile=loadInternal("slimefunhelper-config.yml");
-        Yaml yaml = new Yaml();
-        Map<String, Object> data=new HashMap<>();
-        data=yaml.load(configFile);
-        hotkey_load:{
-            Map<String,Object> modConfig=(Map<String, Object>) data.get("hotkeys");
-            if(modConfig==null)break hotkey_load;
-            for(Map.Entry<String,Object> entry:modConfig.entrySet()){
-                funcHotKeys.put(entry.getKey(),entry.getValue().toString());
-            }
-        }
-        hotkey_toggle:{
-            Map<String,Object> modConfig=(Map<String, Object>) data.get("hotkeys-toggle");
-            if(modConfig==null)break hotkey_toggle;
-            for(Map.Entry<String,Object> entry:modConfig.entrySet()){
-                toggleHotKeys.put(entry.getKey(),entry.getValue().toString());
-            }
-        }
-//
-//            configsValues:{
-//                Map<String,Object> modConfig=(Map<String, Object>) data.get("configValue");
-//                if(modConfig==null)break configsValues;
-//                for(Map.Entry<String,Object> entry:modConfig.entrySet()){
-//                    int value=Utils.parseIntOrDefault(entry.getValue().toString(),0);
-//                    if(configValues.containsKey(entry.getKey())){
-//                        configValues.get(entry.getKey()).set(value);
-//                    }else {
-//                        configValues.put(entry.getKey(),new AtomicInteger() );
-//                    }
-//                }
-//            }
-//            configsOptions:{
-//                Map<String,Object> modConfig=(Map<String, Object>) data.get("configOption");
-//                if(modConfig==null)break configsOptions;
-//                for(Map.Entry<String,Object> entry:modConfig.entrySet()){
-//                    boolean value=Boolean.parseBoolean(entry.getValue().toString());
-//                    if(configOptions.containsKey(entry.getKey())){
-//                        configOptions.get(entry.getKey()).set(value);
-//                    }else {
-//                        configOptions.put(entry.getKey(),new AtomicBoolean(value) );
-//                    }
-//                }
-//            }
         Configs.loadConfigs();
     }
-
-    public static <T extends Object> T getOrSetDefault(Map<String,Object> config,String key,T defaultValue){
-
-        Object value=config.get(key);
-        try{
-            if(value!=null)
-             return (T)value;
-        }catch (Throwable e){
-        }
-        config.put(key,defaultValue);
-        return defaultValue;
-    }
-    //为什么我要把接下来做的东西放在这？
-    //@ServerPlayNetworkHandler
-    //@ServerPlayerInteractionManager
-    //@ClientPlayerInteractionManager
-
 }

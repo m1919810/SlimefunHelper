@@ -1,6 +1,6 @@
 package me.matl114.gui.presets.choices;
 
-import me.matl114.access.ButtonNotFocusedScreenAccess;
+import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -48,8 +48,5 @@ public class SelectScreen extends Screen implements ButtonNotFocusedScreenAccess
         return false;
     }
 
-    @Override
-    public void saveEntryToValues() {
 
-    }
 }

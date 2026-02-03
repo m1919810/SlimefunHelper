@@ -2,7 +2,7 @@ package me.matl114.gui.basic;
 
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import me.matl114.utils.UtilClass.PropertyTracker;
+import me.matl114.utils.impl.config.PropertyTracker;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;

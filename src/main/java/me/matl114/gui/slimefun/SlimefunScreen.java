@@ -2,7 +2,7 @@ package me.matl114.gui.slimefun;
 
 import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.basic.*;
-import me.matl114.hackUtils.SlimefunTasks;
+import me.matl114.hacks.SlimefunTasks;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -92,10 +92,10 @@ public class SlimefunScreen extends GenericBackGroundScreen {
             )
             .addTo(this)
         ;
-        this.guideIcon.setMouseHandler(InputHandler.run(SlimefunTasks::handleClickGuideIcon));
-        this.rtypeIcon.setMouseHandler(InputHandler.run(SlimefunTasks::handleClickRtypeIcon));
-        this.vanillaIcon.setMouseHandler(InputHandler.run(SlimefunTasks::handleClickCraftTableIcon));
-        this.saveItemIcon.setMouseHandler(InputHandler.run(SlimefunTasks::handleClickSaveItemIcon));
+        this.guideIcon.setMouseHandler(InputHandler.run(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu));
+        this.rtypeIcon.setMouseHandler(InputHandler.run(SlimefunTasks.getSlimefunGuide()::openCraftTypeMenu));
+        this.vanillaIcon.setMouseHandler(InputHandler.run(SlimefunTasks.getSlimefunGuide()::openVanillaRecipesMenu));
+        this.saveItemIcon.setMouseHandler(InputHandler.run(SlimefunTasks.getSlimefunGuide()::openSaveItemMenu));
     }
 
 

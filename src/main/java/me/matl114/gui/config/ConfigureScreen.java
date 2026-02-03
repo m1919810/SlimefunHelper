@@ -1,23 +1,12 @@
 package me.matl114.gui.config;
 
-import me.matl114.access.ButtonNotFocusedScreenAccess;
+import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
 import me.matl114.gui.GenericScreen;
-import me.matl114.gui.McWidgetHelpers;
-import me.matl114.gui.basic.*;
-import me.matl114.managers.Config;
+import me.matl114.managers.config.Config;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Unique;
-
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedScreenAccess {
     private Config config;
@@ -113,7 +102,6 @@ public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedSc
         return false;
     }
 
-    @Override
     public void saveEntryToValues() {
         if(configs != null){
             configs.saveSelected();

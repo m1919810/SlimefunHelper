@@ -1,6 +1,6 @@
 package me.matl114.jsApi;
 
-import me.matl114.hackUtils.RenderTasks;
+import me.matl114.hacks.RenderTasks;
 import me.matl114.utils.ApiMethod;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;

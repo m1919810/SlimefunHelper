@@ -1,8 +1,8 @@
 package me.matl114.utils;
 
-import me.matl114.access.ClientPlayerAccess;
-import me.matl114.hackUtils.MovTasks;
-import me.matl114.hackUtils.Tasks;
+import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.hacks.MovTasks;
+import me.matl114.hacks.Tasks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;

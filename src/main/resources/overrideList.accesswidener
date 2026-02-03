@@ -58,3 +58,4 @@ accessible field net/minecraft/client/gui/widget/ScrollableWidget scrollbarDragg
 accessible field net/minecraft/client/Mouse eventDeltaHorizontalWheel D
 accessible field net/minecraft/client/Mouse eventDeltaVerticalWheel D
 accessible field net/minecraft/client/Mouse activeButton I
+accessible field net/minecraft/network/ClientConnection channel Lio/netty/channel/Channel;

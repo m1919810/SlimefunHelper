@@ -3,8 +3,8 @@ package me.matl114.gui;
 import com.github.houbb.pinyin.constant.enums.PinyinStyleEnum;
 import com.github.houbb.pinyin.util.PinyinHelper;
 import me.matl114.gui.basic.*;
-import me.matl114.hackUtils.SlimefunTasks;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import me.matl114.hacks.SlimefunTasks;
+import me.matl114.hacks.utils.recipes.RecipeEntry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -13,11 +13,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
 
 public class FilterService {
     public static String currentUserInput = "";
-    public static BiPredicate<String, SlimefunTasks.RecipeEntry> RECIPE_FILTER = (str, i)->{
+    public static BiPredicate<String, RecipeEntry> RECIPE_FILTER = (str, i)->{
         if(str==null || str.isEmpty())return true;
         if(str.startsWith("@")){
             String str1 = str.substring(1);

@@ -1,13 +1,15 @@
 package me.matl114.gui.slimefun;
 
 import lombok.Getter;
-import me.matl114.access.TileInventoryScreen;
+import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.single.IntFastInputWidget;
-import me.matl114.hackUtils.SlimefunTasks;
-import me.matl114.hackUtils.Tasks;
-import me.matl114.utils.UtilClass.AttrKeyValue;
+import me.matl114.hacks.SlimefunTasks;
+import me.matl114.hacks.Tasks;
+import me.matl114.hacks.modules.slimefun.MultiBlockHelper;
+import me.matl114.hacks.utils.recipes.RecipeEntry;
+import me.matl114.utils.impl.config.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
@@ -104,10 +106,10 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     protected ContentDelegateWidget<DrawableWidget> toggleActivateTextField;
     protected ContentDelegateWidget<DrawableWidget> hovering;
 
-    protected volatile List<SlimefunTasks.RecipeEntry> originItems;
-    protected volatile List<SlimefunTasks.RecipeEntry> filterItems;
+    protected volatile List<RecipeEntry> originItems;
+    protected volatile List<RecipeEntry> filterItems;
 
-    protected BiConsumer<Integer, SlimefunTasks.RecipeEntry> callback;
+    protected BiConsumer<Integer, RecipeEntry> callback;
     protected boolean onlyShowRelated = true;
     @Getter
     int page = 1;
@@ -139,7 +141,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     protected static boolean activate;
     protected Collection<String> type;
     protected TileInventoryScreen tile;
-    public SlimefunDispensorSuggestBookWidget(TileInventoryScreen tile, int x, int y, Collection<String> optionalType, BiConsumer<Integer, SlimefunTasks.RecipeEntry> callback){
+    public SlimefunDispensorSuggestBookWidget(TileInventoryScreen tile, int x, int y, Collection<String> optionalType, BiConsumer<Integer, RecipeEntry> callback){
         super(x, y, DX, DY);
         this.callback = callback;
         this.type = optionalType;
@@ -196,7 +198,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         multiblockExecuteOneWidget = ExecutableWidget.instance(30, 0, 18, 8)
             .setElementHandler(
                 new ButtonElement(TextProvider.of(MULTIBLOCK_EXECUTE), ButtonAction.run(()->{
-                    SlimefunTasks.handleMultiBlockExecute(MinecraftClient.getInstance().currentScreen, false, false);
+                    SlimefunTasks.getMultiBlockHelper().onMultiBlockExecute(MinecraftClient.getInstance().currentScreen, false, false);
                     Tasks.scheduleDelayed(this::refreshContents, 2);
                 }))
                     .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_EXECUTEONE))
@@ -242,7 +244,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         multiblockExecuteWidget = ExecutableWidget.instance(DX - 48,0, 18, 8)
             .setElementHandler(
                 new ButtonElement(TextProvider.of(MULTIBLOCK_EXECUTE), ButtonAction.run(()->{
-                        SlimefunTasks.handleMultiBlockExecute(MinecraftClient.getInstance().currentScreen, true, Screen.hasShiftDown());
+                        SlimefunTasks.getMultiBlockHelper().onMultiBlockExecute(MinecraftClient.getInstance().currentScreen, true, Screen.hasShiftDown());
                     Tasks.scheduleDelayed(this::refreshContents, 5);
                     }))
                     .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_EXECUTE))
@@ -255,12 +257,13 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
             .setElementHandler(
                 new ButtonElement(TextProvider.of(MULTIBLOCK_AUTO), ((element, widget, mouseButton) -> {
                     if(MinecraftClient.getInstance().currentScreen instanceof TileInventoryScreen handledScreen){
-                        if(SlimefunTasks.isMultiBlockAutoExecute(handledScreen)){
+                        MultiBlockHelper multiBlockHelper = SlimefunTasks.getMultiBlockHelper();
+                        if(multiBlockHelper.isMultiBlockExecuting(handledScreen)){
                             widget.setAlpha(0.4f);
-                            SlimefunTasks.handleMultiBlockAutoExecuteToggle(handledScreen,false);
+                            multiBlockHelper.toggleMultiBlockAutoExecuteState(handledScreen,false);
                         }else {
                             widget.setAlpha(1.0f);
-                            SlimefunTasks.handleMultiBlockAutoExecuteToggle(handledScreen, true);
+                            multiBlockHelper.toggleMultiBlockAutoExecuteState(handledScreen, true);
                         }
                     }
 
@@ -271,7 +274,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                         return MinecraftClient.getInstance().currentScreen instanceof TileInventoryScreen tile && !tile.isVirtual();
                     })
             )
-            .setAlpha(SlimefunTasks.isMultiBlockAutoExecute(this.tile)? 1.0F:0.4f)
+            .setAlpha(SlimefunTasks.getMultiBlockHelper().isMultiBlockExecuting(this.tile)? 1.0F:0.4f)
             .addToSub(this);
 
 
@@ -325,7 +328,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
 
 
     public synchronized boolean refreshFilter(){
-        List<SlimefunTasks.RecipeEntry> originItems = this.originItems;
+        List<RecipeEntry> originItems = this.originItems;
         if(FilterService. currentUserInput == null || FilterService.currentUserInput.isEmpty()){
             if(this.filterItems != originItems){
                 this.filterItems = originItems;
@@ -340,7 +343,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         }
     }
     public void resetPage(){
-        List<SlimefunTasks.RecipeEntry> filterItems = this.filterItems;
+        List<RecipeEntry> filterItems = this.filterItems;
         if(filterItems != null && !filterItems.isEmpty()){
             int size = filterItems.size();
             maxPage = (size -1)/maxElementInPage +1;
@@ -363,7 +366,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
 
 
     }
-    public ExecutableWidget generateRecipeEntry(SlimefunTasks.RecipeEntry  recipeEntry){
+    public ExecutableWidget generateRecipeEntry(RecipeEntry  recipeEntry){
         return ExecutableWidget.instance(0,0,12,12)
             .setElementHandler(
                 SlotElement.instance(recipeEntry.output())
@@ -415,7 +418,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     }
     protected static final int HOVER_DX = 96;
     protected static final int HOVER_DY = 42;
-    protected void setHoveringRecipe(SlimefunTasks.RecipeEntry entry, double mouseX, double mouseY){
+    protected void setHoveringRecipe(RecipeEntry entry, double mouseX, double mouseY){
         if(this.hovering != null){
             DrawableWidget widget = SlimefunEntryListScreen.generateRecipeEntryContent(entry, -24,0)
                 .setCancelCallback(()->this.hovering.setContentDelegate(null))

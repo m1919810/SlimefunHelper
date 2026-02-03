@@ -5,7 +5,7 @@ import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.RenderHandler;
 import me.matl114.gui.config.RegistryDisplayRender;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.UtilClass.AttrKeyValue;
+import me.matl114.utils.impl.config.AttrKeyValue;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.item.Item;

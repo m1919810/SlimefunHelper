@@ -1,36 +1,33 @@
 package me.matl114.utils;
 
-import me.matl114.utils.UtilClass.Point;
 import net.minecraft.block.SpawnerBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
-import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
+import org.joml.Vector2d;
 import org.spongepowered.include.com.google.common.collect.BiMap;
 import org.spongepowered.include.com.google.common.collect.HashBiMap;
 
-import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class EntityUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    public static void parseEntityWhiteList(String value, HashSet<EntityType<?>> collection){
+    public static void parseEntityWhiteList(String value, Set<EntityType<?>> collection){
         collection.clear();
         try{
             for(net.minecraft.entity.EntityType<?> entityType: Registries.ENTITY_TYPE){
@@ -120,6 +117,17 @@ public class EntityUtils {
 
             return null;
         }
+    }
+
+
+
+    public static Vector2d getEntityLookXZ(Entity entity){
+        float yaw = entity.getYaw();
+        float pitch = entity.getPitch();
+        float f = MathHelper.cos(-yaw * 0.017453292F - 3.1415927F);
+        float g = MathHelper.sin(-yaw * 0.017453292F - 3.1415927F);
+        float h = -MathHelper.cos(-pitch * 0.017453292F);
+        return new Vector2d(g*h, f*h);
     }
 
 

@@ -2,7 +2,7 @@ package me.matl114.utils;
 
 
 import lombok.Getter;
-import me.matl114.hackUtils.ChatTasks;
+import me.matl114.hacks.ChatTasks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.function.Supplier;
 
 @ApiMethod
 public class Debug {
@@ -80,14 +79,6 @@ public class Debug {
     public static boolean test(Object obj){
         info(obj);
         return false;
-    }
-    public static boolean DEBUG_LOG_TO_CHAT = false;
-    public static void debug(Object... objs){
-        if(DEBUG_LOG_TO_CHAT){
-            Debug.chat(objs);
-        }else{
-            Debug.info(objs);
-        }
     }
 
 }

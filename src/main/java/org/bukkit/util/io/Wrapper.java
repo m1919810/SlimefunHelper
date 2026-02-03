@@ -1,8 +1,8 @@
 package org.bukkit.util.io;
 
 import com.google.common.collect.ImmutableMap;
-import me.matl114.bukkitUtiils.BukkitSerializationMock;
-import me.matl114.bukkitUtiils.ConfigurationSerializable;
+import me.matl114.bukkit.BukkitSerializationMock;
+import me.matl114.bukkit.ConfigurationSerializable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

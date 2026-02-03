@@ -6,22 +6,22 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-import me.matl114.access.ScreenAccess;
-import me.matl114.bukkitUtiils.BukkitItemStackUtils;
+import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.gui.config.KeyValueInputWidget;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.config.ListModifyWidget;
-import me.matl114.hackUtils.ChatTasks;
-import me.matl114.hackUtils.InvTasks;
-import me.matl114.hackUtils.SlimefunTasks;
+import me.matl114.hacks.ChatTasks;
+import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.SlimefunTasks;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.UtilClass.AttrKeyValue;
+import me.matl114.utils.impl.config.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.component.ComponentChanges;
@@ -98,7 +98,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     public void executeSave(){
         syncItemStack();
         if(canConfirm()){
-            SlimefunTasks.handleSaveItem(itemStack.copy());
+            InvTasks.getSaveItem().addSaveItem(itemStack.copy());
         }else {
             Debug.chat(Text.literal("当前的编辑参数存在问题,不能保存为物品"));
         }
@@ -124,7 +124,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     Debug.chat(Text.literal("指令已经被拷贝到了剪切板中!").formatted(Formatting.RED));
                     mc.keyboard.setClipboard(command);
                 }else {
-                    ChatTasks.sendMessage(command, true);
+                    ChatTasks.sayMessage(command, true);
                 }
             }
         }
@@ -253,7 +253,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 this.x + CONTENT_START_X + 81, this.y + CONTENT_START_Y + 1, 18, 18
             )
             .setElementHandler(
-                IconElement.fixed(GUIDE_TEXTURE, ButtonAction.run(SlimefunTasks::handleClickGuideIcon))
+                IconElement.fixed(GUIDE_TEXTURE, ButtonAction.run(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu))
                     .withTooltips(TooltipHandler.of(GUIDE_TOOLTIPS))
             )
             .addTo(this)
@@ -476,8 +476,9 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         DisplayWidget.instance(1,1, 50 -1, 20 -1)
                             .setRenderHandler(LabelElement.instance(Text.literal("是否隐藏")))
                     );
-                    for (var sec: ItemStackUtils.TooltipHideFlag.values()){
-                        int index = sec.ordinal();
+                    var flags = ItemStackUtils.getHideFlags();
+                    for (int index = 0 ; index < flags.length; ++ index){
+                        var sec = flags[index];
                         subScreenWidget.addDrawableChild(
                             ExecutableWidget.instance(50 +1 + 20 * index, 1, 20 -2, 20- 2)
                                 .setElementHandler(
@@ -495,7 +496,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 }
                 public void applyChange(ItemStack stack){
                     //clear hideFlags
-                    for (var entry: ItemStackUtils.TooltipHideFlag.values()){
+                    for (var entry: ItemStackUtils.getHideFlags()){
                         entry.setHideFlag(stack, entry.isHide(sample));
                     }
 
