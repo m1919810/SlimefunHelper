@@ -99,7 +99,7 @@ public class RaycastUtils {
         return Optional.empty();
     }
     private static final Comparator<Vec3i> PRIORITIZE_LEAST_BLOCK_DISTANCE = Comparator.comparingDouble(vec ->
-            -Vec3d.of(vec).add(0.5, 0.5, 0.5).squaredDistanceTo(mc.player.getEntityPos())
+            -Vec3d.of(vec).add(0.5, 0.5, 0.5).squaredDistanceTo(mc.player.getPos())
         );
     public static HitResult findBestBlockPlacement(BlockPos pos){
         BlockState state = mc.world.getBlockState(pos);

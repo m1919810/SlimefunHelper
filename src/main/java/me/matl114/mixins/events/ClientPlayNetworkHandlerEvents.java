@@ -139,7 +139,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
         // turn this into Event
 
         if(!Listener.getTeleportConfirmResponsePoint().isEmpty()){
-            MovTasks.MovInfo eventContext = new MovTasks.MovInfo(playerEntity.getEntityPos(), false, false, new Vec2f(playerEntity.getPitch(), playerEntity.getYaw()));
+            MovTasks.MovInfo eventContext = new MovTasks.MovInfo(playerEntity.getPos(), false, false, new Vec2f(playerEntity.getPitch(), playerEntity.getYaw()));
             Event<MovTasks.MovInfo> setBackEvent = new Event<>(eventContext, false, true);
             Listener.getTeleportConfirmResponsePoint().handleValue(setBackEvent);
             eventContext = setBackEvent.context();

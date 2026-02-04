@@ -55,7 +55,8 @@ dependencies {
 	minecraft ("com.mojang:minecraft:${project.minecraft_version}"){
 		transitive = false
 	}
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	//mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	mappings files("mapping/yarn-1.21.11+build-special-v2.local-v2.jar")
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"

@@ -58,7 +58,7 @@ public class SetBackLog extends BaseModule {
         int tpId = packet0.teleportId();
         maxTpId = Math.max(maxTpId, tpId);
         if(mc.player != null){
-            lastDesyncPos = mc.player.getEntityPos();
+            lastDesyncPos = mc.player.getPos();
         }
         var packet = packet0.change().position();
 

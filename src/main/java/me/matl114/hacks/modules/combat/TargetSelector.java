@@ -244,8 +244,8 @@ public class TargetSelector extends BaseModule {
         Vec3d vec3d = mc.player.getEyePos();
         Vec3d eye = mc.player.getRotationVector().normalize();
         targets.sort(Comparator.comparingDouble(e-> {
-            var pos= e.getEntityPos().subtract(vec3d).normalize();//.dotProduct(eye))
-            return (- withMultiply(e,( pos.x * eye.x + pos.z * eye.z)/ (e.getEntityPos().subtract(vec3d).horizontalLength() + 1E-10)));
+            var pos= e.getPos().subtract(vec3d).normalize();//.dotProduct(eye))
+            return (- withMultiply(e,( pos.x * eye.x + pos.z * eye.z)/ (e.getPos().subtract(vec3d).horizontalLength() + 1E-10)));
         }));
         if(!targets.isEmpty()) {
             return targets.get(0);
@@ -290,7 +290,7 @@ public class TargetSelector extends BaseModule {
 
     private static boolean canPlayerDirectlySee(Entity entity){
         //横向距离小于300
-        return entity.getEntityPos().subtract(mc.player.getEntityPos()).horizontalLengthSquared() < 90000 && !RaycastUtils.raycastAnyBlock(mc.player, mc.player.getEyePos(), entity.getEyePos());
+        return entity.getPos().subtract(mc.player.getPos()).horizontalLengthSquared() < 90000 && !RaycastUtils.raycastAnyBlock(mc.player, mc.player.getEyePos(), entity.getEyePos());
     }
 }
 

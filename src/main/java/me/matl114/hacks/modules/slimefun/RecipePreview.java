@@ -1,22 +1,5 @@
 package me.matl114.hacks.modules.slimefun;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import me.matl114.accessors.access.HandledScreenAccess;
-import me.matl114.utils.collections.HolderWithState;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.text.Text;
-import net.minecraft.util.Colors;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -139,34 +122,34 @@ public class RecipePreview {
 //            releaseAllDisplayRecipe();
 //            return;
 //        }
-        if(!Screen.hasControlDown()){
-            //if not control anyMore;
-            releaseAllDisplayRecipe();
-            return;
-        }
-        if(!CURRENT.isEmpty()){
-            //keep rendering current logic
-            //left not complete
-            if(CURRENT_HANDLING_SCREEN != screen){
-                releaseAllDisplayRecipe();
-                return;
-            }
-
-            CURRENT.values().removeIf(i -> {
-                if(!i.render(context, screen)){
-                    i.disableRender(screen);
-
-
-                    return true;
-                }
-                return false;
-            });
-            if(CURRENT.isEmpty()){
-                releaseAllDisplayRecipe();
-            }
-            return;
-
-        }
-
-    }
+//        if(!Screen.hasControlDown()){
+//            //if not control anyMore;
+//            releaseAllDisplayRecipe();
+//            return;
+//        }
+//        if(!CURRENT.isEmpty()){
+//            //keep rendering current logic
+//            //left not complete
+//            if(CURRENT_HANDLING_SCREEN != screen){
+//                releaseAllDisplayRecipe();
+//                return;
+//            }
+//
+//            CURRENT.values().removeIf(i -> {
+//                if(!i.render(context, screen)){
+//                    i.disableRender(screen);
+//
+//
+//                    return true;
+//                }
+//                return false;
+//            });
+//            if(CURRENT.isEmpty()){
+//                releaseAllDisplayRecipe();
+//            }
+//            return;
+//
+//        }
+//
+//    }
 }

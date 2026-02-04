@@ -12,9 +12,7 @@ import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 
 public class ElytraExtra extends BaseModule {
@@ -45,12 +43,12 @@ public class ElytraExtra extends BaseModule {
         if(enableUnbreakableElytra.get() && tickEvent.context() >= 18){
             fakeGlideTime += 1;
             fakeGlidePoseTime += 1;
-            if(mc.player != null && mc.player.isGliding()){
+            if(mc.player != null && mc.player.isFallFlying()){
                 mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
 //                Debug.info("send stop glide");
             }
             Tasks.scheduleDelayed(()->{
-                if(mc.player != null && mc.player.isGliding() && !mc.player.isOnGround()){
+                if(mc.player != null && mc.player.isFallFlying() && !mc.player.isOnGround()){
                     mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
 //                    Debug.info("send restart glide");
                 }else{

@@ -132,9 +132,9 @@ public class Tests extends BaseModule {
         if(mc.player == null)return;
 
         //todo: try fix tp-into-lava issue
-        Vec3d target = mc.player.getEntityPos().add(mc.player.getRotationVector().multiply(20));
+        Vec3d target = mc.player.getPos().add(mc.player.getRotationVector().multiply(20));
         RenderTasks.drawBox(mc.player.dimensions.getBoxAt(target), 200, Color.RED);
-        MovTasks.generateTpSequence(mc.player.getEntityPos(), target, true, 1000, true);
+        MovTasks.generateTpSequence(mc.player.getPos(), target, true, 1000, true);
 
         //todo: try to simulate a explosion to escape anti cheat
         //todo: try to send clientbound packets to server (wtf to see if grimac got mistaken)

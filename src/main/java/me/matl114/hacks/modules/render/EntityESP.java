@@ -213,7 +213,7 @@ public class EntityESP extends BaseModule {
     private static double calculateDistance(double x1,double y1,double z1){
         if(MinecraftClient.getInstance().player!=null){
             ClientPlayerEntity player=MinecraftClient.getInstance().player;
-            return Math.sqrt( player.getEntityPos().squaredDistanceTo(x1,y1,z1));
+            return Math.sqrt( player.getPos().squaredDistanceTo(x1,y1,z1));
         }
         return -1.0f;
     }

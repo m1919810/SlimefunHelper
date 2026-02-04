@@ -589,7 +589,7 @@ public class ChatTasks {
                 parsedCoord = EntityUtils.lookCoordTooAbsolutePos(entity, x, y, z);
             }else {
                 //use simple coord
-                Vec3d pos = entity.getEntityPos();
+                Vec3d pos = entity.getPos();
                 double x = 0;
                 double y = 0;
                 double z = 0;
@@ -668,7 +668,7 @@ public class ChatTasks {
                     var1.sendMessage(Text.literal("找不到实体或者玩家: " + target).formatted(Formatting.RED));
                     return;
                 }
-                pos = entity.getEntityPos();
+                pos = entity.getPos();
             }
             boolean flag = re.nextBoolean();
             MovTasks.executeTp(pos, flag ? 2147483647: 128, true, true);
@@ -676,16 +676,16 @@ public class ChatTasks {
         public static Vec3d mark;
         private Vec3d specialPositions(String target, PlayerEntity var1){
             return switch (target.substring(1)){
-                case "this"-> var1.getEntityPos();
+                case "this"-> var1.getPos();
                 case "near"-> {
-                    var player = mc.world.getPlayers().stream().filter(m->m != var1).sorted(Comparator.comparingDouble(m -> m.getEntityPos().squaredDistanceTo(var1.getEntityPos()))).findFirst().orElse(null);
+                    var player = mc.world.getPlayers().stream().filter(m->m != var1).sorted(Comparator.comparingDouble(m -> m.getPos().squaredDistanceTo(var1.getPos()))).findFirst().orElse(null);
                     if (player == null){
                         var1.sendMessage(Text.literal("附近没有其他玩家!").formatted(Formatting.RED));
                         yield  null;
                     }else {
                         var1.sendMessage(Text.literal("找到附近的玩家: "+ player.getName()).formatted(Formatting.GREEN));
                     }
-                    yield  player.getEntityPos();
+                    yield  player.getPos();
                 }
                 case "mark"-> {
                     if(mark != null){
@@ -784,18 +784,18 @@ public class ChatTasks {
                     Vec3d pos0  = parsedCoord;
                     final ClientPlayerEntity currentPlayer = mc.player;
                     final long startingTime = System.currentTimeMillis();
-                    final Vec3d startPos = mc.player.getEntityPos();
+                    final Vec3d startPos = mc.player.getPos();
                     public void cancel(){
                         super.cancel();
                         MovTasks.doingTp = false;
                     }
                     private boolean finish(){
-                        if( travelTask != this || mc.player != currentPlayer || mc.player.getEntityPos().subtract(pos0).horizontalLengthSquared() < 900){
+                        if( travelTask != this || mc.player != currentPlayer || mc.player.getPos().subtract(pos0).horizontalLengthSquared() < 900){
                             Debug.chat("当前travel task已完成或者终止");
                             long usedSec = (System.currentTimeMillis() - startingTime)/1000L;
                             Debug.info("using time", usedSec);
                             if(mc.player != null){
-                                double len = mc.player.getEntityPos().distanceTo(startPos);
+                                double len = mc.player.getPos().distanceTo(startPos);
                                 Debug.chat("时间开销:", usedSec, "s, 运行距离: ", len, ", 平均速度: ", len/usedSec ,"m/s");
                                 //send signal to reset distance
                                 mc.player.setOnGround(false);
@@ -813,10 +813,10 @@ public class ChatTasks {
                     private boolean move(Vec3d delta){
 
                         if(delta.length() == 0){
-                            MovTasks.moveToWithPackets(mc.player.getEntityPos(), null);
+                            MovTasks.moveToWithPackets(mc.player.getPos(), null);
                             return false;
                         }else {
-                            MovTasks.moveToWithPackets(mc.player.getEntityPos().add(delta), Boolean.TRUE);
+                            MovTasks.moveToWithPackets(mc.player.getPos().add(delta), Boolean.TRUE);
                             return finish();
                         }
                     }
@@ -829,12 +829,12 @@ public class ChatTasks {
                         MovTasks.doingTp = false;
                         mc.player.setOnGround(false);
                         tickCNT +=1;
-//                                    Debug.info("distance ", vec3d, mc.player.getEntityPos());
+//                                    Debug.info("distance ", vec3d, mc.player.getPos());
                         if(mc.player.getY() < mc.world.getTopY() + 64){
                             MovTasks.farawayMove(new Vec3d(0, 128, 0), true);
                         }else {
                             //fixme error in boat, desync boat position
-                            Vec3d towards = pos0.subtract(mc.player.getEntityPos());
+                            Vec3d towards = pos0.subtract(mc.player.getPos());
 
                             Vec3d towardsHorizontal = new Vec3d(towards.x, 0, towards.z).normalize();
 //                                            if(move(Vec3d.ZERO)){
@@ -853,7 +853,7 @@ public class ChatTasks {
                             }
                         }
                         MovTasks.doingTp = true;
-//                                    this.vec3d = mc.player.getEntityPos();
+//                                    this.vec3d = mc.player.getPos();
                         return false;
                     }
                 };
@@ -895,14 +895,14 @@ public class ChatTasks {
             String type = re.nextNonnull();
             Vec3d pos;
             switch (type){
-                case "this"-> pos = var1.getEntityPos();
-                case "camera" -> pos = mc.player.getEntityPos();
+                case "this"-> pos = var1.getPos();
+                case "camera" -> pos = mc.player.getPos();
                 case "cross" -> pos = mc.crosshairTarget.getPos();
                 case "player" -> {
                     String var = re.nextNonnull();
                     Entity player = EntityUtils.getPlayerByName(var);
                     if(player != null){
-                        pos = player.getEntityPos();
+                        pos = player.getPos();
                     }else {
                         var1.sendMessage(Text.literal("找不到实体或者玩家: " + var).formatted(Formatting.RED));
                         return ;

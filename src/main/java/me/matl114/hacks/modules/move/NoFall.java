@@ -153,7 +153,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         runningDelegate = getDelegate();
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-        Vec3d pos = args.getEntityPos();
+        Vec3d pos = args.getPos();
         if(pos == null){
             entityStage = ENTITY_STAGE_INITIALIZING;
             return;
@@ -252,7 +252,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                         counter = 0;
                         module.lastOnGroundHeight = args.getY();
 
-                        args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
+                        args.setPosition(args.getPos().add(0, + 1E-8, 0));
                         mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(args.getX(), args.getY() , args.getZ(), !forceNoFall && args.isOnGround(), args.horizontalCollision));
                         noFallSetbackResponse = true;
                     }
@@ -305,7 +305,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 counter = 0;
                 module.lastOnGroundHeight = args.getY();
 
-                args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
+                args.setPosition(args.getPos().add(0, + 1E-8, 0));
                 mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(args.getX(), args.getY() , args.getZ(), false, args.horizontalCollision));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
@@ -572,7 +572,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 counter = 0;
                 module.lastOnGroundHeight = args.getY();
 
-                args.setPosition(args.getEntityPos().add(0, + 1E-8, 0));
+                args.setPosition(args.getPos().add(0, + 1E-8, 0));
                 mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(args.getX(), args.getY() , args.getZ(), false, args.horizontalCollision));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
@@ -606,7 +606,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 duplicatingNoFall = false;
                 if(lastNoFallPos != null){
                     //near
-                    if(Math.abs(lastNoFallPos.y - entity.entity.getY()) < 1e-2 && entity.entity.getEntityPos().squaredDistanceTo(lastNoFallPos) < 1 && lastNoFall + latency >= Tasks.getTick()){
+                    if(Math.abs(lastNoFallPos.y - entity.entity.getY()) < 1e-2 && entity.entity.getPos().squaredDistanceTo(lastNoFallPos) < 1 && lastNoFall + latency >= Tasks.getTick()){
                         duplicatingNoFall = true;
                     }
                 }
@@ -654,7 +654,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             lastNoFall = Tasks.getTick();
                             counter = 0;
                             //use history y //todo try use nofall pos as this
-                            lastNoFallPos = entity.entity.getEntityPos();
+                            lastNoFallPos = entity.entity.getPos();
                             //todo figure out why sync flood happens
 //todo: try send it eariler
 

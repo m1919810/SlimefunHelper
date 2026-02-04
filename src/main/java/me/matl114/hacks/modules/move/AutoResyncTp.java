@@ -44,7 +44,7 @@ public class AutoResyncTp extends BaseModule {
             //auto resync
             PlayerPositionLookS2CPacket packet1 = event.context;
             Vec3d resyncPos = packet1.change().position();
-            double sqdistance = resyncPos.squaredDistanceTo(mc.player.getEntityPos());
+            double sqdistance = resyncPos.squaredDistanceTo(mc.player.getPos());
             double sqdistance2 = resyncPos.squaredDistanceTo(pos);
             if(hasMove(packet1) && sqdistance > 1E-4 && sqdistance < MathUtils.s2(128) && sqdistance2 > 1E-4 && sqdistance2 < MathUtils.s2(128)){
                 //don't so far, it may be a real teleport

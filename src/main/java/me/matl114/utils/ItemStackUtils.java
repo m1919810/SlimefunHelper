@@ -112,7 +112,7 @@ public class ItemStackUtils {
                 Set<String> keys = nbt.getKeys();
                 if(keys.size() > 2)return true;
                 // we only support Damage , because most of these are from damage
-                int val = nbt.getInt("Damage", 0);
+                int val = nbt.get("Damage") instanceof NbtInt nbtInt ? nbtInt.intValue() : 0;
                 if(val > 0)return true;
                 for(var key : keys){
                     //viaversion items

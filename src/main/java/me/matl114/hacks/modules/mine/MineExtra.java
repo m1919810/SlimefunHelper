@@ -168,7 +168,7 @@ public class MineExtra extends BaseModule {
                 BlockPos blockPos =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
                 Vec3d pos =Vec3d.of(blockPos);
                 //超过200格的不渲染
-                if(mc.player.getEntityPos().squaredDistanceTo(pos) < 40000){
+                if(mc.player.getPos().squaredDistanceTo(pos) < 40000){
                     RenderUtils.setAsCurrentShaderColor(Color.BLUE, 1.0F);
                     RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0));
                     float progress =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningProgress(true);
@@ -194,7 +194,7 @@ public class MineExtra extends BaseModule {
                 BlockPos doubleMinePos =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
                 if(doubleMinePos != null){
                     Vec3d doubleMineVec = Vec3d.of(doubleMinePos);
-                    if(mc.player.getEntityPos().squaredDistanceTo(doubleMineVec) < 40000 && !Objects.equals(doubleMineVec, pos)){
+                    if(mc.player.getPos().squaredDistanceTo(doubleMineVec) < 40000 && !Objects.equals(doubleMineVec, pos)){
                         float progressFail = PlayerInteractionAccess.of(mc.interactionManager).getFailBreakMiningProgress();
                         RenderUtils.setAsCurrentShaderColor(Color.MAGENTA, 1.0F);
                         RenderUtils.drawOutlinedBox(renderEvent.context, doubleMineVec, doubleMineVec.add(1.0, 1.0, 1.0));

@@ -110,7 +110,7 @@ public class WorldHelper {
     }
 
     public static <T> List<T> sortEntitiesByDistance(List<T> en){
-        return (List<T>)(en.stream().sorted(Comparator.comparingDouble((d) -> JsHelper.unwrap(d, Entity.class).getEntityPos().squaredDistanceTo(mc.player.getEntityPos()))).collect(Collectors.toCollection(ArrayList::new)));
+        return (List<T>)(en.stream().sorted(Comparator.comparingDouble((d) -> JsHelper.unwrap(d, Entity.class).getPos().squaredDistanceTo(mc.player.getPos()))).collect(Collectors.toCollection(ArrayList::new)));
     }
 
     public static List<Entity> getEntities() throws ExecutionException, InterruptedException {

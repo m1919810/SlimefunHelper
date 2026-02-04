@@ -11,10 +11,13 @@ accessible method net/minecraft/util/shape/VoxelShape getPointPositions (Lnet/mi
 accessible field net/minecraft/nbt/NbtCompound entries Ljava/util/Map;
 accessible field net/minecraft/text/TextColor FORMATTING_TO_COLOR Ljava/util/Map;
 accessible method net/minecraft/util/Identifier <init> (Ljava/lang/String;Ljava/lang/String;)V
-accessible field net/minecraft/item/ItemStack components Lnet/minecraft/component/MergedComponentMap;
-accessible field net/minecraft/component/MergedComponentMap changedComponents Lit/unimi/dsi/fastutil/objects/Reference2ObjectMap;
+
+
 accessible field net/minecraft/component/type/NbtComponent nbt Lnet/minecraft/nbt/NbtCompound;
-accessible method net/minecraft/component/MergedComponentMap onWrite ()V
+
+accessible field net/minecraft/item/ItemStack components Lnet/minecraft/component/ComponentMapImpl;
+accessible field net/minecraft/component/ComponentMapImpl changedComponents Lit/unimi/dsi/fastutil/objects/Reference2ObjectMap;
+accessible method net/minecraft/component/ComponentMapImpl onWrite ()V
 accessible method net/minecraft/component/type/NbtComponent <init> (Lnet/minecraft/nbt/NbtCompound;)V
 accessible method net/minecraft/item/ItemStack copyComponentsToNewStackIgnoreEmpty (Lnet/minecraft/item/ItemConvertible;I)Lnet/minecraft/item/ItemStack;
 accessible method net/minecraft/nbt/NbtCompound <init> (Ljava/util/Map;)V
