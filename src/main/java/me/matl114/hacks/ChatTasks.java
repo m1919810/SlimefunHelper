@@ -112,7 +112,7 @@ public class ChatTasks {
     @Getter
     private static final LimitedSpeedExecutor chatExecutor=new LimitedSpeedExecutor(new IntRef(5));
     public static void sendDelayChatMessage(Text text){
-        chatExecutor.addDelayedExecuteTask(()->mc.player.sendMessage(text));
+        chatExecutor.addDelayedExecuteTask(()->mc.inGameHud.getChatHud().addMessage(text));
     }
 
 
@@ -665,7 +665,7 @@ public class ChatTasks {
                     entity = EntityUtils.getPlayerByName(target);
                 }
                 if(entity == null){
-                    var1.sendMessage(Text.literal("找不到实体或者玩家: " + target).formatted(Formatting.RED));
+                    sendMessage(var1, Text.literal("找不到实体或者玩家: " + target).formatted(Formatting.RED));
                     return;
                 }
                 pos = entity.getPos();
@@ -680,45 +680,45 @@ public class ChatTasks {
                 case "near"-> {
                     var player = mc.world.getPlayers().stream().filter(m->m != var1).sorted(Comparator.comparingDouble(m -> m.getPos().squaredDistanceTo(var1.getPos()))).findFirst().orElse(null);
                     if (player == null){
-                        var1.sendMessage(Text.literal("附近没有其他玩家!").formatted(Formatting.RED));
+                        sendMessage(var1, Text.literal("附近没有其他玩家!").formatted(Formatting.RED));
                         yield  null;
                     }else {
-                        var1.sendMessage(Text.literal("找到附近的玩家: "+ player.getName()).formatted(Formatting.GREEN));
+                        sendMessage(var1, Text.literal("找到附近的玩家: "+ player.getName()).formatted(Formatting.GREEN));
                     }
                     yield  player.getPos();
                 }
                 case "mark"-> {
                     if(mark != null){
                         Vec3d pos = Vec3d.ZERO.add(mark);
-                        var1.sendMessage(Text.literal("使用记录坐标： ").append(ChatUtils. getDisplayedLocationDouble(pos)));
+                        sendMessage(var1, Text.literal("使用记录坐标： ").append(ChatUtils. getDisplayedLocationDouble(pos)));
                         yield pos;
                     }else {
-                        var1.sendMessage( Text.literal("暂未记录坐标!"));
+                        sendMessage(var1,  Text.literal("暂未记录坐标!"));
                         yield null;
                     }
                 }
                 case "back" -> {
                     if(MovTasks.LAST_TP_FROM != null){
-                        var1.sendMessage(Text.literal("使用上一个位置: ").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_TP_FROM)));
+                        sendMessage(var1, Text.literal("使用上一个位置: ").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_TP_FROM)));
                         yield MovTasks.LAST_TP_FROM;
                     }
-                    var1.sendMessage(Text.literal("找不到上一个位置"));
+                    sendMessage(var1, Text.literal("找不到上一个位置"));
                     yield null;
                 }
                 case "desync" ->{
                     if(MovTasks.setBackLog.lastDesyncPos != null){
-                        var1.sendMessage(Text.literal("使用上次客户端同步之前的位置").append(ChatUtils. getDisplayedLocationDouble(MovTasks.setBackLog.lastDesyncPos)));
+                        sendMessage(var1, Text.literal("使用上次客户端同步之前的位置").append(ChatUtils. getDisplayedLocationDouble(MovTasks.setBackLog.lastDesyncPos)));
                         yield MovTasks.setBackLog.lastDesyncPos;
                     }
-                    var1.sendMessage(Text.literal("找不到上一次的客户端同步记录"));
+                    sendMessage(var1, Text.literal("找不到上一次的客户端同步记录"));
                     yield null;
                 }
                 case "lasttp" -> {
                     if(MovTasks.LAST_TP_REQUEST != null){
-                        var1.sendMessage(Text.literal("使用上一个TP请求: ").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_TP_REQUEST)));
+                        sendMessage(var1, Text.literal("使用上一个TP请求: ").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_TP_REQUEST)));
                         yield MovTasks.LAST_TP_REQUEST;
                     }
-                    var1.sendMessage(Text.literal("找不到上一个TP请求"));
+                    sendMessage(var1, Text.literal("找不到上一个TP请求"));
                     yield null;
                 }
                 case "death" ->{
@@ -727,15 +727,15 @@ public class ChatTasks {
                         if(Objects.equals(b0.get().dimension(), mc.world.getRegistryKey())){
                             yield b0.get().pos().toBottomCenterPos();
                         }else{
-                            var1.sendMessage(Text.literal("上次死亡位置不在该世界"));
+                            sendMessage(var1, Text.literal("上次死亡位置不在该世界"));
                         }
                     }else{
-                        var1.sendMessage(Text.literal("暂未死亡历史记录"));
+                        sendMessage(var1, Text.literal("暂未死亡历史记录"));
                     }
                     yield null;
                 }
                 default -> {
-                    var1.sendMessage(Text.literal("不存在的特殊目标： "+ target));
+                    sendMessage(var1, Text.literal("不存在的特殊目标： "+ target));
                     yield null;
                 }
             };
@@ -830,7 +830,7 @@ public class ChatTasks {
                         mc.player.setOnGround(false);
                         tickCNT +=1;
 //                                    Debug.info("distance ", vec3d, mc.player.getPos());
-                        if(mc.player.getY() < mc.world.getTopY() + 64){
+                        if(mc.player.getY() < mc.world.getBottomY() + mc.world.getHeight() + 64){
                             MovTasks.farawayMove(new Vec3d(0, 128, 0), true);
                         }else {
                             //fixme error in boat, desync boat position
@@ -904,7 +904,7 @@ public class ChatTasks {
                     if(player != null){
                         pos = player.getPos();
                     }else {
-                        var1.sendMessage(Text.literal("找不到实体或者玩家: " + var).formatted(Formatting.RED));
+                        sendMessage(var1, Text.literal("找不到实体或者玩家: " + var).formatted(Formatting.RED));
                         return ;
                     }
                 }
@@ -913,7 +913,7 @@ public class ChatTasks {
                     return ;
                 }
                 default -> {
-                    var1.sendMessage(Text.literal("不存在的mark类型: "+type).formatted(Formatting.RED));
+                    sendMessage(var1, Text.literal("不存在的mark类型: "+type).formatted(Formatting.RED));
                     return ;
                 }
             }

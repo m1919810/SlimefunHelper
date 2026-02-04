@@ -659,13 +659,13 @@ public class MovTasks {
 
 
         if(len <=  farawayTp){
-            if(currentY >= world.getBottomY() && currentY <= world.getTopY()){
+            if(currentY >= world.getBottomY() && currentY <= world.getBottomY() + world.getHeight()){
                 Box boundariesFromBox = mc.player.dimensions.getBoxAt(current);
                 Box boundariesToBox = mc.player.dimensions.getBoxAt(target);
                 Box boundariesSmallAxis ;
                 Box boundariesLargeAxis;
-                boundariesSmallAxis = CollisionUtil.resetY(tpSmallerAxisPlate, world.getBottomY(), world.getTopY());
-                boundariesLargeAxis = CollisionUtil.resetY(tpLargerAxisPlate, world.getBottomY(), world.getTopY());
+                boundariesSmallAxis = CollisionUtil.resetY(tpSmallerAxisPlate, world.getBottomY(), world.getBottomY() + world.getHeight());
+                boundariesLargeAxis = CollisionUtil.resetY(tpLargerAxisPlate, world.getBottomY(), world.getBottomY() + world.getHeight());
                 boolean debug0 = DEBUG_RENDER_COLLISION_RENDERING;
                 // DEBUG_RENDER_COLLISION_RENDERING = true;
                 STATIC_DEBUG_COLOR = Color.CYAN;
@@ -841,7 +841,7 @@ public class MovTasks {
 
 //        if(currentY > world.getBottomY() + 64){
 //            //most likely
-//            tpHorizontalPlate = world.getTopY()
+//            tpHorizontalPlate = world.getBottomY() + world.getHeight()
 //        }
     }
     private static boolean doIntercepteMovingPacketsWhileTp(PlayerMoveC2SPacket packet){

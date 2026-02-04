@@ -253,7 +253,7 @@ public class MineBot  extends BaseModule {
             noBlockAroundTick ++;
             if(noBlockAroundTick > NO_BLOCK_MENTION_LIMIT){
                 noBlockAroundTick = 0;
-                mc.player.sendMessage(Text.literal("No more minable blocks nearby!"));
+                Debug.chat(Text.literal("No more minable blocks nearby!"));
             }
         }else {
             noBlockAroundTick = 0;

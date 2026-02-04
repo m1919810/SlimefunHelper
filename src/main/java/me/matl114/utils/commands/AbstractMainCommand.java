@@ -11,10 +11,12 @@ import javax.annotation.Nullable;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.Command;
 import me.matl114.utils.ChatUtils;
+import me.matl114.utils.Debug;
 import me.matl114.utils.interruptions.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -63,8 +65,7 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
     /** Whether this command has been registered with the plugin */
     private boolean registered = false;
 
-    /** Logger for debug information */
-    private Logger Debug;
+
 
 
     /**
@@ -74,7 +75,17 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      * @param message The message to send (supports & color codes)
      */
     protected void sendMessage(PlayerEntity sender, String message) {
-        sender.sendMessage(ChatUtils.stringToText(message));
+        Debug.chat(ChatUtils.stringToText(message));
+    }
+
+    /**
+     * Sends a message to the command sender with color code translation.
+     *
+     * @param sender The command sender to send the message to
+     * @param message The message to send (supports & color codes)
+     */
+    protected void sendMessage(PlayerEntity sender, Text message) {
+        Debug.chat(message);
     }
 
 

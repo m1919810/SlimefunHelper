@@ -31,7 +31,7 @@ public class Debug {
         if(MinecraftClient.getInstance().player != null){
             //do not log async
             MinecraftClient.getInstance().execute(()->{
-                MinecraftClient.getInstance().player.sendMessage(text);
+                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(text);
 
             });
         }else {

@@ -39,7 +39,7 @@ public class WorldHelper {
     }
 
     public static boolean isWorldClient(World world){
-        return world.isClient;
+        return world.isClient();
     }
 
     public static void setBlockState(World world, BlockPos pos, BlockState state){
