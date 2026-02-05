@@ -56,7 +56,7 @@ public class SlotElement extends AbstractElement {
     @Override
     public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         //render slot here
-        context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+        context.setShaderAlpha(alpha);
         RenderSystem.enableBlend();
         RenderSystem.enableDepthTest();
         float scalerX = (float) element.getTextureWidth() / uheight;
@@ -67,7 +67,7 @@ public class SlotElement extends AbstractElement {
         if(slotFrame){
             renderSlotFrame(context);
         }
-        context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+        context.setShaderAlpha(  1.0F);
         ItemStack stack = inventory.getStack(index);
         RenderHandler.drawSingleItem(context, stack, 1, 1, isInSlot);
         if(shouldHighlight){

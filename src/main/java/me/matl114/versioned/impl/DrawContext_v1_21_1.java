@@ -47,6 +47,10 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     public void setShaderColor(float red, float green, float blue, float alpha) {
         this.drawContext.setShaderColor(red, green, blue, alpha);
     }
+    @Override
+    public void setShaderAlpha(float alpha) {
+        this.drawContext.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+    }
 
     @Override
     public void drawGuiTexture(Identifier texture, int x, int y, int z, int width, int height) {
@@ -64,13 +68,13 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     }
 
     @Override
-    public int drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) {
-        return drawContext.drawText(textRenderer, text, x, y, color, shadow);
+    public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) {
+        drawContext.drawText(textRenderer, text, x, y, color, shadow);
     }
 
     @Override
-    public int drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow) {
-        return drawContext.drawText(textRenderer, text, x, y, color, shadow);
+    public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow) {
+        drawContext.drawText(textRenderer, text, x, y, color, shadow);
     }
 
     @Override

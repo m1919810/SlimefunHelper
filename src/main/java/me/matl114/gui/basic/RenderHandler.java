@@ -104,11 +104,11 @@ public interface RenderHandler {
         return new RenderHandler() {
             @Override
             public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
-                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                context.setShaderAlpha(alpha);
                 RenderSystem.enableBlend();
                 RenderSystem.enableDepthTest();
                 context.drawTexturedQuad(identifier, 0,  element.getTextureWidth(), 0, element.getTextureHeight(),0,u1, u2, v1, v2);
-                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+                context.setShaderAlpha(1.0F);
             }
         };
     }
@@ -130,11 +130,11 @@ public interface RenderHandler {
         return new RenderHandler() {
             @Override
             public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
-                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                context.setShaderAlpha( alpha);
                 RenderSystem.enableBlend();
                 RenderSystem.enableDepthTest();
                 context.drawTexturedQuad(identifier, 0, element.getTextureWidth(),0,  element.getTextureHeight(),0 ,0, ((float) element.getTextureWidth())/scaler256, 0, ((float) element.getTextureHeight())/scaler256);
-                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+                context.setShaderAlpha( 1.0F);
             }
         };
     }
@@ -157,11 +157,11 @@ public interface RenderHandler {
         return new RenderHandler() {
             @Override
             public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
-                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                context.setShaderAlpha( alpha);
                 RenderSystem.enableBlend();
                 RenderSystem.enableDepthTest();
                 context.drawTexturedQuad(identifier, 0, dx, 0, dy, 0, u1, u2, v1, v2);
-                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+                context.setShaderAlpha(1.0F);
             }
         };
     }
@@ -178,11 +178,11 @@ public interface RenderHandler {
         return new RenderHandler() {
             @Override
             public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
-                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                context.setShaderAlpha(alpha);
                 RenderSystem.enableBlend();
                 RenderSystem.enableDepthTest();
                 context.drawTexturedQuad(identifier, x, x2, y, y2, 0, u1, u2, v1, v2);
-                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+                context.setShaderAlpha(1.0F);
             }
         };
     }

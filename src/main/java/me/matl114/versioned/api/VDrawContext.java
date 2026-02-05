@@ -29,6 +29,8 @@ public interface VDrawContext {
 
     public void setShaderColor(final float red, final float green, final float blue, final float alpha);
 
+    public void setShaderAlpha(float alpha);
+
     default void drawTexture(Identifier texture, int x, int y, int u, int v, int width, int height) {
         this.drawTexture(texture, x, y, 0, (float)u, (float)v, width, height, 256, 256);
     }
@@ -102,12 +104,12 @@ public interface VDrawContext {
         this.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, color, true);
     }
 
-    default int drawTextWithShadow(TextRenderer textRenderer, @Nullable String text, int x, int y, int color) {
-        return this.drawText(textRenderer, text, x, y, color, true);
+    default void drawTextWithShadow(TextRenderer textRenderer, @Nullable String text, int x, int y, int color) {
+        this.drawText(textRenderer, text, x, y, color, true);
     }
 
-    public int drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) ;
-    public int drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow);
+    public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) ;
+    public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow);
 
     public void enableScissor(int x, int y, int width, int height);
 
