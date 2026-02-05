@@ -150,10 +150,6 @@ public class RenderUtils {
         VRender.getInstance().setAsShaderColor(color, opacity);
     }
 
-    //gui
-    public static void drawHighlightFrame(DrawContext context, int x, int y, int dx, int dy, int color){
-        VRender.getInstance().drawHighlightFrame(context, x, y, dx, dy, color);
-    }
 
     public static Box getLerpedBox(Entity e, float partialTicks)
     {

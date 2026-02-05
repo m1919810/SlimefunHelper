@@ -2,8 +2,7 @@ package me.matl114.gui.basic;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.matl114.utils.InventoryUtils;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
@@ -51,11 +50,11 @@ public class SlotElement extends AbstractElement {
         this.index = index;
         this.callback = callback;
     }
-    protected void renderSlotFrame(DrawContext context){
+    protected void renderSlotFrame(VDrawContext context){
         context.drawTexture(SLOT_RESOURCE, 0,0, u0, v0, uheight, vheight);
     }
     @Override
-    public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         //render slot here
         context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
         RenderSystem.enableBlend();
@@ -72,7 +71,7 @@ public class SlotElement extends AbstractElement {
         ItemStack stack = inventory.getStack(index);
         RenderHandler.drawSingleItem(context, stack, 1, 1, isInSlot);
         if(shouldHighlight){
-            context.fillGradient(RenderLayer.getGuiOverlay(), 1, 1, 1 + 16, 1 + 16, -2130706433, -2130706433, 0);
+            context.fillGuiGradient(1, 1, 1 + 16, 1 + 16, -2130706433, -2130706433, 0);
         }
         context.getMatrices().pop();
 
@@ -94,7 +93,7 @@ public class SlotElement extends AbstractElement {
         return super.withTooltips(handler);
     }
     @Override
-    public void renderExtra0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public void renderExtra0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         //draw tooltips here;
         super.renderExtra0(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
         if(shouldHighlight && tooltips){

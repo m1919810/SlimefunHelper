@@ -3,11 +3,12 @@ package me.matl114.gui.other;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.basic.RenderHandler;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.util.Colors;
@@ -82,11 +83,11 @@ public class ChatLikeInputSubScreen extends SubScreenWidget {
     }
 
     @Override
-    public void renderInDefaultMatrix(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
+    public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         //draw gray background for chatField
         context.fill(0,-2,  this.chatFieldWidget.getWidth(),  this.chatFieldWidget.getHeight() -2, mc.options.getTextBackgroundColor(Integer.MIN_VALUE));
-        RenderUtils.drawHighlightFrame(context, -1, -3, this.chatFieldWidget.getWidth() + 2, this.chatFieldWidget.getHeight() + 2, this.isFocused() ? Colors.WHITE : Colors.GRAY);
+        RenderHandler.drawHighlightFrame(context, -1, -3, this.chatFieldWidget.getWidth() + 2, this.chatFieldWidget.getHeight() + 2, this.isFocused() ? Colors.WHITE : Colors.GRAY);
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {

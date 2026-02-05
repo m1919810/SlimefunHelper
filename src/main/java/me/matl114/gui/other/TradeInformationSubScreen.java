@@ -42,7 +42,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
     public TradeOffer getCurrentTrade(){
         MerchantScreenAccess access = MerchantScreenAccess.of(this.screen);
         int index = access.getSelectedIndex();
-        TradeOfferList list = this.screen.getScreenHandler().getRecipes();;
+        TradeOfferList list = this.screen.getScreenHandler().getRecipes();
         if(index < 0 || index >= list.size()){
             return null;
         }else{

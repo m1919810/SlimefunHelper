@@ -1219,7 +1219,7 @@ public final class CollisionUtil {
 //            // note: operations on NaN are false
 //            double last = Double.NaN;
 //
-//            for (;;) {
+//            for (;) {
 //                final boolean noneLeftFirst = firstIndex >= firstCount;
 //                final boolean noneLeftSecond = secondIndex >= secondCount;
 //

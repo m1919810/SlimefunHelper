@@ -23,7 +23,7 @@ public abstract class ItemModelsEvents {
             BakedModel model = bakedModelEvent.context();
             if(model != null) {
                 cir.setReturnValue(model);
-                cir.cancel();;
+                cir.cancel();
             }
         }
     }

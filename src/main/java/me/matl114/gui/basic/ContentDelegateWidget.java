@@ -2,7 +2,7 @@ package me.matl114.gui.basic;
 
 import lombok.Getter;
 import me.matl114.utils.Debug;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -40,7 +40,7 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
         return this.delegate != null && ((!(this.delegate instanceof DrawableWidget draw))||draw.canSelect());
     }
 
-    public void renderInDefaultMatrix(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
+    public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         if(this.delegate != null){
             int translatedMouseX = (mouseX - this.x);
@@ -54,7 +54,8 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
 
                 draw.render0(context, translatedMouseX, translatedMouseY, delta, disableSelect);
             }else {
-                this.delegate.render(context, translatedMouseX, translatedMouseY, delta);
+                this.delegate.render(context.pushMatrix(), translatedMouseX, translatedMouseY, delta);
+                context.popMatrix();
             }
         }
     }

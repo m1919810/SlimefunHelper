@@ -28,7 +28,5 @@ public interface VRender {
 
     public void drawQuadCameraCoord(Matrix4f matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d);
 
-    public void drawHighlightFrame(DrawContext context, int x, int y, int dx, int dy, int color);
-
     public void setAsShaderColor(Color color, float opacity);
 }

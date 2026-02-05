@@ -303,7 +303,7 @@ public class LazyList<S extends List<V>,V> implements List<V> {
     public void clear() {
         if(!this.delegate.value.isEmpty()){
             preWrite();
-            this.delegate.value.clear();;
+            this.delegate.value.clear();
         }
     }
 

@@ -168,7 +168,7 @@ public class ItemStackUtils {
             if(map != null){
                 //no need to modify
                 if(map.containsKey(type) && map.get(type) == Optional.empty())return;
-                cpmap.onWrite();;
+                cpmap.onWrite();
                 cpmap.changedComponents.put(type, Optional.empty());
             }
         }

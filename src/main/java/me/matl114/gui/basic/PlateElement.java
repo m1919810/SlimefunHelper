@@ -1,7 +1,7 @@
 package me.matl114.gui.basic;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.util.Identifier;
 
 public class PlateElement extends AbstractElement {
@@ -23,7 +23,7 @@ public class PlateElement extends AbstractElement {
         this.catchInteract = catchInteract;
     }
     @Override
-    public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         color = -1;
         float alpha1 = ((color >> 24) & 0xFF) / 255f;
         float red = ((color >> 16) & 0xFF) / 255f;

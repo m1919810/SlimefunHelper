@@ -44,7 +44,7 @@ public class HotKeyUtils {
 
     public static SimpleHotKey.InputHandler asHandler(Runnable task){
         return (in)-> {
-            task.run();;
+            task.run();
             return true;
         };
     }

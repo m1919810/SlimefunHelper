@@ -85,7 +85,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;sendMovementPackets()V"), cancellable = true)
     public void preMovementPackets(CallbackInfo ci){
         if(!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity)this)){
-            ci.cancel();;
+            ci.cancel();
         }
     }
 

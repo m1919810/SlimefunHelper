@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.utils.RenderUtils;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
@@ -65,7 +65,7 @@ public abstract class IconElement extends BoxElement{
         }
 
         @Override
-        public @Nullable Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight) {
+        public @Nullable Identifier getTextureId(VDrawContext context, DrawableWidget element, boolean highlight) {
             return isActive()? activeId : inactiveId;
         }
     }
@@ -112,9 +112,9 @@ public abstract class IconElement extends BoxElement{
         super(action);
     }
     @Nullable
-    public abstract Identifier getTextureId(DrawContext context, DrawableWidget element, boolean highlight);
+    public abstract Identifier getTextureId(VDrawContext context, DrawableWidget element, boolean highlight);
     public abstract boolean drawGuiTexture();
-    public void renderTexture(DrawContext context, DrawableWidget element, boolean highlight){
+    public void renderTexture(VDrawContext context, DrawableWidget element, boolean highlight){
         Identifier id = getTextureId(context, element, highlight);
         if(id != null){
             if(drawGuiTexture()){
@@ -125,12 +125,12 @@ public abstract class IconElement extends BoxElement{
             }
             Integer color = (highLightColor == null) ? (highlight ? Integer.valueOf(Colors.WHITE) : null) : highLightColor.provideTextColor(element, highlight);
             if(color != null){
-                RenderUtils.drawHighlightFrame(context,0,0, element.getTextureWidth(), element.getTextureHeight(), color);
+                RenderHandler.drawHighlightFrame(context,0,0, element.getTextureWidth(), element.getTextureHeight(), color);
             }
         }
     }
 
-    public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
+    public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
         //float[] shaders = RenderSystem.getShaderColor();
         context.setShaderColor(this.shaderColor.getRed()/255.0f, this.shaderColor.getGreen()/255.0f, this.shaderColor.getBlue()/255.0f, alpha);
         RenderSystem.enableBlend();
@@ -193,7 +193,7 @@ public abstract class IconElement extends BoxElement{
             }
 
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 //update active condition before render
                 if(handlerPredicate.test(ob)){
                     ob.setActive(true);
@@ -203,7 +203,7 @@ public abstract class IconElement extends BoxElement{
             }
 
             @Override
-            public void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderExtraAbsoluteCoord(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 if(handlerPredicate.test(ob)){
                     ob.setActive(true);
                 }else ob.setActive(false);

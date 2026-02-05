@@ -55,7 +55,7 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
         renderHandler = renderHandler.combineRender(
             (element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                 if(attrKeyValue.getOriginValue() == Boolean.TRUE){
-                    McWidgetHelpers.drawHighLightBox(context, 0, 0, this.dx, this.entryHeight, Colors.WHITE);
+                    RenderHandler.drawHighLightBox(context, 0, 0, this.dx, this.entryHeight, Colors.WHITE);
                 }
             }
         );

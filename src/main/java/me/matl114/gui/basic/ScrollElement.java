@@ -3,7 +3,7 @@ package me.matl114.gui.basic;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.utils.config.PropertyTracker;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
@@ -44,7 +44,7 @@ public class ScrollElement extends AbstractElement {
     private static final Identifier SCROLLER_TEXTURE = new Identifier("minecraft","container/creative_inventory/scroller");
     private static final Identifier SCROLLER_DISABLED_TEXTURE = new Identifier("minecraft","container/creative_inventory/scroller_disabled");
     private static final Quaternionf ROTATE_X = RotationAxis.NEGATIVE_Z.rotationDegrees(90);
-    public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
+    public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
         //绘制滑动条
         //不支持element进行缩放,谁会对滑动条缩放啊,直接指定大小就行
         if(draggingY){

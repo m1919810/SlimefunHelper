@@ -54,7 +54,7 @@ public class PageSwitchSubScreen  extends SubScreenWidget {
         super(x, y, dx, dy);
         this.pageSwitchCallback = pageSwitchCallback;
         this.pageHeight = pageHeight;
-        initPageButton();;
+        initPageButton();
     }
     protected void hoverInputPageWidget(){
         AttrKeyValue<Integer> clampedValue = AttrKeyValue.clampedInt("输入页数", this.page, 1, this.maxPage);

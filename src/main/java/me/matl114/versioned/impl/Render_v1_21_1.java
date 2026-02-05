@@ -66,13 +66,6 @@ public class Render_v1_21_1 implements VRender {
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
     }
 
-    @Override
-    public void drawHighlightFrame(DrawContext context, int x, int y, int dx, int dy, int color) {
-        context.fillGradient(RenderLayer.getGuiOverlay(), x, y, x + dx, y + 1, color, color, 0);
-        context.fillGradient(RenderLayer.getGuiOverlay(), x , y, x + 1, y + dy,  color, color,  0);
-        context.fillGradient(RenderLayer.getGuiOverlay(), x + dx - 1, y + 1, x + dx, y + dy,  color, color, 0);
-        context.fillGradient(RenderLayer.getGuiOverlay(), x + 1, y + dy - 1, x + dx, y + dy,  color, color, 0);
-    }
 
     public  void setAsShaderColor(Color color, float opacity){
         RenderSystem.setShaderColor(color.getRed() / 255.0F, color.getGreen()/ 255.0F, color.getBlue()/ 255.0F, opacity);

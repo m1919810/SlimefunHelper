@@ -1,0 +1,115 @@
+package me.matl114.versioned.impl;
+
+import me.matl114.versioned.api.VDrawContext;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipData;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.Optional;
+
+public class DrawContext_v1_21_1 implements VDrawContext {
+    private final DrawContext drawContext;
+    private final MatrixStack matrixStack;
+    public DrawContext_v1_21_1(DrawContext context) {
+        this.drawContext = context;
+        this.matrixStack = this.drawContext.getMatrices();
+    }
+
+    public DrawContext getDrawContext() {
+        return this.drawContext;
+    }
+
+    @Override
+    public DrawContext pushMatrix() {
+        return this.drawContext;
+    }
+
+    @Override
+    public DrawContext popMatrix() {
+        return this.drawContext;
+    }
+
+    @Override
+    public MatrixStack getMatrices() {
+        return this.matrixStack;
+    }
+
+    @Override
+    public void setShaderColor(float red, float green, float blue, float alpha) {
+        this.drawContext.setShaderColor(red, green, blue, alpha);
+    }
+
+    @Override
+    public void drawGuiTexture(Identifier texture, int x, int y, int z, int width, int height) {
+        this.drawContext.drawGuiTexture(texture, x, y, z, width, height);
+    }
+
+    @Override
+    public void drawGuiTexture(Identifier texture, int i, int j, int k, int l, int x, int y, int z, int width, int height) {
+        this.drawContext.drawGuiTexture(texture, i, j, k, l, x, y, z, width, height);
+    }
+
+    @Override
+    public void drawTexturedQuad(Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
+        this.drawContext.drawTexturedQuad(texture, x1, x2, y1, y2, z, u1, u2, v1, v2);
+    }
+
+    @Override
+    public int drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) {
+        return drawContext.drawText(textRenderer, text, x, y, color, shadow);
+    }
+
+    @Override
+    public int drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow) {
+        return drawContext.drawText(textRenderer, text, x, y, color, shadow);
+    }
+
+    @Override
+    public void enableScissor(int x, int y, int width, int height) {
+        this.drawContext.enableScissor(x, y, width, height);
+    }
+
+    @Override
+    public void disableScissor() {
+        this.drawContext.disableScissor();
+    }
+
+    @Override
+    public void tryDraw() {
+        this.drawContext.tryDraw();
+    }
+
+    @Override
+    public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth) {
+        this.drawContext.fillGradient(RenderLayer.getGuiOverlay(), x1, y1, x2, y2, color1, color2, depth);
+    }
+
+    @Override
+    public void fill(int x1, int y1, int x2, int y2, int z, int color) {
+
+    }
+
+    @Override
+    public void drawTooltip(TextRenderer textRenderer, List<Text> text, Optional<TooltipData> data, int x, int y) {
+        this.drawContext.drawTooltip(textRenderer, text, data, x, y);
+    }
+
+    @Override
+    public void drawItem(ItemStack stack, int x, int y, int seed, int z) {
+        this.drawContext.drawItem(stack, x, y, seed);
+    }
+
+    @Override
+    public void drawItemInSlot(TextRenderer textRenderer, ItemStack stack, int x, int y, @Nullable String countOverride) {
+        this.drawContext.drawItemInSlot(textRenderer, stack, x, y, countOverride);
+    }
+
+}

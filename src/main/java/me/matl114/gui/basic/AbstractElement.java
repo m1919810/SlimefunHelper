@@ -1,7 +1,7 @@
 package me.matl114.gui.basic;
 
 import me.matl114.utils.Debug;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 
 import javax.tools.Tool;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class AbstractElement implements ElementHandler {
     }
 
 
-    public final void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public final void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         renderCentered0(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
         if(extraRender != null){
             for (var h : extraRender){
@@ -52,12 +52,12 @@ public class AbstractElement implements ElementHandler {
             }
         }
     }
-    public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
+    public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
 
     }
 
 
-    public final void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public final void renderExtraAbsoluteCoord(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         renderExtra0(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
         if(absoluteRender != null){
             for (var h: absoluteRender){
@@ -66,7 +66,7 @@ public class AbstractElement implements ElementHandler {
             }
         }
     }
-    public void renderExtra0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
+    public void renderExtra0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
 
     }
 

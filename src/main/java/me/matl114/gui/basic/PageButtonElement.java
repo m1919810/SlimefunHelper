@@ -2,7 +2,7 @@ package me.matl114.gui.basic;
 
 import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -47,7 +47,7 @@ public class PageButtonElement extends ButtonElement{
         this.delta = delta;
         this.withTooltips(new TooltipHandler(pageSwitch));
     }
-    public void renderTexture(DrawContext context, DrawableWidget element, boolean highlight){
+    public void renderTexture(VDrawContext context, DrawableWidget element, boolean highlight){
         int tobe = pageGetter.getAsInt() + delta;
         boolean inactive = tobe <= 0 || tobe > maxPage.getAsInt();
         context.drawGuiTexture( (inactive ? BUTTON_INACTIVE: (highlight? BUTTON_HIGHLIGHT: BUTTON)), 0, 0, element.getTextureWidth(), element.getTextureHeight());

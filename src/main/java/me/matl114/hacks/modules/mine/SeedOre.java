@@ -344,7 +344,7 @@ public class SeedOre extends BaseModule {
 
     private void onClearCachedResults(){
         chunkSeedCache.clear();
-        fakeOres.clear();;
+        fakeOres.clear();
     }
 
     //events that updates the chunk
@@ -387,7 +387,7 @@ public class SeedOre extends BaseModule {
         var stack = event.context;
         if(mc.player == null || oreConfig == null)return;
         if(!enable.get())return;
-        if(!enableRender.get())return;;
+        if(!enableRender.get())return;
         if(!checkCurrentSeedExistence())return;
         RenderUtils.startDrawVirtual(stack);
         try{

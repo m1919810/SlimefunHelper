@@ -2,7 +2,7 @@ package me.matl114.gui.basic;
 
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 
@@ -34,7 +34,7 @@ public class RawTextElement extends AbstractElement {
         this.alignment = alignment;
     }
     @Override
-    public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         Text text1 = text.getLabel(element);
         if(text1 != null){
             RenderHandler.drawScaledText0(context, mc.textRenderer, text1, 0,0,element.getTextureWidth(), element.getTextureHeight(), color, alignment);

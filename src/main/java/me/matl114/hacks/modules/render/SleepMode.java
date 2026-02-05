@@ -293,7 +293,7 @@ public class SleepMode extends BaseModule {
                     DrawContext drawContext = new DrawContext(mc, gameRenderer.buffers.getEntityVertexConsumers());
 
                     currentRenderingSleeping.renderWithTooltip(drawContext, i, j, tickCounter.getLastDuration());
-                    drawContext.draw();;
+                    drawContext.draw();
                     matrix4fStack.popMatrix();
                     RenderSystem.applyModelViewMatrix();
                 }

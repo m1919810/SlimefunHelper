@@ -1,6 +1,5 @@
 package me.matl114.hacks;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,25 +11,15 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.render.*;
 import me.matl114.utils.*;
 import me.matl114.events.Event;
-import me.matl114.versioned.impl.Render_v1_21_1;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.ShaderProgram;
-import net.minecraft.client.gl.VertexBuffer;
-import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 
 import net.minecraft.util.math.*;
-import org.jetbrains.annotations.NotNull;
-import org.joml.Matrix4f;
-
-import javax.annotation.Nonnull;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
 
 public class RenderTasks {
     public static void init(){
