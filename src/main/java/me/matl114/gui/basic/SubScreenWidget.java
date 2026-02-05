@@ -120,6 +120,10 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
         }
         DrawableWidget selected = null;
         if(this.isSelected()){
+            //use super.selected as a cache value to show whether there is a child which is selecting
+            //it is calculated in render0
+            //
+            //use interact order to search the first widget that is selectable
             for (var ch : childrenInteractOrder()){
                 if(ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){
                     selected = ch;
@@ -130,8 +134,6 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
         for (var ch: childrenRenderOrder()){
             boolean disable = ch != selected;
-            //use super.selected as a cache value to show whether there is a child which is selecting
-            //it is calculated in render0
 
             //force disable child highlight, only highlight the first met
             ch.render0(context, translatedMouseX, translatedMouseY, delta, disable);
