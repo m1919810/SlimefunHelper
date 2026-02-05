@@ -1,10 +1,11 @@
 package me.matl114.versioned.impl;
 
+import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.util.math.MatrixStack;
+
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.text.OrderedText;
@@ -20,7 +21,7 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     private final MatrixStack matrixStack;
     public DrawContext_v1_21_1(DrawContext context) {
         this.drawContext = context;
-        this.matrixStack = this.drawContext.getMatrices();
+        this.matrixStack = MatrixStack.of(context.getMatrices());
     }
 
     public DrawContext getDrawContext() {

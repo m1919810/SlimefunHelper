@@ -46,12 +46,13 @@ public class DelegateWidget extends DrawableWidget implements Draggable{
     public boolean isSelected(){
         return this.delegate != null && this.delegate.isSelected();
     }
-    public <T extends DrawableWidget> T setExtraDepth(int depth){
-        if(this.delegate != null){
-            this.delegate.setExtraDepth(depth);
-        }
-        return (T) this;
-    }
+    //remove the extra Depth here, do not set this
+//    public <T extends DrawableWidget> T setExtraDepth(int depth){
+//        if(this.delegate != null){
+//            this.delegate.setExtraDepth(depth);
+//        }
+//        return (T) this;
+//    }
 
     public <T extends DrawableWidget> T setTextureScale(float scale){
         if(this.delegate != null){

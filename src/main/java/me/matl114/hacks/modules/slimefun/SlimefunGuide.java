@@ -15,6 +15,7 @@ import me.matl114.hacks.utils.recipes.RecipeEntry;
 import me.matl114.managers.TaskManagers;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeType;
@@ -139,7 +140,7 @@ public class SlimefunGuide extends BaseModule {
                 .toList(),
                 (entry)-> new ExecutableWidget(0,0,16,16).setElementHandler(SlotElement.instance(entry.copyWithCount(1)).withInputHandler(InputHandler.isLeft(t->{
                     if(t){
-                        if(Screen.hasShiftDown()){
+                        if(ScreenUtils.hasShiftDown()){
                             InvTasks.copyGiveCommand(entry.copy());
                         }else {
                             if(mc.player != null && mc.player.isCreative()){
@@ -228,7 +229,7 @@ public class SlimefunGuide extends BaseModule {
         }
         List<RecipeEntry> resultToDisplay = new ArrayList<>();
         //logic remake
-        boolean shiftDown = Screen.hasShiftDown();
+        boolean shiftDown = ScreenUtils.hasShiftDown();
         if(isLeft){
             //搞到当前物品的配方表
             //显示每个输出和当前物品相同的配方表。使用sfid匹配sf物品，弱匹配 匹配其他物品

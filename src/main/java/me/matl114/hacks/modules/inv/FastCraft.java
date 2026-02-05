@@ -12,6 +12,7 @@ import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.events.Event;
+import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CraftingScreen;
@@ -159,7 +160,7 @@ public class FastCraft extends BaseModule {
             .setElementHandler(
                 new ButtonElement(
                     TextProvider.of(Text.literal("合成")),
-                    ButtonAction.run(()-> placeLastCraftingRecipe(screen, Screen.hasShiftDown()))
+                    ButtonAction.run(()-> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown()))
                 )
             )
             .addToSub(recipeSubScreen);
@@ -216,7 +217,7 @@ public class FastCraft extends BaseModule {
             .setElementHandler(
                 new ButtonElement(
                     TextProvider.of(Text.literal("合成")),
-                    ButtonAction.run(()-> placeLastCraftingRecipe(screen, Screen.hasShiftDown()))
+                    ButtonAction.run(()-> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown()))
                 )
             )
             .addToSub(recipeSubScreen);

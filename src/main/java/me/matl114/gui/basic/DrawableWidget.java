@@ -34,7 +34,8 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
 
     private int textureWidth;
     private int textureHeight;
-    protected int extraDepth;
+    // higher priority means more likely to be selected
+    protected int priority;
     private final void updateScale(){
         this.textureWidth =(int)( dx/ this.textureScale);
         this.textureHeight = (int)( dy/this.textureScale);
@@ -60,7 +61,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return this.textureHeight;
     }
     public int getExtraDepth(){
-        return this.extraDepth;
+        return this.priority;
     }
     public float getAlpha(){
         return this.alpha;
@@ -71,8 +72,9 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     public boolean isSelected(){
         return selected;
     }
+    //this should be set before they join any delegates or something, as they often causes problem
     public <T extends DrawableWidget> T setExtraDepth(int depth){
-        this.extraDepth = depth;
+        this.priority = depth;
         return (T)this;
     }
 
@@ -130,17 +132,21 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
 
     public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
-        context.getMatrices().push();
-        context.getMatrices().translate(x, y, extraDepth);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(x, y);
+        //compat low version
+        if(priority != 0){
+            context.getMatrices().translateZ(priority);
+        }
         if(textureScale != 1.0f){
-            context.getMatrices().push();
-            context.getMatrices().scale(textureScale, textureScale, 1);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().scale(textureScale, textureScale);
         }
         renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         if(textureScale != 1.0f){
-            context.getMatrices().pop();
+            context.getMatrices().popMatrix();
         }
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
         renderAbsolute(context, mouseX, mouseY, delta, disableSelect);
     }
     public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){

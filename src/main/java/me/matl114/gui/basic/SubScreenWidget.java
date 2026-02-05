@@ -1,11 +1,14 @@
 package me.matl114.gui.basic;
 
+import com.google.common.collect.ImmutableList;
 import me.matl114.utils.Debug;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import org.apache.commons.compress.utils.Lists;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
+import java.util.*;
 
 public class SubScreenWidget extends DrawableWidget implements SubSelectable{
     /**
@@ -28,7 +31,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
         return super.setTextureScale(scale);
     }
 
-    protected List<DrawableWidget> children = Lists.newArrayList();
+    private final List<IndexEntry<DrawableWidget>> children = Lists.newArrayList();
     protected DrawableWidget selected = null;
     protected DrawableWidget dragging = null;
 
@@ -56,15 +59,59 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 //        return false;
         return true;
     }
+    private int cnt = 0;
+
+    private void resortChildren() {
+        children.sort(Comparator.<IndexEntry<DrawableWidget>>comparingInt(s -> s.val().priority).thenComparingInt(IndexEntry::index));
+    }
+
+    protected void clearChildren(){
+        children.clear();
+    }
+
+    protected Iterable<DrawableWidget> childrenRenderOrder(){
+        return ()-> new Iterator<>() {
+            int index = 0;
+            final int size = children.size();
+            @Override
+            public boolean hasNext() {
+                return index < size;
+            }
+
+            @Override
+            public DrawableWidget next() {
+                return children.get(index++).val();
+            }
+        };
+    }
+
+    protected Iterable<DrawableWidget> childrenInteractOrder(){
+        return ()-> new Iterator<>() {
+            int index = 0;
+            final int size = children.size();
+            @Override
+            public boolean hasNext() {
+                return index < children.size();
+            }
+
+            @Override
+            public DrawableWidget next() {
+                return children.get(size - 1 - (index++)).val();
+            }
+        };
+    }
 
     public SubScreenWidget addDrawableChild(DrawableWidget widget){
-        children.add(widget);
+        children.add(new IndexEntry<>(++cnt, widget));
         widget.setSubWidget(true);
+        resortChildren();
         return this;
     }
     public boolean remove(DrawableWidget widget){
         widget.setSubWidget(false);
-        return children.remove(widget);
+        boolean val = children.removeIf(s -> Objects.equals(s.val(), widget));
+        resortChildren();
+        return val;
     }
 
     public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
@@ -78,7 +125,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
         boolean selected = false;
-        for (var ch: children){
+        for (var ch: childrenRenderOrder()){
             boolean disable = true;
             //use super.selected as a cache value to show whether there is a child which is selecting
             //it is calculated in render0
@@ -102,7 +149,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.mouseClicked(translatedMouseX, translatedMouseY, button)){
                 setSelected(ch);
                 return true;
@@ -121,7 +168,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
 
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.mouseReleased(translatedMouseX, translatedMouseY, button)){
                 return true;
             }
@@ -159,7 +206,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        for (var ch: children){
+        for (var ch: childrenInteractOrder()){
             if(ch.startDrag(screen, translatedMouseX, translatedMouseY)){
                 this.dragging = ch;
                 return true;
@@ -189,7 +236,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.mouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount)){
                 return true;
             }
@@ -199,7 +246,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.keyPressed(keyCode, scanCode, modifiers)){
                 return true;
             }
@@ -209,7 +256,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
 
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.keyReleased(keyCode, scanCode, modifiers)){
                 return true;
             }
@@ -219,7 +266,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.charTyped(chr, modifiers)){
                 return true;
             }
@@ -228,7 +275,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
     }
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        for (var entry: this.children){
+        for (var entry: this.childrenInteractOrder()){
             if(entry.isMouseOver((mouseX - this.x)/this.textureScale, (mouseY - this.y)/this.textureScale))return true;
         }
         return false;

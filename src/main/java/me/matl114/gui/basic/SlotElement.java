@@ -61,8 +61,8 @@ public class SlotElement extends AbstractElement {
         RenderSystem.enableDepthTest();
         float scalerX = (float) element.getTextureWidth() / uheight;
         float scalerY = (float) element.getTextureHeight() / vheight;
-        context.getMatrices().push();
-        context.getMatrices().scale(scalerX, scalerY, 1);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().scale(scalerX, scalerY);
         //use matrices because item will be rendered later
         if(slotFrame){
             renderSlotFrame(context);
@@ -73,7 +73,7 @@ public class SlotElement extends AbstractElement {
         if(shouldHighlight){
             context.fillGuiGradient(1, 1, 1 + 16, 1 + 16, -2130706433, -2130706433, 0);
         }
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
 
     }
     private boolean slotFrame = true;

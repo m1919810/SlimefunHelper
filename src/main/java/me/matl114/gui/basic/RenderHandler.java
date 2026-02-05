@@ -4,8 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -236,7 +234,7 @@ public interface RenderHandler {
             double e = Math.max((double)l * 0.5, 3.0);
             double f = Math.sin(1.5707963267948966 * Math.cos(6.283185307179586 * d / e)) / 2.0 + 0.5;
             double g = MathHelper.lerp(f, 0.0, (double)l);
-            var trans = context.getMatrices().peek().getPositionMatrix();
+            var trans = context.getMatrices().peek3D();
             var point1 = new Vector4f(startX, startY,0 ,1).mul(trans);
             var point2 = new Vector4f(endX, endY, 0, 1).mul(trans);
             //fix: respect MatrixTranslation
@@ -264,14 +262,14 @@ public interface RenderHandler {
             context.drawCenteredTextWithShadow(textRenderer, text.asOrderedText(), l, j, color);
         }else{
             float scale =((float) availableWidth) / (float)i;
-            context.getMatrices().push();
-            context.getMatrices().translate(startX, startY,0);
-            context.getMatrices().push();
-            context.getMatrices().scale(scale, scale,1);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(startX, startY);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().scale(scale, scale);
             //
             context.drawCenteredTextWithShadow(textRenderer, text.asOrderedText(),(int)( ((endX - startX) / 2)/scale), (int)((((endY - startY)/2)/scale  - 7f/2)), color);
-            context.getMatrices().pop();
-            context.getMatrices().pop();
+            context.getMatrices().popMatrix();
+            context.getMatrices().popMatrix();
         }
     }
 
@@ -286,13 +284,13 @@ public interface RenderHandler {
     }
     public static void drawSingleItem(VDrawContext context, ItemStack stack , int x, int y, boolean inSlot){
         if(!stack.isEmpty()){
-            context.getMatrices().push();
-            context.getMatrices().translate(0,0,100);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translateZ(100);
             context.drawItem(stack, x, y, 114514,0);
             if(inSlot){
                 context.drawItemInSlot(mc.textRenderer, stack, 1, 1, null);
             }
-            context.getMatrices().pop();
+            context.getMatrices().popMatrix();
         }
     }
 

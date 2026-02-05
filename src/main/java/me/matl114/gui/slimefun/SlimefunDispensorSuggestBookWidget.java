@@ -10,6 +10,7 @@ import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.Tasks;
 import me.matl114.hacks.modules.slimefun.MultiBlockHelper;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
+import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -186,6 +187,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         //add delegates to
         //hovering have higher priority so it will trigger first whenever interact or renderHighlight
         this.hovering = new ContentDelegateWidget<>(36,  14,HOVER_DX, HOVER_DY)
+            .setExtraDepth(500)
             .addToSub(this);
 
 
@@ -247,7 +249,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         multiblockExecuteWidget = ExecutableWidget.instance(DX - 48,0, 18, 8)
             .setElementHandler(
                 new ButtonElement(TextProvider.of(MULTIBLOCK_EXECUTE), ButtonAction.run(()->{
-                        SlimefunTasks.getMultiBlockHelper().onMultiBlockExecute(MinecraftClient.getInstance().currentScreen, true, Screen.hasShiftDown());
+                        SlimefunTasks.getMultiBlockHelper().onMultiBlockExecute(MinecraftClient.getInstance().currentScreen, true, ScreenUtils.hasShiftDown());
                     Tasks.scheduleDelayed(this::refreshContents, 5);
                     }))
                     .withTooltips(TooltipHandler.of(MULTIBLOCK_TOOLTIPS_EXECUTE))
@@ -396,7 +398,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                                   if(button == 0 || button == 1){
                                       if (type == Type.MOUSE_CLICK && SlimefunDispensorSuggestBookWidget.this.callback != null){
 
-                                          if(Screen.hasShiftDown()){
+                                          if(ScreenUtils.hasShiftDown()){
                                               int amount = button == 0 ? 64 : 0;
                                               openInputIntScreen(amount, (i)->{
                                                   SlimefunDispensorSuggestBookWidget.this.callback.accept(i, recipeEntry);
@@ -435,8 +437,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
     protected void setHoveringRecipe(RecipeEntry entry, double mouseX, double mouseY){
         if(this.hovering != null){
             DrawableWidget widget = SlimefunEntryListScreen.generateRecipeEntryContent(entry, -24,0)
-                .setCancelCallback(()->this.hovering.setContentDelegate(null))
-                .setExtraDepth(500);
+                .setCancelCallback(()->this.hovering.setContentDelegate(null));
             this.hovering.setContentDelegate(widget);
         }
     }
@@ -452,8 +453,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                     },
                     0, 16,  96, 30, 64
                 )
-                .setFinishRunning(()->this.hovering.setContentDelegate(null))
-                .setExtraDepth(500);
+                .setFinishRunning(()->this.hovering.setContentDelegate(null));
             this.hovering.setContentDelegate(widget);
         }
     }

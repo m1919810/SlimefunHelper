@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import me.matl114.utils.config.PropertyTracker;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.math.MathHelper;
 import org.joml.Vector4f;
@@ -95,25 +94,28 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
             scrollableBorder.render0(context, mouseX, mouseY, delta, disableSelect);
         }
 
-        context.getMatrices().push();
+        context.getMatrices().pushMatrix();
         // apply scissors, content outside the template will not be rendered
-        var trans = context.getMatrices().peek().getPositionMatrix();
+        var trans = context.getMatrices().peek3D();
         var point1 = new Vector4f(this.getX(),this.getY(),0 ,1).mul(trans);
         var point2 = new Vector4f(this.getX()+ this.getWidth(), this.getY()+this.getHeight(), 0, 1).mul(trans);
         context.enableScissor((int) point1.x, (int) point1.y, (int) point2.x, (int) point2.y);
         //apply current pose
-        context.getMatrices().translate(x, y - this.currentPose, extraDepth);
+        context.getMatrices().translate(x, y - this.currentPose);
+        if(this.priority != 0){
+            context.getMatrices().translateZ(priority);
+        }
         if(textureScale != 1.0f){
-            context.getMatrices().push();
-            context.getMatrices().scale(textureScale, textureScale, 1);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().scale(textureScale, textureScale);
         }
 
         renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         if(textureScale != 1.0f){
-            context.getMatrices().pop();
+            context.getMatrices().popMatrix();
         }
         context.disableScissor();
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
         renderAbsolute(context, mouseX, mouseY, delta, disableSelect);
     }
 

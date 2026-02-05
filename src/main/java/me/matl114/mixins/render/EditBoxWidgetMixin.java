@@ -3,6 +3,7 @@ package me.matl114.mixins.render;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ColorProvider;
+import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.PropertyTracker;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -103,7 +104,7 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
         if(!super.scrollbarDragged){
             this.editBox.setSelecting(true);
             this.moveCursor(this.getX() + deltaX, this.getY() + deltaY);
-            this.editBox.setSelecting(Screen.hasShiftDown());
+            this.editBox.setSelecting(ScreenUtils.hasShiftDown());
         }
 
 //            if(deltaY < 0){

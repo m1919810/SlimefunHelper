@@ -1,6 +1,7 @@
 package me.matl114.gui.other;
 
 import lombok.Getter;
+import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -46,7 +47,7 @@ public class BeaconEffectSelectButton extends PressableWidget {
 
     @Override
     public void onPress() {
-        currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (Screen.hasShiftDown()? -1 : 1);
+        currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (ScreenUtils.hasShiftDown()? -1 : 1);
         updateCurrentEffect();
     }
 

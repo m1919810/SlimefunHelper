@@ -51,10 +51,10 @@ public class ScrollElement extends AbstractElement {
             context.drawTexturedQuad(SCROLLER_BACKGROUND, 0, element.getWidth(), 0, element.getHeight(), 100, 174/256f,  (188)/256f, 17/256f,(129)/256f);
         }else {
             //更符合视觉的方式
-            context.getMatrices().push();
-            context.getMatrices().multiply(new Quaternionf(ROTATE_X.x, ROTATE_X.y, ROTATE_X.z, ROTATE_X.w));
+            context.getMatrices().pushMatrix();
+            context.getMatrices().multiply3D(new Quaternionf(ROTATE_X.x, ROTATE_X.y, ROTATE_X.z, ROTATE_X.w));
             context.drawTexturedQuad(SCROLLER_BACKGROUND,  -element.getHeight(), 0,0, element.getWidth(), 100, (188)/256f, 174/256f,  17/256f,(129)/256f);
-            context.getMatrices().pop();
+            context.getMatrices().popMatrix();
         }
 
 

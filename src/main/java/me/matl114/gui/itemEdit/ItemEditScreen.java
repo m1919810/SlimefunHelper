@@ -412,7 +412,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
         @Override
         protected void refreshScreen() {
-            this.children.clear();
+            this.clearChildren();
             for (var attr: ItemAttr.values()){
                 Text selectedText = Text.literal(attr.display).formatted(Formatting.YELLOW);
                 Text unselectedText = Text.literal(attr.display);

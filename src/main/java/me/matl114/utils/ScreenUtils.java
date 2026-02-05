@@ -87,6 +87,10 @@ public class ScreenUtils {
         return null;
     }
 
+    public static boolean hasShiftDown(){
+        return Screen.hasShiftDown();
+    }
+
     //internal methods from MCClient
 
 
