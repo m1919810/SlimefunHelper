@@ -693,10 +693,10 @@ public class Attack extends BaseModule {
         else if(canUseTp() && target.getBoundingBox().squaredMagnitude(vec3d.add(0, mc.player.getStandingEyeHeight(), 0)) > MathUtils.s2(commonAttackRange)){
 
             List<Vec3d> sequence = MovTasks.tpAttackSearch(vec3d, target.getBoundingBox(),  commonAttackRange- 0.25, 135, 1);
-            if(!sequence.isEmpty() && RenderTasks.DEBUG_RENDER_COLLISION){
-                Vec3d vec3d1 = sequence.get(sequence.size() -1);
-                RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(vec3d1.add(new Vec3d(-0.5, 0, -0.5)), vec3d1.add(new Vec3d(0.5, 2, 0.5)), 16));
-            }
+//            if(!sequence.isEmpty() && RenderTasks.DEBUG_RENDER_COLLISION){
+//                Vec3d vec3d1 = sequence.get(sequence.size() -1);
+//                RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(vec3d1.add(new Vec3d(-0.5, 0, -0.5)), vec3d1.add(new Vec3d(0.5, 2, 0.5)), 16));
+//            }
 
             if(!sequence.isEmpty() && target.getBoundingBox().squaredMagnitude(sequence.get(sequence.size() - 1)) < MathUtils.s2(commonAttackRange)){
                 for (var vec : sequence){
