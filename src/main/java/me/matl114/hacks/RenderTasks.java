@@ -28,6 +28,9 @@ import javax.annotation.Nonnull;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 public class RenderTasks {
     public static void init(){
@@ -108,6 +111,8 @@ public class RenderTasks {
 
     public static class TaskBuilder{
         int tickLeft = -1;
+        BooleanSupplier autoStop;
+        Runnable stopFuture;
         List<RenderObject> renderObjects = new ArrayList<>();
         public TaskBuilder time(int tickLeft){
             this.tickLeft = tickLeft;
@@ -118,12 +123,29 @@ public class RenderTasks {
             return this;
         }
 
+        public TaskBuilder autoStop(BooleanSupplier autoStop){
+            this.autoStop = autoStop;
+            return this;
+        }
+        public TaskBuilder stopFuture(Runnable runnable){
+            this.stopFuture = runnable;
+            return this;
+        }
+
         public RenderTask build(){
+            RenderTask renderTask ;
             if(tickLeft <= 0){
-                return new RenderTask(renderObjects.toArray(RenderObject[]::new));
+                renderTask =  new RenderTask(renderObjects.toArray(RenderObject[]::new));
             }else {
-                return new RenderTask(tickLeft, renderObjects.toArray(RenderObject[]::new));
+                renderTask = new RenderTask(tickLeft, renderObjects.toArray(RenderObject[]::new));
             }
+            if(autoStop != null){
+                renderTask.setAutoStop(autoStop);
+            }
+            if(stopFuture != null){
+                renderTask.setStopFuture(stopFuture);
+            }
+            return renderTask;
         }
     }
 
@@ -143,6 +165,8 @@ public class RenderTasks {
         int endTick;
         RenderObject[] renderObjects;
         boolean registered = false;
+        BooleanSupplier autoStopPredicate = null;
+        Runnable stopFuture = null;
         public RenderTask(int tick, RenderObject... renderObjects){
             this.endTick = tick + Tasks.getTick();
             this.renderObjects = renderObjects;
@@ -153,17 +177,31 @@ public class RenderTasks {
             this.renderObjects = renderObjects;
         }
 
-        public void refreshTimer(int val){
+        public RenderTask refreshTimer(int val){
             this.endTick = val + Tasks.getTick();
+            return this;
         }
 
         public void stopRender(){
             this.registered = false;
             this.endTick = -1;
+            if(stopFuture != null){
+                stopFuture.run();
+            }
         }
 
-        public void cancelTimer(){
+        public RenderTask cancelTimer(){
             this.endTick = Integer.MAX_VALUE;
+            return this;
+        }
+
+        public RenderTask setAutoStop(BooleanSupplier autoStopPredicate){
+            this.autoStopPredicate = autoStopPredicate;
+            return this;
+        }
+        public RenderTask setStopFuture(Runnable stopFuture){
+            this.stopFuture = stopFuture;
+            return this;
         }
 
 
@@ -176,7 +214,7 @@ public class RenderTasks {
 
         @Override
         public boolean stillRender() {
-            return registered && Tasks.getTick() <= this.endTick;
+            return registered && Tasks.getTick() <= this.endTick && (autoStopPredicate == null || autoStopPredicate.getAsBoolean());
         }
 
         public void startRender(){
@@ -215,6 +253,9 @@ public class RenderTasks {
         Vec3d endVec;
         Color color;
         float opacity = 0.25F;
+        public BoxObject(Box box, Color color){
+            this(box.getMinPos(), box.getMaxPos(), color);
+        }
         public BoxObject(Vec3d start, Vec3d end, Color color){
             this.startVec = start;
             this.endVec = end;

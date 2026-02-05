@@ -920,12 +920,7 @@ public class ChatTasks {
             }
             mark = pos;
             Debug.chat("标记成功: ", ChatUtils. getDisplayedLocationDouble(pos));
-            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(var1.dimensions.getBoxAt(mark), Integer.MAX_VALUE, Color.GREEN){
-                @Override
-                public boolean stillRender() {
-                    return super.stillRender() && mark == pos;
-                }
-            });
+            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(new RenderTasks.BoxObject(var1.dimensions.getBoxAt(mark), Color.GREEN)).setAutoStop(()-> mark != pos));
         }
         List<String> infoTypes =  List.of("death", "spawn", "nbt", "inventory","ender", "plist", "team", "pentry");
         {
