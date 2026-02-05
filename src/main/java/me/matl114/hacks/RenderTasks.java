@@ -1,7 +1,10 @@
 package me.matl114.hacks;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
@@ -43,25 +46,32 @@ public class RenderTasks {
     public static boolean DEBUG_RENDER_BOWAIM = false;
     public static void debugBoxMov(Box box, Vec3d move){
         if(DEBUG_RENDER_COLLISION_RENDERING && DEBUG_RENDER_COLLISION){
-            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxMoveRenderingTask(box, move, DEBUG_TICK, STATIC_DEBUG_COLOR, Color.RED));
+            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+                DEBUG_TICK,
+                new BoxMoveTarget(box, move,STATIC_DEBUG_COLOR, Color.RED))
+            );
         }
     }
     public static void debugBox(Box box){
         if(DEBUG_RENDER_COLLISION_RENDERING && DEBUG_RENDER_COLLISION){
-            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(box.getMinPos(), box.getMaxPos(), DEBUG_TICK, STATIC_DEBUG_COLOR));
+            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(DEBUG_TICK, new BoxObject(box.getMinPos(), box.getMaxPos(), STATIC_DEBUG_COLOR)));
         }
     }
     public static void drawBox(Box box, int timeTick, Color color){
-        RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(box.getMinPos(), box.getMaxPos(), timeTick, color));
+        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(timeTick, new BoxObject(box.getMinPos(), box.getMaxPos(), color)));
     }
 
 
-
-    private static final Set<VirtualRenderTask> renderBlocks= new HashSet<>();
+    //the visit to renderBlocks need synchronized for thread safety, as they involved for-loop and remove
+    private static final Set<VirtualRenderTask> renderBlocks= new LinkedHashSet<>();
 
 
     public static void registerVirtualRenderTask(VirtualRenderTask task){
-        renderBlocks.add(task);
+        synchronized(renderBlocks){
+            task.startRender();
+            renderBlocks.add(task);
+        }
+
     }
     public static final Vec3d FROM = new Vec3d(-0.5, -0.5, -0.5);
     public static final Vec3d SMALL_FROM = new Vec3d( - 0.2, -0.2, -0.2);
@@ -69,21 +79,26 @@ public class RenderTasks {
     public static final Vec3d SMALL_TO = new Vec3d(0.2, 0.2, 0.2);
     private static void onRenderVirtualTasks(Event<MatrixStack> stackE){
         if(renderBlocks.isEmpty())return;
-        var stack = stackE.context;
-        RenderUtils.startDrawVirtual(stack);
-        try{
-            Iterator<VirtualRenderTask> tasks= renderBlocks.iterator();
-            while (tasks.hasNext()){
-                VirtualRenderTask renderTask = tasks.next();
-                if(renderTask.stillRender()){
-                    renderTask.renderVirtual(stack);
-                }else {
-                    tasks.remove();
+        synchronized(renderBlocks){
+            var stack = stackE.context;
+            float ticksDelta = stackE.getArgs(0);
+            RenderUtils.startDrawVirtual(stack);
+            try{
+                Iterator<VirtualRenderTask> tasks= renderBlocks.iterator();
+                while (tasks.hasNext()){
+                    VirtualRenderTask renderTask = tasks.next();
+                    if(renderTask.stillRender()){
+                        renderTask.renderVirtual(stack, ticksDelta);
+                    }else {
+                        renderTask.stopRender();
+                        tasks.remove();
+                    }
                 }
+            }finally {
+                RenderUtils.stopDrawVirtual(stack);
             }
-        }finally {
-            RenderUtils.stopDrawVirtual(stack);
         }
+
 
     }
 //    public static interface StaticRenderTask {
@@ -91,106 +106,158 @@ public class RenderTasks {
 //        VertexBuffer getRenderAction();
 //    }
 
+    public static class TaskBuilder{
+        int tickLeft = -1;
+        List<RenderObject> renderObjects = new ArrayList<>();
+        public TaskBuilder time(int tickLeft){
+            this.tickLeft = tickLeft;
+            return this;
+        }
+        public TaskBuilder add(RenderObject renderObject){
+            renderObjects.add(renderObject);
+            return this;
+        }
+
+        public RenderTask build(){
+            if(tickLeft <= 0){
+                return new RenderTask(renderObjects.toArray(RenderObject[]::new));
+            }else {
+                return new RenderTask(tickLeft, renderObjects.toArray(RenderObject[]::new));
+            }
+        }
+    }
+
+    public static TaskBuilder builder(){
+        return new TaskBuilder();
+    }
+
+
+
     public static interface VirtualRenderTask {
-        void renderVirtual(MatrixStack stack);
+        void renderVirtual(MatrixStack stack, float partialTicks);
+        public void startRender();
+        public void stopRender();
         boolean stillRender();
     }
-    public static abstract class TickingRenderingTask implements VirtualRenderTask{
-        int tick;
-        int startTick;
-        public TickingRenderingTask(int tick){
-            this.tick = tick;
-            this.startTick = Tasks.getTick();
+    public static class RenderTask implements VirtualRenderTask{
+        int endTick;
+        RenderObject[] renderObjects;
+        boolean registered = false;
+        public RenderTask(int tick, RenderObject... renderObjects){
+            this.endTick = tick + Tasks.getTick();
+            this.renderObjects = renderObjects;
         }
+
+        public RenderTask(RenderObject... renderObjects){
+            this.endTick = Integer.MAX_VALUE;
+            this.renderObjects = renderObjects;
+        }
+
+        public void refreshTimer(int val){
+            this.endTick = val + Tasks.getTick();
+        }
+
+        public void stopRender(){
+            this.registered = false;
+            this.endTick = -1;
+        }
+
+        public void cancelTimer(){
+            this.endTick = Integer.MAX_VALUE;
+        }
+
+
+        @Override
+        public void renderVirtual(MatrixStack stack, float partialTicks) {
+            for(RenderObject renderObject : renderObjects){
+                renderObject.render(stack, partialTicks);
+            }
+        }
+
         @Override
         public boolean stillRender() {
-            return Tasks.getTick() - this.startTick < this.tick;
+            return registered && Tasks.getTick() <= this.endTick;
+        }
+
+        public void startRender(){
+            if(!registered){
+                registered = true;
+                RenderTasks.registerVirtualRenderTask(this);
+            }
         }
     }
-    public static class LineRenderingTask extends TickingRenderingTask{
+
+    public static interface RenderObject{
+        public void render(MatrixStack stack, float partialTicks);
+    }
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class LineObject implements RenderObject{
         Vec3d start;
         Vec3d movement;
-        public LineRenderingTask(Vec3d start, Vec3d movement, int tick) {
-            super(tick);
+        Color color = Color.GREEN;
+        public LineObject(Vec3d start, Vec3d movement){
             this.start = start;
             this.movement = movement;
         }
-
         @Override
-        public void renderVirtual(MatrixStack stack) {
-            RenderUtils.drawLineVirtual(stack, start, start.add(movement), Color.GREEN);
+        public void render(MatrixStack stack, float partialTicks) {
+            RenderUtils.drawLineVirtual(stack, start, start.add(movement), color);
         }
     }
-    public static  class BoxRenderingTask extends TickingRenderingTask {
-        final Vec3d startVec;
-        final Vec3d endVec;
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class BoxObject implements RenderObject{
+
+        Vec3d startVec;
+        Vec3d endVec;
         Color color;
-        public BoxRenderingTask(Box box, int tick, Color color){
-            this(box.getMinPos(), box.getMaxPos(), tick, color);
-        }
-        public BoxRenderingTask(Vec3d start, Vec3d end, int tick){
-            this(start, end, tick, Color.GREEN)   ;
-        }
-        public BoxRenderingTask(Vec3d start, Vec3d end, int tick, Color color){
-            super(tick);
+        float opacity = 0.25F;
+        public BoxObject(Vec3d start, Vec3d end, Color color){
             this.startVec = start;
             this.endVec = end;
             this.color = color;
         }
 
         @Override
-        public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
+        public void render(MatrixStack stack, float partialTicks) {
+            RenderUtils.setAsCurrentShaderColor(color, opacity);
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startVec, endVec);
         }
-
-
-
     }
-    public static class BoxOutlineRenderingTask extends TickingRenderingTask {
-        final Vec3d startVec;
-        final Vec3d endVec;
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    @AllArgsConstructor
+    public static class BoxOutlineObject implements RenderObject{
+        Vec3d startVec;
+        Vec3d endVec;
         Color color;
-        public BoxOutlineRenderingTask(Box box, int tick, Color color){
-            this(box.getMinPos(), box.getMaxPos(), tick, color);
-        }
-        public BoxOutlineRenderingTask(Vec3d start, Vec3d end, int tick){
-            this(start, end, tick, Color.GREEN)   ;
-        }
-        public BoxOutlineRenderingTask(Vec3d start, Vec3d end, int tick, Color color){
-            super(tick);
-            this.startVec = start;
-            this.endVec = end;
-            this.color = color;
-        }
+
 
         @Override
-        public void renderVirtual(MatrixStack stack) {
+        public void render(MatrixStack stack, float partialTicks) {
             RenderUtils.setAsCurrentShaderColor(color, 1.0F);
             RenderUtils.drawOutlinedBox(stack, startVec, endVec);
         }
-
-
-
     }
-    public static class BoxMoveRenderingTask extends TickingRenderingTask implements VirtualRenderTask{
-        final Box startBox;
-        final Vec3d delta;
-        final Color color1;
-        final Color color2;
-        public BoxMoveRenderingTask(Box box, Vec3d vec3d, int tick){
-            this(box, vec3d, tick, Color.GREEN, Color.RED);
-        }
-        public BoxMoveRenderingTask(Box box, Vec3d vec3d, int tick, Color boxColor, Color lineColor){
-            super(tick);
-            this.startBox = box;
-            this.delta = vec3d;
-            color1 = boxColor;
-            color2 = lineColor;
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    @AllArgsConstructor
+    public static class BoxMoveTarget implements RenderObject{
+        Box startBox;
+        Vec3d delta;
+        Color color1;
+        Color color2;
+        public BoxMoveTarget(Box startBox, Vec3d delta){
+            this(startBox, delta, Color.GREEN, Color.RED);
         }
 
         @Override
-        public void renderVirtual(MatrixStack stack) {
+        public void render(MatrixStack stack, float partialTicks) {
             RenderUtils.setAsCurrentShaderColor(color1, 0.25F);
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startBox.getMinPos(), startBox.getMaxPos());
             RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startBox.getMinPos().add(delta), startBox.getMaxPos().add(delta));
@@ -198,212 +265,97 @@ public class RenderTasks {
                 RenderUtils.drawLineVirtual(stack, ver, ver.add(delta), color2);
         }
     }
-    public static class MultiLineRenderingTask extends TickingRenderingTask{
-        List<Vec3d> multiLine;
-        Color color1;
-        public MultiLineRenderingTask(List<Vec3d> vec3ds, int tick, Color color) {
-            super(tick);
-            this.multiLine = Collections.unmodifiableList(vec3ds);
-            this.color1 = color;
-        }
-
-        @Override
-        public void renderVirtual(MatrixStack stack) {
-            RenderUtils.drawLineVirtual(stack, multiLine, color1);
-        }
-    }
-
-    public static class QuadRenderingTask  extends TickingRenderingTask{
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class QuadObject implements RenderObject{
         Vec3d[] abcd;
-        Color color1;
-        public QuadRenderingTask(Vec3d a, Vec3d b, Vec3d c, Vec3d d, int tick, Color color) {
-            super(tick);
-            this.abcd = new Vec3d[]{a, b, c, d};
-            this.color1 = color;
+        Color color;
+        public QuadObject(Vec3d abcd, Vec3d b, Vec3d c, Vec3d d, Color color){
+            this.abcd = new Vec3d[]{abcd, b, c, d};
+            this.color = color;
         }
-
         @Override
-        public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsCurrentShaderColor(color1, 0.25F);
+        public void render(MatrixStack stack, float partialTicks) {
+            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
             RenderUtils.drawQuad(stack.peek().getPositionMatrix(), abcd[0], abcd[1], abcd[2], abcd[3]);
         }
     }
 
-    public static class LineToTargetRenderingTask extends TickingRenderingTask{
-        Vec3d vec3d;
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    @AllArgsConstructor
+    public static class MultiLineObject implements RenderObject{
+        List<Vec3d> multiLine;
         Color color;
-        public LineToTargetRenderingTask(Vec3d vec3d, int tick, Color color) {
-            super(tick);
-            this.vec3d = vec3d;
-            this.color = color;
-        }
 
         @Override
-        public void renderVirtual(MatrixStack stack) {
+        public void render(MatrixStack stack, float partialTicks) {
+            RenderUtils.drawLineVirtual(stack, multiLine, color);
+        }
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    @AllArgsConstructor
+    public static class LineToTargetObject implements RenderObject{
+        Vec3d vec3d;
+        Color color;
+
+        @Override
+        public void render(MatrixStack stack, float partialTicks) {
             Vec3d camera = RenderUtils.getCameraPos();
             Vec3d camerToBlock = this.vec3d.subtract(camera);
             Vec3d cursorPos = RenderUtils.getTracerOrigin(1.0f);
             RenderUtils.drawLineVirtualCameraCoord(stack, cursorPos, camerToBlock, color);
         }
     }
-    public static  class EntityRenderingTask extends TickingRenderingTask {
-        final Entity startVec;
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    @AllArgsConstructor
+    public static class EntityBoxObject implements RenderObject{
+        Entity entity;
 
         Color color;
-        public EntityRenderingTask(Entity entity, int tick, Color color){
-            super(tick);
-            this.startVec = entity;
-            this.color = color;
-        }
-
         @Override
-        public void renderVirtual(MatrixStack stack) {
-            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
-            RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startVec.getBoundingBox().getMinPos(), startVec.getBoundingBox().getMaxPos());
-        }
-        public boolean stillRender(){
-            return super.stillRender() && !startVec.isRemoved();
-        }
-
-
-    }
-    public static class EntityOutlineRenderingTask extends TickingRenderingTask {
-        final Entity startVec;
-
-        Color color;
-
-        public EntityOutlineRenderingTask(Entity entity, int tick, Color color){
-            super(tick);
-            this.startVec = entity;
-            this.color = color;
-        }
-
-        @Override
-        public void renderVirtual(MatrixStack stack) {
+        public void render(MatrixStack stack, float partialTicks) {
             RenderUtils.setAsCurrentShaderColor(color, 1.0F);
-            RenderUtils.drawOutlinedBox(stack, startVec.getBoundingBox().getMinPos(), startVec.getBoundingBox().getMaxPos());
+            RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), entity.getBoundingBox().getMinPos(), entity.getBoundingBox().getMaxPos());
         }
-
-        public boolean stillRender(){
-            return super.stillRender() && !startVec.isRemoved();
-        }
-
-
-
     }
-    public static class LineToEntityRenderingTask extends TickingRenderingTask{
-        Entity vec3d;
-        Color color;
-        public LineToEntityRenderingTask(Entity vec3d, int tick, Color color) {
-            super(tick);
-            this.vec3d = vec3d;
-            this.color = color;
-        }
 
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    @AllArgsConstructor
+    public static class EntityBoxOutlineObject implements RenderObject{
+        Entity entity;
+
+        Color color;
         @Override
-        public void renderVirtual(MatrixStack stack) {
+        public void render(MatrixStack stack, float partialTicks) {
+            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
+            RenderUtils.drawOutlinedBox(stack, entity.getBoundingBox().getMinPos(), entity.getBoundingBox().getMaxPos());
+        }
+    }
+
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    @AllArgsConstructor
+    public static class LineToEntityObject implements RenderObject{
+        Entity entity;
+        Color color;
+        @Override
+        public void render(MatrixStack stack, float partialTicks) {
             Vec3d camera = RenderUtils.getCameraPos();
-            Vec3d camerToBlock = this.vec3d.getBoundingBox().getCenter().subtract(camera);
+            Vec3d camerToBlock = this.entity.getBoundingBox().getCenter().subtract(camera);
             Vec3d cursorPos = RenderUtils.getTracerOrigin(1.0f);
             RenderUtils.drawLineVirtualCameraCoord(stack, cursorPos, camerToBlock, color);
-        }
-        public boolean stillRender(){
-            return super.stillRender() && !vec3d.isRemoved();
-        }
-    }
-    public static abstract class BlockRenderingTask extends TickingRenderingTask implements VirtualRenderTask {
-
-        final BlockPos pos;
-        final boolean shouldLine;
-        public BlockRenderingTask(BlockPos pos,  boolean shouldLine, int tick){
-            super(tick);
-            this.pos = pos;
-            this.shouldLine= shouldLine;
-            this.buffer = createStatic();
-        }
-        final VertexBuffer buffer;
-        @Override
-        public boolean stillRender() {
-            if(super.stillRender()){
-                return true;
-            }
-            this.close();
-            return false;
-        }
-        public void close(){
-            this.buffer.close();
-        }
-        public abstract @Nonnull VertexBuffer createStatic();
-        public abstract void setBlockShaderData();
-        @Override
-        public void renderVirtual(MatrixStack stack) {
-            stack.push();
-            //设置着色器为 position配合POSITION Vertex
-            RenderSystem.setShader(GameRenderer::getPositionProgram);
-            Vec3d camera = RenderUtils.getCameraPos();
-            //push to block coord
-            Vec3d camerToBlock = this.pos.toCenterPos().subtract(camera);
-            stack.translate(camerToBlock.x, camerToBlock.y, camerToBlock.z);;
-            //运行
-            Matrix4f viewMatrix  = stack.peek().getPositionMatrix();
-            Matrix4f projMatrix = RenderSystem.getProjectionMatrix();
-            ShaderProgram shader = RenderSystem.getShader();
-            setBlockShaderData();
-            this.buffer.bind();
-            this.buffer.draw(viewMatrix, projMatrix, shader);
-            VertexBuffer.unbind();
-            //运行结束
-            stack.pop();
-            //绘制线
-            if(shouldLine){
-                //back to camera coord
-                Vec3d cursorPos = RenderUtils.getTracerOrigin(1.0f);
-                RenderUtils.drawLineVirtualCameraCoord(stack, cursorPos, camerToBlock, Color.RED);
-            }
-        }
-    }
-
-    public static class CountingBlockOutlineTarget extends BlockRenderingTask {
-
-        public CountingBlockOutlineTarget(BlockPos pos, int tick, boolean shouldLine){
-            super(pos, shouldLine, tick);
-        }
-
-        @NotNull
-        @Override
-        public VertexBuffer createStatic() {
-            var vertexBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
-            Render_v1_21_1.cacheVertexAction(vertexBuffer, VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION, (b)->{
-                Render_v1_21_1.drawOutlinedBox(b, FROM, TO);
-            });
-            return vertexBuffer;
-        }
-
-        @Override
-        public void setBlockShaderData() {
-            RenderUtils.setAsCurrentShaderColor(Color.GREEN,1.0f);
-            //RenderUtils.setAsShaderColor(Color.GREEN, 0.25F);
-        }
-    }
-    public static class CountingBlockSolidTarget extends BlockRenderingTask {
-
-
-        public CountingBlockSolidTarget(BlockPos pos, boolean shouldLine, int tick) {
-            super(pos, shouldLine, tick);
-        }
-        @NotNull
-        @Override
-        public VertexBuffer createStatic() {
-            var vertexBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
-            Render_v1_21_1.cacheVertexAction(vertexBuffer, VertexFormat.DrawMode.QUADS, VertexFormats.POSITION, (b)->{
-                Render_v1_21_1.drawSolidBox(b, FROM, TO);
-            });
-            return vertexBuffer;
-        }
-
-        @Override
-        public void setBlockShaderData() {
-            RenderUtils.setAsCurrentShaderColor(Color.GREEN,0.25f);
         }
     }
 

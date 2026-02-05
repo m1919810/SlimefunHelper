@@ -13,9 +13,11 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 public class CustomItemStackBuilder {
@@ -78,7 +80,7 @@ public class CustomItemStackBuilder {
     }
 
     public CustomItemStackBuilder skullHash(String hash){
-        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, new ProfileComponent(Optional.empty(), Optional.empty(), BukkitItemStackUtils.buildPropertyMap(new PropertyMap(), hash)));
+        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, new ProfileComponent(Optional.of("CS-CoreLib"), Optional.of(UUID.nameUUIDFromBytes(hash.getBytes(StandardCharsets.UTF_8))), BukkitItemStackUtils.buildPropertyMap(new PropertyMap(), hash)));
         return this;
     }
 

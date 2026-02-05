@@ -171,7 +171,6 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
             input.pressingBack = input.movementForward < 0;
             input.pressingLeft = input.movementSideways > 0;
             input.pressingRight = input.movementSideways < 0;
-            Debug.chat("reset input", originYaw, player.getYaw(), input.movementForward, input.movementSideways);
         }
 
     }

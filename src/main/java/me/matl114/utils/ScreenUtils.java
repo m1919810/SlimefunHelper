@@ -87,6 +87,9 @@ public class ScreenUtils {
         return null;
     }
 
+    //internal methods from MCClient
+
+
     public static void simulateKeyAction(Screen screen, int key, int scancode, int action, int modifiers){
         if (screen != null) {
             switch (key) {

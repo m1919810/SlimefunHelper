@@ -28,6 +28,7 @@ import me.matl114.utils.commands.*;
 import me.matl114.utils.commands.CommandContext;
 import me.matl114.utils.interruptions.LogicalError;
 import me.matl114.utils.tasks.LimitedSpeedExecutor;
+import me.matl114.versioned.api.VEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
@@ -985,8 +986,7 @@ public class ChatTasks {
                 }
                 case "nbt"->{
                     if(entity != null){
-                        var comp = new NbtCompound();
-                        entity.writeNbt(comp);
+                        var comp = VEntity.saveEntityNbt(entity);
                         comp.remove("Inventory");
                         comp.remove("EnderItems");
                         Debug.chat(new NbtTextFormatter("").apply(comp));

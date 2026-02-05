@@ -108,7 +108,7 @@ public class EntityUtils {
         return spawnerCompound == null? null: Registries.ENTITY_TYPE.getOrEmpty(getSpawnedEntityId(spawnerCompound, "SpawnData")).orElse(null);
     }
     public static Identifier getSpawnedEntityId(NbtCompound nbt, String spawnDataKey) {
-        if (nbt.contains(spawnDataKey, 10)) {
+        if (nbt.contains(spawnDataKey)) {
             if(nbt.get(spawnDataKey) instanceof NbtCompound cp1){
                 if(cp1.get("entity") instanceof NbtCompound cp2){
                     if(cp2.get("id") instanceof NbtString nbt3){

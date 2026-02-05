@@ -2,6 +2,8 @@ package me.matl114.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.*;
+import com.mojang.serialization.JsonOps;
 import me.matl114.utils.chat.SimpleOrderedTextVisitor;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
@@ -455,6 +457,7 @@ public class ChatUtils {
         }
         return re.getContent().toString();
     }
+
     @ApiMethod
     public static MutableText copyText(Text text){
         MutableText newLine = MutableText.of(text.getContent());
@@ -462,14 +465,26 @@ public class ChatUtils {
         text.getSiblings().forEach(newLine::append);
         return newLine;
     }
-
+    private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     @ApiMethod
     public static String textToJsonString(Text text){
-        return Text.Serialization.toJsonString(text, ItemStackUtils.delegate());
+        if(text == null)return null;
+        try{
+            var re = TextCodecs.CODEC.encodeStart(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), text).getOrThrow(JsonParseException::new);
+            return GSON.toJson(re);
+        }catch (Throwable e){
+            return null;
+        }
     }
 
     @ApiMethod
-    public static Text textFromJsonString(String text){
-        return Text.Serialization.fromJson(text, ItemStackUtils.delegate());
+    public static Text textFromJsonString(String jsonRaw){
+        try{
+            if(jsonRaw == null)return null;
+            JsonElement jsonElement = JsonParser.parseString(jsonRaw);
+            return jsonElement == null ? null : TextCodecs.CODEC.parse(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), jsonElement).getOrThrow(JsonParseException::new);
+        }catch (Throwable e){
+            return null;
+        }
     }
 }

@@ -214,7 +214,8 @@ public class Render_v1_21_1 implements VRender {
         bufferBuilder.vertex(matrix, minX, maxY, maxZ);
         bufferBuilder.vertex(matrix, minX, maxY, minZ);
     }
-    public static void drawOutlinedBox(BufferBuilder bufferBuilder, Vec3d from, Vec3d to){
+
+    public static void drawOutlinedBox(MatrixStack stack, BufferBuilder bufferBuilder, Vec3d from, Vec3d to){
         float minX = (float)from.getX();
         float minY = (float)from.getY();
         float minZ = (float)from.getZ();

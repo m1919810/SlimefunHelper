@@ -17,7 +17,6 @@ public class EntityMovementStatus<T extends Entity>{
         yaw = entity.getYaw();
         vec = entity.getVelocity();
         speed = entity.speed;
-        horizontalSpeed = entity.horizontalSpeed;
         distanceTraveled = entity.distanceTraveled;
         sprinting = entity.isSprinting();
     }
@@ -44,7 +43,6 @@ public class EntityMovementStatus<T extends Entity>{
 
         this.entity.setVelocity(vec);
         this.entity.speed = speed;
-        this.entity.horizontalSpeed = horizontalSpeed;
         this.entity.distanceTraveled = distanceTraveled;
         this.entity.setSprinting(sprinting);
     }
