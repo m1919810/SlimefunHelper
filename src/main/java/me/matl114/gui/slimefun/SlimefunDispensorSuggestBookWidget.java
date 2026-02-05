@@ -187,8 +187,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
         //add delegates to
         //hovering have higher priority so it will trigger first whenever interact or renderHighlight
         this.hovering = new ContentDelegateWidget<>(36,  14,HOVER_DX, HOVER_DY)
-            .setExtraDepth(500)
-            .addToSub(this);
+            .addToSub(this, 500);
 
 
         switchHard = ExecutableWidget.instance(12, 0, 18, 8)

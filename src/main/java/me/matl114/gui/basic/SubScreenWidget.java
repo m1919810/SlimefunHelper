@@ -1,8 +1,11 @@
 package me.matl114.gui.basic;
 
 import com.google.common.collect.ImmutableList;
+import lombok.Getter;
+import lombok.Setter;
 import me.matl114.utils.Debug;
 import me.matl114.utils.collections.IndexEntry;
+import me.matl114.utils.collections.UnmodifiableListMappingIterator;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import org.apache.commons.compress.utils.Lists;
@@ -31,9 +34,15 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
         return super.setTextureScale(scale);
     }
 
-    private final List<IndexEntry<DrawableWidget>> children = Lists.newArrayList();
+    private final List<IndexEntry<DrawableWidget>> childrenRender = Lists.newArrayList();
+    private final List<IndexEntry<DrawableWidget>> childrenInteract = Lists.newArrayList();
     protected DrawableWidget selected = null;
     protected DrawableWidget dragging = null;
+
+    @Deprecated
+    @Setter
+    @Getter
+    protected int basicDepth = 0;
 
     public <T extends SubSelectable> T setSelected(DrawableWidget subWidget){
         if(selected != null){
@@ -62,56 +71,41 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
     private int cnt = 0;
 
     private void resortChildren() {
-        children.sort(Comparator.<IndexEntry<DrawableWidget>>comparingInt(s -> s.val().priority).thenComparingInt(IndexEntry::index));
+        childrenRender.sort(Comparator.<IndexEntry<DrawableWidget>>comparingInt(s -> s.val().priority).thenComparingInt(IndexEntry::index));
+        childrenInteract.sort(Comparator.<IndexEntry<DrawableWidget>>comparingInt(s -> - s.val().priority).thenComparingInt(IndexEntry::index));
     }
 
     protected void clearChildren(){
-        children.clear();
+        childrenRender.clear();
+        childrenInteract.clear();
+    }
+    private void addChildrenInternal(DrawableWidget child){
+        var re = new IndexEntry<>(++cnt, child);
+        childrenRender.add(re);
+        childrenInteract.add(re);
+        resortChildren();
+    }
+    private boolean removeChildrenInternal(DrawableWidget child){
+        childrenRender.removeIf(s -> Objects.equals(s.val(), child));
+        return childrenInteract.removeIf(s -> Objects.equals(s.val(), child));
+        // no need to resort!
     }
 
-    protected Iterable<DrawableWidget> childrenRenderOrder(){
-        return ()-> new Iterator<>() {
-            int index = 0;
-            final int size = children.size();
-            @Override
-            public boolean hasNext() {
-                return index < size;
-            }
-
-            @Override
-            public DrawableWidget next() {
-                return children.get(index++).val();
-            }
-        };
+    protected Iterable<DrawableWidget> childrenRenderOrder() {
+        return () -> new UnmodifiableListMappingIterator<>(childrenRender, IndexEntry::val);
     }
-
     protected Iterable<DrawableWidget> childrenInteractOrder(){
-        return ()-> new Iterator<>() {
-            int index = 0;
-            final int size = children.size();
-            @Override
-            public boolean hasNext() {
-                return index < children.size();
-            }
-
-            @Override
-            public DrawableWidget next() {
-                return children.get(size - 1 - (index++)).val();
-            }
-        };
+        return ()-> new UnmodifiableListMappingIterator<>(childrenInteract, IndexEntry::val);
     }
 
     public SubScreenWidget addDrawableChild(DrawableWidget widget){
-        children.add(new IndexEntry<>(++cnt, widget));
+        addChildrenInternal(widget);
         widget.setSubWidget(true);
-        resortChildren();
         return this;
     }
     public boolean remove(DrawableWidget widget){
         widget.setSubWidget(false);
-        boolean val = children.removeIf(s -> Objects.equals(s.val(), widget));
-        resortChildren();
-        return val;
+        return removeChildrenInternal(widget);
     }
 
     public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
@@ -124,16 +118,21 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        boolean selected = false;
+        DrawableWidget selected = null;
+        if(this.isSelected()){
+            for (var ch : childrenInteractOrder()){
+                if(ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){
+                    selected = ch;
+                    break;
+                }
+            }
+        }
+
         for (var ch: childrenRenderOrder()){
-            boolean disable = true;
+            boolean disable = ch != selected;
             //use super.selected as a cache value to show whether there is a child which is selecting
             //it is calculated in render0
-            if(this.isSelected() && !selected && ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){
-                disable = false;
-                //select only one in a subScreen
-                selected = true;
-            }
+
             //force disable child highlight, only highlight the first met
             ch.render0(context, translatedMouseX, translatedMouseY, delta, disable);
         }

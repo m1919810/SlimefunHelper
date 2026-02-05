@@ -73,7 +73,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return selected;
     }
     //this should be set before they join any delegates or something, as they often causes problem
-    public <T extends DrawableWidget> T setExtraDepth(int depth){
+    private final  <T extends DrawableWidget> T setPriority(int depth){
         this.priority = depth;
         return (T)this;
     }
@@ -234,9 +234,20 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return (T)this;
     }
     public <T extends DrawableWidget> T addToSub(SubScreenWidget screen){
+        setPriority(screen.getBasicDepth());
+        addInternal(screen);
+        return (T)this;
+    }
+
+    public <T extends DrawableWidget> T addToSub(SubScreenWidget screen, int priority){
+        setPriority(priority + screen.getBasicDepth());
+        addInternal(screen);
+        return (T)this;
+    }
+
+    private void addInternal(SubScreenWidget screen){
         this.subWidget = true;
         screen.addDrawableChild(this);
-        return (T)this;
     }
 
 
