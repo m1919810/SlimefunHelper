@@ -12,7 +12,7 @@
 		"access.MoonriseCubeVoxelShapeMixin",
 		"access.MoonriseSliceShapeMixin",
 		"access.MoonriseVoxelShapeMixin",
-		"access.StringNbtReaderMixin",
+		"access.MoonriseChunkBlockCountingMixin",
 		"events.AtlasLoaderEvents",
 		"events.BlockEntityEvents",
 		"events.ChatHudEvents",
@@ -44,6 +44,7 @@
 		"fix.ParentElementButtonFixMixin",
 		"fix.ParticleCountLimitMixin",
 		"fix.StringHelperFixMixin",
+		"fix.ScreenHandlerFixMixin",
 		"hack.BackGroundRenderMixin",
 		"hack.ChatHudMixin",
 		"hack.ChatInputSuggestorMixin",
@@ -66,7 +67,6 @@
 		"hack.SlimeBlockMixin",
 		"hack.VillagerTradeScreenMixin",
 		"hack.WorldRenderMixin",
-		"render.DepthClickableMixin",
 		"render.EditBoxWidgetMixin",
 		"render.ItemColorMixin",
 		"render.JsonUnbakedModelMixin",
@@ -81,9 +81,7 @@
 		"defaultRequire": 1
 	},
 	"mixins": [
-		"access.MoonriseChunkBlockCountingMixin",
 		"fix.EnchantmentLevelFixMixin",
-		"fix.HeightContextNullFix",
-		"fix.ScreenHandlerFixMixin"
+		"fix.HeightContextNullFix"
 	]
 }

@@ -1,6 +1,5 @@
 package me.matl114.mixins.render;
 
-import me.matl114.accessors.gui.ScaleSlotAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.util.math.MatrixStack;

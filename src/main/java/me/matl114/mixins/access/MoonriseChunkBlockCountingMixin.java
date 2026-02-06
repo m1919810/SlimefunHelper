@@ -3,6 +3,8 @@ package me.matl114.mixins.access;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.moonrise.MoonriseChunkBlockCountingAccess;
 import me.matl114.utils.CollisionUtil;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registry;
@@ -17,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+@Environment(EnvType.CLIENT)
 @Mixin(ChunkSection.class)
 public abstract class MoonriseChunkBlockCountingMixin implements MoonriseChunkBlockCountingAccess {
     @Shadow public abstract void calculateCounts();

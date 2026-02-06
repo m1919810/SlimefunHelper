@@ -90,14 +90,6 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             }
         }
     }
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V", ordinal = 0, shift = At.Shift.BEFORE), cancellable = true)
-    public void preVehiclePackets(CallbackInfo ci){
-
-    }
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;sendMovementPackets()V"), cancellable = true)
-    public void preMovementPackets(CallbackInfo ci){
-
-    }
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))
     public void postwrapperPlayerMovementSentTick(CallbackInfo ci){

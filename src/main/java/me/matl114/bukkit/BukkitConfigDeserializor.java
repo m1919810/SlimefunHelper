@@ -2,7 +2,6 @@ package me.matl114.bukkit;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import me.matl114.accessors.access.StringNbtReaderAccess;
 import me.matl114.utils.Debug;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.*;
@@ -61,8 +60,12 @@ public class BukkitConfigDeserializor {
             } else if (DOUBLE.matcher(string).matches()) {
                 return NbtDouble.of(Double.parseDouble(string.substring(0, string.length() - 1)));
             } else {
-                NbtElement nbtBase = StringNbtReaderAccess.of(MOJANGSON_PARSER).type(string);
-
+                NbtElement nbtBase;
+                try{
+                    nbtBase = MOJANGSON_PARSER.parseElement();
+                }catch (CommandSyntaxException e){
+                    throw new RuntimeException("Could not deserialize found element ", e);
+                }
                 if (nbtBase instanceof NbtInt) { // If this returns an integer, it did not use our method from above
                     return NbtString.of(nbtBase.asString()); // It then is a string that was falsely read as an int
                 } else if (nbtBase instanceof NbtDouble) {
