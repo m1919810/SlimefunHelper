@@ -13,6 +13,7 @@ import me.matl114.gui.config.KeyValueInputWidget;
 import me.matl114.managers.config.Ref;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.api.Displayable;
+import me.matl114.versioned.api.VNbt;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.nbt.NbtElement;
@@ -624,7 +625,7 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
                         return setOriginValue(null) && extraParse();
                     }
                 }
-                this.validate = setOriginValue((new StringNbtReader(new StringReader(this.getValue()))).parseElement()) && extraParse();
+                this.validate = setOriginValue(VNbt.getInstance().readNbt(getValue())) && extraParse();
                 return this.validate;
             }catch (Throwable e){
                 this.validate = false;

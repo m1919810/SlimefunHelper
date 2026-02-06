@@ -6,6 +6,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.JavaOps;
 import com.mojang.serialization.JsonOps;
 import me.matl114.utils.ApiMethod;
+import me.matl114.versioned.api.VNbt;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
@@ -37,6 +38,6 @@ public class NBTHelper {
     }
 
     public static NbtElement stringToNbt(String string) throws CommandSyntaxException {
-        return new StringNbtReader(new StringReader(string)).parseElement();
+        return VNbt.getInstance().readNbt(string);
     }
 }

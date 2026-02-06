@@ -3,6 +3,7 @@ package me.matl114.bukkit;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import me.matl114.utils.Debug;
+import me.matl114.versioned.api.VNbt;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.*;
 import java.util.List;
@@ -50,11 +51,8 @@ public class BukkitConfigDeserializor {
             String string = (String) object;
 
             if (ARRAY.matcher(string).matches()) {
-                try {
-                    return new StringNbtReader(new StringReader(string)).parseElement();
-                } catch (CommandSyntaxException e) {
-                    throw new RuntimeException("Could not deserialize found list ", e);
-                }
+
+                return VNbt.getInstance().readNbt(string);
             } else if (INTEGER.matcher(string).matches()) { //Read integers on our own
                 return NbtInt.of(Integer.parseInt(string.substring(0, string.length() - 1)));
             } else if (DOUBLE.matcher(string).matches()) {

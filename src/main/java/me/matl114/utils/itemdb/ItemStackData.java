@@ -8,6 +8,7 @@ import com.mojang.serialization.JsonOps;
 import me.matl114.utils.CustomItemStackBuilder;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.api.VNbt;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -63,7 +64,7 @@ public interface ItemStackData {
         }else{
             String jsonString = json.getAsString();
             try{
-                NbtCompound nbtElement = (NbtCompound) new StringNbtReader(new StringReader(jsonString)).parseElement();
+                NbtCompound nbtElement = (NbtCompound) VNbt.getInstance().readNbt(jsonString);
                 ItemStack stack = ItemStack.CODEC.decode(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), nbtElement).getOrThrow().getFirst();
                 return stack.isEmpty()? ItemStack.EMPTY : stack;
             }catch (Throwable e){
