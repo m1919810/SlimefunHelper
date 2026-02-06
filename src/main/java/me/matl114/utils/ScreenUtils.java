@@ -91,6 +91,10 @@ public class ScreenUtils {
         return Screen.hasShiftDown();
     }
 
+    public static boolean isToggle(int keyCode) {
+        return keyCode == 257 || keyCode == 32 || keyCode == 335;
+    }
+
     //internal methods from MCClient
 
 

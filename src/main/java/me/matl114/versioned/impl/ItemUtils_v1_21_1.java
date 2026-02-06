@@ -1,6 +1,7 @@
 package me.matl114.versioned.impl;
 
 import me.matl114.versioned.api.VItem;
+import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.*;
 
 public class ItemUtils_v1_21_1 implements VItem {
@@ -34,6 +35,11 @@ public class ItemUtils_v1_21_1 implements VItem {
     @Override
     public boolean isTool(ItemStack stack) {
         return stack.getItem() instanceof ToolItem;
+    }
+
+    @Override
+    public CustomModelDataComponent createModelData(int cmd) {
+        return new CustomModelDataComponent(cmd);
     }
 
 }

@@ -8,6 +8,7 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.events.Event;
+import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.ShieldItem;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -64,10 +65,10 @@ public class CombatExtra extends BaseModule {
             //block shield from
             for (var trackerUpdate : trackerUpdateS2CPacket.trackedValues()){
                 //the ordinal  of LIVING FLAGS in LivingEntity, may vary with versionsl pls check
-                if(trackerUpdate.id() == 8 ){
+                if(trackerUpdate.id() == VDataFlag.ID_LIVING_FLAGS){
                     byte byteValue =(byte) trackerUpdate.value();
-                    boolean bl = ((Byte)byteValue & 1) > 0;
-                    Hand hand = ((Byte)byteValue & 2) > 0 ? Hand.OFF_HAND : Hand.MAIN_HAND;
+                    boolean bl = ((Byte)byteValue & VDataFlag.USING_ITEM_FLAG_INDEX) > 0;
+                    Hand hand = ((Byte)byteValue & VDataFlag.OFFHAND_ACTIVE_FLAG_INDEX) > 0 ? Hand.OFF_HAND : Hand.MAIN_HAND;
                     //cooldown should be ok,
                     //the only position the server disable shield correctly should be cooldown
                     //so we kick it back

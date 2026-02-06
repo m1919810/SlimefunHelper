@@ -1,5 +1,7 @@
 package me.matl114.mixins.hack;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.hacks.ChatTasks;
@@ -44,9 +46,9 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     //在mouseClick中选择
 
     //防止选中原输出框时候不进行setFocus
-    @Redirect(method = "mouseClicked",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;mouseClicked(DDI)Z"))
-    private boolean fixMouseClickedOnChatFocusLost(TextFieldWidget instance, double v, double w, int i) {
-        boolean returnValue=instance.mouseClicked(v, w, i);
+    @WrapOperation(method = "mouseClicked",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;mouseClicked(DDI)Z"))
+    private boolean fixMouseClickedOnChatFocusLost(TextFieldWidget instance, double v, double v2, int i, Operation<Boolean> original) {
+        boolean returnValue = original.call(instance, v, v2, i);
         if(returnValue){
             this.setFocused(instance);
         }

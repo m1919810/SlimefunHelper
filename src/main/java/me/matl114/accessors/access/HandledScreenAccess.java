@@ -12,20 +12,8 @@ import java.util.Set;
 public interface HandledScreenAccess extends ScreenAccess {
     @Nullable
     public Slot reallyGetSlotAt(double var1,double var3);
-    default Slot reallyGetSlotWithExtra(double var1, double var3) {
-        Slot slot ;
-        if((slot =  reallyGetSlotAt(var1, var3)) == null){
-            slot = getExtraSlotAt(var1, var3);
-        }
-        return slot;
-    }
-    default Slot reallyGetExtraSlotWithOrigin(double var1, double var3){
-        Slot slot ;
-        if((slot =  getExtraSlotAt(var1, var3)) == null){
-            slot = reallyGetSlotAt(var1, var3);
-        }
-        return slot;
-    }
+
+
     public boolean isSlotPointed(Slot slot);
     public boolean isSlotPointed(Slot slot, int var1, int var3);
     public Slot getTouchHoveredSlot();
@@ -39,6 +27,4 @@ public interface HandledScreenAccess extends ScreenAccess {
     public int getScreenY();
     public int getScreenBackgroundX();
     public int getScreenBackgroundY();
-    public Set<Slot> getExtraSlots();
-    public Slot getExtraSlotAt(double var1, double var3);
 }

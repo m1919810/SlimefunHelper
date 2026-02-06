@@ -73,6 +73,7 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
     public EditBoxWidgetMixin(int i, int j, int k, int l, Text text) {
         super(i, j, k, l, text);
     }
+    //override ALL EditBox behaviour
     @Override
     protected void drawBox(DrawContext context, int x, int y, int width, int height){
         McWidgetHelpers.drawTextWidgetBox(this, context, x, y, width, height, this.isFocused(), this.boxColorProvider);

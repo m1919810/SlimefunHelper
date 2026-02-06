@@ -166,13 +166,4 @@ public class RenderListener {
     @ExtraArgs(value = {ItemStack.class, boolean.class, boolean.class}, names = {"itemStack", "advance", "creative"})
     private static final EventChannel<List<Text>> tooltipShow = new EventChannel<>();
 
-
-
-    @Getter
-    @Broadcast
-    @ExtraArgs(value = {MatrixStack.class, ModelTransformationMode.class, boolean.class})
-    private static final EventChannel<ItemStack> itemRender = new EventChannel<>();
-
-
-
 }

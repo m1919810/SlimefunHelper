@@ -6,6 +6,7 @@ import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.versioned.api.VHideFlag;
+import me.matl114.versioned.api.VItem;
 import me.matl114.versioned.impl.TooltipHideFlag_v1_21_1;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
@@ -576,7 +577,7 @@ public class ItemStackUtils {
 
 
     public static void setCustomModelData(ItemStack stack,int customModelData){
-        setOrRemoveChange(stack, CUSTOM_MODEL_DATA, new CustomModelDataComponent(customModelData));
+        setOrRemoveChange(stack, CUSTOM_MODEL_DATA, VItem.getInstance().createModelData(customModelData));
     }
 
 

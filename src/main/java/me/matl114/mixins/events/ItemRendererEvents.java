@@ -92,9 +92,4 @@ public abstract class ItemRendererEvents {
     }
 
 
-    @Inject(method = "renderItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;push()V", shift = At.Shift.AFTER))
-    public void onItemRenderStart(ItemStack item, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model,CallbackInfo ci){
-        Event<ItemStack> itemStackEvent = new Event<>(item, false, false, matrices, renderMode, leftHanded);
-        RenderListener.getItemRender().handleValue(itemStackEvent);
-    }
 }

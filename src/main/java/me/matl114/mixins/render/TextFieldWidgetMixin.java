@@ -89,6 +89,7 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
 
     @Redirect(method = "renderWidget", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lnet/minecraft/util/Identifier;IIII)V"))
     public void redirectBorderBoxRender(DrawContext instance, Identifier texture, int x, int y, int width, int height){
+        // only override specific widget behaviour
         if(boxColorProvider != null){
             //use custom color provided
             McWidgetHelpers.drawTextWidgetBox(this, instance, x, y, width, height, this.isFocused(), this.boxColorProvider);

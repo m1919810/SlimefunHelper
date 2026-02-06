@@ -33,20 +33,6 @@ public abstract class PlayerEntityMixin extends LivingEntity implements LivingEn
     private void removePositionXZLimit(PlayerEntity instance, double v, double v2, double v3){
         //do not set
     }
-    @Unique
-    boolean stopJumpThisTickInternal = false;
-    @Override
-    public void stopJumpThisTick(){
-        stopJumpThisTickInternal = true;
-    }
-
-    @Inject(method = "jump", at = @At("HEAD"), cancellable = true)
-    private void onStopJumpThisTick(CallbackInfo ci){
-        if(stopJumpThisTickInternal){
-            stopJumpThisTickInternal = false;
-            ci.cancel();
-        }
-    }
 
     @ModifyExpressionValue(method =  "getBlockBreakingSpeed", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;getAttributeValue(Lnet/minecraft/registry/entry/RegistryEntry;)D", ordinal = 1))
     private double onBlockBreakingSpeedAttrWrongValueFix(double original){

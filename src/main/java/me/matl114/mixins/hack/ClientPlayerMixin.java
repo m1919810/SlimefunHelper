@@ -320,30 +320,27 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         }
     }
 
-
-
-    @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 3, shift = At.Shift.AFTER))
-    private void allDirectionSprint(CallbackInfo ci){
-        //backward
-        //fixme : can not auto toggle sprint if current is not sprinting and sprinting button pressed
+    @Unique
+    private boolean shouldDirectionalSprint(){
         Sprint sprintModule = MovTasks.getSprint();
-        if(sprintModule.directionalSprint.get() && !isSprinting() && this.input.movementForward < -0.8F && sprintModule.enableSprintDirectionalThisTick){
-            //check ticket
-            boolean otherReason = !this.canSprint() || this.horizontalCollision && !this.collidedSoftly || this.isTouchingWater() && !this.isSubmergedInWater();
-            if(!otherReason){
-                //set sprint true if only because of no movement forward
-                setSprinting(true);
-            }
-        }
-
+        return sprintModule.directionalSprint.get() && this.input.movementForward <= -0.8 && sprintModule.enableSprintDirectionalThisTick;
     }
+
+    @ModifyExpressionValue(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;hasForwardMovement()Z"))
+    private boolean allDirectionSprint3(boolean original){
+        if(shouldDirectionalSprint()){
+            return true;
+        }
+        return original;
+    }
+
+
 
     //for directional sprint
     @Inject(method = "isWalking", at = @At("HEAD"), cancellable = true)
-    protected void seenWalkingBackAsWalking(CallbackInfoReturnable<Boolean> cir){
-        Sprint sprintModule = MovTasks.getSprint();
-        if(sprintModule.directionalSprint.get()){
-             if(!this.isSubmergedInWater() && (double)this.input.movementForward <= -0.8F && sprintModule.enableSprintDirectionalThisTick){
+    protected void allDirectionSprint4(CallbackInfoReturnable<Boolean> cir){
+        if(shouldDirectionalSprint()){
+             if(!this.isSubmergedInWater()){
                  //check ticket
                  cir.setReturnValue(true);
              }

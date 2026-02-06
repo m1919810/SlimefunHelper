@@ -1,5 +1,7 @@
 package me.matl114.mixins.access;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.gui.ScaleSlotAccess;
 import me.matl114.utils.ScreenUtils;
@@ -45,15 +47,7 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     public Slot reallyGetSlotAt(double var1, double var3) {
         return getSlotAt(var1, var3);
     }
-    @Unique
-    public Slot getExtraSlotAt(double var1, double var3){
-        for(Slot slot: this.extraSlots) {
-            if (this.isPointOverSlot(slot, var1, var3) && slot.isEnabled()) {
-                return slot;
-            }
-        }
-        return null;
-    }
+
 
     @Unique
     public boolean isSlotPointed(Slot slot){
@@ -66,14 +60,6 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     }
 
 
-    public Slot getTouchHoveredSlot() {
-        return touchHoveredSlot;
-    }
-
-    private Set<Slot> extraSlots = new LinkedHashSet<>(5);
-    public Set<Slot> getExtraSlots(){
-        return extraSlots;
-    }
     @Shadow
     protected int x;
     @Shadow
@@ -86,15 +72,6 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     public abstract int getScreenBackgroundX();
     @Accessor("backgroundHeight")
     public abstract int getScreenBackgroundY();
-    public TextRenderer getTextRenderer(){
-        return this.textRenderer;
-    }
-   // @Inject(method = "drawMouseoverTooltip",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTooltip(Lnet/minecraft/client/font/TextRenderer;Ljava/util/List;Ljava/util/Optional;II)V", shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILHARD)
-    public void drawTooptipPre(DrawContext context, int x, int y, CallbackInfo ci, ItemStack itemStack){
-        //RenderMain.renderItemTooltipsTasks(context, this.textRenderer, itemStack, x, y);
-    }
-    @Shadow
-    protected abstract void drawSlot(DrawContext context, Slot slot);
 
     @Shadow
     protected abstract boolean isPointOverSlot(Slot slot, double pointX, double pointY);
@@ -103,17 +80,10 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     @Nullable
     protected Slot focusedSlot;
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;translate(FFF)V",shift = At.Shift.BEFORE))
-    public void onRenderBegin(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci){
-        //inject after MatrixStack translate to the screen's edge
-        this.focusedSlot = null;
-    }
 
     @Shadow
     public static void drawSlotHighlight(DrawContext context, int x, int y, int z) {
     }
-
-
 
     @Redirect(method = "drawSlot", at = @At(value = "FIELD", target = "Lnet/minecraft/screen/slot/Slot;x:I"))
     public int onRedirectSlotX(Slot instance){
@@ -141,79 +111,16 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
         }
     }
 
-
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawForeground(Lnet/minecraft/client/gui/DrawContext;II)V",shift = At.Shift.BEFORE))
-    public void onRenderMySlot(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci){
-        Set<Slot> extras = new LinkedHashSet<>(this.extraSlots);
-        for (Slot slotToRender: extras){
-            if (slotToRender.isEnabled()) {
-                this.drawSlot(context, slotToRender);
-            }
-
-            if (this.isPointOverSlot(slotToRender, (double)mouseX, (double)mouseY) && slotToRender.isEnabled() && slotToRender.canBeHighlighted()) {
-                this.focusedSlot = slotToRender;
-                //scaling
-                ScaleSlotAccess acc = ScaleSlotAccess.of(this.focusedSlot);
-                if(acc != null && !acc.isDefault()){
-                    drawSlotHightlightScaled(context, slotToRender.x, slotToRender.y, 0, acc.getXYScale());
-                }else {
-                    drawSlotHighlight(context, slotToRender.x, slotToRender.y, 0);
-                }
-            }
-        }
-    }
-    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlotHighlight(Lnet/minecraft/client/gui/DrawContext;III)V"))
-    private void redirectDrawSlotHighlightScaled(DrawContext context, int x, int y, int z){
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlotHighlight(Lnet/minecraft/client/gui/DrawContext;III)V"))
+    private void redirectDrawSlotHighlightScaled(DrawContext context, int x, int y, int z, Operation<Void> original){
         ScaleSlotAccess acc = ScaleSlotAccess.of(this.focusedSlot);
         if(acc != null && !acc.isDefault()){
             drawSlotHightlightScaled(context, x, y, z, acc.getXYScale());
         }else {
-            drawSlotHighlight(context, x, y, z);
+            original.call(context, x, y, z);
         }
     }
     private static void drawSlotHightlightScaled(DrawContext context, int x, int y, int z, float scaled){
         context.fillGradient(RenderLayer.getGuiOverlay(), x, y, x + (int)(16* scaled), y + (int)(16* scaled), -2130706433, -2130706433, z);
     }
-    @Inject(method = "drawSlotHighlight", at = @At("HEAD"))
-    private static void onRenderGlowHere(DrawContext context, int x, int y, int z, CallbackInfo ci){
-        context.fillGradient(RenderLayer.getGuiOverlay(), x, y, x + 16, y + 16, -2130706433, -2130706433, z);
-    }
-
-    @Unique
-    private double lastX;
-    @Unique
-    private double lastY;
-    @Unique
-    private boolean lastResult;
-    @Unique
-    private void updateResultElementOn(double lastX, double lastY){
-        this.lastX   = lastX;
-        this.lastY = lastY;
-        for (var element: this.children()){
-            if(element.isMouseOver(lastX, lastY)){
-                lastResult = true;
-                return;
-            }
-        }
-        lastResult = false;
-    }
-    @Shadow
-    protected abstract boolean isPointWithinBounds(int x, int y, int width, int height, double pointX, double pointY);
-
-
-    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;isPointOverSlot(Lnet/minecraft/screen/slot/Slot;DD)Z"))
-    public boolean considerSubElementsWhenRenderSlot(HandledScreen instance, Slot slot, double pointX, double pointY){
-        if(Math.abs(pointX - lastX) < 1e-4 && Math.abs(pointY - lastY) < 1e-4){
-            //same mouse query
-
-        }else {
-            updateResultElementOn(pointX, pointY);
-        }
-        if(lastResult){
-            return false;
-        }
-        return isPointOverSlot(slot, pointX, pointY);
-    }
-
-
 }

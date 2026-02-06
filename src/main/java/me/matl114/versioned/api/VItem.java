@@ -1,6 +1,7 @@
 package me.matl114.versioned.api;
 
 import me.matl114.versioned.impl.ItemUtils_v1_21_1;
+import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.ItemStack;
 
 public interface VItem {
@@ -15,4 +16,6 @@ public interface VItem {
     public boolean isWeapon(ItemStack stack);
 
     public boolean isTool(ItemStack stack);
+
+    public CustomModelDataComponent createModelData(int cmd);
 }

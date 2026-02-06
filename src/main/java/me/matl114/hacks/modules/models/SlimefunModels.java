@@ -9,6 +9,7 @@ import me.matl114.managers.config.ListRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.events.Event;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.component.DataComponentTypes;
@@ -170,7 +171,7 @@ public class SlimefunModels extends BaseModule {
                     try{
                         int cmd=(Integer) entry.getValue();
                         if(cmd != 0){
-                            customModelDatas.put(entry.getKey(), new CustomModelDataComponent(cmd));
+                            customModelDatas.put(entry.getKey(), VItem.getInstance().createModelData(cmd));
                         }
                     }catch(ClassCastException e){
                         Debug.info("Custom Model data could not be loaded :",entry.getKey());

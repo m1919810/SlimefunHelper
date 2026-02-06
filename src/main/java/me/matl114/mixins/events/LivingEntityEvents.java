@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Listener;
 import me.matl114.events.Event;
@@ -30,16 +32,20 @@ public abstract class LivingEntityEvents extends Entity implements EntityAccess<
     private int jumpingCooldown;
     @Shadow protected int fallFlyingTicks;
 
-    @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;jump()V", shift = At.Shift.BEFORE))
-    private void onJump(CallbackInfo ci){
+    @WrapOperation(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;jump()V"))
+    private void onJump(LivingEntity instance, Operation<Void> original){
         if((Entity)this == ((Entity) MinecraftClient.getInstance().player)){
             //10 sec
             Event<Integer> jumpEvent = new Event<>(10, true, true );
             Listener.getPlayerNotFlyJumpPoint().handleValue(jumpEvent);
             nextJumpCooldown = jumpEvent.context();
             if(jumpEvent.isCancelled()){
-                this.stopJumpThisTick();
+
+            }else{
+                original.call(instance);
             }
+        }else{
+            original.call(instance);
         }
     }
     @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;getWorld()Lnet/minecraft/world/World;", ordinal = 5, shift = At.Shift.BEFORE))

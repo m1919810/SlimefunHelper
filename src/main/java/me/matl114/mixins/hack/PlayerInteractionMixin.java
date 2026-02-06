@@ -539,15 +539,6 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
 
 
-    @Inject(method = "clickSlot",at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/ScreenHandler;onSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V",shift = At.Shift.AFTER), cancellable = true)
-    public void clickSlot(int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci){
-        if(InvTasks.OPTIMIZE_SLOT_CLICK_PACKET.get()){
-            this.networkHandler.sendPacket(new ClickSlotC2SPacket(syncId, player.currentScreenHandler.getRevision(), slotId, button, actionType, player.currentScreenHandler.getCursorStack().copy(), new Int2ObjectOpenHashMap<>()));
-            ci.cancel();
-        }
-    }
-
-
 
 
 

@@ -65,8 +65,6 @@ public class InvTasks {
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    public static final AtomicBoolean OPTIMIZE_SLOT_CLICK_PACKET = new AtomicBoolean(false);
-
 
     @ApiMethod
     public static Screen getCurrentServerScreen(PlayerEntity player){
