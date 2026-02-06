@@ -17,5 +17,7 @@ public interface VItem {
 
     public boolean isTool(ItemStack stack);
 
+    public boolean isShield(ItemStack stack);
+
     public CustomModelDataComponent createModelData(int cmd);
 }

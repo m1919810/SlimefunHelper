@@ -38,6 +38,11 @@ public class ItemUtils_v1_21_1 implements VItem {
     }
 
     @Override
+    public boolean isShield(ItemStack stack) {
+        return stack.getItem() instanceof ShieldItem;
+    }
+
+    @Override
     public CustomModelDataComponent createModelData(int cmd) {
         return new CustomModelDataComponent(cmd);
     }

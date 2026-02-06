@@ -33,12 +33,6 @@ public class MineTasks {
 
     }
 
-    public static BlockPos rayTraceBlock(ClientPlayerEntity player){
-        var blockState=player.getWorld().raycast(new RaycastContext(player.getEyePos(),player.getEyePos().add(player.getRotationVec(1.0f).multiply(6.0f)), RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, player));
-        if(blockState.getType()== HitResult.Type.BLOCK){
-            return blockState.getBlockPos();
-        }else return null;
-    }
     @Getter
     @ApiMethod
     public static final ModuleGroup moduleGroup = new ModuleGroup("Mine");

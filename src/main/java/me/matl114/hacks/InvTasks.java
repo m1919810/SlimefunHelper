@@ -334,7 +334,7 @@ public class InvTasks {
 
     @ApiMethod
     public static void creativeGive(ItemStack itemStack, int count){
-        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
+        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.getCurrentGameMode().isCreative()){
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;
             int stackMax = itemStack.getMaxCount();
             for (int i: INVENTORY_INDEX_TO_SCREEN_SLOT){
@@ -366,7 +366,7 @@ public class InvTasks {
     }
     @ApiMethod
     public static void creativeAddItem(ItemStack itemStack, int count){
-        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
+        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.getCurrentGameMode().isCreative()){
             int slot = -1;
 
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;

@@ -9,6 +9,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.events.Event;
 import me.matl114.versioned.api.VDataFlag;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.ShieldItem;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -60,7 +61,7 @@ public class CombatExtra extends BaseModule {
     public void onShieldSetback(Event<EntityTrackerUpdateS2CPacket> trackerUpdateS2CPacketEvent){
         if(trackerUpdateS2CPacketEvent.isCancelled()){return;}
         var trackerUpdateS2CPacket = trackerUpdateS2CPacketEvent.context();
-        if(shieldPredict.get() && mc.player != null && trackerUpdateS2CPacket.id() == mc.player.getId() && mc.player.isUsingItem() && mc.player.getActiveItem().getItem() instanceof ShieldItem shieldItem && !mc.player.getItemCooldownManager().isCoolingDown(shieldItem)){
+        if(shieldPredict.get() && mc.player != null && trackerUpdateS2CPacket.id() == mc.player.getId() && VItem.getInstance().isShield( mc.player.getActiveItem()) && !mc.player.getItemCooldownManager().isCoolingDown(mc.player.getActiveItem().getItem())){
             //shield not in cooldown
             //block shield from
             for (var trackerUpdate : trackerUpdateS2CPacket.trackedValues()){
@@ -90,7 +91,7 @@ public class CombatExtra extends BaseModule {
     }
 
     public void onShieldSetbackPredict(Event<HandSwingC2SPacket> packet){
-        if(shieldPredict.get() && mc.player.isUsingItem() && mc.player.getActiveItem().getItem() instanceof ShieldItem shield && !mc.player.getItemCooldownManager().isCoolingDown(shield)){
+        if(shieldPredict.get() && mc.player.isUsingItem() && VItem.getInstance().isShield( mc.player.getActiveItem()) && !mc.player.getItemCooldownManager().isCoolingDown(mc.player.getActiveItem().getItem())){
             mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
                 return new PlayerInteractItemC2SPacket(mc.player.getActiveHand(), sequence, mc.player.getYaw(), mc.player.getPitch());
             });
@@ -100,11 +101,11 @@ public class CombatExtra extends BaseModule {
     public void asyncUpdateShieldCooldown(Event<CooldownUpdateS2CPacket> packetEvent){
         if(packetEvent.isCancelled()){return; }
         CooldownUpdateS2CPacket packet = packetEvent.context();
-        if(packet.item() instanceof ShieldItem shield && packet.cooldown() > 0){
+        if(packet.cooldown() > 0){
             try{
                 synchronized (CombatExtra.class){
                     //async update, synchronize to protect concurrent cooldown update,
-                    mc.player.getItemCooldownManager().set(shield, packet.cooldown());
+                    mc.player.getItemCooldownManager().set(packet.item(), packet.cooldown());
 //                if(mc.player.isUsingItem() && mc.player.getActiveItem().getItem() == shield){
 //
 //                }

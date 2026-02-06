@@ -58,7 +58,7 @@ public class FastCraft extends BaseModule {
                 addCraftingInventoryButton(craftingScreen);
             }else if(event.context instanceof InventoryScreen inventoryScreen){
                 lastScreen = null;
-                if(!mc.interactionManager.hasCreativeInventory()){
+                if(!mc.interactionManager.getCurrentGameMode().isCreative()){
                     addInventoryButton(inventoryScreen);
                 }
             }else if(event.context instanceof MerchantScreen merchantScreen){
