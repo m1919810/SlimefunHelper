@@ -2,6 +2,8 @@ package me.matl114.hacks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Shorts;
+import com.google.common.primitives.SignedBytes;
 import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.ints.*;
 import lombok.Getter;
@@ -42,6 +44,7 @@ import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.screen.sync.ItemStackHash;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -65,7 +68,6 @@ public class InvTasks {
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    public static final AtomicBoolean OPTIMIZE_SLOT_CLICK_PACKET = new AtomicBoolean(false);
 
 
     @ApiMethod
@@ -307,7 +309,7 @@ public class InvTasks {
 
     @ApiMethod
     public static ItemStack getHotbarStack(int hotbar){
-        return hotbar == 40 ? mc.player.getInventory().offHand.get(0) : mc.player.getInventory().main.get(hotbar);
+        return hotbar == 40 ? mc.player.getInventory().getStack(40) : mc.player.getInventory().getMainStacks().get(hotbar);
     }
     @ApiMethod
     public static int getTopInventorySize(){
@@ -336,7 +338,7 @@ public class InvTasks {
 
     @ApiMethod
     public static void creativeGive(ItemStack itemStack, int count){
-        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
+        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.getCurrentGameMode().isCreative()){
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;
             int stackMax = itemStack.getMaxCount();
             for (int i: INVENTORY_INDEX_TO_SCREEN_SLOT){
@@ -368,7 +370,7 @@ public class InvTasks {
     }
     @ApiMethod
     public static void creativeAddItem(ItemStack itemStack, int count){
-        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()){
+        if(mc.player != null && mc.interactionManager != null && mc.interactionManager.getCurrentGameMode().isCreative()){
             int slot = -1;
 
             PlayerScreenHandler inventoryView = mc.player.playerScreenHandler;
@@ -845,17 +847,18 @@ public class InvTasks {
             InvTasks.SUPPRESS_DROPITEM_SPAWN.set(false);
         }
 
-        Int2ObjectMap<ItemStack> int2ObjectMap = new Int2ObjectOpenHashMap();
+        Int2ObjectMap<ItemStackHash> int2ObjectMap = new Int2ObjectOpenHashMap();
 
         for(int j = 0; j < i; ++j) {
             ItemStack itemStack = (ItemStack)list.get(j);
             ItemStack itemStack2 = ((Slot)defaultedList.get(j)).getStack();
             if (!ItemStack.areEqual(itemStack, itemStack2)) {
-                int2ObjectMap.put(j, itemStack2.copy());
+                int2ObjectMap.put(j, ItemStackHash.fromItemStack(itemStack2, mc.getNetworkHandler().getComponentHasher()));
             }
         }
 
-        mc.getNetworkHandler().sendPacket(new ClickSlotC2SPacket(syncId, screenHandler.getRevision(), slotId, button, actionType, screenHandler.getCursorStack().copy(), int2ObjectMap));
+        ItemStackHash itemStackHash = ItemStackHash.fromItemStack(screenHandler.getCursorStack(), mc.getNetworkHandler().getComponentHasher());
+        mc.getNetworkHandler().sendPacket(new ClickSlotC2SPacket(syncId, screenHandler.getRevision(), Shorts.checkedCast((long)slotId), SignedBytes.checkedCast((long)button), actionType, int2ObjectMap, itemStackHash));
     }
 
     private static final IntRef SPEED= Configs.INV_CONFIG.getInt(InvExtra.INV_CLICK_LIMIT);

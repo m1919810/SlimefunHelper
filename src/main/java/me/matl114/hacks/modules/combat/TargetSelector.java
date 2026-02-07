@@ -11,6 +11,7 @@ import me.matl114.utils.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.mob.ZombifiedPiglinEntity;
@@ -154,20 +155,10 @@ public class TargetSelector extends BaseModule {
 
     private boolean passHostileCheck(Entity e){
         if(hostile.get()){
-            if(e instanceof BeeEntity bee){
-                if(bee.getAngerTime() > 0){
-                    return true;
-                }
-            }else if(e instanceof EndermanEntity entity){
-                if(entity.isAngry()){
-                    return true;
-                }
-            }else if(e instanceof WolfEntity ironGolem){
-                if(ironGolem.getAngerTime() > 0){
-                    return true;
-                }
-            }else if(e instanceof ZombifiedPiglinEntity piglin){
-                // any rules
+            if(e instanceof Angerable anger){
+                long time = anger.getAngerEndTime();
+                long currentTime =  e.getEntityWorld().getTime();
+                return currentTime < time;
             }
             return false;
         }else{

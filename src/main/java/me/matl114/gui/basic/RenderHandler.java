@@ -3,7 +3,7 @@ package me.matl114.gui.basic;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -25,7 +25,7 @@ public interface RenderHandler {
      * @param alpha
      * @param shouldHighlight
      */
-    public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight);
+    public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight);
 
     default boolean canBeSelected(DrawableWidget element){
         return true;
@@ -41,13 +41,13 @@ public interface RenderHandler {
      * @param alpha
      * @param shouldHighlight
      */
-    default void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
+    default void renderExtraAbsoluteCoord(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
 
     }
     default RenderHandler combineRender(RenderHandler handler){
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 RenderHandler.this.renderAtCentered(element, context, mouseX, mouseY, delta,alpha, shouldHighlight);
                 handler.renderAtCentered(element, context, mouseX, mouseY, delta,alpha, shouldHighlight);
             }
@@ -57,12 +57,12 @@ public interface RenderHandler {
     default RenderHandler combineAbsoluteRender(RenderHandler handlerAbsolute){
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 RenderHandler.this.renderAtCentered(element, context, mouseX, mouseY, delta,alpha, shouldHighlight);
             }
 
             @Override
-            public void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderExtraAbsoluteCoord(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 handlerAbsolute.renderExtraAbsoluteCoord(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
             }
         };
@@ -72,14 +72,14 @@ public interface RenderHandler {
         RenderHandler de = this;
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 if(renderPredicate.test(de)){
                     de.renderAtCentered(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
                 }
             }
 
             @Override
-            public void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderExtraAbsoluteCoord(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 if(renderPredicate.test(de)){
                     de.renderExtraAbsoluteCoord(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
                 }
@@ -103,12 +103,10 @@ public interface RenderHandler {
         float v2 = (float)(v0 + vheight)/256f;
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
-                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-                RenderSystem.enableBlend();
-                RenderSystem.enableDepthTest();
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.setShaderAlpha(alpha);
                 context.drawTexturedQuad(identifier, 0,  element.getTextureWidth(), 0, element.getTextureHeight(),0,u1, u2, v1, v2);
-                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+                context.setShaderAlpha(1.0F);
             }
         };
     }
@@ -129,12 +127,10 @@ public interface RenderHandler {
         final float scaler256 = scaler * 256;
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
-                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-                RenderSystem.enableBlend();
-                RenderSystem.enableDepthTest();
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.setShaderAlpha( alpha);
                 context.drawTexturedQuad(identifier, 0, element.getTextureWidth(),0,  element.getTextureHeight(),0 ,0, ((float) element.getTextureWidth())/scaler256, 0, ((float) element.getTextureHeight())/scaler256);
-                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+                context.setShaderAlpha( 1.0F);
             }
         };
     }
@@ -156,12 +152,10 @@ public interface RenderHandler {
         int dy = (int )((float)vheight *scaler);
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
-                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-                RenderSystem.enableBlend();
-                RenderSystem.enableDepthTest();
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.setShaderAlpha( alpha);
                 context.drawTexturedQuad(identifier, 0, dx, 0, dy, 0, u1, u2, v1, v2);
-                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+                context.setShaderAlpha(1.0F);
             }
         };
     }
@@ -177,12 +171,10 @@ public interface RenderHandler {
         int y2 = y + yheight;
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
-                context.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-                RenderSystem.enableBlend();
-                RenderSystem.enableDepthTest();
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+                context.setShaderAlpha(alpha);
                 context.drawTexturedQuad(identifier, x, x2, y, y2, 0, u1, u2, v1, v2);
-                context.setShaderColor( 1.0F, 1.0F, 1.0F, 1.0F);
+                context.setShaderAlpha(1.0F);
             }
         };
     }
@@ -190,7 +182,7 @@ public interface RenderHandler {
     public static RenderHandler ofGuiTextures(Identifier guiTexture, int startX, int startY, int sizeX, int sizeY){
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 context.drawGuiTexture(guiTexture, startX, startY, sizeX, sizeY);
             }
         };
@@ -201,7 +193,7 @@ public interface RenderHandler {
         final int color1 = color;
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 drawScrollableText(context, mc.textRenderer, text, 0,0, element.getTextureWidth(), element.getTextureHeight(), color1);
             }
         };
@@ -210,19 +202,19 @@ public interface RenderHandler {
     public static RenderHandler ofAutoScaleText(Text text, int color){
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 RenderHandler. drawScaledText0(context, mc.textRenderer, text, 0,0, element.getTextureWidth(), element.getTextureHeight(), color,0);
             }
         };
     }
 
-    public static void drawScrollableText(DrawContext context, TextRenderer textRenderer, Text text, int startX, int startY, int endX, int endY, int color) {
+    public static void drawScrollableText(VDrawContext context, TextRenderer textRenderer, Text text, int startX, int startY, int endX, int endY, int color) {
         drawScrollableText0(context, textRenderer, text, (startX + endX) / 2, startX, startY, endX, endY, color);
     }
 
 
 
-    public static void drawScrollableText0(DrawContext context, TextRenderer textRenderer, Text text, int centerX, int startX, int startY, int endX, int endY, int color) {
+    public static void drawScrollableText0(VDrawContext context, TextRenderer textRenderer, Text text, int centerX, int startX, int startY, int endX, int endY, int color) {
         int i = textRenderer.getWidth(text);
         int var10000 = startY + endY;
         int j = (var10000 - 9) / 2 + 1;
@@ -234,20 +226,16 @@ public interface RenderHandler {
             double e = Math.max((double)l * 0.5, 3.0);
             double f = Math.sin(1.5707963267948966 * Math.cos(6.283185307179586 * d / e)) / 2.0 + 0.5;
             double g = MathHelper.lerp(f, 0.0, (double)l);
-            var trans = context.getMatrices().peek().getPositionMatrix();
-            var point1 = new Vector4f(startX, startY,0 ,1).mul(trans);
-            var point2 = new Vector4f(endX, endY, 0, 1).mul(trans);
-            //fix: respect MatrixTranslation
-            context.enableScissor((int) point1.x, (int) point1.y, (int) point2.x, (int) point2.y);
-            context.drawTextWithShadow(textRenderer, text, startX - (int)g, j, color);
+            context.enableScissor(startX, startY, endX, endY);
+            context.drawText(textRenderer, text.asOrderedText(), startX - (int)g, j, color, true);
             context.disableScissor();
         } else {
             l = MathHelper.clamp(centerX, startX + i / 2, endX - i / 2);
-            context.drawCenteredTextWithShadow(textRenderer, text, l, j, color);
+            context.drawCenteredTextWithShadow(textRenderer, text.asOrderedText(), l, j, color);
         }
     }
 
-    public static void drawScaledText0(DrawContext context, TextRenderer textRenderer, Text text, int startX, int startY, int endX, int endY, int color, int alignment){
+    public static void drawScaledText0(VDrawContext context, TextRenderer textRenderer, Text text, int startX, int startY, int endX, int endY, int color, int alignment){
         int i = textRenderer.getWidth(text);
         int availableWidth = endX - startX;
         //居中位置
@@ -259,17 +247,15 @@ public interface RenderHandler {
                 case 1: l =  endX - i/2  ;break;
                 default:l = MathHelper.clamp((startX + endX) / 2, startX + i / 2, endX - i / 2);break;
             }
-            context.drawCenteredTextWithShadow(textRenderer, text, l, j, color);
+            context.drawCenteredTextWithShadow(textRenderer, text.asOrderedText(), l, j, color);
         }else{
             float scale =((float) availableWidth) / (float)i;
-            context.getMatrices().push();
-            context.getMatrices().translate(startX, startY,0);
-            context.getMatrices().push();
-            context.getMatrices().scale(scale, scale,1);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(startX, startY);
+            context.getMatrices().scale(scale, scale);
             //
-            context.drawCenteredTextWithShadow(textRenderer, text,(int)( ((endX - startX) / 2)/scale), (int)((((endY - startY)/2)/scale  - 7f/2)), color);
-            context.getMatrices().pop();
-            context.getMatrices().pop();
+            context.drawCenteredTextWithShadow(textRenderer, text.asOrderedText(),(int)( ((endX - startX) / 2)/scale), (int)((((endY - startY)/2)/scale  - 7f/2)), color);
+            context.getMatrices().popMatrix();
         }
     }
 
@@ -277,21 +263,37 @@ public interface RenderHandler {
     public static RenderHandler ofSingleItem(Supplier<ItemStack> item, int x, int y, boolean inSlot){
         return new RenderHandler() {
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 drawSingleItem(context, item.get(), x, y, inSlot);
             }
         };
     }
-    public static void drawSingleItem(DrawContext context, ItemStack stack , int x, int y, boolean inSlot){
+    public static void drawSingleItem(VDrawContext context, ItemStack stack , int x, int y, boolean inSlot){
         if(!stack.isEmpty()){
-            context.getMatrices().push();
-            context.getMatrices().translate(0,0,100);
-            context.drawItem(stack, x, y, 114514);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translateZ(100);
+            context.drawItem(stack, x, y, 114514,0);
             if(inSlot){
                 context.drawItemInSlot(mc.textRenderer, stack, 1, 1, null);
             }
-            context.getMatrices().pop();
+            context.getMatrices().popMatrix();
         }
+    }
+
+
+
+    public static void drawHighlightFrame(VDrawContext context, int x, int y, int dx, int dy, int color) {
+        context.fillGuiGradient( x, y, x + dx, y + 1, color, color, 0);
+        context.fillGuiGradient( x , y, x + 1, y + dy,  color, color,  0);
+        context.fillGuiGradient(x + dx - 1, y + 1, x + dx, y + dy,  color, color, 0);
+        context.fillGuiGradient(x + 1, y + dy - 1, x + dx, y + dy,  color, color, 0);
+    }
+
+    public static void drawHighLightBox(VDrawContext context, int x, int y, int width, int height, int color){
+        context.fill(x, y, x+ 1, y+height, color);
+        context.fill(x, y, x +width, y+1, color);
+        context.fill(x + width -1, y, x + width, y + height, color);
+        context.fill(x, y + height - 1, x + width, y + height, color);
     }
 
 

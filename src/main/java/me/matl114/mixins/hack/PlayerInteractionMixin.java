@@ -83,7 +83,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         }
 
         //ack predict
-        float speed = block.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getWorld(), currentBreakingPos);
+        float speed = block.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getEntityWorld(), currentBreakingPos);
 //                else if(HotKeys.getHotkeyToggleManager().getState(HotKeys.QUICK_MINE) && speed > breakThreshold.get()){
 //                    //no need to restore currentBreakingProgress?
 //                    return;
@@ -101,7 +101,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         if(block.isAir()){
             return -1.0F;
         }
-        float speed = block.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getWorld(), currentBreakingPos);
+        float speed = block.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getEntityWorld(), currentBreakingPos);
         return (Tasks.getTick() - failBreakStartTick) * speed;
     }
 
@@ -131,7 +131,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             return 100000.0f;
         }else {
             BlockState state=this.client.world.getBlockState(blockPos);
-            return state.calcBlockBreakingDelta(this.client.player, this.client.player.getWorld(), blockPos);
+            return state.calcBlockBreakingDelta(this.client.player, this.client.player.getEntityWorld(), blockPos);
 
         }
     }
@@ -141,7 +141,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             return true;
         }else {
             BlockState state=this.client.world.getBlockState(blockPos);
-            float speed =state.calcBlockBreakingDelta(this.client.player, this.client.player.getWorld(), blockPos);
+            float speed =state.calcBlockBreakingDelta(this.client.player, this.client.player.getEntityWorld(), blockPos);
             MineExtra mineExtra = MineTasks.getMineExtra();
             if(speed>=1.0f || (speed > mineExtra.breakThreshold.get()&& mineExtra.quickMine.get())||(mineExtra.fakeInstaBreak.get() && speed>((mineExtra.breakThreshold.get() / 2.0)+0.04d))){
                 return true;
@@ -404,7 +404,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             if(playerEntity.canInteractWithBlockAt(this.currentBreakingPos, 1.0D)){
                 BlockState state = MinecraftClient.getInstance().world.getBlockState(this.currentBreakingPos);
                 if(!state.isAir() && !state.isLiquid()){
-                    float speed = state.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getWorld(), currentBreakingPos);
+                    float speed = state.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getEntityWorld(), currentBreakingPos);
                     if(speed > 0){
                         currentFailBreakPos = currentBreakingPos;
                         failBreakStartTick = lastStartMineBreakingProgressResetTick;
@@ -440,7 +440,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     }
     @Inject(method = "attackBlock",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V",ordinal = 1,shift = At.Shift.AFTER),locals = LocalCapture.CAPTURE_FAILSOFT)
     public void earlyBreakPacket(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir, net.minecraft.block.BlockState blockState){
-        float speed=blockState.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getWorld(), pos);
+        float speed=blockState.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getEntityWorld(), pos);
         onStartingMine(pos, speed, false);
         if(MineTasks.getMineExtra().quickMine.get()) {
             //make cooldown issues
@@ -493,7 +493,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     public void earlyBreakNextTickPacketSend(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
         if(MineTasks.getMineExtra().fakeInstaBreak.get() && this.nextTickEarlyBreak) {
             BlockState blockState = MinecraftClient.getInstance().world.getBlockState(pos);
-            float speed = blockState.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getWorld(), pos);
+            float speed = blockState.calcBlockBreakingDelta(MinecraftClient.getInstance().player, MinecraftClient.getInstance().player.getEntityWorld(), pos);
             this.nextTickEarlyBreak=false;
             this.breakingBlock = false;
             this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
@@ -538,14 +538,6 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
 
 
-
-    @Inject(method = "clickSlot",at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/ScreenHandler;onSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V",shift = At.Shift.AFTER), cancellable = true)
-    public void clickSlot(int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci){
-        if(InvTasks.OPTIMIZE_SLOT_CLICK_PACKET.get()){
-            this.networkHandler.sendPacket(new ClickSlotC2SPacket(syncId, player.currentScreenHandler.getRevision(), slotId, button, actionType, player.currentScreenHandler.getCursorStack().copy(), new Int2ObjectOpenHashMap<>()));
-            ci.cancel();
-        }
-    }
 
 
 

@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.events.Listener;
 import me.matl114.managers.input.SimpleInputManager;
@@ -8,13 +10,14 @@ import me.matl114.events.Event;
 import me.matl114.utils.collections.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.MouseInput;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
@@ -40,58 +43,62 @@ public abstract class MouseEvents
 //
 //    }
 
-    @Shadow private int activeButton;
+    @Shadow
+    public MouseInput activeButton;
 
     @Inject(method = "onMouseScroll", cancellable = true,
-            at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;currentScreen:Lnet/minecraft/client/gui/screen/Screen;", ordinal = 0))
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;getOverlay()Lnet/minecraft/client/gui/screen/Overlay;"))
     private void onMouseScroll(long handle, double xOffset, double yOffset, CallbackInfo ci)
     {//暂时没东西
-        if(SimpleInputManager.getInstance().onMouseScroll(xOffset, yOffset)){
-            ci.cancel();
+        if(MinecraftClient.getInstance().getOverlay() == null){
+            if(SimpleInputManager.getInstance().onMouseScroll(xOffset, yOffset)){
+                ci.cancel();
+            }
         }
     }
     @Inject(method = "onMouseButton", cancellable = true,
-            at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;IS_SYSTEM_MAC:Z", ordinal = 0))
-    private void onMouseClick(long handle, final int button, final int action, int mods, CallbackInfo ci)
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;getOverlay()Lnet/minecraft/client/gui/screen/Overlay;", ordinal = 0, shift = At.Shift.BEFORE))
+    private void onMouseClick(long window, MouseInput input, int action, CallbackInfo ci, @Local(ordinal = 1) MouseInput input2)
     {
         Point coord= ScreenUtils.getMouseCoord(this.client,(Mouse)(Object)this);
-        if (SimpleInputManager.getInstance().onMouseClick(coord.x,coord.y, button, action, mods))
+        if (SimpleInputManager.getInstance().onMouseClick(coord.x,coord.y, input2.button(), action, input2.modifiers()))
         {
             ci.cancel();
         }
     }
 
-    @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V", ordinal = 0))
-    private void onMouseMove(Runnable task, String errorTitle, String screenName, @Local(ordinal =  2) double f, @Local(ordinal = 3) double g){
+    @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;mouseMoved(DD)V"))
+    private void onMouseMove(Screen instance, double f, double g, Operation<Void> original){
         Event<Mouse> event = new Event<>((Mouse)(Object)this, true, false, f, g);
         Listener.getMouseMove().handleValue(event);
         if(!event.isCancelled()){
-            Screen.wrapScreenError(task, errorTitle, screenName);
+            original.call(instance, f, g);
         }
     }
 
-    @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V", ordinal = 1))
-    private void onMouseDrag(Runnable task, String errorTitle, String screenName, @Local(ordinal =  2) double f, @Local(ordinal = 3) double g, @Local(ordinal =  4) double h, @Local(ordinal = 5) double i){
-        Event<Mouse> event = new Event<>((Mouse) (Object)this, true, false, f, g, this.activeButton , h, i);
+    @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;mouseDragged(Lnet/minecraft/client/gui/Click;DD)Z"))
+    private boolean onMouseDrag(Screen instance, Click click, double v1, double v2, Operation<Boolean> original){
+        Event<Mouse> event = new Event<>((Mouse) (Object)this, true, false, click.x(), click.y(), this.activeButton , v1, v2);
         Listener.getMouseDrag().handleValue(event);
         if(!event.isCancelled()){
-            Screen.wrapScreenError(task, errorTitle, screenName);
+            return original.call(instance, click, v1, v2);
         }
+        return false;
     }
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Mouse;isCursorLocked()Z"), cancellable = true)
     private void onScreenNull(CallbackInfo ci){
         //handle screen is null case, we should also send Events
-        if(MinecraftClient.getInstance().currentScreen == null){
+        if(MinecraftClient.getInstance().currentScreen == null && MinecraftClient.getInstance().getOverlay() == null){
             double f = getX() * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
             double g = getY() * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
             Event<Mouse> event = new Event<>((Mouse) (Object)this, true, false, f, g);
             Listener.getMouseMove().handleValue(event);
 
-            if (this.activeButton != -1) {
+            if (this.activeButton != null) {
                 double h = this.cursorDeltaX * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
                 double i = this.cursorDeltaY * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
-                Event<Mouse> event2 = new Event<>((Mouse) (Object)this, true, false, f, g, this.activeButton , h, i);
+                Event<Mouse> event2 = new Event<>((Mouse) (Object)this, true, false, f, g, this.activeButton , h, i, new Click(f, g, this.activeButton));
                 Listener.getMouseDrag().handleValue(event2);
             }
         }

@@ -1,10 +1,13 @@
 package me.matl114.jsApi;
 
 import me.matl114.utils.ApiMethod;
+import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.CharInput;
+import net.minecraft.client.input.KeyInput;
 
 @ApiMethod
 public class InputHelper {
@@ -16,7 +19,7 @@ public class InputHelper {
     public static Class<?> GLFW = org.lwjgl.glfw.GLFW.class;
 
     public static void keyAction(int key, int action){
-        keyAction(key, action, getCurrentModifiers());
+        keyAction(key, action, ScreenUtils.getCurrentModifiers());
     }
     public static void keyAction(int key, int action, int modifiers){
         keyAction(key, org.lwjgl.glfw.GLFW.glfwGetKeyScancode(key), action, modifiers);
@@ -50,7 +53,7 @@ public class InputHelper {
      */
     public static void keyAction(int key, int scancode, int action, int modifiers){
         mc.execute(()->{
-            mc.keyboard.onKey(mc.getWindow().getHandle(), key, scancode, action, modifiers);
+            mc.keyboard.onKey(mc.getWindow().getHandle(), action, new KeyInput( key, scancode, modifiers));
         });
     }
 
@@ -59,7 +62,7 @@ public class InputHelper {
     }
 
     public static void charAction(int str){
-        charAction(str, getCurrentModifiers());
+        charAction(str, ScreenUtils.getCurrentModifiers());
     }
 
 
@@ -73,8 +76,8 @@ public class InputHelper {
             Element element = mc.currentScreen;
             if (element != null && mc.getOverlay() == null) {
                 if (Character.charCount(codePoint) == 1) {
-                    Screen.wrapScreenError(() -> {
-                        element.charTyped((char)codePoint, modifiers);
+                    ScreenUtils.wrapScreenError(() -> {
+                        element.charTyped(new CharInput(codePoint, modifiers));
                     }, "charTyped event handler", element.getClass().getCanonicalName());
                 } else {
                     char[] var6 = Character.toChars(codePoint);
@@ -82,8 +85,8 @@ public class InputHelper {
 
                     for(int var8 = 0; var8 < var7; ++var8) {
                         char c = var6[var8];
-                        Screen.wrapScreenError(() -> {
-                            element.charTyped(c, modifiers);
+                        ScreenUtils.wrapScreenError(() -> {
+                            element.charTyped(new CharInput(c, modifiers));
                         }, "charTyped event handler", element.getClass().getCanonicalName());
                     }
                 }
@@ -92,49 +95,5 @@ public class InputHelper {
         });
     }
 
-    public static int getCurrentModifiers() {
-        var windowHandle = mc.getWindow().getHandle();
-        if (windowHandle == 0) {
-            return 0;
-        }
-
-        int modifiers = 0;
-
-        // 检查 Shift 键
-        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
-            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT;
-        }
-
-        // 检查 Control 键
-        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
-            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL;
-        }
-
-        // 检查 Alt 键
-        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_ALT) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
-            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_ALT;
-        }
-
-        // 检查 Windows/Command 键
-        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SUPER) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SUPER) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
-            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_SUPER;
-        }
-
-        // 检查 Caps Lock
-        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_CAPS_LOCK) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
-            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_CAPS_LOCK;
-        }
-
-        // 检查 Num Lock
-        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_NUM_LOCK) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
-            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_NUM_LOCK;
-        }
-
-        return modifiers;
-    }
 
 }

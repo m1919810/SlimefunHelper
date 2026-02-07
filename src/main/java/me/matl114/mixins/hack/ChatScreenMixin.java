@@ -1,15 +1,20 @@
 package me.matl114.mixins.hack;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.hacks.ChatTasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.StringHelper;
 import org.apache.commons.lang3.StringUtils;
@@ -44,14 +49,15 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     //在mouseClick中选择
 
     //防止选中原输出框时候不进行setFocus
-    @Redirect(method = "mouseClicked",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;mouseClicked(DDI)Z"))
-    private boolean fixMouseClickedOnChatFocusLost(TextFieldWidget instance, double v, double w, int i) {
-        boolean returnValue=instance.mouseClicked(v, w, i);
-        if(returnValue){
-            this.setFocused(instance);
-        }
-        return returnValue;
-    }
+    //already fixed by ojng
+
+//    private boolean fixMouseClickedOnChatFocusLost(ChatInputSuggestor instance, Click click, Operation<Boolean> original) {
+//        boolean returnValue = original.call(instance, click);
+//        if(returnValue){
+//            this.setFocused(instance);
+//        }
+//        return returnValue;
+//    }
     //interface
     @Unique
     public Element getDefaultElement(){
@@ -66,7 +72,7 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
 
     //keep-inv and save config when send
     @Inject(method="keyPressed",at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ChatScreen;sendMessage(Ljava/lang/String;Z)V", shift = At.Shift.AFTER), cancellable = true)
-    private void onCancelCloseScreenAfterSend(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
+    private void onCancelCloseScreenAfterSend(KeyInput input, CallbackInfoReturnable<Boolean> cir){
         if(ChatTasks.getChatExtra().keepChatInv.get()){
             //FIX: reset history index so pgup pgdown can work correctly
             messageHistoryIndex = MinecraftClient.getInstance().inGameHud.getChatHud().getMessageHistory().size();

@@ -2,8 +2,9 @@ package me.matl114.bukkit;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import me.matl114.accessors.access.StringNbtReaderAccess;
 import me.matl114.utils.Debug;
+import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.api.VNbt;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.*;
 import java.util.List;
@@ -14,12 +15,12 @@ public class BukkitConfigDeserializor {
     private static final Pattern ARRAY = Pattern.compile("^\\[.*]");
     private static final Pattern INTEGER = Pattern.compile("[-+]?(?:0|[1-9][0-9]*)?i", Pattern.CASE_INSENSITIVE);
     private static final Pattern DOUBLE = Pattern.compile("[-+]?(?:[0-9]+[.]?|[0-9]*[.][0-9]+)(?:e[-+]?[0-9]+)?d", Pattern.CASE_INSENSITIVE);
-    private static final StringNbtReader MOJANGSON_PARSER = new StringNbtReader(new StringReader(""));
+
     public static NbtElement deserializeObject(final Object object) {
         // The new logic expects the top level object to be a single string, holding the entire nbt tag as SNBT.
         if (object instanceof final String snbtString) {
             try {
-                return StringNbtReader.parse(snbtString);
+                return StringNbtReader.fromOps(ItemStackUtils.registry().getOps(NbtOps.INSTANCE)).read(snbtString);
             } catch (final CommandSyntaxException e) {
                 throw new RuntimeException("Failed to deserialise nbt", e);
             }
@@ -51,20 +52,21 @@ public class BukkitConfigDeserializor {
             String string = (String) object;
 
             if (ARRAY.matcher(string).matches()) {
-                try {
-                    return new StringNbtReader(new StringReader(string)).parseElement();
-                } catch (CommandSyntaxException e) {
-                    throw new RuntimeException("Could not deserialize found list ", e);
-                }
+
+                return VNbt.getInstance().readNbt(string);
             } else if (INTEGER.matcher(string).matches()) { //Read integers on our own
                 return NbtInt.of(Integer.parseInt(string.substring(0, string.length() - 1)));
             } else if (DOUBLE.matcher(string).matches()) {
                 return NbtDouble.of(Double.parseDouble(string.substring(0, string.length() - 1)));
             } else {
-                NbtElement nbtBase = StringNbtReaderAccess.of(MOJANGSON_PARSER).type(string);
-
-                if (nbtBase instanceof NbtInt) { // If this returns an integer, it did not use our method from above
-                    return NbtString.of(nbtBase.asString()); // It then is a string that was falsely read as an int
+                NbtElement nbtBase;
+                try{
+                    nbtBase = StringNbtReader.fromOps(ItemStackUtils.registry().getOps(NbtOps.INSTANCE)).read(string);
+                }catch (CommandSyntaxException e){
+                    throw new RuntimeException("Could not deserialize found element ", e);
+                }
+                if (nbtBase instanceof NbtInt(int va)) { // If this returns an integer, it did not use our method from above
+                    return NbtString.of(String.valueOf(va)); // It then is a string that was falsely read as an int
                 } else if (nbtBase instanceof NbtDouble) {
                     return NbtString.of(String.valueOf(((NbtDouble) nbtBase).doubleValue())); // Doubles add "d" at the end
                 } else {

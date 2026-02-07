@@ -74,7 +74,7 @@ public class SlimefunHelper implements ModInitializer {
 				return RenderListener.getReloadingResources(resourceManager.getResourceManager());
 			}),
             (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {
-				// no longer need this anymore
+				// here we should auto register these to BasicItemModel s or SpecialItemModels
 //				pluginContext.addModels(data);
             }
 

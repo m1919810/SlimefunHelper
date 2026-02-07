@@ -13,12 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Environment(EnvType.CLIENT)
 @Mixin(LightmapTextureManager.class)
 public abstract class LightMapTextureMixin {
-    @Inject(method = "getDarknessFactor",at = @At("HEAD"),cancellable = true)
-    private void getDarknessFactor(CallbackInfoReturnable<Float> cir) {
-        if(RenderTasks.getRenderExtra().noEffect.get()) {
-            cir.setReturnValue(0.0F);
-        }
-    }
     @ModifyExpressionValue(method = "update",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",ordinal = 0))
     public boolean alwaysNightVision(boolean original) {
         if(RenderTasks.getRenderExtra().nightVision.get()) {

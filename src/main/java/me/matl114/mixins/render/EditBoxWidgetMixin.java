@@ -3,6 +3,7 @@ package me.matl114.mixins.render;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ColorProvider;
+import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.PropertyTracker;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -11,7 +12,9 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.EditBox;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.EditBoxWidget;
+import net.minecraft.client.gui.widget.ScrollableTextFieldWidget;
 import net.minecraft.client.gui.widget.ScrollableWidget;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,7 +30,7 @@ import java.util.function.Consumer;
 
 @Environment(EnvType.CLIENT)
 @Mixin(EditBoxWidget.class)
-public abstract class EditBoxWidgetMixin extends ScrollableWidget implements TextFieldAccess {
+public abstract class EditBoxWidgetMixin extends ScrollableTextFieldWidget implements TextFieldAccess {
     @Unique
     private static final ColorProvider ORIGIN_PROVIDER = McWidgetHelpers.getDefaultTextBoxColorProvider();
     @Unique
@@ -72,8 +75,9 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
     public EditBoxWidgetMixin(int i, int j, int k, int l, Text text) {
         super(i, j, k, l, text);
     }
+    //override ALL EditBox behaviour
     @Override
-    protected void drawBox(DrawContext context, int x, int y, int width, int height){
+    protected void draw(DrawContext context, int x, int y, int width, int height){
         McWidgetHelpers.drawTextWidgetBox(this, context, x, y, width, height, this.isFocused(), this.boxColorProvider);
     }
 
@@ -85,14 +89,18 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
     }
 
     @Inject(method = "keyPressed", at = @At(value = "RETURN"), cancellable = true)
-    public void fixInventoryKeyPressedWhenFocused(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
-        if(this.isFocused() && MinecraftClient.getInstance().options.inventoryKey.matchesKey(keyCode, scanCode)){
+    public void fixInventoryKeyPressedWhenFocused(KeyInput input, CallbackInfoReturnable<Boolean> cir){
+        if(this.isFocused() && MinecraftClient.getInstance().options.inventoryKey.matchesKey(input)){
             cir.setReturnValue(true);
         }
     }
     @Unique
     public boolean canStartDrag(double mouseX, double mouseY){
         return this.isWithinBounds(mouseX, mouseY) || super.scrollbarDragged;
+    }
+    @Unique
+    private boolean isWithinBounds(double x, double y) {
+        return x >= (double)this.getX() && y >= (double)this.getY() && x < (double)this.getRight() && y < (double)this.getBottom();
     }
     @Unique
     public void dragSelect(int deltaX, int deltaY, boolean shiftDownAction){
@@ -103,7 +111,7 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
         if(!super.scrollbarDragged){
             this.editBox.setSelecting(true);
             this.moveCursor(this.getX() + deltaX, this.getY() + deltaY);
-            this.editBox.setSelecting(Screen.hasShiftDown());
+            this.editBox.setSelecting(ScreenUtils.hasShiftDown());
         }
 
 //            if(deltaY < 0){

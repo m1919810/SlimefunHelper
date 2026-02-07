@@ -6,12 +6,14 @@ import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.other.TradeInformationSubScreen;
 import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.RecipeTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.events.Event;
+import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CraftingScreen;
@@ -22,7 +24,9 @@ import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.recipe.RecipeEntry;
+import net.minecraft.screen.AbstractCraftingScreenHandler;
 import net.minecraft.screen.AbstractRecipeScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
@@ -57,7 +61,7 @@ public class FastCraft extends BaseModule {
                 addCraftingInventoryButton(craftingScreen);
             }else if(event.context instanceof InventoryScreen inventoryScreen){
                 lastScreen = null;
-                if(!mc.interactionManager.hasCreativeInventory()){
+                if(!mc.interactionManager.getCurrentGameMode().isCreative()){
                     addInventoryButton(inventoryScreen);
                 }
             }else if(event.context instanceof MerchantScreen merchantScreen){
@@ -75,7 +79,7 @@ public class FastCraft extends BaseModule {
         }
     }
 
-    public void onRecipeClicked(Event<RecipeEntry<?>> event){
+    public void onRecipeClicked(Event<NetworkRecipeId> event){
         if(!isLock()){
             lastCrafted = event.context();
         }
@@ -90,23 +94,23 @@ public class FastCraft extends BaseModule {
 
     @Getter //todo: make it configurable, like, open a fucking menu and select
     //todo: hard in higher version of mc
-    private RecipeEntry<?> lastCrafted;
+    private NetworkRecipeId lastCrafted;
 
 
 
-    public void placeLastCraftingRecipe(HandledScreen<? extends AbstractRecipeScreenHandler> craftingScreen, boolean doCraft){
+    public void placeLastCraftingRecipe(HandledScreen<? extends AbstractCraftingScreenHandler> craftingScreen, boolean doCraft){
         // var recipeBook = craftingScreen.getRecipeBookWidget();
-        RecipeEntry<?> last = lastCrafted;
+        NetworkRecipeId last = lastCrafted;
         if(last != null){
             mc.interactionManager.clickRecipe(craftingScreen.getScreenHandler().syncId, last,true);
             if(doCraft){
                 int maxCraft = 64;
-                for (Ingredient material:last.value().getIngredients()){
-                    for (ItemStack val:material.getMatchingStacks()){
+                for (Ingredient material : RecipeTasks.getIngredients(last)){
+                    for (ItemStack val : RecipeTasks.streamIngredientOptions(material).toList()){
                         maxCraft = Math.min(maxCraft, val.getMaxCount());
                     }
                 }
-                int slot = craftingScreen.getScreenHandler().getCraftingResultSlotIndex();
+                int slot = craftingScreen.getScreenHandler().getOutputSlot().getIndex();
                 craftAtSlotIndex(craftingScreen, maxCraft, slot);
             }
         }else {
@@ -133,10 +137,9 @@ public class FastCraft extends BaseModule {
 
     @Getter
     boolean lock;
-    RecipeEntry<?> entry;
     private ItemStack getDisplayItemStack(){
-        if(entry != null){
-            return entry.value().getResult(MinecraftClient.getInstance().world.getRegistryManager());
+        if(lastCrafted != null){
+            return RecipeTasks.getRecipeResult(lastCrafted);
         }else{
             return new ItemStack(Items.BARRIER);
         }
@@ -159,7 +162,7 @@ public class FastCraft extends BaseModule {
             .setElementHandler(
                 new ButtonElement(
                     TextProvider.of(Text.literal("合成")),
-                    ButtonAction.run(()-> placeLastCraftingRecipe(screen, Screen.hasShiftDown()))
+                    ButtonAction.run(()-> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown()))
                 )
             )
             .addToSub(recipeSubScreen);
@@ -216,7 +219,7 @@ public class FastCraft extends BaseModule {
             .setElementHandler(
                 new ButtonElement(
                     TextProvider.of(Text.literal("合成")),
-                    ButtonAction.run(()-> placeLastCraftingRecipe(screen, Screen.hasShiftDown()))
+                    ButtonAction.run(()-> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown()))
                 )
             )
             .addToSub(recipeSubScreen);

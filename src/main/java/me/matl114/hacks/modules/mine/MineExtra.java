@@ -151,7 +151,7 @@ public class MineExtra extends BaseModule {
         .build();
 
     public double getReachDistance(){
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE) + reachDistance.get();
+        return mc.player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE) + reachDistance.get();
     }
 
     @Override

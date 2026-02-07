@@ -219,7 +219,7 @@ public class ChatExtra extends BaseModule {
                 helperInputField = new TextFieldWidget(mc.textRenderer, chat.width - 250, chat.height - 56, 140, 20, Text.of(""));
                 helperInputField.setMaxLength(32768);  // 设置最大输入字符数
                 helperInputField.setEditable(true);  // 设置为可编辑
-                helperInputField.setText(chatCache.get());;  // 设置默认文本
+                helperInputField.setText(chatCache.get());  // 设置默认文本
                 helperInputField.setChangedListener(chatCache::set);
                 access.addDrawableChildTo(helperInputField);
                 //todo： add translatable to buttons and everything

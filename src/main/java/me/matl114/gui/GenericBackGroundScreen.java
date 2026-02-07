@@ -37,7 +37,7 @@ public class GenericBackGroundScreen extends GenericScreen{
         ;
     }
     protected void init(){
-        super.init();;
+        super.init();
         initBackground();
     }
 }

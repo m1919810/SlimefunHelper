@@ -1,6 +1,7 @@
 package me.matl114.gui.basic;
 
 import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.versioned.api.VDrawContext;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.*;
@@ -9,6 +10,8 @@ import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.input.CharInput;
+import net.minecraft.client.input.KeyInput;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
@@ -33,7 +36,8 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
 
     private int textureWidth;
     private int textureHeight;
-    protected int extraDepth;
+    // higher priority means more likely to be selected
+    protected int priority;
     private final void updateScale(){
         this.textureWidth =(int)( dx/ this.textureScale);
         this.textureHeight = (int)( dy/this.textureScale);
@@ -59,7 +63,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return this.textureHeight;
     }
     public int getExtraDepth(){
-        return this.extraDepth;
+        return this.priority;
     }
     public float getAlpha(){
         return this.alpha;
@@ -70,8 +74,9 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     public boolean isSelected(){
         return selected;
     }
-    public <T extends DrawableWidget> T setExtraDepth(int depth){
-        this.extraDepth = depth;
+    //this should be set before they join any delegates or something, as they often causes problem
+    private final  <T extends DrawableWidget> T setPriority(int depth){
+        this.priority = depth;
         return (T)this;
     }
 
@@ -115,8 +120,9 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
      * @param mouseY
      * @param delta
      */
-    public final void render(DrawContext context, int mouseX, int mouseY, float delta){
-        render0(context, mouseX, mouseY, delta, false);
+    @Override
+    public final void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        render0(VDrawContext.of(context), mouseX, mouseY, delta, false);
     }
     protected void checkSelect(boolean disableSelect, int mouseX, int mouseY){
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
@@ -126,27 +132,27 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return renderHandler != null && renderHandler.canBeSelected(this);
     }
 
-    public void render0(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
+    public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
-        context.getMatrices().push();
-        context.getMatrices().translate(x, y, extraDepth);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(x, y);
+        //compat low version
+        if(priority != 0){
+            context.getMatrices().translateZ(priority);
+        }
         if(textureScale != 1.0f){
-            context.getMatrices().push();
-            context.getMatrices().scale(textureScale, textureScale, 1);
+            context.getMatrices().scale(textureScale, textureScale);
         }
         renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
-        if(textureScale != 1.0f){
-            context.getMatrices().pop();
-        }
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
         renderAbsolute(context, mouseX, mouseY, delta, disableSelect);
     }
-    public void renderInDefaultMatrix(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
+    public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         if(this.renderHandler != null){
             this.renderHandler.renderAtCentered(this, context, mouseX, mouseY , delta, this.alpha, this.selected);
         }
     }
-    public void renderAbsolute(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
+    public void renderAbsolute(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         if(this.renderHandler != null){
             this.renderHandler.renderExtraAbsoluteCoord(this, context, mouseX, mouseY , delta, this.alpha, this.selected);
             context.tryDraw();
@@ -226,9 +232,20 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return (T)this;
     }
     public <T extends DrawableWidget> T addToSub(SubScreenWidget screen){
+        setPriority(screen.getBasicDepth());
+        addInternal(screen);
+        return (T)this;
+    }
+
+    public <T extends DrawableWidget> T addToSub(SubScreenWidget screen, int priority){
+        setPriority(priority + screen.getBasicDepth());
+        addInternal(screen);
+        return (T)this;
+    }
+
+    private void addInternal(SubScreenWidget screen){
         this.subWidget = true;
         screen.addDrawableChild(this);
-        return (T)this;
     }
 
 
@@ -265,7 +282,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return false;
     }
 
-    //------------------------------------- default functions left for -------------------------------------
+    //------------------------------------- public functions left for -------------------------------------
 
 
     public final void forEachChild(Consumer<ClickableWidget> consumer) {
@@ -310,5 +327,41 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     public boolean startDrag(Screen screen, double mouseX, double mouseY){
         return false;
     }
+    // -------------------------------- API compat for higher version
+    //will only be modified on main thread
+    public static int THREAD_SAFE_MODIFIER_CACHE = 0;
+    public static boolean THREAD_SAFE_DOUBLE_CLICK = false;
 
+    public final boolean mouseClicked(Click click, boolean doubled) {
+        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
+        THREAD_SAFE_DOUBLE_CLICK = doubled;
+        return this.mouseClicked(click.x(), click.y(), click.button());
+    }
+
+    public final boolean mouseReleased(Click click) {
+        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
+        return this.mouseReleased(click.x(), click.y(), click.button());
+    }
+
+    public final boolean mouseDragged(Click click, double offsetX, double offsetY) {
+        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
+        return this.mouseDragged(click.x(), click.y(), click.button(), offsetX, offsetY);
+    }
+    
+
+    public final boolean keyPressed(KeyInput input) {
+        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
+        return this.keyPressed(input.key(), input.scancode(), input.modifiers());
+    }
+
+    public final boolean keyReleased(KeyInput input) {
+        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
+        return this.keyReleased(input.key(), input.scancode(), input.modifiers());
+    }
+
+    public final boolean charTyped(CharInput input) {
+        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
+        return this.charTyped((char) input.codepoint(), input.modifiers());
+    }
+    
 }

@@ -1,7 +1,7 @@
 package me.matl114.gui.basic;
 
 import me.matl114.utils.Debug;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
 
 import java.util.List;
@@ -27,12 +27,12 @@ public class TooltipHandler implements RenderHandler{
         this.provider = provider;
     }
     @Override
-    public final void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public final void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
 
     }
 
 
-    public void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
+    public void renderExtraAbsoluteCoord(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight){
 
         if(shouldHighlight){
             if(provider != null){

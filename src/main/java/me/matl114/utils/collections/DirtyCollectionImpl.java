@@ -112,7 +112,7 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
     public void clear() {
         if(!this.delegate.isEmpty()){
             setDirty();
-            this.delegate.clear();;
+            this.delegate.clear();
         }
     }
 

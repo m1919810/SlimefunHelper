@@ -1,5 +1,6 @@
 package me.matl114.mixins.hack;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.hacks.MovTasks;
@@ -27,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class LivingEntityMixin  extends Entity implements LivingEntityAccess {
 
     @Shadow
-    protected int fallFlyingTicks;
+    protected int glidingTicks;
 
     @Accessor("jumpingCooldown")
     public abstract void setJumpingCooldown(int cooldown);
@@ -74,12 +75,12 @@ public abstract class LivingEntityMixin  extends Entity implements LivingEntityA
 
 
 
-    @Redirect(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;getSlipperiness()F"))
-    private float onIgnoreSlipperiness(Block instance){
+    @ModifyExpressionValue(method = "travelMidAir", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;getSlipperiness()F"))
+    private float onIgnoreSlipperiness(float original){
         if(MovTasks.getNoSlowDown().blockFrac.get()){
             return 0.6F;
         }else{
-            return instance.getSlipperiness();
+            return original;
         }
     }
 

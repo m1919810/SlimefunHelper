@@ -22,24 +22,4 @@ public abstract class GameRenderMixin {
             cir.setReturnValue(1.0F);
         }
     }
-
-
-
-    @ModifyExpressionValue(method = "renderWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
-    public boolean noRenderNausea(boolean original) {
-        if(RenderTasks.getRenderExtra().noNausea.get()){
-            return false;
-        }
-        return original;
-    }
-
-    @ModifyExpressionValue(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
-    public boolean noRenderNausea2(boolean original) {
-        if(RenderTasks.getRenderExtra().noNausea.get()){
-            return false;
-        }
-        return original;
-    }
-
-
 }

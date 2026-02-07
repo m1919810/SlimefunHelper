@@ -1,7 +1,7 @@
 package me.matl114.gui.basic;
 
 import lombok.Getter;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.Screen;
 
 import javax.annotation.Nullable;
@@ -46,12 +46,13 @@ public class DelegateWidget extends DrawableWidget implements Draggable{
     public boolean isSelected(){
         return this.delegate != null && this.delegate.isSelected();
     }
-    public <T extends DrawableWidget> T setExtraDepth(int depth){
-        if(this.delegate != null){
-            this.delegate.setExtraDepth(depth);
-        }
-        return (T) this;
-    }
+    //remove the extra Depth here, do not set this
+//    public <T extends DrawableWidget> T setExtraDepth(int depth){
+//        if(this.delegate != null){
+//            this.delegate.setExtraDepth(depth);
+//        }
+//        return (T) this;
+//    }
 
     public <T extends DrawableWidget> T setTextureScale(float scale){
         if(this.delegate != null){
@@ -91,24 +92,18 @@ public class DelegateWidget extends DrawableWidget implements Draggable{
         return this.delegate != null && this.delegate.canSelect();
     }
 
-    public void render(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
-        if(this.delegate != null){
-            this.delegate.render(context, mouseX, mouseY, delta);
-        }
-    }
-
-    public void render0(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
+    public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         if(this.delegate != null){
             this.delegate.render0(context, mouseX, mouseY, delta, disableSelect);
         }
     }
-    public void renderInDefaultMatrix(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
+    public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         //NO
         if(this.delegate != null){
             this.delegate.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         }
     }
-    public void renderAbsolute(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
+    public void renderAbsolute(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         //NO
         if(this.delegate != null){
             this.delegate.renderAbsolute(context, mouseX, mouseY, delta, disableSelect);

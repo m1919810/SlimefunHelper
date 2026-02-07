@@ -79,13 +79,13 @@ public class CommonUtils {
             default -> {
                 // need fix
                 DimensionType type = mc.world.getDimension();
-                if(type.ultrawarm() || type.hasCeiling()){
+                if(type.cardinalLightType() == DimensionType.CardinalLightType.NETHER|| type.hasCeiling()){
                     return DimensionOptions.NETHER;
                 }
                 if(type.hasSkyLight()){
                     return DimensionOptions.OVERWORLD;
                 }
-                if(type.bedWorks())return DimensionOptions.END;
+                if(type.skybox() == DimensionType.Skybox.END)return DimensionOptions.END;
                 return DimensionOptions.OVERWORLD;
             }
         }

@@ -2,6 +2,7 @@ package me.matl114.mixins.hack;
 
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.CombatTasks;
@@ -38,7 +39,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ClientMixin implements Cloneable, ClientAccess {
 
 
-    @Shadow private Profiler profiler;
 
     @Shadow @Nullable public ClientPlayerEntity player;
 
@@ -97,10 +97,10 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
 
 
 
-    @Inject(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;", shift = At.Shift.BEFORE))
-    public void onInputEventIfScreenOpen(CallbackInfo ci){
+    @Inject(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;", shift = At.Shift.BEFORE, ordinal = 2))
+    public void onInputEventIfScreenOpen(CallbackInfo ci, @Local Profiler profiler){
         if(MinecraftClient.getInstance().currentScreen != null || MinecraftClient.getInstance().getOverlay() != null){
-            this.profiler.swap("Keybindings");
+            profiler.swap("Keybindings");
             handleInputEventWhenScreenOpen();
         }
     }

@@ -42,7 +42,8 @@ public class PickItem extends BaseModule {
                         Debug.chat("Invalid slot for player Inventory",slot.getIndex());
                     }else {
                         Debug.chat("run pickup");
-                        mc.interactionManager.pickFromInventory(slot.getIndex());
+                        Debug.chat("No Longer support this feat");
+                        //mc.interactionManager.pickFromInventory(slot.getIndex());
                     }
                     return true;
                 }else{

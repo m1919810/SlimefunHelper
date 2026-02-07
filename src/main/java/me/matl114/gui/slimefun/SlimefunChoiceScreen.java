@@ -8,6 +8,7 @@ import me.matl114.gui.presets.grids.GridSelectSubScreen;
 import me.matl114.gui.presets.choices.RegistrySelectScreen;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.api.Displayable;
 import net.minecraft.client.gui.screen.Screen;
@@ -162,7 +163,7 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
             .addTo(this);
         nbtFilter.setIdentifier(NbtFilterRule.class);
         nbtFilter.generateSwitchingButton(this.x + this.backgroundWidth + 1, this.y + 68, 18, 18, (attr)->{
-                if(Screen.hasShiftDown()){
+                if(ScreenUtils.hasShiftDown()){
                     //avoid recursive call
 
                     if(nbtFilter.getOriginValue() != NbtFilterRule.ANY){
@@ -206,7 +207,7 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
                     .setMouseHandler(
                         new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.isLeft((left)->{
                             Runnable callback = this::executeFilterTask;
-                            if (Screen.hasShiftDown()){
+                            if (ScreenUtils.hasShiftDown()){
                                 //clear
                                 itemFilter.reset(callback);
                             }else {

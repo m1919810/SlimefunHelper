@@ -98,7 +98,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 //                Debug.info("check vc", player.getVelocity().horizontalLength());
 
         // Debug.info(player.input.movementForward);
-        if(directionalSprint.get() && (player.input.movementForward < -1E-5) && !(player.isTouchingWater() && !player.isSubmergedInWater()) && !(player.horizontalCollision && !player.collidedSoftly)){
+        if(directionalSprint.get() && (player.input.playerInput.backward() && !player.input.playerInput.forward()) && !(player.isTouchingWater() && !player.isSubmergedInWater()) && !(player.horizontalCollision && !player.collidedSoftly)){
             //give the ticket
             enableSprintDirectionalThisTick = true;
 
@@ -110,7 +110,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        if(directionalSprint.get() && (player.input.movementForward < -0.05) && player.isSprinting()){
+        if(directionalSprint.get() && (player.input.playerInput.backward() && !player.input.playerInput.forward()) && player.isSprinting()){
 
             if(directionalSprintMode.getValue() == Configs.BypassMode.BYPASS_GRIM){
                 workRotationThisTick = true;

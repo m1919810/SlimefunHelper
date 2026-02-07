@@ -2,6 +2,7 @@ package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import me.matl114.events.Listener;
@@ -13,6 +14,7 @@ import net.minecraft.network.PacketCallbacks;
 import net.minecraft.network.handler.PacketSizeLogger;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
+import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -35,8 +37,8 @@ public class ClientConnectionEvents {
             }
         }
     }
-    @Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V",at=@At("HEAD"),cancellable = true)
-    private void sendPacket(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci, @Local(argsOnly = true) LocalRef<Packet<?>> packetLocalRef) {
+    @Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lio/netty/channel/ChannelFutureListener;Z)V",at=@At("HEAD"),cancellable = true)
+    private void sendPacket(Packet<?> packet, @Nullable ChannelFutureListener listener, boolean flush, CallbackInfo ci, @Local(argsOnly = true) LocalRef<Packet<?>> packetLocalRef) {
         //fix: null values from cancelled send Events
         if(packet == null){
             ci.cancel();
@@ -50,8 +52,8 @@ public class ClientConnectionEvents {
             }
         }
     }
-    @Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V", at = @At("RETURN"))
-    private void sendPacketPost(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci){
+    @Inject(method = "sendInternal", at = @At("RETURN"))
+    private void sendPacketPost(Packet<?> packet, @Nullable ChannelFutureListener listener, boolean flush, CallbackInfo ci){
         Listener.getPacketPostSendPoint().broadcast(packet);
     }
 

@@ -15,14 +15,18 @@ import me.matl114.utils.collections.Point;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.CharInput;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.option.TextureFilteringMode;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.render.fog.FogRenderer;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -113,7 +117,7 @@ public class SleepMode extends BaseModule {
     private class SleepingChatScreen extends ChatScreen {
 
         public SleepingChatScreen(String originalChatText) {
-            super(originalChatText);
+            super(originalChatText, false);
         }
         protected void init(){
             super.init();
@@ -131,18 +135,19 @@ public class SleepMode extends BaseModule {
             shouldFreshSleepScreen = true;
         }
 
-        public boolean keyPressed(int keyCode, int scanCode, int modifiers){
-            if(keyCode == 257 || keyCode == 335){
+        public boolean keyPressed(KeyInput input){
+            if(input.isEnter()){
                 //intercept send, else left for super
                 this.sendMessage(this.chatField.getText(), true);
                 this.chatField.setText("");
                 return true;
-            }else return super.keyPressed(keyCode, scanCode, modifiers);
+            }else return super.keyPressed(input);
         }
 
         @Override
         public void close() {
             //do not close till sleeping is over or game exit
+            this.closeReason = CloseReason.DONE;
 //            if(mc.player == null || !isScreenSleeping()){
 //                super.close();
 //            }
@@ -220,12 +225,11 @@ public class SleepMode extends BaseModule {
         }
     }
     private void setCurrentRenderingSleeping(Screen screen){
-        BufferRenderer.reset();
         if(screen != null){
             mc.mouse.unlockCursor();
             KeyBinding.unpressAll();
             currentRenderingSleeping = screen;
-            currentRenderingSleeping.init(mc, mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
+            currentRenderingSleeping.init(mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
 
         }else{
             currentRenderingSleeping = null;
@@ -259,9 +263,11 @@ public class SleepMode extends BaseModule {
         }
         if(refresh){
             //clear current  view
-            mc.getFramebuffer().clear(true);
-            mc.getFramebuffer().endRead();
-            mc.getFramebuffer().beginWrite(true);
+            RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(mc.getFramebuffer().getDepthAttachment(), 1.0);
+            mc.gameRenderer.guiState.clear();
+//            mc.getFramebuffer().clear(true);
+//            mc.getFramebuffer().endRead();
+//            mc.getFramebuffer().beginWrite(true);
             return true;
         }
         return true;
@@ -269,7 +275,7 @@ public class SleepMode extends BaseModule {
     private boolean shouldFreshSleepScreen = false;
     public void onSleepingResizeScreen(Event<Point> event){
         if(currentRenderingSleeping != null){
-            currentRenderingSleeping.resize(mc, event.context.x, event.context.y);
+            currentRenderingSleeping.resize(event.context.x, event.context.y);
         }
     }
     public boolean sleepingRenderTick(GameRenderer gameRenderer, RenderTickCounter tickCounter){
@@ -278,24 +284,23 @@ public class SleepMode extends BaseModule {
             if(currentRenderingSleeping != null){
                 if(shouldFreshSleepScreen){
                     shouldFreshSleepScreen = false;
+                    mc.gameRenderer.getGlobalSettings().set(mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight(), (Double)mc.options.getGlintStrength().getValue(), mc.world == null ? 0L : mc.world.getTime(), tickCounter, mc.options.getMenuBackgroundBlurrinessValue(), mc.gameRenderer.getCamera(), mc.options.getTextureFiltering().getValue() == TextureFilteringMode.RGSS);
 
                     int i = (int)(mc.mouse.getX() * (double)mc.getWindow().getScaledWidth() / (double)mc.getWindow().getWidth());
                     int j = (int)(mc.mouse.getY() * (double)mc.getWindow().getScaledHeight() / (double)mc.getWindow().getHeight());
-                    Window window = mc.getWindow();
-                    RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
-                    Matrix4f matrix4f = (new Matrix4f()).setOrtho(0.0F, (float)((double)window.getFramebufferWidth() / window.getScaleFactor()), (float)((double)window.getFramebufferHeight() / window.getScaleFactor()), 0.0F, 1000.0F, 21000.0F);
-                    RenderSystem.setProjectionMatrix(matrix4f, VertexSorter.BY_Z);
-                    Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
-                    matrix4fStack.pushMatrix();
-                    matrix4fStack.translation(0.0F, 0.0F, -11000.0F);
-                    RenderSystem.applyModelViewMatrix();
-                    DiffuseLighting.enableGuiDepthLighting();
-                    DrawContext drawContext = new DrawContext(mc, gameRenderer.buffers.getEntityVertexConsumers());
 
-                    currentRenderingSleeping.renderWithTooltip(drawContext, i, j, tickCounter.getLastDuration());
-                    drawContext.draw();;
-                    matrix4fStack.popMatrix();
-                    RenderSystem.applyModelViewMatrix();
+                    RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(mc.getFramebuffer().getDepthAttachment(), 1.0);
+                    mc.gameRenderer.guiState.clear();
+                    DrawContext drawContext = new DrawContext(mc, mc.gameRenderer.guiState, i, j);
+
+
+                    currentRenderingSleeping.renderWithTooltip(drawContext, i, j, tickCounter.getDynamicDeltaTicks());
+                    mc.gameRenderer.guiRenderer.render(mc.gameRenderer.fogRenderer.getFogBuffer(FogRenderer.FogType.NONE));
+                    mc.gameRenderer.guiRenderer.incrementFrame();
+                    drawContext.applyCursorTo(mc.getWindow());
+                    mc.gameRenderer.getEntityRenderCommandQueue().onNextFrame();
+                    mc.gameRenderer.getEntityRenderDispatcher().endLayeredCustoms();
+                    mc.gameRenderer.pool.decrementLifespan();
                 }
             }else {
                 setUpSleepingScreen();
@@ -346,7 +351,7 @@ public class SleepMode extends BaseModule {
         if(isScreenSleeping()){
             event.cancel();
             if(sleepingScreenInstance != null){
-                sleepingScreenInstance.charTyped(event.context,(Integer) event.extraArgs[1]);
+                sleepingScreenInstance.charTyped(new CharInput(event.context,(Integer) event.extraArgs[1]));
             }
         }
     }
@@ -363,7 +368,7 @@ public class SleepMode extends BaseModule {
         if(isScreenSleeping()){
             event.cancel();
             if(sleepingScreenInstance != null){
-                sleepingScreenInstance.mouseDragged((Double) event.extraArgs[0], (Double) event.extraArgs[1], (Integer)event.extraArgs[2], (Double) event.extraArgs[3], (Double)event.extraArgs[4]);
+                sleepingScreenInstance.mouseDragged(new Click((double) event.extraArgs[0], (double) event.extraArgs[1], event.context.activeButton), (Integer)event.extraArgs[2], (Double) event.extraArgs[3]);
             }
         }
     }

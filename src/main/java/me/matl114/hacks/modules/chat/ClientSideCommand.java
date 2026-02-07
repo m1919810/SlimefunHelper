@@ -21,12 +21,14 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.events.Event;
+import net.minecraft.client.network.ClientCommandSource;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.EntitySelector;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.ItemStackArgument;
 import net.minecraft.command.argument.ItemStackArgumentType;
+import net.minecraft.command.permission.PermissionPredicate;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.CommandTreeS2CPacket;
 import net.minecraft.resource.featuretoggle.FeatureFlags;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class ClientSideCommand extends BaseModule {
@@ -58,30 +61,30 @@ public class ClientSideCommand extends BaseModule {
 
     private static final Predicate<CommandSource> requirement = (val)->true;
     private static final Command<CommandSource> success = (val)->Command.SINGLE_SUCCESS;
-    private void addOurCommandNodesInRoot(RootCommandNode<CommandSource> node){
+    private <T extends CommandSource> void addOurCommandNodesInRoot(RootCommandNode<T> node){
         //try add deop command
         //fix: plugin give commands
         if(enableGive.get()){
-            CommandNode<CommandSource> give = node.getChild("minecraft:give");
-            LiteralCommandNode<CommandSource> giveCommand;
+            CommandNode<T> give = node.getChild("minecraft:give");
+            LiteralCommandNode<T> giveCommand;
             if (give == null) {
                 giveCommand = new LiteralCommandNode<>(
                     "minecraft:give",
                     null,
-                    requirement,
+                    (Predicate<T>) requirement,
                     null,
                     null,
                     false
                 );
                 node.addChild(giveCommand);
             }else {
-                giveCommand = (LiteralCommandNode<CommandSource>) give;
+                giveCommand = (LiteralCommandNode<T>) give;
             }
             if(node.getChild("give") == null){
-                LiteralCommandNode<CommandSource> mcGiveCommand = new LiteralCommandNode<>(
+                LiteralCommandNode<T> mcGiveCommand = new LiteralCommandNode<>(
                     "give",
                     null,
-                    requirement,
+                    (Predicate<T>) requirement,
                     giveCommand,
                     null,
                     false
@@ -95,11 +98,11 @@ public class ClientSideCommand extends BaseModule {
                 );
 
 
-                ArgumentCommandNode<CommandSource, EntitySelector> targetArgument = new ArgumentCommandNode<>(
+                ArgumentCommandNode<T, EntitySelector> targetArgument = new ArgumentCommandNode<>(
                     "targets",
                     EntityArgumentType.players(),
                     null,
-                    requirement,
+                    (Predicate<T>) requirement,
                     null,
                     null,
                     false,
@@ -107,22 +110,22 @@ public class ClientSideCommand extends BaseModule {
                     null
                 );
                 giveCommand.addChild(targetArgument);
-                ArgumentCommandNode<CommandSource, ItemStackArgument> itemArgument = new ArgumentCommandNode<>(
+                ArgumentCommandNode<T, ItemStackArgument> itemArgument = new ArgumentCommandNode<>(
                     "item",
                     ItemStackArgumentType.itemStack(commandRegistryAccess),
-                    success,
-                    requirement,
+                    (Command<T>)success,
+                    (Predicate<T>) requirement,
                     null,
-                    null,
+                  null,
                     false,
                     null
                 );
                 targetArgument.addChild(itemArgument);
-                ArgumentCommandNode<CommandSource, Integer> countAmount = new ArgumentCommandNode<>(
+                ArgumentCommandNode<T, Integer> countAmount = new ArgumentCommandNode<>(
                     "count",
                     IntegerArgumentType.integer(1),
-                    success,
-                    requirement,
+                    (Command<T>)success,
+                    (Predicate<T>) requirement,
                     null,
                     null,
                     false,
@@ -139,13 +142,13 @@ public class ClientSideCommand extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPacketPostHandlePoint().getChannel(CommandTreeS2CPacket.class), this::onClientCommandReload);
+        registerListener(Listener.getPacketPostHandlePoint().getChannel(CommandTreeS2CPacket.class), (Consumer<Event<CommandTreeS2CPacket>>) this::onClientCommandReload);
         registerListener(Listener.getChatSend(), this::onCommandSend, 1);
     }
 
-    private void onClientCommandReload(Event<CommandTreeS2CPacket> reload){
-        CommandDispatcher<CommandSource> clientTree = mc.getNetworkHandler().getCommandDispatcher();
-        RootCommandNode<CommandSource> root = clientTree.getRoot();
+    private <T extends CommandSource> void onClientCommandReload(Event<CommandTreeS2CPacket> reload){
+        CommandDispatcher<T> clientTree = (CommandDispatcher<T>) mc.getNetworkHandler().getCommandDispatcher();
+        RootCommandNode<T> root = clientTree.getRoot();
         if(root != null && enable.get()){
             addOurCommandNodesInRoot(root);
         }
@@ -167,15 +170,15 @@ public class ClientSideCommand extends BaseModule {
     }
 
 
-    private static ResultConsumer<CommandSource> consumer = (c, s, r) -> {
+    private static ResultConsumer<ClientCommandSource> consumer = (c, s, r) -> {
     };
 
     private boolean dispatchVanillaCommand(String command){
         // Debug.info(command);
         if(mc.player == null)return false;
-        mc.player.setClientPermissionLevel(4);
+        mc.player.setPermissions(PermissionPredicate.ALL);
         try{
-            ParseResults<CommandSource> parse = mc.getNetworkHandler().getCommandDispatcher().parse(command, mc.player.getCommandSource());
+            ParseResults<ClientCommandSource> parse = (ParseResults) mc.getNetworkHandler().getCommandDispatcher().parse(command, (ClientCommandSource) mc.getNetworkHandler().getCommandSource());
             if (parse.getReader().canRead()) {
                 if (parse.getExceptions().size() == 1) {
                     throw parse.getExceptions().values().iterator().next();
@@ -187,12 +190,12 @@ public class ClientSideCommand extends BaseModule {
             }
 
             final String commandStr = parse.getReader().getString();
-            final CommandContextBuilder<CommandSource> originalBuilder = parse.getContext();
+            final CommandContextBuilder<ClientCommandSource> originalBuilder = parse.getContext();
             //flatten this
-            List<CommandContextBuilder<CommandSource>> modifiers = new ArrayList<>();
-            CommandContextBuilder<CommandSource> contextData = originalBuilder;
+            List<CommandContextBuilder<ClientCommandSource>> modifiers = new ArrayList<>();
+            CommandContextBuilder<ClientCommandSource> contextData = originalBuilder;
             while (true){
-                CommandContextBuilder<CommandSource> child = contextData.getChild();
+                CommandContextBuilder<ClientCommandSource> child = contextData.getChild();
                 if(child == null){
                     if(contextData.getCommand() ==null){
                         consumer.onCommandComplete(originalBuilder.build(commandStr), false, 0);
@@ -203,7 +206,7 @@ public class ClientSideCommand extends BaseModule {
                 modifiers.add(contextData);
                 contextData = child;
             }
-            Map<String, ParsedArgument<CommandSource, ?>> argsMap = contextData.getArguments();
+            Map<String, ParsedArgument<ClientCommandSource, ?>> argsMap = contextData.getArguments();
             if(commandStr.startsWith("give") || commandStr.startsWith("minecraft:give")){
                 return handleClientSideGiveCommand(argsMap, command);
             }
@@ -215,11 +218,11 @@ public class ClientSideCommand extends BaseModule {
         return false;
     }
 
-    private boolean handleClientSideGiveCommand(Map<String, ParsedArgument<CommandSource, ?>> argsMap, String command) throws CommandSyntaxException{
+    private boolean handleClientSideGiveCommand(Map<String, ParsedArgument<ClientCommandSource, ?>> argsMap, String command) throws CommandSyntaxException{
         if(enableGive.get()){
             if(mc.player.isCreative()){
                 Debug.chat(Text.literal("尝试在客户端执行give指令").formatted(Formatting.GREEN));
-                ParsedArgument<CommandSource, ?> entityArgument = argsMap.get("targets");
+                ParsedArgument<ClientCommandSource, ?> entityArgument = argsMap.get("targets");
                 EntitySelector entitySelector = (EntitySelector) entityArgument.getResult();
                 StringRange range = entityArgument.getRange();
                 if(entitySelector.isSenderOnly() || Objects.equals( mc.player.getNameForScoreboard(), command.substring(range.getStart(), range.getEnd()))){

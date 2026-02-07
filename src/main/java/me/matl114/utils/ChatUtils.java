@@ -2,6 +2,8 @@ package me.matl114.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.*;
+import com.mojang.serialization.JsonOps;
 import me.matl114.utils.chat.SimpleOrderedTextVisitor;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
@@ -392,15 +394,15 @@ public class ChatUtils {
     }
     @ApiMethod
     public static Text getDisplayedLocationDouble(double x,double y ,double z){
-        return Text.literal("[%.2f,%.2f,%.2f]".formatted(x, y, z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+        return Text.literal("[%.2f,%.2f,%.2f]".formatted(x, y, z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
     }
     @ApiMethod
     public static Text getDisplayedLong(long l){
-        return Text.literal("[" + Long.toString(l) + "]").setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, Long.toString(l))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+        return Text.literal("[" + Long.toString(l) + "]").setStyle(Style.EMPTY.withClickEvent(new ClickEvent.CopyToClipboard(Long.toString(l))).withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
     }
     @ApiMethod
     public static Text getDisplayedLocation(double x,double y ,double z){
-        return Text.literal("[%d,%d,%d]".formatted((int)x, (int)y, (int)z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD,"%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+        return Text.literal("[%d,%d,%d]".formatted((int)x, (int)y, (int)z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
     }
     @ApiMethod
     public static MutableText getClickCopyTargetText(String literal){
@@ -409,7 +411,7 @@ public class ChatUtils {
     }
     @ApiMethod
     public static MutableText getClickCopyText(String literal, String copy){
-        return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy text"))).withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, copy)));
+        return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy text"))).withClickEvent(new ClickEvent.CopyToClipboard(copy)));
     }
     @ApiMethod
     public static MutableText concatLineText(List<Text> texts){
@@ -428,7 +430,7 @@ public class ChatUtils {
     }
     @ApiMethod
     public static MutableText getHoverShowText(String literal, List<Text> showText){
-        return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, concatLineText(showText))));
+        return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(concatLineText(showText))));
     }
 
     @ApiMethod
@@ -462,14 +464,26 @@ public class ChatUtils {
         text.getSiblings().forEach(newLine::append);
         return newLine;
     }
-
+    private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     @ApiMethod
     public static String textToJsonString(Text text){
-        return Text.Serialization.toJsonString(text, ItemStackUtils.delegate());
+        if(text == null)return null;
+        try{
+            var re = TextCodecs.CODEC.encodeStart(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), text).getOrThrow(JsonParseException::new);
+            return GSON.toJson(re);
+        }catch (Throwable e){
+            return null;
+        }
     }
 
     @ApiMethod
-    public static Text textFromJsonString(String text){
-        return Text.Serialization.fromJson(text, ItemStackUtils.delegate());
+    public static Text textFromJsonString(String jsonRaw){
+        try{
+            if(jsonRaw == null)return null;
+            JsonElement jsonElement = JsonParser.parseString(jsonRaw);
+            return jsonElement == null ? null : TextCodecs.CODEC.parse(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), jsonElement).getOrThrow(JsonParseException::new);
+        }catch (Throwable e){
+            return null;
+        }
     }
 }

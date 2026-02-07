@@ -73,7 +73,7 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
     }
     public static ListRegistryMultiSelectWidget<Enchantment> enchant(Set<Enchantment> currentSelect, int x, int y, int dx, int dy, int height){
         return new ListRegistryMultiSelectWidget<>(
-            ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT), currentSelect,
+            ItemStackUtils.registry().getOptional(RegistryKeys.ENCHANTMENT).orElseThrow(), currentSelect,
             (item -> item.description().getString()),
             (trp, attr)->new RegistryDisplayRender(new ItemStack(Items.ENCHANTED_BOOK),
                 trp.getC().description(), trp.getB()),
@@ -94,7 +94,7 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
             return (ListRegistryMultiSelectWidget<T>) item((Set) currentSelect, x, y, dx, dy, height);
         }else if(registry == Registries.ATTRIBUTE){
             return (ListRegistryMultiSelectWidget<T>) attribute((Set) currentSelect, x, y, dx, dy, height);
-        }else if(registry == ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT)){
+        }else if(registry == ItemStackUtils.registry().getOptional(RegistryKeys.ENCHANTMENT).orElseThrow()){
             return (ListRegistryMultiSelectWidget<T>) enchant((Set)currentSelect, x, y, dx, dy, height);
         }else {
             return new ListRegistryMultiSelectWidget<>(

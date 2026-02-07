@@ -3,6 +3,7 @@ package me.matl114.mixins.fix;
 import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.ParentElement;
 import org.jetbrains.annotations.Nullable;
@@ -18,7 +19,7 @@ public interface ParentElementButtonFixMixin {
     @Shadow public abstract void setFocused(@Nullable Element focused);
 
     @Inject(method = "mouseClicked",at=@At( "RETURN"))
-    default void mouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+    default void mouseClicked(Click click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         boolean returnValue=cir.getReturnValueZ();
         if( !returnValue ){
            // Debug.info("miss!");

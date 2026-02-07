@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.events.Listener;
@@ -98,7 +100,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
 
     @Unique
     private boolean worldChangeOnRespawn = false;
-    @Inject(method = "onPlayerRespawn", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;<init>(Lnet/minecraft/client/network/ClientPlayNetworkHandler;Lnet/minecraft/client/world/ClientWorld$Properties;Lnet/minecraft/registry/RegistryKey;Lnet/minecraft/registry/entry/RegistryEntry;IILjava/util/function/Supplier;Lnet/minecraft/client/render/WorldRenderer;ZJ)V", shift = At.Shift.AFTER))
+    @Inject(method = "onPlayerRespawn", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;<init>(Lnet/minecraft/client/network/ClientPlayNetworkHandler;Lnet/minecraft/client/world/ClientWorld$Properties;Lnet/minecraft/registry/RegistryKey;Lnet/minecraft/registry/entry/RegistryEntry;IILnet/minecraft/client/render/WorldRenderer;ZJI)V", shift = At.Shift.AFTER))
     private void onPlayerSwitchDimension0(PlayerRespawnS2CPacket packet, CallbackInfo ci){
         worldChangeOnRespawn = true;
     }
@@ -112,11 +114,10 @@ public abstract class ClientPlayNetworkHandlerEvents {
         Listener.getThisPlayerSpawnPoint().broadcast(MinecraftClient.getInstance().player);
     }
 
-    @Redirect(method = "onPlayerPositionLook", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setVelocity(DDD)V"))
-    private void onTeleportConfirmVelocityUpdate(PlayerEntity instance, double v, double v2, double v3){
+    @WrapOperation(method = "setPosition", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V"))
+    private static void onTeleportConfirmVelocityUpdate(Entity instance, Vec3d vec3d, Operation<Void> original){
         //disable velocity resync
         //fixme: turn this into Event
-        Vec3d vec3d = new Vec3d(v, v2, v3);
         if(!Listener.getTeleportConfirmVelocityUpdatePoint().isEmpty()){
             Event<Vec3d> vcUpdate = new Event<>(vec3d, true, true);
             Listener.getTeleportConfirmVelocityUpdatePoint().handleValue(vcUpdate);
@@ -125,8 +126,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
             }
             vec3d = vcUpdate.context();
         }
-        instance.setVelocity(vec3d);
-//        MovTasks.configurateTeleportBackVelocityUpdate(instance, new Vec3d(v, v2, v3));
+        original.call(instance, vec3d);
     }
 
 
@@ -148,7 +148,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
             float yaw = override == null ? playerEntity.getYaw(): override.y;
             boolean onGround = eventContext.oGroundOverride() == null? playerEntity.isOnGround(): eventContext.oGroundOverride();
             //send and cancel
-            this.getConnection().send(new PlayerMoveC2SPacket.Full(eventContext.vec3d().x, eventContext.vec3d().y, eventContext.vec3d().z, yaw, pitch, onGround));
+            this.getConnection().send(new PlayerMoveC2SPacket.Full(eventContext.vec3d().x, eventContext.vec3d().y, eventContext.vec3d().z, yaw, pitch, onGround, false));
 
             ci.cancel();
         }
@@ -171,20 +171,19 @@ public abstract class ClientPlayNetworkHandlerEvents {
         Listener.getOtherPlayerExitPoint().broadcast(playerListEntry);
     }
 
-    @Redirect(method = "onEntityVelocityUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocityClient(DDD)V"))
-    private void onEntityVelocityUpdate(Entity instance, double x, double y, double z){
+    @Redirect(method = "onEntityVelocityUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocityClient(Lnet/minecraft/util/math/Vec3d;)V"))
+    private void onEntityVelocityUpdate(Entity instance, Vec3d vec3d){
         if(!Listener.getEntityClientVelocityUpdate().isEmpty()){
-            Vec3d vec3d = new Vec3d(x, y, z);
             Event<Vec3d> vcUpdate = new Event<>(vec3d  , true, true, instance);
             Listener.getEntityClientVelocityUpdate().handleValue(vcUpdate);
             if(vcUpdate.isCancelled()){
                 return;
             }else{
                 Vec3d vec3d1 = vcUpdate.context();
-                instance.setVelocityClient(vec3d1.getX(), vec3d1.getY(), vec3d1.getZ());
+                instance.setVelocityClient(vec3d1);
             }
         }else {
-            instance.setVelocityClient(x, y, z);
+            instance.setVelocityClient(vec3d);
         }
     }
 

@@ -54,7 +54,7 @@ public class PageSwitchSubScreen  extends SubScreenWidget {
         super(x, y, dx, dy);
         this.pageSwitchCallback = pageSwitchCallback;
         this.pageHeight = pageHeight;
-        initPageButton();;
+        initPageButton();
     }
     protected void hoverInputPageWidget(){
         AttrKeyValue<Integer> clampedValue = AttrKeyValue.clampedInt("输入页数", this.page, 1, this.maxPage);
@@ -62,7 +62,6 @@ public class PageSwitchSubScreen  extends SubScreenWidget {
             (dx - 96)/2 , (this.pageHeight - 30)/2 ,96, 30, 64
             )
                 .setFinishRunning(()->this.hovering.setContentDelegate(null))
-                .setExtraDepth(500)
         );
     }
     protected void hoverInputCallback(AttrKeyValue<Integer> val){
@@ -90,7 +89,7 @@ public class PageSwitchSubScreen  extends SubScreenWidget {
             .addToSub(this);
         //应该在当前组件中的优先级最低
         hovering = new ContentDelegateWidget<>(0,0, dx, dy)
-            .addToSub(this)
+            .addToSub(this, 500)
         ;
     }
 

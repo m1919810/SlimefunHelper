@@ -13,12 +13,15 @@ import me.matl114.hacks.modules.slimefun.*;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.*;
+import me.matl114.versioned.api.VItem;
+import me.matl114.versioned.api.VNbt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.recipe.*;
 import net.minecraft.registry.Registries;
@@ -124,8 +127,8 @@ public class SlimefunTasks {
     private static void initIcon(){
         ItemStack ICON;
         try {
-            ICON = ItemStack.fromNbtOrEmpty(ItemStackUtils.registry(), StringNbtReader.parse( "{Count:1b,id:\"minecraft:enchanted_book\",tag:{CustomModelData:2200001,PublicBukkitValues:{\"slimefun:slimefun_guide_mode\":\"SURVIVAL_MODE\"},display:{Lore:['{\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"浏览物品\"}],\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"Shift + 右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"打开 设置 / 关于\"}],\"text\":\"\"}'],Name:'{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"green\",\"text\":\"Slimefun 指南 \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"(箱子界面)\"}],\"text\":\"\"}'}}}"));
-        } catch (CommandSyntaxException e) {
+            ICON = VItem.getInstance().fromNbt((NbtCompound) VNbt.getInstance().readNbt("{Count:1b,id:\"minecraft:enchanted_book\",tag:{CustomModelData:2200001,PublicBukkitValues:{\"slimefun:slimefun_guide_mode\":\"SURVIVAL_MODE\"},display:{Lore:['{\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"浏览物品\"}],\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"Shift + 右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"打开 设置 / 关于\"}],\"text\":\"\"}'],Name:'{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"green\",\"text\":\"Slimefun 指南 \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"(箱子界面)\"}],\"text\":\"\"}'}}}"));
+        } catch (Throwable e) {
             Debug.info("Icon deserialize failure");
             ICON = new ItemStack(Items.ENCHANTED_BOOK);
         }
@@ -298,41 +301,6 @@ public class SlimefunTasks {
         int[] playerInv = InvTasks.getPlayerInventorySlots(screen).toIntArray();
         InvTasks.moveRecipePatternToContainer(screen, ingredients, acceptSlots, amount, removeOrigin, ((screen1, itemStack) -> getItemStackMatchingSlot(screen1, itemStack, true, playerInv)));
     }
-
-    public static RecipeIngredient[] transfer3x3RecipeDisplay(RecipeTasks.RecipeRecord recipeRecord){
-        return recipeRecord.ingredients();
-    }
-    public static RecipeIngredient[] transfer3x3RecipeDisplay(Recipe<?> instance, RecipeIngredient[] ingred){
-
-        RecipeIngredient[] ingredients = new RecipeIngredient[9];
-
-        if(instance instanceof ShapedRecipe shaped){
-            List<Ingredient> raw = shaped.getIngredients();
-            int width = shaped.getWidth();
-            int height = shaped.getHeight();
-            for (int i=0; i< 3; ++i){
-                for(int j = 0; j< 3; ++j){
-                    if(i < height && j < width){
-                        ingredients[3*i + j] = new RecipeIngredient( raw.get(width * i + j).getMatchingStacks());
-                    }else {
-                        ingredients[3*i + j] = RecipeIngredient.EMPTY;
-                    }
-                }
-            }
-        }else {
-            System.arraycopy(ingred, 0, ingredients, 0, ingred.length);
-            for (int i = ingred.length; i<9 ; ++i){
-                ingredients[i] = RecipeIngredient.EMPTY;
-            }
-        }
-        return ingredients;
-    }
-
-
-
-
-
-
 
     static{
         Tasks.scheduleDelayed(()->{

@@ -4,6 +4,7 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Text;
@@ -35,7 +36,7 @@ public class KeepInv extends BaseModule {
         if(player!=null){
             ClientPlayerAccess access=ClientPlayerAccess.of(player);
             access.clearKeepedInventory(true);
-            player.sendMessage(Text.literal("已清除界面历史记录"));
+            Debug.chat(Text.literal("已清除界面历史记录"));
         }
 
     }

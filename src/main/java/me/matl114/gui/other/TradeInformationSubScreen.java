@@ -9,6 +9,7 @@ import me.matl114.hacks.modules.inv.FastCraft;
 import me.matl114.managers.TaskManagers;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.InventoryUtils;
+import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
@@ -42,7 +43,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
     public TradeOffer getCurrentTrade(){
         MerchantScreenAccess access = MerchantScreenAccess.of(this.screen);
         int index = access.getSelectedIndex();
-        TradeOfferList list = this.screen.getScreenHandler().getRecipes();;
+        TradeOfferList list = this.screen.getScreenHandler().getRecipes();
         if(index < 0 || index >= list.size()){
             return null;
         }else{
@@ -122,7 +123,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
         ExecutableWidget.instance(3 * (SLOT_WIDTH + 2) + TRADE_ICON_WIDTH  + 1, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
             .setElementHandler(
                 new ButtonElement(TextProvider.of(LABEL_TRADE), ButtonAction.run(()->{
-                    if(Screen.hasShiftDown()){
+                    if(ScreenUtils.hasShiftDown()){
                         craft();
                     }else {
                         place();

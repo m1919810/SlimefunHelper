@@ -23,6 +23,7 @@ public abstract class InGameHudMixin {
     @Shadow
     @Final
     private DebugHud debugHud;
+    @Shadow @Final private MinecraftClient client;
     @Unique
     private boolean tmpValue3;
     @Unique
@@ -37,10 +38,10 @@ public abstract class InGameHudMixin {
         if(RenderTasks.getRenderExtra().noWurstHud.get()){
             this.tmpValue3 = true;
             this.tmpValue2 = MinecraftClient.getInstance().options.hudHidden;
-            MinecraftClient.getInstance().options.hudHidden = false;
-            if(!debugHud.shouldShowDebugHud()){
+            client.options.hudHidden = false;
+            if(!this.client.debugHudEntryList.isF3Enabled()){
                 this.tmpValue = true;
-                debugHud.toggleDebugHud();
+                this.client.debugHudEntryList.setF3Enabled(true);
             }else {
                 this.tmpValue = false;
             }
@@ -50,9 +51,9 @@ public abstract class InGameHudMixin {
     private void resetHudData(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci){
         if(tmpValue3){
             tmpValue3 = false;
-            MinecraftClient.getInstance().options.hudHidden = this.tmpValue2;
+            client.options.hudHidden = this.tmpValue2;
             if(this.tmpValue){
-                debugHud.toggleDebugHud();
+                client.debugHudEntryList.setF3Enabled(false);
             }
         }
     }

@@ -7,6 +7,7 @@ import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.TypedEntityData;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
@@ -99,8 +100,8 @@ public class EntityUtils {
     }
     public static EntityType<?> getStoredEntityType(ItemStack stack){
         if(stack != null && stack.getItem() instanceof BlockItem block && block.getBlock() instanceof SpawnerBlock spawner && ItemStackUtils.hasInPatch(stack, DataComponentTypes.BLOCK_ENTITY_DATA)){
-            NbtComponent component = ItemStackUtils.getInPatch(stack, DataComponentTypes.BLOCK_ENTITY_DATA);
-            return getSpawnerEntityType(component.getNbt());
+            TypedEntityData<?> component = ItemStackUtils.getInPatch(stack, DataComponentTypes.BLOCK_ENTITY_DATA);
+            return getSpawnerEntityType(component.getNbtWithoutId());
         }
         return null;
     }
@@ -108,11 +109,11 @@ public class EntityUtils {
         return spawnerCompound == null? null: Registries.ENTITY_TYPE.getOrEmpty(getSpawnedEntityId(spawnerCompound, "SpawnData")).orElse(null);
     }
     public static Identifier getSpawnedEntityId(NbtCompound nbt, String spawnDataKey) {
-        if (nbt.contains(spawnDataKey, 10)) {
+        if (nbt.contains(spawnDataKey)) {
             if(nbt.get(spawnDataKey) instanceof NbtCompound cp1){
                 if(cp1.get("entity") instanceof NbtCompound cp2){
                     if(cp2.get("id") instanceof NbtString nbt3){
-                        String string = nbt3.asString();
+                        String string = nbt3.value();
                         if(string != null && !string.isEmpty()){
                             return Identifier.tryParse(string);
                         }

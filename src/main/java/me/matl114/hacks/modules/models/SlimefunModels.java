@@ -9,8 +9,8 @@ import me.matl114.managers.config.ListRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.events.Event;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.util.ModelIdentifier;
+import me.matl114.versioned.api.VItem;
+import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.ItemStack;
@@ -66,7 +66,7 @@ public class SlimefunModels extends BaseModule {
         registerListener(RenderListener.getCustomModelOverride(), this::onModelOverride);
         registerListener(RenderListener.getItemDataOverrideForModel(), this::onItemOverride);
     }
-    private final Map<ModelIdentifier, Optional<BakedModel>> modelCache = new HashMap<>();
+    private final Map<Identifier, Optional<ItemModel>> modelCache = new HashMap<>();
     public void onResourceReload(Event<ResourceManager> resourceManager) {
         customModelDatas.clear();
         modelCache.clear();
@@ -85,7 +85,7 @@ public class SlimefunModels extends BaseModule {
         }
     }
 
-    public void onModelOverride(Event<BakedModel> event) {
+    public void onModelOverride(Event<ItemModel> event) {
         if(event.context != null)return;
 
         if(enableModel.get()){
@@ -105,7 +105,7 @@ public class SlimefunModels extends BaseModule {
                     if(namespaceCheck.length>=2){
                         namespace=namespaceCheck[0];
                     }
-                    Optional<BakedModel> modelOptional = modelCache.computeIfAbsent(ModelIdentifier.ofInventoryVariant(new Identifier(namespace,itemModel)), RenderListener::getOptionalModelOf);
+                    Optional<ItemModel> modelOptional = modelCache.computeIfAbsent(new Identifier(namespace,itemModel), RenderListener::getOptionalModelOf);
                     if(modelOptional.isPresent()){
                         event.context(modelOptional.get());
                         return;
@@ -118,9 +118,9 @@ public class SlimefunModels extends BaseModule {
             try{
                 String id = ItemStackUtils.getSfId(nbt);
                 if(id!=null ){
-                    ModelIdentifier identifier = customItemModels.get(id);
+                    Identifier identifier = customItemModels.get(id);
                     if(identifier != null){
-                        Optional<BakedModel> modelOptional = modelCache.computeIfAbsent(identifier, RenderListener::getOptionalModelOf);
+                        Optional<ItemModel> modelOptional = modelCache.computeIfAbsent(identifier, RenderListener::getOptionalModelOf);
                         if(modelOptional.isPresent()){
                             event.context(modelOptional.get());
                             return;
@@ -153,7 +153,7 @@ public class SlimefunModels extends BaseModule {
 
 
     private final Map<String, CustomModelDataComponent> customModelDatas = new HashMap<>();
-    private final Map<String, ModelIdentifier> customItemModels = new HashMap<>();
+    private final Map<String, Identifier> customItemModels = new HashMap<>();
     private static final String OUR_NAMESPACE = "slimefunhelper";
 
 
@@ -170,7 +170,7 @@ public class SlimefunModels extends BaseModule {
                     try{
                         int cmd=(Integer) entry.getValue();
                         if(cmd != 0){
-                            customModelDatas.put(entry.getKey(), new CustomModelDataComponent(cmd));
+                            customModelDatas.put(entry.getKey(), VItem.getInstance().createModelData(cmd));
                         }
                     }catch(ClassCastException e){
                         Debug.info("Custom Model data could not be loaded :",entry.getKey());
@@ -217,15 +217,15 @@ public class SlimefunModels extends BaseModule {
                             //Debug.info(shouldId);
                             Identifier fullPathId = new Identifier(realNamespace,realPath);
                             Identifier shouldModelId="item".equals(splits[0])?new Identifier(realNamespace,String.join("/",Arrays.copyOfRange(splits, 1, splits.length)))  :fullPathId;
-                            ModelIdentifier wrappedId = RenderListener.wrapAsModModel(fullPathId);
 
 //                            if(OUR_NAMESPACE.equals(namespace)){
 //                                Debug.info("try test slimefun item model",shouldModelId);
 //                            }
+                            //todo: need test. need test need test need test need test
                             if(predicate.test(shouldModelId.toString())){
                                 //custom item
                                 Debug.info("load custom slimefun item model:",shouldModelId);
-                                customItemModels.put(splits[splits.length-1].toUpperCase(Locale.ROOT), wrappedId);
+                                customItemModels.put(splits[splits.length-1].toUpperCase(Locale.ROOT), fullPathId);
                             }
 
                             if(Registries.ITEM.get(shouldId)== Items.AIR){

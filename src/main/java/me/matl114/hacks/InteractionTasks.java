@@ -28,7 +28,7 @@ public class InteractionTasks {
     public static void placeBlock(Hand hand, BlockHitResult result){
         ActionResult actionResult2 = mc.interactionManager.interactBlock(mc.player, hand, result);
         if (actionResult2.isAccepted()) {
-            if (actionResult2.shouldSwingHand()) {
+            if (((ActionResult.Success)actionResult2).swingSource() == ActionResult.SwingSource.CLIENT) {
                 mc.player.swingHand(hand);
             }
             return;

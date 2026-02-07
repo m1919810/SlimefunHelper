@@ -4,6 +4,7 @@ import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.utils.config.PropertyTracker;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
@@ -20,7 +21,7 @@ public class McWidgetHelpers {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     public static ContentDelegateWidget<EditBoxWidget> createMultiLineEditBox(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin){
         return createEnhancedMultiLine(x, y, dx, dy, valueTracker, origin, null);
-//        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());;
+//        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());
 //        widget.setText(origin);
 //        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
 //        return new ContentDelegateWidget<>(0,0, 0,0)
@@ -28,7 +29,7 @@ public class McWidgetHelpers {
     }
     public static ContentDelegateWidget<EditBoxWidget> createMultiLineEditBox(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin, ColorProvider boxColorProvider){
         return createEnhancedMultiLine(x, y, dx, dy, valueTracker, origin, boxColorProvider);
-//        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());;
+//        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());
 //        widget.setText(origin);
 //        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
 //        return new ContentDelegateWidget<>(0,0, 0,0)
@@ -75,12 +76,6 @@ public class McWidgetHelpers {
         }
         context.fill(x + 1, y + 1, x + width - 1, y + height - 1, -16777216);
     }
-    public static void drawHighLightBox(DrawContext context, int x, int y, int width, int height, int color){
-        context.fill(x, y, x+ 1, y+height, color);
-        context.fill(x, y, x +width, y+1, color);
-        context.fill(x + width -1, y, x + width, y + height, color);
-        context.fill(x, y + height - 1, x + width, y + height, color);
-    }
 
 
     public static <T> ContentDelegateWidget<TextFieldWidget> createEnhancedTextBox(int x, int y, int dx, int dy, PropertyTracker<T, String> valueTracker, String origin, ColorProvider boxColorProvider){
@@ -93,7 +88,10 @@ public class McWidgetHelpers {
         return new TextContentDelegateWidget<>(x, y, textFieldWidget);
     }
     public static <T> ContentDelegateWidget<EditBoxWidget> createEnhancedMultiLine(int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin, ColorProvider boxColorProvider){
-        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());;
+        EditBoxWidget widget = EditBoxWidget.builder()
+            .x(x).y(y)
+            .placeholder(Text.empty())
+            .build(mc.textRenderer,  dx, dy, Text.empty());
         widget.setText(origin);
         widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
         if(boxColorProvider != null){

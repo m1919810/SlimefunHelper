@@ -60,8 +60,4 @@ public class TestingScreen2 extends SlimefunScreen {
 //            .addTo(this);
     }
 
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
-    }
 }

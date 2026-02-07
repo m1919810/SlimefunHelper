@@ -1,5 +1,7 @@
 package me.matl114.utils;
 
+import com.google.common.collect.LinkedHashMultimap;
+import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
 import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.versioned.api.VHideFlag;
@@ -13,9 +15,8 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 
 public class CustomItemStackBuilder {
@@ -78,12 +79,12 @@ public class CustomItemStackBuilder {
     }
 
     public CustomItemStackBuilder skullHash(String hash){
-        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, new ProfileComponent(Optional.empty(), Optional.empty(), BukkitItemStackUtils.buildPropertyMap(new PropertyMap(), hash)));
+        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, ProfileComponent.ofStatic(new GameProfile(UUID.nameUUIDFromBytes(hash.getBytes(StandardCharsets.UTF_8)), "CS-CoreLib", BukkitItemStackUtils.buildPropertyMap(new PropertyMap(LinkedHashMultimap.create()), hash)) ));
         return this;
     }
 
     public CustomItemStackBuilder skullOwner(String owner){
-        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, new ProfileComponent(Optional.of(owner), Optional.empty(), new PropertyMap()));
+        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, ProfileComponent.ofDynamic(owner));
         return this;
     }
 

@@ -39,8 +39,8 @@ public abstract class ClientPacketListenerMixin {
     private void onInventorySyncToKeeped(InventoryS2CPacket packet, CallbackInfo ci) {
         if(MinecraftClient.getInstance().player!=null){
             ClientPlayerAccess access=ClientPlayerAccess.of(MinecraftClient.getInstance().player);
-            if (access.getKeepedInvHandler()!=null&& packet.getSyncId() == access.getKeepedInvHandler().syncId ) {
-                access.getKeepedInvHandler().updateSlotStacks(packet.getRevision(),packet.getContents(),packet.getCursorStack());
+            if (access.getKeepedInvHandler()!=null&& packet.syncId() == access.getKeepedInvHandler().syncId ) {
+                access.getKeepedInvHandler().updateSlotStacks(packet.revision(),packet.contents(),packet.cursorStack());
             }
         }
     }

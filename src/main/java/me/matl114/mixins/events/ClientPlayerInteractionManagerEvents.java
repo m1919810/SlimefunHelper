@@ -5,6 +5,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -20,8 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ClientPlayerInteractionManagerEvents {
 
     @Inject(method = "clickRecipe",at = @At("HEAD"))
-    public void onClickRecipe(int syncId, RecipeEntry<?> recipe, boolean craftAll, CallbackInfo ci){
-        Listener.getClickCraftingRecipe().broadcast(recipe);
+    public void onClickRecipe(int syncId, NetworkRecipeId recipeId, boolean craftAll, CallbackInfo ci){
+        Listener.getClickCraftingRecipe().broadcast(recipeId);
     }
     @Inject(method = "interactBlock", at = @At(value = "HEAD"))
     public void onPreInteractBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir){

@@ -21,10 +21,16 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
     private void onScreenClsoe(CallbackInfo ci){
         Listener.getPostCloseScreen().broadcast((Screen) (AbstractParentElement)this);
     }
-    @Inject(method = "init(Lnet/minecraft/client/MinecraftClient;II)V", at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/screen/Screen;screenInitialized:Z", ordinal = 1, shift = At.Shift.BEFORE))
-    public void onPostInitialization(MinecraftClient client, int width, int height, CallbackInfo ci){
+    @Inject(method = "init(II)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;setInitialFocus()V", shift = At.Shift.BEFORE))
+    public void onPostInitialization(int width, int height, CallbackInfo ci){
+        //first initialize
         Listener.getPostInitializeScreen().broadcast((Screen) (AbstractParentElement)this);
     }
+    @Inject(method = "clearAndInit", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;setInitialFocus()V", shift = At.Shift.BEFORE))
+    public void onClearAndInit(CallbackInfo ci){
+        Listener.getPostInitializeScreen().broadcast((Screen) (AbstractParentElement)this);
+    }
+
     @Unique
     public MetaData metaData;
     @Unique

@@ -50,3 +50,22 @@ accessible field net/minecraft/client/world/ClientChunkManager chunks Lnet/minec
 accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap chunks Ljava/util/concurrent/atomic/AtomicReferenceArray;
 accessible field net/minecraft/client/gui/widget/ScrollableWidget scrollbarDragged Z
 accessible field net/minecraft/network/ClientConnection channel Lio/netty/channel/Channel;
+accessible field net/minecraft/client/Mouse activeButton Lnet/minecraft/client/input/MouseInput;
+accessible method net/minecraft/client/Mouse modifyMouseInput (Lnet/minecraft/client/input/MouseInput;Z)Lnet/minecraft/client/input/MouseInput;
+accessible field net/minecraft/client/Mouse lastMouseClick Lnet/minecraft/client/Mouse$MouseClickTime;
+accessible class net/minecraft/client/Mouse$MouseClickTime
+accessible field net/minecraft/client/Mouse lastMouseButton I
+accessible method net/minecraft/client/gui/DrawContext drawTexturedQuad (Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIIFFFFI)V
+
+
+
+accessible method net/minecraft/client/Keyboard onKey (JILnet/minecraft/client/input/KeyInput;)V
+accessible field net/minecraft/client/recipebook/ClientRecipeBook recipes Ljava/util/Map;
+
+accessible field net/minecraft/client/render/GameRenderer guiState Lnet/minecraft/client/gui/render/state/GuiRenderState;
+accessible field net/minecraft/client/render/GameRenderer guiRenderer Lnet/minecraft/client/gui/render/GuiRenderer;
+accessible field net/minecraft/client/render/GameRenderer fogRenderer Lnet/minecraft/client/render/fog/FogRenderer;
+accessible field net/minecraft/client/render/GameRenderer pool Lnet/minecraft/client/util/Pool;
+
+accessible class net/minecraft/network/PacketApplyBatcher$Entry
+accessible field net/minecraft/client/gui/DrawContext tooltipDrawer Ljava/lang/Runnable;

@@ -51,7 +51,7 @@ public class ListRegistrySelectWidget<T> extends ListSelectWidget<Triplet<String
     }
     public static ListRegistrySelectWidget<Enchantment> enchant(int x, int y, int dx, int dy, int height){
         return new ListRegistrySelectWidget<>(
-            ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT),
+            ItemStackUtils.registry().getOptional(RegistryKeys.ENCHANTMENT).orElseThrow(),
             (item -> item.description().getString()),
             (trp)->new RegistryDisplayRender(new ItemStack(Items.ENCHANTED_BOOK),
                 trp.getC().description(), trp.getB()),
@@ -72,7 +72,7 @@ public class ListRegistrySelectWidget<T> extends ListSelectWidget<Triplet<String
             return (ListRegistrySelectWidget<T>) item(x, y, dx, dy, height);
         }else if(registry == Registries.ATTRIBUTE){
             return (ListRegistrySelectWidget<T>) attribute(x, y, dx, dy, height);
-        }else if(registry == ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT)){
+        }else if(registry == ItemStackUtils.registry().getOptional(RegistryKeys.ENCHANTMENT).orElseThrow()){
             return (ListRegistrySelectWidget<T>) enchant(x, y, dx, dy, height);
         }else {
             return new ListRegistrySelectWidget<>(

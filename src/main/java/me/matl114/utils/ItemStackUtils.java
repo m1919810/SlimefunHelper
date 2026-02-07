@@ -6,7 +6,8 @@ import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.versioned.api.VHideFlag;
-import me.matl114.versioned.impl.TooltipHideFlag_v1_21_1;
+import me.matl114.versioned.api.VItem;
+import me.matl114.versioned.impl.TooltipHideFlag_v1_21_11;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
 import net.minecraft.component.ComponentType;
@@ -44,7 +45,7 @@ public class ItemStackUtils {
 
 
     public static VHideFlag[] getHideFlags(){
-        return TooltipHideFlag_v1_21_1.values();
+        return TooltipHideFlag_v1_21_11.values();
     }
 
 
@@ -528,7 +529,7 @@ public class ItemStackUtils {
         return nbt0;
     }
     public static String getSfIdFromBukkitValues(NbtCompound ntb){
-        return ntb == null? null: (ntb.get(SLIMEFUN_ID_PATH) instanceof NbtString nbtString ? nbtString.asString() : null);
+        return ntb == null? null: (ntb.get(SLIMEFUN_ID_PATH) instanceof NbtString nbtString ? nbtString.value() : null);
     }
     public static String getSfId(NbtCompound nbt){
         NbtCompound bukkitValues=getBukkitValue(nbt);
@@ -567,16 +568,14 @@ public class ItemStackUtils {
 
 
     public static void setCustomModelData(ItemStack stack,int customModelData){
-        setOrRemoveChange(stack, CUSTOM_MODEL_DATA, new CustomModelDataComponent(
-            List.<Float>of((float)customModelData), List.of(), List.of(), List.of()
-
-        ));
+        setOrRemoveChange(stack, CUSTOM_MODEL_DATA, VItem.getInstance().createModelData(customModelData));
     }
 
 
     public static int getEnchantmentLevel(ItemEnchantmentsComponent component, RegistryKey<Enchantment> key){
-        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().getOrThrow(RegistryKeys.ENCHANTMENT);
-        return component.getLevel (enchantmentRegistry.getOptional(Enchantments.SHARPNESS).orElse(null));
+        var enchantmentRegistry = ItemStackUtils.registry().getWrapperOrThrow(RegistryKeys.ENCHANTMENT);
+        return component.getLevel (enchantmentRegistry.getOrThrow(key));
     }
+
 
 }

@@ -16,10 +16,10 @@ public abstract class KeyBindingMixin implements KeyBindAccess {
     @Unique
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     public void resetKeyState(){
-        long handle =  mc.getWindow().getHandle();
+        var handle =  mc.getWindow();
         int  code = boundKey.getCode();
         if(boundKey.getCategory() == InputUtil.Type.MOUSE)
-            setPressed(GLFW.glfwGetMouseButton(handle, code) == 1);
+            setPressed(GLFW.glfwGetMouseButton(handle.getHandle(), code) == 1);
         else
             setPressed(InputUtil.isKeyPressed(handle, code));
     }

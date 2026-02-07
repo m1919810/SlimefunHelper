@@ -1,12 +1,17 @@
 package me.matl114.gui.other;
 
 import lombok.Getter;
+import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
+import me.matl114.versioned.api.VDrawContext;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.PressableWidget;
+import net.minecraft.client.input.AbstractInput;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
@@ -27,7 +32,7 @@ public class BeaconEffectSelectButton extends PressableWidget {
     int currentIndex = 0;
     @Getter
     RegistryEntry<StatusEffect> currentEffect ;
-    Sprite currentSprite;
+    Identifier currentSprite;
     private void updateCurrentEffect(){
         currentIndex %= (SIZE +1);
         if(currentIndex == 0){
@@ -35,7 +40,7 @@ public class BeaconEffectSelectButton extends PressableWidget {
             this.currentSprite = null;
         }else {
             this.currentEffect = EFFECTS_BEACON.get(currentIndex -1);
-            this.currentSprite = MinecraftClient.getInstance().getStatusEffectSpriteManager().getSprite(this.currentEffect);
+            this.currentSprite = InGameHud.getEffectTexture(this.currentEffect);
         }
         setTooltip(Tooltip.of(getNarrationMessage()));
     }
@@ -45,12 +50,13 @@ public class BeaconEffectSelectButton extends PressableWidget {
     }
 
     @Override
-    public void onPress() {
-        currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (Screen.hasShiftDown()? -1 : 1);
+    public void onPress(AbstractInput input) {
+        currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (ScreenUtils.hasShiftDown()? -1 : 1);
         updateCurrentEffect();
     }
 
-    public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+    @Override
+    protected void drawIcon(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         Identifier identifier;
         if (this.isSelected()) {
             identifier = BUTTON_HIGHLIGHTED_TEXTURE;
@@ -58,15 +64,19 @@ public class BeaconEffectSelectButton extends PressableWidget {
             identifier =BUTTON_TEXTURE;
         }
 
-        context.drawGuiTexture(identifier, this.getX(), this.getY(), this.width, this.height);
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, identifier, this.getX(), this.getY(), this.width, this.height);
         this.renderExtra(context);
+    }
+
+    public void renderWidget(VDrawContext context, int mouseX, int mouseY, float delta) {
+
     }
 
     protected void renderExtra(DrawContext context){
         if(this.currentSprite != null){
-            context.drawSprite(this.getX() + 2, this.getY() + 2, 0, 18, 18, this.currentSprite);
+            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, this.currentSprite, this.getX() + 2, this.getY() + 2, 0, 18, 18);
         }else {
-            context.drawGuiTexture(NO_PATH, this.getX() + 2, this.getY() + 2, 18, 18);
+            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, NO_PATH, this.getX() + 2, this.getY() + 2, 18, 18);
         }
     }
 

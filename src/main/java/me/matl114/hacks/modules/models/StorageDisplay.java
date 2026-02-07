@@ -14,7 +14,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.events.Event;
-import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -168,16 +168,16 @@ public class StorageDisplay extends BaseModule {
         }
     }
 
-    public void onGceChickenModel(Event<BakedModel> bakedModelEvent){
-        if(bakedModelEvent.context() != null)return;
+    public void onGceChickenModel(Event<ItemModel> IItemModelEvent){
+        if(IItemModelEvent.context() != null)return;
         if(isActive()){
-            ItemStack stack = bakedModelEvent.getArgs(0);
+            ItemStack stack = IItemModelEvent.getArgs(0);
             String optionalChicken = handlePureChickenDNAInfo(stack);
             if(optionalChicken!=null ){
                 String val = dnaInfo.get(optionalChicken);
                 if(val != null){
                     RenderListener.getModModel(new Identifier("slimefunhelper","gce/"+val))
-                        .ifPresent(bakedModelEvent::context);
+                        .ifPresent(IItemModelEvent::context);
                 }
             }
         }
@@ -295,12 +295,12 @@ public class StorageDisplay extends BaseModule {
             if(tag!=null){
                 if(tag.contains(FINALTECH_STORAGE_ITEM_OLD)){
                     if (tag.get(FINALTECH_STORAGE_ITEM_OLD) instanceof NbtString nbtString) {
-                        String config = nbtString.asString();
+                        String config = nbtString.value();
                         return BukkitConfigDeserializor.deserializeItemFromString(config);
                     }
                 }else if(tag.contains(FINALTECH_STORAGE_ITEM_NEW)){
                     if (tag.get(FINALTECH_STORAGE_ITEM_NEW) instanceof NbtString nbtString) {
-                        String config = nbtString.asString();
+                        String config = nbtString.value();
                         return BukkitConfigDeserializor.deserializeItemFromString(config);
                     }
                 }

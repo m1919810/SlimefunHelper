@@ -1,6 +1,6 @@
 package me.matl114.gui.basic;
 
-import net.minecraft.client.input.KeyCodes;
+import me.matl114.utils.ScreenUtils;
 
 public class BoxElement extends AbstractElement{
     private final ButtonAction action;
@@ -17,7 +17,7 @@ public class BoxElement extends AbstractElement{
     public boolean onKey(ExecutableWidget widget, int keyCode, int scanCode, int modifiers, boolean isPress) {
         //add shift-press-trigger-press feature
         if(this.action != null && widget.isSelected()){
-            if(KeyCodes.isToggle(keyCode)){
+            if(ScreenUtils.isToggle(keyCode)){
                 return this.action.onClick(this, widget, 0);
             }
         }

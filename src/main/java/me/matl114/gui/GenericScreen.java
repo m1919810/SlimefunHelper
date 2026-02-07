@@ -2,8 +2,10 @@ package me.matl114.gui;
 
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 
 import java.util.Iterator;
@@ -66,22 +68,26 @@ public class GenericScreen extends Screen {
     }
     protected Draggable draggingElement = null;
 
+
+    protected boolean doubleClicking = false;
+
+
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if(button == 0 && draggingElement != null){
+    public final boolean mouseReleased(Click click) {
+        if(click.button() == 0 && draggingElement != null){
             //stop dragging here
-            draggingElement.releaseDrag(this, mouseX, mouseY);
+            draggingElement.releaseDrag(this, click.x(), click.y());
             draggingElement = null;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(click);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        boolean val = super.mouseClicked(mouseX, mouseY, button);
-        if(button == 0){
+    public final boolean mouseClicked(Click click, boolean input) {
+        boolean val = super.mouseClicked(click, input);
+        if(click.button() == 0){
             for (var iter: this.children()){
-                if(iter instanceof Draggable drag && drag.startDrag(this, mouseX, mouseY)){
+                if(iter instanceof Draggable drag && drag.startDrag(this, click.x(), click.y())){
                     //start drag this element
                     draggingElement = drag;
                     break;
@@ -92,17 +98,16 @@ public class GenericScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        return this.draggingElement != null && button == 0 && this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    public final boolean mouseDragged(Click click, double deltaX, double deltaY) {
+        return this.draggingElement != null && click.button() == 0 && this.draggingElement.mouseDragged(click, deltaX, deltaY);
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
+    public final boolean keyPressed(KeyInput click) {
+        if (super.keyPressed(click)) {
             return true;
             //we mixin the input field of these
             //it will return tru at keyPressed
-        } else if (this.client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
+        } else if (this.client.options.inventoryKey.matchesKey(click)) {
             this.close();
             return true;
         }
@@ -111,9 +116,12 @@ public class GenericScreen extends Screen {
 
     public void resetScreen(){
         //schedule refresh
-        this.initTabNavigation();
+        this.clearAndInit();
         //mc.executeSync(()->this.init(mc,mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight()));
     }
+
+    // ==================================== API compat for higher version ===========================//
+
 
 
 }

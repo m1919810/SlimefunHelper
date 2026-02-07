@@ -6,6 +6,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.events.Event;
+import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityPose;
@@ -67,30 +68,30 @@ public class ElytraExtra extends BaseModule {
     public void handleEntityDataUpdate(Event<DataTracker.SerializedEntry<?>> serializedEntryMutableObject){
         if(serializedEntryMutableObject.isCancelled())return;
         //only when elytra unbreakable do
-        if(enableUnbreakableElytra.get() && serializedEntryMutableObject.extraArgs().length > 0 && serializedEntryMutableObject.extraArgs()[0] instanceof ClientPlayerEntity player && player == mc.player && player.isGliding() && !player.isOnGround() && !player.isTouchingWater() && !player.hasStatusEffect(StatusEffects.LEVITATION)){
+        if(enableUnbreakableElytra.get() && serializedEntryMutableObject.extraArgs().length > 0 && serializedEntryMutableObject.extraArgs()[0] instanceof ClientPlayerEntity player && player == mc.player && player.isFallFlying() && !player.isOnGround() && !player.isTouchingWater() && !player.hasStatusEffect(StatusEffects.LEVITATION)){
             ItemStack itemStack = player.getEquippedStack(EquipmentSlot.CHEST);
             //do all the checks to avoid ghost gliding
             if (VItem.getInstance().canGlide(itemStack) && isUsable(itemStack)) {
                 var val = serializedEntryMutableObject.context();
 
-                if(val.id() == 0){
+                if(val.id() == VDataFlag.ID_FLAGS){
                     byte data = (byte) val.value();
-                    if( (data & (1 << 7 )) == 0){
+                    if( (data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0){
 //                        Debug.info("[data]stop gliding");
                         if(fakeGlideTime > 0){
                             fakeGlideTime -= 1;
                             //cancel stop fallflying
                             // ;
-                            serializedEntryMutableObject.context(new DataTracker.SerializedEntry(val.id(), val.handler(), (byte)(data | (1 << 7))));
+                            serializedEntryMutableObject.context(new DataTracker.SerializedEntry(val.id(), val.handler(), (byte)(data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX))));
                         }
 
                     }else{
 //                        Debug.info("[data]start gliding");
                     }
-                }else if(val.id() == 6){
+                }else if(val.id() == VDataFlag.ID_POSE){
                     //standing pose
                     EntityPose pose = (EntityPose) val.value();
-                    if(fakeGlidePoseTime >0 && pose != EntityPose.GLIDING && player.getPose() == EntityPose.GLIDING){
+                    if(fakeGlidePoseTime >0 && pose != EntityPose.FALL_FLYING && player.getPose() == EntityPose.FALL_FLYING){
                         //cancel pose sync
                         fakeGlidePoseTime -= 1;
 

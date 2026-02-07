@@ -60,7 +60,7 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
     );
     protected static Identifier CANCEL_GUI_TEXTURE = new Identifier("minecraft","container/beacon/cancel");
     private final void init0(){
-        setExtraDepth(1);
+        setBasicDepth(1);
         for (int i=0; i<3; ++i){
             for (int j=0; j<3; ++j){
                 final int index = 3*i + j;
@@ -84,7 +84,7 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
         //save item
         //ExecutableWidget.instance()
         // creative give
-        boolean displayGive = MinecraftClient.getInstance().interactionManager != null && MinecraftClient.getInstance().interactionManager.hasCreativeInventory();
+        boolean displayGive = MinecraftClient.getInstance().interactionManager != null && MinecraftClient.getInstance().interactionManager.getCurrentGameMode().isCreative();
         int buttonAmount =  2 + (displayGive?1:0);
         //中心在 123 - 14 + 9 =118
         // buttonAmount个, 相当于
@@ -138,8 +138,7 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
             .addToSub(this);
         ExecutableWidget.instance(0,0,DX, DY)
             .setElementHandler(PlateElement.catchInteract())
-            .setExtraDepth(-1)
-            .addToSub(this);
+            .addToSub(this, -1);
     }
     private void cancelGui(){
         if(this.cancelCallback != null){

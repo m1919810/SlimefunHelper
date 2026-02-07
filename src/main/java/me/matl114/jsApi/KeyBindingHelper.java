@@ -20,7 +20,7 @@ public class KeyBindingHelper {
                 if(field.getType() == KeyBinding.class){
                     field.setAccessible(true);
                     KeyBinding keyBinding = (KeyBinding)field.get(options);
-                    keyBindings.put(keyBinding.getTranslationKey(), keyBinding);
+                    keyBindings.put(keyBinding.getId(), keyBinding);
                 }
             }
         }catch (Throwable e){

@@ -14,73 +14,47 @@ public class RenderHelper {
         return new Color(x, y, z);
     }
 
-    public static void renderBlock(int x, int y, int z, int tick, boolean line, boolean solid){
-        renderBox(x, y, z, x + 1, y + 1, z + 1, tick, line, solid);
+    public static RenderTasks.TaskBuilder builder(){
+        return new RenderTasks.TaskBuilder();
     }
 
-    public static void renderBlock(int x, int y, int z, int tick, boolean line, boolean solid, Color color){
-        renderBox(x, y, z, x + 1, y + 1, z + 1, tick, line, solid, color, Color.RED);
+    public static RenderTasks.RenderObject createBox(double x, double y, double z, double x1, double y1, double z1, Color color){
+        return createBox(new Vec3d(x, y, z), new Vec3d(x1, y1, z1), color);
+    }
+    public static RenderTasks.RenderObject createBox(Object vec3d1, Object vec3d2, Color color){
+        return new RenderTasks.BoxObject(DataHelper.createVec(vec3d1), DataHelper.createVec(vec3d2), color);
     }
 
-    public static void renderBlock(int x, int y, int z, int tick, boolean line, boolean solid, Color color, Color lineColor){
-        renderBox(x, y, z, x + 1, y + 1, z + 1, tick, line, solid, color, lineColor);
+    public static RenderTasks.RenderObject createBoxFrame(Object vec3d1, Object vec3d2, Color color){
+        return new RenderTasks.BoxOutlineObject(DataHelper.createVec(vec3d1), DataHelper.createVec(vec3d2), color);
     }
 
-    public static void renderEntity(Object jsEntity , int tick, boolean line, boolean solid){
-        renderEntity(jsEntity, tick, line, solid, Color.GREEN, Color.RED);
-    }
-    public static void renderEntity(Object jsEntity , int tick, boolean line, boolean solid, Color color){
-        renderEntity(jsEntity, tick, line, solid, color, Color.RED  );
+    public static RenderTasks.RenderObject createLineToTarget(Object vec3d1, Color color){
+        return new RenderTasks.LineToTargetObject(DataHelper.createVec(vec3d1), color);
     }
 
-    public static void renderEntity(Object jsEntity , int tick, boolean line, boolean solid, Color color, Color lineColor){
-        Entity entity = JsHelper.unwrap(jsEntity, Entity.class);
-        JsHelper.runOnMainThread(()->{
-            RenderTasks.registerVirtualRenderTask(solid? new RenderTasks.EntityRenderingTask(entity, tick, color): new RenderTasks.EntityOutlineRenderingTask(
-                entity, tick, color
-            ));
-            if(line){
-                RenderTasks.registerVirtualRenderTask(
-                    new RenderTasks.LineToEntityRenderingTask(entity, tick, lineColor)
-                );
-            }
-        });
-
+    public static RenderTasks.RenderObject createEntityBox(Object vec3d1, Color color){
+        return new RenderTasks.EntityBoxObject(JsHelper.unwrap(vec3d1, Entity.class), color);
     }
 
-    public static void renderBox(double x, double y, double z, double x1, double y1, double z1, int tick, boolean line, boolean solid){
-        renderBox(x, y, z, x1, y1, z1, tick, line, solid, Color.GREEN, Color.RED);
+    public static RenderTasks.RenderObject createEntityBoxFrame(Object vec3d1, Color color){
+        return new RenderTasks.EntityBoxOutlineObject(JsHelper.unwrap(vec3d1, Entity.class), color);
     }
 
-    public static void renderBox(double x, double y, double z, double x1, double y1, double z1, int tick, boolean line, boolean solid, Color color  , Color lineColor){
-        JsHelper.runOnMainThread(()->{
-            RenderTasks.registerVirtualRenderTask(
-                solid? new RenderTasks.BoxRenderingTask(new Vec3d(x, y, z), new Vec3d(x1, y1, z1) , tick, color) : new RenderTasks.BoxOutlineRenderingTask(new Vec3d(x, y, z), new Vec3d(x1, y1, z1) , tick, color)
-
-            );
-            if(line){
-                RenderTasks.registerVirtualRenderTask(
-                    new RenderTasks.LineToTargetRenderingTask(new Vec3d(x + x1 , y + y1, z + z1).multiply(0.5), tick, lineColor)
-                );
-            }
-        });
+    public static RenderTasks.RenderObject createLineToEntity(Object vec3d1, Color color){
+        return new RenderTasks.LineToEntityObject(JsHelper.unwrap(vec3d1, Entity.class), color);
     }
 
-
-    public static void renderLine(List<Vec3d> list, int tick, Color color){
-        JsHelper.runOnMainThread(()->{
-            RenderTasks.registerVirtualRenderTask(
-                new RenderTasks.MultiLineRenderingTask(list, tick, color)
-            );
-        });
+    public static RenderTasks.RenderObject createLine(Object vec3d1, Object vec3d2, Color color){
+        return new RenderTasks.LineObject(DataHelper.createVec(vec3d1), DataHelper.createVec(vec3d2)).color(color);
     }
 
-    public static void renderQuad(Vec3d a, Vec3d b, Vec3d c, Vec3d d, int tick, Color color){
-        JsHelper.runOnMainThread(()->{
-            RenderTasks.registerVirtualRenderTask(
-                new RenderTasks.QuadRenderingTask(a, b, c, d, tick, color)
-            );
-        });
+    public static RenderTasks.RenderObject createMultiLine(List vec3d1, Color color){
+        return new RenderTasks.MultiLineObject(vec3d1.stream().map(DataHelper::createVec).toList(), color);
+    }
+
+    public static RenderTasks.RenderObject createQuad(Object vec3d1, Object vec3d2, Object vec3d3, Object vec3d4, Color color){
+        return new RenderTasks.QuadObject(DataHelper.createVec(vec3d1), DataHelper.createVec(vec3d2), DataHelper.createVec(vec3d3), DataHelper.createVec(vec3d4), color);
     }
 
 }

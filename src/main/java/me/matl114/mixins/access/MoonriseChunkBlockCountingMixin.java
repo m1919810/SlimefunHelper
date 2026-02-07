@@ -3,11 +3,14 @@ package me.matl114.mixins.access;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.moonrise.MoonriseChunkBlockCountingAccess;
 import me.matl114.utils.CollisionUtil;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registry;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
+import net.minecraft.world.chunk.PalettesFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,6 +20,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+@Environment(EnvType.CLIENT)
 @Mixin(ChunkSection.class)
 public abstract class MoonriseChunkBlockCountingMixin implements MoonriseChunkBlockCountingAccess {
     @Shadow public abstract void calculateCounts();
@@ -28,11 +32,14 @@ public abstract class MoonriseChunkBlockCountingMixin implements MoonriseChunkBl
         return specialCollidingBlocks;
     }
 
-    @Inject(method = "<init>(Lnet/minecraft/registry/Registry;)V",at = @At("RETURN"))
-    private void calculateBlockCount(Registry biomeRegistry, CallbackInfo ci){
+    @Inject(method = "<init>(Lnet/minecraft/world/chunk/PalettesFactory;)V",at = @At("RETURN"))
+    private void calculateBlockCount(PalettesFactory palettesFactory, CallbackInfo ci){
         this.calculateCounts();
     }
-
+    @Inject(method = "<init>(Lnet/minecraft/world/chunk/ChunkSection;)V", at = @At("RETURN"))
+    private void calculateBlockCount2(ChunkSection section, CallbackInfo ci){
+        this.calculateCounts();
+    }
     @Inject(method = "readDataPacket", at = @At(value = "RETURN"))
     private void calculateBlockCount(PacketByteBuf buf, CallbackInfo ci){
         this.calculateCounts();

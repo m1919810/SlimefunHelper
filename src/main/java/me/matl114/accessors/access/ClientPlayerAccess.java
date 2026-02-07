@@ -18,8 +18,8 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
     public void clearKeepedInventory(boolean closeInv);
     public void resyncSprint();
     public void resyncSneak();
-    public void resyncPos();
-    public void resyncRot();
+//    public void resyncPos();
+//    public void resyncRot();
 //    public void syncLocationPackets();
     public boolean isContinueMoving();
 

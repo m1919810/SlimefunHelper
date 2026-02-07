@@ -18,6 +18,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -83,7 +84,14 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
                         if(l){
                             openInventoryViewScreen(screen);
                         }else if(screen instanceof TileInventoryScreen tile && tile.getPos() !=null && WorldUtils.areWorldEquals(MinecraftClient.getInstance().world, tile.getWorld())){
-                            RenderTasks.registerVirtualRenderTask(new RenderTasks.CountingBlockSolidTarget(tile.getPos(), true, 120));
+                            BlockPos pos = tile.getPos();
+                            RenderTasks.registerVirtualRenderTask(
+                                new RenderTasks.RenderTask(
+                                    120,
+                                    new RenderTasks.BoxObject(pos.toCenterPos().add(RenderTasks.FROM), pos.toCenterPos().add(RenderTasks.TO), Color.GREEN),
+                                    new RenderTasks.LineToTargetObject(pos.toCenterPos(), Color.RED)
+                                )
+                            );
                             this.close();
                         }
                     }))

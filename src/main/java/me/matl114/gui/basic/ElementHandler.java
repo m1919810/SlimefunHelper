@@ -1,6 +1,6 @@
 package me.matl114.gui.basic;
 
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 
 import java.util.function.Predicate;
 
@@ -36,14 +36,14 @@ public interface ElementHandler extends InputHandler, RenderHandler{
             }
 
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 if(handlerPredicate.test(ob)){
                     ob.renderAtCentered(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
                 }
             }
 
             @Override
-            public void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderExtraAbsoluteCoord(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 if(handlerPredicate.test(ob)){
                     ob.renderExtraAbsoluteCoord(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
                 }
@@ -82,13 +82,13 @@ public interface ElementHandler extends InputHandler, RenderHandler{
 
 
             @Override
-            public void renderAtCentered(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 ob.renderAtCentered(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
 
             }
 
             @Override
-            public void renderExtraAbsoluteCoord(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+            public void renderExtraAbsoluteCoord(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
                 ob.renderExtraAbsoluteCoord(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
             }
         };

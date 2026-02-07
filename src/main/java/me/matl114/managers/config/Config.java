@@ -437,7 +437,8 @@ Config implements RefMap{
         protected final Class<T> clazz;
         protected String[] path;
         protected Ref<T> ref;
-        protected T defaultValue;
+        @Nullable
+        protected Optional<T> defaultValue;
         protected Ref<T> getRef(){
             if(ref == null){
                 Object obj = root.get(path);
@@ -456,7 +457,7 @@ Config implements RefMap{
         }
 
         public SettingBuilder<T> defaultValue(T val){
-            this.defaultValue = val;
+            this.defaultValue = Optional.ofNullable(val);
             var instance = Refs.wrapInstance(val);
             ref = (Ref<T>) root.getOrCreate(instance, path);
             if(ref == instance){
@@ -485,7 +486,7 @@ Config implements RefMap{
                     ((SettingBuilder<MultiKeyBind>)this).updateListener(hotKey::setKeyCodes);
                     return this;
                 }else{
-                    MultiKeyBind defaultKeyBind = this.defaultValue == null ? new MultiKeyBind(""): (MultiKeyBind)this.defaultValue;
+                    MultiKeyBind defaultKeyBind = this.defaultValue == null ? new MultiKeyBind(""): (MultiKeyBind)this.defaultValue.orElse(null);
                     IHotKey hotKey1 = new SimpleHotKey(path, defaultKeyBind);
                     hotKey1.setInputHandler(handler);
                     SimpleInputManager.getInstance().registerHotKeys(hotKey1);
@@ -506,6 +507,7 @@ Config implements RefMap{
         }
 
         public  <W extends Ref<T>> W build(){
+            Objects.requireNonNull(defaultValue);
             var ref1 = (W) Objects.requireNonNull(getRef());
             ref1.setConfigReference(rootConfig);
             return ref1;

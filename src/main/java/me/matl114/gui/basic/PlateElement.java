@@ -1,7 +1,7 @@
 package me.matl114.gui.basic;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.util.Identifier;
 
 public class PlateElement extends AbstractElement {
@@ -23,16 +23,13 @@ public class PlateElement extends AbstractElement {
         this.catchInteract = catchInteract;
     }
     @Override
-    public void renderCentered0(DrawableWidget element, DrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         color = -1;
         float alpha1 = ((color >> 24) & 0xFF) / 255f;
         float red = ((color >> 16) & 0xFF) / 255f;
         float green = ((color >> 8) & 0xFF) / 255f;
         float blue = (color & 0xFF) / 255f;
-        RenderSystem.setShaderColor(red, green, blue, alpha1);
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(770, 771, 1, 0);
-        RenderSystem.blendFunc(770, 771);
+        context.setShaderColor(red, green, blue, alpha1);
         int width = element.getTextureWidth();
         int height = element.getTextureHeight();
         context.drawTexture(TEXTURE, 0, 0, 106 + xTextureOffset, 124 + yTextureOffset, 8, 8);
@@ -48,7 +45,7 @@ public class PlateElement extends AbstractElement {
 
         // Center
         context.drawTexturedQuad(TEXTURE,  8, width - 8,  8,  height - 8, 0, (114 + xTextureOffset) / 256f, (248 + xTextureOffset) / 256f, (132 + yTextureOffset) / 256f, (182 + yTextureOffset) / 256f);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     @Override

@@ -7,6 +7,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
@@ -20,6 +21,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.StringHelper;
+import net.minecraft.util.Uuids;
+import org.apache.logging.log4j.core.util.UuidUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -138,55 +141,14 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
     }
 
     public PropertyMap createPropertyMap(){
-        PropertyMap map = new PropertyMap();
+        PropertyMap map = new PropertyMap(LinkedHashMultimap.create());
         map.putAll(this.properties);
         return map;
     }
     public ProfileComponent createGameProfile(){
-        PropertyMap map = new PropertyMap();
+        PropertyMap map = new PropertyMap(LinkedHashMultimap.create());
         map.putAll(this.properties);
-        return new ProfileComponent(
-            Optional.ofNullable( StringHelper.isEmpty(this.name)? (String)null: this.name),
-            Optional.ofNullable(this.uniqueId),
-            map
-        );
-    }
-    public NbtCompound writeGameProfile(NbtCompound var0) {
-
-        if (!StringHelper.isEmpty(name)) {
-            var0.putString("Name", this.name);
-        }
-
-        if (uniqueId != null) {
-            var0.putUuid("Id", uniqueId);
-        }
-
-        if (!this.properties.isEmpty()) {
-            NbtCompound var2 = new NbtCompound();
-            Iterator var3 = this.properties.keySet().iterator();
-
-            while(var3.hasNext()) {
-                String var4 = (String)var3.next();
-                NbtList var5 = new NbtList();
-
-                NbtCompound var8;
-                for(Iterator var6 = properties.get(var4).iterator(); var6.hasNext(); var5.add(var8)) {
-                    Property var7 = (Property) var6.next();
-                    var8 = new NbtCompound();
-
-                    var8.putString("Value", var7.value());
-                    if (var7.hasSignature()) {
-                        var8.putString("Signature", var7.signature());
-                    }
-                }
-
-                var2.put(var4, var5);
-            }
-
-            var0.put("Properties", var2);
-        }
-
-        return var0;
+        return ProfileComponent.ofStatic(new GameProfile(uniqueId, name == null ? "": name, map));
     }
 
     public static Property deserializeProperty(@Nonnull Map<?, ?> map) {

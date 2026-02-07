@@ -180,7 +180,7 @@ public class MineBot  extends BaseModule {
             if(item.get(DataComponentTypes.UNBREAKABLE) != null){
                 durabilityLimit = 0;
             }else if(item.get(DataComponentTypes.MAX_DAMAGE) != null){
-                var optionalUnbreaking = ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.UNBREAKING);
+                var optionalUnbreaking = ItemStackUtils.registry().getOptional(RegistryKeys.ENCHANTMENT).orElseThrow().getOptional(Enchantments.UNBREAKING);
                 int multiply = 1;
                 if(optionalUnbreaking.isPresent()){
                     multiply = EnchantmentHelper.getLevel(optionalUnbreaking.get(), item) + 1;
@@ -253,7 +253,7 @@ public class MineBot  extends BaseModule {
             noBlockAroundTick ++;
             if(noBlockAroundTick > NO_BLOCK_MENTION_LIMIT){
                 noBlockAroundTick = 0;
-                mc.player.sendMessage(Text.literal("No more minable blocks nearby!"));
+                Debug.chat(Text.literal("No more minable blocks nearby!"));
             }
         }else {
             noBlockAroundTick = 0;

@@ -104,8 +104,8 @@ public class ProjectileEnhance extends BaseModule {
         var actionC2SPacket = actionC2SPacketEvent.context();
         if(actionC2SPacket.getAction() == PlayerActionC2SPacket.Action.RELEASE_USE_ITEM && mc.player != null && tridentDupe.get() && mc.player.getMainHandStack().getItem() instanceof TridentItem trident){
             //dupe trident
-            mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 3, mc.player.getInventory().selectedSlot, SlotActionType.SWAP, mc.player);
-            Tasks.scheduleDelayed(()->mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 3, mc.player.getInventory().selectedSlot, SlotActionType.SWAP, mc.player), 1);
+            mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 3, mc.player.getInventory().getSelectedSlot(), SlotActionType.SWAP, mc.player);
+            Tasks.scheduleDelayed(()->mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 3, mc.player.getInventory().getSelectedSlot(), SlotActionType.SWAP, mc.player), 1);
         }
     }
 

@@ -409,7 +409,7 @@ public class MovTasks {
                         //
                         packets.get(i + emptyMoveCnt).failure();
                         if(considerNoFall && i > 0){
-                            if(Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1){
+                            if(Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) - 1){
 
 //                                mc.player.fallDistance = MovTasks. FORCE_RESET_DISTANCE;
                                 //in case that resync packet cause OnGround falldamage
@@ -464,7 +464,7 @@ public class MovTasks {
             }
         }
         if(considerNoFall){
-            if(Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1){
+            if(Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) - 1){
                 packets.get(packets.size() - 1).add(()->{
                     ClientPlayerAccess.of( mc.player).setForceNoFall(true);// = MovTasks. FORCE_RESET_DISTANCE;
                     //in case that resync packet cause OnGround falldamage
@@ -489,7 +489,7 @@ public class MovTasks {
         final List<Box> collisionsBB = new java.util.ArrayList<>();
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
         CollisionUtil.getCollisions(
-            mc.player.getWorld(), mc.player, involved, collisionsVoxel, collisionsBB,
+            mc.world, mc.player, involved, collisionsVoxel, collisionsBB,
             //CollisionUtil.COLLISION_FLAG_COLLIDE_WITH_UNLOADED_CHUNKS |
                 CollisionUtil.COLLISION_FLAG_CHECK_BORDER,
             null, null, null
@@ -560,7 +560,7 @@ public class MovTasks {
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
         Box oldBox = entity.getBoundingBox();
         CollisionUtil.getCollisions(
-            entity.getWorld(), entity, entity.dimensions.getBoxAt(pos), collisionsVoxel, collisionsBB,
+            entity.getEntityWorld(), entity, entity.dimensions.getBoxAt(pos), collisionsVoxel, collisionsBB,
             //may cancel unloaded chunks?
             //COLLISION_FLAG_COLLIDE_WITH_UNLOADED_CHUNKS |
             ignoreChunkBorder ?
@@ -654,18 +654,18 @@ public class MovTasks {
 
         double currentY = current.y;
         double targetY = target.y;
-        World world = mc.player.getWorld();
+        World world = mc.world;
         double horizontalY;
 
 
         if(len <=  farawayTp){
-            if(currentY >= world.getBottomY() && currentY <= world.getTopY()){
+            if(currentY >= world.getBottomY() && currentY <= world.getBottomY() + world.getHeight()){
                 Box boundariesFromBox = mc.player.dimensions.getBoxAt(current);
                 Box boundariesToBox = mc.player.dimensions.getBoxAt(target);
                 Box boundariesSmallAxis ;
                 Box boundariesLargeAxis;
-                boundariesSmallAxis = CollisionUtil.resetY(tpSmallerAxisPlate, world.getBottomY(), world.getTopY());
-                boundariesLargeAxis = CollisionUtil.resetY(tpLargerAxisPlate, world.getBottomY(), world.getTopY());
+                boundariesSmallAxis = CollisionUtil.resetY(tpSmallerAxisPlate, world.getBottomY(), world.getBottomY() + world.getHeight());
+                boundariesLargeAxis = CollisionUtil.resetY(tpLargerAxisPlate, world.getBottomY(), world.getBottomY() + world.getHeight());
                 boolean debug0 = DEBUG_RENDER_COLLISION_RENDERING;
                 // DEBUG_RENDER_COLLISION_RENDERING = true;
                 STATIC_DEBUG_COLOR = Color.CYAN;
@@ -841,7 +841,7 @@ public class MovTasks {
 
 //        if(currentY > world.getBottomY() + 64){
 //            //most likely
-//            tpHorizontalPlate = world.getTopY()
+//            tpHorizontalPlate = world.getBottomY() + world.getHeight()
 //        }
     }
     private static boolean doIntercepteMovingPacketsWhileTp(PlayerMoveC2SPacket packet){
@@ -973,7 +973,7 @@ public class MovTasks {
         if(CollisionUtil.isEmpty(currBoundingBox))return;
         Box collisionBox = makeCollectorBoxInvolvingCollision(currBoundingBox, movement, entity.getStepHeight(), entity.isOnGround());
         CollisionUtil.getCollisions(
-            entity.getWorld(), entity, collisionBox, intoVoxels, intoAABB,
+            entity.getEntityWorld(), entity, collisionBox, intoVoxels, intoAABB,
             ignoreUnloadedChunk ?  COLLISION_FLAG_CHECK_BORDER : (COLLISION_FLAG_CHECK_BORDER | COLLISION_FLAG_COLLIDE_WITH_UNLOADED_CHUNKS),
             null,null,null
         );
@@ -1139,7 +1139,7 @@ public class MovTasks {
             if(!vec.isEmpty()){
                 currentPos = vec.get(vec.size() - 1);
             }
-            Vec3d currentTry =  to.getBottomCenter().subtract(currentPos);
+            Vec3d currentTry =  to.getHorizontalCenter().subtract(currentPos);
             double len = Math.max(1.0F,  currentTry.length() - availableRange + 1.0F);
             currentTry = currentTry.normalize().multiply(Math.min(maxAtOnce, len));
             if(len >= maxAtOnce ){
@@ -1191,12 +1191,12 @@ public class MovTasks {
         //can back
         Vec3d expectedBack  = Vec3d.ZERO.subtract(testMov);
         Vec3d backTry = engin.simulateMovement(mc.player, testPos, expectedBack );
-        if(collisionDebugRender()){
-            Vec3d backPos = testPos.add(backTry);
-            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(testPos.add(new Vec3d(-0.5, 0, -0.5)), testPos.add(new Vec3d(0.5, 2, 0.5)), DEBUG_TICK));
-            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(backPos.add(new Vec3d(-0.5, 0, -0.5)), backPos.add(new Vec3d(0.5, 2, 0.5)), DEBUG_TICK));
-            Debug.chat("Boundback", backPos.squaredDistanceTo(currentPos));
-        }
+//        if(collisionDebugRender()){
+//            Vec3d backPos = testPos.add(backTry);
+//            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(testPos.add(new Vec3d(-0.5, 0, -0.5)), testPos.add(new Vec3d(0.5, 2, 0.5)), DEBUG_TICK));
+//            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(backPos.add(new Vec3d(-0.5, 0, -0.5)), backPos.add(new Vec3d(0.5, 2, 0.5)), DEBUG_TICK));
+//            Debug.chat("Boundback", backPos.squaredDistanceTo(currentPos));
+//        }
 
         // there should be bug, but it works well, that's because only the y is unlimited
         if(validMovementAsServer(expectedBack, backTry)){
@@ -1492,13 +1492,13 @@ public class MovTasks {
     private static boolean fixPositionSetBackFallDamage(Event<PlayerPositionLookS2CPacket> packet){
         if(packet.context() instanceof PlayerPositionLookS2CPacket setBackPackets){
             //real setback , not a tp
-            Vec3d target = new Vec3d(setBackPackets.getX(), setBackPackets.getY(), setBackPackets.getZ());
+            Vec3d target = setBackPackets.change().position();//new Vec3d(setBackPackets.getX(), setBackPackets.getY(), setBackPackets.getZ());
             //len < 200, may be the set back of a single movement
             double lenSqr = mc.player.getPos().squaredDistanceTo(target);
             // len > 3, not be setback packets of anticheat
             if (lenSqr < 60000 && lenSqr > 10) {
                 double deltaY = target.y -  mc.player.getY();
-                if(deltaY < 0  && Math.abs(deltaY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE)){
+                if(deltaY < 0  && Math.abs(deltaY) > mc.player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE)){
                     //fix setback packets cause fallDistance
                     mc.player.setOnGround(false);
                     ClientPlayerAccess.of( mc.player).setForceNoFall(true);

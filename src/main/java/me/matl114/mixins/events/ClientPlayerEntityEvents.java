@@ -18,6 +18,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.stat.StatHandler;
+import net.minecraft.util.PlayerInput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -47,14 +48,14 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void onClientPlayerInitConfiguration(MinecraftClient client, ClientWorld world, ClientPlayNetworkHandler networkHandler, StatHandler stats, ClientRecipeBook recipeBook, boolean lastSneaking, boolean lastSprinting, CallbackInfo ci){
+    private void onClientPlayerInitConfiguration(MinecraftClient client, ClientWorld world, ClientPlayNetworkHandler networkHandler, StatHandler stats, ClientRecipeBook recipeBook, PlayerInput lastPlayerInput, boolean lastSprinting, CallbackInfo ci){
         this.movementManager = new LegalMovementManager();
         this.addTickWrapper(this.movementManager);
         Listener.getPlayerInitConfiguration().broadcast((ClientPlayerEntity)(AbstractClientPlayerEntity) this);
     }
 
 
-    @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick(ZF)V", shift = At.Shift.AFTER))
+    @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick()V", shift = At.Shift.AFTER))
     public void onPostInputTick(CallbackInfo ci){
         if(!Listener.getPlayerKeyboardInputTick().isEmpty()){
             Listener.getPlayerKeyboardInputTick().handleValue(new Event<>(this.input, false, false));
@@ -76,31 +77,39 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         }
 
     }
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V", ordinal = 0, shift = At.Shift.BEFORE), cancellable = true)
-    public void preVehiclePackets(CallbackInfo ci){
-        if(!this.movementManager.preInputProgress((ClientPlayerEntity) (AbstractClientPlayerEntity)this)){
-            ci.cancel();
-        }
-    }
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;sendMovementPackets()V"), cancellable = true)
-    public void preMovementPackets(CallbackInfo ci){
-        if(!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity)this)){
-            ci.cancel();;
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasVehicle()Z"), cancellable = true)
+    public void onAfterTick(CallbackInfo ci){
+        if(hasVehicle()){
+            if(!this.movementManager.preInputProgress((ClientPlayerEntity) (AbstractClientPlayerEntity)this)){
+                ci.cancel();
+                onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity)this);
+            }
+        }else {
+            if(!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity)this)){
+                ci.cancel();
+                onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity)this);
+            }
         }
     }
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))
     public void postwrapperPlayerMovementSentTick(CallbackInfo ci){
+        onPostPlayerMovementTick((ClientPlayerEntity) (Object)this);
+    }
+    @Unique
+    private void onPostPlayerMovementTick(ClientPlayerEntity player){
         var iter = usedIterator;
         usedIterator = null;
-        if(iter != null)
+        if(iter != null){
             while (iter.hasPrevious()){
                 var prev = iter.previous();
-                prev.postProgress((ClientPlayerEntity) (Object)this);
-                if(!prev.stillWrap((ClientPlayerEntity) (Object)this)){
+                prev.postProgress(player);
+                if(!prev.stillWrap(player)){
                     iter.remove();
                 }
             }
+        }
+
     }
 
     @Unique

@@ -13,6 +13,7 @@ import me.matl114.utils.collections.Point;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -20,6 +21,7 @@ import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.input.Input;
+import net.minecraft.client.input.MouseInput;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.GameRenderer;
@@ -32,6 +34,7 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.*;
 import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
+import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
@@ -313,7 +316,7 @@ public class Listener {
     private static final EventChannel<RecipeBookProvider> postToggleRecipeBook = new EventChannel<>();
     @Getter
     @Broadcast
-    private static final EventChannel<RecipeEntry<?>> clickCraftingRecipe = new EventChannel<>();
+    private static final EventChannel<NetworkRecipeId> clickCraftingRecipe = new EventChannel<>();
 
 
     // packet events
@@ -466,7 +469,7 @@ public class Listener {
     private static final EventChannel<Mouse> mouseMove = new EventChannel<>();
     @Getter
     @Cancelable
-    @ExtraArgs(value = {double.class, double.class, int.class, double.class, double.class}, names = {"mouseX", "mouseY", "activeButton", "deltaX", "deltaY"})
+    @ExtraArgs(value = {double.class, double.class, double.class, double.class}, names = {"mouseX", "mouseY", "deltaX", "deltaY"})
     private static final EventChannel<Mouse> mouseDrag = new EventChannel<>();
     @Getter
     @Cancelable

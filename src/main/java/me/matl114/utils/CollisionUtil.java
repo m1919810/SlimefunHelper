@@ -1812,7 +1812,7 @@ public final class CollisionUtil {
         return ret;
     }
     public static boolean isHardColliding(Entity entity){
-        return entity instanceof BoatEntity || entity instanceof AbstractMinecartEntity || entity instanceof ShulkerEntity || entity.isCollidable();
+        return entity instanceof BoatEntity || entity instanceof AbstractMinecartEntity || entity instanceof ShulkerEntity || entity.isCollidable(null);
     }
     public static boolean getEntityHardCollisions(final net.minecraft.world.World world, final net.minecraft.entity.Entity entity, net.minecraft.util.math.Box aabb,
                                                   final java.util.List<net.minecraft.util.math.Box> into, final int collisionFlags, final java.util.function.Predicate<net.minecraft.entity.Entity> predicate) {
@@ -1842,7 +1842,7 @@ public final class CollisionUtil {
                 continue;
             }
 
-            if ((entity == null && otherEntity.isCollidable()) || (entity != null && entity.collidesWith(otherEntity))) {
+            if ((entity == null && otherEntity.isCollidable(entity)) || (entity != null && entity.collidesWith(otherEntity))) {
                 if (checkOnly) {
                     return true;
                 } else {
@@ -1874,7 +1874,7 @@ public final class CollisionUtil {
         private boolean delegated;
 
         public LazyEntityCollisionContext(final net.minecraft.entity.Entity entity) {
-            super(false, 0.0, null, null, entity);
+            super(false, false, 0.0, null, false, entity);
         }
 
         public boolean isDelegated() {

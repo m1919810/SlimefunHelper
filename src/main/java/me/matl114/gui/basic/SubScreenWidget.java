@@ -1,11 +1,17 @@
 package me.matl114.gui.basic;
 
+import com.google.common.collect.ImmutableList;
+import lombok.Getter;
+import lombok.Setter;
 import me.matl114.utils.Debug;
-import net.minecraft.client.gui.DrawContext;
+import me.matl114.utils.collections.IndexEntry;
+import me.matl114.utils.collections.UnmodifiableListMappingIterator;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import org.apache.commons.compress.utils.Lists;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
+import java.util.*;
 
 public class SubScreenWidget extends DrawableWidget implements SubSelectable{
     /**
@@ -28,9 +34,15 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
         return super.setTextureScale(scale);
     }
 
-    protected List<DrawableWidget> children = Lists.newArrayList();
+    private final List<IndexEntry<DrawableWidget>> childrenRender = Lists.newArrayList();
+    private final List<IndexEntry<DrawableWidget>> childrenInteract = Lists.newArrayList();
     protected DrawableWidget selected = null;
     protected DrawableWidget dragging = null;
+
+    @Deprecated
+    @Setter
+    @Getter
+    protected int basicDepth = 0;
 
     public <T extends SubSelectable> T setSelected(DrawableWidget subWidget){
         if(selected != null){
@@ -56,18 +68,47 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 //        return false;
         return true;
     }
+    private int cnt = 0;
+
+    private void resortChildren() {
+        childrenRender.sort(Comparator.<IndexEntry<DrawableWidget>>comparingInt(s -> s.val().priority).thenComparingInt(IndexEntry::index));
+        childrenInteract.sort(Comparator.<IndexEntry<DrawableWidget>>comparingInt(s -> - s.val().priority).thenComparingInt(IndexEntry::index));
+    }
+
+    protected void clearChildren(){
+        childrenRender.clear();
+        childrenInteract.clear();
+    }
+    private void addChildrenInternal(DrawableWidget child){
+        var re = new IndexEntry<>(++cnt, child);
+        childrenRender.add(re);
+        childrenInteract.add(re);
+        resortChildren();
+    }
+    private boolean removeChildrenInternal(DrawableWidget child){
+        childrenRender.removeIf(s -> Objects.equals(s.val(), child));
+        return childrenInteract.removeIf(s -> Objects.equals(s.val(), child));
+        // no need to resort!
+    }
+
+    protected Iterable<DrawableWidget> childrenRenderOrder() {
+        return () -> new UnmodifiableListMappingIterator<>(childrenRender, IndexEntry::val);
+    }
+    protected Iterable<DrawableWidget> childrenInteractOrder(){
+        return ()-> new UnmodifiableListMappingIterator<>(childrenInteract, IndexEntry::val);
+    }
 
     public SubScreenWidget addDrawableChild(DrawableWidget widget){
-        children.add(widget);
+        addChildrenInternal(widget);
         widget.setSubWidget(true);
         return this;
     }
     public boolean remove(DrawableWidget widget){
         widget.setSubWidget(false);
-        return children.remove(widget);
+        return removeChildrenInternal(widget);
     }
 
-    public void renderInDefaultMatrix(DrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
+    public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         //handling mouse Coord in render should be scaled? here
         int translatedMouseX = (mouseX - this.x);
@@ -77,16 +118,23 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        boolean selected = false;
-        for (var ch: children){
-            boolean disable = true;
+        DrawableWidget selected = null;
+        if(this.isSelected()){
             //use super.selected as a cache value to show whether there is a child which is selecting
             //it is calculated in render0
-            if(this.isSelected() && !selected && ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){
-                disable = false;
-                //select only one in a subScreen
-                selected = true;
+            //
+            //use interact order to search the first widget that is selectable
+            for (var ch : childrenInteractOrder()){
+                if(ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)){
+                    selected = ch;
+                    break;
+                }
             }
+        }
+
+        for (var ch: childrenRenderOrder()){
+            boolean disable = ch != selected;
+
             //force disable child highlight, only highlight the first met
             ch.render0(context, translatedMouseX, translatedMouseY, delta, disable);
         }
@@ -102,7 +150,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.mouseClicked(translatedMouseX, translatedMouseY, button)){
                 setSelected(ch);
                 return true;
@@ -121,7 +169,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
 
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.mouseReleased(translatedMouseX, translatedMouseY, button)){
                 return true;
             }
@@ -159,7 +207,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        for (var ch: children){
+        for (var ch: childrenInteractOrder()){
             if(ch.startDrag(screen, translatedMouseX, translatedMouseY)){
                 this.dragging = ch;
                 return true;
@@ -189,7 +237,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
         }
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.mouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount)){
                 return true;
             }
@@ -199,7 +247,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.keyPressed(keyCode, scanCode, modifiers)){
                 return true;
             }
@@ -209,7 +257,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
 
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.keyReleased(keyCode, scanCode, modifiers)){
                 return true;
             }
@@ -219,7 +267,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        for (var ch : children){
+        for (var ch : childrenInteractOrder()){
             if(ch.charTyped(chr, modifiers)){
                 return true;
             }
@@ -228,7 +276,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable{
     }
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        for (var entry: this.children){
+        for (var entry: this.childrenInteractOrder()){
             if(entry.isMouseOver((mouseX - this.x)/this.textureScale, (mouseY - this.y)/this.textureScale))return true;
         }
         return false;

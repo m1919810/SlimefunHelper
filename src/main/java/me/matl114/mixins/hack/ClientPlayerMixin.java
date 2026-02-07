@@ -19,18 +19,20 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.command.permission.PermissionPredicate;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Hand;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -43,6 +45,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Objects;
+
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayerEntity.class)
 public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity implements ClientPlayerAccess {
@@ -50,25 +54,18 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Final
     @Shadow
     public ClientPlayNetworkHandler networkHandler;
-    @Shadow
-    private double lastX;
 
-    @Shadow
-    private double lastBaseY;
-
-    @Shadow
-    private double lastZ;
-    @Accessor("lastX")
+    @Accessor("lastXClient")
     public abstract double getLastX();
-    @Accessor("lastBaseY")
+    @Accessor("lastYClient")
     public abstract double getLastBaseY();
-    @Accessor("lastZ")
+    @Accessor("lastZClient")
     public abstract double getLastZ();
     @Accessor("lastOnGround")
     public abstract boolean getLastOnGround();
-    @Accessor("lastPitch")
+    @Accessor("lastPitchClient")
     public abstract float getLastPitch();
-    @Accessor("lastYaw")
+    @Accessor("lastYawClient")
     public abstract float getLastYaw();
 
     @Shadow
@@ -101,8 +98,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Shadow @Final protected MinecraftClient client;
 
-    @Shadow private float lastYaw;
-    @Shadow private float lastPitch;
 
     @Shadow public abstract void tick();
 
@@ -112,14 +107,17 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Shadow public Input input;
 
-    @Shadow protected abstract boolean canSprint();
+
 
     @Shadow private boolean lastSprinting;
-    @Shadow private boolean lastSneaking;
 
     @Shadow public abstract boolean isSneaking();
 
     @Shadow public abstract void swingHand(Hand hand);
+
+    @Shadow private PlayerInput lastPlayerInput;
+
+    @Shadow protected abstract boolean canSprint(boolean allowTouchingWater);
 
     @Getter
     @Unique
@@ -149,13 +147,15 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
             }
         }
     }
-
-    @ModifyExpressionValue(method = "tickNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z", ordinal = 0))
-    public boolean noNausea(boolean val){
-        if(RenderTasks.getRenderExtra().noNausea.get()){
-            return false;
+    @Override
+    public float getEffectFadeFactor(RegistryEntry<StatusEffect> effect, float tickProgress){
+        if(RenderTasks.getRenderExtra().noNausea.get() && Objects.equals(effect, StatusEffects.NAUSEA)){
+            return 0.0F;
         }
-        return val;
+        if(RenderTasks.getRenderExtra().noEffect.get() && (Objects.equals(effect, StatusEffects.DARKNESS) || Objects.equals(effect, StatusEffects.BLINDNESS))) {
+            return 0.0F;
+        }
+        return super.getEffectFadeFactor(effect, tickProgress);
     }
 
 
@@ -185,23 +185,24 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     }
     @Unique
     public double getAttributeValue(RegistryEntry<EntityAttribute> attribute){
-        if(attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED && MovTasks.getCreativeFlight().overrideWalkSpeed.get()){
+        if(attribute == EntityAttributes.MOVEMENT_SPEED && MovTasks.getCreativeFlight().overrideWalkSpeed.get()){
             return MovTasks.getCreativeFlight().getOverridingWalkSpeed();
         }
         return super.getAttributeValue(attribute);
     }
 
 
-    @ModifyExpressionValue(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z") )
-    public boolean noSlowUsingItem(boolean original){
+    @ModifyExpressionValue(method = "applyMovementSpeedFactors", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
+    private boolean noSlotUsingItem(boolean original){
         if(MovTasks.getNoSlowDown().useItem.get()){
             return false;
         }
         return original;
     }
 
-    @ModifyExpressionValue(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldSlowDown()Z"))
-    public boolean noSlowSneak(boolean original){
+
+    @ModifyExpressionValue(method = "applyMovementSpeedFactors", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldSlowDown()Z"))
+    private boolean noSlowSneak(boolean original){
         if(MovTasks.getNoSlowDown().sneak.get()){
             return false;
         }
@@ -219,9 +220,9 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     }
 
 
-    @Inject(method = "getPermissionLevel", at = @At("HEAD"), cancellable = true)
-    protected void grantAllClientPermissions(CallbackInfoReturnable<Integer> cir){
-        cir.setReturnValue(4);
+    @Inject(method = "getPermissions", at = @At("HEAD"), cancellable = true)
+    protected void grantAllClientPermissions(CallbackInfoReturnable<PermissionPredicate> cir){
+        cir.setReturnValue(PermissionPredicate.ALL);
     }
 
 
@@ -248,18 +249,18 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         this.lastSprinting = !this.isSprinting();
     }
     public void resyncSneak(){
-        this.lastSneaking = !this.isSneaking();
+        this.lastPlayerInput = new PlayerInput(this.lastPlayerInput.forward(), this.lastPlayerInput.backward(), this.lastPlayerInput.left(), this.lastPlayerInput.right(), this.lastPlayerInput.jump(), !this.isSneaking(), this.lastPlayerInput.sprint());
     }
 
-    public void resyncPos(){
-        this.lastX =0;
-        this.lastZ =0;
-        this.lastBaseY = 0;
-    }
-    public void resyncRot(){
-        this.lastPitch = 0;
-        this.lastYaw = 0;
-    }
+//    public void resyncPos(){
+//        this.lastX =0;
+//        this.lastZ =0;
+//        this.lastBaseY = 0;
+//    }
+//    public void resyncRot(){
+//        this.lastPitch = 0;
+//        this.lastYaw = 0;
+//    }
 
 //    @Unique
 //    public void syncLocationPackets(){
@@ -319,39 +320,47 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
             }
         }
     }
-
-
-
-    @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 3, shift = At.Shift.AFTER))
-    private void allDirectionSprint(CallbackInfo ci){
-        //backward
-        //fixme : can not auto toggle sprint if current is not sprinting and sprinting button pressed
+    @Unique
+    private boolean shouldDirectionalSprint(){
         Sprint sprintModule = MovTasks.getSprint();
-        if(sprintModule.directionalSprint.get() && !isSprinting() && this.input.movementForward < -0.8F && sprintModule.enableSprintDirectionalThisTick){
-            //check ticket
-            boolean otherReason = !this.canSprint() || this.horizontalCollision && !this.collidedSoftly || this.isTouchingWater() && !this.isSubmergedInWater();
-            if(!otherReason){
-                //set sprint true if only because of no movement forward
-                setSprinting(true);
-            }
-        }
-
+        return sprintModule.directionalSprint.get() && (input.playerInput.backward() && !input.playerInput.forward())&& sprintModule.enableSprintDirectionalThisTick;
     }
 
-    //for directional sprint
-    @Inject(method = "isWalking", at = @At("HEAD"), cancellable = true)
-    protected void seenWalkingBackAsWalking(CallbackInfoReturnable<Boolean> cir){
-        Sprint sprintModule = MovTasks.getSprint();
-        if(sprintModule.directionalSprint.get()){
-             if(!this.isSubmergedInWater() && (double)this.input.movementForward <= -0.8F && sprintModule.enableSprintDirectionalThisTick){
-                 //check ticket
-                 cir.setReturnValue(true);
-             }
+    @ModifyExpressionValue(method = "shouldStopSprinting", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;hasForwardMovement()Z"))
+    private boolean allDirectionSprint(boolean original){
+        if(shouldDirectionalSprint()){
+            return true;
         }
+        return original;
+    }
+
+    @ModifyExpressionValue(method = "canStartSprinting", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;hasForwardMovement()Z"))
+    private boolean allDirectionSprint2(boolean original){
+        if(shouldDirectionalSprint()){
+            return true;
+        }
+        return original;
+    }
+
+    @ModifyExpressionValue(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;hasForwardMovement()Z"))
+    private boolean allDirectionSprint3(boolean original){
+        if(shouldDirectionalSprint()){
+            return true;
+        }
+        return original;
+    }
+
+    @ModifyExpressionValue(method = "shouldStopSwimSprinting", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;hasForwardMovement()Z"))
+    private boolean allDirectionSprint4(boolean original){
+        if(shouldDirectionalSprint()){
+            return true;
+        }
+        return original;
     }
 
 
-    @ModifyExpressionValue(method = "tickNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;shouldPause()Z"))
+
+    @ModifyExpressionValue(method = "tickNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;keepOpenThroughPortal()Z"))
     private boolean onPortalGui(boolean original){
         if(ExtraTasks.getClientExtra().portalGui.get())return true;
         return original;
@@ -375,7 +384,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Unique
     @Override
     public ItemEntity dropItem(ItemStack stack, boolean throwRandomly, boolean retainOwnership){
-        if(!stack.isEmpty() && this.getWorld().isClient && InvTasks.SUPPRESS_DROPITEM_SPAWN.get() && !MinecraftClient.getInstance().isOnThread()){
+        if(!stack.isEmpty() && this.getEntityWorld().isClient() && InvTasks.SUPPRESS_DROPITEM_SPAWN.get() && !MinecraftClient.getInstance().isOnThread()){
             this.swingHand(Hand.MAIN_HAND);
             return null;
         }else{

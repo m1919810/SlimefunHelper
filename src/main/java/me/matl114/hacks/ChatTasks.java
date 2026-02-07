@@ -28,6 +28,7 @@ import me.matl114.utils.commands.*;
 import me.matl114.utils.commands.CommandContext;
 import me.matl114.utils.interruptions.LogicalError;
 import me.matl114.utils.tasks.LimitedSpeedExecutor;
+import me.matl114.versioned.api.VEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
@@ -112,7 +113,7 @@ public class ChatTasks {
     @Getter
     private static final LimitedSpeedExecutor chatExecutor=new LimitedSpeedExecutor(new IntRef(5));
     public static void sendDelayChatMessage(Text text){
-        chatExecutor.addDelayedExecuteTask(()->mc.player.sendMessage(text));
+        chatExecutor.addDelayedExecuteTask(()->mc.inGameHud.getChatHud().addMessage(text));
     }
 
 
@@ -665,7 +666,7 @@ public class ChatTasks {
                     entity = EntityUtils.getPlayerByName(target);
                 }
                 if(entity == null){
-                    var1.sendMessage(Text.literal("找不到实体或者玩家: " + target).formatted(Formatting.RED));
+                    sendMessage(var1, Text.literal("找不到实体或者玩家: " + target).formatted(Formatting.RED));
                     return;
                 }
                 pos = entity.getPos();
@@ -680,45 +681,45 @@ public class ChatTasks {
                 case "near"-> {
                     var player = mc.world.getPlayers().stream().filter(m->m != var1).sorted(Comparator.comparingDouble(m -> m.getPos().squaredDistanceTo(var1.getPos()))).findFirst().orElse(null);
                     if (player == null){
-                        var1.sendMessage(Text.literal("附近没有其他玩家!").formatted(Formatting.RED));
+                        sendMessage(var1, Text.literal("附近没有其他玩家!").formatted(Formatting.RED));
                         yield  null;
                     }else {
-                        var1.sendMessage(Text.literal("找到附近的玩家: "+ player.getName()).formatted(Formatting.GREEN));
+                        sendMessage(var1, Text.literal("找到附近的玩家: "+ player.getName()).formatted(Formatting.GREEN));
                     }
                     yield  player.getPos();
                 }
                 case "mark"-> {
                     if(mark != null){
                         Vec3d pos = Vec3d.ZERO.add(mark);
-                        var1.sendMessage(Text.literal("使用记录坐标： ").append(ChatUtils. getDisplayedLocationDouble(pos)));
+                        sendMessage(var1, Text.literal("使用记录坐标： ").append(ChatUtils. getDisplayedLocationDouble(pos)));
                         yield pos;
                     }else {
-                        var1.sendMessage( Text.literal("暂未记录坐标!"));
+                        sendMessage(var1,  Text.literal("暂未记录坐标!"));
                         yield null;
                     }
                 }
                 case "back" -> {
                     if(MovTasks.LAST_TP_FROM != null){
-                        var1.sendMessage(Text.literal("使用上一个位置: ").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_TP_FROM)));
+                        sendMessage(var1, Text.literal("使用上一个位置: ").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_TP_FROM)));
                         yield MovTasks.LAST_TP_FROM;
                     }
-                    var1.sendMessage(Text.literal("找不到上一个位置"));
+                    sendMessage(var1, Text.literal("找不到上一个位置"));
                     yield null;
                 }
                 case "desync" ->{
                     if(MovTasks.setBackLog.lastDesyncPos != null){
-                        var1.sendMessage(Text.literal("使用上次客户端同步之前的位置").append(ChatUtils. getDisplayedLocationDouble(MovTasks.setBackLog.lastDesyncPos)));
+                        sendMessage(var1, Text.literal("使用上次客户端同步之前的位置").append(ChatUtils. getDisplayedLocationDouble(MovTasks.setBackLog.lastDesyncPos)));
                         yield MovTasks.setBackLog.lastDesyncPos;
                     }
-                    var1.sendMessage(Text.literal("找不到上一次的客户端同步记录"));
+                    sendMessage(var1, Text.literal("找不到上一次的客户端同步记录"));
                     yield null;
                 }
                 case "lasttp" -> {
                     if(MovTasks.LAST_TP_REQUEST != null){
-                        var1.sendMessage(Text.literal("使用上一个TP请求: ").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_TP_REQUEST)));
+                        sendMessage(var1, Text.literal("使用上一个TP请求: ").append(ChatUtils. getDisplayedLocationDouble(MovTasks.LAST_TP_REQUEST)));
                         yield MovTasks.LAST_TP_REQUEST;
                     }
-                    var1.sendMessage(Text.literal("找不到上一个TP请求"));
+                    sendMessage(var1, Text.literal("找不到上一个TP请求"));
                     yield null;
                 }
                 case "death" ->{
@@ -727,15 +728,15 @@ public class ChatTasks {
                         if(Objects.equals(b0.get().dimension(), mc.world.getRegistryKey())){
                             yield b0.get().pos().toBottomCenterPos();
                         }else{
-                            var1.sendMessage(Text.literal("上次死亡位置不在该世界"));
+                            sendMessage(var1, Text.literal("上次死亡位置不在该世界"));
                         }
                     }else{
-                        var1.sendMessage(Text.literal("暂未死亡历史记录"));
+                        sendMessage(var1, Text.literal("暂未死亡历史记录"));
                     }
                     yield null;
                 }
                 default -> {
-                    var1.sendMessage(Text.literal("不存在的特殊目标： "+ target));
+                    sendMessage(var1, Text.literal("不存在的特殊目标： "+ target));
                     yield null;
                 }
             };
@@ -830,7 +831,7 @@ public class ChatTasks {
                         mc.player.setOnGround(false);
                         tickCNT +=1;
 //                                    Debug.info("distance ", vec3d, mc.player.getPos());
-                        if(mc.player.getY() < mc.world.getTopY() + 64){
+                        if(mc.player.getY() < mc.world.getBottomY() + mc.world.getHeight() + 64){
                             MovTasks.farawayMove(new Vec3d(0, 128, 0), true);
                         }else {
                             //fixme error in boat, desync boat position
@@ -904,7 +905,7 @@ public class ChatTasks {
                     if(player != null){
                         pos = player.getPos();
                     }else {
-                        var1.sendMessage(Text.literal("找不到实体或者玩家: " + var).formatted(Formatting.RED));
+                        sendMessage(var1, Text.literal("找不到实体或者玩家: " + var).formatted(Formatting.RED));
                         return ;
                     }
                 }
@@ -913,18 +914,13 @@ public class ChatTasks {
                     return ;
                 }
                 default -> {
-                    var1.sendMessage(Text.literal("不存在的mark类型: "+type).formatted(Formatting.RED));
+                    sendMessage(var1, Text.literal("不存在的mark类型: "+type).formatted(Formatting.RED));
                     return ;
                 }
             }
             mark = pos;
             Debug.chat("标记成功: ", ChatUtils. getDisplayedLocationDouble(pos));
-            RenderTasks.registerVirtualRenderTask(new RenderTasks.BoxRenderingTask(var1.dimensions.getBoxAt(mark), Integer.MAX_VALUE, Color.GREEN){
-                @Override
-                public boolean stillRender() {
-                    return super.stillRender() && mark == pos;
-                }
-            });
+            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(new RenderTasks.BoxObject(var1.dimensions.getBoxAt(mark), Color.GREEN)).setAutoStop(()-> mark != pos));
         }
         List<String> infoTypes =  List.of("death", "spawn", "nbt", "inventory","ender", "plist", "team", "pentry");
         {
@@ -975,7 +971,7 @@ public class ChatTasks {
                 case "spawn"->{
                     //todo: test if it works
                     Debug.chat("当前世界的出生点:");
-                    GlobalPos pos = GlobalPos.create(mc.world.getRegistryKey(), mc.world.getSpawnPos());
+                    GlobalPos pos = mc.world.getSpawnPoint().globalPos();
                     Debug.chat("World Spawn Point [World:", pos.dimension().getValue(), ",Pos:", ChatUtils.getDisplayedLocationDouble(Vec3d.of(pos.pos())), "]");
 //                        if(entity != null){
 //                           // mc.player.spawn
@@ -985,8 +981,7 @@ public class ChatTasks {
                 }
                 case "nbt"->{
                     if(entity != null){
-                        var comp = new NbtCompound();
-                        entity.writeNbt(comp);
+                        var comp = VEntity.saveEntityNbt(entity);
                         comp.remove("Inventory");
                         comp.remove("EnderItems");
                         Debug.chat(new NbtTextFormatter("").apply(comp));
@@ -1019,9 +1014,9 @@ public class ChatTasks {
                 case "plist"->{
                     Debug.chat(Text.literal("当前可视的玩家列表").formatted(Formatting.GREEN));
                     mc.getNetworkHandler().getPlayerList().stream()
-                        .sorted(Comparator.comparing(e -> e.getProfile().getName()))
+                        .sorted(Comparator.comparing(e -> e.getProfile().name()))
                         .map(entry ->{
-                            var val =  Text.literal(  "%-16s (Display: ".formatted(entry.getProfile().getName()) ).append(entry.getDisplayName() ==null ? Text.literal("null") : entry.getDisplayName()).append(Text.literal(", GameMode: " + entry.getGameMode().name() + ")"));
+                            var val =  Text.literal(  "%-16s (Display: ".formatted(entry.getProfile().name()) ).append(entry.getDisplayName() ==null ? Text.literal("null") : entry.getDisplayName()).append(Text.literal(", GameMode: " + entry.getGameMode().name() + ")"));
                             Debug.info(val);
                             return  val;
                         })
@@ -1059,9 +1054,9 @@ public class ChatTasks {
                     PlayerListEntry entry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(user0);
                     if(entry != null){
                         Debug.chat("查询到PlayerEntry");
-                        Debug.chat(Text.literal("名字: ").formatted(Formatting.GRAY), entry.getProfile().getName());
-                        Debug.chat(Text.literal("UUID: ").formatted(Formatting.GRAY), ChatUtils.getClickCopyTargetText(entry.getProfile().getId().toString()).formatted(Formatting.GREEN));
-                        Debug.chat(Text.literal("Property: ").formatted(Formatting.GRAY),  ChatUtils.getHoverShowText("[点击查看具体数据]", List.of(Text.literal(entry.getProfile().getProperties().toString()))) );
+                        Debug.chat(Text.literal("名字: ").formatted(Formatting.GRAY), entry.getProfile().name());
+                        Debug.chat(Text.literal("UUID: ").formatted(Formatting.GRAY), ChatUtils.getClickCopyTargetText(entry.getProfile().id().toString()).formatted(Formatting.GREEN));
+                        Debug.chat(Text.literal("Property: ").formatted(Formatting.GRAY),  ChatUtils.getHoverShowText("[点击查看具体数据]", List.of(Text.literal(entry.getProfile().properties().toString()))) );
                         Debug.chat(Text.literal("GameMode: ").formatted(Formatting.GRAY), entry.getGameMode().name());
                         Debug.chat(Text.literal("DisplayName: ").formatted(Formatting.GRAY), entry.getDisplayName() == null ?  Text.literal("null") : entry.getDisplayName());
                         //todo need test

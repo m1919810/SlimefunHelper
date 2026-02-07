@@ -11,6 +11,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -91,7 +92,8 @@ public class PacketDebugger extends BaseModule {
             Packet<?> type = packetEvent.context();
             if(typesDebug.contains(type.getPacketId())){
                 if(type instanceof PlayerPositionLookS2CPacket positionLookS2CPacket){
-                    ExtraTasks.debug("Accept", type.getPacketId().id(), positionLookS2CPacket.getX(), positionLookS2CPacket.getY(), positionLookS2CPacket.getZ(), ", Pitch:", positionLookS2CPacket.getPitch(), ", Yaw:", positionLookS2CPacket.getYaw());
+                    Vec3d vec3d = positionLookS2CPacket.change().position();
+                    ExtraTasks.debug("Accept", type.getPacketId().id(),vec3d.x, vec3d.y, vec3d.z, ", Pitch:", positionLookS2CPacket.change().pitch(), ", Yaw:", positionLookS2CPacket.change().yaw());
                 } else{
                     ExtraTasks.debug("Accept", type.getPacketId().id());
                 }

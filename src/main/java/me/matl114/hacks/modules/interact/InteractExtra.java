@@ -20,6 +20,7 @@ public class InteractExtra extends BaseModule {
         .build();
 
     public final IntRef noCooldownValue = builder(Configs.INTERACT_CONFIG, NO_COOLDOWN_VALUE, IntRef.TYPE)
+        .defaultValue(4)
         .build();
 
     public final FlagRef rideUse = builder(Configs.INTERACT_CONFIG, INTERACT_WHEN_RIDING, FlagRef.TYPE)

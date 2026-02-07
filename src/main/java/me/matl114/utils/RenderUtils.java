@@ -1,10 +1,8 @@
 package me.matl114.utils;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import me.matl114.utils.world.RegionPos;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.*;
@@ -40,12 +38,12 @@ public class RenderUtils {
     //vertexBuffer可以缓存buffer的行为，可以在不同的变换矩阵下重复使用， 使用bind();draw(viewMatrix, projMatrix, shader);unbind();
     //projMatrix从RenderSystem.getProjectionMatrix();获取, shader从RenderSystem.getShader();获取, viewMatrix是正常传参中的玩家位置matrixStack.position
     public static Vec3d getCameraPos(){
-        var d = mc.getBlockEntityRenderDispatcher().camera;
-        return d == null? Vec3d.ZERO:d.getPos();
+        var d = mc.gameRenderer.getCamera();
+        return d == null? Vec3d.ZERO:d.getCameraPos();
     }
     public static BlockPos getCameraBlockPos()
     {
-        Camera camera = mc.getBlockEntityRenderDispatcher().camera;
+        Camera camera = mc.gameRenderer.getCamera();
         if(camera == null)
             return BlockPos.ORIGIN;
 
@@ -152,10 +150,6 @@ public class RenderUtils {
         VRender.getInstance().setAsShaderColor(color, opacity);
     }
 
-    //gui
-    public static void drawHighlightFrame(DrawContext context, int x, int y, int dx, int dy, int color){
-        VRender.getInstance().drawHighlightFrame(context, x, y, dx, dy, color);
-    }
 
     public static Box getLerpedBox(Entity e, float partialTicks)
     {

@@ -182,8 +182,7 @@ public class IntFastInputWidget extends SubScreenWidget {
                         })
                     )
             )
-            .setExtraDepth( -1)
-            .addToSub(this);
+            .addToSub(this, -1);
 
     }
     protected void callback(){
@@ -197,7 +196,7 @@ public class IntFastInputWidget extends SubScreenWidget {
     }
 
     protected void init(){
-        setExtraDepth(1);
+        setBasicDepth(1);
         initConfirmButton();
         initBackgroundAndText();
         initFastButtons();

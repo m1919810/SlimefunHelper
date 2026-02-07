@@ -15,8 +15,6 @@ import me.matl114.utils.Debug;
 import me.matl114.events.Event;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Saddleable;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.*;
@@ -122,21 +120,14 @@ public class Tasks {
             if(mc.player.getMainHandStack().getItem() == Items.WRITABLE_BOOK){
                 Debug.chat("生成了书内容");
                 String generatedContent = "§b§k" + ("1a锕β".repeat(250));
-                mc.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(mc.player.getInventory().selectedSlot, Collections.nCopies(100, generatedContent), args.length > 0 ?  Optional.of(String.join("\n", args)) : Optional.empty()));
+                mc.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(mc.player.getInventory().getSelectedSlot(), Collections.nCopies(100, generatedContent), args.length > 0 ?  Optional.of(String.join("\n", args)) : Optional.empty()));
             }else {
                 Debug.chat("手持物品不是书");
             }
         }
     }
     public static void versionedStriderFix(String[] args){
-        if(mc.player != null){
-            if(mc.player.getVehicle() instanceof Saddleable striderEntity){
-                Debug.chat("Set saddle for entity");
-                striderEntity.saddle(new ItemStack(Items.SADDLE), null);
-            }else{
-                Debug.chat("No vehicle");
-            }
-        }
+        // no version problem now
     }
 
     //store the crash exception

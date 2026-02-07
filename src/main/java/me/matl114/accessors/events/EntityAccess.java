@@ -24,8 +24,4 @@ public interface EntityAccess<T extends Entity> extends MetadataHolder {
 
     public void afterTick();
 
-    default void stopJumpThisTick(){
-        throw new UnsupportedOperationException();
-    }
-
 }
