@@ -90,16 +90,6 @@ public class SlimefunGuide extends BaseModule {
         ));
     }
 
-    public void openVanillaRecipeTypeMenuFromEntry(RecipeEntry type){
-        if(handleNotEnable())return;
-        SlimefunTasks.openOrSwitch(SlimefunEntryListScreen.recipeEntry(RecipeTasks.getAllRecipe().values()
-            .stream()
-            .filter(i-> Objects.equals(type, i.type()))
-            .map(RecipeEntry.class::cast)
-            .toList())
-        );
-    }
-
 
     private static final Text TITLE_ALL_ITEM = Text.literal("全部记录物品");
     public static final List<Text> TOOLTIPS_ITEM_RULE =  List.of(

@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.Listener;
 import me.matl114.events.Event;
@@ -68,12 +70,12 @@ public abstract class MinecraftClientEvents {
             Listener.getServerDisconnectPoint().broadcast(null);
     }
 
-    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/GameRenderer;render(Lnet/minecraft/client/render/RenderTickCounter;Z)V"))
-    private void onGameRenderer(GameRenderer renderer, RenderTickCounter counter, boolean z){
-        Event<GameRenderer> rendererEvent = new Event<>(renderer, true, false, counter, z);
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/GameRenderer;render(Lnet/minecraft/client/render/RenderTickCounter;Z)V"))
+    private void onGameRenderer(GameRenderer instance, RenderTickCounter tickCounter, boolean tick, Operation<Void> original){
+        Event<GameRenderer> rendererEvent = new Event<>(instance, true, false, tickCounter, tick);
         Listener.getGameRender().handleValue(rendererEvent);
         if(!rendererEvent.isCancelled()){
-            renderer.render(counter, z);
+            original.call(instance, tickCounter, tick);
         }
     }
     @Inject(method = "printCrashReport(Lnet/minecraft/client/MinecraftClient;Ljava/io/File;Lnet/minecraft/util/crash/CrashReport;)V", at = @At(value = "INVOKE", target = "Ljava/lang/System;exit(I)V", shift = At.Shift.BEFORE), cancellable = true)

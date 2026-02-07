@@ -69,8 +69,6 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok:1.18.30'   // 最新的 Lombok 版本
 	compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 	annotationProcessor 'org.projectlombok:lombok:1.18.30'  // 注解处理器
-	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
-	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
 
 
 }
@@ -171,10 +169,6 @@ tasks.named("runClient", JavaExec) {
 //			"http.proxyPort": "7890"
 //	]
 //}
-
-tasks.test {
-	useJUnitPlatform()
-}
 
 
 // configure the maven publication

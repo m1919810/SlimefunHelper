@@ -363,7 +363,7 @@ public class SleepMode extends BaseModule {
         if(isScreenSleeping()){
             event.cancel();
             if(sleepingScreenInstance != null){
-                sleepingScreenInstance.mouseDragged((Double) event.extraArgs[0], (Double) event.extraArgs[1], (Integer)event.extraArgs[2], (Double) event.extraArgs[3], (Double)event.extraArgs[4]);
+                sleepingScreenInstance.mouseDragged((Double) event.extraArgs[0], (Double) event.extraArgs[1], event.context.activeButton, (Double) event.extraArgs[2], (Double)event.extraArgs[3]);
             }
         }
     }

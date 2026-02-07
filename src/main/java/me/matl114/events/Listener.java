@@ -466,7 +466,7 @@ public class Listener {
     private static final EventChannel<Mouse> mouseMove = new EventChannel<>();
     @Getter
     @Cancelable
-    @ExtraArgs(value = {double.class, double.class, int.class, double.class, double.class}, names = {"mouseX", "mouseY", "activeButton", "deltaX", "deltaY"})
+    @ExtraArgs(value = {double.class, double.class, double.class, double.class}, names = {"mouseX", "mouseY", "deltaX", "deltaY"})
     private static final EventChannel<Mouse> mouseDrag = new EventChannel<>();
     @Getter
     @Cancelable
