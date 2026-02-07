@@ -71,7 +71,6 @@
 		"render.ItemColorMixin",
 		"render.JsonUnbakedModelMixin",
 		"render.ResourcePackPositionMixin",
-		"render.ScaleSlotMixin",
 		"render.ScreenMixin",
 		"render.ScrollableWidgetMixin",
 		"render.TextFieldWidgetMixin",
