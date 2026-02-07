@@ -22,12 +22,8 @@ public class RecipeTasks {
     public static final Map EMPTY = Map.of();
     public static final Map<String, RecipeType> TYPE_MAP = new LinkedHashMap<>();
 
-
-    public static RecipeType getById(String id){
-        if(TYPE_MAP .isEmpty()){
-            Registries.RECIPE_TYPE.stream().forEach(rt->TYPE_MAP.put(Registries.RECIPE_TYPE.getId(rt).toString(),rt));
-        }
-        return TYPE_MAP.get(id);
+    public static boolean isVanillaRecipeType(String rid){
+        return Registries.RECIPE_TYPE.getOrEmpty(Identifier.tryParse(rid)).isPresent();
     }
 
     public static Map<Identifier, RecipeRecord> getAllRecipe(){
@@ -61,7 +57,7 @@ public class RecipeTasks {
     }
     public static record RecipeRecord(Identifier identifier, Recipe<?> instance, RecipeType<?> type, ItemStack output, RecipeIngredient[] ingredients) implements me.matl114.hacks.utils.recipes.RecipeEntry {
         public static RecipeRecord of(RecipeEntry<?> instance, RecipeType type){
-            return new RecipeRecord(instance.id(), (Recipe<?>) (Object)instance.value(), type, instance.value().getResult( mc.world.getRegistryManager()), SlimefunTasks.transfer3x3RecipeDisplay(instance.value(), instance.value().getIngredients().stream().map(v -> new RecipeIngredient(v.getMatchingStacks())).toArray(RecipeIngredient[]::new)));
+            return new RecipeRecord(instance.id(), (Recipe<?>) (Object)instance.value(), type, instance.value().getResult( mc.world.getRegistryManager()), RecipeTasks.transfer3x3RecipeDisplay(instance.value(), instance.value().getIngredients().stream().map(v -> new RecipeIngredient(v.getMatchingStacks())).toArray(RecipeIngredient[]::new)));
         }
         @Override
         public String rid() {
@@ -80,6 +76,43 @@ public class RecipeTasks {
 
     }
 
+
+    public static RecipeIngredient[] transfer3x3RecipeDisplay(RecipeTasks.RecipeRecord recipeRecord){
+        return recipeRecord.ingredients();
+    }
+    public static RecipeIngredient[] transfer3x3RecipeDisplay(Recipe<?> instance, RecipeIngredient[] ingred){
+
+        RecipeIngredient[] ingredients = new RecipeIngredient[9];
+
+        if(instance instanceof ShapedRecipe shaped){
+            List<Ingredient> raw = RecipeTasks.getIngredients(shaped);
+            int width = shaped.getWidth();
+            int height = shaped.getHeight();
+            for (int i=0; i< 3; ++i){
+                for(int j = 0; j< 3; ++j){
+                    if(i < height && j < width){
+                        ingredients[3*i + j] = new RecipeIngredient(RecipeTasks.streamIngredientOptions(raw.get(width * i + j)).toArray(ItemStack[]::new));
+                    }else {
+                        ingredients[3*i + j] = RecipeIngredient.EMPTY;
+                    }
+                }
+            }
+        }else {
+            System.arraycopy(ingred, 0, ingredients, 0, ingred.length);
+            for (int i = ingred.length; i<9 ; ++i){
+                ingredients[i] = RecipeIngredient.EMPTY;
+            }
+        }
+        return ingredients;
+    }
+
+
+
+
+
+
+
+
     public static List<Ingredient> getIngredients(Recipe<?> recipe){
         return recipe.getIngredients();
     }
@@ -90,6 +123,10 @@ public class RecipeTasks {
 
     public static List<Ingredient> getIngredients(RecipeEntry<?> recipeEntry){
         return recipeEntry.value().getIngredients();
+    }
+
+    public static ItemStack getRecipeResult(RecipeEntry<?> recipeEntry){
+        return recipeEntry.value().getResult(MinecraftClient.getInstance().world.getRegistryManager());
     }
 
     static{

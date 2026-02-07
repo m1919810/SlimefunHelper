@@ -135,10 +135,9 @@ public class FastCraft extends BaseModule {
 
     @Getter
     boolean lock;
-    RecipeEntry<?> entry;
     private ItemStack getDisplayItemStack(){
-        if(entry != null){
-            return entry.value().getResult(MinecraftClient.getInstance().world.getRegistryManager());
+        if(lastCrafted != null){
+            return RecipeTasks.getRecipeResult(lastCrafted);
         }else{
             return new ItemStack(Items.BARRIER);
         }

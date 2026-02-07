@@ -302,41 +302,6 @@ public class SlimefunTasks {
         InvTasks.moveRecipePatternToContainer(screen, ingredients, acceptSlots, amount, removeOrigin, ((screen1, itemStack) -> getItemStackMatchingSlot(screen1, itemStack, true, playerInv)));
     }
 
-    public static RecipeIngredient[] transfer3x3RecipeDisplay(RecipeTasks.RecipeRecord recipeRecord){
-        return recipeRecord.ingredients();
-    }
-    public static RecipeIngredient[] transfer3x3RecipeDisplay(Recipe<?> instance, RecipeIngredient[] ingred){
-
-        RecipeIngredient[] ingredients = new RecipeIngredient[9];
-
-        if(instance instanceof ShapedRecipe shaped){
-            List<Ingredient> raw = RecipeTasks.getIngredients(shaped);
-            int width = shaped.getWidth();
-            int height = shaped.getHeight();
-            for (int i=0; i< 3; ++i){
-                for(int j = 0; j< 3; ++j){
-                    if(i < height && j < width){
-                        ingredients[3*i + j] = new RecipeIngredient(RecipeTasks.streamIngredientOptions(raw.get(width * i + j)).toArray(ItemStack[]::new));
-                    }else {
-                        ingredients[3*i + j] = RecipeIngredient.EMPTY;
-                    }
-                }
-            }
-        }else {
-            System.arraycopy(ingred, 0, ingredients, 0, ingred.length);
-            for (int i = ingred.length; i<9 ; ++i){
-                ingredients[i] = RecipeIngredient.EMPTY;
-            }
-        }
-        return ingredients;
-    }
-
-
-
-
-
-
-
     static{
         Tasks.scheduleDelayed(()->{
             //post init tasks

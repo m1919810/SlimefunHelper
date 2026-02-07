@@ -199,13 +199,13 @@ public class SlimefunGuide extends BaseModule {
 
     public void onClickRecipeType(String type, boolean isLeft){
         if(handleNotEnable())return;
-        RecipeType type1 = RecipeTasks.getById(type);
         List<RecipeEntry> myEntry;
-        if(type1 != null){
+
+        if(RecipeTasks.isVanillaRecipeType(type)){
             Map<Identifier, RecipeTasks.RecipeRecord> myCache = RecipeTasks.getAllRecipe();
             myEntry = myCache.values()       // RecipeTasks.getRecipeByType(type1)
                 .stream()
-                .filter(i-> i.type() == type1)
+                .filter(i-> Objects.equals(i.rid(), type))
                 .map(RecipeEntry.class::cast)
                 //  .map(i->(RecipeEntry)myCache.get(i.id()))
                 //  .filter(Objects::nonNull)
