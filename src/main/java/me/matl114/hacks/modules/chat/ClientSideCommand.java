@@ -21,6 +21,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.events.Event;
+import net.minecraft.client.network.ClientCommandSource;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.EntitySelector;
@@ -168,7 +169,7 @@ public class ClientSideCommand extends BaseModule {
     }
 
 
-    private static ResultConsumer<CommandSource> consumer = (c, s, r) -> {
+    private static ResultConsumer<ClientCommandSource> consumer = (c, s, r) -> {
     };
 
     private boolean dispatchVanillaCommand(String command){
@@ -176,7 +177,7 @@ public class ClientSideCommand extends BaseModule {
         if(mc.player == null)return false;
         mc.player.setClientPermissionLevel(4);
         try{
-            ParseResults<CommandSource> parse = mc.getNetworkHandler().getCommandDispatcher().parse(command, mc.player.getCommandSource());
+            ParseResults<ClientCommandSource> parse = (ParseResults) mc.getNetworkHandler().getCommandDispatcher().parse(command, (ClientCommandSource) mc.getNetworkHandler().getCommandSource());
             if (parse.getReader().canRead()) {
                 if (parse.getExceptions().size() == 1) {
                     throw parse.getExceptions().values().iterator().next();
@@ -188,12 +189,12 @@ public class ClientSideCommand extends BaseModule {
             }
 
             final String commandStr = parse.getReader().getString();
-            final CommandContextBuilder<CommandSource> originalBuilder = parse.getContext();
+            final CommandContextBuilder<ClientCommandSource> originalBuilder = parse.getContext();
             //flatten this
-            List<CommandContextBuilder<CommandSource>> modifiers = new ArrayList<>();
-            CommandContextBuilder<CommandSource> contextData = originalBuilder;
+            List<CommandContextBuilder<ClientCommandSource>> modifiers = new ArrayList<>();
+            CommandContextBuilder<ClientCommandSource> contextData = originalBuilder;
             while (true){
-                CommandContextBuilder<CommandSource> child = contextData.getChild();
+                CommandContextBuilder<ClientCommandSource> child = contextData.getChild();
                 if(child == null){
                     if(contextData.getCommand() ==null){
                         consumer.onCommandComplete(originalBuilder.build(commandStr), false, 0);
@@ -204,7 +205,7 @@ public class ClientSideCommand extends BaseModule {
                 modifiers.add(contextData);
                 contextData = child;
             }
-            Map<String, ParsedArgument<CommandSource, ?>> argsMap = contextData.getArguments();
+            Map<String, ParsedArgument<ClientCommandSource, ?>> argsMap = contextData.getArguments();
             if(commandStr.startsWith("give") || commandStr.startsWith("minecraft:give")){
                 return handleClientSideGiveCommand(argsMap, command);
             }
@@ -216,11 +217,11 @@ public class ClientSideCommand extends BaseModule {
         return false;
     }
 
-    private boolean handleClientSideGiveCommand(Map<String, ParsedArgument<CommandSource, ?>> argsMap, String command) throws CommandSyntaxException{
+    private boolean handleClientSideGiveCommand(Map<String, ParsedArgument<ClientCommandSource, ?>> argsMap, String command) throws CommandSyntaxException{
         if(enableGive.get()){
             if(mc.player.isCreative()){
                 Debug.chat(Text.literal("尝试在客户端执行give指令").formatted(Formatting.GREEN));
-                ParsedArgument<CommandSource, ?> entityArgument = argsMap.get("targets");
+                ParsedArgument<ClientCommandSource, ?> entityArgument = argsMap.get("targets");
                 EntitySelector entitySelector = (EntitySelector) entityArgument.getResult();
                 StringRange range = entityArgument.getRange();
                 if(entitySelector.isSenderOnly() || Objects.equals( mc.player.getNameForScoreboard(), command.substring(range.getStart(), range.getEnd()))){
