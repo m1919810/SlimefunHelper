@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class ClientSideCommand extends BaseModule {
@@ -58,30 +59,30 @@ public class ClientSideCommand extends BaseModule {
 
     private static final Predicate<CommandSource> requirement = (val)->true;
     private static final Command<CommandSource> success = (val)->Command.SINGLE_SUCCESS;
-    private void addOurCommandNodesInRoot(RootCommandNode<CommandSource> node){
+    private <T extends CommandSource> void addOurCommandNodesInRoot(RootCommandNode<T> node){
         //try add deop command
         //fix: plugin give commands
         if(enableGive.get()){
-            CommandNode<CommandSource> give = node.getChild("minecraft:give");
-            LiteralCommandNode<CommandSource> giveCommand;
+            CommandNode<T> give = node.getChild("minecraft:give");
+            LiteralCommandNode<T> giveCommand;
             if (give == null) {
                 giveCommand = new LiteralCommandNode<>(
                     "minecraft:give",
                     null,
-                    requirement,
+                    (Predicate<T>) requirement,
                     null,
                     null,
                     false
                 );
                 node.addChild(giveCommand);
             }else {
-                giveCommand = (LiteralCommandNode<CommandSource>) give;
+                giveCommand = (LiteralCommandNode<T>) give;
             }
             if(node.getChild("give") == null){
-                LiteralCommandNode<CommandSource> mcGiveCommand = new LiteralCommandNode<>(
+                LiteralCommandNode<T> mcGiveCommand = new LiteralCommandNode<>(
                     "give",
                     null,
-                    requirement,
+                    (Predicate<T>) requirement,
                     giveCommand,
                     null,
                     false
@@ -95,11 +96,11 @@ public class ClientSideCommand extends BaseModule {
                 );
 
 
-                ArgumentCommandNode<CommandSource, EntitySelector> targetArgument = new ArgumentCommandNode<>(
+                ArgumentCommandNode<T, EntitySelector> targetArgument = new ArgumentCommandNode<>(
                     "targets",
                     EntityArgumentType.players(),
                     null,
-                    requirement,
+                    (Predicate<T>) requirement,
                     null,
                     null,
                     false,
@@ -107,22 +108,22 @@ public class ClientSideCommand extends BaseModule {
                     null
                 );
                 giveCommand.addChild(targetArgument);
-                ArgumentCommandNode<CommandSource, ItemStackArgument> itemArgument = new ArgumentCommandNode<>(
+                ArgumentCommandNode<T, ItemStackArgument> itemArgument = new ArgumentCommandNode<>(
                     "item",
                     ItemStackArgumentType.itemStack(commandRegistryAccess),
-                    success,
-                    requirement,
+                    (Command<T>)success,
+                    (Predicate<T>) requirement,
                     null,
-                    null,
+                  null,
                     false,
                     null
                 );
                 targetArgument.addChild(itemArgument);
-                ArgumentCommandNode<CommandSource, Integer> countAmount = new ArgumentCommandNode<>(
+                ArgumentCommandNode<T, Integer> countAmount = new ArgumentCommandNode<>(
                     "count",
                     IntegerArgumentType.integer(1),
-                    success,
-                    requirement,
+                    (Command<T>)success,
+                    (Predicate<T>) requirement,
                     null,
                     null,
                     false,
@@ -139,13 +140,13 @@ public class ClientSideCommand extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPacketPostHandlePoint().getChannel(CommandTreeS2CPacket.class), this::onClientCommandReload);
+        registerListener(Listener.getPacketPostHandlePoint().getChannel(CommandTreeS2CPacket.class), (Consumer<Event<CommandTreeS2CPacket>>) this::onClientCommandReload);
         registerListener(Listener.getChatSend(), this::onCommandSend, 1);
     }
 
-    private void onClientCommandReload(Event<CommandTreeS2CPacket> reload){
-        CommandDispatcher<CommandSource> clientTree = mc.getNetworkHandler().getCommandDispatcher();
-        RootCommandNode<CommandSource> root = clientTree.getRoot();
+    private <T extends CommandSource> void onClientCommandReload(Event<CommandTreeS2CPacket> reload){
+        CommandDispatcher<T> clientTree = (CommandDispatcher<T>) mc.getNetworkHandler().getCommandDispatcher();
+        RootCommandNode<T> root = clientTree.getRoot();
         if(root != null && enable.get()){
             addOurCommandNodesInRoot(root);
         }

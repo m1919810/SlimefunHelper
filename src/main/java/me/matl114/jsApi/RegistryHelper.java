@@ -12,7 +12,7 @@ import java.util.Objects;
 public class RegistryHelper {
     private static MinecraftClient mc = MinecraftClient.getInstance();
     public static <T> Registry<T> getRegistry(String resourceKey){
-        return mc.getNetworkHandler().getRegistryManager().get( RegistryKey.ofRegistry(Identifier.tryParse(resourceKey)));
+        return (Registry<T>) mc.getNetworkHandler().getRegistryManager().getOptional( RegistryKey.ofRegistry(Identifier.tryParse(resourceKey))).orElseThrow();
     }
 
     public static <T> T getInRegistry(Registry<T> registry, String key){

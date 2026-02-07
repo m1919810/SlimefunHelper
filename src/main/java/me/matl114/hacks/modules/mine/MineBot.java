@@ -180,7 +180,7 @@ public class MineBot  extends BaseModule {
             if(item.get(DataComponentTypes.UNBREAKABLE) != null){
                 durabilityLimit = 0;
             }else if(item.get(DataComponentTypes.MAX_DAMAGE) != null){
-                var optionalUnbreaking = ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.UNBREAKING);
+                var optionalUnbreaking = ItemStackUtils.registry().getOptional(RegistryKeys.ENCHANTMENT).orElseThrow().getEntry(Enchantments.UNBREAKING);
                 int multiply = 1;
                 if(optionalUnbreaking.isPresent()){
                     multiply = EnchantmentHelper.getLevel(optionalUnbreaking.get(), item) + 1;

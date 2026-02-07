@@ -66,60 +66,60 @@ public class Tests extends BaseModule {
 
     private int counter=0;
 
-    private void sendItemSwapPacketInternal(){
-//        slimefunTick++;
-//        if(slimefunTick<5){
+//    private void sendItemSwapPacketInternal(){
+////        slimefunTick++;
+////        if(slimefunTick<5){
+////
+////            return;
+////        }else if(slimefunTick>21){
+////            slimefunTick=0;
+////            return;
+////        }
+//        running=true;
 //
-//            return;
-//        }else if(slimefunTick>21){
-//            slimefunTick=0;
-//            return;
+//        if(future == null){
+//            String test="Start running 12 test";
+//            // Debug.info(test);
+//            future = CompletableFuture.runAsync(()->{
+//                try{
+//                    do {
+//                        //
+//                        if (counter>delay.get()) {
+//                            counter=0;
+//                            try {
+//                                Thread.sleep(bigDelay.get());
+//                            } catch (Throwable e) {
+//                            }
+//                            MinecraftClient.getInstance().getNetworkHandler().sendPacket(
+//                                new ClickSlotC2SPacket(MinecraftClient.getInstance().player.currentScreenHandler.syncId, MinecraftClient.getInstance().player.currentScreenHandler.getRevision(), 25, 40, SlotActionType.SWAP, MinecraftClient.getInstance().player.currentScreenHandler.getCursorStack(), new Int2ObjectOpenHashMap<>())
+//                            );
+//                            MinecraftClient.getInstance().getNetworkHandler().sendPacket(
+//                                new ClickSlotC2SPacket(MinecraftClient.getInstance().player.currentScreenHandler.syncId, MinecraftClient.getInstance().player.currentScreenHandler.getRevision(), 19, 40, SlotActionType.SWAP, MinecraftClient.getInstance().player.currentScreenHandler.getCursorStack(), new Int2ObjectOpenHashMap<>())
+//                            );
+//
+//                            swapState=false;
+//                        }else{
+//
+//                            counter+=10_000;
+//                            MinecraftClient.getInstance().getNetworkHandler().sendPacket(
+//                                new ClickSlotC2SPacket(MinecraftClient.getInstance().player.currentScreenHandler.syncId, MinecraftClient.getInstance().player.currentScreenHandler.getRevision(), 19, 40, SlotActionType.SWAP, MinecraftClient.getInstance().player.currentScreenHandler.getCursorStack(), new Int2ObjectOpenHashMap<>())
+//                            );
+//
+//                            long a=System.nanoTime()+10_000;
+//                            do{
+//                            }while (System.nanoTime()<a);
+//                        }
+//
+//                    }while (running);
+//                }catch(Throwable e){
+//                    Debug.info(e);
+//                    running=false;
+//                }
+//            });
+//
 //        }
-        running=true;
-
-        if(future == null){
-            String test="Start running 12 test";
-            // Debug.info(test);
-            future = CompletableFuture.runAsync(()->{
-                try{
-                    do {
-                        //
-                        if (counter>delay.get()) {
-                            counter=0;
-                            try {
-                                Thread.sleep(bigDelay.get());
-                            } catch (Throwable e) {
-                            }
-                            MinecraftClient.getInstance().getNetworkHandler().sendPacket(
-                                new ClickSlotC2SPacket(MinecraftClient.getInstance().player.currentScreenHandler.syncId, MinecraftClient.getInstance().player.currentScreenHandler.getRevision(), 25, 40, SlotActionType.SWAP, MinecraftClient.getInstance().player.currentScreenHandler.getCursorStack(), new Int2ObjectOpenHashMap<>())
-                            );
-                            MinecraftClient.getInstance().getNetworkHandler().sendPacket(
-                                new ClickSlotC2SPacket(MinecraftClient.getInstance().player.currentScreenHandler.syncId, MinecraftClient.getInstance().player.currentScreenHandler.getRevision(), 19, 40, SlotActionType.SWAP, MinecraftClient.getInstance().player.currentScreenHandler.getCursorStack(), new Int2ObjectOpenHashMap<>())
-                            );
-
-                            swapState=false;
-                        }else{
-
-                            counter+=10_000;
-                            MinecraftClient.getInstance().getNetworkHandler().sendPacket(
-                                new ClickSlotC2SPacket(MinecraftClient.getInstance().player.currentScreenHandler.syncId, MinecraftClient.getInstance().player.currentScreenHandler.getRevision(), 19, 40, SlotActionType.SWAP, MinecraftClient.getInstance().player.currentScreenHandler.getCursorStack(), new Int2ObjectOpenHashMap<>())
-                            );
-
-                            long a=System.nanoTime()+10_000;
-                            do{
-                            }while (System.nanoTime()<a);
-                        }
-
-                    }while (running);
-                }catch(Throwable e){
-                    Debug.info(e);
-                    running=false;
-                }
-            });
-
-        }
-
-    }
+//
+//    }
     public void stopItemSwapPacketInternal(){
         running=false;
         if(future!=null){

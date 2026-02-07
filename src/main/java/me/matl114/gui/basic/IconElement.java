@@ -136,7 +136,7 @@ public abstract class IconElement extends BoxElement{
         RenderSystem.enableBlend();
         RenderSystem.enableDepthTest();
         renderTexture(context, element, shouldHighlight);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
 

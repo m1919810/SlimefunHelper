@@ -49,7 +49,7 @@ public class GenericScreen extends Screen {
 
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public final boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         //call for all children
         Iterator var5 = this.children().iterator();
         Element element;
@@ -67,7 +67,7 @@ public class GenericScreen extends Screen {
     protected Draggable draggingElement = null;
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public final boolean mouseReleased(double mouseX, double mouseY, int button) {
         if(button == 0 && draggingElement != null){
             //stop dragging here
             draggingElement.releaseDrag(this, mouseX, mouseY);
@@ -77,7 +77,7 @@ public class GenericScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public final boolean mouseClicked(double mouseX, double mouseY, int button) {
         boolean val = super.mouseClicked(mouseX, mouseY, button);
         if(button == 0){
             for (var iter: this.children()){
@@ -92,12 +92,12 @@ public class GenericScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public final boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         return this.draggingElement != null && button == 0 && this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public final boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
             //we mixin the input field of these

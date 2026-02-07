@@ -43,22 +43,28 @@ public abstract class MouseEvents
     @Shadow private int activeButton;
 
     @Inject(method = "onMouseScroll", cancellable = true,
-            at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;currentScreen:Lnet/minecraft/client/gui/screen/Screen;", ordinal = 0))
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;getOverlay()Lnet/minecraft/client/gui/screen/Overlay;"))
     private void onMouseScroll(long handle, double xOffset, double yOffset, CallbackInfo ci)
     {//暂时没东西
-        if(SimpleInputManager.getInstance().onMouseScroll(xOffset, yOffset)){
-            ci.cancel();
+        if(MinecraftClient.getInstance().getOverlay() == null){
+            if(SimpleInputManager.getInstance().onMouseScroll(xOffset, yOffset)){
+                ci.cancel();
+            }
         }
+
     }
     @Inject(method = "onMouseButton", cancellable = true,
-            at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;IS_SYSTEM_MAC:Z", ordinal = 0))
-    private void onMouseClick(long handle, final int button, final int action, int mods, CallbackInfo ci)
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;getOverlay()Lnet/minecraft/client/gui/screen/Overlay;", ordinal = 0, shift = At.Shift.BEFORE))
+    private void onMouseClick(long handle, final int button, final int action, int mods, CallbackInfo ci, @Local(ordinal = 3) int i)
     {
+
+        // capture the modified i
         Point coord= ScreenUtils.getMouseCoord(this.client,(Mouse)(Object)this);
-        if (SimpleInputManager.getInstance().onMouseClick(coord.x,coord.y, button, action, mods))
+        if (SimpleInputManager.getInstance().onMouseClick(coord.x,coord.y, i, action, mods))
         {
             ci.cancel();
         }
+
     }
 
     @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V", ordinal = 0))
@@ -82,7 +88,7 @@ public abstract class MouseEvents
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Mouse;isCursorLocked()Z"), cancellable = true)
     private void onScreenNull(CallbackInfo ci){
         //handle screen is null case, we should also send Events
-        if(MinecraftClient.getInstance().currentScreen == null){
+        if(MinecraftClient.getInstance().currentScreen == null && MinecraftClient.getInstance().getOverlay() == null){
             double f = getX() * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
             double g = getY() * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
             Event<Mouse> event = new Event<>((Mouse) (Object)this, true, false, f, g);

@@ -558,7 +558,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                             new ProfileComponent(lastComponent.name(), lastComponent.id(), map));
                     }else {
                         //generate empty
-                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, new ProfileComponent(Optional.empty(), Optional.empty(), BukkitItemStackUtils.buildPropertyMap(new PropertyMap(), hash)));
+                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, BukkitItemStackUtils.buildPlayerHeadProfileCSCoreLib(hash));
                     }
                 }else {
                     //empty hash remove

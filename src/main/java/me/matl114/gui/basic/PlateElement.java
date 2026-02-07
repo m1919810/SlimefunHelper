@@ -29,7 +29,7 @@ public class PlateElement extends AbstractElement {
         float red = ((color >> 16) & 0xFF) / 255f;
         float green = ((color >> 8) & 0xFF) / 255f;
         float blue = (color & 0xFF) / 255f;
-        RenderSystem.setShaderColor(red, green, blue, alpha1);
+        context.setShaderColor(red, green, blue, alpha1);
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(770, 771, 1, 0);
         RenderSystem.blendFunc(770, 771);
@@ -48,7 +48,7 @@ public class PlateElement extends AbstractElement {
 
         // Center
         context.drawTexturedQuad(TEXTURE,  8, width - 8,  8,  height - 8, 0, (114 + xTextureOffset) / 256f, (248 + xTextureOffset) / 256f, (132 + yTextureOffset) / 256f, (182 + yTextureOffset) / 256f);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     @Override

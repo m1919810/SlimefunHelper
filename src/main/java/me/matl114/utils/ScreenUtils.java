@@ -95,6 +95,52 @@ public class ScreenUtils {
         return keyCode == 257 || keyCode == 32 || keyCode == 335;
     }
 
+    public static int getCurrentModifiers() {
+        var windowHandle = mc.getWindow().getHandle();
+        if (windowHandle == 0) {
+            return 0;
+        }
+
+        int modifiers = 0;
+
+        // 检查 Shift 键
+        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
+            org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
+            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT;
+        }
+
+        // 检查 Control 键
+        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
+            org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
+            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL;
+        }
+
+        // 检查 Alt 键
+        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
+            org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_ALT) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
+            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_ALT;
+        }
+
+        // 检查 Windows/Command 键
+        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SUPER) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
+            org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SUPER) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
+            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_SUPER;
+        }
+
+        // 检查 Caps Lock
+        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_CAPS_LOCK) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
+            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_CAPS_LOCK;
+        }
+
+        // 检查 Num Lock
+        if (org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_NUM_LOCK) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
+            modifiers |= org.lwjgl.glfw.GLFW.GLFW_MOD_NUM_LOCK;
+        }
+
+        return modifiers;
+    }
+
+
     //internal methods from MCClient
 
 
