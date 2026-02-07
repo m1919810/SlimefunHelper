@@ -12,6 +12,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class RecipeTasks {
     private static MinecraftClient mc = MinecraftClient.getInstance();
@@ -78,6 +79,19 @@ public class RecipeTasks {
         }
 
     }
+
+    public static List<Ingredient> getIngredients(Recipe<?> recipe){
+        return recipe.getIngredients();
+    }
+
+    public static Stream<ItemStack> streamIngredientOptions(Ingredient ingredient){
+        return Arrays.stream(ingredient.getMatchingStacks());
+    }
+
+    public static List<Ingredient> getIngredients(RecipeEntry<?> recipeEntry){
+        return recipeEntry.value().getIngredients();
+    }
+
     static{
 //        Listener.getServerDisconnectPoint().registerHandler((v)->{
 //            resetCache();

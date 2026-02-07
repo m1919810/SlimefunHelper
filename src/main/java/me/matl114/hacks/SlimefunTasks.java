@@ -310,13 +310,13 @@ public class SlimefunTasks {
         RecipeIngredient[] ingredients = new RecipeIngredient[9];
 
         if(instance instanceof ShapedRecipe shaped){
-            List<Ingredient> raw = shaped.getIngredients();
+            List<Ingredient> raw = RecipeTasks.getIngredients(shaped);
             int width = shaped.getWidth();
             int height = shaped.getHeight();
             for (int i=0; i< 3; ++i){
                 for(int j = 0; j< 3; ++j){
                     if(i < height && j < width){
-                        ingredients[3*i + j] = new RecipeIngredient( raw.get(width * i + j).getMatchingStacks());
+                        ingredients[3*i + j] = new RecipeIngredient(RecipeTasks.streamIngredientOptions(raw.get(width * i + j)).toArray(ItemStack[]::new));
                     }else {
                         ingredients[3*i + j] = RecipeIngredient.EMPTY;
                     }

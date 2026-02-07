@@ -6,6 +6,7 @@ import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.other.TradeInformationSubScreen;
 import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.RecipeTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
@@ -102,8 +103,8 @@ public class FastCraft extends BaseModule {
             mc.interactionManager.clickRecipe(craftingScreen.getScreenHandler().syncId, last,true);
             if(doCraft){
                 int maxCraft = 64;
-                for (Ingredient material:last.value().getIngredients()){
-                    for (ItemStack val:material.getMatchingStacks()){
+                for (Ingredient material : RecipeTasks.getIngredients(last)){
+                    for (ItemStack val : RecipeTasks.streamIngredientOptions(material).toList()){
                         maxCraft = Math.min(maxCraft, val.getMaxCount());
                     }
                 }
