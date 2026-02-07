@@ -1,8 +1,10 @@
 package me.matl114.versioned.impl;
 
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.*;
+import net.minecraft.nbt.NbtCompound;
 
 public class ItemUtils_v1_21_1 implements VItem {
     @Override
@@ -40,6 +42,16 @@ public class ItemUtils_v1_21_1 implements VItem {
     @Override
     public boolean isShield(ItemStack stack) {
         return stack.getItem() instanceof ShieldItem;
+    }
+
+    @Override
+    public ItemStack fromNbt(NbtCompound tag) {
+        return ItemStack.fromNbtOrEmpty(ItemStackUtils.registry(), tag);
+    }
+
+    @Override
+    public NbtCompound toNbt(ItemStack tag) {
+        return (NbtCompound) tag.encodeAllowEmpty(ItemStackUtils.registry());
     }
 
     @Override

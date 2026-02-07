@@ -34,7 +34,7 @@ public class NBTHelper {
     }
 
     public static String nbtToString(Object element) {
-        return JsHelper.unwrap( element, NbtElement.class).asString();
+        return VNbt.getInstance().writeNbt(JsHelper.unwrap(element, NbtElement.class));
     }
 
     public static NbtElement stringToNbt(String string) throws CommandSyntaxException {

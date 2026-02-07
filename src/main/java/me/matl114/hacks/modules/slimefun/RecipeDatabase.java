@@ -514,7 +514,7 @@ public class RecipeDatabase extends BaseModule {
         private static final Tagged WOODEN_FENCES = new Tagged(BlockTags.WOODEN_FENCES);
         private static final BlockMatcher FIRE = new BlockMatcher(){
             public Set<Block> getPotentials(){
-                Set<Block> fires =  Registries.BLOCK.streamEntries().filter(s -> s.isIn(BlockTags.FIRE)).map(RegistryEntry::value).collect(Collectors.toCollection(HashSet::new));
+                Set<Block> fires =  Registries.BLOCK.getEntryList(BlockTags.FIRE).orElseThrow().stream().map(RegistryEntry::value).collect(Collectors.toCollection(HashSet::new));
                 fires.add(Blocks.AIR);
                 return fires;
             }

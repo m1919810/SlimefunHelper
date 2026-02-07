@@ -78,8 +78,7 @@ public interface ItemStackData {
             return JsonNull.INSTANCE;
         }else{
             NbtCompound nbt = (NbtCompound) ItemStack.CODEC.encodeStart(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), stack).getOrThrow();
-            String nbtString = new StringNbtWriter().apply(nbt);
-            return new JsonPrimitive(nbtString);
+            return new JsonPrimitive(VNbt.getInstance().writeNbt(nbt));
         }
     }
 

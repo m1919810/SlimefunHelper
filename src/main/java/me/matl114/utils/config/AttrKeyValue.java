@@ -635,7 +635,7 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
 
         @Override
         public String updateValue(NbtElement val) {
-            return val == null? "": new StringNbtWriter().apply(val);
+            return val == null? "": VNbt.getInstance().writeNbt(val);
         }
 
         @Override

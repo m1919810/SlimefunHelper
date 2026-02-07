@@ -582,8 +582,8 @@ public class ItemStackUtils {
 
 
     public static int getEnchantmentLevel(ItemEnchantmentsComponent component, RegistryKey<Enchantment> key){
-        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT);
-        return component.getLevel (enchantmentRegistry.getEntry(Enchantments.SHARPNESS).orElse(null));
+        var enchantmentRegistry = ItemStackUtils.registry().getWrapperOrThrow(RegistryKeys.ENCHANTMENT);
+        return component.getLevel (enchantmentRegistry.getOrThrow(key));
     }
 
 

@@ -22,6 +22,7 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.component.ComponentChanges;
@@ -32,6 +33,7 @@ import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.Registries;
@@ -286,7 +288,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         protected static final Identifier FORMAT_TEXTURE = new Identifier("slimefunhelper", "textures/gui/format.png");
         protected static final List<Text> FORMAT =List.of( Text.literal("格式化NBT字符串") );
         protected ItemStack validateItemStack(NbtElement element){
-            ItemStack decode = ItemStack.fromNbt(ItemStackUtils.registry(), element).get();
+            //may throw
+            ItemStack decode = VItem.getInstance().fromNbt((NbtCompound) element);
             Preconditions.checkArgument(decode != ItemStack.EMPTY);
             this.lastResult = decode;
             return decode;
@@ -298,7 +301,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         protected void init(){
             //transform item to json
             this.lastResult = ItemEditScreen.this.itemStack.copy();
-            NbtElement compound = this.lastResult.encode(ItemStackUtils.registry());
+            NbtElement compound = VItem.getInstance().toNbt(this.lastResult);
             this.itemAttrValue = new AttrKeyValue.NbtAttrKeyValue<>("", compound, this::validateItemStack);
             if(!itemAttrValue.validateAndUpdate()){
                 error();
@@ -630,7 +633,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
             protected static class ItemEnchantAttrGroup{
                 public ItemEnchantAttrGroup(String enchantment,  int level){
-                    id = AttrKeyValue.openRegistry("附魔", ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT), enchantment);
+                    id = AttrKeyValue.openRegistry("附魔", ItemStackUtils.registry().getOptional(RegistryKeys.ENCHANTMENT).orElseThrow(), enchantment);
                     lvl = AttrKeyValue.integer("等级", level);
                 }
                 AttrKeyValue<Enchantment> id;
@@ -650,7 +653,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 public Pair<RegistryEntry<Enchantment>, Integer> entryValue(){
                     try{
                         Enchantment enchantment = this.id.getOriginValue();
-                        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().get(RegistryKeys.ENCHANTMENT);
+                        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry().getOptional(RegistryKeys.ENCHANTMENT).orElseThrow();
                         RegistryEntry<Enchantment> ench = enchantmentRegistry.getEntry(enchantment);
                         return new Pair<>(ench, lvl.getOriginValue());
                     }catch (Throwable e){

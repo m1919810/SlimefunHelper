@@ -3,6 +3,7 @@ package me.matl114.versioned.api;
 import me.matl114.versioned.impl.ItemUtils_v1_21_1;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 
 public interface VItem {
     public static final VItem INSTANCE = new ItemUtils_v1_21_1();
@@ -18,6 +19,10 @@ public interface VItem {
     public boolean isTool(ItemStack stack);
 
     public boolean isShield(ItemStack stack);
+
+    public ItemStack fromNbt(NbtCompound tag);
+
+    public NbtCompound toNbt(ItemStack tag);
 
     public CustomModelDataComponent createModelData(int cmd);
 }
