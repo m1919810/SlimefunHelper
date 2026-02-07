@@ -1,5 +1,6 @@
 package me.matl114.versioned.impl;
 
+import com.google.common.util.concurrent.Runnables;
 import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;
@@ -20,6 +21,7 @@ import java.util.Optional;
 public class DrawContext_v1_21_1 implements VDrawContext {
     private final DrawContext drawContext;
     private final MatrixStack matrixStack;
+    private Runnable delayedDrawing = null;
     public DrawContext_v1_21_1(DrawContext context) {
         this.drawContext = context;
         this.matrixStack = MatrixStack.of(context.getMatrices());
@@ -93,6 +95,9 @@ public class DrawContext_v1_21_1 implements VDrawContext {
 
     @Override
     public void tryDraw() {
+        if(this.delayedDrawing != null) {
+            this.delayedDrawing.run();
+        }
         this.drawContext.tryDraw();
     }
 
@@ -106,9 +111,24 @@ public class DrawContext_v1_21_1 implements VDrawContext {
 
     }
 
+    private void addInternal(Runnable runnable) {
+        if(this.delayedDrawing != null) {
+            final Runnable prev = this.delayedDrawing;
+            this.delayedDrawing = ()->{
+                prev.run();
+                runnable.run();
+            };
+        }else{
+            this.delayedDrawing = runnable;
+        }
+    }
+
     @Override
     public void drawTooltip(TextRenderer textRenderer, List<Text> text, Optional<TooltipData> data, int x, int y) {
-        this.drawContext.drawTooltip(textRenderer, text, data, x, y);
+        var trans = matrixStack.peek3D();
+        var point1 = new Vector4f(x, y, 0 ,1).mul(trans);
+        addInternal(()->this.drawContext.drawTooltip(textRenderer, text, data, (int) point1.x, (int) point1.y));
+
     }
 
     @Override

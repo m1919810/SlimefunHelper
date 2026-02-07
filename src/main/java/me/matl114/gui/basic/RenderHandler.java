@@ -260,11 +260,9 @@ public interface RenderHandler {
             float scale =((float) availableWidth) / (float)i;
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(startX, startY);
-            context.getMatrices().pushMatrix();
             context.getMatrices().scale(scale, scale);
             //
             context.drawCenteredTextWithShadow(textRenderer, text.asOrderedText(),(int)( ((endX - startX) / 2)/scale), (int)((((endY - startY)/2)/scale  - 7f/2)), color);
-            context.getMatrices().popMatrix();
             context.getMatrices().popMatrix();
         }
     }

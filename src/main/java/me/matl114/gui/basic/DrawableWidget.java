@@ -120,7 +120,9 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
      */
     @Override
     public final void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        VDrawContext vdraw = VDrawContext.of(context);
         render0(VDrawContext.of(context), mouseX, mouseY, delta, false);
+        vdraw.tryDraw();
     }
     protected void checkSelect(boolean disableSelect, int mouseX, int mouseY){
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
@@ -139,13 +141,9 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
             context.getMatrices().translateZ(priority);
         }
         if(textureScale != 1.0f){
-            context.getMatrices().pushMatrix();
             context.getMatrices().scale(textureScale, textureScale);
         }
         renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
-        if(textureScale != 1.0f){
-            context.getMatrices().popMatrix();
-        }
         context.getMatrices().popMatrix();
         renderAbsolute(context, mouseX, mouseY, delta, disableSelect);
     }
@@ -157,7 +155,6 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     public void renderAbsolute(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         if(this.renderHandler != null){
             this.renderHandler.renderExtraAbsoluteCoord(this, context, mouseX, mouseY , delta, this.alpha, this.selected);
-            context.tryDraw();
         }
     }
 

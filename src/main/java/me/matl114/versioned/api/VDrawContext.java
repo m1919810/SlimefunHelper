@@ -115,6 +115,9 @@ public interface VDrawContext {
 
     public void disableScissor();
 
+    /**
+     * this method must be called if a VDrawContext is about to be released
+     */
     public void tryDraw();
 
     public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth);
