@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.events.Listener;
@@ -112,8 +114,8 @@ public abstract class ClientPlayNetworkHandlerEvents {
         Listener.getThisPlayerSpawnPoint().broadcast(MinecraftClient.getInstance().player);
     }
 
-    @Redirect(method = "onPlayerPositionLook", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setVelocity(DDD)V"))
-    private void onTeleportConfirmVelocityUpdate(PlayerEntity instance, double v, double v2, double v3){
+    @WrapOperation(method = "onPlayerPositionLook", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setVelocity(DDD)V"))
+    private void onTeleportConfirmVelocityUpdate(PlayerEntity instance, double v, double v2, double v3, Operation<Void> original){
         //disable velocity resync
         //fixme: turn this into Event
         Vec3d vec3d = new Vec3d(v, v2, v3);
@@ -125,7 +127,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
             }
             vec3d = vcUpdate.context();
         }
-        instance.setVelocity(vec3d);
+        original.call(instance, vec3d.x, vec3d.y, vec3d.z);
 //        MovTasks.configurateTeleportBackVelocityUpdate(instance, new Vec3d(v, v2, v3));
     }
 

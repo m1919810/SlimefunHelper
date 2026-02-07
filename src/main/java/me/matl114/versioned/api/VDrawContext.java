@@ -110,8 +110,8 @@ public interface VDrawContext {
 
     public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) ;
     public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow);
-
-    public void enableScissor(int x, int y, int width, int height);
+    // just pass the relative coord
+    public void enableScissor(int x, int y, int x2, int y2);
 
     public void disableScissor();
 

@@ -96,10 +96,8 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
 
         context.getMatrices().pushMatrix();
         // apply scissors, content outside the template will not be rendered
-        var trans = context.getMatrices().peek3D();
-        var point1 = new Vector4f(this.getX(),this.getY(),0 ,1).mul(trans);
-        var point2 = new Vector4f(this.getX()+ this.getWidth(), this.getY()+this.getHeight(), 0, 1).mul(trans);
-        context.enableScissor((int) point1.x, (int) point1.y, (int) point2.x, (int) point2.y);
+
+        context.enableScissor(this.getX(), this.getY(), this.getX() + this.getWidth(), this.getY() + this.getHeight());
         //apply current pose
         context.getMatrices().translate(x, y - this.currentPose);
         if(this.priority != 0){

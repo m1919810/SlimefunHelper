@@ -12,6 +12,7 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector4f;
 
 import java.util.List;
 import java.util.Optional;
@@ -78,8 +79,11 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     }
 
     @Override
-    public void enableScissor(int x, int y, int width, int height) {
-        this.drawContext.enableScissor(x, y, width, height);
+    public void enableScissor(int x, int y, int x2, int y2) {
+        var trans = matrixStack.peek3D();
+        var point1 = new Vector4f(x, y, 0 ,1).mul(trans);
+        var point2 = new Vector4f(x2, y2, 0, 1).mul(trans);
+        this.drawContext.enableScissor((int) point1.x, (int) point1.y, (int) point2.x, (int) point2.y);
     }
 
     @Override

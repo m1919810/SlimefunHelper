@@ -234,11 +234,7 @@ public interface RenderHandler {
             double e = Math.max((double)l * 0.5, 3.0);
             double f = Math.sin(1.5707963267948966 * Math.cos(6.283185307179586 * d / e)) / 2.0 + 0.5;
             double g = MathHelper.lerp(f, 0.0, (double)l);
-            var trans = context.getMatrices().peek3D();
-            var point1 = new Vector4f(startX, startY,0 ,1).mul(trans);
-            var point2 = new Vector4f(endX, endY, 0, 1).mul(trans);
-            //fix: respect MatrixTranslation
-            context.enableScissor((int) point1.x, (int) point1.y, (int) point2.x, (int) point2.y);
+            context.enableScissor(startX, startY, endX, endY);
             context.drawText(textRenderer, text.asOrderedText(), startX - (int)g, j, color, true);
             context.disableScissor();
         } else {
