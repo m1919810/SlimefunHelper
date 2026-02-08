@@ -69,7 +69,9 @@ public class SlimefunModels extends BaseModule {
     }
 
     public void onModelSupply(Event<Set<Identifier>> event) {
-        event.context().addAll(walkThroughResourcePacks(event.getArgs(0), enableModel.get()));
+        if(enableModel.get()){
+            event.context().addAll(walkThroughResourcePacks(event.getArgs(0), false));
+        }
     }
 
     public void onModelOverride(Event<BakedModel> event) {
@@ -78,30 +80,6 @@ public class SlimefunModels extends BaseModule {
         if(enableModel.get()){
             ItemStack stack = event.getArgs(0);
             NbtCompound nbt= ItemStackUtils.getCustomDataReadOnly(stack);
-            try{
-                String model=null;
-                if(nbt.get("item_model") instanceof NbtString string){
-                    model = string.asString();
-                }else if(nbt.get("minecraft:item_model") instanceof NbtString string){
-                    model = string.asString();
-                }
-                if(model!=null){
-                    String[] namespaceCheck=model.split(":");
-                    String namespace="minecraft";
-                    String itemModel=namespaceCheck[namespaceCheck.length-1];
-                    if(namespaceCheck.length>=2){
-                        namespace=namespaceCheck[0];
-                    }
-                    Optional<BakedModel> modelOptional = modelCache.computeIfAbsent(ModelIdentifier.ofInventoryVariant(new Identifier(namespace,itemModel)), RenderListener::getOptionalModelOf);
-                    if(modelOptional.isPresent()){
-                        event.context(modelOptional.get());
-                        return;
-                    }
-
-                }
-            }catch(Throwable e){
-
-            }
             try{
                 String id = ItemStackUtils.getSfId(nbt);
                 if(id!=null ){
@@ -185,14 +163,14 @@ public class SlimefunModels extends BaseModule {
         for(ResourcePack pack : packs){
 
             String name=pack.getId();
-            if(name.equals("minecraft")||name.equals("realms")||name.startsWith("fabric-")||name.equals("fabric")){
+            if(name.equals("minecraft") || name.equals("realms") || name.startsWith("fabric-") || name.equals("fabric") || name.equals("vanilla")){
                 continue;
             }
 
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
 
             for(String namespace : namespacess){
-                if(allLoad || OUR_NAMESPACE.equals(namespace)){
+                if(true){
                     //Debug.info("in namespace ",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"models",(i,j)->{
                             ///Debug.info("finding resource ",i,j);
@@ -209,16 +187,10 @@ public class SlimefunModels extends BaseModule {
 //                            if(OUR_NAMESPACE.equals(namespace)){
 //                                Debug.info("try test slimefun item model",shouldModelId);
 //                            }
-                            if(predicate.test(shouldModelId.toString())){
+                            if(OUR_NAMESPACE.equals(namespace) || predicate.test(shouldModelId.toString())){
                                 //custom item
                                 Debug.info("load custom slimefun item model:",shouldModelId);
                                 customItemModels.put(splits[splits.length-1].toUpperCase(Locale.ROOT), wrappedId);
-                            }
-
-                            if(Registries.ITEM.get(shouldId)== Items.AIR){
-
-                                // Debug.info("input into registry");
-                                // Debug.info("add into ", fullPathId);
                                 id.add(fullPathId);
                             }
                         }
