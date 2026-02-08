@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.render;
 
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Listener;
+import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -85,6 +86,7 @@ public class EntityESP extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPacketPostHandlePoint().getChannel(EntitySpawnS2CPacket.class), this::onEntitySpawn);
         registerListener(Listener.getPacketPreHandlePoint().getChannel(EntitiesDestroyS2CPacket.class), this::onEntityRemove);
+        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
     }
 
 

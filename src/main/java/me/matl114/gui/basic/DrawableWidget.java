@@ -121,7 +121,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     @Override
     public final void render(DrawContext context, int mouseX, int mouseY, float delta) {
         VDrawContext vdraw = VDrawContext.of(context);
-        render0(VDrawContext.of(context), mouseX, mouseY, delta, false);
+        render0(vdraw, mouseX, mouseY, delta, false);
         vdraw.tryDraw();
     }
     protected void checkSelect(boolean disableSelect, int mouseX, int mouseY){

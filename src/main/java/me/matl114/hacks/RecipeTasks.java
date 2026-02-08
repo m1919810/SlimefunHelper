@@ -4,6 +4,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.SynchronizeRecipesS2CPacket;
 import net.minecraft.recipe.*;
 import net.minecraft.registry.DynamicRegistryManager;
@@ -24,6 +25,20 @@ public class RecipeTasks {
 
     public static boolean isVanillaRecipeType(String rid){
         return Registries.RECIPE_TYPE.getOrEmpty(Identifier.tryParse(rid)).isPresent();
+    }
+
+    private static final Map<String, ItemStack> SUPPORT_VANILLA_RTYPE = Map.of(
+        "minecraft:crafting", new ItemStack(Items.CRAFTING_TABLE),
+        "minecraft:smelting", new ItemStack(Items.FURNACE),
+        "minecraft:blasting", new ItemStack(Items.BLAST_FURNACE),
+        "minecraft:smoking", new ItemStack(Items.SMOKER),
+        "minecraft:campfire_cooking", new ItemStack(Items.CAMPFIRE),
+        "minecraft:stonecutting", new ItemStack(Items.STONECUTTER),
+        "minecraft:smithing", new ItemStack(Items.SMITHING_TABLE)
+    );
+
+    public static ItemStack getVanillaRecipeTypeIcon(String rid){
+        return SUPPORT_VANILLA_RTYPE.getOrDefault(rid, null);
     }
 
     public static Map<Identifier, RecipeRecord> getAllRecipe(){

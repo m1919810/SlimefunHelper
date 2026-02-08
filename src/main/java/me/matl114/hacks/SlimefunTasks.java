@@ -67,18 +67,10 @@ public class SlimefunTasks {
         return InvTasks.getCustomItemDatabase().getFromCodecId(id);
     }
 
-
-    private static final Map<String, ItemStack> SUPPORT_VANILLA_RTYPE = Map.of(
-        "minecraft:crafting", new ItemStack(Items.CRAFTING_TABLE),
-        "minecraft:smelting", new ItemStack(Items.FURNACE),
-        "minecraft:blasting", new ItemStack(Items.BLAST_FURNACE),
-        "minecraft:smoking", new ItemStack(Items.SMOKER),
-        "minecraft:campfire_cooking", new ItemStack(Items.CAMPFIRE),
-        "minecraft:stonecutting", new ItemStack(Items.STONECUTTER),
-        "minecraft:smithing", new ItemStack(Items.SMITHING_TABLE)
-    );
     private static ItemStack getSupportVanillaIcon(String rid){
-        return SUPPORT_VANILLA_RTYPE.getOrDefault(rid,null);
+        if(RecipeTasks.isVanillaRecipeType(rid)){
+            return RecipeTasks.getVanillaRecipeTypeIcon(rid);
+        }return null;
     }
     public static ItemStack getRecipeTypeIcon(String rid){
         ItemStack rt;
@@ -393,6 +385,8 @@ public class SlimefunTasks {
     public static SlimefunGuide slimefunGuide;
     @Getter
     public static CopyId copyId;
+    @Getter
+    public static ShowIdTooltips showIdTooltips;
     private static void initModule(ModuleManager m){
         slimefunExtra = new SlimefunExtra()
             .register(m);
@@ -403,6 +397,8 @@ public class SlimefunTasks {
         slimefunGuide = new SlimefunGuide()
             .register(m);
         copyId = new CopyId()
+            .register(m);
+        showIdTooltips = new ShowIdTooltips()
             .register(m);
     }
 

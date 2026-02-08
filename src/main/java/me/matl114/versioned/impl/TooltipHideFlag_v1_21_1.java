@@ -34,6 +34,7 @@ public enum TooltipHideFlag_v1_21_1 implements VHideFlag {
     TooltipHideFlag_v1_21_1(String display ,Predicate<ItemStack> stack, ItemStackUtils.TooltipsToggle toggle){
         this.hideFlagGetter = stack;
         this.toggle = toggle;
+        this.display = display;
     }
     private static <T> Predicate<T> inv(Predicate<T> tt){
         return (val)->!tt.test(val);
@@ -43,6 +44,11 @@ public enum TooltipHideFlag_v1_21_1 implements VHideFlag {
     }
     public void setHideFlag(ItemStack stack,  boolean hide){
         this.toggle.apply(stack, !hide);
+    }
+
+    @Override
+    public String displayName() {
+        return display;
     }
 
 }

@@ -97,6 +97,7 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     public void tryDraw() {
         if(this.delayedDrawing != null) {
             this.delayedDrawing.run();
+            this.delayedDrawing = null;
         }
         this.drawContext.tryDraw();
     }

@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.slimefun;
 
+import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -32,6 +33,7 @@ public class ShowIdTooltips extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(RenderListener.getTooltipShow(), this::onTooltips);
     }
     public void onTooltips(Event<List<Text>> event){
         if(isActive()){

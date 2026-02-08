@@ -69,7 +69,7 @@ public class SaveItem extends BaseModule {
         Codec.list(Codec.STRING).xmap(
         lst -> (Map<String, ItemStackData>)lst.stream().collect(Collectors.toMap(Function.identity(), InvTasks.getCustomItemDatabase()::getDataFromCodecId, (k, v)-> v, LinkedHashMap::new)),
         mp -> mp.keySet().stream().toList()
-    ).fieldOf("saved-ids").codec();
+    ).optionalFieldOf("saved-ids", Map.of()).codec();
     Gson gson = new GsonBuilder()
         .disableHtmlEscaping()
         .create();

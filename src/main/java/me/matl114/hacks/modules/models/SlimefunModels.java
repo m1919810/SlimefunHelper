@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class SlimefunModels extends BaseModule {
     public static final String[] SLIMEFUN_MODEL_ID = {"model-config", "enable-slimefun-cmd-override"};
     public static final String[] ITEM_MODEL_OVERRIDE = {"model-config", "enable-item-model-override"};
-    public static final String[] CUSTOM_TEXTURE_PATTERN = {"slimefun-models", "namespace-for-slimefun-textures"};
+
     public static final String[] AUTO_MODEL_PATTERN = {"slimefun-models", "path-pattern-for-slimefun-model"};
 
     public SlimefunModels(){
@@ -48,11 +48,6 @@ public class SlimefunModels extends BaseModule {
         .defaultValue(true)
         .build();
 
-    public final ListRef customTexturePath = builder(Configs.MODEL_CONFIG, CUSTOM_TEXTURE_PATTERN, ListRef.TYPE)
-        .defaultValue(List.of("ae2", "slimefunhelper", "infinityexpansion", "avaritia"))
-
-        .build();
-
     public final ListRef autoModelPattern = builder(Configs.MODEL_CONFIG, AUTO_MODEL_PATTERN, ListRef.TYPE)
         .defaultValue(List.of("^slimefunhelper:slimefunitem/.*$", "^slimefunhelper:test/.*$"))
         .listValidator(Configs.REGEX_VALIDATOR)
@@ -63,7 +58,6 @@ public class SlimefunModels extends BaseModule {
         super.registerAll();
         registerListener(RenderListener.getResourceReload(), this::onResourceReload);
         registerListener(RenderListener.getAsyncResourceSupply(), this::onModelSupply);
-        registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlasSupply);
         registerListener(RenderListener.getCustomModelOverride(), this::onModelOverride);
         registerListener(RenderListener.getItemDataOverrideForModel(), this::onItemOverride);
     }
@@ -76,14 +70,6 @@ public class SlimefunModels extends BaseModule {
 
     public void onModelSupply(Event<Set<Identifier>> event) {
         event.context().addAll(walkThroughResourcePacks(event.getArgs(0), enableModel.get()));
-    }
-
-    public void onAtlasSupply(Event<Set<Identifier>> event){
-        if(targetIdentifier.equals(event.getArgs(1))){
-            Debug.info("Loading blocks atlases");
-            Debug.info("Appending our textures automatically");
-            event.context().addAll(loadOurselvesCustomModelTexture(event.getArgs(0)));
-        }
     }
 
     public void onModelOverride(Event<BakedModel> event) {
@@ -247,34 +233,7 @@ public class SlimefunModels extends BaseModule {
 
         return id;
     }
-    public Collection<Identifier> loadOurselvesCustomModelTexture(ResourceManager manager){
-        List<Identifier> textureIds = new ArrayList<>();
-        Set<String> namespaces = new HashSet<>(customTexturePath.get());
-        for(ResourcePack pack : manager.streamResourcePacks().toList()){
-            //Debug.info("in resourcepack ",pack.getName());
-            Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
-            for(String namespace : namespacess){
-                if(OUR_NAMESPACE.equals(namespace) || namespaces.contains(namespace)){
-                    Debug.info("Force load TEXTURE in pack",pack.getId(),"and namespace",namespace);
-                    pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
-                            String realNamespace=i.getNamespace();
-                            if(i.getPath().endsWith(".png")){
-                                String realPath=i.getPath().replaceFirst("^textures/","").replaceAll(".png$","");
 
-                                Identifier shouldId=new Identifier(realNamespace,realPath);
-                                textureIds.add(shouldId);
-
-                            }
-                        }
-                    );
-                }
-            }
-
-
-        }
-        return textureIds;
-    }
-    private static Identifier targetIdentifier = new Identifier("minecraft","blocks");
 
 
 

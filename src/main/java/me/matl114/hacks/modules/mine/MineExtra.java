@@ -162,67 +162,68 @@ public class MineExtra extends BaseModule {
     }
 
     public void onRender(Event<MatrixStack> renderEvent){
-        RenderUtils.startDrawVirtual(renderEvent.context);
-        try{
-            if(mineRender.get() && mc.interactionManager != null && mc.player != null && mc.world != null){
-                BlockPos blockPos =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
-                Vec3d pos =Vec3d.of(blockPos);
-                //超过200格的不渲染
-                if(mc.player.getPos().squaredDistanceTo(pos) < 40000){
-                    RenderUtils.setAsCurrentShaderColor(Color.BLUE, 1.0F);
-                    RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0));
-                    float progress =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningProgress(true);
-                    if(progress > 0.0F){
-                        BlockState state = mc.world.getBlockState(blockPos);
-                        Box box;
-                        if(state.isAir()){
-                            box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
-                        }else{
-                            VoxelShape shape = state.getOutlineShape(mc.world, blockPos);
-                            box = shape.isEmpty()? new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0): shape.getBoundingBox();
-                        }
-                        Vec3d vec3 = box.getMaxPos().subtract(box.getMinPos()).multiply(0.5);
-
-                        RenderUtils.setAsCurrentShaderColor(Color.YELLOW, 0.25F);
-                        Vec3d vec3d = pos.add(box.getCenter());
-                        float clamped = MathHelper.clamp(progress, 0.0F, 1.0F) ;
-                        RenderUtils.drawSolidBox(renderEvent.context.peek().getPositionMatrix(), vec3d.add(vec3.multiply(-clamped)), vec3d.add(vec3.multiply(clamped)));
-                    }
-                }
-
-
-                BlockPos doubleMinePos =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
-                if(doubleMinePos != null){
-                    Vec3d doubleMineVec = Vec3d.of(doubleMinePos);
-                    if(mc.player.getPos().squaredDistanceTo(doubleMineVec) < 40000 && !Objects.equals(doubleMineVec, pos)){
-                        float progressFail = PlayerInteractionAccess.of(mc.interactionManager).getFailBreakMiningProgress();
-                        RenderUtils.setAsCurrentShaderColor(Color.MAGENTA, 1.0F);
-                        RenderUtils.drawOutlinedBox(renderEvent.context, doubleMineVec, doubleMineVec.add(1.0, 1.0, 1.0));
-                        if(progressFail > 0.0F){
-                            BlockState state = mc.world.getBlockState(doubleMinePos);
+        if(mineRender.get()){
+            RenderUtils.startDrawVirtual(renderEvent.context);
+            try{
+                if(mc.interactionManager != null && mc.player != null && mc.world != null){
+                    BlockPos blockPos =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+                    Vec3d pos =Vec3d.of(blockPos);
+                    //超过200格的不渲染
+                    if(mc.player.getPos().squaredDistanceTo(pos) < 40000){
+                        RenderUtils.setAsCurrentShaderColor(Color.BLUE, 1.0F);
+                        RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0));
+                        float progress =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningProgress(true);
+                        if(progress > 0.0F){
+                            BlockState state = mc.world.getBlockState(blockPos);
                             Box box;
                             if(state.isAir()){
                                 box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
                             }else{
-                                VoxelShape shape = state.getOutlineShape(mc.world, doubleMinePos);
+                                VoxelShape shape = state.getOutlineShape(mc.world, blockPos);
                                 box = shape.isEmpty()? new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0): shape.getBoundingBox();
                             }
                             Vec3d vec3 = box.getMaxPos().subtract(box.getMinPos()).multiply(0.5);
 
-                            RenderUtils.setAsCurrentShaderColor(Color.ORANGE, 0.25F);
-                            Vec3d vec3d = doubleMineVec.add(box.getCenter());
-                            float clamped = MathHelper.clamp(progressFail, 0.0F, 1.0F) ;
+                            RenderUtils.setAsCurrentShaderColor(Color.YELLOW, 0.25F);
+                            Vec3d vec3d = pos.add(box.getCenter());
+                            float clamped = MathHelper.clamp(progress, 0.0F, 1.0F) ;
                             RenderUtils.drawSolidBox(renderEvent.context.peek().getPositionMatrix(), vec3d.add(vec3.multiply(-clamped)), vec3d.add(vec3.multiply(clamped)));
                         }
                     }
 
+
+                    BlockPos doubleMinePos =  PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
+                    if(doubleMinePos != null){
+                        Vec3d doubleMineVec = Vec3d.of(doubleMinePos);
+                        if(mc.player.getPos().squaredDistanceTo(doubleMineVec) < 40000 && !Objects.equals(doubleMineVec, pos)){
+                            float progressFail = PlayerInteractionAccess.of(mc.interactionManager).getFailBreakMiningProgress();
+                            RenderUtils.setAsCurrentShaderColor(Color.MAGENTA, 1.0F);
+                            RenderUtils.drawOutlinedBox(renderEvent.context, doubleMineVec, doubleMineVec.add(1.0, 1.0, 1.0));
+                            if(progressFail > 0.0F){
+                                BlockState state = mc.world.getBlockState(doubleMinePos);
+                                Box box;
+                                if(state.isAir()){
+                                    box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+                                }else{
+                                    VoxelShape shape = state.getOutlineShape(mc.world, doubleMinePos);
+                                    box = shape.isEmpty()? new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0): shape.getBoundingBox();
+                                }
+                                Vec3d vec3 = box.getMaxPos().subtract(box.getMinPos()).multiply(0.5);
+
+                                RenderUtils.setAsCurrentShaderColor(Color.ORANGE, 0.25F);
+                                Vec3d vec3d = doubleMineVec.add(box.getCenter());
+                                float clamped = MathHelper.clamp(progressFail, 0.0F, 1.0F) ;
+                                RenderUtils.drawSolidBox(renderEvent.context.peek().getPositionMatrix(), vec3d.add(vec3.multiply(-clamped)), vec3d.add(vec3.multiply(clamped)));
+                            }
+                        }
+
+                    }
+
                 }
-
+            }finally {
+                RenderUtils.stopDrawVirtual(renderEvent.context);
             }
-        }finally {
-            RenderUtils.stopDrawVirtual(renderEvent.context);
         }
-
     }
 
 
