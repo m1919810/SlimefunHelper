@@ -87,7 +87,7 @@ public class FastCraft extends BaseModule {
 
     public void toggleRecipeLock(){
         lock = !lock;
-        Debug.chat("Toggle RecipeLock ", lock);
+        Debug.chat("Toggle RecipeLock", lock);
     }
 
 
@@ -194,8 +194,7 @@ public class FastCraft extends BaseModule {
             )
             .addToSub(recipeSubScreen);
 
-        DrawableWidget lockItemDisplay = DisplayWidget.instance(150 + 10, access.getScreenY() + 56 + 10, 18, 18)
-            .setTextureScale(0.4f)
+        DrawableWidget lockItemDisplay = DisplayWidget.instance(150 + 10, access.getScreenY() + 56 + 10, 7, 7)
             .setRenderHandler(
                 new SlotElement(this::getLockItem)
                     .setInSlot(false)
@@ -251,8 +250,7 @@ public class FastCraft extends BaseModule {
             )
             .addToSub(recipeSubScreen);
 
-        DrawableWidget lockItemDisplay = DisplayWidget.instance(132 + 10, access.getScreenY() + 55 + 10, 18, 18)
-            .setTextureScale(0.4f)
+        DrawableWidget lockItemDisplay = DisplayWidget.instance(132 + 10, access.getScreenY() + 55 + 10, 7, 7)
             .setRenderHandler(
                 new SlotElement(this::getLockItem)
                     .setInSlot(false)

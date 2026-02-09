@@ -63,7 +63,7 @@ public class SleepMode extends BaseModule {
         registerListener(Listener.getCharTyped(), this::interceptCharType);
         registerListener(Listener.getMouseMove(), this::interceptMouseMove);
         registerListener(Listener.getMouseDrag(), this::interceptMouseDragged);
-
+        registerListener(Listener.getPreSetScreen(), this::interceptSetScreen);
     }
 
     public void onGameRender(Event<GameRenderer> rendererEvent){
@@ -114,7 +114,7 @@ public class SleepMode extends BaseModule {
     public Screen getCurrentRenderingSleeping(){
         return currentRenderingSleeping;
     }
-    private class SleepingChatScreen extends ChatScreen {
+    private class SleepingChatScreen extends ChatScreen implements SleepOverlay {
 
         public SleepingChatScreen(String originalChatText) {
             super(originalChatText, false);
@@ -136,7 +136,8 @@ public class SleepMode extends BaseModule {
         }
 
         public boolean keyPressed(KeyInput input){
-            if(input.isEnter()){
+            //fix: SleepingScreen may be wrongly set on currentScreen
+            if(sleepingScreenInstance == this && input.isEnter()){
                 //intercept send, else left for super
                 this.sendMessage(this.chatField.getText(), true);
                 this.chatField.setText("");
@@ -147,7 +148,13 @@ public class SleepMode extends BaseModule {
         @Override
         public void close() {
             //do not close till sleeping is over or game exit
-            this.closeReason = CloseReason.DONE;
+            if(sleepingScreenInstance != this){
+                super.close();
+            }
+//            if(mc.currentScreen == this){
+//                super.close();
+//                return;
+//            }
 //            if(mc.player == null || !isScreenSleeping()){
 //                super.close();
 //            }
@@ -208,7 +215,7 @@ public class SleepMode extends BaseModule {
 
         }
     }
-    private interface SafeSleepingScreen {
+    private static interface SafeSleepingScreen extends SleepOverlay {
         //screen which implement this can keep even when player exit game, which means it does not need mc.player or mc.world or sth
     }
     //
@@ -282,6 +289,8 @@ public class SleepMode extends BaseModule {
 
         if(ensureSleepingScreen()){
             if(currentRenderingSleeping != null){
+                //todo: should refresh screen all the time?
+                shouldFreshSleepScreen = true;
                 if(shouldFreshSleepScreen){
                     shouldFreshSleepScreen = false;
                     mc.gameRenderer.getGlobalSettings().set(mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight(), (Double)mc.options.getGlintStrength().getValue(), mc.world == null ? 0L : mc.world.getTime(), tickCounter, mc.options.getMenuBackgroundBlurrinessValue(), mc.gameRenderer.getCamera(), mc.options.getTextureFiltering().getValue() == TextureFilteringMode.RGSS);
@@ -309,7 +318,7 @@ public class SleepMode extends BaseModule {
         }
         return false;
     }
-
+    //todo: key input doesn't work
     public void interceptScreenSetup(Event<Screen> event){
         if(isScreenSleeping()){
             event.cancel();
@@ -368,14 +377,24 @@ public class SleepMode extends BaseModule {
         if(isScreenSleeping()){
             event.cancel();
             if(sleepingScreenInstance != null){
-                sleepingScreenInstance.mouseDragged(new Click((double) event.extraArgs[0], (double) event.extraArgs[1], event.context.activeButton), (Integer)event.extraArgs[2], (Double) event.extraArgs[3]);
+                sleepingScreenInstance.mouseDragged(new Click((double) event.extraArgs[0], (double) event.extraArgs[1], event.context.activeButton), (Double) event.extraArgs[2], (Double) event.extraArgs[3]);
             }
         }
+    }
+
+    private static interface SleepOverlay{
+
     }
 
 
     public String getWakeupButton(){
         return keyBindRef.get().getKeyStr();
+    }
+
+    public void interceptSetScreen(Event<Screen> setScreen){
+        if(setScreen.context instanceof SleepOverlay){
+            setScreen.cancel();
+        }
     }
 
     //fixme: hoverEvent and clickEvent does not work in SleepingChatScreen

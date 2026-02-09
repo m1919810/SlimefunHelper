@@ -34,14 +34,14 @@ public class SlimefunHelperApi {
             Debug.info("JsMacros library inject failed, caused by: ");
             e.printStackTrace();
             Debug.info("Running Mock js lib test");
-            createSlimefunHelperApi(MockLibBase.class);
-            for (var clazz : slimefunHelperApi){
-                try{
-                    clazz.newInstance();
-                }catch (Throwable e1){
-                    throw new RuntimeException(e1);
-                }
-            }
+//            createSlimefunHelperApi(MockLibBase.class);
+//            for (var clazz : slimefunHelperApi){
+//                try{
+//                    clazz.newInstance();
+//                }catch (Throwable e1){
+//                    throw new RuntimeException(e1);
+//                }
+//            }
             Debug.info("Mock lib test success");
         }
     }

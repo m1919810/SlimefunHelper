@@ -12,4 +12,6 @@ public interface VNbt {
     public String writeNbt(NbtElement element);
 
     public NbtElement readNbt(String element);
+
+    public NbtElement readNbtNoRegistry(String element);
 }

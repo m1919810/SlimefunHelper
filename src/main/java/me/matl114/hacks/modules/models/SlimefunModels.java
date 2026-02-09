@@ -14,10 +14,7 @@ import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.Registries;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourcePack;
 import net.minecraft.resource.ResourceType;
@@ -32,7 +29,7 @@ import java.util.stream.Collectors;
 public class SlimefunModels extends BaseModule {
     public static final String[] SLIMEFUN_MODEL_ID = {"model-config", "enable-slimefun-cmd-override"};
     public static final String[] ITEM_MODEL_OVERRIDE = {"model-config", "enable-item-model-override"};
-    public static final String[] CUSTOM_TEXTURE_PATTERN = {"slimefun-models", "namespace-for-slimefun-textures"};
+
     public static final String[] AUTO_MODEL_PATTERN = {"slimefun-models", "path-pattern-for-slimefun-model"};
 
     public SlimefunModels(){
@@ -47,11 +44,6 @@ public class SlimefunModels extends BaseModule {
         .defaultValue(true)
         .build();
 
-    public final ListRef customTexturePath = builder(Configs.MODEL_CONFIG, CUSTOM_TEXTURE_PATTERN, ListRef.TYPE)
-        .defaultValue(List.of("ae2", "slimefunhelper", "infinityexpansion", "avaritia"))
-
-        .build();
-
     public final ListRef autoModelPattern = builder(Configs.MODEL_CONFIG, AUTO_MODEL_PATTERN, ListRef.TYPE)
         .defaultValue(List.of("^slimefunhelper:slimefunitem/.*$", "^slimefunhelper:test/.*$"))
         .listValidator(Configs.REGEX_VALIDATOR)
@@ -61,8 +53,7 @@ public class SlimefunModels extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getResourceReload(), this::onResourceReload);
-        registerListener(RenderListener.getAsyncResourceSupply(), this::onModelSupply);
-        registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlasSupply);
+        registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
         registerListener(RenderListener.getCustomModelOverride(), this::onModelOverride);
         registerListener(RenderListener.getItemDataOverrideForModel(), this::onItemOverride);
     }
@@ -74,14 +65,8 @@ public class SlimefunModels extends BaseModule {
     }
 
     public void onModelSupply(Event<Set<Identifier>> event) {
-        event.context().addAll(walkThroughResourcePacks(event.getArgs(0), enableModel.get()));
-    }
-
-    public void onAtlasSupply(Event<Set<Identifier>> event){
-        if(targetIdentifier.equals(event.getArgs(1))){
-            Debug.info("Loading blocks atlases");
-            Debug.info("Appending our textures automatically");
-            event.context().addAll(loadOurselvesCustomModelTexture(event.getArgs(0)));
+        if(enableModel.get()){
+            event.context().addAll(walkThroughResourcePacks(event.getArgs(0), false));
         }
     }
 
@@ -91,30 +76,6 @@ public class SlimefunModels extends BaseModule {
         if(enableModel.get()){
             ItemStack stack = event.getArgs(0);
             NbtCompound nbt= ItemStackUtils.getCustomDataReadOnly(stack);
-            try{
-                String model=null;
-                if(nbt.get("item_model") instanceof NbtString string){
-                    model = string.value();
-                }else if(nbt.get("minecraft:item_model") instanceof NbtString string){
-                    model = string.value();
-                }
-                if(model!=null){
-                    String[] namespaceCheck=model.split(":");
-                    String namespace="minecraft";
-                    String itemModel=namespaceCheck[namespaceCheck.length-1];
-                    if(namespaceCheck.length>=2){
-                        namespace=namespaceCheck[0];
-                    }
-                    Optional<ItemModel> modelOptional = modelCache.computeIfAbsent(new Identifier(namespace,itemModel), RenderListener::getOptionalModelOf);
-                    if(modelOptional.isPresent()){
-                        event.context(modelOptional.get());
-                        return;
-                    }
-
-                }
-            }catch(Throwable e){
-
-            }
             try{
                 String id = ItemStackUtils.getSfId(nbt);
                 if(id!=null ){
@@ -198,14 +159,14 @@ public class SlimefunModels extends BaseModule {
         for(ResourcePack pack : packs){
 
             String name=pack.getId();
-            if(name.equals("minecraft")||name.equals("realms")||name.startsWith("fabric-")||name.equals("fabric")){
+            if(name.equals("minecraft") || name.equals("realms") || name.startsWith("fabric-") || name.equals("fabric") || name.equals("vanilla")){
                 continue;
             }
 
             Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
 
             for(String namespace : namespacess){
-                if(allLoad || OUR_NAMESPACE.equals(namespace)){
+                if(true){
                     //Debug.info("in namespace ",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"models",(i,j)->{
                             ///Debug.info("finding resource ",i,j);
@@ -221,17 +182,13 @@ public class SlimefunModels extends BaseModule {
 //                            if(OUR_NAMESPACE.equals(namespace)){
 //                                Debug.info("try test slimefun item model",shouldModelId);
 //                            }
-                            //todo: need test. need test need test need test need test
-                            if(predicate.test(shouldModelId.toString())){
+                            boolean testResult = predicate.test(shouldModelId.toString());
+                            if(OUR_NAMESPACE.equals(namespace) || testResult){
                                 //custom item
                                 Debug.info("load custom slimefun item model:",shouldModelId);
-                                customItemModels.put(splits[splits.length-1].toUpperCase(Locale.ROOT), fullPathId);
-                            }
-
-                            if(Registries.ITEM.get(shouldId)== Items.AIR){
-
-                                // Debug.info("input into registry");
-                                // Debug.info("add into ", fullPathId);
+                                if(testResult){
+                                    customItemModels.put(splits[splits.length-1].toUpperCase(Locale.ROOT), fullPathId);
+                                }
                                 id.add(fullPathId);
                             }
                         }
@@ -246,34 +203,7 @@ public class SlimefunModels extends BaseModule {
 
         return id;
     }
-    public Collection<Identifier> loadOurselvesCustomModelTexture(ResourceManager manager){
-        List<Identifier> textureIds = new ArrayList<>();
-        Set<String> namespaces = new HashSet<>(customTexturePath.get());
-        for(ResourcePack pack : manager.streamResourcePacks().toList()){
-            //Debug.info("in resourcepack ",pack.getName());
-            Set<String> namespacess= pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
-            for(String namespace : namespacess){
-                if(OUR_NAMESPACE.equals(namespace) || namespaces.contains(namespace)){
-                    Debug.info("Force load TEXTURE in pack",pack.getId(),"and namespace",namespace);
-                    pack.findResources(ResourceType.CLIENT_RESOURCES,namespace,"textures",(i,j)->{
-                            String realNamespace=i.getNamespace();
-                            if(i.getPath().endsWith(".png")){
-                                String realPath=i.getPath().replaceFirst("^textures/","").replaceAll(".png$","");
 
-                                Identifier shouldId=new Identifier(realNamespace,realPath);
-                                textureIds.add(shouldId);
-
-                            }
-                        }
-                    );
-                }
-            }
-
-
-        }
-        return textureIds;
-    }
-    private static Identifier targetIdentifier = new Identifier("minecraft","blocks");
 
 
 

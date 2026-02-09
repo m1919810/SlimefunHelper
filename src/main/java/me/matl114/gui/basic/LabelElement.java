@@ -31,8 +31,8 @@ public class LabelElement extends RawTextElement{
     public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
         Text text1 = text.getLabel(element);
         if(text1 != null){
-            RenderHandler.drawScaledText0(context, mc.textRenderer, text1, 0,0,element.getTextureWidth(), element.getTextureHeight(), color, alignment);
             context.drawTexturedQuad(BACKGROUND_RESOURCE, 0,element.getTextureWidth(), 0, element.getTextureHeight(), 0,u0,u1,v0,v1 );
+            RenderHandler.drawScaledText0(context, mc.textRenderer, text1, 0,0,element.getTextureWidth(), element.getTextureHeight(), color, alignment);
         }
     }
 }

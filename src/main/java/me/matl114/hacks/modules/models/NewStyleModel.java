@@ -98,6 +98,7 @@ public class NewStyleModel extends BaseModule {
         for(Item item : Registries.ITEM) {
             Identifier id = new Identifier(NAMESPACE,PATH_OF_NEW_VERSION + "/" + Registries.ITEM.getId(item).getPath());
             Optional<ItemModel> modelId = RenderListener.getModModel(id);
+            //todo: what?
             if(modelId.isPresent()){
                 cacheItem.put(item, modelId);
                 Debug.info("Loading new-version model",id);

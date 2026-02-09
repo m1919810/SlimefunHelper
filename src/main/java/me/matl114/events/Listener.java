@@ -301,6 +301,10 @@ public class Listener {
     @Broadcast
     private static final EventChannel<Screen> postCloseScreen = new EventChannel<>();
     @Getter
+    @Cancelable
+    @Modifiable
+    private static final EventChannel<Screen> preSetScreen = new EventChannel<>();
+    @Getter
     @Cancelable //note: this cancels post operations of setting a screen , like cursor lock, render refresh and title update
     private static final EventChannel<Screen> postSetScreen = new EventChannel<>();
     @Getter

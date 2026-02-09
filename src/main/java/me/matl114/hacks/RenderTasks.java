@@ -203,7 +203,7 @@ public class RenderTasks {
 
         @Override
         public boolean stillRender() {
-            return registered && Tasks.getTick() <= this.endTick && (autoStopPredicate == null || autoStopPredicate.getAsBoolean());
+            return registered && Tasks.getTick() <= this.endTick && (autoStopPredicate == null || !autoStopPredicate.getAsBoolean());
         }
 
         public void startRender(){

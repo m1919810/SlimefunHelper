@@ -3,6 +3,7 @@ package me.matl114.mixins.events;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.Listener;
 import me.matl114.events.Event;
@@ -46,6 +47,21 @@ public abstract class MinecraftClientEvents {
 
 
     @Shadow public abstract void tick();
+
+    @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
+    public void onPreSetScreen(Screen screen, CallbackInfo ci, @Local(argsOnly = true) LocalRef<Screen> screenRef){
+        if(!Listener.getPreSetScreen().isEmpty()){
+            Event<Screen> screenEvent = new Event<>(screen, true, true);
+            Listener.getPreSetScreen().handleValue(screenEvent);
+            if(screenEvent.isCancelled()){
+                ci.cancel();
+            }else{
+                if(screenEvent.context != screen){
+                    screenRef.set(screenEvent.context);
+                }
+            }
+        }
+    }
 
     @Inject(method = "setScreen", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;currentScreen:Lnet/minecraft/client/gui/screen/Screen;", ordinal = 3, shift = At.Shift.BEFORE), cancellable = true)
     public void onPostSetScreen(Screen screen, CallbackInfo ci){

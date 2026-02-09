@@ -78,7 +78,7 @@ public abstract class MouseEvents
 
     @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;mouseDragged(Lnet/minecraft/client/gui/Click;DD)Z"))
     private boolean onMouseDrag(Screen instance, Click click, double v1, double v2, Operation<Boolean> original){
-        Event<Mouse> event = new Event<>((Mouse) (Object)this, true, false, click.x(), click.y(), this.activeButton , v1, v2);
+        Event<Mouse> event = new Event<>((Mouse) (Object)this, true, false, click.x(), click.y(), v1, v2);
         Listener.getMouseDrag().handleValue(event);
         if(!event.isCancelled()){
             return original.call(instance, click, v1, v2);
@@ -98,7 +98,7 @@ public abstract class MouseEvents
             if (this.activeButton != null) {
                 double h = this.cursorDeltaX * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
                 double i = this.cursorDeltaY * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
-                Event<Mouse> event2 = new Event<>((Mouse) (Object)this, true, false, f, g, this.activeButton , h, i, new Click(f, g, this.activeButton));
+                Event<Mouse> event2 = new Event<>((Mouse) (Object)this, true, false, f, g, h, i);
                 Listener.getMouseDrag().handleValue(event2);
             }
         }

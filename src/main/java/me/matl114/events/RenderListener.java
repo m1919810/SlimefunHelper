@@ -14,7 +14,6 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashException;
-import org.lwjgl.opengl.GL11;
 
 import java.util.*;
 
@@ -54,7 +53,8 @@ public class RenderListener {
         return getCustomModelOf(modeled);
     }
     public static ItemModel getCustomModelOf(Identifier identifier){
-        return mc.getBakedModelManager().getItemModel(identifier);
+        ItemModel model =  mc.getBakedModelManager().getItemModel(identifier);
+        return model == mc.getBakedModelManager().missingModels.item() ? null : model;
     }
 
 
@@ -85,7 +85,7 @@ public class RenderListener {
     @ExtraArgs(value = {float.class}, names = {"ticksDelta"})
     private static final EventChannel<MatrixStack> renderLayerTasks = new EventChannel<>();
     public static void renderMoreTasks(MatrixStack stack, float tickDelta){
-        GL11.glEnable(GL11.GL_LINE_SMOOTH);
+        //GL11.glEnable(GL11.GL_LINE_SMOOTH);
 
         try{
             // This stack start with the position with RenderUtils.getCameraPose();
@@ -95,7 +95,7 @@ public class RenderListener {
         }catch (ConcurrentModificationException | NullPointerException | CrashException e){
             Debug.info("Error while handling Render Event:", e.getMessage());
         }finally {
-            GL11.glDisable(GL11.GL_LINE_SMOOTH);
+            //GL11.glDisable(GL11.GL_LINE_SMOOTH);
         }
 
 
@@ -130,7 +130,7 @@ public class RenderListener {
     @Getter
     @Broadcast
     @ExtraArgs(value = {ResourceManager.class})
-    private static final EventChannel<Set<Identifier>> asyncResourceSupply = new EventChannel<>();
+    private static final EventChannel<Set<Identifier>> asyncItemModelSupply = new EventChannel<>();
 
     public static void onResourceReload(ResourceManager manager){
         Event<ResourceManager> resourceReloadEvent = new Event<>(manager, false,false);
@@ -139,7 +139,7 @@ public class RenderListener {
 
     public static Collection<Identifier> getReloadingResources(ResourceManager manager){
         Event<Set<Identifier>> resourceReloadEvent = new Event<>(new LinkedHashSet<>(), false,false, manager);
-        asyncResourceSupply.handleValue(resourceReloadEvent);
+        asyncItemModelSupply.handleValue(resourceReloadEvent);
         return resourceReloadEvent.context();
     }
 

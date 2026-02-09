@@ -2,8 +2,10 @@ package me.matl114.mixins.render;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.val;
 import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
 import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.gui.basic.DisplayWidget;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -26,16 +28,23 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 @Mixin(Screen.class)
 public abstract class ScreenMixin extends AbstractParentElement implements ScreenAccess {
     @Shadow
-    protected <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement){
-        return null;
-    }
+    protected abstract  <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement);
     @Shadow
     protected void remove(Element child){
 
     }
+
+    @Shadow protected abstract <T extends Drawable> T addDrawable(T drawable);
+
     @Unique
     public <T extends Element & Drawable & Selectable> T addDrawableChildTo(T drawable){
-        return addDrawableChild(drawable);
+        if(drawable instanceof DisplayWidget display){
+            addDrawable(display);
+            return drawable;
+        }else{
+            return addDrawableChild(drawable);
+        }
+
     }
     @Unique
     public void removeChildFrom(Element val){

@@ -1,7 +1,9 @@
 package me.matl114.versioned.impl;
 
+import com.mojang.serialization.Codec;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VItem;
+import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.*;
@@ -9,6 +11,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
 
 import java.util.List;
+import java.util.Map;
 
 public class ItemUtils_v1_21_11 implements VItem {
     @Override
@@ -49,6 +52,11 @@ public class ItemUtils_v1_21_11 implements VItem {
     @Override
     public CustomModelDataComponent createModelData(int cmd) {
         return new CustomModelDataComponent(List.of((float)cmd), List.of(), List.of(), List.of());
+    }
+
+    @Override
+    public Map<ComponentType<?>, Codec<?>> getVersionCompatCodecs() {
+        return Map.of();
     }
 
 }

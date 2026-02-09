@@ -14,18 +14,25 @@ import me.matl114.utils.Debug;
 import net.fabricmc.api.ModInitializer;
 
 
+import net.fabricmc.fabric.api.client.model.loading.v1.ExtraModelKey;
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.model.loading.v1.SimpleUnbakedExtraModel;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 
 import net.fabricmc.fabric.impl.client.model.loading.ModelLoadingPluginManager;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.item.model.BasicItemModel;
+import net.minecraft.client.render.item.model.ItemModel;
+import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 
@@ -71,7 +78,8 @@ public class SlimefunHelper implements ModInitializer {
             (resourceManager, executor) -> CompletableFuture.supplyAsync(()->{
 				Debug.info("check model plugin work");
 				ModConfig.reloadModConfig();
-				return RenderListener.getReloadingResources(resourceManager.getResourceManager());
+				//we removed the itemModel auto register to ItemAssetsLoader
+				return Set.of();//RenderListener.getReloadingResources(resourceManager.getResourceManager());
 			}),
             (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {
 				// here we should auto register these to BasicItemModel s or SpecialItemModels

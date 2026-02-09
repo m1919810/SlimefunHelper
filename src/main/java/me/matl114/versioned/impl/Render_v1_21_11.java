@@ -113,19 +113,9 @@ public class Render_v1_21_11 implements VRender {
             Vector3f next = points.get(i).toVector3f();
             Vector3f normal = new Vector3f(next).sub(prev).normalize();
             consumer.vertex(entry, prev).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                .normal(entry, normal).lineWidth(2);
-            float t = prev.negate().dot(normal);
-            float length = next.sub(prev).length();
-            if(t > 0 && t < length)
-            {
-                Vector3f closeToCam = new Vector3f(normal).mul(t).add(prev);
-                consumer.vertex(entry, closeToCam).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                    .normal(entry, normal).lineWidth(2);
-                consumer.vertex(entry, closeToCam).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                    .normal(entry, normal).lineWidth(2);
-            }
+                .normal(entry, normal).lineWidth(1);
             consumer.vertex(entry, next).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                .normal(entry, normal).lineWidth(2);
+                .normal(entry, normal).lineWidth(1);
         }
         vcp.draw(LINES);
     }
@@ -141,19 +131,9 @@ public class Render_v1_21_11 implements VRender {
             Vector3f next = points.get(i).toVector3f();
             Vector3f normal = new Vector3f(next).sub(prev).normalize();
             consumer.vertex(entry, prev).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                .normal(entry, normal).lineWidth(2);
-            float t = prev.negate().dot(normal);
-            float length = next.sub(prev).length();
-            if(t > 0 && t < length)
-            {
-                Vector3f closeToCam = new Vector3f(normal).mul(t).add(prev);
-                consumer.vertex(entry, closeToCam).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                    .normal(entry, normal).lineWidth(2);
-                consumer.vertex(entry, closeToCam).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                    .normal(entry, normal).lineWidth(2);
-            }
+                .normal(entry, normal).lineWidth(1);
             consumer.vertex(entry, next).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                .normal(entry, normal).lineWidth(2);
+                .normal(entry, normal).lineWidth(1);
         }
         vcp.draw(LINES);
     }
@@ -162,11 +142,11 @@ public class Render_v1_21_11 implements VRender {
     public void drawOutlinedBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to) {
         VertexConsumerProvider.Immediate vcp = getVCP();
         VertexConsumer consumer = vcp.getBuffer(LINES);
-        drawOutlinedBox(consumer, from, to);
+        drawOutlinedBox(matrix, consumer, from, to);
         vcp.draw(LINES);
     }
 
-    public void drawOutlinedBox(VertexConsumer bufferBuilder, Vec3d from, Vec3d to){
+    public void drawOutlinedBox(Matrix4f matrix4f, VertexConsumer bufferBuilder, Vec3d from, Vec3d to){
         float minX = (float)from.getX();
         float minY = (float)from.getY();
         float minZ = (float)from.getZ();
@@ -174,111 +154,111 @@ public class Render_v1_21_11 implements VRender {
         float maxY = (float)to.getY();
         float maxZ = (float)to.getZ();
 
-        bufferBuilder.vertex(minX, minY, minZ)
+        bufferBuilder.vertex(matrix4f, minX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
                 .normal(1, 0, 0)
                     .lineWidth(2);
-        bufferBuilder.vertex(maxX, minY, minZ)
+        bufferBuilder.vertex(matrix4f, maxX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
             .lineWidth(2);
 
-        bufferBuilder.vertex(maxX, minY, minZ)
+        bufferBuilder.vertex(matrix4f, maxX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
             .lineWidth(2);
-        bufferBuilder.vertex(maxX, minY, maxZ)
+        bufferBuilder.vertex(matrix4f, maxX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
             .lineWidth(2);
 
-        bufferBuilder.vertex(minX, minY, maxZ)
+        bufferBuilder.vertex(matrix4f, minX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
             .lineWidth(2);
-        bufferBuilder.vertex(maxX, minY, maxZ)
+        bufferBuilder.vertex(matrix4f, maxX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
             .lineWidth(2);
 
-        bufferBuilder.vertex(minX, minY, minZ)
+        bufferBuilder.vertex(matrix4f, minX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
             .lineWidth(2);
-        bufferBuilder.vertex(minX, minY, maxZ)
+        bufferBuilder.vertex(matrix4f, minX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
             .lineWidth(2);
 
 
-        bufferBuilder.vertex(minX, minY, minZ)
+        bufferBuilder.vertex(matrix4f, minX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
             .lineWidth(2);
-        bufferBuilder.vertex(minX, maxY, minZ)
-            .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-            .normal(0, 1, 0)
-            .lineWidth(2);
-
-        bufferBuilder.vertex(maxX, minY, minZ)
-            .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-            .normal(0, 1, 0)
-            .lineWidth(2);
-        bufferBuilder.vertex(maxX, maxY, minZ)
+        bufferBuilder.vertex(matrix4f, minX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
             .lineWidth(2);
 
-        bufferBuilder.vertex(maxX, minY, maxZ)
+        bufferBuilder.vertex(matrix4f, maxX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
             .lineWidth(2);
-        bufferBuilder.vertex(maxX, maxY, maxZ)
-            .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-            .normal(0, 1, 0)
-            .lineWidth(2);
-
-        bufferBuilder.vertex(minX, minY, maxZ)
-            .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-            .normal(0, 1, 0)
-            .lineWidth(2);
-        bufferBuilder.vertex(minX, maxY, maxZ)
+        bufferBuilder.vertex(matrix4f, maxX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
             .lineWidth(2);
 
-        bufferBuilder.vertex(minX, maxY, minZ)
+        bufferBuilder.vertex(matrix4f, maxX, minY, maxZ)
+            .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
+            .normal(0, 1, 0)
+            .lineWidth(2);
+        bufferBuilder.vertex(matrix4f, maxX, maxY, maxZ)
+            .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
+            .normal(0, 1, 0)
+            .lineWidth(2);
+
+        bufferBuilder.vertex(matrix4f, minX, minY, maxZ)
+            .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
+            .normal(0, 1, 0)
+            .lineWidth(2);
+        bufferBuilder.vertex(matrix4f, minX, maxY, maxZ)
+            .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
+            .normal(0, 1, 0)
+            .lineWidth(2);
+
+        bufferBuilder.vertex(matrix4f, minX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
             .lineWidth(2);
-        bufferBuilder.vertex(maxX, maxY, minZ)
+        bufferBuilder.vertex(matrix4f, maxX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1,0, 0)
             .lineWidth(2);
 
-        bufferBuilder.vertex(maxX, maxY, minZ)
+        bufferBuilder.vertex(matrix4f, maxX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
             .lineWidth(2);
-        bufferBuilder.vertex(maxX, maxY, maxZ)
+        bufferBuilder.vertex(matrix4f, maxX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
             .lineWidth(2);
 
-        bufferBuilder.vertex(minX, maxY, maxZ)
+        bufferBuilder.vertex(matrix4f, minX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
             .lineWidth(2);
-        bufferBuilder.vertex(maxX, maxY, maxZ)
+        bufferBuilder.vertex(matrix4f, maxX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
             .lineWidth(2);
 
-        bufferBuilder.vertex(minX, maxY, minZ)
+        bufferBuilder.vertex(matrix4f, minX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
             .lineWidth(2);
-        bufferBuilder.vertex(minX, maxY, maxZ)
+        bufferBuilder.vertex(matrix4f, minX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
             .lineWidth(2);

@@ -69,3 +69,4 @@ accessible field net/minecraft/client/render/GameRenderer pool Lnet/minecraft/cl
 
 accessible class net/minecraft/network/PacketApplyBatcher$Entry
 accessible field net/minecraft/client/gui/DrawContext tooltipDrawer Ljava/lang/Runnable;
+accessible field net/minecraft/client/render/model/BakedModelManager missingModels Lnet/minecraft/client/render/model/ModelBaker$BlockItemModels;

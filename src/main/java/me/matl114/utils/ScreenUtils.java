@@ -263,7 +263,7 @@ public class ScreenUtils {
         if (screen != null) {
             mc.setNavigationType(GuiNavigationType.MOUSE);
         }
-        MouseInput mouseInput = new MouseInput(action, mods);
+        MouseInput mouseInput = new MouseInput(button, mods);
         boolean bl = action == 1;
         final Mouse mouse = mc.mouse;
         MouseInput i = mouse.modifyMouseInput(mouseInput, bl);

@@ -7,9 +7,11 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.render.item.KeyedItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.Packet;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -21,6 +23,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
     @Shadow
     ItemDisplayContext displayContext;
+
+    @Shadow public abstract void addModelKey(Object modelKey);
+
     @Unique
     ItemRenderState attachedRender;
 
@@ -32,6 +37,10 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
 
     public void setAttachedRenderState(ItemRenderState state){
         attachedRender = state;
+        //mark a difference in the cache
+        if(state != null){
+            addModelKey(state instanceof KeyedItemRenderState keyed ? keyed.getModelKey() : state);
+        }
     }
 
 
@@ -75,6 +84,10 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
                 }else{
                     return;
                 }
+                if(inGui){
+                    MinecraftClient.getInstance().gameRenderer.getDiffuseLighting().setShaderLights(DiffuseLighting.Type.ITEMS_FLAT);
+                }
+
                 attachedRender.render(matrices, orderedRenderCommandQueue, light, overlay, i);
             }finally {
                 matrices.pop();

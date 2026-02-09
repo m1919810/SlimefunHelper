@@ -74,7 +74,7 @@ public class BeaconEffectSelectButton extends PressableWidget {
 
     protected void renderExtra(DrawContext context){
         if(this.currentSprite != null){
-            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, this.currentSprite, this.getX() + 2, this.getY() + 2, 0, 18, 18);
+            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, this.currentSprite, this.getX() + 2, this.getY() + 2,  18, 18);
         }else {
             context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, NO_PATH, this.getX() + 2, this.getY() + 2, 18, 18);
         }

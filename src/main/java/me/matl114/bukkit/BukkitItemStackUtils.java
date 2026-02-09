@@ -27,6 +27,9 @@ public class BukkitItemStackUtils {
 
     public static ItemStack getAsDisplayItem(BukkitItemStack itemStack){
         try{
+            if(itemStack instanceof CraftItemStack cis){
+                return cis.buildDisplay();
+            }
             ItemStack stack=new ItemStack(itemStack.getType());
             stack.setCount(itemStack.getAmount());
             if(itemStack.hasItemMeta()){
@@ -65,7 +68,7 @@ public class BukkitItemStackUtils {
 
         }catch (Throwable e) {
             Debug.info("error in ItemConvertion");
-            return null;
+            return STACK_FORBIDDEN;
         }
     }
 

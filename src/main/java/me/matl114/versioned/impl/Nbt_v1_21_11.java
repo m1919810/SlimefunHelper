@@ -25,4 +25,13 @@ public class Nbt_v1_21_11 implements VNbt {
             throw new RuntimeException("Could not deserialize found element ", e);
         }
     }
+
+    @Override
+    public NbtElement readNbtNoRegistry(String element) {
+        try{
+            return StringNbtReader.fromOps(NbtOps.INSTANCE).read(element);
+        }catch (CommandSyntaxException e){
+            throw new RuntimeException("Could not deserialize found element ", e);
+        }
+    }
 }

@@ -9,10 +9,10 @@
 		"access.KeyBindingMixin",
 		"access.MoonriseArrayVoxelShapeMixin",
 		"access.MoonriseBlockStateBaseMixin",
+		"access.MoonriseChunkBlockCountingMixin",
 		"access.MoonriseCubeVoxelShapeMixin",
 		"access.MoonriseSliceShapeMixin",
 		"access.MoonriseVoxelShapeMixin",
-		"access.MoonriseChunkBlockCountingMixin",
 		"events.AtlasLoaderEvents",
 		"events.BlockEntityEvents",
 		"events.ChatHudEvents",
@@ -26,6 +26,7 @@
 		"events.EntityEvents",
 		"events.GameRendererEvents",
 		"events.HandledScreenEvents",
+		"events.ItemAssetsLoaderEvents",
 		"events.ItemModelManagerEvents",
 		"events.ItemRenderStateEvents",
 		"events.ItemStackEvents",
@@ -37,6 +38,7 @@
 		"events.NetworkThreadUtilsEvents",
 		"events.RecipeBookScreenEvents",
 		"events.ScreenEvents",
+		"events.WorldRendererEvents",
 		"fix.AbstractElementButtonFixMixin",
 		"fix.LoginHelloPacketNameFixMixin",
 		"fix.PacketByteBufFixMixin",
@@ -79,7 +81,6 @@
 		"defaultRequire": 1
 	},
 	"mixins": [
-		
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
 		"fix.ScreenHandlerFixMixin"

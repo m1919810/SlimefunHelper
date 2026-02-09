@@ -493,7 +493,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                         ButtonAction.run(()-> sec.setHideFlag(sample, !sec.isHide(sample))),
                                         (bl)->sec.isHide(sample)
                                     )
-                                        .withTooltips(TooltipHandler.of(List.of(Text.literal(sec.name().toLowerCase(Locale.ROOT)))))
+                                        .withTooltips(TooltipHandler.of(List.of(Text.literal(sec.displayName()))))
                                 )
                         );
                     }

@@ -64,4 +64,9 @@ public enum TooltipHideFlag_v1_21_11 implements VHideFlag {
         }
 
     }
+
+    @Override
+    public String displayName() {
+        return name;
+    }
 }
