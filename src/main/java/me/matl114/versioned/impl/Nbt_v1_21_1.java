@@ -7,6 +7,8 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.nbt.visitor.StringNbtWriter;
 
+import java.util.regex.Pattern;
+
 public class Nbt_v1_21_1 implements VNbt {
     @Override
     public String writeNbt(NbtElement element) {
@@ -17,9 +19,14 @@ public class Nbt_v1_21_1 implements VNbt {
     @Override
     public NbtElement readNbt(String element) {
         try{
-            return new StringNbtReader(new StringReader(element)).parseElement();
+            return new StringNbtReader(new StringReader(element.replace("\\n", "\n").replace("\\s", "\s"))).parseElement();
         }catch (CommandSyntaxException e){
-            throw new RuntimeException("Could not deserialize found element ", e);
+            throw new RuntimeException("Could not deserialize nbt element ", e);
         }
+    }
+
+    @Override
+    public NbtElement readNbtNoRegistry(String element) {
+        return readNbt(element);
     }
 }

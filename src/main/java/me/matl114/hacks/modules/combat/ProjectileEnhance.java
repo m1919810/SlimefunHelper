@@ -125,6 +125,7 @@ public class ProjectileEnhance extends BaseModule {
 
         return sfid != null && Pattern.matches(regex, sfid);
     }
+    //todo: test crossbow, may wrong
     public void onPlayerInteractItem(Event<PlayerInteractItemC2SPacket> packetMutableObject){
         //targeting
         if(packetMutableObject.isCancelled())return;

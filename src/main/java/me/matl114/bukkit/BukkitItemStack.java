@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public class BukkitItemStack implements Cloneable, ConfigurationSerializable {
+public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializable permits CraftItemStack{
     private Item type;
     private int amount;
     private BukkitMetaItem meta;
@@ -158,10 +158,13 @@ public class BukkitItemStack implements Cloneable, ConfigurationSerializable {
 
         return result;
     }
-
+    private static final String VERSION_1_21_10_FLAG = "schema_version";
 
     @NotNull
     public static BukkitItemStack deserialize(@NotNull Map<String, Object> args) {
+        if(args.containsKey(VERSION_1_21_10_FLAG)) {
+            return CraftItemStack.deserializeModern(args);
+        }
         short damage = 0;
         int amount = 1;
         if (args.containsKey("damage")) {

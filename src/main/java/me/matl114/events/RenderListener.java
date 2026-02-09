@@ -7,7 +7,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
@@ -143,7 +142,7 @@ public class RenderListener {
     @Getter
     @Broadcast
     @ExtraArgs(value = {ResourceManager.class})
-    private static final EventChannel<Set<Identifier>> asyncResourceSupply = new EventChannel<>();
+    private static final EventChannel<Set<Identifier>> asyncItemModelSupply = new EventChannel<>();
 
     public static void onResourceReload(ResourceManager manager){
         Event<ResourceManager> resourceReloadEvent = new Event<>(manager, false,false);
@@ -152,7 +151,7 @@ public class RenderListener {
 
     public static Collection<Identifier> getReloadingResources(ResourceManager manager){
         Event<Set<Identifier>> resourceReloadEvent = new Event<>(new LinkedHashSet<>(), false,false, manager);
-        asyncResourceSupply.handleValue(resourceReloadEvent);
+        asyncItemModelSupply.handleValue(resourceReloadEvent);
         return resourceReloadEvent.context();
     }
 

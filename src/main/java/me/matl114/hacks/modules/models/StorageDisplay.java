@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import me.matl114.bukkit.BukkitConfigDeserializor;
 import me.matl114.bukkit.BukkitItemStack;
 import me.matl114.bukkit.BukkitItemStackUtils;
+import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
@@ -59,6 +60,7 @@ public class StorageDisplay extends BaseModule {
         registerListener(RenderListener.getDetachedItemStackInformation(), this::onContainerPluginStorage, 1000);
         registerListener(RenderListener.getDetachedItemStackInformation(), this::onProductsSpecialPlugin, 1000);
         registerListener(RenderListener.getCustomModelOverride(), this::onGceChickenModel);
+        registerListener(Listener.getPostTick(), this::onCacheClean);
     }
 
     public void onContainerSpawner(Event<ItemStack> event) {
@@ -98,6 +100,23 @@ public class StorageDisplay extends BaseModule {
 
         }
     });
+    private int updateTick = 0;
+    private void onCacheClean(Event<Void> gameTick){
+        if(updateTick < 60 * 20){
+            updateTick++;
+            return;
+        }
+        //on main thread
+        updateTick = 0;
+        var entryIter = storageItemStackCache.entrySet().iterator();
+        while (entryIter.hasNext()){
+            var enty = entryIter.next().getValue();
+            if(enty.lastUpdated < System.currentTimeMillis() - 10 * updateIntervalMs){
+                //10秒没有更新了
+                entryIter.remove();
+            }
+        }
+    }
     private final long updateIntervalMs = 1000;
     public void onContainerPluginStorage(Event<ItemStack> event) {
         if(event.context() != null){

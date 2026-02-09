@@ -1,11 +1,5 @@
-package me.matl114.mixins.events;
+package me.matl114.utils;
 
-import me.matl114.accessors.events.ItemRendererAccess;
-import me.matl114.events.RenderListener;
-import me.matl114.events.Event;
-import me.matl114.utils.DebugUtils;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -14,38 +8,9 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Environment(EnvType.CLIENT)
-@Mixin(ItemRenderer.class)
-public abstract class ItemRendererEvents implements ItemRendererAccess {
-    private boolean nextTimeRenderDisableGuiLight = false;
-    @ModifyVariable(method = "getModel", at = @At("HEAD"), index = 1, argsOnly = true)
-    public ItemStack onItemModelLoad(ItemStack stack){
-        Event<ItemStack> itemStackEvent = new Event<>(stack, true, true);
-        RenderListener.getItemDataOverrideForModel().handleValue(itemStackEvent);
-        if(itemStackEvent.isCancelled()){
-            return stack;
-        }else{
-            return itemStackEvent.context();
-        }
-    }
-
-    @Inject(method = "renderItem",at = @At("RETURN"))
-    public void onItemRenderDetached(ItemStack item, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model, CallbackInfo ci){
-        ItemStack stack = RenderListener.getContainedItemInfo(item);
-        if(stack != null){
-            renderItemContainerItemInfo((ItemRenderer) (Object)this, matrices, renderMode, stack, leftHanded, vertexConsumers, overlay);
-        }
-
-    }
-    @Unique
-    private void renderItemContainerItemInfo(ItemRenderer itemRenderer, MatrixStack matrices, ModelTransformationMode renderMode, ItemStack stack, boolean leftHanded, VertexConsumerProvider vertexConsumers, int overlay){
+public class DebugUtils {
+    public static void renderItemContainerItemInfo(ItemRenderer itemRenderer, MatrixStack matrices, ModelTransformationMode renderMode, ItemStack stack, boolean leftHanded, VertexConsumerProvider vertexConsumers, int overlay){
         matrices.push();
         try{
             final float scale=0.54f;
@@ -85,21 +50,11 @@ public abstract class ItemRendererEvents implements ItemRendererAccess {
             BakedModel bakedModel=itemRenderer.getModel(stack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0);
             //fixme: renderer error here
             if(inGui){
-                nextTimeRenderDisableGuiLight = true;
+                DiffuseLighting.disableGuiDepthLighting();
             }
             itemRenderer.renderItem(stack,renderMode,leftHanded,matrices,vertexConsumers,0xF000F0,overlay,bakedModel);
         }finally {
             matrices.pop();
         }
     }
-
-    public boolean fetchThisTimeGuiLightStatus(){
-        if(nextTimeRenderDisableGuiLight){
-            nextTimeRenderDisableGuiLight = false;
-            return true;
-        }
-        return false;
-    }
-
-
 }

@@ -15,10 +15,7 @@ import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.Registries;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourcePack;
 import net.minecraft.resource.ResourceType;
@@ -57,7 +54,7 @@ public class SlimefunModels extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getResourceReload(), this::onResourceReload);
-        registerListener(RenderListener.getAsyncResourceSupply(), this::onModelSupply);
+        registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
         registerListener(RenderListener.getCustomModelOverride(), this::onModelOverride);
         registerListener(RenderListener.getItemDataOverrideForModel(), this::onItemOverride);
     }

@@ -1,10 +1,21 @@
 package me.matl114.versioned.impl;
 
+import com.google.common.collect.ImmutableMap;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VItem;
+import net.minecraft.component.ComponentType;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.CustomModelDataComponent;
+import net.minecraft.component.type.UnbreakableComponent;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.Unit;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class ItemUtils_v1_21_1 implements VItem {
     @Override
@@ -57,6 +68,21 @@ public class ItemUtils_v1_21_1 implements VItem {
     @Override
     public CustomModelDataComponent createModelData(int cmd) {
         return new CustomModelDataComponent(cmd);
+    }
+
+    private static final Map<ComponentType<?>, Codec<?>> VERSIONED ;
+    static{
+        var builder = ImmutableMap.<ComponentType<?>, Codec<?>>builder();
+        builder.put(DataComponentTypes.CUSTOM_MODEL_DATA, Codec.withAlternative(CustomModelDataComponent.CODEC, RecordCodecBuilder.create((instance) -> {
+            return instance.group(Codec.FLOAT.listOf().optionalFieldOf("floats", List.of()).forGetter(s -> s.value() == 0 ? List.of(): List.of((float)s.value()))).apply(instance, floats -> new CustomModelDataComponent(floats.isEmpty()? 0 : (int)(float)floats.get(0)));
+        })));
+        builder.put(DataComponentTypes.UNBREAKABLE, Codec.withAlternative(UnbreakableComponent.CODEC, Unit.CODEC.xmap(s -> new UnbreakableComponent(true), b -> Unit.INSTANCE)));
+        VERSIONED = builder.build();
+    }
+
+    @Override
+    public Map<ComponentType<?>, Codec<?>> getVersionCompatCodecs() {
+        return VERSIONED;
     }
 
 }
