@@ -187,7 +187,7 @@ public class StorageDisplay extends BaseModule {
         }
     }
 
-    public void onGceChickenModel(Event<ItemModel> IItemModelEvent){
+    public void onGceChickenModel(Event<Identifier> IItemModelEvent){
         if(IItemModelEvent.context() != null)return;
         if(isActive()){
             ItemStack stack = IItemModelEvent.getArgs(0);
@@ -195,8 +195,9 @@ public class StorageDisplay extends BaseModule {
             if(optionalChicken!=null ){
                 String val = dnaInfo.get(optionalChicken);
                 if(val != null){
-                    RenderListener.getModModel(new Identifier("slimefunhelper","gce/"+val))
-                        .ifPresent(IItemModelEvent::context);
+                    Identifier id = new Identifier("slimefunhelper","gce/"+val);
+                    RenderListener.getModModel(id)
+                        .ifPresent((v)-> IItemModelEvent.context(id));
                 }
             }
         }

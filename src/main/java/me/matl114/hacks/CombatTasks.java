@@ -213,6 +213,8 @@ public class CombatTasks {
     @Getter
     public static BowEnhance bowEnhance;
     @Getter
+    public static AutoTotem autoTotem;
+    @Getter
     public static ProjectileEnhance projectileEnhance;
     private static void initModules(ModuleManager m){
         combatExtra = new CombatExtra()
@@ -228,6 +230,8 @@ public class CombatTasks {
         bowEnhance = new BowEnhance()
             .register(m);
         projectileEnhance = new ProjectileEnhance()
+            .register(m);
+        autoTotem = new AutoTotem()
             .register(m);
     }
     static {

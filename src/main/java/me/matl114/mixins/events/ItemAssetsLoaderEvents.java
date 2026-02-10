@@ -30,14 +30,17 @@ public abstract class ItemAssetsLoaderEvents {
             Collection<Identifier> ids = RenderListener.getReloadingResources(resourceManager);
             Map<Identifier, ItemAsset> autoAssets = new HashMap<>(ids.size());
             for(Identifier id : ids){
-                autoAssets.put(id, new ItemAsset(new BasicItemModel.Unbaked(id, new ArrayList<>()), new ItemAsset.Properties(true, false, 1.0F)));
+                autoAssets.put(id, new ItemAsset(new BasicItemModel.Unbaked(id, new ArrayList<>()), new ItemAsset.Properties(true, true, 1.0F)));
             }
             return autoAssets;
         }, executor);
         cir.setReturnValue(CompletableFuture.allOf(future, customLoadingAssets).thenApplyAsync((async)->{
             ItemAssetsLoader.Result result = future.join();
             Map<Identifier, ItemAsset> autoAssets = customLoadingAssets.join();
-            result.contents().putAll(autoAssets);
+            for(var entry : autoAssets.entrySet()){
+                // do not override models that already exists
+                result.contents().putIfAbsent(entry.getKey(), entry.getValue());
+            }
             return result;
         }));
     }

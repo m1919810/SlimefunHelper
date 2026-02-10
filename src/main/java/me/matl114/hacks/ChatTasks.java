@@ -13,10 +13,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.hacks.modules.chat.AutoChat;
-import me.matl114.hacks.modules.chat.ChatCombine;
-import me.matl114.hacks.modules.chat.ChatExtra;
-import me.matl114.hacks.modules.chat.ClientSideCommand;
+import me.matl114.hacks.modules.chat.*;
 import me.matl114.events.Listener;
 import me.matl114.hacks.modules.combat.Attack;
 import me.matl114.hacks.modules.combat.BowEnhance;
@@ -73,6 +70,8 @@ public class ChatTasks {
     public static ClientSideCommand clientSideCommand;
     @Getter
     public static ChatCombine chatCombine;
+    @Getter
+    public static InGuiChatBox inGuiChatBox;
 
     private static void initModules(ModuleManager m){
         chatExtra = new ChatExtra()
@@ -85,6 +84,8 @@ public class ChatTasks {
             .register(m);
 
         chatCombine = new ChatCombine()
+            .register(m);
+        inGuiChatBox = new InGuiChatBox()
             .register(m);
     }
     static{
@@ -479,6 +480,11 @@ public class ChatTasks {
                         .select(List.of("confirm"), "")
                         .build()
                 )
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("display")
+                        .build()
+                )
                 .post(e -> e.executor(CommandContext.run(this::onSleep)))
                 .complete();
         }
@@ -489,8 +495,9 @@ public class ChatTasks {
                 return ;
             }
             String val = re.nextNonnull();
+            String val2 = re.nextArg();
             if("confirm".equals(val)){
-                Tasks.scheduleDelayed(()->RenderTasks.getSleepMode().setScreenSleeping(level), 1);
+                Tasks.scheduleDelayed(()->RenderTasks.getSleepMode().setCustomScreenSleeping(level, val2), 1);
             }else {
                 Debug.chat("使用sleep confirm 确认进入睡眠模式, 进入睡眠模式后可以按 "+ RenderTasks.getSleepMode().getWakeupButton() +" 键离开");
             }

@@ -87,11 +87,14 @@ public class SleepMode extends BaseModule {
         else return false;
     }
     public boolean setScreenSleeping(int s){
+        return setCustomScreenSleeping(s, null);
+    }
+    public boolean setCustomScreenSleeping(int s, String sleep){
         if(sleepingLevel != s){
 
             if(s != 0){
                 sleepingLevel = s;
-                setUpSleepingScreen();
+                setUpSleepingScreen(sleep == null ? getDefaultDisplayText() : Text.literal(sleep));
             }else {
                 //sleeping = false;
                 sleepingLevel = s;
@@ -115,15 +118,16 @@ public class SleepMode extends BaseModule {
         return currentRenderingSleeping;
     }
     private class SleepingChatScreen extends ChatScreen implements SleepOverlay {
-
-        public SleepingChatScreen(String originalChatText) {
+        Text displayMessage;
+        public SleepingChatScreen(String originalChatText, Text displayMessage) {
             super(originalChatText, false);
+            this.displayMessage = displayMessage;
         }
         protected void init(){
             super.init();
             sleepingScreenInstance = this;
             DisplayWidget.instance(this.width - 80, 0, 80, 40)
-                .setRenderHandler(LabelElement.instance(Text.literal("按 "+  getWakeupButton() +" 键退出休眠模式")))
+                .setRenderHandler(LabelElement.instance(displayMessage))
                 .addTo(this);
             shouldFreshSleepScreen = true;
         }
@@ -161,8 +165,10 @@ public class SleepMode extends BaseModule {
         }
     }
     private class SleepingScreen extends Screen implements SafeSleepingScreen{
-        protected SleepingScreen(Text title) {
+        Text displayMessage;
+        protected SleepingScreen(Text title, Text displayMessage) {
             super(title);
+            this.displayMessage = displayMessage;
         }
 
         @Override
@@ -170,7 +176,7 @@ public class SleepMode extends BaseModule {
             super.init();
             sleepingScreenInstance = this;
             DisplayWidget.instance(40, 40, this.width - 80, this.height - 80)
-                .setRenderHandler(LabelElement.instance(Text.literal("按 "+ getWakeupButton() +" 键退出休眠模式")))
+                .setRenderHandler(LabelElement.instance(displayMessage))
                 .addTo(this);
             shouldFreshSleepScreen = true;
         }
@@ -200,7 +206,7 @@ public class SleepMode extends BaseModule {
                             if(isScreenSleeping()){
                                 if(ClientUtils.isPlayerOnline()){
                                     sleepingScreenInstance = null;
-                                    setUpSleepingScreen();
+                                    setUpSleepingScreen(getDefaultDisplayText());
                                 }else{
                                     //keep this screen
                                 }
@@ -215,18 +221,21 @@ public class SleepMode extends BaseModule {
 
         }
     }
+    private Text getDefaultDisplayText(){
+        return Text.literal("按 "+  getWakeupButton() +" 键退出休眠模式");
+    }
     private static interface SafeSleepingScreen extends SleepOverlay {
         //screen which implement this can keep even when player exit game, which means it does not need mc.player or mc.world or sth
     }
     //
-    public void setUpSleepingScreen(){
+    public void setUpSleepingScreen(Text display){
         if(sleepingScreenInstance == null){
             switch (sleepingLevel){
                 case 1:
-                    sleepingScreenInstance =  new SleepingChatScreen("");
+                    sleepingScreenInstance =  new SleepingChatScreen("", display);
                     break;
                 default:
-                    sleepingScreenInstance = new SleepingScreen(Text.empty());
+                    sleepingScreenInstance = new SleepingScreen(Text.empty(), display);
                     break;
             }
         }
@@ -312,7 +321,7 @@ public class SleepMode extends BaseModule {
                     mc.gameRenderer.pool.decrementLifespan();
                 }
             }else {
-                setUpSleepingScreen();
+                setUpSleepingScreen(getDefaultDisplayText());
             }
             return true;
         }

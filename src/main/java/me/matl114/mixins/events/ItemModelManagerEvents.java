@@ -16,6 +16,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.HeldItemContext;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -41,16 +42,17 @@ public abstract class ItemModelManagerEvents {
     }
 
 
-    @ModifyExpressionValue(method = "update", at = @At(value = "INVOKE", target = "Ljava/util/function/Function;apply(Ljava/lang/Object;)Ljava/lang/Object;", ordinal = 1))
-    public <R> R onItemModelOverride(R original, @Local(argsOnly = true) ItemStack stack){
-        Event<ItemModel> bakedModelEvent = new Event<>(null, true, true, stack);
+    @ModifyExpressionValue(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;get(Lnet/minecraft/component/ComponentType;)Ljava/lang/Object;"))
+    public Object onItemModelOverride(Object original, @Local(argsOnly = true) ItemStack stack){
+        Event<Identifier> bakedModelEvent = new Event<>(null, true, true, stack);
         RenderListener.getCustomModelOverride().handleValue(bakedModelEvent);
         if(!bakedModelEvent.isCancelled()) {
-            ItemModel model = bakedModelEvent.context();
+            Identifier model = bakedModelEvent.context();
             if(model != null) {
-                return (R) model;
+                return model;
             }
         }
+        // if no modification, just return the origin, do not return the null
         return original;
     }
 
