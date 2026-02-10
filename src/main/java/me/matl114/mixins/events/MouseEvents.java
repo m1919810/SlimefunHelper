@@ -78,7 +78,7 @@ public abstract class MouseEvents
 
     @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V", ordinal = 1))
     private void onMouseDrag(Runnable task, String errorTitle, String screenName, @Local(ordinal =  2) double f, @Local(ordinal = 3) double g, @Local(ordinal =  4) double h, @Local(ordinal = 5) double i){
-        Event<Mouse> event = new Event<>((Mouse) (Object)this, true, false, f, g, h, i, this.activeButton);
+        Event<Mouse> event = new Event<>((Mouse) (Object)this, true, false, f, g, h, i);
         Listener.getMouseDrag().handleValue(event);
         if(!event.isCancelled()){
             Screen.wrapScreenError(task, errorTitle, screenName);
@@ -97,7 +97,7 @@ public abstract class MouseEvents
             if (this.activeButton != -1) {
                 double h = this.cursorDeltaX * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
                 double i = this.cursorDeltaY * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
-                Event<Mouse> event2 = new Event<>((Mouse) (Object)this, true, false, f, g, h, i, this.activeButton);
+                Event<Mouse> event2 = new Event<>((Mouse) (Object)this, true, false, f, g, h, i);
                 Listener.getMouseDrag().handleValue(event2);
             }
         }

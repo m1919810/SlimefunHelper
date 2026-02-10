@@ -1,13 +1,11 @@
 package me.matl114.mixins.events;
 
-import me.matl114.accessors.events.ItemRendererAccess;
+import me.matl114.events.GlobalEventVars;
 import me.matl114.events.RenderListener;
 import me.matl114.events.Event;
-import me.matl114.utils.DebugUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
@@ -23,8 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ItemRenderer.class)
-public abstract class ItemRendererEvents implements ItemRendererAccess {
-    private boolean nextTimeRenderDisableGuiLight = false;
+public abstract class ItemRendererEvents {
     @ModifyVariable(method = "getModel", at = @At("HEAD"), index = 1, argsOnly = true)
     public ItemStack onItemModelLoad(ItemStack stack){
         Event<ItemStack> itemStackEvent = new Event<>(stack, true, true);
@@ -85,7 +82,7 @@ public abstract class ItemRendererEvents implements ItemRendererAccess {
             BakedModel bakedModel=itemRenderer.getModel(stack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0);
             //fixme: renderer error here
             if(inGui){
-                nextTimeRenderDisableGuiLight = true;
+                GlobalEventVars.lastRenderNeedDisableGuiLight = true;
             }
             itemRenderer.renderItem(stack,renderMode,leftHanded,matrices,vertexConsumers,0xF000F0,overlay,bakedModel);
         }finally {
@@ -93,13 +90,6 @@ public abstract class ItemRendererEvents implements ItemRendererAccess {
         }
     }
 
-    public boolean fetchThisTimeGuiLightStatus(){
-        if(nextTimeRenderDisableGuiLight){
-            nextTimeRenderDisableGuiLight = false;
-            return true;
-        }
-        return false;
-    }
 
 
 }

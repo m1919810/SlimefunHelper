@@ -13,6 +13,7 @@ public class ListUnmodifiableWidget extends ScrollableListWidget {
         this.controller = controller;
         refreshList();
     }
+    //todo check
     protected void refreshList(){
         clearScrollingWidget();
         int size = controller.size();

@@ -13,10 +13,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.hacks.modules.chat.AutoChat;
-import me.matl114.hacks.modules.chat.ChatCombine;
-import me.matl114.hacks.modules.chat.ChatExtra;
-import me.matl114.hacks.modules.chat.ClientSideCommand;
+import me.matl114.hacks.modules.chat.*;
 import me.matl114.events.Listener;
 import me.matl114.hacks.modules.combat.Attack;
 import me.matl114.hacks.modules.combat.BowEnhance;
@@ -73,6 +70,8 @@ public class ChatTasks {
     public static ClientSideCommand clientSideCommand;
     @Getter
     public static ChatCombine chatCombine;
+    @Getter
+    public static InGuiChatBox inGuiChatBox;
 
     private static void initModules(ModuleManager m){
         chatExtra = new ChatExtra()
@@ -85,6 +84,8 @@ public class ChatTasks {
             .register(m);
 
         chatCombine = new ChatCombine()
+            .register(m);
+        inGuiChatBox = new InGuiChatBox()
             .register(m);
     }
     static{

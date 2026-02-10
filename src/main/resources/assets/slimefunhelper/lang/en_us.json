@@ -132,6 +132,7 @@
 	"att-bot.mace-height-multiply.tooltips": "值不应高于170,若同时使用TP Reach,则值不应高于140/100",
 	"att-bot.mace-pass-totem": "武器攻击:重锤pass图腾",
 	"att-bot.mace-pass-totem.tooltips": "测试功能\n不稳定",
+	"att-bot.mace-enable": "武器攻击:启用重锤",
 	"att-bot.opposite-attack-multiply": "武器攻击:身后实体加权",
 	"att-bot.opposite-attack-multiply.tooltips": "在玩家身后的实体在进行攻击目标选取的时候会获得此加权值\u000A这是为了防止反作弊插件在玩家身后生成假人来测试杀戮\n不加权情况为0.0D,值越大,身后实体越不可能被攻击",
 	"att-bot.player-attack-multiply": "武器攻击:玩家加权",
