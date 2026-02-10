@@ -480,6 +480,11 @@ public class ChatTasks {
                         .select(List.of("confirm"), "")
                         .build()
                 )
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("display")
+                        .build()
+                )
                 .post(e -> e.executor(CommandContext.run(this::onSleep)))
                 .complete();
         }
@@ -490,8 +495,9 @@ public class ChatTasks {
                 return ;
             }
             String val = re.nextNonnull();
+            String val2 = re.nextArg();
             if("confirm".equals(val)){
-                Tasks.scheduleDelayed(()->RenderTasks.getSleepMode().setScreenSleeping(level), 1);
+                Tasks.scheduleDelayed(()->RenderTasks.getSleepMode().setCustomScreenSleeping(level, val2), 1);
             }else {
                 Debug.chat("使用sleep confirm 确认进入睡眠模式, 进入睡眠模式后可以按 "+ RenderTasks.getSleepMode().getWakeupButton() +" 键离开");
             }
