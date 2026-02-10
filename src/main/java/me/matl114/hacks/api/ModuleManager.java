@@ -17,7 +17,6 @@ public class ModuleManager extends AbstractGuiManager<BaseModule> {
         registeringFunctions.removeIf(function);
     }
 
-
     public void registerModule(BaseModule module) {
         super.registerModule(module);
         module.onCreate();
@@ -32,8 +31,6 @@ public class ModuleManager extends AbstractGuiManager<BaseModule> {
         registeringFunctions.forEach(consumer -> consumer.accept(this));
     }
 
+    // todo antikb
 
-
-    //todo antikb
-    
 }

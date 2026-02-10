@@ -1,18 +1,16 @@
 package me.matl114.utils.interruptions;
 
+import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import me.matl114.utils.commands.ArgumentReader;
 import me.matl114.utils.commands.SimpleCommandArgs;
 import net.minecraft.entity.player.PlayerEntity;
 
-
-import javax.annotation.Nullable;
-
-
 @AllArgsConstructor
 public class ValueAbsentError extends ArgumentException {
     @Nullable
     ArgumentReader reader;
+
     String argument;
 
     public ValueAbsentError(@Nullable ArgumentReader reader, SimpleCommandArgs.Argument argument) {

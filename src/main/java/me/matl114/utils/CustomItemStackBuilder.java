@@ -3,6 +3,8 @@ package me.matl114.utils;
 import com.google.common.collect.LinkedHashMultimap;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.versioned.api.VHideFlag;
 import net.minecraft.component.DataComponentTypes;
@@ -15,31 +17,28 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
-
 public class CustomItemStackBuilder {
     ItemStack stack = new ItemStack(Items.STONE);
     List<Text> tooltip = new ArrayList<>();
 
-    public static CustomItemStackBuilder builder(){
+    public static CustomItemStackBuilder builder() {
         return new CustomItemStackBuilder();
     }
 
-    public CustomItemStackBuilder() {
+    public CustomItemStackBuilder() {}
 
-    }
     public CustomItemStackBuilder type(String type) {
         return type(Registries.ITEM.get(Identifier.tryParse(type)));
     }
+
     public CustomItemStackBuilder type(Item type) {
-        if(type != Items.AIR){
+        if (type != Items.AIR) {
             int cnt = Math.min(1, stack.getCount());
             stack = stack.copyComponentsToNewStackIgnoreEmpty(type, cnt);
         }
         return this;
     }
+
     public CustomItemStackBuilder amount(int amount) {
         stack.setCount(amount);
         return this;
@@ -68,27 +67,34 @@ public class CustomItemStackBuilder {
         return append(ChatUtils.stringToText(tooltip));
     }
 
-    public CustomItemStackBuilder endLore(){
-        ItemStackUtils.setOrRemoveChange(this.stack, DataComponentTypes.LORE, new LoreComponent(List.copyOf(this.tooltip)));
+    public CustomItemStackBuilder endLore() {
+        ItemStackUtils.setOrRemoveChange(
+                this.stack, DataComponentTypes.LORE, new LoreComponent(List.copyOf(this.tooltip)));
         return this;
     }
 
-    public CustomItemStackBuilder hideFlag(VHideFlag flag){
+    public CustomItemStackBuilder hideFlag(VHideFlag flag) {
         flag.setHideFlag(this.stack, true);
         return this;
     }
 
-    public CustomItemStackBuilder skullHash(String hash){
-        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, ProfileComponent.ofStatic(new GameProfile(UUID.nameUUIDFromBytes(hash.getBytes(StandardCharsets.UTF_8)), "CS-CoreLib", BukkitItemStackUtils.buildPropertyMap(new PropertyMap(LinkedHashMultimap.create()), hash)) ));
+    public CustomItemStackBuilder skullHash(String hash) {
+        ItemStackUtils.setOrRemoveChange(
+                stack,
+                DataComponentTypes.PROFILE,
+                ProfileComponent.ofStatic(new GameProfile(
+                        UUID.nameUUIDFromBytes(hash.getBytes(StandardCharsets.UTF_8)),
+                        "CS-CoreLib",
+                        BukkitItemStackUtils.buildPropertyMap(new PropertyMap(LinkedHashMultimap.create()), hash))));
         return this;
     }
 
-    public CustomItemStackBuilder skullOwner(String owner){
+    public CustomItemStackBuilder skullOwner(String owner) {
         ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, ProfileComponent.ofDynamic(owner));
         return this;
     }
 
-    public CustomItemStackBuilder glint(){
+    public CustomItemStackBuilder glint() {
         ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, Boolean.TRUE);
         return this;
     }

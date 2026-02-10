@@ -1,31 +1,30 @@
 package me.matl114.bukkit;
 
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 
-import java.util.HashMap;
-import java.util.Map;
+public class BukkitPersistentDataContainer {
+    public Map<String, NbtElement> container = new HashMap<>();
 
-public class BukkitPersistentDataContainer  {
-    public Map<String, NbtElement> container=new HashMap<>();
-    public BukkitPersistentDataContainer() {
+    public BukkitPersistentDataContainer() {}
 
-    }
-    public void putData(Map<String ,NbtElement> container) {
+    public void putData(Map<String, NbtElement> container) {
         this.container.putAll(container);
     }
-    public void putData(NbtCompound compound){
+
+    public void putData(NbtCompound compound) {
         for (String key : compound.getKeys()) {
             this.container.put(key, compound.get(key));
         }
     }
-    public NbtCompound toCompound(){
+
+    public NbtCompound toCompound() {
         NbtCompound compound = new NbtCompound();
         for (String key : container.keySet()) {
             compound.put(key, container.get(key));
         }
         return compound;
     }
-
-
 }

@@ -16,17 +16,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Environment(EnvType.CLIENT)
 @Mixin(ParentElement.class)
 public interface ParentElementButtonFixMixin {
-    @Shadow public abstract void setFocused(@Nullable Element focused);
+    @Shadow
+    public abstract void setFocused(@Nullable Element focused);
 
-    @Inject(method = "mouseClicked",at=@At( "RETURN"))
+    @Inject(method = "mouseClicked", at = @At("RETURN"))
     default void mouseClicked(Click click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-        boolean returnValue=cir.getReturnValueZ();
-        if( !returnValue ){
-           // Debug.info("miss!");
-            Element defaultVal=null;
-            if(((ParentElement)((Object)this)) instanceof ButtonNotFocusedScreenAccess access){
-                //force=!access.doKeepButtonWhenClicked();
-                defaultVal=access.getDefaultElement();
+        boolean returnValue = cir.getReturnValueZ();
+        if (!returnValue) {
+            // Debug.info("miss!");
+            Element defaultVal = null;
+            if (((ParentElement) ((Object) this)) instanceof ButtonNotFocusedScreenAccess access) {
+                // force=!access.doKeepButtonWhenClicked();
+                defaultVal = access.getDefaultElement();
             }
             this.setFocused(defaultVal);
         }

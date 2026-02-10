@@ -25,7 +25,8 @@ public interface VPacket {
      * @param collision 是否发生碰撞（版本兼容参数）
      * @return PlayerMoveC2SPacket 实例
      */
-    public static PlayerMoveC2SPacket newPositionAndOnGround(double x, double y, double z, boolean isOnGround, boolean collision) {
+    public static PlayerMoveC2SPacket newPositionAndOnGround(
+            double x, double y, double z, boolean isOnGround, boolean collision) {
         return getInstance().createPositionAndOnGround(x, y, z, isOnGround, collision);
     }
 
@@ -37,12 +38,13 @@ public interface VPacket {
      * @param collision 是否发生碰撞（版本兼容参数）
      * @return PlayerMoveC2SPacket 实例
      */
-    public static PlayerMoveC2SPacket newLookAndOnGround(float yaw, float pitch, boolean isOnGround, boolean collision) {
+    public static PlayerMoveC2SPacket newLookAndOnGround(
+            float yaw, float pitch, boolean isOnGround, boolean collision) {
         return getInstance().createLookAndOnGround(yaw, pitch, isOnGround, collision);
     }
 
-    public static VehicleMoveC2SPacket newVehicleMove(Entity entity){
-        return  getInstance().createVehicleMove(entity);
+    public static VehicleMoveC2SPacket newVehicleMove(Entity entity) {
+        return getInstance().createVehicleMove(entity);
     }
 
     /**
@@ -56,7 +58,8 @@ public interface VPacket {
      * @param collision 是否发生碰撞（版本兼容参数）
      * @return PlayerMoveC2SPacket 实例
      */
-    public static PlayerMoveC2SPacket newFull(double x, double y, double z, float yaw, float pitch, boolean isOnGround, boolean collision) {
+    public static PlayerMoveC2SPacket newFull(
+            double x, double y, double z, float yaw, float pitch, boolean isOnGround, boolean collision) {
         return getInstance().createFull(x, y, z, yaw, pitch, isOnGround, collision);
     }
 
@@ -68,7 +71,8 @@ public interface VPacket {
     /**
      * 实例方法 - 创建 PositionAndOnGround 数据包
      */
-    public PlayerMoveC2SPacket createPositionAndOnGround(double x, double y, double z, boolean isOnGround, boolean collision);
+    public PlayerMoveC2SPacket createPositionAndOnGround(
+            double x, double y, double z, boolean isOnGround, boolean collision);
 
     /**
      * 实例方法 - 创建 LookAndOnGround 数据包
@@ -78,7 +82,9 @@ public interface VPacket {
     /**
      * 实例方法 - 创建 Full 数据包
      */
-    public PlayerMoveC2SPacket createFull(double x, double y, double z, float yaw, float pitch, boolean isOnGround, boolean collision);
+    public PlayerMoveC2SPacket createFull(
+            double x, double y, double z, float yaw, float pitch, boolean isOnGround, boolean collision);
+
     public VehicleMoveC2SPacket createVehicleMove(Entity entity);
     /**
      * 获取当前版本的 VPacket 实例

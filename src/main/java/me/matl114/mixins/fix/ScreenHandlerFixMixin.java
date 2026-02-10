@@ -16,20 +16,45 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ScreenHandler.class)
 public abstract class ScreenHandlerFixMixin {
 
-    @Inject(method = "onSlotClick", at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/ScreenHandler;internalOnSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V", shift = At.Shift.BEFORE))
-    private void onPreSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
-        if(MinecraftClient.getInstance().world != null && MinecraftClient.getInstance().world.isClient()) {
+    @Inject(
+            method = "onSlotClick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/screen/ScreenHandler;internalOnSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V",
+                            shift = At.Shift.BEFORE))
+    private void onPreSlotClick(
+            int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
+        if (MinecraftClient.getInstance().world != null
+                && MinecraftClient.getInstance().world.isClient()) {
             InvTasks.SUPPRESS_DROPITEM_SPAWN.set(true);
         }
     }
 
-    @Inject(method = "onSlotClick", at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/ScreenHandler;internalOnSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V", shift = At.Shift.AFTER))
-    private void onPostSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
+    @Inject(
+            method = "onSlotClick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/screen/ScreenHandler;internalOnSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V",
+                            shift = At.Shift.AFTER))
+    private void onPostSlotClick(
+            int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
         InvTasks.SUPPRESS_DROPITEM_SPAWN.set(false);
     }
 
-    @Inject(method = "onSlotClick", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/crash/CrashReport;create(Ljava/lang/Throwable;Ljava/lang/String;)Lnet/minecraft/util/crash/CrashReport;", shift = At.Shift.BEFORE))
-    private void onExceptionHandlePostSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
+    @Inject(
+            method = "onSlotClick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/util/crash/CrashReport;create(Ljava/lang/Throwable;Ljava/lang/String;)Lnet/minecraft/util/crash/CrashReport;",
+                            shift = At.Shift.BEFORE))
+    private void onExceptionHandlePostSlotClick(
+            int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
         InvTasks.SUPPRESS_DROPITEM_SPAWN.set(false);
     }
 }

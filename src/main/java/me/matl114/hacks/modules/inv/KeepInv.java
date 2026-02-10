@@ -9,18 +9,17 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Text;
 
-//todo: move in the future, or not
+// todo: move in the future, or not
 public class KeepInv extends BaseModule {
 
     public static final String[] KEEP_INV = {"button-toggle", "keep-inv"};
-    public static final String CLEAR_KEEP="clear-keep";
+    public static final String CLEAR_KEEP = "clear-keep";
 
     public KeepInv() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = toggle(KEEP_INV)
-        .build();
+    public final FlagRef enable = toggle(KEEP_INV).build();
 
     @Override
     public void registerAll() {
@@ -28,16 +27,13 @@ public class KeepInv extends BaseModule {
         TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
     }
 
-
-
-    public void clearKeep(){
+    public void clearKeep() {
 
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
-        if(player!=null){
-            ClientPlayerAccess access=ClientPlayerAccess.of(player);
+        if (player != null) {
+            ClientPlayerAccess access = ClientPlayerAccess.of(player);
             access.clearKeepedInventory(true);
             Debug.chat(Text.literal("已清除界面历史记录"));
         }
-
     }
 }

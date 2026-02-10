@@ -16,14 +16,10 @@ public abstract class ImmutableInventory implements Inventory {
     }
 
     @Override
-    public void setStack(int slot, ItemStack stack) {
-
-    }
+    public void setStack(int slot, ItemStack stack) {}
 
     @Override
-    public void markDirty() {
-
-    }
+    public void markDirty() {}
 
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
@@ -31,7 +27,5 @@ public abstract class ImmutableInventory implements Inventory {
     }
 
     @Override
-    public void clear() {
-
-    }
+    public void clear() {}
 }

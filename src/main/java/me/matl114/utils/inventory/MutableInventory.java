@@ -1,20 +1,21 @@
 package me.matl114.utils.inventory;
 
+import java.util.List;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 
-import java.util.List;
-
 public class MutableInventory implements Inventory {
     private final List<ItemStack> stacks;
+
     public MutableInventory(int maxSize, List<ItemStack> stacks) {
         this.stacks = stacks;
         while (maxSize > stacks.size()) {
             stacks.add(ItemStack.EMPTY);
         }
     }
+
     @Override
     public int size() {
         return stacks.size();
@@ -42,7 +43,7 @@ public class MutableInventory implements Inventory {
 
     @Override
     public ItemStack removeStack(int slot) {
-        ItemStack itemStack = (ItemStack)this.stacks.get(slot);
+        ItemStack itemStack = (ItemStack) this.stacks.get(slot);
         if (itemStack.isEmpty()) {
             return ItemStack.EMPTY;
         } else {
@@ -57,9 +58,7 @@ public class MutableInventory implements Inventory {
     }
 
     @Override
-    public void markDirty() {
-
-    }
+    public void markDirty() {}
 
     @Override
     public boolean canPlayerUse(PlayerEntity player) {

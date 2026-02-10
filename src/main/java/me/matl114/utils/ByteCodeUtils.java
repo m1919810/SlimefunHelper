@@ -1,11 +1,8 @@
 package me.matl114.utils;
 
 import com.mojang.datafixers.util.Pair;
-import org.objectweb.asm.Type;
-
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import org.objectweb.asm.Type;
 
 public class ByteCodeUtils {
     /**
@@ -33,10 +30,10 @@ public class ByteCodeUtils {
      * @param clazzName The Java class name to convert
      * @return The JVM type descriptor string
      */
-    public static String toJvmType(String clazzName){
-        if(clazzName.charAt(0) == '['){
-            //is array
-            return clazzName.replace('.','/');
+    public static String toJvmType(String clazzName) {
+        if (clazzName.charAt(0) == '[') {
+            // is array
+            return clazzName.replace('.', '/');
         }
         return switch (clazzName) {
             case "void" -> "V";
@@ -65,10 +62,10 @@ public class ByteCodeUtils {
      * @param jvm The JVM type descriptor to convert
      * @return The Java class name
      */
-    public static String fromJvmType(String jvm){
-        if(jvm.charAt(0) == '['){
-            //is array
-            return jvm.replace('/','.');
+    public static String fromJvmType(String jvm) {
+        if (jvm.charAt(0) == '[') {
+            // is array
+            return jvm.replace('/', '.');
         }
         return switch (jvm) {
             case "V" -> "void";
@@ -80,7 +77,7 @@ public class ByteCodeUtils {
             case "D" -> "double";
             case "F" -> "float";
             case "J" -> "long";
-            default -> jvm.substring(1, jvm.length()-1).replace('/','.');
+            default -> jvm.substring(1, jvm.length() - 1).replace('/', '.');
         };
     }
     /**
@@ -95,17 +92,17 @@ public class ByteCodeUtils {
      * @return A Pair where the first element is the array dimensions (empty string for non-arrays)
      *         and the second element is the component type name
      */
-    public static Pair<String, String> getComponentType(Class<?> clazz){
-        if(clazz.isArray()){
-            //is array
+    public static Pair<String, String> getComponentType(Class<?> clazz) {
+        if (clazz.isArray()) {
+            // is array
             StringBuilder builder = new StringBuilder();
-            while(clazz.isArray()){
+            while (clazz.isArray()) {
                 builder.append('[');
                 clazz = clazz.getComponentType();
             }
             return Pair.of(builder.toString(), clazz.getName());
-        }else {
-            return Pair.of("",clazz.getName());
+        } else {
+            return Pair.of("", clazz.getName());
         }
     }
     /**
@@ -130,9 +127,9 @@ public class ByteCodeUtils {
             case 'D' -> "double";
             case 'V' -> "void";
             default ->
-                //not a primitive
-                // throw new RuntimeException("Not a primitive descriptor:"+descriptor);
-                null;
+            // not a primitive
+            // throw new RuntimeException("Not a primitive descriptor:"+descriptor);
+            null;
         };
     }
     /**
@@ -169,7 +166,7 @@ public class ByteCodeUtils {
      * @param returnType The return type of the method
      * @return The JVM method descriptor string
      */
-    public static String getMethodDescriptor(String name, Class[] arguments, Class returnType){
+    public static String getMethodDescriptor(String name, Class[] arguments, Class returnType) {
         var builder = new StringBuilder();
         builder.append(name);
         builder.append("(");
@@ -181,7 +178,6 @@ public class ByteCodeUtils {
         return builder.toString();
     }
 
-
     /**
      * Extracts the method name from a JVM method descriptor.
      *
@@ -191,56 +187,56 @@ public class ByteCodeUtils {
      * @param descriptor The JVM method descriptor string
      * @return The method name
      */
-    public static String parseMethodNameFromDescriptor(String descriptor){
+    public static String parseMethodNameFromDescriptor(String descriptor) {
         return descriptor.substring(0, descriptor.indexOf('('));
     }
 
-//    /**
-//     * Parses a JVM method descriptor into its components.
-//     *
-//     * <p>This method parses a JVM method descriptor and returns a Triplet containing:
-//     * <ul>
-//     *   <li>The method name</li>
-//     *   <li>An array of parameter type descriptors</li>
-//     *   <li>The return type descriptor</li>
-//     * </ul>
-//     *
-//     * <p>The method handles complex type descriptors including arrays and reference types
-//     * by properly parsing the JVM descriptor format.
-//     *
-//     * @param descriptor The JVM method descriptor string
-//     * @return A Triplet containing (methodName, parameterTypes[], returnType)
-//     */
-//    public static Triplet<String,String[],String> parseMethodDescriptor(String descriptor){
-//        int index = descriptor.indexOf('(');
-//        String name = descriptor.substring(0, index);
-//        int index2 = descriptor.indexOf(')');
-//        String params = descriptor.substring(index+1, index2);
-//        String retType = descriptor.substring(index2 +1);
-//        List<String> paramsList = new ArrayList<>();
-//        StringBuilder builder = new StringBuilder();
-//        int len = params.length();
-//        boolean recordingPath =false;
-//        for (int i=0; i< len; ++i){
-//            char c = params.charAt(i);
-//            if(recordingPath){
-//                builder.append(c);
-//                if (c == ';') {
-//                    recordingPath = false;
-//                    paramsList.add(builder.toString());
-//                }
-//            }else {
-//                if('L' == c || '[' == c){
-//                    recordingPath = true;
-//                    builder = new StringBuilder();
-//                    builder.append(c);
-//                }else {
-//                    paramsList.add(String.valueOf(c));
-//                }
-//            }
-//        }
-//        return new Triplet(name, paramsList.toArray(String[]::new), retType);
-//    }
+    //    /**
+    //     * Parses a JVM method descriptor into its components.
+    //     *
+    //     * <p>This method parses a JVM method descriptor and returns a Triplet containing:
+    //     * <ul>
+    //     *   <li>The method name</li>
+    //     *   <li>An array of parameter type descriptors</li>
+    //     *   <li>The return type descriptor</li>
+    //     * </ul>
+    //     *
+    //     * <p>The method handles complex type descriptors including arrays and reference types
+    //     * by properly parsing the JVM descriptor format.
+    //     *
+    //     * @param descriptor The JVM method descriptor string
+    //     * @return A Triplet containing (methodName, parameterTypes[], returnType)
+    //     */
+    //    public static Triplet<String,String[],String> parseMethodDescriptor(String descriptor){
+    //        int index = descriptor.indexOf('(');
+    //        String name = descriptor.substring(0, index);
+    //        int index2 = descriptor.indexOf(')');
+    //        String params = descriptor.substring(index+1, index2);
+    //        String retType = descriptor.substring(index2 +1);
+    //        List<String> paramsList = new ArrayList<>();
+    //        StringBuilder builder = new StringBuilder();
+    //        int len = params.length();
+    //        boolean recordingPath =false;
+    //        for (int i=0; i< len; ++i){
+    //            char c = params.charAt(i);
+    //            if(recordingPath){
+    //                builder.append(c);
+    //                if (c == ';') {
+    //                    recordingPath = false;
+    //                    paramsList.add(builder.toString());
+    //                }
+    //            }else {
+    //                if('L' == c || '[' == c){
+    //                    recordingPath = true;
+    //                    builder = new StringBuilder();
+    //                    builder.append(c);
+    //                }else {
+    //                    paramsList.add(String.valueOf(c));
+    //                }
+    //            }
+    //        }
+    //        return new Triplet(name, paramsList.toArray(String[]::new), retType);
+    //    }
     /**
      * Extracts the field name from a JVM field descriptor.
      *
@@ -258,25 +254,25 @@ public class ByteCodeUtils {
      * @param descriptor The JVM field descriptor string
      * @return The extracted field name, or a partial type name if no field name is found
      */
-    public static String parseFieldNameFromDescriptor(String descriptor){
-        if(descriptor.charAt(descriptor.length()-1) == ';'){
+    public static String parseFieldNameFromDescriptor(String descriptor) {
+        if (descriptor.charAt(descriptor.length() - 1) == ';') {
             int isArray = descriptor.indexOf('[');
-            if(isArray > 0 ){
-                //class array
+            if (isArray > 0) {
+                // class array
                 return descriptor.substring(0, isArray);
-            }else {
-                //class type
+            } else {
+                // class type
                 String firstLevel = descriptor.substring(0, descriptor.indexOf('/'));
                 return firstLevel.substring(0, firstLevel.lastIndexOf('L'));
             }
-        }else {
+        } else {
             int isArray = descriptor.indexOf('[');
-            if(isArray > 0 ){
-                //primitive type array
+            if (isArray > 0) {
+                // primitive type array
                 return descriptor.substring(0, isArray);
             }
-            //primitive type
-            return descriptor.substring(0, descriptor.length()-1);
+            // primitive type
+            return descriptor.substring(0, descriptor.length() - 1);
         }
     }
     /**
@@ -289,10 +285,7 @@ public class ByteCodeUtils {
      * @param fieldType The type of the field
      * @return The JVM field descriptor string
      */
-    public static String getFieldDescriptor(String fieldName, Class<?> fieldType){
+    public static String getFieldDescriptor(String fieldName, Class<?> fieldType) {
         return fieldName + toJvmType(fieldType);
     }
-
-
-
 }

@@ -1,9 +1,8 @@
 package me.matl114.utils.commands;
 
-import net.minecraft.entity.player.PlayerEntity;
-
 import java.util.List;
 import java.util.function.*;
+import net.minecraft.entity.player.PlayerEntity;
 
 public interface CommandContext {
     public boolean execute(PlayerEntity var1, ArgumentInputStream streamArgs, ArgumentReader argsReader);
@@ -12,43 +11,42 @@ public interface CommandContext {
         return List.of();
     }
 
-    public static CommandContext run(Runnable task){
+    public static CommandContext run(Runnable task) {
         return (var1, streamArgs, argsReader) -> {
             task.run();
             return true;
         };
     }
 
-    public static CommandContext run(BooleanSupplier task){
+    public static CommandContext run(BooleanSupplier task) {
         return ((var1, streamArgs, argsReader) -> {
             return task.getAsBoolean();
         });
     }
 
-    public static CommandContext run(Consumer<ArgumentInputStream> var){
+    public static CommandContext run(Consumer<ArgumentInputStream> var) {
         return ((var1, streamArgs, argsReader) -> {
             var.accept(streamArgs);
             return true;
         });
     }
-    public static CommandContext run(Predicate<ArgumentInputStream> var){
+
+    public static CommandContext run(Predicate<ArgumentInputStream> var) {
         return (var1, streamArgs, argsReader) -> {
             return var.test(streamArgs);
         };
     }
 
-
-    public static CommandContext run(BiConsumer<PlayerEntity, ArgumentInputStream> var){
+    public static CommandContext run(BiConsumer<PlayerEntity, ArgumentInputStream> var) {
         return ((var1, streamArgs, argsReader) -> {
             var.accept(var1, streamArgs);
             return true;
         });
     }
-    public static CommandContext run(BiPredicate<PlayerEntity, ArgumentInputStream> var){
+
+    public static CommandContext run(BiPredicate<PlayerEntity, ArgumentInputStream> var) {
         return (var1, streamArgs, argsReader) -> {
             return var.test(var1, streamArgs);
         };
     }
-
 }
-

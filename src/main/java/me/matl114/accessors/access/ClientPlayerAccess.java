@@ -1,53 +1,60 @@
 package me.matl114.accessors.access;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.screen.ScreenHandler;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
 
     @Nullable
     public HandledScreen getKeepedInv();
+
     @Nullable
     public ScreenHandler getKeepedInvHandler();
+
     public void clearKeepedInventory(boolean closeInv);
+
     public void resyncSprint();
+
     public void resyncSneak();
-//    public void resyncPos();
-//    public void resyncRot();
-//    public void syncLocationPackets();
+    //    public void resyncPos();
+    //    public void resyncRot();
+    //    public void syncLocationPackets();
     public boolean isContinueMoving();
 
     @Nonnull
     public static ClientPlayerAccess of(@Nonnull ClientPlayerEntity player) {
         return (ClientPlayerAccess) player;
     }
-    //get the Screen object which handler related to the server(should)
-    default HandledScreen getServerOpeningScreen(){
-        if(getKeepedInv() !=null)return getKeepedInv();
-        else return MinecraftClient.getInstance().currentScreen instanceof HandledScreen<?> han?han:null;
+    // get the Screen object which handler related to the server(should)
+    default HandledScreen getServerOpeningScreen() {
+        if (getKeepedInv() != null) return getKeepedInv();
+        else return MinecraftClient.getInstance().currentScreen instanceof HandledScreen<?> han ? han : null;
     }
 
     @Nonnull
-    default ScreenHandler getServerScreenHandler(){
-        if(getKeepedInvHandler() != null)return getKeepedInvHandler();
-        else  return ((ClientPlayerEntity)this).currentScreenHandler;
+    default ScreenHandler getServerScreenHandler() {
+        if (getKeepedInvHandler() != null) return getKeepedInvHandler();
+        else return ((ClientPlayerEntity) this).currentScreenHandler;
     }
 
-
-
     public boolean isForceNoFall();
+
     public void setForceNoFall(boolean fall);
 
     public abstract double getLastX();
+
     public abstract double getLastBaseY();
+
     public abstract double getLastZ();
+
     public abstract boolean getLastOnGround();
+
     public abstract float getLastPitch();
+
     public abstract float getLastYaw();
 }

@@ -2,22 +2,26 @@ package me.matl114.gui.basic;
 
 import java.util.function.Consumer;
 
-public interface ButtonAction{
-    static ButtonAction run(Runnable task){
+public interface ButtonAction {
+    static ButtonAction run(Runnable task) {
         return ((element, widget, mouseButton) -> {
             task.run();
             return true;
         });
     }
-    static ButtonAction isLeft(Consumer<Boolean> isLeft){
+
+    static ButtonAction isLeft(Consumer<Boolean> isLeft) {
         return ((element, widget, mouseButton) -> {
             isLeft.accept(mouseButton == 0);
             return true;
         });
     }
+
     static ButtonAction EMPTY = ((element, widget, mouseButton) -> true);
-    static ButtonAction empty(){
+
+    static ButtonAction empty() {
         return EMPTY;
     }
+
     public boolean onClick(AbstractElement element, ExecutableWidget widget, int mouseButton);
 }

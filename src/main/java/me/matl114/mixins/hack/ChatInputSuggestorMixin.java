@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import com.mojang.brigadier.suggestion.Suggestions;
+import java.util.concurrent.CompletableFuture;
 import me.matl114.hacks.ChatTasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -13,8 +14,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.concurrent.CompletableFuture;
-
 @Environment(EnvType.CLIENT)
 @Mixin(ChatInputSuggestor.class)
 public abstract class ChatInputSuggestorMixin {
@@ -26,15 +25,23 @@ public abstract class ChatInputSuggestorMixin {
     private CompletableFuture<Suggestions> pendingSuggestions;
 
     @Shadow
-    protected abstract  void showCommandSuggestions();
+    protected abstract void showCommandSuggestions();
 
     @Shadow
     public abstract void show(boolean a);
 
-    @Inject(method = "refresh", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;getCursor()I",shift = At.Shift.BEFORE), cancellable = true)
-    private void parseClientCommandsTabComplete(CallbackInfo ci){
-        CompletableFuture<Suggestions> suggestionCompletableFuture = ChatTasks.tabCompleteClientCommand(textField.getText(), textField.getCursor());
-        if(suggestionCompletableFuture != null){
+    @Inject(
+            method = "refresh",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;getCursor()I",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void parseClientCommandsTabComplete(CallbackInfo ci) {
+        CompletableFuture<Suggestions> suggestionCompletableFuture =
+                ChatTasks.tabCompleteClientCommand(textField.getText(), textField.getCursor());
+        if (suggestionCompletableFuture != null) {
             this.pendingSuggestions = suggestionCompletableFuture;
             this.pendingSuggestions.thenRun(() -> {
                 if (this.pendingSuggestions.isDone()) {
@@ -44,5 +51,4 @@ public abstract class ChatInputSuggestorMixin {
             ci.cancel();
         }
     }
-
 }

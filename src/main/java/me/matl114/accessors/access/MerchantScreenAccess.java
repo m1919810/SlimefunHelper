@@ -5,10 +5,9 @@ import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 public interface MerchantScreenAccess {
     public int getSelectedIndex();
 
-
     public void setSelectedIndex(int k);
 
-    public static MerchantScreenAccess of(MerchantScreen screen){
+    public static MerchantScreenAccess of(MerchantScreen screen) {
         return (MerchantScreenAccess) screen;
     }
 }

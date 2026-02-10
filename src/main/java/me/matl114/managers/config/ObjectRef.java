@@ -4,14 +4,15 @@ import lombok.AllArgsConstructor;
 import me.matl114.utils.config.AttrKeyValue;
 
 @AllArgsConstructor
-public abstract class ObjectRef<T> extends Ref<T>{
+public abstract class ObjectRef<T> extends Ref<T> {
     private T object;
+
     @Override
     public final T getValue() {
         return get();
     }
 
-    public T get(){
+    public T get() {
         return object;
     }
 
@@ -24,32 +25,32 @@ public abstract class ObjectRef<T> extends Ref<T>{
     public abstract Object getAsPrimitive();
 
     @Override
-    public abstract  <W> boolean copyValueTo(Ref<W> otherRef);
+    public abstract <W> boolean copyValueTo(Ref<W> otherRef);
+
     @Override
     public abstract AttrKeyValue<T> _createKeyValue0(String key);
 
     protected abstract T validateAndCast(Object val);
 
-    public void set(T val){
+    public void set(T val) {
         T cas = validateAndCast(val);
-        if(validateUpdateValue(cas)){
+        if (validateUpdateValue(cas)) {
             this.object = cas;
             callUpdate();
         }
-
     }
 
-    public static class JustOnlyObjectRef extends ObjectRef<Object>{
+    public static class JustOnlyObjectRef extends ObjectRef<Object> {
 
         public JustOnlyObjectRef(Object object) {
             super(object);
         }
 
-        public  <W> boolean copyValueTo(Ref<W> otherRef) {
-            if(otherRef.getClass() == JustOnlyObjectRef.class){
+        public <W> boolean copyValueTo(Ref<W> otherRef) {
+            if (otherRef.getClass() == JustOnlyObjectRef.class) {
                 ((JustOnlyObjectRef) otherRef).set(this.get());
                 return true;
-            }else {
+            } else {
                 return false;
             }
         }
@@ -64,7 +65,7 @@ public abstract class ObjectRef<T> extends Ref<T>{
             return val;
         }
 
-        public Object getAsPrimitive(){
+        public Object getAsPrimitive() {
             return this.get().toString();
         }
 
@@ -73,5 +74,4 @@ public abstract class ObjectRef<T> extends Ref<T>{
             return ref.getClass() == JustOnlyObjectRef.class;
         }
     }
-
 }

@@ -1,4 +1,3 @@
 package me.matl114.hacks.modules.combat;
 
-public class BowTp {
-}
+public class BowTp {}

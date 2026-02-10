@@ -5,23 +5,24 @@ import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.input.CharInput;
 import net.minecraft.client.input.KeyInput;
 
 @ApiMethod
 public class InputHelper {
     static final MinecraftClient mc = MinecraftClient.getInstance();
-    public static Keyboard getKeyboard(){
+
+    public static Keyboard getKeyboard() {
         return mc.keyboard;
     }
 
     public static Class<?> GLFW = org.lwjgl.glfw.GLFW.class;
 
-    public static void keyAction(int key, int action){
+    public static void keyAction(int key, int action) {
         keyAction(key, action, ScreenUtils.getCurrentModifiers());
     }
-    public static void keyAction(int key, int action, int modifiers){
+
+    public static void keyAction(int key, int action, int modifiers) {
         keyAction(key, org.lwjgl.glfw.GLFW.glfwGetKeyScancode(key), action, modifiers);
     }
     /**
@@ -51,49 +52,50 @@ public class InputHelper {
      *
      * @threadSafety 内部会自动切换到Minecraft主线程执行。
      */
-    public static void keyAction(int key, int scancode, int action, int modifiers){
-        mc.execute(()->{
-            mc.keyboard.onKey(mc.getWindow().getHandle(), action, new KeyInput( key, scancode, modifiers));
+    public static void keyAction(int key, int scancode, int action, int modifiers) {
+        mc.execute(() -> {
+            mc.keyboard.onKey(mc.getWindow().getHandle(), action, new KeyInput(key, scancode, modifiers));
         });
     }
 
-    public static void charAction(String str){
+    public static void charAction(String str) {
         charAction(str);
     }
 
-    public static void charAction(int str){
+    public static void charAction(int str) {
         charAction(str, ScreenUtils.getCurrentModifiers());
     }
 
-
-
-    public static void charAction(String chr, int modifiers){
-        charAction((int)chr.charAt(0), modifiers);
+    public static void charAction(String chr, int modifiers) {
+        charAction((int) chr.charAt(0), modifiers);
     }
 
-    public static void charAction(int codePoint, int modifiers){
-        mc.execute(()->{
+    public static void charAction(int codePoint, int modifiers) {
+        mc.execute(() -> {
             Element element = mc.currentScreen;
             if (element != null && mc.getOverlay() == null) {
                 if (Character.charCount(codePoint) == 1) {
-                    ScreenUtils.wrapScreenError(() -> {
-                        element.charTyped(new CharInput(codePoint, modifiers));
-                    }, "charTyped event handler", element.getClass().getCanonicalName());
+                    ScreenUtils.wrapScreenError(
+                            () -> {
+                                element.charTyped(new CharInput(codePoint, modifiers));
+                            },
+                            "charTyped event handler",
+                            element.getClass().getCanonicalName());
                 } else {
                     char[] var6 = Character.toChars(codePoint);
                     int var7 = var6.length;
 
-                    for(int var8 = 0; var8 < var7; ++var8) {
+                    for (int var8 = 0; var8 < var7; ++var8) {
                         char c = var6[var8];
-                        ScreenUtils.wrapScreenError(() -> {
-                            element.charTyped(new CharInput(c, modifiers));
-                        }, "charTyped event handler", element.getClass().getCanonicalName());
+                        ScreenUtils.wrapScreenError(
+                                () -> {
+                                    element.charTyped(new CharInput(c, modifiers));
+                                },
+                                "charTyped event handler",
+                                element.getClass().getCanonicalName());
                     }
                 }
-
             }
         });
     }
-
-
 }

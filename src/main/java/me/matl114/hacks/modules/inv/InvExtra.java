@@ -5,15 +5,13 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.IntRef;
 
 public class InvExtra extends BaseModule {
-    public static final String[] INV_CLICK_LIMIT={"inventory","packet-limit"};
+    public static final String[] INV_CLICK_LIMIT = {"inventory", "packet-limit"};
 
-    public InvExtra() {
-
-    }
+    public InvExtra() {}
 
     public final IntRef inventoryClickLimit = builder(Configs.INV_CONFIG, IntRef.TYPE)
-        .path(INV_CLICK_LIMIT)
-        .defaultValue(40)
-        .validator(Configs.INT_POSITIVE)
-        .build();
+            .path(INV_CLICK_LIMIT)
+            .defaultValue(40)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 }

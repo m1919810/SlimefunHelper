@@ -2,11 +2,7 @@ package me.matl114.utils.world;
 
 import net.minecraft.util.math.Box;
 
-public record CachedToAABBs(
-    java.util.List<Box> aabbs,
-    boolean isOffset,
-    double offX, double offY, double offZ
-) {
+public record CachedToAABBs(java.util.List<Box> aabbs, boolean isOffset, double offX, double offY, double offZ) {
 
     public CachedToAABBs removeOffset() {
         final java.util.List<net.minecraft.util.math.Box> toOffset = this.aabbs;
@@ -23,7 +19,8 @@ public record CachedToAABBs(
         return new CachedToAABBs(ret, false, 0.0, 0.0, 0.0);
     }
 
-    public static CachedToAABBs offset(final CachedToAABBs cache, final double offX, final double offY, final double offZ) {
+    public static CachedToAABBs offset(
+            final CachedToAABBs cache, final double offX, final double offY, final double offZ) {
         if (offX == 0.0 && offY == 0.0 && offZ == 0.0) {
             return cache;
         }
@@ -35,4 +32,3 @@ public record CachedToAABBs(
         return new CachedToAABBs(cache.aabbs, true, resX, resY, resZ);
     }
 }
-

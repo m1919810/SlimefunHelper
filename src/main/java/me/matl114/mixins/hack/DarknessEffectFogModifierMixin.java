@@ -15,15 +15,37 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(DarknessEffectFogModifier.class)
 public abstract class DarknessEffectFogModifierMixin {
-    @Inject(method = "applyDarknessModifier", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/fog/DarknessEffectFogModifier;getStatusEffect()Lnet/minecraft/registry/entry/RegistryEntry;"), cancellable = true)
-    private void applyDarknessModifier(LivingEntity cameraEntity, float darkness, float tickProgress, CallbackInfoReturnable<Float> cir) {
-        if(RenderTasks.getRenderExtra().noEffect.get()){
+    @Inject(
+            method = "applyDarknessModifier",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/fog/DarknessEffectFogModifier;getStatusEffect()Lnet/minecraft/registry/entry/RegistryEntry;"),
+            cancellable = true)
+    private void applyDarknessModifier(
+            LivingEntity cameraEntity, float darkness, float tickProgress, CallbackInfoReturnable<Float> cir) {
+        if (RenderTasks.getRenderExtra().noEffect.get()) {
             cir.setReturnValue(darkness);
         }
     }
-    @Inject(method = "applyStartEndModifier", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/fog/DarknessEffectFogModifier;getStatusEffect()Lnet/minecraft/registry/entry/RegistryEntry;"), cancellable = true)
-    private void applyStartEndModifier(FogData data, Camera camera, ClientWorld clientWorld, float f, RenderTickCounter renderTickCounter, CallbackInfo ci){
-        if(RenderTasks.getRenderExtra().noEffect.get()){
+
+    @Inject(
+            method = "applyStartEndModifier",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/fog/DarknessEffectFogModifier;getStatusEffect()Lnet/minecraft/registry/entry/RegistryEntry;"),
+            cancellable = true)
+    private void applyStartEndModifier(
+            FogData data,
+            Camera camera,
+            ClientWorld clientWorld,
+            float f,
+            RenderTickCounter renderTickCounter,
+            CallbackInfo ci) {
+        if (RenderTasks.getRenderExtra().noEffect.get()) {
             ci.cancel();
         }
     }

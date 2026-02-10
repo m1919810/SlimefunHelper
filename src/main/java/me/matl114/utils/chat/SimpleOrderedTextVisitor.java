@@ -5,10 +5,12 @@ import net.minecraft.text.Style;
 
 public class SimpleOrderedTextVisitor implements CharacterVisitor {
     StringBuilder builder;
-    public SimpleOrderedTextVisitor(){
+
+    public SimpleOrderedTextVisitor() {
         builder = new StringBuilder();
     }
-    public SimpleOrderedTextVisitor(StringBuilder bu){
+
+    public SimpleOrderedTextVisitor(StringBuilder bu) {
         builder = bu;
     }
 
@@ -18,7 +20,7 @@ public class SimpleOrderedTextVisitor implements CharacterVisitor {
         return true;
     }
 
-    public StringBuilder getContent(){
+    public StringBuilder getContent() {
         return this.builder;
     }
 }

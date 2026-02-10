@@ -12,20 +12,28 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
-@Mixin(value = Keyboard.class,priority = 1)
+@Mixin(value = Keyboard.class, priority = 1)
 public abstract class KeyBoardEvents {
-    @Inject(method = "onKey", cancellable = true,
+    @Inject(
+            method = "onKey",
+            cancellable = true,
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/Keyboard;debugCrashStartTime:J", ordinal = 0))
-    private void onKeyboardInput(long window, int action, KeyInput input, CallbackInfo ci)
-    {
-        if(SimpleInputManager.getInstance().onKeyInput(input.key(), input.scancode(), input.modifiers(), action)){
+    private void onKeyboardInput(long window, int action, KeyInput input, CallbackInfo ci) {
+        if (SimpleInputManager.getInstance().onKeyInput(input.key(), input.scancode(), input.modifiers(), action)) {
             ci.cancel();
         }
     }
 
-    @Inject(method = "onChar", cancellable = true, at = @At(value = "FIELD", target = "Lnet/minecraft/client/Keyboard;client:Lnet/minecraft/client/MinecraftClient;", ordinal = 0))
-    private void onChar(long window, CharInput input, CallbackInfo ci){
-        if(SimpleInputManager.getInstance().onCharTyped(input.codepoint(), input.modifiers())){
+    @Inject(
+            method = "onChar",
+            cancellable = true,
+            at =
+                    @At(
+                            value = "FIELD",
+                            target = "Lnet/minecraft/client/Keyboard;client:Lnet/minecraft/client/MinecraftClient;",
+                            ordinal = 0))
+    private void onChar(long window, CharInput input, CallbackInfo ci) {
+        if (SimpleInputManager.getInstance().onCharTyped(input.codepoint(), input.modifiers())) {
             ci.cancel();
         }
     }

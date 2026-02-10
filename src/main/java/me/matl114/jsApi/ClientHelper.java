@@ -1,62 +1,55 @@
 package me.matl114.jsApi;
 
+import java.util.concurrent.locks.LockSupport;
 import me.matl114.utils.ApiMethod;
-import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
-import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.world.ClientWorld;
-
-import java.util.concurrent.locks.LockSupport;
 
 @ApiMethod
 public class ClientHelper {
     static MinecraftClient mc = MinecraftClient.getInstance();
-    public static MinecraftClient getClient(){
+
+    public static MinecraftClient getClient() {
         return mc;
     }
 
-    public static ClientPlayerEntity getPlayer(){
+    public static ClientPlayerEntity getPlayer() {
         return mc.player;
     }
 
-    public static ClientWorld getWorld(){
+    public static ClientWorld getWorld() {
         return mc.world;
     }
 
-    public static GameOptions getGameOptions(){
+    public static GameOptions getGameOptions() {
         return mc.options;
     }
 
-    public static void runTask(Runnable runnable){
+    public static void runTask(Runnable runnable) {
         mc.execute(runnable);
     }
 
-
-
-    public static void sleep(long ms, long ns) throws Throwable{
-        if(ms > 0){
+    public static void sleep(long ms, long ns) throws Throwable {
+        if (ms > 0) {
             Thread.sleep(ms);
         }
-        if(ns > 0){
+        if (ns > 0) {
             LockSupport.parkNanos(ns);
         }
     }
 
-    public static void sleepNs(long ns) throws Throwable{
+    public static void sleepNs(long ns) throws Throwable {
         long ms = ns / 1000;
         sleep(ms, ns % 1000);
     }
 
-    public static void sleepMs(long ms) throws Throwable{
+    public static void sleepMs(long ms) throws Throwable {
         sleep(ms, 0);
     }
 
-    public static boolean isOnThread(){
+    public static boolean isOnThread() {
         return mc.isOnThread();
     }
-
 }

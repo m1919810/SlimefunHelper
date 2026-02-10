@@ -13,12 +13,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Environment(EnvType.CLIENT)
 @Mixin(ClientWorld.class)
 public abstract class ClientWorldEvents {
-    @Inject(method = "tickEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;tick()V", shift = At.Shift.BEFORE))
-    public void onEntityTickBefore(Entity entity, CallbackInfo ci){
+    @Inject(
+            method = "tickEntity",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;tick()V", shift = At.Shift.BEFORE))
+    public void onEntityTickBefore(Entity entity, CallbackInfo ci) {
         EntityAccess.of(entity).beforeTick();
     }
-    @Inject(method = "tickEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;tick()V", shift = At.Shift.AFTER))
-    public void onEntityTickAfter(Entity entity, CallbackInfo ci){
+
+    @Inject(
+            method = "tickEntity",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;tick()V", shift = At.Shift.AFTER))
+    public void onEntityTickAfter(Entity entity, CallbackInfo ci) {
         EntityAccess.of(entity).afterTick();
     }
 }

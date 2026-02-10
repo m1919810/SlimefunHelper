@@ -11,39 +11,40 @@ import me.matl114.hacks.modules.extra.Tests;
 import me.matl114.utils.Debug;
 
 public class ExtraTasks {
-    public static void init(){
+    public static void init() {}
 
-    }
     public static final ModuleGroup moduleManager = new ModuleGroup("Extra");
     public static boolean DEBUG_INTO_CHAT = true;
-    public static void debug(Object...val){
-        if(DEBUG_INTO_CHAT){
+
+    public static void debug(Object... val) {
+        if (DEBUG_INTO_CHAT) {
             Debug.chat(val);
-        }else {
+        } else {
             Debug.info(val);
         }
     }
 
     @Getter
     public static ClientExtra clientExtra;
+
     @Getter
     public static Tests tests;
+
     @Getter
     public static PacketDebugger packetDebugger;
+
     @Getter
     public static BeaconEnhance beaconEnhance;
-    private static void initModules(ModuleManager m){
-        clientExtra = new ClientExtra()
-            .register(m);
+
+    private static void initModules(ModuleManager m) {
+        clientExtra = new ClientExtra().register(m);
         ;
-        tests = new Tests()
-            .register(m);
-        packetDebugger = new PacketDebugger()
-            .register(m);
-        beaconEnhance = new BeaconEnhance()
-            .register(m);
+        tests = new Tests().register(m);
+        packetDebugger = new PacketDebugger().register(m);
+        beaconEnhance = new BeaconEnhance().register(m);
     }
-    static{
+
+    static {
         moduleManager.registerFactories(ExtraTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
     }

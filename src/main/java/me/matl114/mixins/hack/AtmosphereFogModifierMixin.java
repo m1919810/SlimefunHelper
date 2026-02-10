@@ -18,9 +18,14 @@ public abstract class AtmosphereFogModifierMixin {
      * NoFog is enabled.
      */
     @Inject(method = "applyStartEndModifier", at = @At("RETURN"))
-    private void onApplyStartEndModifier(FogData data, Camera camera, ClientWorld clientWorld, float f, RenderTickCounter renderTickCounter, CallbackInfo ci)
-    {
-        if(RenderTasks.getRenderExtra().noEffect.get()){
+    private void onApplyStartEndModifier(
+            FogData data,
+            Camera camera,
+            ClientWorld clientWorld,
+            float f,
+            RenderTickCounter renderTickCounter,
+            CallbackInfo ci) {
+        if (RenderTasks.getRenderExtra().noEffect.get()) {
             data.environmentalStart = 1000000;
             data.environmentalEnd = 1000000;
         }

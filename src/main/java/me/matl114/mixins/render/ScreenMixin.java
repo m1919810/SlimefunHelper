@@ -28,88 +28,107 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 @Mixin(Screen.class)
 public abstract class ScreenMixin extends AbstractParentElement implements ScreenAccess {
     @Shadow
-    protected abstract  <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement);
+    protected abstract <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement);
+
     @Shadow
-    protected void remove(Element child){
+    protected void remove(Element child) {}
 
-    }
-
-    @Shadow protected abstract <T extends Drawable> T addDrawable(T drawable);
+    @Shadow
+    protected abstract <T extends Drawable> T addDrawable(T drawable);
 
     @Unique
-    public <T extends Element & Drawable & Selectable> T addDrawableChildTo(T drawable){
-        if(drawable instanceof DisplayWidget display){
+    public <T extends Element & Drawable & Selectable> T addDrawableChildTo(T drawable) {
+        if (drawable instanceof DisplayWidget display) {
             addDrawable(display);
             return drawable;
-        }else{
+        } else {
             return addDrawableChild(drawable);
         }
-
     }
+
     @Unique
-    public void removeChildFrom(Element val){
+    public void removeChildFrom(Element val) {
         remove(val);
     }
+
     @Getter
     @Setter
     @Unique
     Screen parent = null;
+
     @Unique
-    public void open(){
-        MinecraftClient.getInstance().setScreen((Screen)(Object) this);
+    public void open() {
+        MinecraftClient.getInstance().setScreen((Screen) (Object) this);
     }
+
     @Unique
-    public void openFromCurrent(){
+    public void openFromCurrent() {
         parent = MinecraftClient.getInstance().currentScreen;
         open();
     }
+
     @Unique
-    public void switchToScreen(Screen anotherScreen){
+    public void switchToScreen(Screen anotherScreen) {
         Screen p = this.parent;
         this.parent = null;
         ScreenAccess.of(anotherScreen).setParent(p);
         MinecraftClient.getInstance().setScreen(anotherScreen);
     }
-    public void switchFromCurrent(){
+
+    public void switchFromCurrent() {
         Screen current = MinecraftClient.getInstance().currentScreen;
-        if(current == null){
+        if (current == null) {
             this.parent = null;
-        }else{
-            this.parent =  ((ScreenMixin)(Object)current).parent;
-            ((ScreenMixin)(Object)current).parent = null;
+        } else {
+            this.parent = ((ScreenMixin) (Object) current).parent;
+            ((ScreenMixin) (Object) current).parent = null;
         }
-        MinecraftClient.getInstance().setScreen((Screen)(Object)this);
+        MinecraftClient.getInstance().setScreen((Screen) (Object) this);
     }
 
-
-    @ModifyArgs(method = "close",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V"))
-    public void onRedirectReturnScreen(Args args){
-        if(parent != null){
+    @ModifyArgs(
+            method = "close",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V"))
+    public void onRedirectReturnScreen(Args args) {
+        if (parent != null) {
             args.set(0, parent);
             parent = null;
         }
     }
 
     @Override
-    public Element getFocused(){
-        Element focused=super.getFocused();
-      //  Debug.info("getFocused called");
-        if(focused==null&& (Object)this instanceof ButtonNotFocusedScreenAccess access&&access.autoSelectDefaultElementWhenNotFocused()&&(focused=access.getDefaultElement())!=null){
-            //Debug.info("to default Value");
+    public Element getFocused() {
+        Element focused = super.getFocused();
+        //  Debug.info("getFocused called");
+        if (focused == null
+                && (Object) this instanceof ButtonNotFocusedScreenAccess access
+                && access.autoSelectDefaultElementWhenNotFocused()
+                && (focused = access.getDefaultElement()) != null) {
+            // Debug.info("to default Value");
             this.setFocused(focused);
         }
         return focused;
     }
-    @Inject(method = "keyPressed",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;switchFocus(Lnet/minecraft/client/gui/navigation/GuiNavigationPath;)V",shift = At.Shift.BEFORE),cancellable = true)
+
+    @Inject(
+            method = "keyPressed",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/screen/Screen;switchFocus(Lnet/minecraft/client/gui/navigation/GuiNavigationPath;)V",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
     private void onKeyPressed(KeyInput input, CallbackInfoReturnable<Boolean> cir) {
-        if(this instanceof ButtonNotFocusedScreenAccess access && !access.enableSwitchUsingKey()){
+        if (this instanceof ButtonNotFocusedScreenAccess access && !access.enableSwitchUsingKey()) {
             cir.setReturnValue(false);
         }
     }
 
-
-
-    //todo: add close future list
-
+    // todo: add close future list
 
 }

@@ -1,15 +1,14 @@
 package me.matl114.utils.commands;
 
 import com.google.common.base.Supplier;
-import me.matl114.utils.interruptions.TypeError;
-import me.matl114.utils.interruptions.ValueOutOfRangeError;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import me.matl114.utils.interruptions.TypeError;
+import me.matl114.utils.interruptions.ValueOutOfRangeError;
+import org.jetbrains.annotations.Nullable;
 
 public class CommandUtils {
     public static String getOrDefault(String[] args, int index, String defaultValue) {
@@ -180,7 +179,12 @@ public class CommandUtils {
             return;
         }
         throw new ValueOutOfRangeError(
-            null ,arg, String.valueOf(from), String.valueOf(to), String.valueOf(input), TypeError.BaseArgumentType.FLOAT);
+                null,
+                arg,
+                String.valueOf(from),
+                String.valueOf(to),
+                String.valueOf(input),
+                TypeError.BaseArgumentType.FLOAT);
     }
 
     /**

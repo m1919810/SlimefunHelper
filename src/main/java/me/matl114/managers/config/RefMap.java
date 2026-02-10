@@ -1,6 +1,6 @@
 package me.matl114.managers.config;
 
-public interface RefMap{
+public interface RefMap {
     public Ref<?> get(String... key);
 
     public <T> Ref<T> getOrCreate(Ref<T> val, String... obj);

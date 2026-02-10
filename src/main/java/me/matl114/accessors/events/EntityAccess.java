@@ -8,14 +8,14 @@ public interface EntityAccess<T extends Entity> extends MetadataHolder {
     public void setDataFlag(int flag, boolean val);
 
     public boolean getDataFlag(int index);
-    static <T extends Entity> EntityAccess<T> of(T entity){
+
+    static <T extends Entity> EntityAccess<T> of(T entity) {
         return (EntityAccess) entity;
     }
 
-    default boolean checkClientPlayer(){
+    default boolean checkClientPlayer() {
         return this == MinecraftClient.getInstance().player;
     }
-
 
     public void addTickWrapper(ProgressWrapper<T> wrapper);
 
@@ -23,5 +23,4 @@ public interface EntityAccess<T extends Entity> extends MetadataHolder {
     public void beforeTick();
 
     public void afterTick();
-
 }

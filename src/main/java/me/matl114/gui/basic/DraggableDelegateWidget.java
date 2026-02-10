@@ -2,9 +2,8 @@ package me.matl114.gui.basic;
 
 import net.minecraft.client.gui.screen.Screen;
 
-public class DraggableDelegateWidget extends DelegateWidget implements Draggable{
+public class DraggableDelegateWidget extends DelegateWidget implements Draggable {
     // can change a no-drag element to a drag-element
-
 
     @Override
     public boolean isDragging() {
@@ -12,6 +11,7 @@ public class DraggableDelegateWidget extends DelegateWidget implements Draggable
     }
 
     boolean dragging = false;
+
     @Override
     public void releaseDrag(Screen screen, double mouseX, double mouseY) {
         dragging = false;
@@ -19,7 +19,7 @@ public class DraggableDelegateWidget extends DelegateWidget implements Draggable
 
     @Override
     public boolean startDrag(Screen screen, double mouseX, double mouseY) {
-        if(this.delegate != null && this.delegate.isMouseOver(mouseX, mouseY)){
+        if (this.delegate != null && this.delegate.isMouseOver(mouseX, mouseY)) {
             dragging = true;
             return true;
         }
@@ -28,8 +28,8 @@ public class DraggableDelegateWidget extends DelegateWidget implements Draggable
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if(dragging && this.delegate != null ){
-            return  this.delegate.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        if (dragging && this.delegate != null) {
+            return this.delegate.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         }
         return false;
     }

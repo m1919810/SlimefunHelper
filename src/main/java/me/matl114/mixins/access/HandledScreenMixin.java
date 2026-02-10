@@ -18,51 +18,56 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     }
 
     @Shadow
-    protected abstract Slot getSlotAt(double x, double y) ;
+    protected abstract Slot getSlotAt(double x, double y);
+
     @Final
     @Mutable
     @Shadow
     protected ScreenHandler handler;
+
     public void setHandler(ScreenHandler handler) {
         this.handler = handler;
     }
+
     @Shadow
     private Slot touchHoveredSlot;
-//    @Inject(method = "mouseClicked",at = @At("HEAD"))
-//    public void mouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
-//    }
+    //    @Inject(method = "mouseClicked",at = @At("HEAD"))
+    //    public void mouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+    //    }
     @Override
     public Slot reallyGetSlotAt(double var1, double var3) {
         return getSlotAt(var1, var3);
     }
 
-
     @Unique
-    public boolean isSlotPointed(Slot slot){
+    public boolean isSlotPointed(Slot slot) {
         var mouseCoord = ScreenUtils.getMouseCoord(MinecraftClient.getInstance());
         return this.isPointOverSlot(slot, mouseCoord.x, mouseCoord.y);
     }
-    @Unique
-    public boolean isSlotPointed(Slot slot, int var1, int var3){
-        return this.isPointOverSlot(slot,var1, var3);
-    }
 
+    @Unique
+    public boolean isSlotPointed(Slot slot, int var1, int var3) {
+        return this.isPointOverSlot(slot, var1, var3);
+    }
 
     @Shadow
     protected int x;
+
     @Shadow
     protected int y;
+
     @Accessor("x")
     public abstract int getScreenX();
+
     @Accessor("y")
     public abstract int getScreenY();
+
     @Accessor("backgroundWidth")
     public abstract int getScreenBackgroundX();
+
     @Accessor("backgroundHeight")
     public abstract int getScreenBackgroundY();
 
     @Shadow
     protected abstract boolean isPointOverSlot(Slot slot, double pointX, double pointY);
-
-
 }

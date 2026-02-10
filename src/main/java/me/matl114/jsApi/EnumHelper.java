@@ -12,7 +12,7 @@ public class EnumHelper {
         return enumClass.getEnumConstants()[idx];
     }
 
-    public static boolean isEnum(Object what){
+    public static boolean isEnum(Object what) {
         Class<?> clazz = what instanceof Class<?> ? (Class<?>) what : what.getClass();
         return Enum.class.isAssignableFrom(clazz);
     }

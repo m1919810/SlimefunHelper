@@ -5,7 +5,15 @@ import com.google.gson.*;
 import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import java.awt.*;
+import java.util.*;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.RenderListener;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
@@ -13,10 +21,8 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.StringRef;
-import me.matl114.events.RenderListener;
 import me.matl114.utils.*;
 import me.matl114.utils.config.AttrKeyValue;
-import me.matl114.events.Event;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -57,13 +63,6 @@ import net.minecraft.world.gen.placementmodifier.HeightRangePlacementModifier;
 import net.minecraft.world.gen.placementmodifier.PlacementModifier;
 import net.minecraft.world.gen.placementmodifier.RarityFilterPlacementModifier;
 
-import java.awt.*;
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 public class SeedOre extends BaseModule {
     public static final String[] XRAY_ENABLE_SEED = {"aaxray", "enable-seed"};
     public static final String[] XRAY_ENABLE_SEED_RADIUS = {"aaxray", "seed-radius"};
@@ -71,14 +70,14 @@ public class SeedOre extends BaseModule {
     public static final String[] XRAY_MAKE_CLIENTSIDE_ORE = {"aaxray", "clientside-ore"};
 
     public static final String[] XRAY_ORE_TYPE = {"aaxray", "show-ore-type"};
-    public static final String[] SEED_MAP = new String[]{"seed", "seed-cache"};
+    public static final String[] SEED_MAP = new String[] {"seed", "seed-cache"};
     public final Object2LongMap<String> seedMap = new Object2LongOpenHashMap<>();
-    //how to do cache: chunkUnload
+    // how to do cache: chunkUnload
     private final Map<Long, Map<Ore, Set<Vec3d>>> chunkSeedCache = new ConcurrentHashMap<>();
     private final Map<Long, Map<BlockPos, BlockState>> fakeOres = new ConcurrentHashMap<>();
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
-    public void onSeedMap(String json){
+    public void onSeedMap(String json) {
         JsonObject element = (JsonObject) JsonParser.parseString(json);
         seedMap.clear();
         for (Map.Entry<String, JsonElement> entry : element.entrySet()) {
@@ -88,65 +87,61 @@ public class SeedOre extends BaseModule {
         }
     }
 
-    public void saveSeedMap(){
+    public void saveSeedMap() {
         JsonObject obj = new JsonObject();
-        for (var entry : seedMap.object2LongEntrySet()){
+        for (var entry : seedMap.object2LongEntrySet()) {
             obj.addProperty(entry.getKey(), entry.getLongValue());
         }
         seedMapSave.set(gson.toJson(obj));
     }
 
-
-    public SeedOre(){
+    public SeedOre() {
         super();
         bindFlag(enable);
     }
 
-
-
     public final FlagRef enable = builder(Configs.MINE_CONFIG, Boolean.class)
-        .path(XRAY_ENABLE_SEED)
-        .defaultValue(false)
-        .build();
+            .path(XRAY_ENABLE_SEED)
+            .defaultValue(false)
+            .build();
 
     public final IntRef chunkRadius = builder(Configs.MINE_CONFIG, Integer.class)
-        .path(XRAY_ENABLE_SEED_RADIUS)
-        .defaultValue(6)
-        .validator(Configs.INT_POSITIVE)
-        .build();
+            .path(XRAY_ENABLE_SEED_RADIUS)
+            .defaultValue(6)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
     public final FlagRef enableRender = builder(Configs.MINE_CONFIG, Boolean.class)
-        .path(XRAY_RENDER_FAKE_ORE)
-        .defaultValue(false)
-        .build();
+            .path(XRAY_RENDER_FAKE_ORE)
+            .defaultValue(false)
+            .build();
 
     boolean fakeOre = false;
     public final FlagRef enableFakeOres = builder(Configs.MINE_CONFIG, Boolean.class)
-        .path(XRAY_MAKE_CLIENTSIDE_ORE)
-        .defaultValue(false)
-        .updateListener(this::onFakeOreToggle)
-        .build();
+            .path(XRAY_MAKE_CLIENTSIDE_ORE)
+            .defaultValue(false)
+            .updateListener(this::onFakeOreToggle)
+            .build();
 
     public final StringRef oreWhiteList = builder(Configs.MINE_CONFIG, String.class)
-        .path(XRAY_ORE_TYPE)
-        .defaultValue("^(diamond)$")
-        .validator(Configs.REGEX_VALIDATOR)
-        .updateListener(Ore::reloadOreSettings)
-        .build();
+            .path(XRAY_ORE_TYPE)
+            .defaultValue("^(diamond)$")
+            .validator(Configs.REGEX_VALIDATOR)
+            .updateListener(Ore::reloadOreSettings)
+            .build();
 
     public final StringRef seedMapSave = builder(Configs.INTERNAL_CONFIG, String.class)
-        .path(SEED_MAP)
-        .defaultValue("{}")
-        .validator(Configs.JSON_VALIDATOR)
-        .updateListener(this::onSeedMap)
-        .build();
-
+            .path(SEED_MAP)
+            .defaultValue("{}")
+            .validator(Configs.JSON_VALIDATOR)
+            .updateListener(this::onSeedMap)
+            .build();
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getWorldSwitchPoint(), this::onDimensionChange);
-        //this needs run on main thread to ensure the chunk is accessible
+        // this needs run on main thread to ensure the chunk is accessible
         registerListener(Listener.getPacketPostHandlePoint().getChannel(ChunkDataS2CPacket.class), this::onChunkUpdate);
         registerListener(Listener.getPacketPoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRenderOreSimulation);
@@ -155,7 +150,7 @@ public class SeedOre extends BaseModule {
     @Override
     public void onEnableModule() {
         super.onEnableModule();
-        if(mc.world != null){
+        if (mc.world != null) {
             onReloadSeedOre();
         }
     }
@@ -164,233 +159,232 @@ public class SeedOre extends BaseModule {
     public void onDisableModule() {
         super.onDisableModule();
         oreConfig = null;
-        if(mc.player != null && mc.world != null){
+        if (mc.player != null && mc.world != null) {
             Debug.chat(Text.literal("[种子矿透] 禁用该功能").formatted(Formatting.RED));
         }
         onRemoveFakeOreVisibleChunks();
     }
 
-    public void onReloadSeedOre(){
-        try{
+    public void onReloadSeedOre() {
+        try {
             onClearCachedResults();
-            if(mc.world != null){
-                //remove Fake ores existing
+            if (mc.world != null) {
+                // remove Fake ores existing
                 onRemoveFakeOreVisibleChunks();
             }
             oreConfig = Ore.getRegistry();
-            if(mc.player != null && mc.world != null){
-                Debug.chat(Text.literal("[种子矿透] 启用该功能, 范围 %d".formatted(chunkRadius.get())).formatted(Formatting.GREEN));
+            if (mc.player != null && mc.world != null) {
+                Debug.chat(Text.literal("[种子矿透] 启用该功能, 范围 %d".formatted(chunkRadius.get()))
+                        .formatted(Formatting.GREEN));
                 onLoadCurrentVisibleChunks();
             }
-            //load fake ores are in onLoadCurrentVisibleChunks
+            // load fake ores are in onLoadCurrentVisibleChunks
 
-        }catch (Throwable e){
+        } catch (Throwable e) {
             Debug.info(e);
-            if(mc.player != null)
-                Debug.chat(Text.literal("[种子矿透] 启用时出现报错, 已关闭..."));
+            if (mc.player != null) Debug.chat(Text.literal("[种子矿透] 启用时出现报错, 已关闭..."));
             enable.set(false);
         }
     }
 
-    public void onFakeOreToggle(boolean va){
-        if(va != fakeOre){
+    public void onFakeOreToggle(boolean va) {
+        if (va != fakeOre) {
             fakeOre = va;
-            if(enable.get()){
-                if(fakeOre){
+            if (enable.get()) {
+                if (fakeOre) {
                     onReloadFakeOre();
-                }else {
+                } else {
                     onRemoveFakeOreVisibleChunks();
                 }
             }
-
         }
     }
 
-    public void onReloadFakeOre(){
-        if(mc.world != null){
+    public void onReloadFakeOre() {
+        if (mc.world != null) {
             onRemoveFakeOreVisibleChunks();
             onReloadFakeOreVisibleChunks();
         }
     }
 
-
-
-    //-26225.23 67.00 -23482.37
-    public void onDimensionChange(Event<World> v){
+    // -26225.23 67.00 -23482.37
+    public void onDimensionChange(Event<World> v) {
         onClearCachedResults();
-        if(isActive()){
-            //reload config
+        if (isActive()) {
+            // reload config
             onReloadSeedOre();
         }
     }
 
-    public void putSeed(String key, long seed){
-        if(seedMap.containsKey(key)){
+    public void putSeed(String key, long seed) {
+        if (seedMap.containsKey(key)) {
             long old = seedMap.getLong(key);
-            if(old != seed){
+            if (old != seed) {
                 seedMap.put(key, seed);
                 saveSeedMap();
                 onSeedChange(key);
             }
-        }else{
+        } else {
             seedMap.put(key, seed);
             saveSeedMap();
             onSeedChange(key);
         }
     }
 
-    public void removeSeed(String key){
-        if(seedMap.containsKey(key)){
+    public void removeSeed(String key) {
+        if (seedMap.containsKey(key)) {
             seedMap.removeLong(key);
             onSeedChange(key);
         }
     }
 
-    public void onSeedChange(String key){
-        if(!checkCurrentSeedExistence())return;
-        if(Objects.equals(CommonUtils.getWorldName(), key) && enable.get()){
+    public void onSeedChange(String key) {
+        if (!checkCurrentSeedExistence()) return;
+        if (Objects.equals(CommonUtils.getWorldName(), key) && enable.get()) {
             Debug.chat("[种子矿透] 重载Seed Ore Simulation功能");
             onReloadSeedOre();
         }
     }
 
-    public boolean hasCurrentSeed(){
+    public boolean hasCurrentSeed() {
         return seedMap.containsKey(CommonUtils.getWorldName());
     }
 
-    public long getCurrentSeed(){
+    public long getCurrentSeed() {
         return seedMap.getLong(CommonUtils.getWorldName());
     }
 
-
-
     @ApiMethod
-    public void setWorldSeed(long seed){
+    public void setWorldSeed(long seed) {
         putSeed(CommonUtils.getWorldName(), seed);
     }
+
     @ApiMethod
-    public void removeWorldSeed(){
+    public void removeWorldSeed() {
         removeSeed(CommonUtils.getWorldName());
     }
 
-    public boolean checkCurrentSeedExistence(){
-        if(hasCurrentSeed()){
+    public boolean checkCurrentSeedExistence() {
+        if (hasCurrentSeed()) {
             return true;
-        }else{
-            Debug.chat(Text.literal("[世界种子] 暂时没有设置 %s 世界的种子".formatted(CommonUtils.getWorldName())).formatted(Formatting.RED));
+        } else {
+            Debug.chat(Text.literal("[世界种子] 暂时没有设置 %s 世界的种子".formatted(CommonUtils.getWorldName()))
+                    .formatted(Formatting.RED));
             enable.set(false);
             return false;
         }
     }
 
-    public void validateCurrentSeed(){
-        if(!checkCurrentSeedExistence())return;
+    public void validateCurrentSeed() {
+        if (!checkCurrentSeedExistence()) return;
         long value = seedMap.getLong(CommonUtils.getWorldName());
         Debug.chat(Text.literal("[世界种子] 核验当前世界种子中:").formatted(Formatting.GREEN));
-        Debug.chat(Text.literal("[世界种子] 输入的种子: " ).formatted(Formatting.GREEN).append(ChatUtils.getDisplayedLong(value)));
+        Debug.chat(
+                Text.literal("[世界种子] 输入的种子: ").formatted(Formatting.GREEN).append(ChatUtils.getDisplayedLong(value)));
         long hashed = mc.world.getBiomeAccess().seed;
-        Debug.chat(Text.literal("[世界种子] 服务器加密种子: " ).append(ChatUtils.getDisplayedLong(hashed)));
-        if(BiomeAccess.hashSeed(value) ==  hashed){
+        Debug.chat(Text.literal("[世界种子] 服务器加密种子: ").append(ChatUtils.getDisplayedLong(hashed)));
+        if (BiomeAccess.hashSeed(value) == hashed) {
             Debug.chat(Text.literal("[世界种子] 验证通过").formatted(Formatting.GREEN));
-        }else {
+        } else {
             Debug.chat(Text.literal("[世界种子] 验证失败").formatted(Formatting.RED));
         }
     }
 
-
-
-
     // 重载可视区块的种子计算 包含了假矿计算
-    public void onLoadCurrentVisibleChunks(){
-        if(mc.world == null)return;
-        for (Chunk chunk : CommonUtils.chunks(false)){
+    public void onLoadCurrentVisibleChunks() {
+        if (mc.world == null) return;
+        for (Chunk chunk : CommonUtils.chunks(false)) {
             updateChunk(chunk);
         }
     }
     // 重载假矿
-    public void onReloadFakeOreVisibleChunks(){
-        if(mc.world == null)return;
-        for (Chunk chunk : CommonUtils.chunks(false)){
+    public void onReloadFakeOreVisibleChunks() {
+        if (mc.world == null) return;
+        for (Chunk chunk : CommonUtils.chunks(false)) {
             long key = chunk.getPos().toLong();
             var map = chunkSeedCache.get(key);
-            if(map != null && !map.isEmpty()){
+            if (map != null && !map.isEmpty()) {
                 updateOreClientSide(key, map);
             }
         }
     }
     // 移除假矿
-    public void onRemoveFakeOreVisibleChunks(){
-        if(mc.world == null)return;
-        for (Chunk chunk : CommonUtils.chunks(false)){
+    public void onRemoveFakeOreVisibleChunks() {
+        if (mc.world == null) return;
+        for (Chunk chunk : CommonUtils.chunks(false)) {
             long key = chunk.getPos().toLong();
             var map = fakeOres.remove(key);
-            if(map != null && !map.isEmpty()){
+            if (map != null && !map.isEmpty()) {
                 removeChunkFakeOres(key, map);
             }
         }
     }
     // 移除内部实现
-    private void removeChunkFakeOres(long key, Map<BlockPos, BlockState> originDatas){
-        for (var re: originDatas.entrySet()){
+    private void removeChunkFakeOres(long key, Map<BlockPos, BlockState> originDatas) {
+        for (var re : originDatas.entrySet()) {
             BlockPos pos0 = re.getKey();
             BlockState state0 = re.getValue();
-            Tasks.scheduleDelayed(()->{
-                if(mc.world != null){
-                    mc.world.setBlockState(pos0, state0);
-                }
-            },1);
+            Tasks.scheduleDelayed(
+                    () -> {
+                        if (mc.world != null) {
+                            mc.world.setBlockState(pos0, state0);
+                        }
+                    },
+                    1);
         }
     }
 
-    private void onClearCachedResults(){
+    private void onClearCachedResults() {
         chunkSeedCache.clear();
         fakeOres.clear();
     }
 
-    //events that updates the chunk
-    public void onChunkUpdate(Event<ChunkDataS2CPacket> packet){
-        //update data as scheduled after the handle
+    // events that updates the chunk
+    public void onChunkUpdate(Event<ChunkDataS2CPacket> packet) {
+        // update data as scheduled after the handle
         Packet<?> packet1 = packet.context;
-        if(enable.get() ){
+        if (enable.get()) {
             var dataS2CPacket = packet.context;
             int x = dataS2CPacket.getChunkX();
             int z = dataS2CPacket.getChunkZ();
-            Tasks.scheduleDelayed(()->{
-                updateChunk(mc.world.getChunk(x, z));
-            }, 2);
+            Tasks.scheduleDelayed(
+                    () -> {
+                        updateChunk(mc.world.getChunk(x, z));
+                    },
+                    2);
         }
     }
 
-    public void onBlockUpdate(Event<BlockUpdateS2CPacket> event){
-        //remove cache whenever
-        //remove async
-        //todo: add check to
-        if(!chunkSeedCache.isEmpty() || !fakeOres.isEmpty()){
+    public void onBlockUpdate(Event<BlockUpdateS2CPacket> event) {
+        // remove cache whenever
+        // remove async
+        // todo: add check to
+        if (!chunkSeedCache.isEmpty() || !fakeOres.isEmpty()) {
             var packet = event.context;
             long chunkKey = ChunkPos.toLong((packet).getPos());
             var map = chunkSeedCache.get(chunkKey);
             Vec3d pos = Vec3d.of(packet.getPos());
-            if(map != null && !map.isEmpty()){
-                for (var ore: map.values()){
+            if (map != null && !map.isEmpty()) {
+                for (var ore : map.values()) {
                     ore.remove(pos);
                 }
             }
             var map2 = fakeOres.get(chunkKey);
-            if(map2 != null && !map2.isEmpty()){
+            if (map2 != null && !map2.isEmpty()) {
                 map2.remove(packet.getPos());
             }
         }
     }
-    //render issues
+    // render issues
 
-    public void onRenderOreSimulation(Event<MatrixStack> event){
+    public void onRenderOreSimulation(Event<MatrixStack> event) {
         var stack = event.context;
-        if(mc.player == null || oreConfig == null)return;
-        if(!enable.get())return;
-        if(!enableRender.get())return;
-        if(!checkCurrentSeedExistence())return;
+        if (mc.player == null || oreConfig == null) return;
+        if (!enable.get()) return;
+        if (!enableRender.get()) return;
+        if (!checkCurrentSeedExistence()) return;
         RenderUtils.startDrawVirtual(stack);
-        try{
+        try {
             int chunkX = mc.player.getChunkPos().x;
             int chunkZ = mc.player.getChunkPos().z;
 
@@ -403,67 +397,69 @@ public class SeedOre extends BaseModule {
                     renderChunk(x, chunkZ - range + rangeVal + 1, stack);
                 }
             }
-        }finally {
+        } finally {
             RenderUtils.stopDrawVirtual(stack);
         }
-
-
     }
-    private void renderChunk(int x, int z, MatrixStack event){
-        long chunkKey = ChunkPos.toLong(x,z);
+
+    private void renderChunk(int x, int z, MatrixStack event) {
+        long chunkKey = ChunkPos.toLong(x, z);
 
         if (chunkSeedCache.containsKey(chunkKey)) {
             Map<Ore, Set<Vec3d>> chunk = chunkSeedCache.get(chunkKey);
 
             for (Map.Entry<Ore, Set<Vec3d>> oreRenders : chunk.entrySet()) {
                 if (oreRenders.getKey().active.getOriginValue() == Boolean.TRUE) {
-                    RenderUtils.setAsCurrentShaderColor(
-                        oreRenders.getKey().color
-                        , 1.0F);
+                    RenderUtils.setAsCurrentShaderColor(oreRenders.getKey().color, 1.0F);
                     for (Vec3d pos : oreRenders.getValue()) {
                         Vec3d centerPos = BlockPos.ofFloored(pos).toCenterPos();
 
-                        // event.renderer.boxLines(pos.x, pos.y, pos.z, pos.x + 1, pos.y + 1, pos.z + 1, oreRenders.getKey().color, 0);
-                        RenderUtils.drawOutlinedBox(event, centerPos.add(RenderTasks.FROM), centerPos.add(RenderTasks.TO));
+                        // event.renderer.boxLines(pos.x, pos.y, pos.z, pos.x + 1, pos.y + 1, pos.z + 1,
+                        // oreRenders.getKey().color, 0);
+                        RenderUtils.drawOutlinedBox(
+                                event, centerPos.add(RenderTasks.FROM), centerPos.add(RenderTasks.TO));
                     }
                 }
             }
         }
     }
 
-
-    public Map<String, Set<Vec3d>> getSeedOres(int x, int z){
+    public Map<String, Set<Vec3d>> getSeedOres(int x, int z) {
         Map<String, Set<Vec3d>> map = new HashMap<>();
-        for (var entry: chunkSeedCache.getOrDefault(ChunkPos.toLong(x, z), Map.of()).entrySet()){
+        for (var entry :
+                chunkSeedCache.getOrDefault(ChunkPos.toLong(x, z), Map.of()).entrySet()) {
             map.put(entry.getKey().active.getKeyName(), entry.getValue());
         }
         return map;
     }
 
-    private  void updateChunk(Chunk chunk) {
-        if(!enable.get())return;
-        if(!checkCurrentSeedExistence()){
+    private void updateChunk(Chunk chunk) {
+        if (!enable.get()) return;
+        if (!checkCurrentSeedExistence()) {
             return;
         }
         var chunkPos = chunk.getPos();
         long chunkKey = chunkPos.toLong();
         ClientWorld world = mc.world;
-        //clear cache when switching world
+        // clear cache when switching world
         Map<Ore, Set<Vec3d>> h;
 
         if (chunkSeedCache.containsKey(chunkKey) || world == null || oreConfig == null) {
             h = chunkSeedCache.get(chunkKey);
-        }else{
+        } else {
             Set<RegistryKey<Biome>> biomes = new HashSet<>();
             ChunkPos.stream(chunkPos, 1).forEach(chunkPosx -> {
                 Chunk chunkxx = world.getChunk(chunkPosx.x, chunkPosx.z, ChunkStatus.BIOMES, false);
                 if (chunkxx == null) return;
 
-                for(ChunkSection chunkSection : chunkxx.getSectionArray()) {
-                    chunkSection.getBiomeContainer().forEachValue(entry -> biomes.add(entry.getKey().get()));
+                for (ChunkSection chunkSection : chunkxx.getSectionArray()) {
+                    chunkSection
+                            .getBiomeContainer()
+                            .forEachValue(entry -> biomes.add(entry.getKey().get()));
                 }
             });
-            Set<Ore> oreSet = biomes.stream().flatMap(b -> getDefaultOres(b).stream()).collect(Collectors.toSet());
+            Set<Ore> oreSet =
+                    biomes.stream().flatMap(b -> getDefaultOres(b).stream()).collect(Collectors.toSet());
 
             int chunkX = chunkPos.x << 4;
             int chunkZ = chunkPos.z << 4;
@@ -481,16 +477,17 @@ public class SeedOre extends BaseModule {
 
                 for (int i = 0; i < repeat; i++) {
 
-                    if (ore.rarity != 1F && random.nextFloat() >= 1/ore.rarity) {
+                    if (ore.rarity != 1F && random.nextFloat() >= 1 / ore.rarity) {
                         continue;
                     }
 
                     int x = random.nextInt(16) + chunkX;
                     int z = random.nextInt(16) + chunkZ;
                     int y = ore.heightProvider.get(random, ore.heightContext);
-                    BlockPos origin = new BlockPos(x,y,z);
+                    BlockPos origin = new BlockPos(x, y, z);
 
-                    RegistryKey<Biome> biome = chunk.getBiomeForNoiseGen(x,y,z).getKey().get();
+                    RegistryKey<Biome> biome =
+                            chunk.getBiomeForNoiseGen(x, y, z).getKey().get();
 
                     if (!getDefaultOres(biome).contains(ore)) {
                         continue;
@@ -507,69 +504,66 @@ public class SeedOre extends BaseModule {
                 }
             }
         }
-        if(h != null && !h.isEmpty()){
-            //fake ore do not load automatically
+        if (h != null && !h.isEmpty()) {
+            // fake ore do not load automatically
             chunkSeedCache.put(chunkKey, h);
-            if(enableFakeOres.get()){
+            if (enableFakeOres.get()) {
                 updateOreClientSide(chunkKey, h);
             }
         }
-
-
     }
-    //for fake ores
-    private void updateOreClientSide(long chunkey, Map<Ore, Set<Vec3d>> ores){
-        if(mc.world == null)return;
-        if(!enableFakeOres.get())return;
+    // for fake ores
+    private void updateOreClientSide(long chunkey, Map<Ore, Set<Vec3d>> ores) {
+        if (mc.world == null) return;
+        if (!enableFakeOres.get()) return;
 
-        //return blockstates already cached
+        // return blockstates already cached
         var map0 = fakeOres.remove(chunkey);
-        if(map0 != null && !map0.isEmpty()){
+        if (map0 != null && !map0.isEmpty()) {
             removeChunkFakeOres(chunkey, map0);
         }
-        //todo: remove obfuscated ores from server , add config
+        // todo: remove obfuscated ores from server , add config
         Map<BlockPos, BlockState> newFakeOres = new ConcurrentHashMap<>();
         int minY = mc.world.getBottomY();
-        for(var ore0 : ores.entrySet()){
+        for (var ore0 : ores.entrySet()) {
             Ore oreType = ore0.getKey();
             var sample = oreType.sampleBlock;
             var sampleDeepslate = oreType.sampleDeepslateBlock;
             loop:
-            for (var pos: ore0.getValue()){
-                if(pos.y < minY + 4){
-                    //mostly bedrock , escape
-                    continue ;
+            for (var pos : ore0.getValue()) {
+                if (pos.y < minY + 4) {
+                    // mostly bedrock , escape
+                    continue;
                 }
-                var block = pos.y > 0? sample: sampleDeepslate;
+                var block = pos.y > 0 ? sample : sampleDeepslate;
                 var blockState = block.getDefaultState();
                 var blockPos = BlockPos.ofFloored(pos);
                 BlockState state = mc.world.getBlockState(blockPos);
-                //todo: air can be faked!!! that's allshit,
-                //fuck you 3c3u
-                if(!state.isAir() && state.getBlock() != sample && state.getBlock() != sampleDeepslate){
-                    //not naked and not the same
-                    for (Direction direction : Direction.values()){
+                // todo: air can be faked!!! that's allshit,
+                // fuck you 3c3u
+                if (!state.isAir() && state.getBlock() != sample && state.getBlock() != sampleDeepslate) {
+                    // not naked and not the same
+                    for (Direction direction : Direction.values()) {
                         BlockPos testPos = blockPos.offset(direction);
-                        if(mc.world.getBlockState(testPos).isAir()){
+                        if (mc.world.getBlockState(testPos).isAir()) {
                             continue loop;
                         }
                     }
                     newFakeOres.put(blockPos, state);
-                    //run sync
-                    Tasks.scheduleDelayed(()->{
-                        if(mc.world != null)
-                            mc.world.setBlockState(blockPos, blockState);
-                    }, 2);
+                    // run sync
+                    Tasks.scheduleDelayed(
+                            () -> {
+                                if (mc.world != null) mc.world.setBlockState(blockPos, blockState);
+                            },
+                            2);
                 }
-
             }
         }
         fakeOres.put(chunkey, newFakeOres);
     }
 
+    private Map<RegistryKey<Biome>, List<Ore>> oreConfig;
 
-
-    private  Map<RegistryKey<Biome>, List<Ore>> oreConfig;
     private List<Ore> getDefaultOres(RegistryKey<Biome> biomeRegistryKey) {
         if (oreConfig.containsKey(biomeRegistryKey)) {
             return oreConfig.get(biomeRegistryKey);
@@ -578,7 +572,7 @@ public class SeedOre extends BaseModule {
         }
     }
 
-    static{
+    static {
         Ore.init();
     }
 
@@ -586,7 +580,8 @@ public class SeedOre extends BaseModule {
     // Mojang code
     // ====================================
 
-    private static ArrayList<Vec3d> generateNormal(ClientWorld world, ChunkRandom random, BlockPos blockPos, int veinSize, float discardOnAir) {
+    private static ArrayList<Vec3d> generateNormal(
+            ClientWorld world, ChunkRandom random, BlockPos blockPos, int veinSize, float discardOnAir) {
         float f = random.nextFloat() * 3.1415927F;
         float g = (float) veinSize / 8.0F;
         int i = MathHelper.ceil(((float) veinSize / 16.0F * 2.0F + 1.0F) / 2.0F);
@@ -613,7 +608,22 @@ public class SeedOre extends BaseModule {
         return new ArrayList<>();
     }
 
-    private static ArrayList<Vec3d> generateVeinPart(ClientWorld world, ChunkRandom random, int veinSize, double startX, double endX, double startZ, double endZ, double startY, double endY, int x, int y, int z, int size, int i, float discardOnAir) {
+    private static ArrayList<Vec3d> generateVeinPart(
+            ClientWorld world,
+            ChunkRandom random,
+            int veinSize,
+            double startX,
+            double endX,
+            double startZ,
+            double endZ,
+            double startY,
+            double endY,
+            int x,
+            int y,
+            int z,
+            int size,
+            int i,
+            float discardOnAir) {
 
         BitSet bitSet = new BitSet(size * i * size);
         BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -685,7 +695,10 @@ public class SeedOre extends BaseModule {
                                         if (!bitSet.get(an)) {
                                             bitSet.set(an);
                                             mutable.set(ah, aj, al);
-                                            if (aj >= -64 && aj < 320 && ( world.getBlockState(mutable).isOpaque())) {
+                                            if (aj >= -64
+                                                    && aj < 320
+                                                    && (world.getBlockState(mutable)
+                                                            .isOpaque())) {
                                                 if (shouldPlace(world, mutable, discardOnAir, random)) {
                                                     poses.add(new Vec3d(ah, aj, al));
                                                 }
@@ -741,56 +754,59 @@ public class SeedOre extends BaseModule {
         return Math.round((random.nextFloat() - random.nextFloat()) * (float) size);
     }
 
-
-
     public static class Ore {
-        private static final AttrKeyValue<Boolean> coal        = AttrKeyValue.bool("Coal");
-        private static final AttrKeyValue<Boolean> iron        = AttrKeyValue.bool("Iron");
-        private static final AttrKeyValue<Boolean> gold        = AttrKeyValue.bool("Gold");
-        private static final AttrKeyValue<Boolean> redstone    = AttrKeyValue.bool("Redstone");
-        private static final AttrKeyValue<Boolean> diamond     = AttrKeyValue.bool("Diamond");
-        private static final AttrKeyValue<Boolean> lapis       = AttrKeyValue.bool("Lapis");
-        private static final AttrKeyValue<Boolean> copper      = AttrKeyValue.bool("Copper");
-        private static final AttrKeyValue<Boolean> emerald     = AttrKeyValue.bool("Emerald");
-        private static final AttrKeyValue<Boolean> quartz      = AttrKeyValue.bool("Quartz");
-        private static final AttrKeyValue<Boolean> debris      = AttrKeyValue.bool("Ancient Debris");
-        private static final Map<String, Pair<Block, Block>> oreMapping = ImmutableMap.<String, Pair<Block, Block>>builder()
-            .put("Coal", Pair.of(Blocks.COAL_ORE, Blocks.DEEPSLATE_COAL_ORE))
-            .put("Iron", Pair.of(Blocks.IRON_ORE, Blocks.DEEPSLATE_IRON_ORE))
-            .put("Gold", Pair.of(Blocks.GOLD_ORE, Blocks.DEEPSLATE_GOLD_ORE))
-            .put("Redstone", Pair.of(Blocks.REDSTONE_ORE, Blocks.DEEPSLATE_REDSTONE_ORE))
-            .put("Diamond", Pair.of(Blocks.DIAMOND_ORE, Blocks.DEEPSLATE_DIAMOND_ORE))
-            .put("Lapis", Pair.of(Blocks.LAPIS_ORE, Blocks.DEEPSLATE_LAPIS_ORE))
-            .put("Copper", Pair.of(Blocks.COPPER_ORE, Blocks.DEEPSLATE_COPPER_ORE))
-            .put("Emerald", Pair.of(Blocks.EMERALD_ORE, Blocks.DEEPSLATE_EMERALD_ORE))
-            .put("Quartz", Pair.of(Blocks.NETHER_QUARTZ_ORE, Blocks.NETHER_QUARTZ_ORE))
-            .put("Ancient Debris", Pair.of(Blocks.ANCIENT_DEBRIS, Blocks.ANCIENT_DEBRIS))
-            .build();
-        public static final List<AttrKeyValue<Boolean>> oreSettings = new ArrayList<>(Arrays.asList(coal, iron, gold, redstone, diamond, lapis, copper, emerald, quartz, debris));
+        private static final AttrKeyValue<Boolean> coal = AttrKeyValue.bool("Coal");
+        private static final AttrKeyValue<Boolean> iron = AttrKeyValue.bool("Iron");
+        private static final AttrKeyValue<Boolean> gold = AttrKeyValue.bool("Gold");
+        private static final AttrKeyValue<Boolean> redstone = AttrKeyValue.bool("Redstone");
+        private static final AttrKeyValue<Boolean> diamond = AttrKeyValue.bool("Diamond");
+        private static final AttrKeyValue<Boolean> lapis = AttrKeyValue.bool("Lapis");
+        private static final AttrKeyValue<Boolean> copper = AttrKeyValue.bool("Copper");
+        private static final AttrKeyValue<Boolean> emerald = AttrKeyValue.bool("Emerald");
+        private static final AttrKeyValue<Boolean> quartz = AttrKeyValue.bool("Quartz");
+        private static final AttrKeyValue<Boolean> debris = AttrKeyValue.bool("Ancient Debris");
+        private static final Map<String, Pair<Block, Block>> oreMapping =
+                ImmutableMap.<String, Pair<Block, Block>>builder()
+                        .put("Coal", Pair.of(Blocks.COAL_ORE, Blocks.DEEPSLATE_COAL_ORE))
+                        .put("Iron", Pair.of(Blocks.IRON_ORE, Blocks.DEEPSLATE_IRON_ORE))
+                        .put("Gold", Pair.of(Blocks.GOLD_ORE, Blocks.DEEPSLATE_GOLD_ORE))
+                        .put("Redstone", Pair.of(Blocks.REDSTONE_ORE, Blocks.DEEPSLATE_REDSTONE_ORE))
+                        .put("Diamond", Pair.of(Blocks.DIAMOND_ORE, Blocks.DEEPSLATE_DIAMOND_ORE))
+                        .put("Lapis", Pair.of(Blocks.LAPIS_ORE, Blocks.DEEPSLATE_LAPIS_ORE))
+                        .put("Copper", Pair.of(Blocks.COPPER_ORE, Blocks.DEEPSLATE_COPPER_ORE))
+                        .put("Emerald", Pair.of(Blocks.EMERALD_ORE, Blocks.DEEPSLATE_EMERALD_ORE))
+                        .put("Quartz", Pair.of(Blocks.NETHER_QUARTZ_ORE, Blocks.NETHER_QUARTZ_ORE))
+                        .put("Ancient Debris", Pair.of(Blocks.ANCIENT_DEBRIS, Blocks.ANCIENT_DEBRIS))
+                        .build();
+        public static final List<AttrKeyValue<Boolean>> oreSettings = new ArrayList<>(
+                Arrays.asList(coal, iron, gold, redstone, diamond, lapis, copper, emerald, quartz, debris));
 
-
-        public static void reloadOreSettings(String value){
-            try{
+        public static void reloadOreSettings(String value) {
+            try {
                 var regex = Pattern.compile(value).asMatchPredicate();
-                for (var ore: oreSettings){
-                    if(regex.test(ore.getKeyName().toLowerCase(Locale.ROOT))){
+                for (var ore : oreSettings) {
+                    if (regex.test(ore.getKeyName().toLowerCase(Locale.ROOT))) {
                         ore.valueChange(ore, "true");
-                    }else{
+                    } else {
                         ore.valueChange(ore, "false");
                     }
                 }
-            }catch (Throwable e){
-                //Debug.chat("");
+            } catch (Throwable e) {
+                // Debug.chat("");
             }
         }
-        public static void init(){
 
-        }
+        public static void init() {}
+
         public static Map<RegistryKey<Biome>, List<Ore>> getRegistry() {
 
             RegistryWrapper.WrapperLookup registry = BuiltinRegistries.createWrapperLookup();
             RegistryWrapper.Impl<PlacedFeature> features = registry.getWrapperOrThrow(RegistryKeys.PLACED_FEATURE);
-            var reg = registry.getWrapperOrThrow(RegistryKeys.WORLD_PRESET).getOrThrow(WorldPresets.DEFAULT).value().createDimensionsRegistryHolder().dimensions();
+            var reg = registry.getWrapperOrThrow(RegistryKeys.WORLD_PRESET)
+                    .getOrThrow(WorldPresets.DEFAULT)
+                    .value()
+                    .createDimensionsRegistryHolder()
+                    .dimensions();
             RegistryKey<DimensionOptions> options = CommonUtils.getCurrentDimensionOption();
             var dim = reg.get(options);
 
@@ -798,62 +814,197 @@ public class SeedOre extends BaseModule {
             var biomes1 = biomes.stream().toList();
 
             List<PlacedFeatureIndexer.IndexedFeatures> indexer = PlacedFeatureIndexer.collectIndexedFeatures(
-                biomes1, biomeEntry -> biomeEntry.value().getGenerationSettings().getFeatures(), true
-            );
-
+                    biomes1,
+                    biomeEntry -> biomeEntry.value().getGenerationSettings().getFeatures(),
+                    true);
 
             Map<PlacedFeature, Ore> featureToOre = new HashMap<>();
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_COAL_LOWER, 6, coal, new Color(47, 44, 54));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_COAL_UPPER, 6, coal, new Color(47, 44, 54));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_IRON_MIDDLE, 6, iron, new Color(236, 173, 119));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_IRON_SMALL, 6, iron, new Color(236, 173, 119));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_IRON_UPPER, 6, iron, new Color(236, 173, 119));
+            registerOre(
+                    featureToOre, indexer, features, OrePlacedFeatures.ORE_COAL_LOWER, 6, coal, new Color(47, 44, 54));
+            registerOre(
+                    featureToOre, indexer, features, OrePlacedFeatures.ORE_COAL_UPPER, 6, coal, new Color(47, 44, 54));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_IRON_MIDDLE,
+                    6,
+                    iron,
+                    new Color(236, 173, 119));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_IRON_SMALL,
+                    6,
+                    iron,
+                    new Color(236, 173, 119));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_IRON_UPPER,
+                    6,
+                    iron,
+                    new Color(236, 173, 119));
             registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_GOLD, 6, gold, new Color(247, 229, 30));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_GOLD_LOWER, 6, gold, new Color(247, 229, 30));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_GOLD_EXTRA, 6, gold, new Color(247, 229, 30));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_GOLD_NETHER, 7, gold, new Color(247, 229, 30));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_GOLD_DELTAS, 7, gold, new Color(247, 229, 30));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_REDSTONE, 6, redstone, new Color(245, 7, 23));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_REDSTONE_LOWER, 6, redstone, new Color(245, 7, 23));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_DIAMOND, 6, diamond, new Color(33, 244, 255));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_DIAMOND_BURIED, 6, diamond, new Color(33, 244, 255));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_DIAMOND_LARGE, 6, diamond, new Color(33, 244, 255));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_DIAMOND_MEDIUM, 6, diamond, new Color(33, 244, 255));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_GOLD_LOWER,
+                    6,
+                    gold,
+                    new Color(247, 229, 30));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_GOLD_EXTRA,
+                    6,
+                    gold,
+                    new Color(247, 229, 30));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_GOLD_NETHER,
+                    7,
+                    gold,
+                    new Color(247, 229, 30));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_GOLD_DELTAS,
+                    7,
+                    gold,
+                    new Color(247, 229, 30));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_REDSTONE,
+                    6,
+                    redstone,
+                    new Color(245, 7, 23));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_REDSTONE_LOWER,
+                    6,
+                    redstone,
+                    new Color(245, 7, 23));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_DIAMOND,
+                    6,
+                    diamond,
+                    new Color(33, 244, 255));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_DIAMOND_BURIED,
+                    6,
+                    diamond,
+                    new Color(33, 244, 255));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_DIAMOND_LARGE,
+                    6,
+                    diamond,
+                    new Color(33, 244, 255));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_DIAMOND_MEDIUM,
+                    6,
+                    diamond,
+                    new Color(33, 244, 255));
             registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_LAPIS, 6, lapis, new Color(8, 26, 189));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_LAPIS_BURIED, 6, lapis, new Color(8, 26, 189));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_COPPER, 6, copper, new Color(239, 151, 0));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_COPPER_LARGE, 6, copper, new Color(239, 151, 0));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_EMERALD, 6, emerald, new Color(27, 209, 45));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_QUARTZ_NETHER, 7, quartz, new Color(205, 205, 205));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_QUARTZ_DELTAS, 7, quartz, new Color(205, 205, 205));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_DEBRIS_SMALL, 7, debris, new Color(209, 27, 245));
-            registerOre(featureToOre, indexer, features, OrePlacedFeatures.ORE_ANCIENT_DEBRIS_LARGE, 7, debris, new Color(209, 27, 245));
-
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_LAPIS_BURIED,
+                    6,
+                    lapis,
+                    new Color(8, 26, 189));
+            registerOre(
+                    featureToOre, indexer, features, OrePlacedFeatures.ORE_COPPER, 6, copper, new Color(239, 151, 0));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_COPPER_LARGE,
+                    6,
+                    copper,
+                    new Color(239, 151, 0));
+            registerOre(
+                    featureToOre, indexer, features, OrePlacedFeatures.ORE_EMERALD, 6, emerald, new Color(27, 209, 45));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_QUARTZ_NETHER,
+                    7,
+                    quartz,
+                    new Color(205, 205, 205));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_QUARTZ_DELTAS,
+                    7,
+                    quartz,
+                    new Color(205, 205, 205));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_DEBRIS_SMALL,
+                    7,
+                    debris,
+                    new Color(209, 27, 245));
+            registerOre(
+                    featureToOre,
+                    indexer,
+                    features,
+                    OrePlacedFeatures.ORE_ANCIENT_DEBRIS_LARGE,
+                    7,
+                    debris,
+                    new Color(209, 27, 245));
 
             Map<RegistryKey<Biome>, List<Ore>> biomeOreMap = new HashMap<>();
 
             biomes1.forEach(biome -> {
                 biomeOreMap.put(biome.getKey().get(), new ArrayList<>());
                 biome.value().getGenerationSettings().getFeatures().stream()
-                    .flatMap(RegistryEntryList::stream)
-                    .map(RegistryEntry::value)
-                    .filter(featureToOre::containsKey)
-                    .forEach(feature -> {
-                        biomeOreMap.get(biome.getKey().get()).add(featureToOre.get(feature));
-                    });
+                        .flatMap(RegistryEntryList::stream)
+                        .map(RegistryEntry::value)
+                        .filter(featureToOre::containsKey)
+                        .forEach(feature -> {
+                            biomeOreMap.get(biome.getKey().get()).add(featureToOre.get(feature));
+                        });
             });
             return biomeOreMap;
         }
 
         private static void registerOre(
-            Map<PlacedFeature, Ore> map,
-            List<PlacedFeatureIndexer.IndexedFeatures> indexer,
-            RegistryWrapper.Impl<PlacedFeature> oreRegistry,
-            RegistryKey<PlacedFeature> oreKey,
-            int genStep,
-            AttrKeyValue<Boolean> active,
-            Color color
-        ) {
+                Map<PlacedFeature, Ore> map,
+                List<PlacedFeatureIndexer.IndexedFeatures> indexer,
+                RegistryWrapper.Impl<PlacedFeature> oreRegistry,
+                RegistryKey<PlacedFeature> oreKey,
+                int genStep,
+                AttrKeyValue<Boolean> active,
+                Color color) {
             var orePlacement = oreRegistry.getOrThrow(oreKey).value();
 
             int index = indexer.get(genStep).indexMapping().applyAsInt(orePlacement);
@@ -877,7 +1028,14 @@ public class SeedOre extends BaseModule {
         public Color color;
         public boolean scattered;
 
-        private Ore(PlacedFeature feature, Block block, Block deepslate, int step, int index, AttrKeyValue<Boolean> active, Color color) {
+        private Ore(
+                PlacedFeature feature,
+                Block block,
+                Block deepslate,
+                int step,
+                int index,
+                AttrKeyValue<Boolean> active,
+                Color color) {
             this.step = step;
             this.index = index;
             this.active = active;
@@ -893,7 +1051,7 @@ public class SeedOre extends BaseModule {
                     this.count = count.count;
 
                 } else if (modifier instanceof HeightRangePlacementModifier height0) {
-                    this.heightProvider =  height0.height;
+                    this.heightProvider = height0.height;
 
                 } else if (modifier instanceof RarityFilterPlacementModifier rare) {
                     this.rarity = rare.chance;

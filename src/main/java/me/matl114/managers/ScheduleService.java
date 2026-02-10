@@ -1,9 +1,8 @@
 package me.matl114.managers;
 
-import me.matl114.utils.Debug;
-
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import me.matl114.utils.Debug;
 
 public class ScheduleService {
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -13,15 +12,19 @@ public class ScheduleService {
     public static String launchAsyncRepeatTask(Runnable task, long initialDelay, long repeat) {
         String taskId = "repeat-" + taskIdGenerator.incrementAndGet();
 
-        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
-            try {
-                task.run();
-            } catch (Exception e) {
-                Debug.getLogger().warn("重复任务执行异常: {}", taskId);
-                e.printStackTrace();
-                // 发生异常时取消任务，防止无限重试
-            }
-        }, initialDelay, repeat, TimeUnit.MILLISECONDS);
+        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
+                () -> {
+                    try {
+                        task.run();
+                    } catch (Exception e) {
+                        Debug.getLogger().warn("重复任务执行异常: {}", taskId);
+                        e.printStackTrace();
+                        // 发生异常时取消任务，防止无限重试
+                    }
+                },
+                initialDelay,
+                repeat,
+                TimeUnit.MILLISECONDS);
 
         runningTasks.put(taskId, future);
         return taskId;
@@ -30,16 +33,19 @@ public class ScheduleService {
     public static String launchAsyncDelayedTask(Runnable task, long delay) {
         String taskId = "delayed-" + taskIdGenerator.incrementAndGet();
 
-        ScheduledFuture<?> future = scheduler.schedule(() -> {
-            try {
-                task.run();
-            } catch (Exception e) {
-                Debug.getLogger().warn("任务执行异常: {}", taskId);
-                e.printStackTrace();
-            } finally {
-                runningTasks.remove(taskId);
-            }
-        }, delay, TimeUnit.MILLISECONDS);
+        ScheduledFuture<?> future = scheduler.schedule(
+                () -> {
+                    try {
+                        task.run();
+                    } catch (Exception e) {
+                        Debug.getLogger().warn("任务执行异常: {}", taskId);
+                        e.printStackTrace();
+                    } finally {
+                        runningTasks.remove(taskId);
+                    }
+                },
+                delay,
+                TimeUnit.MILLISECONDS);
 
         runningTasks.put(taskId, future);
         return taskId;
@@ -47,11 +53,10 @@ public class ScheduleService {
 
     public static boolean stopAsyncTask(String taskId) {
         var task = runningTasks.get(taskId);
-        if(task != null) {
+        if (task != null) {
             boolean success = task.cancel(true);
-            if(success) {
+            if (success) {
                 runningTasks.remove(taskId);
-
             }
             return success;
         }

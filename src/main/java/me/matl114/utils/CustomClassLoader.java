@@ -5,21 +5,26 @@ import java.util.HashSet;
 
 public class CustomClassLoader extends ClassLoader {
     static WeakReference<CustomClassLoader> instance = new WeakReference<>(null);
-    public static synchronized CustomClassLoader getInstance(){
-        if(instance.get() == null){
-            instance = new WeakReference<>( new CustomClassLoader(CustomClassLoader.class.getClassLoader()) );
+
+    public static synchronized CustomClassLoader getInstance() {
+        if (instance.get() == null) {
+            instance = new WeakReference<>(new CustomClassLoader(CustomClassLoader.class.getClassLoader()));
         }
         return instance.get();
     }
+
     private final HashSet<String> loadedClassNames = new HashSet<>();
-    CustomClassLoader(ClassLoader parent){
+
+    CustomClassLoader(ClassLoader parent) {
         super(parent);
         Debug.info("Creating new CustomClassLoader");
     }
+
     public Class<?> defineAccessClass(String name, byte[] bytes) throws ClassFormatError {
         this.loadedClassNames.add(name);
         return this.defineClass(name, bytes);
     }
+
     public Class loadAccessClass(String name) {
         if (this.loadedClassNames.contains(name)) {
             try {
@@ -32,16 +37,17 @@ public class CustomClassLoader extends ClassLoader {
         }
     }
 
-    public boolean isClassPresent(String name){
-        if(this.loadedClassNames.contains(name)){
+    public boolean isClassPresent(String name) {
+        if (this.loadedClassNames.contains(name)) {
             return true;
         }
         return super.findLoadedClass(name) != null;
     }
+
     Class<?> defineClass(String name, byte[] bytes) throws ClassFormatError {
         return this.defineClass(name, bytes, 0, bytes.length, this.getClass().getProtectionDomain());
     }
-//    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException{
-//        return super.loadClass(name, resolve);
-//    }
+    //    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException{
+    //        return super.loadClass(name, resolve);
+    //    }
 }

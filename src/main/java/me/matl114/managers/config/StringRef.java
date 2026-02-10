@@ -2,13 +2,14 @@ package me.matl114.managers.config;
 
 import me.matl114.utils.config.AttrKeyValue;
 
-public class StringRef extends ObjectRef<String>{
+public class StringRef extends ObjectRef<String> {
     public static final Class<String> TYPE = String.class;
 
-    public StringRef(String value){
+    public StringRef(String value) {
         super(value);
     }
-    public Object getAsPrimitive(){
+
+    public Object getAsPrimitive() {
         return get();
     }
 
@@ -19,7 +20,7 @@ public class StringRef extends ObjectRef<String>{
 
     @Override
     public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if(otherRef instanceof StringRef stringRef){
+        if (otherRef instanceof StringRef stringRef) {
             stringRef.set(this.get());
             return true;
         }

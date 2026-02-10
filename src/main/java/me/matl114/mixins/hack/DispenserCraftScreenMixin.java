@@ -1,7 +1,6 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.accessors.access.TileInventoryScreen;
-import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.InvTasks;
 import net.minecraft.block.Block;
@@ -21,12 +20,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 @Mixin(Generic3x3ContainerScreen.class)
-public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3ContainerScreenHandler> implements TileInventoryScreen {
+public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3ContainerScreenHandler>
+        implements TileInventoryScreen {
     @Unique
     private SlimefunDispensorSuggestBookWidget recipeBookWidget;
 
@@ -34,7 +30,7 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
     private BlockPos pos;
 
     @Unique
-    public BlockPos getPos(){
+    public BlockPos getPos() {
         return this.pos;
     }
 
@@ -42,7 +38,7 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
     private Block cacheBlockType;
 
     @Unique
-    public Block getBlockType(){
+    public Block getBlockType() {
         return cacheBlockType;
     }
 
@@ -50,12 +46,12 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
     private ClientWorld world;
 
     @Unique
-    public ClientWorld getWorld(){
+    public ClientWorld getWorld() {
         return this.world;
     }
 
     @Unique
-    public HandledScreen<?> castHandled(){
+    public HandledScreen<?> castHandled() {
         return this;
     }
 
@@ -63,14 +59,20 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
         super((Generic3x3ContainerScreenHandler) handler, inventory, title);
     }
 
-
-    @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;<init>(Lnet/minecraft/screen/ScreenHandler;Lnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/text/Text;)V", shift = At.Shift.AFTER))
-    protected void tryInitBlockPos(Generic3x3ContainerScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci){
+    @Inject(
+            method = "<init>",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;<init>(Lnet/minecraft/screen/ScreenHandler;Lnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/text/Text;)V",
+                            shift = At.Shift.AFTER))
+    protected void tryInitBlockPos(
+            Generic3x3ContainerScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci) {
         this.world = MinecraftClient.getInstance().world;
-        this.pos = InvTasks.predictScreenFrom((b)->b == Blocks.DISPENSER || b == Blocks.DROPPER);
-        if(this.pos != null && this.world != null){
+        this.pos = InvTasks.predictScreenFrom((b) -> b == Blocks.DISPENSER || b == Blocks.DROPPER);
+        if (this.pos != null && this.world != null) {
             cacheBlockType = this.world.getBlockState(this.pos).getBlock();
         }
-
     }
 }

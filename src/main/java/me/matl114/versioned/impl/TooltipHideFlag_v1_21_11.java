@@ -1,22 +1,14 @@
 package me.matl114.versioned.impl;
 
+import static net.minecraft.component.DataComponentTypes.*;
+
+import java.util.Objects;
+import javax.annotation.Nullable;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VHideFlag;
 import net.minecraft.component.ComponentType;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.AttributeModifiersComponent;
-import net.minecraft.component.type.DyedColorComponent;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.component.type.TooltipDisplayComponent;
 import net.minecraft.item.ItemStack;
-
-import javax.annotation.Nullable;
-
-import java.util.Objects;
-
-import static me.matl114.utils.ItemStackUtils.componentPredicate;
-import static net.minecraft.component.DataComponentTypes.*;
-
 
 public enum TooltipHideFlag_v1_21_11 implements VHideFlag {
     HIDE_ALL("全部", null),
@@ -30,9 +22,11 @@ public enum TooltipHideFlag_v1_21_11 implements VHideFlag {
     HIDE_ARMOR_TRIM("盔甲纹饰", TRIM),
     HIDE_STORED_ENCHANTS("附魔书", STORED_ENCHANTMENTS);
     String name;
+
     @Nullable
     ComponentType type;
-    TooltipHideFlag_v1_21_11(String displayName, ComponentType<?>  type){
+
+    TooltipHideFlag_v1_21_11(String displayName, ComponentType<?> type) {
         this.name = displayName;
         this.type = type;
     }
@@ -41,9 +35,9 @@ public enum TooltipHideFlag_v1_21_11 implements VHideFlag {
     public boolean isHide(ItemStack stack) {
         var component = ItemStackUtils.getInPatch(stack, TOOLTIP_DISPLAY);
         if (component == null) return false;
-        if(this.type == null){
+        if (this.type == null) {
             return component.hideTooltip();
-        }else{
+        } else {
             return component.hiddenComponents().contains(this.type);
         }
     }
@@ -52,17 +46,16 @@ public enum TooltipHideFlag_v1_21_11 implements VHideFlag {
     public void setHideFlag(ItemStack stack, boolean hide) {
         var component = ItemStackUtils.getInPatch(stack, TOOLTIP_DISPLAY);
         if (component == null) component = TooltipDisplayComponent.DEFAULT;
-        if(this.type == null){
+        if (this.type == null) {
             component = new TooltipDisplayComponent(hide, component.hiddenComponents());
-        }else{
+        } else {
             component = component.with(this.type, hide);
         }
-        if(Objects.equals(component, TooltipDisplayComponent.DEFAULT)){
+        if (Objects.equals(component, TooltipDisplayComponent.DEFAULT)) {
             ItemStackUtils.setOrRemoveChange(stack, TOOLTIP_DISPLAY, null);
-        }else {
+        } else {
             ItemStackUtils.setOrRemoveChange(stack, TOOLTIP_DISPLAY, component);
         }
-
     }
 
     @Override

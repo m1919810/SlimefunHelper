@@ -14,17 +14,16 @@ public class MoveTimer extends BaseModule {
 
     public MoveTimer() {
         bindFlag(enable);
-
     }
 
-    public final FlagRef enable = toggle(MOVE_TIMER_ENABLE)
-        .build();
+    public final FlagRef enable = toggle(MOVE_TIMER_ENABLE).build();
 
-    public final KeyBindRef keyBind = toggleHotkey(MOVE_TIMER_ENABLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_Y))
-        .build();
+    public final KeyBindRef keyBind = toggleHotkey(
+                    MOVE_TIMER_ENABLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_Y))
+            .build();
 
     public final IntRef timer = builder(Configs.MOV_CONFIG, MOVE_TICK_TIMER, IntRef.TYPE)
-        .defaultValue(0)
-        .validator(Configs.INT_NONNEGATIVE)
-        .build();
+            .defaultValue(0)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 }
