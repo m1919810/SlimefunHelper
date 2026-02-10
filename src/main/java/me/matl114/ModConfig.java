@@ -1,80 +1,72 @@
 package me.matl114;
 
-import lombok.Getter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.nio.file.Files;
+import java.util.HashMap;
 import me.matl114.managers.Configs;
 import me.matl114.utils.Debug;
 import net.fabricmc.loader.api.FabricLoader;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 public class ModConfig {
 
-    public static File loadOrUseInternal(String configName){
-        final File configFile = FabricLoader.getInstance().getConfigDir().resolve(configName).toFile();
-        if(!configFile.exists()){
-            try{
-                if(!configFile.getParentFile().exists()) {
+    public static File loadOrUseInternal(String configName) {
+        final File configFile =
+                FabricLoader.getInstance().getConfigDir().resolve(configName).toFile();
+        if (!configFile.exists()) {
+            try {
+                if (!configFile.getParentFile().exists()) {
                     Files.createDirectories(configFile.toPath().getParent());
                 }
-                Files.copy(SlimefunHelper.getInstance().getClass().getResourceAsStream("/"+configName), configFile.toPath());
-            }catch (Throwable e){
+                Files.copy(
+                        SlimefunHelper.getInstance().getClass().getResourceAsStream("/" + configName),
+                        configFile.toPath());
+            } catch (Throwable e) {
                 Debug.info("AN INTERNAL ERROR WHILE LOADING DEFAULT CONFIG");
                 Debug.info(e);
                 return null;
             }
         }
-        //sync with internal
+        // sync with internal
         Yaml yaml = new Yaml();
-        HashMap<String,Object> config=new HashMap<>();
-        HashMap<String,Object> defaults=null;
-        try(FileReader readerConfig=new FileReader(configFile)){
+        HashMap<String, Object> config = new HashMap<>();
+        HashMap<String, Object> defaults = null;
+        try (FileReader readerConfig = new FileReader(configFile)) {
             config = yaml.load(readerConfig);
-            config=(config==null?new HashMap<>():config);
-            defaults =yaml.load(SlimefunHelper.getInstance().getClass().getResourceAsStream("/"+configName));
-            defaults=(defaults==null?new HashMap<>():defaults);
-            syncKeys(config,defaults);
-        }catch (Throwable e){
+            config = (config == null ? new HashMap<>() : config);
+            defaults = yaml.load(SlimefunHelper.getInstance().getClass().getResourceAsStream("/" + configName));
+            defaults = (defaults == null ? new HashMap<>() : defaults);
+            syncKeys(config, defaults);
+        } catch (Throwable e) {
             Debug.info("AN INTERNAL ERROR WHILE LOADING DEFAULT CONFIG");
             e.printStackTrace();
         }
-        try(FileWriter writer=new FileWriter(configFile)){
-            yaml.dump(config,writer);
-        }catch (Throwable e){
+        try (FileWriter writer = new FileWriter(configFile)) {
+            yaml.dump(config, writer);
+        } catch (Throwable e) {
             Debug.info("AN INTERNAL ERROR WHILE WRITING CONFIG");
             Debug.info(e);
         }
         return configFile;
     }
 
-    public static void syncKeys(HashMap config,HashMap defaults){
-        for(Object key:defaults.keySet()){
-            if(config.containsKey(key)){
+    public static void syncKeys(HashMap config, HashMap defaults) {
+        for (Object key : defaults.keySet()) {
+            if (config.containsKey(key)) {
                 Object value = config.get(key);
                 Object defaultValue = defaults.get(key);
-                if(value instanceof HashMap mp1 && defaultValue instanceof HashMap mp2){
-                    syncKeys(mp1,mp2);
+                if (value instanceof HashMap mp1 && defaultValue instanceof HashMap mp2) {
+                    syncKeys(mp1, mp2);
                 }
-            }else {
+            } else {
                 config.put(key, defaults.get(key));
             }
         }
     }
 
-
-
-
-    public static void reloadModConfig(){
+    public static void reloadModConfig() {
         Debug.info("Reloading Mod Config");
         Configs.loadConfigs();
     }

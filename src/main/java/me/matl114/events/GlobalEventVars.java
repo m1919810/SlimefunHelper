@@ -6,8 +6,8 @@ public class GlobalEventVars {
     public static CrashReport crashReport = null;
     public static boolean lastRenderNeedDisableGuiLight;
 
-    public static boolean fetchThisTimeGuiLightStatus(){
-        if(lastRenderNeedDisableGuiLight){
+    public static boolean fetchThisTimeGuiLightStatus() {
+        if (lastRenderNeedDisableGuiLight) {
             lastRenderNeedDisableGuiLight = false;
             return true;
         }

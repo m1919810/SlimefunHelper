@@ -18,34 +18,32 @@ import net.minecraft.screen.slot.Slot;
 
 public class PickItem extends BaseModule {
 
-    public PickItem() {
-
-    }
+    public PickItem() {}
 
     public static final String[] PICK_ITEM = {"hotkeys", "pick-item"};
 
     public final KeyBindRef pickItemHotkey = hotkey(PICK_ITEM)
-        .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.MOUSE_BUTTON_3))
-        .registerHotkey(HotKeyUtils.asHandler(this::onPickItem))
-        .build();
+            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.MOUSE_BUTTON_3))
+            .registerHotkey(HotKeyUtils.asHandler(this::onPickItem))
+            .build();
 
-    public boolean onPickItem(){
+    public boolean onPickItem() {
         PlayerEntity player = mc.player;
-        if(player == null)return false;
-        Screen nowScreen= InvTasks.getCurrentServerScreen(player);
-        if( !player.isCreative() && nowScreen instanceof HandledScreen<?> handled){
-            Point mouseCoord= ScreenUtils.getMouseCoord(mc);
-            Slot slot= HandledScreenAccess.of(handled).reallyGetSlotAt(mouseCoord.x, mouseCoord.y);
-            if(slot != null){
-                if(slot.inventory instanceof PlayerInventory){
-                    if(slot.getIndex() >= 36){
-                        Debug.chat("Invalid slot for player Inventory",slot.getIndex());
-                    }else {
+        if (player == null) return false;
+        Screen nowScreen = InvTasks.getCurrentServerScreen(player);
+        if (!player.isCreative() && nowScreen instanceof HandledScreen<?> handled) {
+            Point mouseCoord = ScreenUtils.getMouseCoord(mc);
+            Slot slot = HandledScreenAccess.of(handled).reallyGetSlotAt(mouseCoord.x, mouseCoord.y);
+            if (slot != null) {
+                if (slot.inventory instanceof PlayerInventory) {
+                    if (slot.getIndex() >= 36) {
+                        Debug.chat("Invalid slot for player Inventory", slot.getIndex());
+                    } else {
                         Debug.chat("run pickup");
                         mc.interactionManager.pickFromInventory(slot.getIndex());
                     }
                     return true;
-                }else{
+                } else {
                     Debug.chat("Invalid slot outside player Inventory");
                 }
             }

@@ -1,25 +1,25 @@
 package me.matl114.managers.config;
 
+import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import me.matl114.utils.config.AttrKeyValue;
 
-import javax.annotation.Nonnull;
-
 @AllArgsConstructor
-public class FlagRef extends Ref<Boolean>{
+public class FlagRef extends Ref<Boolean> {
     public static final Class<Boolean> TYPE = Boolean.class;
 
     boolean flag;
-    public FlagRef(Object newFlag){
-        this((boolean)newFlag);
+
+    public FlagRef(Object newFlag) {
+        this((boolean) newFlag);
     }
 
-    public static FlagRef fromString(String value){
-        if("true".equals(value)){
+    public static FlagRef fromString(String value) {
+        if ("true".equals(value)) {
             return new FlagRef(true);
-        }else if("false".equals(value)){
+        } else if ("false".equals(value)) {
             return new FlagRef(false);
-        }else return null;
+        } else return null;
     }
 
     @Nonnull
@@ -28,7 +28,7 @@ public class FlagRef extends Ref<Boolean>{
         return get();
     }
 
-    public boolean get(){
+    public boolean get() {
         return flag;
     }
 
@@ -39,7 +39,7 @@ public class FlagRef extends Ref<Boolean>{
 
     @Override
     public Object getAsPrimitive() {
-        return flag? "true": "false";
+        return flag ? "true" : "false";
     }
 
     @Override
@@ -49,10 +49,10 @@ public class FlagRef extends Ref<Boolean>{
 
     @Override
     public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if(otherRef instanceof FlagRef flagRef){
+        if (otherRef instanceof FlagRef flagRef) {
             flagRef.set(this.flag);
             return true;
-        }else {
+        } else {
             return false;
         }
     }
@@ -62,8 +62,8 @@ public class FlagRef extends Ref<Boolean>{
         return AttrKeyValue.bool(key, this.flag);
     }
 
-    public void set(boolean val){
-        if(validateUpdateValue(val)){
+    public void set(boolean val) {
+        if (validateUpdateValue(val)) {
             this.flag = val;
             callUpdate();
         }

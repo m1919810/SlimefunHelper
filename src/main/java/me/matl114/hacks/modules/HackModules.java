@@ -1,8 +1,6 @@
 package me.matl114.hacks.modules;
 
-import lombok.Getter;
 import me.matl114.hacks.api.ModuleGroup;
-import me.matl114.hacks.api.ModuleManager;
 
 public class HackModules {
 
@@ -16,12 +14,9 @@ public class HackModules {
         return main.moduleGroups.get(name);
     }
 
-
     public static void reloadModuleGroups() {
         main.reloadModules();
     }
 
-    public static void init(){
-
-    }
+    public static void init() {}
 }

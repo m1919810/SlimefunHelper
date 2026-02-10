@@ -1,10 +1,11 @@
 package me.matl114.utils.itemdb;
 
 import com.google.gson.*;
-import com.mojang.brigadier.StringReader;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.JsonOps;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import me.matl114.utils.CustomItemStackBuilder;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
@@ -14,13 +15,8 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.nbt.visitor.StringNbtWriter;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
-
-//todo: check and use
+// todo: check and use
 public interface ItemStackData {
     public JsonElement getAsJson();
 
@@ -33,74 +29,78 @@ public interface ItemStackData {
     public ItemStack getIcon();
 
     static ItemStack FAILURE = CustomItemStackBuilder.builder()
-        .type(Items.BARRIER)
-        .amount(1)
-        .name("&c物品解析失败")
-        .lore()
-        .append("")
-        .append("&7详细信息请检查日志")
-        .endLore()
-        .build();
+            .type(Items.BARRIER)
+            .amount(1)
+            .name("&c物品解析失败")
+            .lore()
+            .append("")
+            .append("&7详细信息请检查日志")
+            .endLore()
+            .build();
 
     static ItemStack MISSING = CustomItemStackBuilder.builder()
-        .type(Items.STRUCTURE_VOID)
-        .amount(1)
-        .name("&c物品索引缺失")
-        .lore()
-        .append("")
-        .append("&7请修复item-database.json")
-        .endLore()
-        .build();
+            .type(Items.STRUCTURE_VOID)
+            .amount(1)
+            .name("&c物品索引缺失")
+            .lore()
+            .append("")
+            .append("&7请修复item-database.json")
+            .endLore()
+            .build();
 
-    public static ItemStack deserialize(JsonElement json){
-        if(json.isJsonObject()){
+    public static ItemStack deserialize(JsonElement json) {
+        if (json.isJsonObject()) {
             JsonObject jsonMap = json.getAsJsonObject();
-            try{
-                ItemStack stack = ItemStack.CODEC.decode(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), jsonMap).getOrThrow().getFirst();
-                return stack.isEmpty() ? ItemStack.EMPTY: stack;
-            }catch (Throwable e){
+            try {
+                ItemStack stack = ItemStack.CODEC
+                        .decode(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), jsonMap)
+                        .getOrThrow()
+                        .getFirst();
+                return stack.isEmpty() ? ItemStack.EMPTY : stack;
+            } catch (Throwable e) {
                 throw new JsonParseException(e);
             }
-        }else{
+        } else {
             String jsonString = json.getAsString();
-            try{
+            try {
                 NbtCompound nbtElement = (NbtCompound) VNbt.getInstance().readNbt(jsonString);
-                ItemStack stack = ItemStack.CODEC.decode(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), nbtElement).getOrThrow().getFirst();
-                return stack.isEmpty()? ItemStack.EMPTY : stack;
-            }catch (Throwable e){
+                ItemStack stack = ItemStack.CODEC
+                        .decode(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), nbtElement)
+                        .getOrThrow()
+                        .getFirst();
+                return stack.isEmpty() ? ItemStack.EMPTY : stack;
+            } catch (Throwable e) {
                 throw new NbtException(e.getMessage());
             }
         }
     }
 
-    public static JsonElement serialize(ItemStack stack){
-        if(stack.isEmpty()){
+    public static JsonElement serialize(ItemStack stack) {
+        if (stack.isEmpty()) {
             return JsonNull.INSTANCE;
-        }else{
-            NbtCompound nbt = (NbtCompound) ItemStack.CODEC.encodeStart(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), stack).getOrThrow();
+        } else {
+            NbtCompound nbt = (NbtCompound) ItemStack.CODEC
+                    .encodeStart(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), stack)
+                    .getOrThrow();
             return new JsonPrimitive(VNbt.getInstance().writeNbt(nbt));
         }
     }
 
-
-    public static ItemStackData wrapRaw(ItemStack stack){
-        if(stack.isEmpty()){
+    public static ItemStackData wrapRaw(ItemStack stack) {
+        if (stack.isEmpty()) {
             return EMPTY;
-        }else{
+        } else {
             return new Wrapper(stack);
         }
     }
 
-    public static ItemStackData wrapCopy(ItemStack stack){
-        if(stack.isEmpty()){
+    public static ItemStackData wrapCopy(ItemStack stack) {
+        if (stack.isEmpty()) {
             return EMPTY;
-        }else {
+        } else {
             return new Wrapper(stack.copyWithCount(1));
         }
     }
-
-
-
 
     public static final ItemStackData EMPTY = new ItemStackData() {
 
@@ -110,9 +110,7 @@ public interface ItemStackData {
         }
 
         @Override
-        public void resolveItemStack() {
-
-        }
+        public void resolveItemStack() {}
 
         @Override
         public boolean isValid() {
@@ -131,22 +129,28 @@ public interface ItemStackData {
 
         @Override
         public boolean equals(Object obj) {
-            return obj == this || (obj instanceof ItemStackData data && data.isValid() && data.getItemStack().isEmpty());
+            return obj == this
+                    || (obj instanceof ItemStackData data
+                            && data.isValid()
+                            && data.getItemStack().isEmpty());
         }
+
         private static final int EMPTY_HASHCODE = ItemStack.hashCode(ItemStack.EMPTY);
+
         @Override
         public int hashCode() {
             return EMPTY_HASHCODE;
         }
     };
 
-    public static final class DataSource implements ItemStackData{
+    public static final class DataSource implements ItemStackData {
         JsonElement jsonRaw;
         ItemStack stack;
         boolean resolve = false;
         boolean valid = false;
-        Integer cachedHash ;
-        public DataSource(@Nonnull JsonElement jsonRaw){
+        Integer cachedHash;
+
+        public DataSource(@Nonnull JsonElement jsonRaw) {
             this.jsonRaw = jsonRaw;
         }
 
@@ -157,12 +161,12 @@ public interface ItemStackData {
 
         @Override
         public void resolveItemStack() {
-            if(!resolve){
+            if (!resolve) {
                 resolve = true;
-                try{
+                try {
                     stack = ItemStackData.deserialize(this.jsonRaw).copyWithCount(1);
                     valid = true;
-                }catch (Throwable e){
+                } catch (Throwable e) {
                     Debug.info("Error while resolving ItemStackData:", jsonRaw);
                     Debug.info(e);
                     valid = false;
@@ -179,20 +183,20 @@ public interface ItemStackData {
         @Override
         public ItemStack getItemStack() {
             resolveItemStack();
-            if(valid){
+            if (valid) {
                 return stack;
-            }else {
+            } else {
                 throw new UnsupportedOperationException("Invalid data");
             }
         }
 
         @Override
         public int hashCode() {
-            if(cachedHash == null){
+            if (cachedHash == null) {
                 resolveItemStack();
-                if(valid){
+                if (valid) {
                     cachedHash = ItemStack.hashCode(stack);
-                }else{
+                } else {
                     cachedHash = jsonRaw.hashCode();
                 }
             }
@@ -202,47 +206,48 @@ public interface ItemStackData {
         @Override
         public ItemStack getIcon() {
             resolveItemStack();
-            if(valid){
+            if (valid) {
                 return stack;
-            }else {
+            } else {
                 return FAILURE;
             }
         }
 
         @Override
         public boolean equals(Object obj) {
-            if(obj == this){
+            if (obj == this) {
                 return true;
-            }else if(obj instanceof ItemStackData data){
+            } else if (obj instanceof ItemStackData data) {
                 boolean v1 = valid;
                 boolean v2 = data.isValid();
-                if(v1 && v2){
+                if (v1 && v2) {
                     return ItemStack.areItemsAndComponentsEqual(stack, data.getItemStack());
-                }else if(!v1 && !v2){
+                } else if (!v1 && !v2) {
                     return Objects.equals(jsonRaw, data.getAsJson());
-                }else{
+                } else {
                     return false;
                 }
-            }else{
+            } else {
                 return false;
             }
         }
     }
 
-    public static final class Wrapper implements ItemStackData{
+    public static final class Wrapper implements ItemStackData {
         ItemStack itemStack;
         Integer cachedHash;
         JsonElement cachedJson;
-        public Wrapper(ItemStack itemStack){
+
+        public Wrapper(ItemStack itemStack) {
             this.itemStack = itemStack;
         }
 
         @Override
         public JsonElement getAsJson() {
-            if(cachedJson == null){
-                try{
+            if (cachedJson == null) {
+                try {
                     cachedJson = serialize(this.itemStack);
-                }catch (Throwable e){
+                } catch (Throwable e) {
                     cachedJson = JsonNull.INSTANCE;
                 }
             }
@@ -251,7 +256,7 @@ public interface ItemStackData {
 
         @Override
         public void resolveItemStack() {
-            //no
+            // no
         }
 
         @Override
@@ -271,7 +276,7 @@ public interface ItemStackData {
 
         @Override
         public int hashCode() {
-            if(cachedHash == null){
+            if (cachedHash == null) {
                 cachedHash = ItemStack.hashCode(itemStack);
             }
             return cachedHash;
@@ -279,22 +284,21 @@ public interface ItemStackData {
 
         @Override
         public boolean equals(Object obj) {
-            if(obj == this){
+            if (obj == this) {
                 return true;
-            }else if(obj instanceof ItemStackData data){
-                if(data.isValid()){
+            } else if (obj instanceof ItemStackData data) {
+                if (data.isValid()) {
                     return ItemStack.areItemsAndComponentsEqual(itemStack, data.getItemStack());
-                }else {
+                } else {
                     return false;
                 }
-            }else{
+            } else {
                 return false;
             }
         }
-
     }
 
-    public static final record Missing(String customId) implements ItemStackData{
+    public static final record Missing(String customId) implements ItemStackData {
 
         @Override
         public JsonElement getAsJson() {
@@ -302,9 +306,7 @@ public interface ItemStackData {
         }
 
         @Override
-        public void resolveItemStack() {
-
-        }
+        public void resolveItemStack() {}
 
         @Override
         public boolean isValid() {
@@ -321,31 +323,29 @@ public interface ItemStackData {
             return MISSING;
         }
 
-        public boolean equals(Object obj){
-            if(obj == this){
+        public boolean equals(Object obj) {
+            if (obj == this) {
                 return true;
-            }else if(obj instanceof Missing ms){
+            } else if (obj instanceof Missing ms) {
                 return ms.customId.equals(customId);
-            }else if(obj instanceof ItemStackData md){
+            } else if (obj instanceof ItemStackData md) {
                 return false;
-            }return false;
+            }
+            return false;
         }
     }
 
     public Codec<ItemStackData> CODEC = Codec.PASSTHROUGH.xmap(
-        (dynamic)->{
-            JsonElement jsonElement = dynamic.convert(JsonOps.INSTANCE).getValue();
-            if(jsonElement.isJsonNull()){
-                return EMPTY;
-            }else{
-                return new DataSource(jsonElement);
-            }
-        },
-        (data)->{
-            JsonElement jsonElement = data.getAsJson();
-            return new Dynamic<>(JsonOps.INSTANCE, jsonElement);
-        }
-    );
-
-
+            (dynamic) -> {
+                JsonElement jsonElement = dynamic.convert(JsonOps.INSTANCE).getValue();
+                if (jsonElement.isJsonNull()) {
+                    return EMPTY;
+                } else {
+                    return new DataSource(jsonElement);
+                }
+            },
+            (data) -> {
+                JsonElement jsonElement = data.getAsJson();
+                return new Dynamic<>(JsonOps.INSTANCE, jsonElement);
+            });
 }

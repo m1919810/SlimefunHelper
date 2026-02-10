@@ -1,19 +1,19 @@
 package me.matl114.utils.collections;
 
+import java.util.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
-
-public class LazyList<S extends List<V>,V> implements List<V> {
+public class LazyList<S extends List<V>, V> implements List<V> {
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class State<S> implements Cloneable{
+    public static class State<S> implements Cloneable {
         public S value = null;
         public boolean state = false;
         private static final State INSTANCE = new State();
-        public static <T> State<T> newInstance(){
+
+        public static <T> State<T> newInstance() {
             return INSTANCE.clone();
         }
 
@@ -28,12 +28,12 @@ public class LazyList<S extends List<V>,V> implements List<V> {
         }
     }
 
-    public static class ListIndexIterator<T> implements Iterator<T>{
+    public static class ListIndexIterator<T> implements Iterator<T> {
         List<T> delegate;
         int index;
 
-        public ListIndexIterator(List<T> delegate){
-            this.delegate =delegate;
+        public ListIndexIterator(List<T> delegate) {
+            this.delegate = delegate;
             this.index = 0;
         }
 
@@ -49,21 +49,20 @@ public class LazyList<S extends List<V>,V> implements List<V> {
 
         @Override
         public void remove() {
-            this.delegate.remove(--index );
-
+            this.delegate.remove(--index);
         }
-
-
-
     }
+
     public static class BidirListIndexIterator<T> extends ListIndexIterator<T> implements ListIterator<T> {
         public BidirListIndexIterator(List<T> delegate) {
             super(delegate);
         }
+
         public BidirListIndexIterator(List<T> delegate, int index) {
             super(delegate);
             this.index = index;
         }
+
         int lastVisit = -1;
 
         @Override
@@ -77,13 +76,12 @@ public class LazyList<S extends List<V>,V> implements List<V> {
             return this.delegate.get(this.lastVisit);
         }
 
-
         @Override
         public int nextIndex() {
             return index;
         }
 
-        public T next(){
+        public T next() {
             this.lastVisit = index;
             return super.next();
         }
@@ -92,7 +90,6 @@ public class LazyList<S extends List<V>,V> implements List<V> {
         public int previousIndex() {
             return index - 1;
         }
-
 
         @Override
         public void add(T t) {
@@ -108,11 +105,12 @@ public class LazyList<S extends List<V>,V> implements List<V> {
             }
             delegate.remove(lastVisit);
             // 调整索引（如果删除的是通过 next() 访问的元素）
-            if(lastVisit < index){
+            if (lastVisit < index) {
                 --index;
             }
             lastVisit = -1;
         }
+
         @Override
         public void set(T t) {
             if (lastVisit == -1) {
@@ -121,15 +119,18 @@ public class LazyList<S extends List<V>,V> implements List<V> {
             delegate.set(lastVisit, t);
         }
     }
+
     public static class SubListWindow<T> extends AbstractList<T> {
         int fromHead;
         int toEnd;
         List<T> delegate;
-        public SubListWindow(List<T> value, int from, int to){
+
+        public SubListWindow(List<T> value, int from, int to) {
             this.delegate = value;
             this.fromHead = from;
             this.toEnd = this.delegate.size() - to;
         }
+
         @Override
         public T get(int index) {
             return this.delegate.get(index + fromHead);
@@ -140,28 +141,29 @@ public class LazyList<S extends List<V>,V> implements List<V> {
             return this.delegate.size() - toEnd - fromHead;
         }
 
-        public void add(int index, T element){
+        public void add(int index, T element) {
             this.delegate.add(index + fromHead, element);
         }
-        public T remove(int index){
+
+        public T remove(int index) {
             return this.delegate.remove(index + fromHead);
         }
-        public T set(int index, T element){
+
+        public T set(int index, T element) {
             return this.delegate.set(index + fromHead, element);
         }
     }
 
-
-
     protected volatile State<S> delegate;
-    public LazyList(S value){
-        this.delegate =State.newInstance();
+
+    public LazyList(S value) {
+        this.delegate = State.newInstance();
         this.delegate.value = value;
         this.delegate.state = true;
-
     }
-    //make
-//    protected static final AtomicReferenceFieldUpdater<COWImmutableCollectionViewImpl, State> UPDATER = AtomicReferenceFieldUpdater.newUpdater(COWImmutableCollectionViewImpl.class, State.class, "delegate");
+    // make
+    //    protected static final AtomicReferenceFieldUpdater<COWImmutableCollectionViewImpl, State> UPDATER =
+    // AtomicReferenceFieldUpdater.newUpdater(COWImmutableCollectionViewImpl.class, State.class, "delegate");
 
     @Override
     public boolean addAll(int index, @NotNull Collection<? extends V> c) {
@@ -202,8 +204,6 @@ public class LazyList<S extends List<V>,V> implements List<V> {
         return this.delegate.value.lastIndexOf(o);
     }
 
-
-
     @NotNull
     @Override
     public ListIterator<V> listIterator() {
@@ -222,15 +222,14 @@ public class LazyList<S extends List<V>,V> implements List<V> {
         return new SubListWindow<>(this, fromIndex, toIndex);
     }
 
-    protected void preWrite(){
-        if(!this.delegate.state){
+    protected void preWrite() {
+        if (!this.delegate.state) {
             return;
         }
         var ls = this.delegate.value;
         this.delegate = State.newInstance();
         this.delegate.value = (S) new ArrayList<>(ls);
     }
-
 
     public S getHandle() {
         return this.delegate.value;
@@ -251,13 +250,11 @@ public class LazyList<S extends List<V>,V> implements List<V> {
         return this.delegate.value.contains(o);
     }
 
-
     @NotNull
     @Override
     public Object[] toArray() {
         return this.delegate.value.toArray();
     }
-
 
     @Override
     public <T> T[] toArray(T[] a) {
@@ -277,7 +274,7 @@ public class LazyList<S extends List<V>,V> implements List<V> {
     }
 
     @Override
-    public boolean containsAll( Collection<?> c) {
+    public boolean containsAll(Collection<?> c) {
         return this.delegate.value.containsAll(c);
     }
 
@@ -288,20 +285,20 @@ public class LazyList<S extends List<V>,V> implements List<V> {
     }
 
     @Override
-    public boolean retainAll( Collection<?> c) {
+    public boolean retainAll(Collection<?> c) {
         preWrite();
         return this.delegate.value.retainAll(c);
     }
 
     @Override
-    public boolean removeAll( Collection<?> c) {
+    public boolean removeAll(Collection<?> c) {
         preWrite();
         return this.delegate.value.removeAll(c);
     }
 
     @Override
     public void clear() {
-        if(!this.delegate.value.isEmpty()){
+        if (!this.delegate.value.isEmpty()) {
             preWrite();
             this.delegate.value.clear();
         }
@@ -322,5 +319,4 @@ public class LazyList<S extends List<V>,V> implements List<V> {
     public Iterator<V> iterator() {
         return this.delegate.value.iterator();
     }
-
 }

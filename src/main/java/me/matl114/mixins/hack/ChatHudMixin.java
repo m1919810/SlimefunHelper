@@ -1,5 +1,7 @@
 package me.matl114.mixins.hack;
 
+import java.util.ArrayList;
+import java.util.List;
 import me.matl114.accessors.access.ChatHudAccess;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.RenderTasks;
@@ -17,41 +19,42 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Environment(EnvType.CLIENT)
 @Mixin(ChatHud.class)
 public abstract class ChatHudMixin implements ChatHudAccess {
     @Shadow
     @Final
     private List<ChatHudLine.Visible> visibleMessages;
+
     @Unique
     @Override
-    public ArrayList<ChatHudLine.Visible> getVisibleLines(){
+    public ArrayList<ChatHudLine.Visible> getVisibleLines() {
         return (ArrayList<ChatHudLine.Visible>) this.visibleMessages;
     }
 
     // mixin for chatHistoryLength override
-    @Inject(method = "addVisibleMessage", at = @At(value = "INVOKE", target = "Ljava/util/List;remove(I)Ljava/lang/Object;", shift = At.Shift.BEFORE), cancellable = true)
-    private void resizeChatHistoryMaxLength(ChatHudLine message, CallbackInfo ci){
-        if(ChatTasks.getChatExtra().overrideChatHistoryLength.get()){
+    @Inject(
+            method = "addVisibleMessage",
+            at = @At(value = "INVOKE", target = "Ljava/util/List;remove(I)Ljava/lang/Object;", shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void resizeChatHistoryMaxLength(ChatHudLine message, CallbackInfo ci) {
+        if (ChatTasks.getChatExtra().overrideChatHistoryLength.get()) {
             int chat = ChatTasks.getChatExtra().chatHistoryLength.get();
-            if (chat > 0){
-                //提前结束
-                if(this.visibleMessages.size() <= chat){
+            if (chat > 0) {
+                // 提前结束
+                if (this.visibleMessages.size() <= chat) {
                     ci.cancel();
                 }
             }
         }
-
     }
 
-    //mixin for chatHud usage
+    // mixin for chatHud usage
 
     @Inject(method = "isChatFocused", at = @At("HEAD"), cancellable = true)
-    private void onSleepingChatScreenUseChatHud(CallbackInfoReturnable<Boolean> cir){
-        if(RenderTasks.getSleepMode().isScreenSleeping() && RenderTasks.getSleepMode().getCurrentRenderingSleeping() instanceof ChatScreen){
+    private void onSleepingChatScreenUseChatHud(CallbackInfoReturnable<Boolean> cir) {
+        if (RenderTasks.getSleepMode().isScreenSleeping()
+                && RenderTasks.getSleepMode().getCurrentRenderingSleeping() instanceof ChatScreen) {
             cir.setReturnValue(true);
         }
     }

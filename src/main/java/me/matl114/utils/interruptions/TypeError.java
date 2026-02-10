@@ -1,4 +1,5 @@
 package me.matl114.utils.interruptions;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.utils.commands.ArgumentReader;
@@ -13,10 +14,11 @@ public class TypeError extends ArgumentException {
     BaseArgumentType typeName;
     String input;
 
-    public TypeError(ArgumentReader reader, SimpleCommandArgs.Argument arg, BaseArgumentType typeName, String input){
+    public TypeError(ArgumentReader reader, SimpleCommandArgs.Argument arg, BaseArgumentType typeName, String input) {
         this(reader, arg == null ? null : arg.getArgsName(), typeName, input);
     }
-    public TypeError( String argument, BaseArgumentType typeName, String input){
+
+    public TypeError(String argument, BaseArgumentType typeName, String input) {
         this(null, argument, typeName, input);
     }
 

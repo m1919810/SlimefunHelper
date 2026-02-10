@@ -1,12 +1,16 @@
 package me.matl114.mixins.access;
 
 import it.unimi.dsi.fastutil.doubles.DoubleList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import me.matl114.accessors.moonrise.MoonriseVoxelShapeAccess;
 import me.matl114.utils.CollisionUtil;
 import me.matl114.utils.Debug;
+import me.matl114.utils.collections.FlatBitsetUtil;
 import me.matl114.utils.world.CachedShapeData;
 import me.matl114.utils.world.CachedToAABBs;
-import me.matl114.utils.collections.FlatBitsetUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.util.function.BooleanBiFunction;
@@ -15,55 +19,65 @@ import net.minecraft.util.math.*;
 import net.minecraft.util.shape.*;
 import org.spongepowered.asm.mixin.*;
 
-import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
 @Environment(EnvType.CLIENT)
 @Mixin(VoxelShape.class)
 public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAccess {
     @Final
     @Shadow
     protected VoxelSet voxels;
+
     @Unique
     private double offsetX;
+
     @Unique
     private double offsetY;
+
     @Unique
     private double offsetZ;
+
     @Unique
     private Box singleAABBRepresentation;
+
     @Unique
     private double[] rootCoordinatesX;
+
     @Unique
     private double[] rootCoordinatesY;
+
     @Unique
     private double[] rootCoordinatesZ;
+
     private CachedShapeData cachedShapeData;
+
     @Unique
     private boolean isEmpty;
+
     @Unique
     private CachedToAABBs cachedToAABBs;
+
     @Unique
-    public   CachedToAABBs moonrise$cachedToAABBs(){
+    public CachedToAABBs moonrise$cachedToAABBs() {
         return cachedToAABBs;
     }
+
     @Unique
-    public void moonriss$setCachedToAABBs(CachedToAABBs aabBs){
+    public void moonriss$setCachedToAABBs(CachedToAABBs aabBs) {
         this.cachedToAABBs = aabBs;
     }
+
     @Unique
     private Box cachedBounds;
+
     @Unique
     private Boolean isFullBlock;
+
     @Unique
     private Boolean occludesFullBlock;
 
     // must be power of two
     @Unique
     private static final int MERGED_CACHE_SIZE = 16;
-//    private ca.spottedleaf.moonrise.patches.collisions.shape.MergedORCache[] mergedORCache;
+    //    private ca.spottedleaf.moonrise.patches.collisions.shape.MergedORCache[] mergedORCache;
 
     @Override
     @Unique
@@ -107,7 +121,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         return this.rootCoordinatesZ;
     }
 
-    public CachedShapeData moonrise$getCachedVoxelData(){
+    public CachedShapeData moonrise$getCachedVoxelData() {
         return this.cachedShapeData;
     }
 
@@ -115,7 +129,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
     public abstract DoubleList getPointPositions(Direction.Axis axis);
 
     private static double[] extractRawArray(final DoubleList list) {
-        if(list == null){
+        if (list == null) {
             Debug.stackTrace();
             return new double[0];
         }
@@ -131,8 +145,8 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
             return list.toDoubleArray();
         }
     }
-    private static final CachedShapeData moonrise$getOrCreateCachedShapeData(VoxelSet shape) {
 
+    private static final CachedShapeData moonrise$getOrCreateCachedShapeData(VoxelSet shape) {
 
         final VoxelSet discreteVoxelShape = shape;
 
@@ -172,7 +186,8 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
             }
         }
 
-        final boolean hasSingleAABB = sizeX == 1 && sizeY == 1 && sizeZ == 1 && !isEmpty && discreteVoxelShape.contains(0, 0, 0);
+        final boolean hasSingleAABB =
+                sizeX == 1 && sizeY == 1 && sizeZ == 1 && !isEmpty && discreteVoxelShape.contains(0, 0, 0);
 
         final int minFullX = discreteVoxelShape.getMin(Direction.Axis.X);
         final int minFullY = discreteVoxelShape.getMin(Direction.Axis.Y);
@@ -183,24 +198,30 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         final int maxFullZ = discreteVoxelShape.getMax(Direction.Axis.Z);
 
         return new CachedShapeData(
-            sizeX, sizeY, sizeZ, voxelSet,
-            minFullX, minFullY, minFullZ,
-            maxFullX, maxFullY, maxFullZ,
-            isEmpty, hasSingleAABB
-        );
+                sizeX,
+                sizeY,
+                sizeZ,
+                voxelSet,
+                minFullX,
+                minFullY,
+                minFullZ,
+                maxFullX,
+                maxFullY,
+                maxFullZ,
+                isEmpty,
+                hasSingleAABB);
     }
 
     public final void moonrise$initCache() {
         this.cachedShapeData = moonrise$getOrCreateCachedShapeData(this.voxels);
         this.isEmpty = this.cachedShapeData.isEmpty();
 
-
         final DoubleList xList = getPointPositions(Direction.Axis.X);
         final DoubleList yList = getPointPositions(Direction.Axis.Y);
         final DoubleList zList = getPointPositions(Direction.Axis.Z);
 
         if (xList instanceof OffsetDoubleList offsetDoubleList) {
-            if(offsetDoubleList.oldList == null){
+            if (offsetDoubleList.oldList == null) {
                 Debug.info("check", offsetDoubleList, offsetDoubleList.getClass(), offsetDoubleList.offset);
             }
             this.offsetX = offsetDoubleList.offset;
@@ -210,7 +231,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         }
 
         if (yList instanceof OffsetDoubleList offsetDoubleList) {
-            if(offsetDoubleList.oldList == null){
+            if (offsetDoubleList.oldList == null) {
                 Debug.info("check", offsetDoubleList, offsetDoubleList.getClass(), offsetDoubleList.offset);
             }
             this.offsetY = offsetDoubleList.offset;
@@ -220,7 +241,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         }
 
         if (zList instanceof OffsetDoubleList offsetDoubleList) {
-            if(offsetDoubleList.oldList == null){
+            if (offsetDoubleList.oldList == null) {
                 Debug.info("check", offsetDoubleList, offsetDoubleList.getClass(), offsetDoubleList.offset);
             }
             this.offsetZ = offsetDoubleList.offset;
@@ -231,9 +252,12 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
 
         if (this.cachedShapeData.hasSingleAABB()) {
             this.singleAABBRepresentation = new Box(
-                this.rootCoordinatesX[0] + this.offsetX, this.rootCoordinatesY[0] + this.offsetY, this.rootCoordinatesZ[0] + this.offsetZ,
-                this.rootCoordinatesX[1] + this.offsetX, this.rootCoordinatesY[1] + this.offsetY, this.rootCoordinatesZ[1] + this.offsetZ
-            );
+                    this.rootCoordinatesX[0] + this.offsetX,
+                    this.rootCoordinatesY[0] + this.offsetY,
+                    this.rootCoordinatesZ[0] + this.offsetZ,
+                    this.rootCoordinatesX[1] + this.offsetX,
+                    this.rootCoordinatesY[1] + this.offsetY,
+                    this.rootCoordinatesZ[1] + this.offsetZ);
             this.cachedBounds = this.singleAABBRepresentation;
         }
     }
@@ -242,7 +266,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         Boolean ret;
         if (this.isEmpty) {
             ret = Boolean.FALSE;
-        } else if ((VoxelShape)(Object)this == VoxelShapes.fullCube()) {
+        } else if ((VoxelShape) (Object) this == VoxelShapes.fullCube()) {
             ret = Boolean.TRUE;
         } else {
             final Box singleAABB = this.singleAABBRepresentation;
@@ -256,13 +280,15 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
                 final int sMaxY = shapeData.maxFullY();
                 final int sMaxZ = shapeData.maxFullZ();
 
-                if (Math.abs(this.rootCoordinatesX[sMinX] + this.offsetX) <= CollisionUtil.COLLISION_EPSILON &&
-                    Math.abs(this.rootCoordinatesY[sMinY] + this.offsetY) <= CollisionUtil.COLLISION_EPSILON &&
-                    Math.abs(this.rootCoordinatesZ[sMinZ] + this.offsetZ) <= CollisionUtil.COLLISION_EPSILON &&
-
-                    Math.abs(1.0 - (this.rootCoordinatesX[sMaxX] + this.offsetX)) <= CollisionUtil.COLLISION_EPSILON &&
-                    Math.abs(1.0 - (this.rootCoordinatesY[sMaxY] + this.offsetY)) <= CollisionUtil.COLLISION_EPSILON &&
-                    Math.abs(1.0 - (this.rootCoordinatesZ[sMaxZ] + this.offsetZ)) <= CollisionUtil.COLLISION_EPSILON) {
+                if (Math.abs(this.rootCoordinatesX[sMinX] + this.offsetX) <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(this.rootCoordinatesY[sMinY] + this.offsetY) <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(this.rootCoordinatesZ[sMinZ] + this.offsetZ) <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(1.0 - (this.rootCoordinatesX[sMaxX] + this.offsetX))
+                                <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(1.0 - (this.rootCoordinatesY[sMaxY] + this.offsetY))
+                                <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(1.0 - (this.rootCoordinatesZ[sMaxZ] + this.offsetZ))
+                                <= CollisionUtil.COLLISION_EPSILON) {
 
                     // index = z + y*sizeZ + x*(sizeZ*sizeY)
 
@@ -276,7 +302,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
                     check_full:
                     for (int x = sMinX; x < sMaxX; ++x) {
                         for (int y = sMinY; y < sMaxY; ++y) {
-                            final int baseIndex = y*sizeZ + x*(sizeZ*sizeY);
+                            final int baseIndex = y * sizeZ + x * (sizeZ * sizeY);
                             if (!FlatBitsetUtil.isRangeSet(bitset, baseIndex + sMinZ, baseIndex + sMaxZ)) {
                                 ret = Boolean.FALSE;
                                 break check_full;
@@ -287,18 +313,14 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
                     ret = Boolean.FALSE;
                 }
             } else {
-                ret = Boolean.valueOf(
-                    Math.abs(singleAABB.minX) <= CollisionUtil.COLLISION_EPSILON &&
-                        Math.abs(singleAABB.minY) <= CollisionUtil.COLLISION_EPSILON &&
-                        Math.abs(singleAABB.minZ) <= CollisionUtil.COLLISION_EPSILON &&
-
-                        Math.abs(1.0 - singleAABB.maxX) <= CollisionUtil.COLLISION_EPSILON &&
-                        Math.abs(1.0 - singleAABB.maxY) <= CollisionUtil.COLLISION_EPSILON &&
-                        Math.abs(1.0 - singleAABB.maxZ) <= CollisionUtil.COLLISION_EPSILON
-                );
+                ret = Boolean.valueOf(Math.abs(singleAABB.minX) <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(singleAABB.minY) <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(singleAABB.minZ) <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(1.0 - singleAABB.maxX) <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(1.0 - singleAABB.maxY) <= CollisionUtil.COLLISION_EPSILON
+                        && Math.abs(1.0 - singleAABB.maxZ) <= CollisionUtil.COLLISION_EPSILON);
             }
         }
-
 
         this.isFullBlock = ret;
 
@@ -329,19 +351,22 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
             final double offY = this.offsetY;
             final double offZ = this.offsetZ;
 
-            this.voxels.forEachBox((final int minX, final int minY, final int minZ,
-                                    final int maxX, final int maxY, final int maxZ) -> {
-                ret.add(new Box(
-                    coordsX[minX] + offX,
-                    coordsY[minY] + offY,
-                    coordsZ[minZ] + offZ,
-
-
-                    coordsX[maxX] + offX,
-                    coordsY[maxY] + offY,
-                    coordsZ[maxZ] + offZ
-                ));
-            }, true);
+            this.voxels.forEachBox(
+                    (final int minX,
+                            final int minY,
+                            final int minZ,
+                            final int maxX,
+                            final int maxY,
+                            final int maxZ) -> {
+                        ret.add(new Box(
+                                coordsX[minX] + offX,
+                                coordsY[minY] + offY,
+                                coordsZ[minZ] + offZ,
+                                coordsX[maxX] + offX,
+                                coordsY[maxY] + offY,
+                                coordsZ[maxZ] + offZ));
+                    },
+                    true);
         }
 
         // cache result
@@ -349,116 +374,116 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
 
         return ret;
     }
+
     @Nullable
     private static Direction getDirection( // Paper - optimise collisions - public
-                                          Box box, Vec3d intersectingVector, double[] traceDistanceResult, @Nullable Direction approachDirection, double deltaX, double deltaY, double deltaZ
-    ) {
+            Box box,
+            Vec3d intersectingVector,
+            double[] traceDistanceResult,
+            @Nullable Direction approachDirection,
+            double deltaX,
+            double deltaY,
+            double deltaZ) {
         if (deltaX > 1.0E-7) {
             approachDirection = clipPoint(
-                traceDistanceResult,
-                approachDirection,
-                deltaX,
-                deltaY,
-                deltaZ,
-                box.minX,
-                box.minY,
-                box.maxY,
-                box.minZ,
-                box.maxZ,
-                Direction.WEST,
-                intersectingVector.x,
-                intersectingVector.y,
-                intersectingVector.z
-            );
+                    traceDistanceResult,
+                    approachDirection,
+                    deltaX,
+                    deltaY,
+                    deltaZ,
+                    box.minX,
+                    box.minY,
+                    box.maxY,
+                    box.minZ,
+                    box.maxZ,
+                    Direction.WEST,
+                    intersectingVector.x,
+                    intersectingVector.y,
+                    intersectingVector.z);
         } else if (deltaX < -1.0E-7) {
             approachDirection = clipPoint(
-                traceDistanceResult,
-                approachDirection,
-                deltaX,
-                deltaY,
-                deltaZ,
-                box.maxX,
-                box.minY,
-                box.maxY,
-                box.minZ,
-                box.maxZ,
-                Direction.EAST,
-                intersectingVector.x,
-                intersectingVector.y,
-                intersectingVector.z
-            );
+                    traceDistanceResult,
+                    approachDirection,
+                    deltaX,
+                    deltaY,
+                    deltaZ,
+                    box.maxX,
+                    box.minY,
+                    box.maxY,
+                    box.minZ,
+                    box.maxZ,
+                    Direction.EAST,
+                    intersectingVector.x,
+                    intersectingVector.y,
+                    intersectingVector.z);
         }
 
         if (deltaY > 1.0E-7) {
             approachDirection = clipPoint(
-                traceDistanceResult,
-                approachDirection,
-                deltaY,
-                deltaZ,
-                deltaX,
-                box.minY,
-                box.minZ,
-                box.maxZ,
-                box.minX,
-                box.maxX,
-                Direction.DOWN,
-                intersectingVector.y,
-                intersectingVector.z,
-                intersectingVector.x
-            );
+                    traceDistanceResult,
+                    approachDirection,
+                    deltaY,
+                    deltaZ,
+                    deltaX,
+                    box.minY,
+                    box.minZ,
+                    box.maxZ,
+                    box.minX,
+                    box.maxX,
+                    Direction.DOWN,
+                    intersectingVector.y,
+                    intersectingVector.z,
+                    intersectingVector.x);
         } else if (deltaY < -1.0E-7) {
             approachDirection = clipPoint(
-                traceDistanceResult,
-                approachDirection,
-                deltaY,
-                deltaZ,
-                deltaX,
-                box.maxY,
-                box.minZ,
-                box.maxZ,
-                box.minX,
-                box.maxX,
-                Direction.UP,
-                intersectingVector.y,
-                intersectingVector.z,
-                intersectingVector.x
-            );
+                    traceDistanceResult,
+                    approachDirection,
+                    deltaY,
+                    deltaZ,
+                    deltaX,
+                    box.maxY,
+                    box.minZ,
+                    box.maxZ,
+                    box.minX,
+                    box.maxX,
+                    Direction.UP,
+                    intersectingVector.y,
+                    intersectingVector.z,
+                    intersectingVector.x);
         }
 
         if (deltaZ > 1.0E-7) {
             approachDirection = clipPoint(
-                traceDistanceResult,
-                approachDirection,
-                deltaZ,
-                deltaX,
-                deltaY,
-                box.minZ,
-                box.minX,
-                box.maxX,
-                box.minY,
-                box.maxY,
-                Direction.NORTH,
-                intersectingVector.z,
-                intersectingVector.x,
-                intersectingVector.y
-            );
+                    traceDistanceResult,
+                    approachDirection,
+                    deltaZ,
+                    deltaX,
+                    deltaY,
+                    box.minZ,
+                    box.minX,
+                    box.maxX,
+                    box.minY,
+                    box.maxY,
+                    Direction.NORTH,
+                    intersectingVector.z,
+                    intersectingVector.x,
+                    intersectingVector.y);
         } else if (deltaZ < -1.0E-7) {
             approachDirection = clipPoint(
-                traceDistanceResult,
-                approachDirection,
-                deltaZ,
-                deltaX,
-                deltaY,
-                box.maxZ,
-                box.minX,
-                box.maxX,
-                box.minY,
-                box.maxY,
-                Direction.SOUTH,
-                intersectingVector.z,
-                intersectingVector.x,
-                intersectingVector.y
-            );
+                    traceDistanceResult,
+                    approachDirection,
+                    deltaZ,
+                    deltaX,
+                    deltaY,
+                    box.maxZ,
+                    box.minX,
+                    box.maxX,
+                    box.minY,
+                    box.maxY,
+                    Direction.SOUTH,
+                    intersectingVector.z,
+                    intersectingVector.x,
+                    intersectingVector.y);
         }
 
         return approachDirection;
@@ -466,25 +491,29 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
 
     @Nullable
     private static Direction clipPoint(
-        double[] traceDistanceResult,
-        @Nullable Direction approachDirection,
-        double deltaX,
-        double deltaY,
-        double deltaZ,
-        double begin,
-        double minX,
-        double maxX,
-        double minZ,
-        double maxZ,
-        Direction resultDirection,
-        double startX,
-        double startY,
-        double startZ
-    ) {
+            double[] traceDistanceResult,
+            @Nullable Direction approachDirection,
+            double deltaX,
+            double deltaY,
+            double deltaZ,
+            double begin,
+            double minX,
+            double maxX,
+            double minZ,
+            double maxZ,
+            Direction resultDirection,
+            double startX,
+            double startY,
+            double startZ) {
         double d = (begin - startX) / deltaX;
         double e = startY + d * deltaY;
         double f = startZ + d * deltaZ;
-        if (0.0 < d && d < traceDistanceResult[0] && minX - 1.0E-7 < e && e < maxX + 1.0E-7 && minZ - 1.0E-7 < f && f < maxZ + 1.0E-7) {
+        if (0.0 < d
+                && d < traceDistanceResult[0]
+                && minX - 1.0E-7 < e
+                && e < maxX + 1.0E-7
+                && minZ - 1.0E-7 < f
+                && f < maxZ + 1.0E-7) {
             traceDistanceResult[0] = d;
             return resultDirection;
         } else {
@@ -493,7 +522,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
     }
 
     private static BlockHitResult raycast(final Box aabb, final Vec3d from, final Vec3d to, final BlockPos offset) {
-        final double[] minDistanceArr = new double[] { 1.0 };
+        final double[] minDistanceArr = new double[] {1.0};
         final double diffX = to.x - from.x;
         final double diffY = to.y - from.y;
         final double diffZ = to.z - from.z;
@@ -505,7 +534,8 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         }
 
         final double minDistance = minDistanceArr[0];
-        return new BlockHitResult(from.add(minDistance * diffX, minDistance * diffY, minDistance * diffZ), direction, offset, false);
+        return new BlockHitResult(
+                from.add(minDistance * diffX, minDistance * diffY, minDistance * diffZ), direction, offset, false);
     }
     /**
      * @author
@@ -563,19 +593,18 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
 
         // note: if not empty, then there is one full AABB so no bounds checks are needed on the minFull/maxFull indices
         cached = new Box(
-            coordsX[shapeData.minFullX()] + offX,
-            coordsY[shapeData.minFullY()] + offY,
-            coordsZ[shapeData.minFullZ()] + offZ,
-
-            coordsX[shapeData.maxFullX()] + offX,
-            coordsY[shapeData.maxFullY()] + offY,
-            coordsZ[shapeData.maxFullZ()] + offZ
-        );
+                coordsX[shapeData.minFullX()] + offX,
+                coordsY[shapeData.minFullY()] + offY,
+                coordsZ[shapeData.minFullZ()] + offZ,
+                coordsX[shapeData.maxFullX()] + offX,
+                coordsY[shapeData.maxFullY()] + offY,
+                coordsZ[shapeData.maxFullZ()] + offZ);
 
         this.cachedBounds = cached;
         return cached;
         // Paper end - optimise collisions
     }
+
     private static DoubleList offsetList(final DoubleList src, final double by) {
         if (src instanceof OffsetDoubleList offsetDoubleList) {
             return new OffsetDoubleList(offsetDoubleList.oldList, by + offsetDoubleList.offset);
@@ -594,15 +623,14 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         }
 
         final ArrayVoxelShape ret = new ArrayVoxelShape(
-            this.voxels,
-            offsetList(this.getPointPositions(Direction.Axis.X), x),
-            offsetList(this.getPointPositions(Direction.Axis.Y), y),
-            offsetList(this.getPointPositions(Direction.Axis.Z), z)
-        );
+                this.voxels,
+                offsetList(this.getPointPositions(Direction.Axis.X), x),
+                offsetList(this.getPointPositions(Direction.Axis.Y), y),
+                offsetList(this.getPointPositions(Direction.Axis.Z), z));
 
         final CachedToAABBs cachedToAABBs = this.cachedToAABBs;
         if (cachedToAABBs != null) {
-             MoonriseVoxelShapeAccess.of(ret).moonriss$setCachedToAABBs( CachedToAABBs.offset(cachedToAABBs, x, y, z));
+            MoonriseVoxelShapeAccess.of(ret).moonriss$setCachedToAABBs(CachedToAABBs.offset(cachedToAABBs, x, y, z));
         }
 
         return ret;
@@ -619,10 +647,9 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
             return VoxelShapes.empty();
         }
 
-
-            // note: the isFullBlock() is fuzzy, and Shapes.create() is also fuzzy which would return block()
-        if(this.singleAABBRepresentation != null)
-            return this.moonrise$isFullBlock() ? VoxelShapes.fullCube() : (VoxelShape)(Object)this;
+        // note: the isFullBlock() is fuzzy, and Shapes.create() is also fuzzy which would return block()
+        if (this.singleAABBRepresentation != null)
+            return this.moonrise$isFullBlock() ? VoxelShapes.fullCube() : (VoxelShape) (Object) this;
         final List<Box> aabbs = this.getBoundingBoxes();
 
         if (aabbs.size() == 1) {
@@ -717,21 +744,32 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         }
 
         final Vec3d fromBehind = from.add(directionOpposite.multiply(0.001));
-        final double fromBehindOffsetX = fromBehind.x - (double)offset.getX();
-        final double fromBehindOffsetY = fromBehind.y - (double)offset.getY();
-        final double fromBehindOffsetZ = fromBehind.z - (double)offset.getZ();
+        final double fromBehindOffsetX = fromBehind.x - (double) offset.getX();
+        final double fromBehindOffsetY = fromBehind.y - (double) offset.getY();
+        final double fromBehindOffsetZ = fromBehind.z - (double) offset.getZ();
 
         final Box singleAABB = this.singleAABBRepresentation;
 
         if (singleAABB != null) {
             if (singleAABB.contains(fromBehindOffsetX, fromBehindOffsetY, fromBehindOffsetZ)) {
-                return new BlockHitResult(fromBehind, Direction.getFacing(directionOpposite.x, directionOpposite.y, directionOpposite.z).getOpposite(), offset, true);
+                return new BlockHitResult(
+                        fromBehind,
+                        Direction.getFacing(directionOpposite.x, directionOpposite.y, directionOpposite.z)
+                                .getOpposite(),
+                        offset,
+                        true);
             }
             return raycast(singleAABB, from, to, offset);
         }
 
-        if (CollisionUtil.strictlyContains((VoxelShape)(Object)this, fromBehindOffsetX, fromBehindOffsetY, fromBehindOffsetZ)) {
-            return new BlockHitResult(fromBehind, Direction.getFacing(directionOpposite.x, directionOpposite.y, directionOpposite.z).getOpposite(), offset, true);
+        if (CollisionUtil.strictlyContains(
+                (VoxelShape) (Object) this, fromBehindOffsetX, fromBehindOffsetY, fromBehindOffsetZ)) {
+            return new BlockHitResult(
+                    fromBehind,
+                    Direction.getFacing(directionOpposite.x, directionOpposite.y, directionOpposite.z)
+                            .getOpposite(),
+                    offset,
+                    true);
         }
 
         return Box.raycast(getBoundingBoxes(), from, to, offset);
@@ -781,9 +819,8 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
         if (Math.abs(source_move) < CollisionUtil.COLLISION_EPSILON) {
             return 0.0;
         }
-        VoxelShape voxelShape = (VoxelShape)(Object)this;
+        VoxelShape voxelShape = (VoxelShape) (Object) this;
         return CollisionUtil.calculateAxisCollide(voxelShape, axis, source, source_move);
         // Paper end - optimise collisions
     }
-
 }

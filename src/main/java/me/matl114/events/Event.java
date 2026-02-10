@@ -9,32 +9,37 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 public class Event<T> {
-    public Event(T context, boolean canCancel){
+    public Event(T context, boolean canCancel) {
         this(context, canCancel, false, new Object[0]);
     }
-    public Event(T context, boolean canCancel, boolean canModifyContext, Object... extraArgs){
+
+    public Event(T context, boolean canCancel, boolean canModifyContext, Object... extraArgs) {
         this.context = context;
         this.extraArgs = extraArgs;
         this.canCancel = canCancel;
         this.canModifyContext = canModifyContext;
     }
-    public Event<T> cancel(){
+
+    public Event<T> cancel() {
         Preconditions.checkArgument(this.canCancel, "Can not cancel!");
         this.cancel = true;
         return this;
     }
-    public Event<T> context(T val){
+
+    public Event<T> context(T val) {
         Preconditions.checkArgument(this.canModifyContext, "Can not modify");
         this.context = val;
         return this;
     }
 
-    public <W> W getArgs(int idx){
-        return (W)this.extraArgs[idx];
+    public <W> W getArgs(int idx) {
+        return (W) this.extraArgs[idx];
     }
-    public boolean isCancelled(){
+
+    public boolean isCancelled() {
         return this.cancel;
     }
+
     public T context;
     public Object[] extraArgs;
     public boolean cancel = false;

@@ -2,7 +2,7 @@ package me.matl114.gui.basic;
 
 import net.minecraft.client.gui.screen.Screen;
 
-public class DraggableExecutableWidget extends ExecutableWidget implements Draggable{
+public class DraggableExecutableWidget extends ExecutableWidget implements Draggable {
     public DraggableExecutableWidget(int x, int y, int dx, int dy) {
         super(x, y, dx, dy);
     }
@@ -14,6 +14,7 @@ public class DraggableExecutableWidget extends ExecutableWidget implements Dragg
     }
 
     boolean dragging = false;
+
     @Override
     public void releaseDrag(Screen screen, double mouseX, double mouseY) {
         dragging = false;
@@ -21,14 +22,10 @@ public class DraggableExecutableWidget extends ExecutableWidget implements Dragg
 
     @Override
     public boolean startDrag(Screen screen, double mouseX, double mouseY) {
-        if(isMouseOver(mouseX, mouseY)){
+        if (isMouseOver(mouseX, mouseY)) {
             dragging = true;
             return true;
         }
         return false;
-
     }
-
-
-
 }

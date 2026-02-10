@@ -1,7 +1,7 @@
 package me.matl114.mixins.events;
 
-import me.matl114.events.Listener;
 import me.matl114.events.Event;
+import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
@@ -20,23 +20,31 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Environment(EnvType.CLIENT)
 @Mixin(InventoryScreen.class)
-public abstract class InventoryScreenEvents extends AbstractInventoryScreen<PlayerScreenHandler> implements RecipeBookProvider {
+public abstract class InventoryScreenEvents extends AbstractInventoryScreen<PlayerScreenHandler>
+        implements RecipeBookProvider {
     @Shadow
     @Final
     private RecipeBookWidget recipeBook;
+
     public InventoryScreenEvents(PlayerScreenHandler screenHandler, PlayerInventory playerInventory, Text text) {
         super(screenHandler, playerInventory, text);
     }
 
-    @ModifyArg(method = "init",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TexturedButtonWidget;<init>(IIIILnet/minecraft/client/gui/screen/ButtonTextures;Lnet/minecraft/client/gui/widget/ButtonWidget$PressAction;)V"),index = 5)
-    public ButtonWidget.PressAction modifyPressAction(ButtonWidget.PressAction pressAction){
+    @ModifyArg(
+            method = "init",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/widget/TexturedButtonWidget;<init>(IIIILnet/minecraft/client/gui/screen/ButtonTextures;Lnet/minecraft/client/gui/widget/ButtonWidget$PressAction;)V"),
+            index = 5)
+    public ButtonWidget.PressAction modifyPressAction(ButtonWidget.PressAction pressAction) {
         return (button -> {
             pressAction.onPress(button);
-            if(!Listener.getPostToggleRecipeBook().isEmpty()){
+            if (!Listener.getPostToggleRecipeBook().isEmpty()) {
                 Event<RecipeBookProvider> toggleRecipeBook = new Event<>(this, false, false, recipeBook, button);
                 Listener.getPostToggleRecipeBook().handleValue(toggleRecipeBook);
             }
         });
     }
-
 }

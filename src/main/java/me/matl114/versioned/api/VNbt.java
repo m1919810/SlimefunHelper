@@ -5,7 +5,8 @@ import net.minecraft.nbt.NbtElement;
 
 public interface VNbt {
     VNbt INSTANCE = new Nbt_v1_21_1();
-    public static VNbt getInstance(){
+
+    public static VNbt getInstance() {
         return INSTANCE;
     }
 

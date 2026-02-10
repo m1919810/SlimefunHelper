@@ -1,40 +1,37 @@
 package me.matl114.utils;
 
-
 import com.mojang.datafixers.util.Pair;
-
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 @ApiMethod
 public class CollectionUtils {
-    public static <T> List<T> newArrayList(){
+    public static <T> List<T> newArrayList() {
         return new ArrayList<>();
     }
 
-    public static <T> List<T> newArrayList(List<T> list){
+    public static <T> List<T> newArrayList(List<T> list) {
         return new ArrayList<>(list);
     }
 
-    public static <T> List<T> newArrayList(T[] list){
+    public static <T> List<T> newArrayList(T[] list) {
         return Arrays.stream(list).collect(Collectors.toCollection(ArrayList::new));
     }
 
-
-    public static <T,V> Map<T,V> newHashMap(){
+    public static <T, V> Map<T, V> newHashMap() {
         return new LinkedHashMap<>();
     }
 
-    public static <T,V> Map<T,V> newHashMap(Map<T, V> map){
+    public static <T, V> Map<T, V> newHashMap(Map<T, V> map) {
         return new LinkedHashMap<>(map);
     }
 
-    public static <T,V> Map<T,V> newHashMap(T[] array, V[] arr){
+    public static <T, V> Map<T, V> newHashMap(T[] array, V[] arr) {
         int len = Math.min(array.length, arr.length);
-        Map<T,V> map = new LinkedHashMap<>(len);
+        Map<T, V> map = new LinkedHashMap<>(len);
         for (int i = 0; i < len; i++) {
             map.put(array[i], arr[i]);
         }
@@ -42,67 +39,65 @@ public class CollectionUtils {
     }
 
     public static <T> T resolvePath(@Nullable Object tree, String path) {
-        if(tree == null) return null;
-        if(path == null || path.isEmpty()) return (T) tree;
+        if (tree == null) return null;
+        if (path == null || path.isEmpty()) return (T) tree;
         int idx = path.indexOf('.');
         String currentPath = idx == -1 ? path : path.substring(0, idx);
-        String remainPath = idx == -1 ? null : path.substring(idx+1);
+        String remainPath = idx == -1 ? null : path.substring(idx + 1);
         return resolvePath(resolveOne(tree, currentPath), remainPath);
     }
-    private static final Pattern PATTERN = Pattern.compile(
-        "^([^\\[\\]]*?)((?:\\[\\-?\\d+\\])*)$"
-    );
-    private static final Pattern NUM_PATTERN = Pattern.compile(
-        "\\[(\\-?[\\d]+)\\]"
-    );
+
+    private static final Pattern PATTERN = Pattern.compile("^([^\\[\\]]*?)((?:\\[\\-?\\d+\\])*)$");
+    private static final Pattern NUM_PATTERN = Pattern.compile("\\[(\\-?[\\d]+)\\]");
+
     private static Object resolveOne(@Nullable Object tree, String path) {
-        //be like name[a][b][c]
-        if(tree == null) return null;
+        // be like name[a][b][c]
+        if (tree == null) return null;
         Matcher matcher = PATTERN.matcher(path);
         if (matcher.matches()) {
             String name = matcher.group(1);
             String idx = matcher.group(2);
-            if(!name.isEmpty()){
-                if(tree instanceof Map<?,?> map){
+            if (!name.isEmpty()) {
+                if (tree instanceof Map<?, ?> map) {
                     tree = map.get(name);
-                }else{
+                } else {
                     return null;
                 }
             }
-            if(tree == null){
+            if (tree == null) {
                 return null;
             }
-            if(!idx.isEmpty()){
+            if (!idx.isEmpty()) {
                 Matcher numMatcher = NUM_PATTERN.matcher(idx);
-                while(numMatcher.find()){
+                while (numMatcher.find()) {
                     String numStr = numMatcher.group(1);
                     int num = Integer.parseInt(numStr);
-                    if(tree instanceof List<?> list){
-                        if(num >= 0){
+                    if (tree instanceof List<?> list) {
+                        if (num >= 0) {
                             tree = list.get(num);
-                        }else{
+                        } else {
                             tree = list.get(list.size() + num);
                         }
-                    }else if(tree.getClass().isArray()){
+                    } else if (tree.getClass().isArray()) {
                         int length = java.lang.reflect.Array.getLength(tree);
                         if (num < 0) {
                             tree = java.lang.reflect.Array.get(tree, length + num);
-                        }else{
+                        } else {
                             tree = java.lang.reflect.Array.get(tree, num);
                         }
                     }
-                    if(tree == null){
+                    if (tree == null) {
                         return null;
                     }
                 }
             }
             return tree;
-        }else{
+        } else {
             throw new IllegalArgumentException("Invalid path: " + path);
         }
     }
 
-    public static <A, B> Pair<A, B> entryToPair(Map.Entry<A, B> entry){
+    public static <A, B> Pair<A, B> entryToPair(Map.Entry<A, B> entry) {
         return Pair.of(entry.getKey(), entry.getValue());
     }
 }

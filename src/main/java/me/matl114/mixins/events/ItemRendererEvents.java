@@ -1,8 +1,8 @@
 package me.matl114.mixins.events;
 
+import me.matl114.events.Event;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.RenderListener;
-import me.matl114.events.Event;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -23,73 +23,89 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ItemRenderer.class)
 public abstract class ItemRendererEvents {
     @ModifyVariable(method = "getModel", at = @At("HEAD"), index = 1, argsOnly = true)
-    public ItemStack onItemModelLoad(ItemStack stack){
+    public ItemStack onItemModelLoad(ItemStack stack) {
         Event<ItemStack> itemStackEvent = new Event<>(stack, true, true);
         RenderListener.getItemDataOverrideForModel().handleValue(itemStackEvent);
-        if(itemStackEvent.isCancelled()){
+        if (itemStackEvent.isCancelled()) {
             return stack;
-        }else{
+        } else {
             return itemStackEvent.context();
         }
     }
 
-    @Inject(method = "renderItem",at = @At("RETURN"))
-    public void onItemRenderDetached(ItemStack item, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel model, CallbackInfo ci){
+    @Inject(method = "renderItem", at = @At("RETURN"))
+    public void onItemRenderDetached(
+            ItemStack item,
+            ModelTransformationMode renderMode,
+            boolean leftHanded,
+            MatrixStack matrices,
+            VertexConsumerProvider vertexConsumers,
+            int light,
+            int overlay,
+            BakedModel model,
+            CallbackInfo ci) {
         ItemStack stack = RenderListener.getContainedItemInfo(item);
-        if(stack != null){
-            renderItemContainerItemInfo((ItemRenderer) (Object)this, matrices, renderMode, stack, leftHanded, vertexConsumers, overlay);
+        if (stack != null) {
+            renderItemContainerItemInfo(
+                    (ItemRenderer) (Object) this, matrices, renderMode, stack, leftHanded, vertexConsumers, overlay);
         }
-
     }
+
     @Unique
-    private void renderItemContainerItemInfo(ItemRenderer itemRenderer, MatrixStack matrices, ModelTransformationMode renderMode, ItemStack stack, boolean leftHanded, VertexConsumerProvider vertexConsumers, int overlay){
+    private void renderItemContainerItemInfo(
+            ItemRenderer itemRenderer,
+            MatrixStack matrices,
+            ModelTransformationMode renderMode,
+            ItemStack stack,
+            boolean leftHanded,
+            VertexConsumerProvider vertexConsumers,
+            int overlay) {
         matrices.push();
-        try{
-            final float scale=0.54f;
-            final float scale_ground=0.8f;
+        try {
+            final float scale = 0.54f;
+            final float scale_ground = 0.8f;
             boolean inGui = false;
-            if(renderMode == ModelTransformationMode.GUI){
+            if (renderMode == ModelTransformationMode.GUI) {
                 inGui = true;
-                matrices.translate(0.26,-0.26,1f);
-                matrices. scale(scale, scale, scale);
-            }else if(renderMode == ModelTransformationMode.GROUND){
-                matrices.translate(0.15,-0.15,0);
-                matrices. scale(scale_ground, scale_ground, scale_ground);
-            }else if(renderMode == ModelTransformationMode.FIXED){
-                matrices.translate(-0.25,-0.25,-0.05);
-                matrices. scale(scale_ground, scale_ground, scale_ground);
-            }else if(renderMode == ModelTransformationMode.HEAD) {
-                //seems too wierd, give up
+                matrices.translate(0.26, -0.26, 1f);
+                matrices.scale(scale, scale, scale);
+            } else if (renderMode == ModelTransformationMode.GROUND) {
+                matrices.translate(0.15, -0.15, 0);
+                matrices.scale(scale_ground, scale_ground, scale_ground);
+            } else if (renderMode == ModelTransformationMode.FIXED) {
+                matrices.translate(-0.25, -0.25, -0.05);
+                matrices.scale(scale_ground, scale_ground, scale_ground);
+            } else if (renderMode == ModelTransformationMode.HEAD) {
+                // seems too wierd, give up
                 return;
-//                    matrices.translate(-0.25,0.5,-0.05);
-//    //                matrices. scale(scale_ground, scale_ground, scale_ground);
-//                    renderMode = ModelTransformationMode.FIXED;
-            }else if(renderMode == ModelTransformationMode.THIRD_PERSON_RIGHT_HAND){
-                //seems too wierd
-//                matrices.translate(0.25,0.25,0.05);
-//               matrices. scale(scale, scale, scale);
-//                renderMode = ModelTransformationMode.GUI;
+                //                    matrices.translate(-0.25,0.5,-0.05);
+                //    //                matrices. scale(scale_ground, scale_ground, scale_ground);
+                //                    renderMode = ModelTransformationMode.FIXED;
+            } else if (renderMode == ModelTransformationMode.THIRD_PERSON_RIGHT_HAND) {
+                // seems too wierd
+                //                matrices.translate(0.25,0.25,0.05);
+                //               matrices. scale(scale, scale, scale);
+                //                renderMode = ModelTransformationMode.GUI;
                 return;
-            }else if(renderMode == ModelTransformationMode.THIRD_PERSON_LEFT_HAND){
-                //seems too wierd
-//                matrices.translate(0.25,0.25,0.05);
-//                matrices. scale(scale, scale, scale);
-//                renderMode = ModelTransformationMode.GUI;
+            } else if (renderMode == ModelTransformationMode.THIRD_PERSON_LEFT_HAND) {
+                // seems too wierd
+                //                matrices.translate(0.25,0.25,0.05);
+                //                matrices. scale(scale, scale, scale);
+                //                renderMode = ModelTransformationMode.GUI;
                 return;
-            }else{
+            } else {
                 return;
             }
-            BakedModel bakedModel=itemRenderer.getModel(stack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0);
-            //fixme: renderer error here
-            if(inGui){
+            BakedModel bakedModel = itemRenderer.getModel(
+                    stack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0);
+            // fixme: renderer error here
+            if (inGui) {
                 GlobalEventVars.lastRenderNeedDisableGuiLight = true;
             }
-            itemRenderer.renderItem(stack,renderMode,leftHanded,matrices,vertexConsumers,0xF000F0,overlay,bakedModel);
-        }finally {
+            itemRenderer.renderItem(
+                    stack, renderMode, leftHanded, matrices, vertexConsumers, 0xF000F0, overlay, bakedModel);
+        } finally {
             matrices.pop();
         }
     }
-
-
-
 }

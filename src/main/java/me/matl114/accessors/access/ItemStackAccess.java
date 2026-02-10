@@ -7,6 +7,6 @@ public interface ItemStackAccess {
     public Item getRealItem();
 
     static ItemStackAccess of(ItemStack itemStack) {
-        return (ItemStackAccess)(Object) itemStack;
+        return (ItemStackAccess) (Object) itemStack;
     }
 }

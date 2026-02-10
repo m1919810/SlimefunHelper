@@ -11,11 +11,9 @@ public interface VEntity {
         return INSTANCE;
     }
 
-    public static NbtCompound saveEntityNbt(Entity entity){
+    public static NbtCompound saveEntityNbt(Entity entity) {
         return getInstance().serializeNBT(entity);
     }
 
     public NbtCompound serializeNBT(Entity entity);
-
-
 }

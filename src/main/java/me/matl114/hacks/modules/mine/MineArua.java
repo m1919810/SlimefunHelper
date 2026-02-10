@@ -1,5 +1,7 @@
 package me.matl114.hacks.modules.mine;
 
+import java.util.*;
+import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.Tasks;
@@ -13,7 +15,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.RegistryUtils;
-import me.matl114.events.Event;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
@@ -26,39 +27,38 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-import java.util.*;
-
 public class MineArua extends BaseModule {
-    public MineArua(){
+    public MineArua() {
         bindFlag(enable);
     }
+
     public static final String[] MINEARUA_WHILELIST = {"mine-arua", "block-whitelist"};
     public static final String[] MINEARUA_HOTKEY = {"hotkeys-toggle", "mine-arua"};
     private BlockPos cachePosition;
     private int lastRefreshTick;
     public Set<Block> whiteList = new HashSet<>();
-    public void parseWhiteList(String str){
+
+    public void parseWhiteList(String str) {
         whiteList = RegistryUtils.parseWhiteList(Registries.BLOCK, str);
     }
 
-    public FlagRef enable = toggle(MINEARUA_HOTKEY)
-        .build();
+    public FlagRef enable = toggle(MINEARUA_HOTKEY).build();
 
     public KeyBindRef keyBind = toggleHotkey(MINEARUA_HOTKEY, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_N))
-        .build();
+            .build();
 
     public StringRef whiteListRegex = builder(Configs.MINE_CONFIG, String.class)
-        .path(MINEARUA_WHILELIST)
-        .defaultValue("^(.*bed)$")
-        .validator(Configs.REGEX_VALIDATOR)
-        .updateListener(this::parseWhiteList)
-        .build();
+            .path(MINEARUA_WHILELIST)
+            .defaultValue("^(.*bed)$")
+            .validator(Configs.REGEX_VALIDATOR)
+            .updateListener(this::parseWhiteList)
+            .build();
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getMineBlockAction(), this::onMineBlockAction);
-        //todo handle doAttackAction redirect
+        // todo handle doAttackAction redirect
     }
 
     @Override
@@ -67,65 +67,63 @@ public class MineArua extends BaseModule {
         this.cachePosition = null;
     }
 
-    public void onMineBlockAction(Event<HitResult> event){
-        if(mc.player != null && isActive()){
+    public void onMineBlockAction(Event<HitResult> event) {
+        if (mc.player != null && isActive()) {
             BlockPos pos = refreshMineAruaTarget();
-            if(pos != this.cachePosition){
-                if(pos != null){
-                    Debug.chat(Text.literal("[Mine Arua] Redirect mine target ").append(ChatUtils.getDisplayedLocation(Vec3d.of(pos))).formatted(Formatting.GREEN));
+            if (pos != this.cachePosition) {
+                if (pos != null) {
+                    Debug.chat(Text.literal("[Mine Arua] Redirect mine target ")
+                            .append(ChatUtils.getDisplayedLocation(Vec3d.of(pos)))
+                            .formatted(Formatting.GREEN));
                 }
                 this.cachePosition = pos;
                 lastRefreshTick = Tasks.getTick();
             }
 
-            if(this.cachePosition != null){
-                Direction dir = Direction.getFacing(this.cachePosition.toCenterPos().subtract(mc.player.getEyePos())).getOpposite();
+            if (this.cachePosition != null) {
+                Direction dir = Direction.getFacing(
+                                this.cachePosition.toCenterPos().subtract(mc.player.getEyePos()))
+                        .getOpposite();
                 HitResult hitResult = new BlockHitResult(Vec3d.of(this.cachePosition), dir, this.cachePosition, false);
                 event.context(hitResult);
             }
         }
-
     }
 
+    // where to place it
+    // todo: minearua conflict with optimize
 
-    //where to place it
-    //todo: minearua conflict with optimize
-
-
-
-    private boolean isMineAruaTarget(World world, BlockPos pos){
-        BlockState state=world.getBlockState(pos);
-        if(state != null &&  !state.isAir() && !state.isLiquid()){
-            Block block=state.getBlock();
-            if(block.getHardness() >= 0.0F &&  whiteList.contains(block)){
+    private boolean isMineAruaTarget(World world, BlockPos pos) {
+        BlockState state = world.getBlockState(pos);
+        if (state != null && !state.isAir() && !state.isLiquid()) {
+            Block block = state.getBlock();
+            if (block.getHardness() >= 0.0F && whiteList.contains(block)) {
                 return true;
             }
         }
         return false;
     }
 
-    private BlockPos refreshMineAruaTarget(){
-        if(mc.player != null && mc.world != null){
-            //every time check if current cache is here
+    private BlockPos refreshMineAruaTarget() {
+        if (mc.player != null && mc.world != null) {
+            // every time check if current cache is here
             Vec3d eyepos = mc.player.getEyePos();
-            if(this.cachePosition != null && isMineAruaTarget(mc.world, this.cachePosition) && !MineTasks.distanceOutOfReach(this.cachePosition, eyepos)){
+            if (this.cachePosition != null
+                    && isMineAruaTarget(mc.world, this.cachePosition)
+                    && !MineTasks.distanceOutOfReach(this.cachePosition, eyepos)) {
                 return this.cachePosition;
             }
-            //refresh only 4 ticks once
-            if(Tasks.getTick() >= lastRefreshTick + 4){
+            // refresh only 4 ticks once
+            if (Tasks.getTick() >= lastRefreshTick + 4) {
                 BlockPos currentBlockPos = mc.player.getBlockPos();
-                for (var vec : MineTasks.getMineExtra().getBlocksAround()){
+                for (var vec : MineTasks.getMineExtra().getBlocksAround()) {
                     BlockPos pos = currentBlockPos.add(vec);
-                    if(isMineAruaTarget(mc.world, pos) && !MineTasks.distanceOutOfReach(pos, eyepos)){
+                    if (isMineAruaTarget(mc.world, pos) && !MineTasks.distanceOutOfReach(pos, eyepos)) {
                         return pos;
                     }
                 }
             }
-
         }
         return null;
     }
-
-
-
 }

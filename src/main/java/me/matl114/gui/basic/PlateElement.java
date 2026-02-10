@@ -8,22 +8,34 @@ public class PlateElement extends AbstractElement {
     private static final int xTextureOffset = 0;
     private static final int yTextureOffset = 66;
     public static final Identifier TEXTURE = new Identifier("slimefunhelper", "textures/gui/recipecontainer.png");
-    private int color = -1;//0xFFBB0000;
+    private int color = -1; // 0xFFBB0000;
     private boolean catchInteract;
-    public static PlateElement instance(){
+
+    public static PlateElement instance() {
         return new PlateElement(false);
     }
-    public static PlateElement catchInteract(){
+
+    public static PlateElement catchInteract() {
         return new PlateElement(true);
     }
-    public PlateElement(){
+
+    public PlateElement() {
         this(false);
     }
-    public PlateElement(boolean catchInteract){
+
+    public PlateElement(boolean catchInteract) {
         this.catchInteract = catchInteract;
     }
+
     @Override
-    public void renderCentered0(DrawableWidget element, VDrawContext context, int mouseX, int mouseY, float delta, float alpha, boolean shouldHighlight) {
+    public void renderCentered0(
+            DrawableWidget element,
+            VDrawContext context,
+            int mouseX,
+            int mouseY,
+            float delta,
+            float alpha,
+            boolean shouldHighlight) {
         color = -1;
         float alpha1 = ((color >> 24) & 0xFF) / 255f;
         float red = ((color >> 16) & 0xFF) / 255f;
@@ -36,18 +48,68 @@ public class PlateElement extends AbstractElement {
         int width = element.getTextureWidth();
         int height = element.getTextureHeight();
         context.drawTexture(TEXTURE, 0, 0, 106 + xTextureOffset, 124 + yTextureOffset, 8, 8);
-        context.drawTexture(TEXTURE,  width - 8, 0, 248 + xTextureOffset, 124 + yTextureOffset, 8, 8);
-        context.drawTexture(TEXTURE, 0,   height - 8, 106 + xTextureOffset, 182 + yTextureOffset, 8, 8);
-        context.drawTexture(TEXTURE,  width - 8,  height - 8, 248 + xTextureOffset, 182 + yTextureOffset, 8, 8);
+        context.drawTexture(TEXTURE, width - 8, 0, 248 + xTextureOffset, 124 + yTextureOffset, 8, 8);
+        context.drawTexture(TEXTURE, 0, height - 8, 106 + xTextureOffset, 182 + yTextureOffset, 8, 8);
+        context.drawTexture(TEXTURE, width - 8, height - 8, 248 + xTextureOffset, 182 + yTextureOffset, 8, 8);
 
         // Sides
-        context.drawTexturedQuad(TEXTURE,  8,  width - 8, 0,  8, 0, (114 + xTextureOffset) / 256f, (248 + xTextureOffset) / 256f, (124 + yTextureOffset) / 256f, (132 + yTextureOffset) / 256f);
-        context.drawTexturedQuad(TEXTURE,  8,  width - 8,  height - 8,  height, 0, (114 + xTextureOffset) / 256f, (248 + xTextureOffset) / 256f, (182 + yTextureOffset) / 256f, (190 + yTextureOffset) / 256f);
-        context.drawTexturedQuad(TEXTURE, 0,  8,  8,  height - 8, 0, (106 + xTextureOffset) / 256f, (114 + xTextureOffset) / 256f, (132 + yTextureOffset) / 256f, (182 + yTextureOffset) / 256f);
-        context.drawTexturedQuad(TEXTURE, width - 8,  width, 8,  height - 8, 0, (248 + xTextureOffset) / 256f, (256 + xTextureOffset) / 256f, (132 + yTextureOffset) / 256f, (182 + yTextureOffset) / 256f);
+        context.drawTexturedQuad(
+                TEXTURE,
+                8,
+                width - 8,
+                0,
+                8,
+                0,
+                (114 + xTextureOffset) / 256f,
+                (248 + xTextureOffset) / 256f,
+                (124 + yTextureOffset) / 256f,
+                (132 + yTextureOffset) / 256f);
+        context.drawTexturedQuad(
+                TEXTURE,
+                8,
+                width - 8,
+                height - 8,
+                height,
+                0,
+                (114 + xTextureOffset) / 256f,
+                (248 + xTextureOffset) / 256f,
+                (182 + yTextureOffset) / 256f,
+                (190 + yTextureOffset) / 256f);
+        context.drawTexturedQuad(
+                TEXTURE,
+                0,
+                8,
+                8,
+                height - 8,
+                0,
+                (106 + xTextureOffset) / 256f,
+                (114 + xTextureOffset) / 256f,
+                (132 + yTextureOffset) / 256f,
+                (182 + yTextureOffset) / 256f);
+        context.drawTexturedQuad(
+                TEXTURE,
+                width - 8,
+                width,
+                8,
+                height - 8,
+                0,
+                (248 + xTextureOffset) / 256f,
+                (256 + xTextureOffset) / 256f,
+                (132 + yTextureOffset) / 256f,
+                (182 + yTextureOffset) / 256f);
 
         // Center
-        context.drawTexturedQuad(TEXTURE,  8, width - 8,  8,  height - 8, 0, (114 + xTextureOffset) / 256f, (248 + xTextureOffset) / 256f, (132 + yTextureOffset) / 256f, (182 + yTextureOffset) / 256f);
+        context.drawTexturedQuad(
+                TEXTURE,
+                8,
+                width - 8,
+                8,
+                height - 8,
+                0,
+                (114 + xTextureOffset) / 256f,
+                (248 + xTextureOffset) / 256f,
+                (132 + yTextureOffset) / 256f,
+                (182 + yTextureOffset) / 256f);
         context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
@@ -56,7 +118,7 @@ public class PlateElement extends AbstractElement {
         return catchInteract;
     }
 
-    public boolean canBeSelected(DrawableWidget element){
+    public boolean canBeSelected(DrawableWidget element) {
         return false;
     }
 }

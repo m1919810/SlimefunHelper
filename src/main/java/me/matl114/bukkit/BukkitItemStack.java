@@ -1,6 +1,9 @@
 package me.matl114.bukkit;
 
 import com.google.common.base.Preconditions;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
@@ -8,11 +11,7 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-
-public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializable permits CraftItemStack{
+public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializable permits CraftItemStack {
     private Item type;
     private int amount;
     private BukkitMetaItem meta;
@@ -27,11 +26,11 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
     }
 
     public BukkitItemStack(@NotNull Item type, int amount) {
-        this(type, amount, (short)0);
+        this(type, amount, (short) 0);
     }
 
     public BukkitItemStack(@NotNull Item type, int amount, short damage) {
-        this(type, amount, damage, (Byte)null);
+        this(type, amount, damage, (Byte) null);
     }
 
     public BukkitItemStack(@NotNull Item type, int amount, short damage, @Nullable Byte data) {
@@ -52,7 +51,6 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
         if (stack.hasItemMeta()) {
             this.setItemMeta0(stack.getItemMeta(), this.type);
         }
-
     }
 
     @NotNull
@@ -66,9 +64,6 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
         if (this.meta != null) {
             this.meta = BukkitSerializationMock.getItemFactory().asMetaFor(this.meta, type);
         }
-
-
-
     }
 
     public int getAmount() {
@@ -79,12 +74,11 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
         this.amount = amount;
     }
 
-
-
-
-
     public String toString() {
-        StringBuilder toString = (new StringBuilder("ItemStack{")).append(Registries.ITEM.getId(this.getType()).getPath().toUpperCase(Locale.ROOT)).append(" x ").append(this.getAmount());
+        StringBuilder toString = (new StringBuilder("ItemStack{"))
+                .append(Registries.ITEM.getId(this.getType()).getPath().toUpperCase(Locale.ROOT))
+                .append(" x ")
+                .append(this.getAmount());
         if (this.hasItemMeta()) {
             toString.append(", ").append(this.getItemMeta());
         }
@@ -98,7 +92,7 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
         } else if (!(obj instanceof BukkitItemStack)) {
             return false;
         } else {
-            BukkitItemStack stack = (BukkitItemStack)obj;
+            BukkitItemStack stack = (BukkitItemStack) obj;
             return this.getAmount() == stack.getAmount() && this.isSimilar(stack);
         }
     }
@@ -109,8 +103,12 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
         } else if (stack == this) {
             return true;
         } else {
-            Item comparisonType =  this.type;
-            return comparisonType == stack.getType() &&  this.hasItemMeta() == stack.hasItemMeta() && (!this.hasItemMeta() || BukkitSerializationMock.getItemFactory().equals(this.getItemMeta(), stack.getItemMeta()));
+            Item comparisonType = this.type;
+            return comparisonType == stack.getType()
+                    && this.hasItemMeta() == stack.hasItemMeta()
+                    && (!this.hasItemMeta()
+                            || BukkitSerializationMock.getItemFactory()
+                                    .equals(this.getItemMeta(), stack.getItemMeta()));
         }
     }
 
@@ -128,57 +126,47 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-//    public void removeEnchantments() {
-
+    //    public void removeEnchantments() {
 
     @NotNull
     public Map<String, Object> serialize() {
         Map<String, Object> result = new LinkedHashMap();
         result.put("v", 0);
-        result.put("type", Registries.ITEM.getId( this.getType()).getPath().toUpperCase(Locale.ROOT));
+        result.put("type", Registries.ITEM.getId(this.getType()).getPath().toUpperCase(Locale.ROOT));
         if (this.getAmount() != 1) {
             result.put("amount", this.getAmount());
         }
 
         BukkitMetaItem meta = this.getItemMeta();
-        if (meta!=null) {
+        if (meta != null) {
             result.put("meta", meta);
         }
 
         return result;
     }
+
     private static final String VERSION_1_21_10_FLAG = "schema_version";
 
     @NotNull
     public static BukkitItemStack deserialize(@NotNull Map<String, Object> args) {
-        if(args.containsKey(VERSION_1_21_10_FLAG)) {
+        if (args.containsKey(VERSION_1_21_10_FLAG)) {
             return CraftItemStack.deserializeModern(args);
         }
         short damage = 0;
         int amount = 1;
         if (args.containsKey("damage")) {
-            damage = ((Number)args.get("damage")).shortValue();
+            damage = ((Number) args.get("damage")).shortValue();
         }
-        Item type ;
-        try{
-            type = Registries.ITEM.get(new Identifier("minecraft",((String) args.get("type")).toLowerCase(Locale.ROOT)));
+        Item type;
+        try {
+            type = Registries.ITEM.get(
+                    new Identifier("minecraft", ((String) args.get("type")).toLowerCase(Locale.ROOT)));
 
-        }catch (Throwable e){
+        } catch (Throwable e) {
             type = Items.BARRIER;
         }
         if (args.containsKey("amount")) {
-            amount = ((Number)args.get("amount")).intValue();
+            amount = ((Number) args.get("amount")).intValue();
         }
 
         BukkitItemStack result = new BukkitItemStack(type, amount, damage);
@@ -190,11 +178,8 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
             }
         }
 
-
         return result;
     }
-
-    
 
     @Nullable
     public BukkitMetaItem getItemMeta() {
@@ -210,8 +195,7 @@ public sealed class BukkitItemStack implements Cloneable, ConfigurationSerializa
     }
 
     private boolean setItemMeta0(@Nullable BukkitMetaItem itemMeta, @NotNull Item material) {
-        this.meta=itemMeta;
+        this.meta = itemMeta;
         return true;
     }
-
 }

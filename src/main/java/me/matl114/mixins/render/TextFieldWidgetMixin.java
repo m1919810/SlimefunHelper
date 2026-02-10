@@ -1,5 +1,6 @@
 package me.matl114.mixins.render;
 
+import java.util.function.Consumer;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ColorProvider;
@@ -23,13 +24,12 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.function.Consumer;
-
 @Mixin(TextFieldWidget.class)
 @Environment(EnvType.CLIENT)
 public abstract class TextFieldWidgetMixin extends ClickableWidget implements TextFieldAccess {
     @Unique
     private static final ColorProvider ORIGIN_PROVIDER = McWidgetHelpers.getDefaultTextBoxColorProvider();
+
     @Final
     @Shadow
     private TextRenderer textRenderer;
@@ -41,44 +41,50 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
     private int firstCharacterIndex;
 
     @Unique
-    TextFieldWidget cast(){
-        return (TextFieldWidget) (Object)this;
+    TextFieldWidget cast() {
+        return (TextFieldWidget) (Object) this;
     }
 
     @Unique
-    public boolean isMultiLine(){
+    public boolean isMultiLine() {
         return false;
     }
+
     @Unique
-    public void setBorderColorProvider(ColorProvider provider){
+    public void setBorderColorProvider(ColorProvider provider) {
         this.boxColorProvider = provider;
     }
+
     @Shadow
     public abstract String getText();
+
     @Unique
     @Override
-    public String getTextContent(){
+    public String getTextContent() {
         return getText();
     }
+
     @Shadow
     public abstract void setText(String text);
+
     @Unique
-    public void setTextContent(String value){
+    public void setTextContent(String value) {
         setText(value);
     }
 
     @Shadow
     public abstract void setChangedListener(Consumer<String> changedListener);
 
-    @Shadow private int selectionStart;
+    @Shadow
+    private int selectionStart;
 
-    @Shadow protected abstract void onChanged(String newText);
+    @Shadow
+    protected abstract void onChanged(String newText);
 
     @Unique
-    public void setListener(PropertyTracker<TextFieldAccess, String> tracker){
-        setChangedListener((str)->tracker.valueChange(this, str));
+    public void setListener(PropertyTracker<TextFieldAccess, String> tracker) {
+        setChangedListener((str) -> tracker.valueChange(this, str));
     }
-
 
     @Unique
     private ColorProvider boxColorProvider = null;
@@ -87,50 +93,62 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
         super(x, y, width, height, message);
     }
 
-    @Redirect(method = "renderWidget", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lnet/minecraft/util/Identifier;IIII)V"))
-    public void redirectBorderBoxRender(DrawContext instance, Identifier texture, int x, int y, int width, int height){
+    @Redirect(
+            method = "renderWidget",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lnet/minecraft/util/Identifier;IIII)V"))
+    public void redirectBorderBoxRender(DrawContext instance, Identifier texture, int x, int y, int width, int height) {
         // only override specific widget behaviour
-        if(boxColorProvider != null){
-            //use custom color provided
-            McWidgetHelpers.drawTextWidgetBox(this, instance, x, y, width, height, this.isFocused(), this.boxColorProvider);
-        }else {
+        if (boxColorProvider != null) {
+            // use custom color provided
+            McWidgetHelpers.drawTextWidgetBox(
+                    this, instance, x, y, width, height, this.isFocused(), this.boxColorProvider);
+        } else {
             instance.drawGuiTexture(texture, x, y, width, height);
         }
     }
 
     @Inject(method = "keyPressed", at = @At(value = "RETURN"), cancellable = true)
-    public void fixInventoryKeyPressedWhenFocused(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
-        if(this.isFocused() && MinecraftClient.getInstance().options.inventoryKey.matchesKey(keyCode, scanCode)){
+    public void fixInventoryKeyPressedWhenFocused(
+            int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
+        if (this.isFocused()
+                && MinecraftClient.getInstance().options.inventoryKey.matchesKey(keyCode, scanCode)) {
             cir.setReturnValue(true);
         }
     }
 
     @Unique
-    public void dragSelect(int deltaX, int deltaY, boolean shiftDownAction){
+    public void dragSelect(int deltaX, int deltaY, boolean shiftDownAction) {
         int i = deltaX;
         if (cast().drawsBackground()) {
             i -= 4;
         }
 
-        String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.cast().getInnerWidth());
-        this.cast().setCursor(this.textRenderer.trimToWidth(string, i).length() + this.firstCharacterIndex, shiftDownAction);
+        String string = this.textRenderer.trimToWidth(
+                this.text.substring(this.firstCharacterIndex), this.cast().getInnerWidth());
+        this.cast()
+                .setCursor(
+                        this.textRenderer.trimToWidth(string, i).length() + this.firstCharacterIndex, shiftDownAction);
     }
+
     @Unique
-    public boolean canStartDrag(double mouseX, double mouseY){
+    public boolean canStartDrag(double mouseX, double mouseY) {
         return this.isMouseOver(mouseX, mouseY);
     }
+
     @Inject(method = "setFocused", at = @At("HEAD"))
-    public void resetSelectOnRelease(boolean focused, CallbackInfo ci){
-        if(!focused){
+    public void resetSelectOnRelease(boolean focused, CallbackInfo ci) {
+        if (!focused) {
             resetSelect();
         }
     }
 
-
     @Unique
-    public void resetSelect(){
+    public void resetSelect() {
         this.cast().setSelectionEnd(this.selectionStart);
         this.onChanged(this.text);
     }
-
 }

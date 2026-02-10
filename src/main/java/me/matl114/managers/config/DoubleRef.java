@@ -4,27 +4,29 @@ import lombok.AllArgsConstructor;
 import me.matl114.utils.config.AttrKeyValue;
 
 @AllArgsConstructor
-public class DoubleRef extends Ref<Double>{
+public class DoubleRef extends Ref<Double> {
     public static final Class<Double> TYPE = Double.class;
 
     double value;
 
-    public static DoubleRef of(Object va){
-        return new DoubleRef(((Number)va).doubleValue());
+    public static DoubleRef of(Object va) {
+        return new DoubleRef(((Number) va).doubleValue());
     }
 
-    public DoubleRef(Double doubleValue){
+    public DoubleRef(Double doubleValue) {
         this(doubleValue.doubleValue());
     }
-    public DoubleRef(Float floatValue){
+
+    public DoubleRef(Float floatValue) {
         this(floatValue.doubleValue());
     }
+
     @Override
     public Double getValue() {
         return get();
     }
 
-    public double get(){
+    public double get() {
         return value;
     }
 
@@ -45,10 +47,10 @@ public class DoubleRef extends Ref<Double>{
 
     @Override
     public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if(otherRef instanceof DoubleRef ref){
+        if (otherRef instanceof DoubleRef ref) {
             ref.set(this.value);
             return true;
-        }else return false;
+        } else return false;
     }
 
     @Override
@@ -56,8 +58,8 @@ public class DoubleRef extends Ref<Double>{
         return AttrKeyValue.doub(key, this.value);
     }
 
-    public void set(double va){
-        if(validateUpdateValue(va)){
+    public void set(double va) {
+        if (validateUpdateValue(va)) {
             this.value = va;
             callUpdate();
         }

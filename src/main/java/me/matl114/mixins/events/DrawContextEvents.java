@@ -14,17 +14,22 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(DrawContext.class)
 public abstract class DrawContextEvents {
-    @Shadow @Final private MinecraftClient client;
+    @Shadow
+    @Final
+    private MinecraftClient client;
 
-    @WrapOperation(method = "drawItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;IIII)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;draw()V"))
-    private void onCorrectingGuiLight(DrawContext instance, Operation<Void> original, @Local boolean bl){
+    @WrapOperation(
+            method =
+                    "drawItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;IIII)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;draw()V"))
+    private void onCorrectingGuiLight(DrawContext instance, Operation<Void> original, @Local boolean bl) {
         boolean status = GlobalEventVars.fetchThisTimeGuiLightStatus();
-        if(status && ! bl){
-            //attach gui lightening fix
+        if (status && !bl) {
+            // attach gui lightening fix
             DiffuseLighting.disableGuiDepthLighting();
             original.call(instance);
             DiffuseLighting.enableGuiDepthLighting();
-        }else{
+        } else {
             original.call(instance);
         }
     }

@@ -1,11 +1,10 @@
 package me.matl114.utils.commands;
 
+import com.google.common.collect.Streams;
+import com.mojang.brigadier.Command;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
-import com.google.common.collect.Streams;
-import com.mojang.brigadier.Command;
 import me.matl114.utils.interruptions.ArgumentException;
 import me.matl114.utils.interruptions.PermissionDenyError;
 import me.matl114.utils.interruptions.ValueUnexpectedError;
@@ -14,8 +13,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public interface SubCommandDispatcher extends CustomTabExecutor, SubCommand.SubCommandCaller {
-    default List<String> onCustomTabComplete(PlayerEntity sender, @Nullable Command apiUsage, ArgumentReader arguments){
-        if(hasPermission(sender)){
+    default List<String> onCustomTabComplete(
+            PlayerEntity sender, @Nullable Command apiUsage, ArgumentReader arguments) {
+        if (hasPermission(sender)) {
             var re = parseInput(arguments);
             if (!arguments.hasNext()) {
                 List<String> provider = re.getTabComplete(sender);
@@ -23,7 +23,8 @@ public interface SubCommandDispatcher extends CustomTabExecutor, SubCommand.SubC
             } else {
                 SubCommand subCommand = getSubCommand(re.nextArg());
                 if (subCommand != null) {
-                    List<String> tab = subCommand.onCustomTabComplete(sender, apiUsage, arguments);  //parseInput(elseArg).getTabComplete();
+                    List<String> tab = subCommand.onCustomTabComplete(
+                            sender, apiUsage, arguments); // parseInput(elseArg).getTabComplete();
                     if (tab != null) {
                         return tab;
                     }
@@ -35,31 +36,31 @@ public interface SubCommandDispatcher extends CustomTabExecutor, SubCommand.SubC
     }
 
     @Override
-    default boolean onCustomCommand(@NotNull PlayerEntity var1, @Nullable Command apiUsage, ArgumentReader reader) throws ArgumentException {
-        if(hasPermission(var1)){
-            if(reader.hasNext()) {
+    default boolean onCustomCommand(@NotNull PlayerEntity var1, @Nullable Command apiUsage, ArgumentReader reader)
+            throws ArgumentException {
+        if (hasPermission(var1)) {
+            if (reader.hasNext()) {
                 String next = reader.next();
                 SubCommand command = getSubCommand(next);
                 if (command != null) {
                     // add permission check
                     return command.onCustomCommand(var1, apiUsage, reader);
                 }
-                //没有对应的
+                // 没有对应的
                 throw new ValueUnexpectedError(reader.stepBack());
-            }else{
-                //认为在dispatch的时候值缺失算空串
+            } else {
+                // 认为在dispatch的时候值缺失算空串
                 throw new ValueUnexpectedError(reader);
             }
             // not consume
-        }else{
+        } else {
             throw new PermissionDenyError(permissionRequired(), reader);
         }
-
     }
 
-    default Stream<String> onCustomHelp(PlayerEntity sender, ArgumentReader reader){
-        if(hasPermission(sender)){
-            if(reader.hasNext()) {
+    default Stream<String> onCustomHelp(PlayerEntity sender, ArgumentReader reader) {
+        if (hasPermission(sender)) {
+            if (reader.hasNext()) {
                 String next = reader.peek();
                 SubCommand command1 = getSubCommand(next);
                 if (command1 != null) {
@@ -68,15 +69,17 @@ public interface SubCommandDispatcher extends CustomTabExecutor, SubCommand.SubC
                 } else {
                     return getHelp(reader.getAlreadyReadCmdStr());
                 }
-            }else{
+            } else {
                 return getHelp(reader.getAlreadyReadCmdStr());
             }
-        }else{
+        } else {
             return Stream.empty();
         }
     }
 
-    default Stream<String> getHelp(String prefix){
-        return Streams.concat(getSubCommands().stream().map(cmd -> cmd.getHelp(prefix + cmd.getName() + " ")).toArray(Stream[]::new));
+    default Stream<String> getHelp(String prefix) {
+        return Streams.concat(getSubCommands().stream()
+                .map(cmd -> cmd.getHelp(prefix + cmd.getName() + " "))
+                .toArray(Stream[]::new));
     }
 }

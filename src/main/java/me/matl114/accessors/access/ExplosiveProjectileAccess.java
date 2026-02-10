@@ -4,11 +4,10 @@ import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 
 public interface ExplosiveProjectileAccess {
     public float getDragCommon();
+
     public float getDragMult();
 
-
-    static ExplosiveProjectileAccess of(ExplosiveProjectileEntity entity){
+    static ExplosiveProjectileAccess of(ExplosiveProjectileEntity entity) {
         return (ExplosiveProjectileAccess) entity;
     }
-
 }

@@ -1,19 +1,13 @@
 package me.matl114.jsApi;
 
 import com.google.gson.JsonElement;
-import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.JavaOps;
 import com.mojang.serialization.JsonOps;
 import me.matl114.utils.ApiMethod;
 import me.matl114.versioned.api.VNbt;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.nbt.visitor.StringNbtWriter;
-
-import java.util.Map;
 
 @ApiMethod
 public class NBTHelper {

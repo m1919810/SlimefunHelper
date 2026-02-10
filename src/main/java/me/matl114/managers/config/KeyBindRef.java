@@ -3,7 +3,7 @@ package me.matl114.managers.config;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.config.AttrKeyValue;
 
-public class KeyBindRef extends ObjectRef<MultiKeyBind>{
+public class KeyBindRef extends ObjectRef<MultiKeyBind> {
     public static final Class<MultiKeyBind> TYPE = MultiKeyBind.class;
 
     public KeyBindRef(MultiKeyBind object) {
@@ -22,7 +22,7 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind>{
 
     @Override
     public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if(otherRef instanceof KeyBindRef stringRef){
+        if (otherRef instanceof KeyBindRef stringRef) {
             stringRef.set(this.get());
             return true;
         }
@@ -31,7 +31,7 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind>{
 
     @Override
     public AttrKeyValue<MultiKeyBind> _createKeyValue0(String key) {
-        //todo
+        // todo
         return AttrKeyValue.keyBind(key, this.get());
     }
 
@@ -40,11 +40,11 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind>{
         return (MultiKeyBind) val;
     }
 
-    public static KeyBindRef fromString(String val){
-        if(val.startsWith("hotkey:")){
-            try{
+    public static KeyBindRef fromString(String val) {
+        if (val.startsWith("hotkey:")) {
+            try {
                 return new KeyBindRef(new MultiKeyBind(val));
-            }catch (Throwable e){
+            } catch (Throwable e) {
             }
         }
         return null;

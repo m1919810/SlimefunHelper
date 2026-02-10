@@ -3,6 +3,8 @@ package me.matl114.versioned.impl;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.List;
+import java.util.Map;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.component.ComponentType;
@@ -12,10 +14,6 @@ import net.minecraft.component.type.UnbreakableComponent;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Unit;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 public class ItemUtils_v1_21_1 implements VItem {
     @Override
@@ -30,17 +28,17 @@ public class ItemUtils_v1_21_1 implements VItem {
 
     @Override
     public boolean isWeapon(ItemStack stack) {
-        if(stack.getItem() instanceof MaceItem) {
+        if (stack.getItem() instanceof MaceItem) {
             return true;
-        }else if(stack.getItem() instanceof ToolItem tool){
-            if(tool instanceof AxeItem){
+        } else if (stack.getItem() instanceof ToolItem tool) {
+            if (tool instanceof AxeItem) {
                 return true;
-            }else if(tool instanceof MiningToolItem){
+            } else if (tool instanceof MiningToolItem) {
                 return false;
-            }else{
+            } else {
                 return true;
             }
-        }else{
+        } else {
             return false;
         }
     }
@@ -70,13 +68,27 @@ public class ItemUtils_v1_21_1 implements VItem {
         return new CustomModelDataComponent(cmd);
     }
 
-    private static final Map<ComponentType<?>, Codec<?>> VERSIONED ;
-    static{
+    private static final Map<ComponentType<?>, Codec<?>> VERSIONED;
+
+    static {
         var builder = ImmutableMap.<ComponentType<?>, Codec<?>>builder();
-        builder.put(DataComponentTypes.CUSTOM_MODEL_DATA, Codec.withAlternative(CustomModelDataComponent.CODEC, RecordCodecBuilder.create((instance) -> {
-            return instance.group(Codec.FLOAT.listOf().optionalFieldOf("floats", List.of()).forGetter(s -> s.value() == 0 ? List.of(): List.of((float)s.value()))).apply(instance, floats -> new CustomModelDataComponent(floats.isEmpty()? 0 : (int)(float)floats.get(0)));
-        })));
-        builder.put(DataComponentTypes.UNBREAKABLE, Codec.withAlternative(UnbreakableComponent.CODEC, Unit.CODEC.xmap(s -> new UnbreakableComponent(true), b -> Unit.INSTANCE)));
+        builder.put(
+                DataComponentTypes.CUSTOM_MODEL_DATA,
+                Codec.withAlternative(CustomModelDataComponent.CODEC, RecordCodecBuilder.create((instance) -> {
+                    return instance.group(Codec.FLOAT
+                                    .listOf()
+                                    .optionalFieldOf("floats", List.of())
+                                    .forGetter(s -> s.value() == 0 ? List.of() : List.of((float) s.value())))
+                            .apply(
+                                    instance,
+                                    floats -> new CustomModelDataComponent(
+                                            floats.isEmpty() ? 0 : (int) (float) floats.get(0)));
+                })));
+        builder.put(
+                DataComponentTypes.UNBREAKABLE,
+                Codec.withAlternative(
+                        UnbreakableComponent.CODEC,
+                        Unit.CODEC.xmap(s -> new UnbreakableComponent(true), b -> Unit.INSTANCE)));
         VERSIONED = builder.build();
     }
 
@@ -84,5 +96,4 @@ public class ItemUtils_v1_21_1 implements VItem {
     public Map<ComponentType<?>, Codec<?>> getVersionCompatCodecs() {
         return VERSIONED;
     }
-
 }

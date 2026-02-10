@@ -3,28 +3,17 @@ package me.matl114.jsApi;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Pair;
-import lombok.Getter;
-import me.matl114.utils.ApiMethod;
-
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.screen.slot.Slot;
-import org.graalvm.polyglot.Value;
-import xyz.wagyourtail.jsmacros.core.language.BaseLanguage;
-import xyz.wagyourtail.jsmacros.core.language.BaseScriptContext;
-import xyz.wagyourtail.jsmacros.core.language.EventContainer;
-
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import me.matl114.utils.ApiMethod;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.player.PlayerEntity;
+import xyz.wagyourtail.jsmacros.core.language.EventContainer;
 
 /**
  * this provides the common consts which may be used in js Scripts
@@ -52,7 +41,6 @@ public interface Consts {
     Class<?> BlockEntity = net.minecraft.block.entity.BlockEntity.class;
     Class<?> FluidState = net.minecraft.fluid.FluidState.class;
 
-
     net.minecraft.util.math.BlockPos BlockPos_ZERO = net.minecraft.util.math.BlockPos.ORIGIN;
     net.minecraft.util.math.Vec3d Vec3d_ZERO = net.minecraft.util.math.Vec3d.ZERO;
     MinecraftClient MC = MinecraftClient.getInstance();
@@ -72,7 +60,6 @@ public interface Consts {
     Class<?> Chunk = net.minecraft.world.chunk.Chunk.class;
     Class<?> WorldChunk = net.minecraft.world.chunk.WorldChunk.class;
 
-
     // 物品和方块实体
     Class<?> Item = net.minecraft.item.Item.class;
     Class<?> Inventory = net.minecraft.inventory.Inventory.class;
@@ -80,9 +67,7 @@ public interface Consts {
     Class<?> PlayerInventory = net.minecraft.entity.player.PlayerInventory.class;
     Class<?> Container = net.minecraft.inventory.Inventory.class;
 
-
     // 交互和命中
-
 
     // 网络和NBT
     Class<?> NbtList = net.minecraft.nbt.NbtList.class;
@@ -99,9 +84,7 @@ public interface Consts {
     // 事件和状态
     Class<?> Enchantment = net.minecraft.enchantment.Enchantment.class;
 
-
     // =========================== Minecraft 常量实例 ===========================
-
 
     // 方向常量
     net.minecraft.util.math.Direction Direction_UP = net.minecraft.util.math.Direction.UP;
@@ -115,8 +98,6 @@ public interface Consts {
     net.minecraft.util.hit.HitResult.Type HitResult_MISS = net.minecraft.util.hit.HitResult.Type.MISS;
     net.minecraft.util.hit.HitResult.Type HitResult_BLOCK = net.minecraft.util.hit.HitResult.Type.BLOCK;
     net.minecraft.util.hit.HitResult.Type HitResult_ENTITY = net.minecraft.util.hit.HitResult.Type.ENTITY;
-
-
 
     // =========================== Java 基础类 ===========================
 
@@ -164,7 +145,6 @@ public interface Consts {
     Class<?> Runnable = java.lang.Runnable.class;
     Class<?> Callable = java.util.concurrent.Callable.class;
 
-
     // 文件和IO
     Class<?> File = java.io.File.class;
     Class<?> Path = java.nio.file.Path.class;
@@ -191,9 +171,8 @@ public interface Consts {
     // GUI (AWT/Swing - 可选)
     Class<?> Color = java.awt.Color.class;
 
-
     // 其他实用类
-    Class<?> JavaObject  = java.lang.Object.class;
+    Class<?> JavaObject = java.lang.Object.class;
     Class<?> Objects = java.util.Objects.class;
     Class<?> Optional = java.util.Optional.class;
     Class<?> Stream = java.util.stream.Stream.class;
@@ -202,57 +181,52 @@ public interface Consts {
     Class<?> DoubleStream = java.util.stream.DoubleStream.class;
     Class<?> UUID = java.util.UUID.class;
 
-
-
-
-    public static Supplier<Map<String, Object>> ConstantMap = Suppliers.memoize(()->{
+    public static Supplier<Map<String, Object>> ConstantMap = Suppliers.memoize(() -> {
         return java.util.Arrays.stream(Consts.class.getFields())
-            .filter(field -> Modifier.isStatic(field.getModifiers()))
-            .filter(f -> !Supplier.class.isAssignableFrom(f.getType()))
-            .map(f -> {
-                try {
-                    return Pair.of(f.getName(), f.get(null));
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-            })
-            .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+                .filter(field -> Modifier.isStatic(field.getModifiers()))
+                .filter(f -> !Supplier.class.isAssignableFrom(f.getType()))
+                .map(f -> {
+                    try {
+                        return Pair.of(f.getName(), f.get(null));
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     });
-    public static Supplier<Map<String, String>> AliasMap = Suppliers.memoize(()->{
+    public static Supplier<Map<String, String>> AliasMap = Suppliers.memoize(() -> {
         return ImmutableMap.<String, String>builder()
-            .put("NBT", "NbtElement")
-            .put("NBTMap", "NbtCompound")
-            .put("NBTList", "NbtList")
-
-            .build();
+                .put("NBT", "NbtElement")
+                .put("NBTMap", "NbtCompound")
+                .put("NBTList", "NbtList")
+                .build();
     });
-    public static void importConstantToContext(Object context0) throws Throwable{
-        EventContainer<?> context = (EventContainer<?>)context0;
+
+    public static void importConstantToContext(Object context0) throws Throwable {
+        EventContainer<?> context = (EventContainer<?>) context0;
         var ctx0 = context.getCtx().getContext();
         var bindingMap = ReflectHelper.invoke(ctx0, "getBindings", "js");
-        importConstantNames( bindingMap);
+        importConstantNames(bindingMap);
     }
-    public static void importConstantNames(Object varMap) throws Throwable{
+
+    public static void importConstantNames(Object varMap) throws Throwable {
         var map = ConstantMap.get();
         Map<String, Object> obj = new LinkedHashMap<>(map);
         var alias = AliasMap.get();
-        alias.forEach((k,v)-> {
-            if (map.containsKey(v)){
+        alias.forEach((k, v) -> {
+            if (map.containsKey(v)) {
                 obj.put(k, map.get(v));
             }
         });
-        //polygolt Value
-        Method m = ReflectHelper.findMethodByType(varMap, "putMember", String.class, Object.class).get(0);
-        obj.forEach((k, v)-> {
+        // polygolt Value
+        Method m = ReflectHelper.findMethodByType(varMap, "putMember", String.class, Object.class)
+                .get(0);
+        obj.forEach((k, v) -> {
             try {
                 m.invoke(varMap, k, v);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         });
-
-
-
     }
-
 }

@@ -1,9 +1,8 @@
 package me.matl114.utils.collections;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import net.minecraft.component.ComponentType;
-
-import java.util.Optional;
 
 @AllArgsConstructor
 public class MutableComponent<T> {

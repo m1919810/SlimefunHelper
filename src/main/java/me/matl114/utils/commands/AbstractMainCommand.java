@@ -1,15 +1,12 @@
 package me.matl114.utils.commands;
 
 import com.google.common.base.Supplier;
-
+import com.mojang.authlib.GameProfile;
+import com.mojang.brigadier.Command;
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import com.mojang.authlib.GameProfile;
-import com.mojang.brigadier.Command;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.interruptions.*;
@@ -41,32 +38,27 @@ import org.jetbrains.annotations.NotNull;
  * <p>To use this class, extend it and implement the abstract methods.
  * The root command should be defined as a field named "mainCommand" in the subclass.</p>
  */
-public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHandler {
+public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandler {
 
     /** Internal reference to the root command */
     private TreeSubCommand root;
 
-    protected SubCommand.Builder<TreeSubCommand> mainBuilder(){
-        return SubCommand.factoryBuilder((a, b, c)->{
+    protected SubCommand.Builder<TreeSubCommand> mainBuilder() {
+        return SubCommand.factoryBuilder((a, b, c) -> {
             root = new TreeSubCommand(a, c);
             root.subBuilder(SubCommand.taskBuilder())
-                .name("help")
-                .post(s -> s.executor(((var1, streamArgs, argsReader) -> {
-                    showHelpCommand(var1, new ArgumentReader(getName(), argsReader.getRemainingArgs()));
-                    return true;
-                })))
-                .complete();
+                    .name("help")
+                    .post(s -> s.executor(((var1, streamArgs, argsReader) -> {
+                        showHelpCommand(var1, new ArgumentReader(getName(), argsReader.getRemainingArgs()));
+                        return true;
+                    })))
+                    .complete();
             return root;
         });
     }
 
-
-
     /** Whether this command has been registered with the plugin */
     private boolean registered = false;
-
-
-
 
     /**
      * Sends a message to the command sender with color code translation.
@@ -87,7 +79,6 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
     protected void sendMessage(PlayerEntity sender, Text message) {
         Debug.chat(message);
     }
-
 
     /**
      * Gets a sub-command by name (case-insensitive).
@@ -111,9 +102,9 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      */
     public List<String> getDisplayedSubCommand() {
         return this.getSubCommands().stream()
-            .filter(SubCommand::isVisiable)
-            .map(SubCommand::getName)
-            .toList();
+                .filter(SubCommand::isVisiable)
+                .map(SubCommand::getName)
+                .toList();
     }
 
     /**
@@ -136,7 +127,6 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
     public void registerSub(SubCommand command) {
         this.root.registerSub(command);
     }
-
 
     /**
      * Gets the root command for this command group.
@@ -163,14 +153,13 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
         return getMainName();
     }
 
-
     @org.jetbrains.annotations.Nullable
     @Override
     public String permissionRequired() {
         return getMainCommand().permissionRequired();
     }
 
-    public ArgumentInputStream parseInput(ArgumentReader reader){
+    public ArgumentInputStream parseInput(ArgumentReader reader) {
         return (getMainCommand()).parseInput(reader);
     }
 
@@ -196,23 +185,22 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      * @return true if the command was executed successfully, false otherwise
      */
     public boolean onCommand(PlayerEntity var1, Command var2, String var3, String[] var4) {
-        try{
-            //return getMainCommand().onCustomCommand(var1, var2, new ArgumentReader(getMainName(), var4));
+        try {
+            // return getMainCommand().onCustomCommand(var1, var2, new ArgumentReader(getMainName(), var4));
             return onCustomCommand(var1, var2, new ArgumentReader(getMainName(), var4).stepBack());
-        }catch (ArgumentException ex){
+        } catch (ArgumentException ex) {
             ex.handleAbort(var1, this);
             return true;
         }
     }
 
-
     public boolean onCommandAsync(
-        @NotNull PlayerEntity var1, @NotNull Command var2, @NotNull String var3, @NotNull String[] var4) {
+            @NotNull PlayerEntity var1, @NotNull Command var2, @NotNull String var3, @NotNull String[] var4) {
         return onCommand(var1, var2, var3, var4);
     }
 
-    private StringBuilder getArgumentPositionPrefix(ArgumentReader reader){
-        return reader == null? new StringBuilder() : new StringBuilder("&f" + reader.getAlreadyReadCmdStr() + "&c<--");
+    private StringBuilder getArgumentPositionPrefix(ArgumentReader reader) {
+        return reader == null ? new StringBuilder() : new StringBuilder("&f" + reader.getAlreadyReadCmdStr() + "&c<--");
     }
 
     /**
@@ -225,12 +213,24 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      * @param input The invalid input that was provided
      */
     public void handleTypeError(
-        PlayerEntity sender, @Nullable ArgumentReader reader , @Nullable String argument, TypeError.BaseArgumentType type, String input) {
+            PlayerEntity sender,
+            @Nullable ArgumentReader reader,
+            @Nullable String argument,
+            TypeError.BaseArgumentType type,
+            String input) {
         StringBuilder builder = getArgumentPositionPrefix(reader);
         if (argument != null) {
-            builder.append("&c类型错误:参数\"").append(argument).append("\"需要输入一个").append(type.getDisplayNameZHCN()).append(",但是输入了:").append(input);
+            builder.append("&c类型错误:参数\"")
+                    .append(argument)
+                    .append("\"需要输入一个")
+                    .append(type.getDisplayNameZHCN())
+                    .append(",但是输入了:")
+                    .append(input);
         } else {
-            builder.append("&c类型错误: 需要输入一个").append(type.getDisplayNameZHCN()).append(",但是输入了:").append(input);
+            builder.append("&c类型错误: 需要输入一个")
+                    .append(type.getDisplayNameZHCN())
+                    .append(",但是输入了:")
+                    .append(input);
         }
         sendMessage(sender, builder.toString());
     }
@@ -242,14 +242,13 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      * @param sender The command sender to send the error to
      * @param argument The argument name that is missing a value
      */
-    public void handleValueAbsent(PlayerEntity sender, @Nullable ArgumentReader reader , @Nonnull String argument) {
+    public void handleValueAbsent(PlayerEntity sender, @Nullable ArgumentReader reader, @Nonnull String argument) {
         StringBuilder builder = getArgumentPositionPrefix(reader);
-        if(reader != null){
+        if (reader != null) {
             builder.append("&c值缺失: 并未输入参数\"").append(argument).append("\"的值");
 
-        }else{
+        } else {
             builder.append("&c值缺失: 并未输入参数\"").append(argument).append("\"的值");
-
         }
         sendMessage(sender, builder.toString());
     }
@@ -266,19 +265,19 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      */
     @Override
     public void handleValueOutOfRange(
-        PlayerEntity sender,
-        @Nullable ArgumentReader reader,
-        @Nullable String argument,
-        TypeError.BaseArgumentType type,
-        String range,
-        @Nonnull String input) {
+            PlayerEntity sender,
+            @Nullable ArgumentReader reader,
+            @Nullable String argument,
+            TypeError.BaseArgumentType type,
+            String range,
+            @Nonnull String input) {
         var builder = getArgumentPositionPrefix(reader);
         if (argument != null) {
             builder.append("&c值不在范围内: 参数 %s 输入了类型: %s, 需要在范围 %s 之间, 但是输入了%s"
-                .formatted(argument, type.getDisplayNameZHCN(), range, input));
+                    .formatted(argument, type.getDisplayNameZHCN(), range, input));
         } else {
-            builder.append("&c值不在范围内: 输入了类型: %s, 需要在范围 %s 之间, 但是输入了 %s"
-                .formatted(type.getDisplayNameZHCN(), range, input));
+            builder.append(
+                    "&c值不在范围内: 输入了类型: %s, 需要在范围 %s 之间, 但是输入了 %s".formatted(type.getDisplayNameZHCN(), range, input));
         }
         sendMessage(sender, builder.toString());
     }
@@ -299,18 +298,19 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
         }
     }
 
-    public void handlePermissionDenied(PlayerEntity sender, String permission, @Nullable ArgumentReader commandNodeName) {
+    public void handlePermissionDenied(
+            PlayerEntity sender, String permission, @Nullable ArgumentReader commandNodeName) {
         if (commandNodeName == null) {
             noPermission(sender);
         } else {
             sendMessage(sender, "&c你没有权限使用: " + commandNodeName.getAlreadyReadArgStr());
         }
     }
+
     @Override
-    public void handleUnexpectedArgument(PlayerEntity sender, ArgumentReader reader){
+    public void handleUnexpectedArgument(PlayerEntity sender, ArgumentReader reader) {
         showHelpCommand(sender, reader);
     }
-
 
     /**
      * Handles logical errors during command execution.
@@ -332,51 +332,52 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
         sendMessage(var1, "&c你没有权限使用该指令!");
     }
 
-    public Stream<String> getHelp(String prefix){
+    public Stream<String> getHelp(String prefix) {
         return getMainCommand().getHelp(prefix + getName() + " ");
     }
 
     @Override
-    public boolean onCustomCommand(@NotNull PlayerEntity var1, @Nullable Command apiUsage, ArgumentReader reader) throws ArgumentException {
+    public boolean onCustomCommand(@NotNull PlayerEntity var1, @Nullable Command apiUsage, ArgumentReader reader)
+            throws ArgumentException {
         // mainName as first
-        if(hasPermission(var1)){
-            if(reader.hasNext()){
-                if(getName().equalsIgnoreCase(reader.next())){
+        if (hasPermission(var1)) {
+            if (reader.hasNext()) {
+                if (getName().equalsIgnoreCase(reader.next())) {
                     return getMainCommand().onCustomCommand(var1, apiUsage, reader);
-                }else {
+                } else {
                     throw new ValueUnexpectedError(reader);
                 }
-            }else{
-                throw new ValueAbsentError(reader,"main_command");
+            } else {
+                throw new ValueAbsentError(reader, "main_command");
             }
-        }else {
+        } else {
             throw new PermissionDenyError(permissionRequired(), reader);
         }
     }
 
     @Override
-    public List<String> onCustomTabComplete(PlayerEntity sender, @org.jetbrains.annotations.Nullable Command apiUsage, ArgumentReader arguments) {
-        if(hasPermission(sender) && arguments.hasNext() && getName().equalsIgnoreCase(arguments.next())){
+    public List<String> onCustomTabComplete(
+            PlayerEntity sender, @org.jetbrains.annotations.Nullable Command apiUsage, ArgumentReader arguments) {
+        if (hasPermission(sender) && arguments.hasNext() && getName().equalsIgnoreCase(arguments.next())) {
             return getMainCommand().onCustomTabComplete(sender, apiUsage, arguments);
-        }
-        else return List.of();
+        } else return List.of();
     }
 
     @Override
     public Stream<String> onCustomHelp(PlayerEntity sender, ArgumentReader reader) {
-        if(hasPermission(sender)){
-            if(reader.hasNext()){
+        if (hasPermission(sender)) {
+            if (reader.hasNext()) {
                 // mainName as first
-                if(getName().equalsIgnoreCase(reader.next()) && hasPermission(sender)){
-                    return  getMainCommand().onCustomHelp(sender, reader);
-                }else{
+                if (getName().equalsIgnoreCase(reader.next()) && hasPermission(sender)) {
+                    return getMainCommand().onCustomHelp(sender, reader);
+                } else {
                     return Stream.empty();
                 }
 
-            }else{
+            } else {
                 return Stream.empty();
             }
-        }else{
+        } else {
             return Stream.empty();
         }
     }
@@ -387,13 +388,11 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      *
      * @param sender The command sender to show help to
      */
-
-
-    protected void showHelpCommand(PlayerEntity sender, ArgumentReader command){
+    protected void showHelpCommand(PlayerEntity sender, ArgumentReader command) {
         String already = command.getAlreadyReadArgStr();
         sendMessage(sender, "/%s 全部指令".formatted(already));
-        onCustomHelp(sender,new ArgumentReader(command.getAlreadyReadArgs()))
-            .forEach(s -> sendMessage(sender, "&a" + s));
+        onCustomHelp(sender, new ArgumentReader(command.getAlreadyReadArgs()))
+                .forEach(s -> sendMessage(sender, "&a" + s));
     }
 
     /**
@@ -486,7 +485,7 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      * @return A supplier that returns the list of visible sub-command names
      */
     public Supplier<Stream<String>> subCommandsSupplier() {
-        return ()-> this.getSubCommands().stream().map(SubCommand::getName);
+        return () -> this.getSubCommands().stream().map(SubCommand::getName);
     }
 
     /**
@@ -495,11 +494,14 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
      * @return A supplier that returns a list of online player names
      */
     public static Supplier<Stream<String>> playerNameSupplier() {
-        return () -> MinecraftClient.getInstance().world.getPlayers().stream().map(PlayerEntity::getNameForScoreboard);// Bukkit.getOnlinePlayers().stream().map(Player::getName);
+        return () -> MinecraftClient.getInstance().world.getPlayers().stream()
+                .map(PlayerEntity::getNameForScoreboard); // Bukkit.getOnlinePlayers().stream().map(Player::getName);
     }
 
     public static Supplier<Stream<String>> playerListNameSupplier() {
-        return () -> MinecraftClient.getInstance().getNetworkHandler().getPlayerList().stream().map(PlayerListEntry::getProfile).map(GameProfile::getName);
+        return () -> MinecraftClient.getInstance().getNetworkHandler().getPlayerList().stream()
+                .map(PlayerListEntry::getProfile)
+                .map(GameProfile::getName);
     }
 
     public static void checkArgument(boolean argument, String... msg) {

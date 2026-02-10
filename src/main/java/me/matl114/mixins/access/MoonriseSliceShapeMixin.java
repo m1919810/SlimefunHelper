@@ -14,15 +14,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(SlicedVoxelShape.class)
-public abstract class MoonriseSliceShapeMixin extends VoxelShape{
+public abstract class MoonriseSliceShapeMixin extends VoxelShape {
     protected MoonriseSliceShapeMixin(VoxelSet voxels) {
         super(voxels);
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void moonriseinitCache(VoxelShape shape, Direction.Axis axis, int sliceWidth, CallbackInfo ci){
+    private void moonriseinitCache(VoxelShape shape, Direction.Axis axis, int sliceWidth, CallbackInfo ci) {
         MoonriseVoxelShapeAccess.of(this).moonrise$initCache();
     }
-
-
 }

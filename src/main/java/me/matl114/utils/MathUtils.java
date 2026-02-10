@@ -1,33 +1,33 @@
 package me.matl114.utils;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntSupplier;
 import lombok.AllArgsConstructor;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.IntSupplier;
-
 public class MathUtils {
     public static double s2(double x) {
         return x * x;
     }
-    public static double squareSum(double... x){
+
+    public static double squareSum(double... x) {
         double sum = 0;
-        for(double y : x){
-            sum += y*y;
+        for (double y : x) {
+            sum += y * y;
         }
         return sum;
     }
-    public static int sgn(int t){
+
+    public static int sgn(int t) {
         return Integer.compare(t, 0);
     }
 
-
     public static Vec3d linearInterpolation(Vec3d[] vec3ds, int ticksLater) {
         if (ticksLater <= 0 || vec3ds.length < 3) return vec3ds[vec3ds.length - 1];
-        if(vec3ds[0] == null || vec3ds[1] == null || vec3ds[2] == null) return vec3ds[2];
+        if (vec3ds[0] == null || vec3ds[1] == null || vec3ds[2] == null) return vec3ds[2];
 
         // 计算最近的速度（位置变化）
         Vec3d velocity1 = vec3ds[2].subtract(vec3ds[1]);
@@ -38,14 +38,12 @@ public class MathUtils {
 
         // 预测：position = p0 + v*t + 0.5*a*t^2
         double t = ticksLater;
-        return vec3ds[2]
-            .add(velocity1.multiply(t))
-            .add(acceleration.multiply(0.5 * t * t));
+        return vec3ds[2].add(velocity1.multiply(t)).add(acceleration.multiply(0.5 * t * t));
     }
 
     public static Vec3d quadraticPolynomialFit(Vec3d[] positions, int ticksLater) {
         if (ticksLater <= 0 || positions.length < 3) return positions[positions.length - 1];
-        if(positions[0] == null || positions[1] == null || positions[2] == null) return positions[2];
+        if (positions[0] == null || positions[1] == null || positions[2] == null) return positions[2];
         // 使用最近3个点进行二次拟合
         // 对x, y, z分别进行二次多项式拟合
         // 设多项式为: p(t) = a*t^2 + b*t + c
@@ -73,10 +71,9 @@ public class MathUtils {
         double t2 = t * t;
 
         return new Vec3d(
-            xCoeffs[0] * t2 + xCoeffs[1] * t + xCoeffs[2],
-            yCoeffs[0] * t2 + yCoeffs[1] * t + yCoeffs[2],
-            zCoeffs[0] * t2 + zCoeffs[1] * t + zCoeffs[2]
-        );
+                xCoeffs[0] * t2 + xCoeffs[1] * t + xCoeffs[2],
+                yCoeffs[0] * t2 + yCoeffs[1] * t + yCoeffs[2],
+                zCoeffs[0] * t2 + zCoeffs[1] * t + zCoeffs[2]);
     }
 
     private static double[] solveQuadratic(double[] t, double[] p) {
@@ -90,33 +87,33 @@ public class MathUtils {
         double p0 = p[0], p1 = p[1], p2 = p[2];
 
         // 使用克莱姆法则解方程组
-        double det = t0*t0*(t1 - t2) + t0*(t2*t2 - t1*t1) + (t1*t1*t2 - t1*t2*t2);
+        double det = t0 * t0 * (t1 - t2) + t0 * (t2 * t2 - t1 * t1) + (t1 * t1 * t2 - t1 * t2 * t2);
 
-        double detA = p0*(t1 - t2) + t0*(p2 - p1) + (p1*t2 - p2*t1);
-        double detB = t0*t0*(p1 - p2) + p0*(t2*t2 - t1*t1) + (t1*t1*p2 - t2*t2*p1);
-        double detC = t0*t0*(t1*p2 - t2*p1) + t0*(t2*t2*p1 - t1*t1*p2) + p0*(t1*t1*t2 - t1*t2*t2);
+        double detA = p0 * (t1 - t2) + t0 * (p2 - p1) + (p1 * t2 - p2 * t1);
+        double detB = t0 * t0 * (p1 - p2) + p0 * (t2 * t2 - t1 * t1) + (t1 * t1 * p2 - t2 * t2 * p1);
+        double detC =
+                t0 * t0 * (t1 * p2 - t2 * p1) + t0 * (t2 * t2 * p1 - t1 * t1 * p2) + p0 * (t1 * t1 * t2 - t1 * t2 * t2);
 
         double a = detA / det;
         double b = detB / det;
         double c = detC / det;
 
-        return new double[]{a, b, c};
+        return new double[] {a, b, c};
     }
 
-
-    public static Vec3d linearPrediction(Vec3d[] vec3ds, int ticksLater){
+    public static Vec3d linearPrediction(Vec3d[] vec3ds, int ticksLater) {
         if (ticksLater <= 0) {
             return vec3ds[vec3ds.length - 1];
         }
         int datapoints = 0;
-        for(int i = vec3ds.length - 1; i >= 0 ; --i){
-            if(vec3ds[i] != null){
+        for (int i = vec3ds.length - 1; i >= 0; --i) {
+            if (vec3ds[i] != null) {
                 ++datapoints;
-            }else {
+            } else {
                 break;
             }
         }
-        if(datapoints < 3){
+        if (datapoints < 3) {
             return vec3ds[vec3ds.length - 1];
         }
         Vec3d[] vec3ds1 = new Vec3d[datapoints];
@@ -126,7 +123,7 @@ public class MathUtils {
         double[] y = new double[vec3ds.length];
         double[] z = new double[vec3ds.length];
         double[] arg = new double[vec3ds.length];
-        for (var i = 0; i < vec3ds.length; i++){
+        for (var i = 0; i < vec3ds.length; i++) {
             x[i] = vec3ds[i].x;
             y[i] = vec3ds[i].y;
             z[i] = vec3ds[i].z;
@@ -138,19 +135,19 @@ public class MathUtils {
         return new Vec3d(xl.f(ticksLater), yl.f(ticksLater), zl.f(ticksLater));
     }
 
-    public static Vec3d quadraticPrediction(Vec3d[] vec3ds, int ticksLater){
+    public static Vec3d quadraticPrediction(Vec3d[] vec3ds, int ticksLater) {
         if (ticksLater <= 0) {
             return vec3ds[vec3ds.length - 1];
         }
         int datapoints = 0;
-        for(int i = vec3ds.length - 1; i >= 0 ; --i){
-            if(vec3ds[i] != null){
+        for (int i = vec3ds.length - 1; i >= 0; --i) {
+            if (vec3ds[i] != null) {
                 ++datapoints;
-            }else {
+            } else {
                 break;
             }
         }
-        if(datapoints < 4){
+        if (datapoints < 4) {
             return vec3ds[vec3ds.length - 1];
         }
         Vec3d[] vec3ds1 = new Vec3d[datapoints];
@@ -161,7 +158,7 @@ public class MathUtils {
         double[] y = new double[vec3ds.length];
         double[] z = new double[vec3ds.length];
         double[] arg = new double[vec3ds.length];
-        for (var i = 0; i < vec3ds.length; i++){
+        for (var i = 0; i < vec3ds.length; i++) {
             x[i] = vec3ds[i].x;
             y[i] = vec3ds[i].y;
             z[i] = vec3ds[i].z;
@@ -195,8 +192,7 @@ public class MathUtils {
 
         return new Linear(slope, intercept);
     }
-    //todo 卡尔曼滤波实现
-
+    // todo 卡尔曼滤波实现
 
     public static MathFunction quadraticRegression(double[] x, double[] y) {
         int n = x.length;
@@ -230,39 +226,34 @@ public class MathUtils {
 
         double[] b = {sumX2Y, sumXY, sumY};
 
-        Matrix3d m = new Matrix3d(
-            sumX4, sumX3, sumX2,
-            sumX3, sumX2, sumX,
-            sumX2, sumX, n
-        );
-        Vector3d v = new Vector3d(
-            sumX2Y, sumXY, sumY
-        );
-        if(Math.abs( m.determinant()) > 1e-6) {
+        Matrix3d m = new Matrix3d(sumX4, sumX3, sumX2, sumX3, sumX2, sumX, sumX2, sumX, n);
+        Vector3d v = new Vector3d(sumX2Y, sumXY, sumY);
+        if (Math.abs(m.determinant()) > 1e-6) {
             Matrix3d minv = m.invert();
             Vector3d result = minv.transform(v);
-            return new Quadratic(result.x , result.y , result.z);
-        }else{
+            return new Quadratic(result.x, result.y, result.z);
+        } else {
             return linearRegression(x, y);
         }
-
     }
 
-
-    public static interface MathFunction{
+    public static interface MathFunction {
         public double f(double x);
     }
+
     @AllArgsConstructor
-    public static class Linear implements MathFunction{
+    public static class Linear implements MathFunction {
         double a;
         double b;
+
         @Override
         public double f(double x) {
             return a * x + b;
         }
     }
+
     @AllArgsConstructor
-    public static class Quadratic implements MathFunction{
+    public static class Quadratic implements MathFunction {
         double a;
         double b;
         double c;
@@ -272,9 +263,9 @@ public class MathUtils {
             return a * x * x + b * x + c;
         }
     }
-    //指数加权移动平均
-    //copied from NumberVector
-    //todo: test if it works well
+    // 指数加权移动平均
+    // copied from NumberVector
+    // todo: test if it works well
     public static class NVPredictor {
         private final Vec3d[] pointList;
         private final IntSupplier supplier;
@@ -286,23 +277,25 @@ public class MathUtils {
 
         public Vec3d compute(int ticksLater) {
             int idx = supplier.getAsInt();
-            Vec3d currentPos     = pointList[idx];
+            Vec3d currentPos = pointList[idx];
             if (currentPos == null) return null;
             int len = pointList.length;
             int i = 1;
             List<Vec3d> points = new ArrayList<>();
             points.add(currentPos);
             for (; i < len; i++) {
-                Vec3d v3d = pointList[(idx - i +  len) % len ];
-                if(v3d != null){
+                Vec3d v3d = pointList[(idx - i + len) % len];
+                if (v3d != null) {
                     points.add(0, v3d);
-                }else{
+                } else {
                     break;
                 }
             }
             Vec3d result = null;
-            if (!points.isEmpty()) {result = currentPos;}
-            if (points.size() < 2 ) return result;
+            if (!points.isEmpty()) {
+                result = currentPos;
+            }
+            if (points.size() < 2) return result;
             List<Vec3d> diff = new ArrayList<>();
             Vec3d oldV = null;
             for (Vec3d v : points) {
@@ -316,7 +309,7 @@ public class MathUtils {
                 oldV = v;
             }
             if (diff.size() >= 2) {
-                Vec3d d = new Vec3d(0,0,0);
+                Vec3d d = new Vec3d(0, 0, 0);
                 for (Vec3d v : diff) {
                     d = d.add(v).multiply(0.5);
                 }
@@ -327,6 +320,5 @@ public class MathUtils {
 
             return result;
         }
-
     }
 }

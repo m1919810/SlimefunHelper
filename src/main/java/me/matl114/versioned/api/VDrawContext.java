@@ -1,5 +1,8 @@
 package me.matl114.versioned.api;
 
+import java.util.List;
+import java.util.Optional;
+import javax.annotation.Nonnull;
 import me.matl114.versioned.impl.DrawContext_v1_21_1;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -11,10 +14,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Optional;
-
 public interface VDrawContext {
     // MatrixStack will be deprecated in the future in GUI drawing, to compat old code, we have to use these wrappers
     @Nonnull
@@ -25,6 +24,7 @@ public interface VDrawContext {
     public DrawContext pushMatrix();
 
     public DrawContext popMatrix();
+
     public MatrixStack getMatrices();
 
     public void setShaderColor(final float red, final float green, final float blue, final float alpha);
@@ -32,7 +32,7 @@ public interface VDrawContext {
     public void setShaderAlpha(float alpha);
 
     default void drawTexture(Identifier texture, int x, int y, int u, int v, int width, int height) {
-        this.drawTexture(texture, x, y, 0, (float)u, (float)v, width, height, 256, 256);
+        this.drawTexture(texture, x, y, 0, (float) u, (float) v, width, height, 256, 256);
     }
 
     /**
@@ -41,7 +41,17 @@ public interface VDrawContext {
      * <p>The width and height of the region are the same as
      * the dimensions of the rectangle.
      */
-    default void drawTexture(Identifier texture, int x, int y, int z, float u, float v, int width, int height, int textureWidth, int textureHeight) {
+    default void drawTexture(
+            Identifier texture,
+            int x,
+            int y,
+            int z,
+            float u,
+            float v,
+            int width,
+            int height,
+            int textureWidth,
+            int textureHeight) {
         this.drawTexture(texture, x, x + width, y, y + height, z, width, height, u, v, textureWidth, textureHeight);
     }
 
@@ -49,9 +59,19 @@ public interface VDrawContext {
      * Draws a textured rectangle from a region in a texture.
      */
     default void drawTexture(
-        Identifier texture, int x, int y, int width, int height, float u, float v, int regionWidth, int regionHeight, int textureWidth, int textureHeight
-    ) {
-        this.drawTexture(texture, x, x + width, y, y + height, 0, regionWidth, regionHeight, u, v, textureWidth, textureHeight);
+            Identifier texture,
+            int x,
+            int y,
+            int width,
+            int height,
+            float u,
+            float v,
+            int regionWidth,
+            int regionHeight,
+            int textureWidth,
+            int textureHeight) {
+        this.drawTexture(
+                texture, x, x + width, y, y + height, 0, regionWidth, regionHeight, u, v, textureWidth, textureHeight);
     }
 
     /**
@@ -60,47 +80,75 @@ public interface VDrawContext {
      * <p>The width and height of the region are the same as
      * the dimensions of the rectangle.
      */
-    default void drawTexture(Identifier texture, int x, int y, float u, float v, int width, int height, int textureWidth, int textureHeight) {
+    default void drawTexture(
+            Identifier texture,
+            int x,
+            int y,
+            float u,
+            float v,
+            int width,
+            int height,
+            int textureWidth,
+            int textureHeight) {
         this.drawTexture(texture, x, y, width, height, u, v, width, height, textureWidth, textureHeight);
     }
 
     default void drawTexture(
-        Identifier texture, int x1, int x2, int y1, int y2, int z, int regionWidth, int regionHeight, float u, float v, int textureWidth, int textureHeight
-    ) {
+            Identifier texture,
+            int x1,
+            int x2,
+            int y1,
+            int y2,
+            int z,
+            int regionWidth,
+            int regionHeight,
+            float u,
+            float v,
+            int textureWidth,
+            int textureHeight) {
         this.drawTexturedQuad(
-            texture,
-            x1,
-            x2,
-            y1,
-            y2,
-            z,
-            (u + 0.0F) / (float)textureWidth,
-            (u + (float)regionWidth) / (float)textureWidth,
-            (v + 0.0F) / (float)textureHeight,
-            (v + (float)regionHeight) / (float)textureHeight
-        );
+                texture,
+                x1,
+                x2,
+                y1,
+                y2,
+                z,
+                (u + 0.0F) / (float) textureWidth,
+                (u + (float) regionWidth) / (float) textureWidth,
+                (v + 0.0F) / (float) textureHeight,
+                (v + (float) regionHeight) / (float) textureHeight);
     }
 
     default void drawGuiTexture(Identifier texture, int x, int y, int width, int height) {
         this.drawGuiTexture(texture, x, y, 0, width, height);
     }
 
-
     public void drawGuiTexture(Identifier texture, int x, int y, int z, int width, int height);
 
-    public void drawGuiTexture(Identifier texture, int i, int j, int k, int l, int x, int y, int z, int width, int height);
+    public void drawGuiTexture(
+            Identifier texture, int i, int j, int k, int l, int x, int y, int z, int width, int height);
 
     default void drawSprite(int x, int y, int z, int width, int height, Sprite sprite) {
         if (width != 0 && height != 0) {
-            this.drawTexturedQuad(sprite.getAtlasId(), x, x + width, y, y + height, z, sprite.getMinU(), sprite.getMaxU(), sprite.getMinV(), sprite.getMaxV());
+            this.drawTexturedQuad(
+                    sprite.getAtlasId(),
+                    x,
+                    x + width,
+                    y,
+                    y + height,
+                    z,
+                    sprite.getMinU(),
+                    sprite.getMaxU(),
+                    sprite.getMinV(),
+                    sprite.getMaxV());
         }
     }
 
+    public void drawTexturedQuad(
+            Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2);
 
-    public void drawTexturedQuad(Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2);
-
-
-    default void drawCenteredTextWithShadow(TextRenderer textRenderer, OrderedText text, int centerX, int y, int color) {
+    default void drawCenteredTextWithShadow(
+            TextRenderer textRenderer, OrderedText text, int centerX, int y, int color) {
         this.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, color, true);
     }
 
@@ -108,7 +156,8 @@ public interface VDrawContext {
         this.drawText(textRenderer, text, x, y, color, true);
     }
 
-    public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) ;
+    public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow);
+
     public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow);
     // just pass the relative coord
     public void enableScissor(int x, int y, int x2, int y2);
@@ -122,15 +171,16 @@ public interface VDrawContext {
 
     public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth);
 
-    default void fill( int x1, int y1, int x2, int y2, int color){
+    default void fill(int x1, int y1, int x2, int y2, int color) {
         this.fill(x1, y1, x2, y2, 0, color);
     }
 
-    public void fill( int x1, int y1, int x2, int y2, int z, int color);
+    public void fill(int x1, int y1, int x2, int y2, int z, int color);
 
     public void drawTooltip(TextRenderer textRenderer, List<Text> text, Optional<TooltipData> data, int x, int y);
 
     public void drawItem(ItemStack stack, int x, int y, int seed, int z);
 
-    public void drawItemInSlot(TextRenderer textRenderer, ItemStack stack, int x, int y, @Nullable String countOverride);
+    public void drawItemInSlot(
+            TextRenderer textRenderer, ItemStack stack, int x, int y, @Nullable String countOverride);
 }

@@ -13,9 +13,10 @@ import org.spongepowered.asm.mixin.Unique;
 public abstract class BlockEntityEvents implements BlockEntityAccess {
     @Unique
     public MetaData metaData;
+
     @Unique
-    public MetaData getMetadata(){
-        if(metaData == null){
+    public MetaData getMetadata() {
+        if (metaData == null) {
             metaData = new MetaData();
         }
         return metaData;

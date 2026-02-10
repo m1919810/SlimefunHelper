@@ -2,6 +2,7 @@ plugins {
 	id 'fabric-loom' version "1.8-SNAPSHOT"
 	id 'maven-publish'
 	id 'com.gradleup.shadow' version "9.0.0-beta13"
+	id "com.diffplug.spotless" version "8.1.0"
 }
 loom {
 	accessWidenerPath = file("src/main/resources/overrideList.accesswidener")
@@ -27,9 +28,6 @@ repositories {
 	}
 	maven {
 		url 'https://jitpack.io'
-	}
-	maven {
-		url 'https://repo.destroystokyo.com/repository/maven-public'
 	}
 	maven {
 		url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots'
@@ -85,6 +83,19 @@ shadowJar {
 		exclude "mappings/mappings.tiny"
 	}
 	finalizedBy(tasks.remapJar)
+}
+
+spotless {
+	lineEndings = 'WINDOWS'
+
+	java {
+		// 使用 PalantirJavaFormat（更简单，不需要配置文件）
+		palantirJavaFormat('2.38.0')
+				.style('PALANTIR')
+
+		removeUnusedImports()
+		endWithNewline()
+	}
 }
 
 //loom {

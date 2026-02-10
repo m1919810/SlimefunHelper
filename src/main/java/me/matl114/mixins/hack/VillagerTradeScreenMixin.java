@@ -15,22 +15,25 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(MerchantScreen.class)
 @Environment(EnvType.CLIENT)
-public abstract class VillagerTradeScreenMixin extends HandledScreen<MerchantScreenHandler> implements MerchantScreenAccess {
+public abstract class VillagerTradeScreenMixin extends HandledScreen<MerchantScreenHandler>
+        implements MerchantScreenAccess {
     public VillagerTradeScreenMixin(MerchantScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
     }
+
     @Shadow
     private int selectedIndex;
 
-    @Shadow protected abstract void syncRecipeIndex();
+    @Shadow
+    protected abstract void syncRecipeIndex();
 
     @Accessor("selectedIndex")
     public abstract int getSelectedIndex();
+
     @Unique
     @Override
-    public void setSelectedIndex(int index ){
+    public void setSelectedIndex(int index) {
         this.selectedIndex = index;
         syncRecipeIndex();
     }
-
 }

@@ -13,11 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ResourcePackPositionMixin {
 
     @Inject(method = "fixedPosition", at = @At("HEAD"), cancellable = true)
-    private void ignoreFixPosition(CallbackInfoReturnable<Boolean> cir){
+    private void ignoreFixPosition(CallbackInfoReturnable<Boolean> cir) {
         cir.setReturnValue(false);
     }
-//    @Inject(method = "required", at = @At("HEAD"), cancellable = true)
-//    private void ignoreRequired(CallbackInfoReturnable<Boolean> cir){
-//       // cir.setReturnValue(false);
-//    }
+    //    @Inject(method = "required", at = @At("HEAD"), cancellable = true)
+    //    private void ignoreRequired(CallbackInfoReturnable<Boolean> cir){
+    //       // cir.setReturnValue(false);
+    //    }
 }

@@ -16,46 +16,59 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-
 @Environment(EnvType.CLIENT)
 @Mixin(value = InGameHud.class, priority = 10)
 public abstract class InGameHudMixin {
     @Shadow
     @Final
     private DebugHud debugHud;
-    @Shadow @Final private MinecraftClient client;
+
+    @Shadow
+    @Final
+    private MinecraftClient client;
+
     @Unique
     private boolean tmpValue3;
+
     @Unique
     private boolean tmpValue;
+
     @Unique
     private boolean tmpValue2;
 
-
-    @Inject(at = @At("HEAD"),
-        method = "renderPlayerList(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V")
-    private void rejectWurstHud(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci){
-        if(RenderTasks.getRenderExtra().noWurstHud.get()){
+    @Inject(
+            at = @At("HEAD"),
+            method =
+                    "renderPlayerList(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V")
+    private void rejectWurstHud(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
+        if (RenderTasks.getRenderExtra().noWurstHud.get()) {
             this.tmpValue3 = true;
             this.tmpValue2 = MinecraftClient.getInstance().options.hudHidden;
             client.options.hudHidden = false;
-            if(!debugHud.shouldShowDebugHud()){
+            if (!debugHud.shouldShowDebugHud()) {
                 this.tmpValue = true;
                 debugHud.toggleDebugHud();
-            }else {
+            } else {
                 this.tmpValue = false;
             }
         }
     }
-    @Inject(method = "renderPlayerList", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;getScoreboard()Lnet/minecraft/scoreboard/Scoreboard;", shift = At.Shift.AFTER))
-    private void resetHudData(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci){
-        if(tmpValue3){
+
+    @Inject(
+            method = "renderPlayerList",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/world/ClientWorld;getScoreboard()Lnet/minecraft/scoreboard/Scoreboard;",
+                            shift = At.Shift.AFTER))
+    private void resetHudData(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
+        if (tmpValue3) {
             tmpValue3 = false;
             client.options.hudHidden = this.tmpValue2;
-            if(this.tmpValue){
+            if (this.tmpValue) {
                 debugHud.toggleDebugHud();
             }
         }
     }
-
 }

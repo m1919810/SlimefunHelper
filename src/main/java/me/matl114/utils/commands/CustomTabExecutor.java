@@ -1,12 +1,11 @@
 package me.matl114.utils.commands;
 
 import com.mojang.brigadier.Command;
-import net.minecraft.entity.player.PlayerEntity;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import net.minecraft.entity.player.PlayerEntity;
 
 public interface CustomTabExecutor {
     /**
@@ -49,16 +48,18 @@ public interface CustomTabExecutor {
 
     public Stream<String> onCustomHelp(PlayerEntity sender, ArgumentReader arguments);
 
-//    @DoNotOverride
-//    @Override
-//    default boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-//        return onCustomCommand(commandSender, command, new ArgumentReader(s, strings));
-//    }
-//    @Override
-//    @DoNotOverride
-//    default List<String> onTabComplete(@NotNull CommandSender var1, @NotNull Command var2, @NotNull String var3, @NotNull String[] var4) {
-//        return onCustomTabComplete(var1, var2, new ArgumentReader(var3, var4));
-//    }
+    //    @DoNotOverride
+    //    @Override
+    //    default boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s,
+    // @NotNull String[] strings) {
+    //        return onCustomCommand(commandSender, command, new ArgumentReader(s, strings));
+    //    }
+    //    @Override
+    //    @DoNotOverride
+    //    default List<String> onTabComplete(@NotNull CommandSender var1, @NotNull Command var2, @NotNull String var3,
+    // @NotNull String[] var4) {
+    //        return onCustomTabComplete(var1, var2, new ArgumentReader(var3, var4));
+    //    }
 
     /**
      * the prefix WILL contains current command name with a blank
@@ -66,6 +67,4 @@ public interface CustomTabExecutor {
      * @return
      */
     public Stream<String> getHelp(String prefix);
-
-
 }

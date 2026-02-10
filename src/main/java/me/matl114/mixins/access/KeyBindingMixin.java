@@ -13,16 +13,17 @@ import org.spongepowered.asm.mixin.Unique;
 public abstract class KeyBindingMixin implements KeyBindAccess {
     @Shadow
     private InputUtil.Key boundKey;
+
     @Unique
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    public void resetKeyState(){
-        long handle =  mc.getWindow().getHandle();
-        int  code = boundKey.getCode();
-        if(boundKey.getCategory() == InputUtil.Type.MOUSE)
-            setPressed(GLFW.glfwGetMouseButton(handle, code) == 1);
-        else
-            setPressed(InputUtil.isKeyPressed(handle, code));
+
+    public void resetKeyState() {
+        long handle = mc.getWindow().getHandle();
+        int code = boundKey.getCode();
+        if (boundKey.getCategory() == InputUtil.Type.MOUSE) setPressed(GLFW.glfwGetMouseButton(handle, code) == 1);
+        else setPressed(InputUtil.isKeyPressed(handle, code));
     }
+
     @Shadow
-    public abstract void setPressed(boolean b) ;
+    public abstract void setPressed(boolean b);
 }

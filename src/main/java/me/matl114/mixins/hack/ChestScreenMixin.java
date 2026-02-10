@@ -22,16 +22,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(GenericContainerScreen.class)
-public abstract class ChestScreenMixin  extends HandledScreen<GenericContainerScreenHandler> implements TileInventoryScreen {
+public abstract class ChestScreenMixin extends HandledScreen<GenericContainerScreenHandler>
+        implements TileInventoryScreen {
 
     @Unique
     private BlockPos pos;
 
     @Unique
-    public BlockPos getPos(){
+    public BlockPos getPos() {
         return this.pos;
     }
-
 
     @Unique
     private Block cacheBlockType;
@@ -41,27 +41,37 @@ public abstract class ChestScreenMixin  extends HandledScreen<GenericContainerSc
     }
 
     @Unique
-    public Block getBlockType(){
+    public Block getBlockType() {
         return cacheBlockType;
     }
 
     @Unique
-    public ClientWorld getWorld(){
+    public ClientWorld getWorld() {
         return this.world;
     }
+
     @Unique
-    public HandledScreen<?> castHandled(){
+    public HandledScreen<?> castHandled() {
         return this;
     }
 
     @Unique
     private ClientWorld world;
-    @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;<init>(Lnet/minecraft/screen/ScreenHandler;Lnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/text/Text;)V", shift = At.Shift.AFTER))
-    private void tryInitBlockPos(GenericContainerScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci){
+
+    @Inject(
+            method = "<init>",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;<init>(Lnet/minecraft/screen/ScreenHandler;Lnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/text/Text;)V",
+                            shift = At.Shift.AFTER))
+    private void tryInitBlockPos(
+            GenericContainerScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci) {
         this.world = MinecraftClient.getInstance().world;
-        //everything
-        this.pos = InvTasks.predictScreenFrom((b)->true);
-        if(this.pos != null && this.world != null){
+        // everything
+        this.pos = InvTasks.predictScreenFrom((b) -> true);
+        if (this.pos != null && this.world != null) {
             cacheBlockType = this.world.getBlockState(this.pos).getBlock();
         }
     }

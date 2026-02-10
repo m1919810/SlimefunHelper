@@ -2,11 +2,10 @@ package me.matl114.managers.input;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import java.lang.reflect.Field;
+import javax.annotation.Nullable;
 import me.matl114.utils.Debug;
 import org.lwjgl.glfw.GLFW;
-
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 
 public class KeyCode {
     private static final Int2ObjectOpenHashMap<String> MAP_KEY_TO_NAME = new Int2ObjectOpenHashMap<>();
@@ -152,12 +151,13 @@ public class KeyCode {
     public static int getKeyCodeFromName(String name) {
         return MAP_NAME_TO_KEY.getInt(name);
     }
-    public static int getKeyCodeFromMouseAction(int button){
+
+    public static int getKeyCodeFromMouseAction(int button) {
         return button - 100;
     }
-    public static void init(){
 
-    }
+    public static void init() {}
+
     static {
         MAP_NAME_TO_KEY.defaultReturnValue(KEY_NONE);
 

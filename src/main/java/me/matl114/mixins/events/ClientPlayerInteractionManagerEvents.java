@@ -19,21 +19,30 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ClientPlayerInteractionManager.class)
 public abstract class ClientPlayerInteractionManagerEvents {
 
-    @Inject(method = "clickRecipe",at = @At("HEAD"))
-    public void onClickRecipe(int syncId, RecipeEntry<?> recipe, boolean craftAll, CallbackInfo ci){
+    @Inject(method = "clickRecipe", at = @At("HEAD"))
+    public void onClickRecipe(int syncId, RecipeEntry<?> recipe, boolean craftAll, CallbackInfo ci) {
         Listener.getClickCraftingRecipe().broadcast(recipe);
     }
+
     @Inject(method = "interactBlock", at = @At(value = "HEAD"))
-    public void onPreInteractBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir){
-        //todo: can it be modifiable
-        if( !Listener.doItemUseAtBlockPre(hand, hitResult)){
+    public void onPreInteractBlock(
+            ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir) {
+        // todo: can it be modifiable
+        if (!Listener.doItemUseAtBlockPre(hand, hitResult)) {
             cir.setReturnValue(ActionResult.PASS);
         }
     }
-    @Inject(method = "interactBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V",shift = At.Shift.AFTER))
-    public void onPostInteractBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir){
+
+    @Inject(
+            method = "interactBlock",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V",
+                            shift = At.Shift.AFTER))
+    public void onPostInteractBlock(
+            ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir) {
         Listener.doItemUseAtBlockPost(hand, hitResult);
     }
-
-
 }

@@ -1,13 +1,6 @@
 package me.matl114.bukkit;
 
 import com.google.common.base.Preconditions;
-import me.matl114.utils.Debug;
-
-
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,17 +8,18 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
+import me.matl114.utils.Debug;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class BukkitSerializationMock {
-    public static BukkitItemFactory ITEM_FACTORY_INSTANCE=new BukkitItemFactory();
-    public static void init(){
+    public static BukkitItemFactory ITEM_FACTORY_INSTANCE = new BukkitItemFactory();
+
+    public static void init() {
         Debug.info("loading bukkitMock!");
-
     }
-    public static void initTest(){
 
-    }
+    public static void initTest() {}
 
     public static BukkitItemFactory getItemFactory() {
         return ITEM_FACTORY_INSTANCE;
@@ -34,15 +28,15 @@ public class BukkitSerializationMock {
     public static final String SERIALIZED_TYPE_KEY = "==";
     private final Class<? extends ConfigurationSerializable> clazz;
     private static Map<String, Class<? extends ConfigurationSerializable>> aliases = new HashMap();
-    static {
-        registerClass(BukkitMetaItem.class,"ItemMeta");
-        registerClass(BukkitMetaItem.class,"org.bukkit.craftbukkit.inventory.CraftMetaItem");
-        registerClass(BukkitItemStack.class,"ItemStack");
-        registerClass(BukkitItemStack.class,"org.bukkit.inventory.ItemStack");
-        registerClass(BukkitOfflineplayer.class,"OfflinePlayer");
-        registerClass(BukkitPlayerProfile.class,"PlayerProfile");
-    }
 
+    static {
+        registerClass(BukkitMetaItem.class, "ItemMeta");
+        registerClass(BukkitMetaItem.class, "org.bukkit.craftbukkit.inventory.CraftMetaItem");
+        registerClass(BukkitItemStack.class, "ItemStack");
+        registerClass(BukkitItemStack.class, "org.bukkit.inventory.ItemStack");
+        registerClass(BukkitOfflineplayer.class, "OfflinePlayer");
+        registerClass(BukkitPlayerProfile.class, "PlayerProfile");
+    }
 
     protected BukkitSerializationMock(@NotNull Class<? extends ConfigurationSerializable> clazz) {
         this.clazz = clazz;
@@ -78,27 +72,33 @@ public class BukkitSerializationMock {
     @Nullable
     protected ConfigurationSerializable deserializeViaMethod(@NotNull Method method, @NotNull Map<String, ?> args) {
         try {
-            ConfigurationSerializable result = (ConfigurationSerializable)method.invoke((Object)null, args);
+            ConfigurationSerializable result = (ConfigurationSerializable) method.invoke((Object) null, args);
             if (result != null) {
                 return result;
             }
 
-            Debug.info( "Could not call method '" + method.toString() + "' of " + this.clazz + " for deserialization: method returned null");
+            Debug.info("Could not call method '" + method.toString() + "' of " + this.clazz
+                    + " for deserialization: method returned null");
         } catch (Throwable var4) {
             Throwable ex = var4;
-            Debug.info( "Could not call method '" + method.toString() + "' of " + this.clazz + " for deserialization", ex instanceof InvocationTargetException ? ex.getCause() : ex);
+            Debug.info(
+                    "Could not call method '" + method.toString() + "' of " + this.clazz + " for deserialization",
+                    ex instanceof InvocationTargetException ? ex.getCause() : ex);
         }
 
         return null;
     }
 
     @Nullable
-    protected ConfigurationSerializable deserializeViaCtor(@NotNull Constructor<? extends ConfigurationSerializable> ctor, @NotNull Map<String, ?> args) {
+    protected ConfigurationSerializable deserializeViaCtor(
+            @NotNull Constructor<? extends ConfigurationSerializable> ctor, @NotNull Map<String, ?> args) {
         try {
-            return (ConfigurationSerializable)ctor.newInstance(args);
+            return (ConfigurationSerializable) ctor.newInstance(args);
         } catch (Throwable var4) {
             Throwable ex = var4;
-            Debug.info( "Could not call constructor '" + ctor.toString() + "' of " + this.clazz + " for deserialization", ex instanceof InvocationTargetException ? ex.getCause() : ex);
+            Debug.info(
+                    "Could not call constructor '" + ctor.toString() + "' of " + this.clazz + " for deserialization",
+                    ex instanceof InvocationTargetException ? ex.getCause() : ex);
             return null;
         }
     }
@@ -133,24 +133,27 @@ public class BukkitSerializationMock {
     }
 
     @Nullable
-    public static ConfigurationSerializable deserializeObject(@NotNull Map<String, ?> args, @NotNull Class<? extends ConfigurationSerializable> clazz) {
+    public static ConfigurationSerializable deserializeObject(
+            @NotNull Map<String, ?> args, @NotNull Class<? extends ConfigurationSerializable> clazz) {
         return (new BukkitSerializationMock(clazz)).deserialize(args);
     }
+
     public static final String UNKNOWN_SERIALIZATION_TYPE = "unknown-serialization-type";
+
     @Nullable
     public static Object deserializeObject(@NotNull Map<String, ?> args) {
         Class<? extends ConfigurationSerializable> clazz = null;
         if (args.containsKey("==")) {
             try {
-                String alias = (String)args.get("==");
+                String alias = (String) args.get("==");
                 if (alias == null) {
                     throw new IllegalArgumentException("Cannot have null alias");
                 }
 
                 clazz = getClassByAlias(alias);
                 if (clazz == null) {
-                    //do not throw Exception
-                    //throw new IllegalArgumentException("Specified class does not exist ('" + alias + "')");
+                    // do not throw Exception
+                    // throw new IllegalArgumentException("Specified class does not exist ('" + alias + "')");
 
                     return new UnknownSerialization(args);
                 }
@@ -165,10 +168,12 @@ public class BukkitSerializationMock {
             throw new IllegalArgumentException("Args doesn't contain type key ('==')");
         }
     }
-    public static class UnknownSerialization{
+
+    public static class UnknownSerialization {
         public String type;
-        public Map<String, ?> value ;
-        public UnknownSerialization(Map value){
+        public Map<String, ?> value;
+
+        public UnknownSerialization(Map value) {
             this.value = new LinkedHashMap<>(value);
             type = (String) value.get("==");
             this.value.remove("==");
@@ -189,14 +194,12 @@ public class BukkitSerializationMock {
     }
 
     public static void unregisterClass(@NotNull Class<? extends ConfigurationSerializable> clazz) {
-        while(aliases.values().remove(clazz)) {
-        }
-
+        while (aliases.values().remove(clazz)) {}
     }
 
     @Nullable
     public static Class<? extends ConfigurationSerializable> getClassByAlias(@NotNull String alias) {
-        return (Class)aliases.get(alias);
+        return (Class) aliases.get(alias);
     }
 
     @NotNull

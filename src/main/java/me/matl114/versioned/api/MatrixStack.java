@@ -3,7 +3,7 @@ package me.matl114.versioned.api;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
-//matrix stack for GUI, deprecate depth test now, but not then
+// matrix stack for GUI, deprecate depth test now, but not then
 public interface MatrixStack {
     public void pushMatrix();
 

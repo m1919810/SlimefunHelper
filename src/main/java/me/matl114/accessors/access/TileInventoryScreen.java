@@ -10,21 +10,18 @@ public interface TileInventoryScreen {
     @Nullable
     public BlockPos getPos();
 
-
-
     @Nullable
     public ClientWorld getWorld();
-
 
     @Nullable
     public Block getBlockType();
 
     @Nullable
-    default boolean isVirtual(){
-        return getPos()== null || getWorld() == null;
+    default boolean isVirtual() {
+        return getPos() == null || getWorld() == null;
     }
 
-    static TileInventoryScreen of(HandledScreen<?> handledScreen){
+    static TileInventoryScreen of(HandledScreen<?> handledScreen) {
         return (TileInventoryScreen) handledScreen;
     }
 

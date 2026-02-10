@@ -1,5 +1,11 @@
 package me.matl114.jsApi;
 
+import static me.matl114.utils.ASMUtils.*;
+import static org.objectweb.asm.Opcodes.*;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.*;
 import me.matl114.hacks.*;
 import me.matl114.utils.*;
 import org.objectweb.asm.*;
@@ -8,37 +14,31 @@ import xyz.wagyourtail.jsmacros.core.Core;
 import xyz.wagyourtail.jsmacros.core.library.BaseLibrary;
 import xyz.wagyourtail.jsmacros.core.library.LibraryRegistry;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.*;
-
-import static org.objectweb.asm.Opcodes.*;
-import static me.matl114.utils.ASMUtils.*;
 /**
  * this utility class is created for JsMacros invocation
  * JsMacros is fucking great
  */
 public class SlimefunHelperApi {
-    private static void initTask(){
-        try{
+    private static void initTask() {
+        try {
             Core jsMacrosInstance = Core.getInstance();
             LibraryRegistry registry = jsMacrosInstance.libraryRegistry;
             Class<?> baseLib = BaseLibrary.class;
 
             List<Class<?>> clazzes = createSlimefunHelperApi(baseLib);
-            for (var clazz : clazzes){
+            for (var clazz : clazzes) {
                 registry.addLibrary((Class<? extends BaseLibrary>) clazz);
             }
             Debug.info("Successfully injected jsMacros library");
-        }catch (Throwable e){
+        } catch (Throwable e) {
             Debug.info("JsMacros library inject failed, caused by: ");
             e.printStackTrace();
             Debug.info("Running Mock js lib test");
             createSlimefunHelperApi(MockLibBase.class);
-            for (var clazz : slimefunHelperApi){
-                try{
+            for (var clazz : slimefunHelperApi) {
+                try {
                     clazz.newInstance();
-                }catch (Throwable e1){
+                } catch (Throwable e1) {
                     throw new RuntimeException(e1);
                 }
             }
@@ -46,56 +46,54 @@ public class SlimefunHelperApi {
         }
     }
 
-    public static void init(){
+    public static void init() {
         Tasks.scheduleDelayed(SlimefunHelperApi::initTask, 1);
     }
 
-    public static abstract class MockLibBase{
+    public abstract static class MockLibBase {}
 
-    }
     private static List<Class<?>> slimefunHelperApi;
-    public static synchronized List<Class<?>> createSlimefunHelperApi(Class<?> libBase){
-        if(slimefunHelperApi == null){
+
+    public static synchronized List<Class<?>> createSlimefunHelperApi(Class<?> libBase) {
+        if (slimefunHelperApi == null) {
             slimefunHelperApi = new ArrayList<>();
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, ClientHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, Consts.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, DataHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, InputHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, KeyBindingHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, PacketHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, RenderHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, ReflectHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, MovTasks.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, Tasks.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, CombatTasks.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, MineTasks.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, InvTasks.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, CommonUtils.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, JsHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, RegistryHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, Debug.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, ChatUtils.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, InventoryUtils.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, ItemStackHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, CollectionUtils.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, FileHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, RaycastUtils.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, WorldHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, NBTHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, EnumHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, EntityHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, ScreenHelper.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, ClientUtils.class));
-            slimefunHelperApi.add( buildLibForJsMacros(libBase, ItemStackUtils.class));
-//            buildLibForJsMacros(libBase, ClientHelper.class);
-        //todo: 适配PacketByteBufferHelper
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, ClientHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, Consts.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, DataHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, InputHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, KeyBindingHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, PacketHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, RenderHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, ReflectHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, MovTasks.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, Tasks.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, CombatTasks.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, MineTasks.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, InvTasks.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, CommonUtils.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, JsHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, RegistryHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, Debug.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, ChatUtils.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, InventoryUtils.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, ItemStackHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, CollectionUtils.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, FileHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, RaycastUtils.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, WorldHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, NBTHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, EnumHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, EntityHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, ScreenHelper.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, ClientUtils.class));
+            slimefunHelperApi.add(buildLibForJsMacros(libBase, ItemStackUtils.class));
+            //            buildLibForJsMacros(libBase, ClientHelper.class);
+            // todo: 适配PacketByteBufferHelper
         }
         return slimefunHelperApi;
     }
 
-
-
-    public synchronized static Class<?> buildLibForJsMacros(Class<?> targetBaseClass, Class<?> utilityClass) {
+    public static synchronized Class<?> buildLibForJsMacros(Class<?> targetBaseClass, Class<?> utilityClass) {
         try {
             // 检查是否有ApiMethod注解
             boolean hasApiMethodAnnotation = false;
@@ -120,14 +118,7 @@ public class SlimefunHelperApi {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 
             // 定义类头部
-            cw.visit(V21,
-                ACC_PUBLIC|ACC_FINAL|ACC_SUPER,
-                internalName,
-                null,
-                baseClassInternalName,
-                null
-            )
-            ;
+            cw.visit(V21, ACC_PUBLIC | ACC_FINAL | ACC_SUPER, internalName, null, baseClassInternalName, null);
 
             cw.visitSource(null, null);
             if (hasLibraryAnnotation) {
@@ -158,7 +149,9 @@ public class SlimefunHelperApi {
                         }
                     }
                     targetMethods.add(method);
-                    if(method.getParameterCount() == 0 && method.getReturnType() != void.class && method.getName().startsWith("get")){
+                    if (method.getParameterCount() == 0
+                            && method.getReturnType() != void.class
+                            && method.getName().startsWith("get")) {
                         getterMethods.add(method.getName());
                     }
 
@@ -173,10 +166,8 @@ public class SlimefunHelperApi {
                     }
                     methodDesc.append(")").append(asmMethod.getReturnType().getDescriptor());
 
-                    MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC,
-                        method.getName(),
-                        methodDesc.toString(),
-                        null, null);
+                    MethodVisitor mv =
+                            cw.visitMethod(Opcodes.ACC_PUBLIC, method.getName(), methodDesc.toString(), null, null);
                     mv.visitCode();
                     var args = method.getParameterTypes();
                     // 加载参数
@@ -186,11 +177,12 @@ public class SlimefunHelperApi {
                     }
 
                     // 调用原始静态方法
-                    mv.visitMethodInsn(  Opcodes.INVOKESTATIC,
-                        utilityClassInternalName,
-                        method.getName(),
-                        methodDesc.toString(),
-                        utilityClass.isInterface());
+                    mv.visitMethodInsn(
+                            Opcodes.INVOKESTATIC,
+                            utilityClassInternalName,
+                            method.getName(),
+                            methodDesc.toString(),
+                            utilityClass.isInterface());
 
                     // 返回结果
                     createSuitableReturn(mv, Type.getInternalName(method.getReturnType()));
@@ -213,34 +205,29 @@ public class SlimefunHelperApi {
                     }
 
                     // 创建对应的实例字段
-                    //todo: 只有当不存在getter时才创建getter
-                    //todo: 只有当field为final的时候才创建field
+                    // todo: 只有当不存在getter时才创建getter
+                    // todo: 只有当field为final的时候才创建field
                     String fieldDesc = Type.getDescriptor(field.getType());
-                    if(Modifier.isFinal(modifiers)) {
+                    if (Modifier.isFinal(modifiers)) {
                         targetFields.add(field);
-                        cw.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
-                            field.getName(), fieldDesc, null, null);
+                        cw.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, field.getName(), fieldDesc, null, null);
                     }
 
                     String getterMethodName = "get" + field.getName();
-                    //create getter if no exist
-                    if(!getterMethods.contains(getterMethodName)){
+                    // create getter if no exist
+                    if (!getterMethods.contains(getterMethodName)) {
                         getterMethods.add(getterMethodName);
-                        var mv = cw.visitMethod(ACC_PUBLIC| ACC_FINAL,
-                            getterMethodName, "()" + fieldDesc, null, null
-                        );
+                        var mv = cw.visitMethod(ACC_PUBLIC | ACC_FINAL, getterMethodName, "()" + fieldDesc, null, null);
                         mv.visitCode();
                         mv.visitFieldInsn(
-                            GETSTATIC,
-                            Type.getInternalName(field.getDeclaringClass()),
-                            field.getName(),
-                            ByteCodeUtils.toJvmType(field.getType())
-                        );
+                                GETSTATIC,
+                                Type.getInternalName(field.getDeclaringClass()),
+                                field.getName(),
+                                ByteCodeUtils.toJvmType(field.getType()));
                         ASMUtils.createSuitableReturn(mv, Type.getInternalName(field.getType()));
-                        mv.visitMaxs(0,0);
+                        mv.visitMaxs(0, 0);
                         mv.visitEnd();
                     }
-
                 }
             }
 
@@ -252,17 +239,12 @@ public class SlimefunHelperApi {
 
             // 调用父类构造函数
             constructor.visitVarInsn(Opcodes.ALOAD, 0);
-            constructor.visitMethodInsn(Opcodes.INVOKESPECIAL,
-                baseClassInternalName,
-                "<init>",
-                "()V",
-                false);
+            constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, baseClassInternalName, "<init>", "()V", false);
 
             // 初始化所有final字段
             for (java.lang.reflect.Field field : utilityClass.getDeclaredFields()) {
                 int modifiers = field.getModifiers();
-                if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers) &&
-                    targetFields.contains(field)) {
+                if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers) && targetFields.contains(field)) {
 
                     // 获取字段值
                     Object fieldValue = field.get(null); // 静态字段
@@ -273,17 +255,12 @@ public class SlimefunHelperApi {
 
                     // 加载字段值
                     constructor.visitFieldInsn(
-                        GETSTATIC,
-                        Type.getInternalName(field.getDeclaringClass()),
-                        field.getName(),
-                        ByteCodeUtils.toJvmType(field.getType())
-                    );
+                            GETSTATIC,
+                            Type.getInternalName(field.getDeclaringClass()),
+                            field.getName(),
+                            ByteCodeUtils.toJvmType(field.getType()));
                     // 存储到字段
-                    constructor.visitFieldInsn(Opcodes.PUTFIELD,
-                        internalName,
-                        field.getName(),
-                        fieldDesc
-                    );
+                    constructor.visitFieldInsn(Opcodes.PUTFIELD, internalName, field.getName(), fieldDesc);
                 }
             }
 
