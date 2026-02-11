@@ -107,8 +107,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
                             value = "FIELD",
                             target =
                                     "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;",
-                            shift = At.Shift.BEFORE,
-                            ordinal = 2))
+                            shift = At.Shift.BEFORE))
     public void onInputEventIfScreenOpen(CallbackInfo ci, @Local Profiler profiler) {
         if (MinecraftClient.getInstance().currentScreen != null
                 || MinecraftClient.getInstance().getOverlay() != null) {

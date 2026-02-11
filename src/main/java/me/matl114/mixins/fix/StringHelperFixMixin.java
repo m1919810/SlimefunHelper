@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(StringHelper.class)
 public abstract class StringHelperFixMixin {
     @Inject(method = "isValidChar", at = @At("HEAD"), cancellable = true)
-    private static void isValidChar(int c, CallbackInfoReturnable<Boolean> cir) {
+    private static void isValidChar(char c, CallbackInfoReturnable<Boolean> cir) {
         cir.setReturnValue(c >= ' ' && c != 127);
     }
 }

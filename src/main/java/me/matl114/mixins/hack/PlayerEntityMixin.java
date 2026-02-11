@@ -60,7 +60,7 @@ public abstract class PlayerEntityMixin extends LivingEntity
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/entity/PlayerLikeEntity;<init>(Lnet/minecraft/entity/EntityType;Lnet/minecraft/world/World;)V",
+                                    "Lnet/minecraft/entity/LivingEntity;<init>(Lnet/minecraft/entity/EntityType;Lnet/minecraft/world/World;)V",
                             shift = At.Shift.AFTER))
     private void onInit(World world, GameProfile profile, CallbackInfo ci) {
         historyPositionQueue = new Vec3d[HISTORY_LEN];

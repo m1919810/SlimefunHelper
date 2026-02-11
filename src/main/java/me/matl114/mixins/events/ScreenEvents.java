@@ -5,6 +5,7 @@ import me.matl114.events.Listener;
 import me.matl114.utils.containers.MetaData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.AbstractParentElement;
 import net.minecraft.client.gui.screen.Screen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,13 +23,13 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
     }
 
     @Inject(
-            method = "init(II)V",
+            method = "init(Lnet/minecraft/client/MinecraftClient;II)V",
             at =
                     @At(
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/gui/screen/Screen;setInitialFocus()V",
                             shift = At.Shift.BEFORE))
-    public void onPostInitialization(int width, int height, CallbackInfo ci) {
+    public void onPostInitialization(MinecraftClient client, int width, int height, CallbackInfo ci) {
         // first initialize
         Listener.getPostInitializeScreen().broadcast((Screen) (AbstractParentElement) this);
     }

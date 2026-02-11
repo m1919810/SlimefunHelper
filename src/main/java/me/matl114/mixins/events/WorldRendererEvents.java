@@ -17,22 +17,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(WorldRenderer.class)
 public abstract class WorldRendererEvents {
-    @Shadow
-    public abstract void tick(Camera camera);
 
     @Inject(at = @At("RETURN"), method = "render")
     public void renderMore(
-            ObjectAllocator allocator,
-            RenderTickCounter tickCounter,
-            boolean renderBlockOutline,
-            Camera camera,
-            Matrix4f positionMatrix,
-            Matrix4f basicProjectionMatrix,
-            Matrix4f projectionMatrix,
-            GpuBufferSlice fogBuffer,
-            Vector4f fogColor,
-            boolean renderSky,
-            CallbackInfo ci) {
+        ObjectAllocator allocator, RenderTickCounter tickCounter, boolean renderBlockOutline, Camera camera, Matrix4f positionMatrix, Matrix4f projectionMatrix, GpuBufferSlice fog, Vector4f fogColor, boolean shouldRenderSky, CallbackInfo ci) {
         MatrixStack matrixStack = new MatrixStack();
         matrixStack.multiplyPositionMatrix(positionMatrix);
         // fixme: Event

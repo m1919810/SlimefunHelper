@@ -38,7 +38,7 @@ public abstract class ChatHudMixin implements ChatHudAccess {
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Ljava/util/List;removeLast()Ljava/lang/Object;",
+                            target = "Ljava/util/List;remove(I)Ljava/lang/Object;",
                             shift = At.Shift.BEFORE),
             cancellable = true)
     private void resizeChatHistoryMaxLength(ChatHudLine message, CallbackInfo ci) {

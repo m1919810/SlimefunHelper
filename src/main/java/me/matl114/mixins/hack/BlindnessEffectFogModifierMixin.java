@@ -6,7 +6,9 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.fog.BlindnessEffectFogModifier;
 import net.minecraft.client.render.fog.FogData;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -39,12 +41,7 @@ public abstract class BlindnessEffectFogModifierMixin {
                                     "Lnet/minecraft/client/render/fog/BlindnessEffectFogModifier;getStatusEffect()Lnet/minecraft/registry/entry/RegistryEntry;"),
             cancellable = true)
     private void applyStartEndModifier(
-            FogData data,
-            Camera camera,
-            ClientWorld clientWorld,
-            float f,
-            RenderTickCounter renderTickCounter,
-            CallbackInfo ci) {
+        FogData data, Entity cameraEntity, BlockPos cameraPos, ClientWorld world, float viewDistance, RenderTickCounter tickCounter, CallbackInfo ci) {
         if (RenderTasks.getRenderExtra().noEffect.get()) {
             ci.cancel();
         }
