@@ -104,8 +104,7 @@ public class RenderListener {
             names = {"renderer", "stack"})
     private static final EventChannel<DrawContext> renderSlot = new EventChannel<>();
 
-    public static void renderSlotInScreen(
-            DrawContext context, HandledScreen<?> renderer, Slot stack) {
+    public static void renderSlotInScreen(DrawContext context, HandledScreen<?> renderer, Slot stack) {
         if (renderSlot.isEmpty()) return;
         Event<DrawContext> contextEvent = new Event<>(context, false, false, renderer, stack);
         renderSlot.handleValue(contextEvent);

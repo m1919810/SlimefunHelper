@@ -35,11 +35,7 @@ public abstract class ChatHudMixin implements ChatHudAccess {
     // mixin for chatHistoryLength override
     @Inject(
             method = "addVisibleMessage",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Ljava/util/List;remove(I)Ljava/lang/Object;",
-                            shift = At.Shift.BEFORE),
+            at = @At(value = "INVOKE", target = "Ljava/util/List;remove(I)Ljava/lang/Object;", shift = At.Shift.BEFORE),
             cancellable = true)
     private void resizeChatHistoryMaxLength(ChatHudLine message, CallbackInfo ci) {
         if (ChatTasks.getChatExtra().overrideChatHistoryLength.get()) {

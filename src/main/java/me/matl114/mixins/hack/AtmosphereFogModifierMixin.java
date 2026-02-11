@@ -1,7 +1,6 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.RenderTasks;
-import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.fog.AtmosphericFogModifier;
 import net.minecraft.client.render.fog.FogData;
@@ -21,7 +20,13 @@ public abstract class AtmosphereFogModifierMixin {
      */
     @Inject(method = "applyStartEndModifier", at = @At("RETURN"))
     private void onApplyStartEndModifier(
-        FogData data, Entity cameraEntity, BlockPos cameraPos, ClientWorld world, float viewDistance, RenderTickCounter tickCounter, CallbackInfo ci) {
+            FogData data,
+            Entity cameraEntity,
+            BlockPos cameraPos,
+            ClientWorld world,
+            float viewDistance,
+            RenderTickCounter tickCounter,
+            CallbackInfo ci) {
         if (RenderTasks.getRenderExtra().noEffect.get()) {
             data.environmentalStart = 1000000;
             data.environmentalEnd = 1000000;

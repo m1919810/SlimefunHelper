@@ -10,7 +10,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -20,7 +19,16 @@ public abstract class WorldRendererEvents {
 
     @Inject(at = @At("RETURN"), method = "render")
     public void renderMore(
-        ObjectAllocator allocator, RenderTickCounter tickCounter, boolean renderBlockOutline, Camera camera, Matrix4f positionMatrix, Matrix4f projectionMatrix, GpuBufferSlice fog, Vector4f fogColor, boolean shouldRenderSky, CallbackInfo ci) {
+            ObjectAllocator allocator,
+            RenderTickCounter tickCounter,
+            boolean renderBlockOutline,
+            Camera camera,
+            Matrix4f positionMatrix,
+            Matrix4f projectionMatrix,
+            GpuBufferSlice fog,
+            Vector4f fogColor,
+            boolean shouldRenderSky,
+            CallbackInfo ci) {
         MatrixStack matrixStack = new MatrixStack();
         matrixStack.multiplyPositionMatrix(positionMatrix);
         // fixme: Event

@@ -1,7 +1,6 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.RenderTasks;
-import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.fog.BlindnessEffectFogModifier;
 import net.minecraft.client.render.fog.FogData;
@@ -41,7 +40,13 @@ public abstract class BlindnessEffectFogModifierMixin {
                                     "Lnet/minecraft/client/render/fog/BlindnessEffectFogModifier;getStatusEffect()Lnet/minecraft/registry/entry/RegistryEntry;"),
             cancellable = true)
     private void applyStartEndModifier(
-        FogData data, Entity cameraEntity, BlockPos cameraPos, ClientWorld world, float viewDistance, RenderTickCounter tickCounter, CallbackInfo ci) {
+            FogData data,
+            Entity cameraEntity,
+            BlockPos cameraPos,
+            ClientWorld world,
+            float viewDistance,
+            RenderTickCounter tickCounter,
+            CallbackInfo ci) {
         if (RenderTasks.getRenderExtra().noEffect.get()) {
             ci.cancel();
         }

@@ -32,7 +32,8 @@ public abstract class HandledScreenEvents {
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;)V"))
+                            target =
+                                    "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;)V"))
     public void onRenderSlot(DrawContext context, CallbackInfo ci, @Local Slot slot) {
         RenderListener.renderSlotInScreen(context, (HandledScreen<?>) (Object) this, slot);
     }
