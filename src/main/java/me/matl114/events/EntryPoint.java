@@ -1,12 +1,11 @@
 package me.matl114.events;
 
-import lombok.AllArgsConstructor;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import lombok.AllArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class EntryPoint<W> {
     @AllArgsConstructor
@@ -19,28 +18,31 @@ public abstract class EntryPoint<W> {
             return this.priority - th.priority;
         }
 
-
         @Override
         public boolean test(T t) {
-            if(value instanceof Consumer con){
+            if (value instanceof Consumer con) {
                 con.accept(t);
                 return true;
-            }else if(value instanceof Predicate pred){
+            } else if (value instanceof Predicate pred) {
                 return pred.test(t);
-            }else return false;
+            } else return false;
         }
     }
+
     protected List<H<W>> handlers = new ArrayList<>();
-    public void registerHandler(Predicate<W> val){
+
+    public void registerHandler(Predicate<W> val) {
         registerHandler(val, 0);
     }
-    public void registerHandler(Consumer<W> val){
+
+    public void registerHandler(Consumer<W> val) {
         registerHandler(val, 0);
     }
-    public void registerHandler(Object val, int p){
+
+    public void registerHandler(Object val, int p) {
         H newHandler = new H(p, val);
 
-        int index = handlers.size() -1 ;
+        int index = handlers.size() - 1;
         while (index >= 0 && handlers.get(index).priority > p) {
             --index;
         }
@@ -48,20 +50,21 @@ public abstract class EntryPoint<W> {
         handlers.add(index + 1, newHandler);
     }
 
-    public void  unregisterPredicate(Predicate<Predicate<W>> p){
-        handlers.removeIf(h -> h.value instanceof Predicate pd &&  p.test(pd));
+    public void unregisterPredicate(Predicate<Predicate<W>> p) {
+        handlers.removeIf(h -> h.value instanceof Predicate pd && p.test(pd));
     }
 
-    public void  unregisterConsumer(Predicate<Consumer<W>> p){
-        handlers.removeIf(h -> h.value instanceof Consumer pd &&  p.test(pd));
+    public void unregisterConsumer(Predicate<Consumer<W>> p) {
+        handlers.removeIf(h -> h.value instanceof Consumer pd && p.test(pd));
     }
-    public void unregisterHandler(Predicate p){
-        handlers.removeIf(h ->  p.test(h.value));
+
+    public void unregisterHandler(Predicate p) {
+        handlers.removeIf(h -> p.test(h.value));
     }
 
     public abstract boolean handleValue(W express);
 
-    public boolean isEmpty(){
+    public boolean isEmpty() {
         return this.handlers.isEmpty();
     }
 }

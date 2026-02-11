@@ -1,13 +1,12 @@
 package me.matl114.jsApi;
 
+import java.util.Locale;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.utils.ApiMethod;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.Vec3d;
-
-import java.util.Locale;
 
 @ApiMethod
 public class EntityHelper {
@@ -30,7 +29,6 @@ public class EntityHelper {
     public static void setEntityPose(Entity entity, String pose) {
         entity.setPose(EntityPose.valueOf(pose.toUpperCase(Locale.ROOT)));
     }
-
 
     public static Vec3d getEntityVelocity(Entity entity) {
         return entity.getVelocity();

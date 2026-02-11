@@ -2,9 +2,10 @@ package me.matl114.gui.basic;
 
 import me.matl114.utils.ScreenUtils;
 
-public class BoxElement extends AbstractElement{
+public class BoxElement extends AbstractElement {
     private final ButtonAction action;
-    public  BoxElement(ButtonAction action){
+
+    public BoxElement(ButtonAction action) {
         super();
         this.action = action;
     }
@@ -15,9 +16,9 @@ public class BoxElement extends AbstractElement{
 
     @Override
     public boolean onKey(ExecutableWidget widget, int keyCode, int scanCode, int modifiers, boolean isPress) {
-        //add shift-press-trigger-press feature
-        if(this.action != null && widget.isSelected()){
-            if(ScreenUtils.isToggle(keyCode)){
+        // add shift-press-trigger-press feature
+        if (this.action != null && widget.isSelected()) {
+            if (ScreenUtils.isToggle(keyCode)) {
                 return this.action.onClick(this, widget, 0);
             }
         }

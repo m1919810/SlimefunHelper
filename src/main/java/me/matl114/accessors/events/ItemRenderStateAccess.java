@@ -7,8 +7,7 @@ public interface ItemRenderStateAccess {
 
     public void setAttachedRenderState(ItemRenderState state);
 
-
-    public static ItemRenderStateAccess of(ItemRenderState state){
-        return (ItemRenderStateAccess)state;
+    public static ItemRenderStateAccess of(ItemRenderState state) {
+        return (ItemRenderStateAccess) state;
     }
 }

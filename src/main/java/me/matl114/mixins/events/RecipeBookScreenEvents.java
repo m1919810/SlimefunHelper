@@ -14,17 +14,25 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(RecipeBookScreen.class)
 public abstract class RecipeBookScreenEvents implements RecipeBookProvider {
-    @Shadow @Final private RecipeBookWidget<?> recipeBook;
+    @Shadow
+    @Final
+    private RecipeBookWidget<?> recipeBook;
 
-    @ModifyArg(method = "addRecipeBook",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TexturedButtonWidget;<init>(IIIILnet/minecraft/client/gui/screen/ButtonTextures;Lnet/minecraft/client/gui/widget/ButtonWidget$PressAction;)V"),index = 5)
-    public ButtonWidget.PressAction modifyPressAction(ButtonWidget.PressAction pressAction){
+    @ModifyArg(
+            method = "addRecipeBook",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/widget/TexturedButtonWidget;<init>(IIIILnet/minecraft/client/gui/screen/ButtonTextures;Lnet/minecraft/client/gui/widget/ButtonWidget$PressAction;)V"),
+            index = 5)
+    public ButtonWidget.PressAction modifyPressAction(ButtonWidget.PressAction pressAction) {
         return (button -> {
             pressAction.onPress(button);
-            if(!Listener.getPostToggleRecipeBook().isEmpty()){
+            if (!Listener.getPostToggleRecipeBook().isEmpty()) {
                 Event<RecipeBookProvider> toggleRecipeBook = new Event<>(this, false, false, this.recipeBook, button);
                 Listener.getPostToggleRecipeBook().handleValue(toggleRecipeBook);
             }
         });
     }
-
 }

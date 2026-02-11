@@ -13,26 +13,23 @@ public record ItemStackDataWithAmount(ItemStackData stackReference, int count) {
         return new ItemStackDataWithAmount(ItemStackData.wrapCopy(itemStack), itemStack.getCount());
     }
 
-    public ItemStackDataWithAmount asCount(int v){
+    public ItemStackDataWithAmount asCount(int v) {
         return new ItemStackDataWithAmount(stackReference, v);
     }
 
-    public ItemStack getAsItemStack(){
+    public ItemStack getAsItemStack() {
         return stackReference.getIcon().copyWithCount(count);
     }
 
-    public ItemStack getAsPrototype(){
+    public ItemStack getAsPrototype() {
         return stackReference.getIcon();
     }
 
-
-    public static Codec<ItemStackDataWithAmount> createCodecOf(Codec<ItemStackData> itemStackData){
-        Codec<ItemStackDataWithAmount> codec = RecordCodecBuilder.create((instance)->instance.group(
-            itemStackData.fieldOf("typeid").forGetter(ItemStackDataWithAmount::stackReference),
-            Codec.INT.fieldOf("amount").forGetter(ItemStackDataWithAmount::count)
-        ).apply(instance, ItemStackDataWithAmount::new));
+    public static Codec<ItemStackDataWithAmount> createCodecOf(Codec<ItemStackData> itemStackData) {
+        Codec<ItemStackDataWithAmount> codec = RecordCodecBuilder.create((instance) -> instance.group(
+                        itemStackData.fieldOf("typeid").forGetter(ItemStackDataWithAmount::stackReference),
+                        Codec.INT.fieldOf("amount").forGetter(ItemStackDataWithAmount::count))
+                .apply(instance, ItemStackDataWithAmount::new));
         return new NullCodec<>(codec, s -> s.stackReference == ItemStackData.EMPTY, EMPTY);
     }
-
-
 }

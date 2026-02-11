@@ -1,19 +1,20 @@
 package me.matl114.versioned.api;
 
 import com.mojang.serialization.Codec;
+import java.util.Map;
 import me.matl114.versioned.impl.ItemUtils_v1_21_8;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 
-import java.util.Map;
-
 public interface VItem {
     public static final VItem INSTANCE = new ItemUtils_v1_21_8();
-    public static VItem getInstance(){
+
+    public static VItem getInstance() {
         return INSTANCE;
     }
+
     public boolean canGlide(ItemStack stack);
 
     public boolean isSpear(ItemStack stack);

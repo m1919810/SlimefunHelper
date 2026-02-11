@@ -14,15 +14,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ArrayVoxelShape.class)
-public abstract class MoonriseArrayVoxelShapeMixin extends VoxelShape{
+public abstract class MoonriseArrayVoxelShapeMixin extends VoxelShape {
     protected MoonriseArrayVoxelShapeMixin(VoxelSet voxels) {
         super(voxels);
     }
 
-    @Inject(method = "<init>(Lnet/minecraft/util/shape/VoxelSet;Lit/unimi/dsi/fastutil/doubles/DoubleList;Lit/unimi/dsi/fastutil/doubles/DoubleList;Lit/unimi/dsi/fastutil/doubles/DoubleList;)V", at = @At("RETURN"))
-    private void moonriseinitCache(VoxelSet shape, DoubleList xPoints, DoubleList yPoints, DoubleList zPoints, CallbackInfo ci){
+    @Inject(
+            method =
+                    "<init>(Lnet/minecraft/util/shape/VoxelSet;Lit/unimi/dsi/fastutil/doubles/DoubleList;Lit/unimi/dsi/fastutil/doubles/DoubleList;Lit/unimi/dsi/fastutil/doubles/DoubleList;)V",
+            at = @At("RETURN"))
+    private void moonriseinitCache(
+            VoxelSet shape, DoubleList xPoints, DoubleList yPoints, DoubleList zPoints, CallbackInfo ci) {
         MoonriseVoxelShapeAccess.of(this).moonrise$initCache();
     }
-
-
 }

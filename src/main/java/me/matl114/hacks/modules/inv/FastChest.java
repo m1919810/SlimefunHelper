@@ -6,11 +6,10 @@ import me.matl114.managers.TaskManagers;
 
 public class FastChest extends BaseModule {
 
-    public FastChest() {
+    public FastChest() {}
 
-    }
-    public static final String TAKE_ALL =  "take-all";
-    public static final String SAVE_ALL =  "save-all";
+    public static final String TAKE_ALL = "take-all";
+    public static final String SAVE_ALL = "save-all";
 
     @Override
     public void registerAll() {

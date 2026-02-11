@@ -18,10 +18,11 @@ public interface MoonriseVoxelShapeAccess {
 
     public double[] moonrise$rootCoordinatesZ();
 
-
     // rets null if not possible to represent this shape as one AABB
     public Box moonrise$getSingleAABBRepresentation();
+
     CachedToAABBs moonrise$cachedToAABBs();
+
     public void moonriss$setCachedToAABBs(CachedToAABBs aabBs);
 
     public boolean moonrise$isFullBlock();
@@ -30,7 +31,8 @@ public interface MoonriseVoxelShapeAccess {
 
     // ONLY USE INTERNALLY, ONLY FOR INITIALISING IN CONSTRUCTOR: VOXELSHAPES ARE STATIC
     public void moonrise$initCache();
-    static MoonriseVoxelShapeAccess of(VoxelShape voxel){
-        return (MoonriseVoxelShapeAccess) (Object)voxel;
+
+    static MoonriseVoxelShapeAccess of(VoxelShape voxel) {
+        return (MoonriseVoxelShapeAccess) (Object) voxel;
     }
 }

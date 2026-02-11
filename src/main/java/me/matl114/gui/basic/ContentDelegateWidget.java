@@ -1,21 +1,18 @@
 package me.matl114.gui.basic;
 
 import lombok.Getter;
-import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.Widget;
-import org.apache.commons.compress.utils.Lists;
-
-import java.util.List;
 
 /**
  * this class handles the delegate content's render and click behaviour, but the position and transformation is applied before the handle's
  */
-public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> extends DrawableWidget implements Draggable{
+public class ContentDelegateWidget<W extends Element & Drawable & Selectable> extends DrawableWidget
+        implements Draggable {
 
     public ContentDelegateWidget(int x, int y, int dx, int dy) {
         super(x, y, dx, dy);
@@ -23,7 +20,8 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
     // you can put nms widget or sth here, not only DrawableWidget
     @Getter
     protected W delegate;
-    public ContentDelegateWidget<W> setContentDelegate(W delegate){
+
+    public ContentDelegateWidget<W> setContentDelegate(W delegate) {
         this.delegate = delegate;
         return this;
     }
@@ -31,51 +29,51 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
     public int getHeight() {
         return this.delegate instanceof Widget widget ? widget.getHeight() : this.dy;
     }
-    public int getWidth(){
+
+    public int getWidth() {
         return this.delegate instanceof Widget widget ? widget.getWidth() : this.dx;
     }
 
     @Override
     public boolean canSelect() {
-        return this.delegate != null && ((!(this.delegate instanceof DrawableWidget draw))||draw.canSelect());
+        return this.delegate != null && ((!(this.delegate instanceof DrawableWidget draw)) || draw.canSelect());
     }
 
-    public void renderInDefaultMatrix(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
+    public void renderInDefaultMatrix(
+            VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
-        if(this.delegate != null){
+        if (this.delegate != null) {
             int translatedMouseX = (mouseX - this.x);
 
             int translatedMouseY = mouseY - this.y;
-            if(this.textureScale != 1.0f){
+            if (this.textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
-            if(this.delegate instanceof DrawableWidget draw){
+            if (this.delegate instanceof DrawableWidget draw) {
 
                 draw.render0(context, translatedMouseX, translatedMouseY, delta, disableSelect);
-            }else {
+            } else {
                 this.delegate.render(context.pushMatrix(), translatedMouseX, translatedMouseY, delta);
                 context.popMatrix();
             }
         }
     }
 
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
 
-        if(this.delegate != null ){
+        if (this.delegate != null) {
             int translatedMouseX = (int) (mouseX - this.x);
 
             int translatedMouseY = (int) (mouseY - this.y);
-            if(this.textureScale != 1.0f){
+            if (this.textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
-            if(this.delegate.mouseClicked(translatedMouseX, translatedMouseY, button)){
+            if (this.delegate.mouseClicked(translatedMouseX, translatedMouseY, button)) {
                 return true;
             }
-
         }
 
         return false;
@@ -83,30 +81,29 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if(this.delegate != null ){
+        if (this.delegate != null) {
             int translatedMouseX = (int) (mouseX - this.x);
 
             int translatedMouseY = (int) (mouseY - this.y);
-            if(this.textureScale != 1.0f){
+            if (this.textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
-            if(this.delegate.mouseReleased(translatedMouseX, translatedMouseY, button)){
+            if (this.delegate.mouseReleased(translatedMouseX, translatedMouseY, button)) {
                 return true;
             }
-
         }
 
         return false;
     }
 
     public void mouseMoved(double mouseX, double mouseY) {
-        //should not move
-        if(this.delegate != null){
+        // should not move
+        if (this.delegate != null) {
             int translatedMouseX = (int) (mouseX - this.x);
 
             int translatedMouseY = (int) (mouseY - this.y);
-            if(this.textureScale != 1.0f){
+            if (this.textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
@@ -114,49 +111,49 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
         }
     }
 
-
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        //should not drag
-        if(this.delegate != null ){
+        // should not drag
+        if (this.delegate != null) {
             int translatedMouseX = (int) (mouseX - this.x);
 
             int translatedMouseY = (int) (mouseY - this.y);
-            if(this.textureScale != 1.0f){
+            if (this.textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
-            if(this.delegate.mouseDragged(translatedMouseX, translatedMouseY, button, deltaX * this.textureScale, deltaY * this.textureScale)){
+            if (this.delegate.mouseDragged(
+                    translatedMouseX,
+                    translatedMouseY,
+                    button,
+                    deltaX * this.textureScale,
+                    deltaY * this.textureScale)) {
                 return true;
             }
-
         }
 
         return false;
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        //should not scrolled
-        if(this.delegate != null ){
+        // should not scrolled
+        if (this.delegate != null) {
             int translatedMouseX = (int) (mouseX - this.x);
 
             int translatedMouseY = (int) (mouseY - this.y);
-            if(this.textureScale != 1.0f){
+            if (this.textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
-            if(this.delegate.mouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount)){
+            if (this.delegate.mouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount)) {
                 return true;
             }
-
         }
         return false;
     }
 
-
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         return this.delegate != null && this.delegate.keyPressed(keyCode, scanCode, modifiers);
     }
-
 
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         return this.delegate != null && this.delegate.keyReleased(keyCode, scanCode, modifiers);
@@ -169,7 +166,9 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return this.delegate != null && this.delegate.isMouseOver((mouseX - this.x)/this.textureScale, (mouseY - this.y)/this.textureScale);
+        return this.delegate != null
+                && this.delegate.isMouseOver(
+                        (mouseX - this.x) / this.textureScale, (mouseY - this.y) / this.textureScale);
     }
 
     @Override
@@ -177,15 +176,13 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
         return this.delegate != null && this.delegate.isFocused();
     }
 
-    public void setFocused(boolean focused){
-        if(this.delegate != null)this.delegate.setFocused(focused);
+    public void setFocused(boolean focused) {
+        if (this.delegate != null) this.delegate.setFocused(focused);
     }
 
-    public SelectionType getType(){
-        return this.delegate == null? SelectionType.NONE : this.delegate.getType();
+    public SelectionType getType() {
+        return this.delegate == null ? SelectionType.NONE : this.delegate.getType();
     }
-
-
 
     @Override
     public boolean isDragging() {
@@ -194,16 +191,17 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
 
     @Override
     public void releaseDrag(Screen screen, double mouseX, double mouseY) {
-        if(delegate instanceof  Draggable draggable){
-            draggable.releaseDrag(screen, (mouseX - this.x)/this.textureScale, (mouseY - this.y)/this.textureScale);
+        if (delegate instanceof Draggable draggable) {
+            draggable.releaseDrag(screen, (mouseX - this.x) / this.textureScale, (mouseY - this.y) / this.textureScale);
         }
     }
 
     @Override
     public boolean startDrag(Screen screen, double mouseX, double mouseY) {
-        if(delegate instanceof  Draggable draggable){
-            return draggable.startDrag(screen, (mouseX - this.x)/this.textureScale, (mouseY - this.y)/this.textureScale);
-        }return false;
+        if (delegate instanceof Draggable draggable) {
+            return draggable.startDrag(
+                    screen, (mouseX - this.x) / this.textureScale, (mouseY - this.y) / this.textureScale);
+        }
+        return false;
     }
-
 }

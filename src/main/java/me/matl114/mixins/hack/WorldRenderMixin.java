@@ -13,9 +13,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(WorldRenderer.class)
 public abstract class WorldRenderMixin {
 
-    @Inject(method = "hasBlindnessOrDarkness",at = @At("HEAD"),cancellable = true)
+    @Inject(method = "hasBlindnessOrDarkness", at = @At("HEAD"), cancellable = true)
     public void hasBlindnessOrDarkness(CallbackInfoReturnable<Boolean> cir) {
-        if(RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderTasks.getRenderExtra().noEffect.get()) {
             cir.setReturnValue(false);
         }
     }

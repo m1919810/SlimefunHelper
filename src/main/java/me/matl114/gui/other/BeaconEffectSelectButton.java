@@ -1,17 +1,14 @@
 package me.matl114.gui.other;
 
+import java.util.List;
 import lombok.Getter;
 import me.matl114.utils.ScreenUtils;
-import net.minecraft.client.MinecraftClient;
-import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.PressableWidget;
-import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -19,30 +16,38 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-import java.util.List;
-
-
 public class BeaconEffectSelectButton extends PressableWidget {
-    public static final List<RegistryEntry<StatusEffect>> EFFECTS_BEACON = List.of(StatusEffects.SPEED, StatusEffects.HASTE,StatusEffects.RESISTANCE, StatusEffects.JUMP_BOOST,StatusEffects.STRENGTH,StatusEffects.REGENERATION);
-    private static final int SIZE =EFFECTS_BEACON.size();
-    private static Identifier NO_PATH = new Identifier("minecraft","container/beacon/cancel");
-    static final Identifier BUTTON_HIGHLIGHTED_TEXTURE = new Identifier("minecraft","container/beacon/button_highlighted");
-    static final Identifier BUTTON_TEXTURE = new Identifier("minecraft","container/beacon/button");
+    public static final List<RegistryEntry<StatusEffect>> EFFECTS_BEACON = List.of(
+            StatusEffects.SPEED,
+            StatusEffects.HASTE,
+            StatusEffects.RESISTANCE,
+            StatusEffects.JUMP_BOOST,
+            StatusEffects.STRENGTH,
+            StatusEffects.REGENERATION);
+    private static final int SIZE = EFFECTS_BEACON.size();
+    private static Identifier NO_PATH = new Identifier("minecraft", "container/beacon/cancel");
+    static final Identifier BUTTON_HIGHLIGHTED_TEXTURE =
+            new Identifier("minecraft", "container/beacon/button_highlighted");
+    static final Identifier BUTTON_TEXTURE = new Identifier("minecraft", "container/beacon/button");
     int currentIndex = 0;
+
     @Getter
-    RegistryEntry<StatusEffect> currentEffect ;
+    RegistryEntry<StatusEffect> currentEffect;
+
     Identifier currentSprite;
-    private void updateCurrentEffect(){
-        currentIndex %= (SIZE +1);
-        if(currentIndex == 0){
+
+    private void updateCurrentEffect() {
+        currentIndex %= (SIZE + 1);
+        if (currentIndex == 0) {
             this.currentEffect = null;
             this.currentSprite = null;
-        }else {
-            this.currentEffect = EFFECTS_BEACON.get(currentIndex -1);
+        } else {
+            this.currentEffect = EFFECTS_BEACON.get(currentIndex - 1);
             this.currentSprite = InGameHud.getEffectTexture(this.currentEffect);
         }
         setTooltip(Tooltip.of(getNarrationMessage()));
     }
+
     public BeaconEffectSelectButton(int i, int j, int k, int l, Text text) {
         super(i, j, k, l, text);
         updateCurrentEffect();
@@ -50,7 +55,7 @@ public class BeaconEffectSelectButton extends PressableWidget {
 
     @Override
     public void onPress() {
-        currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (ScreenUtils.hasShiftDown()? -1 : 1);
+        currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (ScreenUtils.hasShiftDown() ? -1 : 1);
         updateCurrentEffect();
     }
 
@@ -60,17 +65,19 @@ public class BeaconEffectSelectButton extends PressableWidget {
         if (this.isSelected()) {
             identifier = BUTTON_HIGHLIGHTED_TEXTURE;
         } else {
-            identifier =BUTTON_TEXTURE;
+            identifier = BUTTON_TEXTURE;
         }
 
-        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, identifier, this.getX(), this.getY(), this.width, this.height);
+        context.drawGuiTexture(
+                RenderPipelines.GUI_TEXTURED, identifier, this.getX(), this.getY(), this.width, this.height);
         this.renderExtra(context);
     }
 
-    protected void renderExtra(DrawContext context){
-        if(this.currentSprite != null){
-            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, this.currentSprite, this.getX() + 2, this.getY() + 2,  18, 18);
-        }else {
+    protected void renderExtra(DrawContext context) {
+        if (this.currentSprite != null) {
+            context.drawGuiTexture(
+                    RenderPipelines.GUI_TEXTURED, this.currentSprite, this.getX() + 2, this.getY() + 2, 18, 18);
+        } else {
             context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, NO_PATH, this.getX() + 2, this.getY() + 2, 18, 18);
         }
     }
@@ -79,8 +86,14 @@ public class BeaconEffectSelectButton extends PressableWidget {
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {
         this.appendDefaultNarrations(builder);
     }
+
     @Override
     protected MutableText getNarrationMessage() {
-        return getMessage().copy().append(this.currentEffect == null ? Text.literal("无选中") : Text.translatable(this.currentEffect.value().getTranslationKey()));
+        return getMessage()
+                .copy()
+                .append(
+                        this.currentEffect == null
+                                ? Text.literal("无选中")
+                                : Text.translatable(this.currentEffect.value().getTranslationKey()));
     }
 }

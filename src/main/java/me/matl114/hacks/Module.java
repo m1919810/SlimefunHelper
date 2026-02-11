@@ -1,7 +1,8 @@
 package me.matl114.hacks;
 
-//todo:
+// todo:
 public @interface Module {
     String value();
+
     String[] extra() default {};
 }

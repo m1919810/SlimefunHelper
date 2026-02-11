@@ -9,7 +9,6 @@ public class CustomDisplaySlot extends Slot {
 
     public CustomDisplaySlot(Inventory inventory, int index, int x, int y) {
         super(inventory, index, x, y);
-
     }
 
     @Override
@@ -26,6 +25,4 @@ public class CustomDisplaySlot extends Slot {
     public boolean canTakePartial(PlayerEntity player) {
         return false;
     }
-
-
 }

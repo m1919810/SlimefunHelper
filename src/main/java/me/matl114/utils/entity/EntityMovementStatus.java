@@ -4,9 +4,8 @@ import me.matl114.utils.EntityUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 
-
-public class EntityMovementStatus<T extends Entity>{
-    public EntityMovementStatus(T entity){
+public class EntityMovementStatus<T extends Entity> {
+    public EntityMovementStatus(T entity) {
         this.entity = entity;
         onGround = entity.isOnGround();
         horizontalCollision = entity.horizontalCollision;
@@ -20,20 +19,22 @@ public class EntityMovementStatus<T extends Entity>{
         distanceTraveled = entity.distanceTraveled;
         sprinting = entity.isSprinting();
     }
+
     public T entity;
-    public boolean onGround ;
-    public boolean horizontalCollision ;
-    public boolean verticalCollision ;
+    public boolean onGround;
+    public boolean horizontalCollision;
+    public boolean verticalCollision;
     public boolean groundCollision;
-    public Vec3d pos ;
+    public Vec3d pos;
     public float pitch;
     public float yaw;
-    public Vec3d vec ;
-    public float speed ;
-    public float horizontalSpeed ;
-    public float distanceTraveled ;
-    public boolean sprinting ;
-    public void restore(){
+    public Vec3d vec;
+    public float speed;
+    public float horizontalSpeed;
+    public float distanceTraveled;
+    public boolean sprinting;
+
+    public void restore() {
         this.entity.horizontalCollision = horizontalCollision;
         this.entity.verticalCollision = verticalCollision;
         this.entity.groundCollision = groundCollision;
@@ -46,18 +47,22 @@ public class EntityMovementStatus<T extends Entity>{
         this.entity.distanceTraveled = distanceTraveled;
         this.entity.setSprinting(sprinting);
     }
-    public void restoreOnGround(){
+
+    public void restoreOnGround() {
         this.entity.setOnGround(onGround);
     }
-    public void restorePosRot(){
+
+    public void restorePosRot() {
         this.restoreRotation();
         this.restorePos();
     }
-    public void restoreRotation(){
+
+    public void restoreRotation() {
         EntityUtils.setEntityPitchSafe(this.entity, pitch);
         EntityUtils.setEntityYawSafe(this.entity, yaw);
     }
-    public void restorePos(){
+
+    public void restorePos() {
         this.entity.setPosition(pos);
     }
 }

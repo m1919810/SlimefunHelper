@@ -19,9 +19,7 @@ public abstract class MoonriseCubeVoxelShapeMixin extends VoxelShape {
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void moonriseinitCache(VoxelSet voxelSet, CallbackInfo ci){
+    private void moonriseinitCache(VoxelSet voxelSet, CallbackInfo ci) {
         MoonriseVoxelShapeAccess.of(this).moonrise$initCache();
     }
-
-
 }

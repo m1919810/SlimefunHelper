@@ -1,6 +1,5 @@
 package me.matl114.mixins.hack;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import me.matl114.hacks.RenderTasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -11,14 +10,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-
 @Environment(EnvType.CLIENT)
 @Mixin(GameRenderer.class)
 public abstract class GameRenderMixin {
 
-    @Inject(method = "getNightVisionStrength",at = @At("HEAD"),cancellable = true)
-    private static void getNightVisionStrength(LivingEntity entity, float tickDelta,CallbackInfoReturnable<Float> cir) {
-        if(RenderTasks.getRenderExtra().nightVision.get()) {
+    @Inject(method = "getNightVisionStrength", at = @At("HEAD"), cancellable = true)
+    private static void getNightVisionStrength(
+            LivingEntity entity, float tickDelta, CallbackInfoReturnable<Float> cir) {
+        if (RenderTasks.getRenderExtra().nightVision.get()) {
             cir.setReturnValue(1.0F);
         }
     }

@@ -7,5 +7,4 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.SOURCE)
-public @interface Broadcast {
-}
+public @interface Broadcast {}

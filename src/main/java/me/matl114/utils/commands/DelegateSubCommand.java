@@ -1,13 +1,12 @@
 package me.matl114.utils.commands;
 
 import com.mojang.brigadier.Command;
+import java.util.List;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.player.PlayerEntity;
-
-import java.util.List;
-import java.util.stream.Stream;
 
 @Accessors(fluent = true, chain = true)
 @Getter
@@ -26,19 +25,19 @@ public class DelegateSubCommand extends SubCommand {
 
     @Override
     public boolean onCustomCommand(PlayerEntity sender, Command command, ArgumentReader arguments) {
-        if(delegate != null)return delegate.onCustomCommand(sender, command, arguments);
+        if (delegate != null) return delegate.onCustomCommand(sender, command, arguments);
         return false;
     }
 
     @Override
     public List<String> onCustomTabComplete(PlayerEntity sender, Command command, ArgumentReader arguments) {
-        if (delegate != null)return delegate.onCustomTabComplete(sender, command, arguments);
+        if (delegate != null) return delegate.onCustomTabComplete(sender, command, arguments);
         return List.of();
     }
 
     @Override
     public Stream<String> onCustomHelp(PlayerEntity sender, ArgumentReader arguments) {
-        if(delegate != null)return delegate.onCustomHelp(sender, arguments);
+        if (delegate != null) return delegate.onCustomHelp(sender, arguments);
         return Stream.empty();
     }
 }

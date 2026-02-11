@@ -6,6 +6,11 @@ import com.google.gson.JsonElement;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.config.ConfigLoader;
@@ -21,23 +26,15 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 public class SaveItem extends BaseModule {
     private static final String[] SAVE_ITEM_KEY = {"hotkeys", "save-slot-item"};
 
-    public SaveItem() {
-
-    }
+    public SaveItem() {}
 
     public KeyBindRef keyBind = hotkey(SAVE_ITEM_KEY)
-        .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_A, KeyCode.MOUSE_BUTTON_1))
-        .registerHotkey(HotKeyUtils.asHandler(this::saveItem))
-        .build();
+            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_A, KeyCode.MOUSE_BUTTON_1))
+            .registerHotkey(HotKeyUtils.asHandler(this::saveItem))
+            .build();
 
     private boolean loaded = false;
     Map<String, ItemStackData> savedItemDataMap = new LinkedHashMap<>();
@@ -56,45 +53,51 @@ public class SaveItem extends BaseModule {
         });
     }
 
-    public void ensureLoad(){
-        if(!loaded){
+    public void ensureLoad() {
+        if (!loaded) {
             InvTasks.getCustomItemDatabase().getAccess();
         }
     }
 
-    public static final String SAVE_PATH =
-        "sfhelper-configs/recipes/saved-items.json";
+    public static final String SAVE_PATH = "sfhelper-configs/recipes/saved-items.json";
 
-    public Codec<Map<String, ItemStackData>> mapCodec =
-        Codec.list(Codec.STRING).xmap(
-        lst -> (Map<String, ItemStackData>)lst.stream().collect(Collectors.toMap(Function.identity(), InvTasks.getCustomItemDatabase()::getDataFromCodecId, (k, v)-> v, LinkedHashMap::new)),
-        mp -> mp.keySet().stream().toList()
-    ).optionalFieldOf("saved-ids", Map.of()).codec();
-    Gson gson = new GsonBuilder()
-        .disableHtmlEscaping()
-        .create();
+    public Codec<Map<String, ItemStackData>> mapCodec = Codec.list(Codec.STRING)
+            .xmap(
+                    lst -> (Map<String, ItemStackData>) lst.stream()
+                            .collect(Collectors.toMap(
+                                    Function.identity(),
+                                    InvTasks.getCustomItemDatabase()::getDataFromCodecId,
+                                    (k, v) -> v,
+                                    LinkedHashMap::new)),
+                    mp -> mp.keySet().stream().toList())
+            .optionalFieldOf("saved-ids", Map.of())
+            .codec();
+    Gson gson = new GsonBuilder().disableHtmlEscaping().create();
     boolean dirty = false;
-    public void onLoad(){
-        try{
+
+    public void onLoad() {
+        try {
             String savedItemIds = ConfigLoader.loadExternalJson(SAVE_PATH);
             JsonElement json = gson.fromJson(savedItemIds, JsonElement.class);
             savedItemDataMap.clear();
-            Map<String, ItemStackData> itemDataMap = mapCodec.decode(JsonOps.INSTANCE, json).getOrThrow().getFirst();
+            Map<String, ItemStackData> itemDataMap =
+                    mapCodec.decode(JsonOps.INSTANCE, json).getOrThrow().getFirst();
             savedItemDataMap.putAll(itemDataMap);
             dirty = false;
-        }catch (Throwable e){
+        } catch (Throwable e) {
             Debug.info(e);
         }
         loaded = true;
     }
 
-    public void onSave(){
+    public void onSave() {
 
-        if(dirty){
+        if (dirty) {
             dirty = false;
-            try{
-                JsonElement json = mapCodec.encodeStart(JsonOps.INSTANCE, savedItemDataMap).getOrThrow();
-                CompletableFuture.runAsync(()->{
+            try {
+                JsonElement json =
+                        mapCodec.encodeStart(JsonOps.INSTANCE, savedItemDataMap).getOrThrow();
+                CompletableFuture.runAsync(() -> {
                     String jsonStr = gson.toJson(json);
                     try {
                         ConfigLoader.saveToFile(SAVE_PATH, jsonStr);
@@ -102,56 +105,54 @@ public class SaveItem extends BaseModule {
                         Debug.info(e);
                     }
                 });
-            }catch (Throwable e){
+            } catch (Throwable e) {
                 Debug.info("序列化SavedItems数据失败, 错误:");
                 Debug.info(e);
             }
         }
     }
 
-    public void onUnload(){
+    public void onUnload() {
         loaded = false;
     }
 
-    public boolean saveItem(){
+    public boolean saveItem() {
         ClientPlayerEntity player = mc.player;
-        if(player==null)return false;
+        if (player == null) return false;
 
         ItemStack heldItem = ScreenUtils.getSelectingOrHandItem();
 
-        if(heldItem != null && !heldItem.isEmpty()){
+        if (heldItem != null && !heldItem.isEmpty()) {
             ensureLoad();
             addSaveItem(heldItem);
             return true;
-        }else if (heldItem != null){
+        } else if (heldItem != null) {
             Debug.chat(Text.literal("不能保存空物品").formatted(Formatting.RED));
         }
         return false;
     }
 
-    public void addSaveItem(ItemStack item){
+    public void addSaveItem(ItemStack item) {
         ensureLoad();
         Pair<String, ItemStackData> dataPair = InvTasks.getCustomItemDatabase().getOrRegisterItem(item);
-        if(savedItemDataMap.containsKey(dataPair.getFirst())){
+        if (savedItemDataMap.containsKey(dataPair.getFirst())) {
             Debug.chat(Text.literal("该物品已经保存过了!").formatted(Formatting.YELLOW));
-        }else {
+        } else {
             savedItemDataMap.put(dataPair.getFirst(), dataPair.getSecond());
             Debug.chat(Text.literal("成功保存物品!").formatted(Formatting.GREEN));
         }
     }
-    public void removeSavedItem(ItemStack item){
+
+    public void removeSavedItem(ItemStack item) {
         ensureLoad();
         String id = InvTasks.getCustomItemDatabase().getItemIdOrNull(item);
-        if(id != null && savedItemDataMap.remove(id) != null){
+        if (id != null && savedItemDataMap.remove(id) != null) {
             Debug.chat(Text.literal("已经成功移除这个保存物品").formatted(Formatting.GREEN));
         }
     }
 
-
-    public Map<String, ItemStackData> getSavedItemDataMap(){
+    public Map<String, ItemStackData> getSavedItemDataMap() {
         ensureLoad();
         return Collections.unmodifiableMap(savedItemDataMap);
     }
-
-
 }

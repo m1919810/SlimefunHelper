@@ -9,7 +9,9 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(DrawContext.class)
 public abstract class DrawContextMixin implements MatrixStack {
-    @Shadow @Final private Matrix3x2fStack matrices;
+    @Shadow
+    @Final
+    private Matrix3x2fStack matrices;
 
     @Override
     public void pushMatrix() {
@@ -49,9 +51,7 @@ public abstract class DrawContextMixin implements MatrixStack {
     }
 
     @Override
-    public void translateZ(float z) {
-
-    }
+    public void translateZ(float z) {}
 
     @Override
     public void scale(float x, float y) {
@@ -64,10 +64,9 @@ public abstract class DrawContextMixin implements MatrixStack {
         Matrix4f mat3 = new Matrix4f().rotate(quaternion);
         mat4.mul(mat3);
         Matrix3x2f result = new Matrix3x2f(
-            mat4.m00(), mat4.m01(),
-            mat4.m10(), mat4.m11(),
-            mat4.m30(), mat4.m31()
-        );
+                mat4.m00(), mat4.m01(),
+                mat4.m10(), mat4.m11(),
+                mat4.m30(), mat4.m31());
         this.matrices.set(result);
     }
 }

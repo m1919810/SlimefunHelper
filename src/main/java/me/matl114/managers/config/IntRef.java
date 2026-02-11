@@ -4,19 +4,20 @@ import lombok.AllArgsConstructor;
 import me.matl114.utils.config.AttrKeyValue;
 
 @AllArgsConstructor
-public class IntRef extends Ref<Integer>{
+public class IntRef extends Ref<Integer> {
     public static final Class<Integer> TYPE = Integer.class;
 
     int value;
-    public IntRef(Object ref){
+
+    public IntRef(Object ref) {
         this((int) ref);
     }
 
-    public static IntRef fromString(String value){
-        try{
+    public static IntRef fromString(String value) {
+        try {
             int val = Integer.parseInt(value);
             return new IntRef(val);
-        }catch (NumberFormatException numberFormatException){
+        } catch (NumberFormatException numberFormatException) {
             return null;
         }
     }
@@ -26,7 +27,7 @@ public class IntRef extends Ref<Integer>{
         return get();
     }
 
-    public int get(){
+    public int get() {
         return value;
     }
 
@@ -47,10 +48,10 @@ public class IntRef extends Ref<Integer>{
 
     @Override
     public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if(otherRef instanceof IntRef integer){
+        if (otherRef instanceof IntRef integer) {
             integer.set(this.value);
             return true;
-        }else return false;
+        } else return false;
     }
 
     @Override
@@ -58,11 +59,10 @@ public class IntRef extends Ref<Integer>{
         return AttrKeyValue.integer(key, this.value);
     }
 
-    public void set(int value){
-        if(validateUpdateValue(value)){
+    public void set(int value) {
+        if (validateUpdateValue(value)) {
             this.value = value;
             callUpdate();
         }
-
     }
 }

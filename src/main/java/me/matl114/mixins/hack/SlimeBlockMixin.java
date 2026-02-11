@@ -13,14 +13,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-
 @Environment(EnvType.CLIENT)
 @Mixin(SlimeBlock.class)
 public abstract class SlimeBlockMixin {
 
-    @Inject(method = "onSteppedOn", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V", shift = At.Shift.BEFORE), cancellable = true)
-    private void onDisableSlimeBlockVelocityModify(World world, BlockPos pos, BlockState state, Entity entity, CallbackInfo ci){
-        if(MovTasks.getNoSlowDown().blockSpecial.get()){
+    @Inject(
+            method = "onSteppedOn",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/entity/Entity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void onDisableSlimeBlockVelocityModify(
+            World world, BlockPos pos, BlockState state, Entity entity, CallbackInfo ci) {
+        if (MovTasks.getNoSlowDown().blockSpecial.get()) {
             ci.cancel();
         }
     }

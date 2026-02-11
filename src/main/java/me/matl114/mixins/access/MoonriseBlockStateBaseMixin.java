@@ -20,20 +20,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MoonriseBlockStateBaseMixin implements MoonriseBlockStateBaseAccess {
     @Unique
     private VoxelShape constantCollisionShape;
+
     @Shadow
     public abstract VoxelShape getCollisionShape(BlockView world, BlockPos pos, ShapeContext context);
+
     @Unique
-    private void initCache0(){
+    private void initCache0() {
         try {
-            constantCollisionShape = getCollisionShape(null, null,null);
-        }catch (Throwable e){
+            constantCollisionShape = getCollisionShape(null, null, null);
+        } catch (Throwable e) {
             constantCollisionShape = null;
         }
     }
+
     @Inject(method = "initShapeCache", at = @At("RETURN"))
-    public void onInitCache(CallbackInfo ci){
+    public void onInitCache(CallbackInfo ci) {
         initCache0();
     }
+
     @Unique
     public VoxelShape moonrise$getConstantCollisionShape() {
         return this.constantCollisionShape;

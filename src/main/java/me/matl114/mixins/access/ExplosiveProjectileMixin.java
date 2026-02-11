@@ -13,19 +13,17 @@ import org.spongepowered.asm.mixin.Unique;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ExplosiveProjectileEntity.class)
-public abstract class ExplosiveProjectileMixin  extends ProjectileEntity implements ExplosiveProjectileAccess {
+public abstract class ExplosiveProjectileMixin extends ProjectileEntity implements ExplosiveProjectileAccess {
 
     @Shadow
     protected abstract float getDrag();
+
     @Shadow
     protected abstract float getDragInWater();
 
-
-
-
     @Unique
-    public float getDragMult(){
-        return this.isTouchingWater()? getDragInWater(): getDrag();
+    public float getDragMult() {
+        return this.isTouchingWater() ? getDragInWater() : getDrag();
     }
 
     @Override
@@ -33,11 +31,7 @@ public abstract class ExplosiveProjectileMixin  extends ProjectileEntity impleme
         return getDrag();
     }
 
-
     public ExplosiveProjectileMixin(EntityType<? extends ProjectileEntity> entityType, World world) {
         super(entityType, world);
     }
-
-
-
 }

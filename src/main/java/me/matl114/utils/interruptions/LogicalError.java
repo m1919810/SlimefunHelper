@@ -1,6 +1,5 @@
 package me.matl114.utils.interruptions;
 
-
 import net.minecraft.entity.player.PlayerEntity;
 
 public class LogicalError extends ArgumentException {

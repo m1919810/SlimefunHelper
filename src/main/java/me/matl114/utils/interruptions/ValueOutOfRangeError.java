@@ -1,9 +1,8 @@
 package me.matl114.utils.interruptions;
 
+import java.util.Collection;
 import me.matl114.utils.commands.ArgumentReader;
 import net.minecraft.entity.player.PlayerEntity;
-
-import java.util.Collection;
 
 public class ValueOutOfRangeError extends ArgumentException {
     ArgumentReader reader;
@@ -31,7 +30,8 @@ public class ValueOutOfRangeError extends ArgumentException {
         this.type = TypeError.BaseArgumentType.FLOAT;
     }
 
-    public ValueOutOfRangeError(ArgumentReader reader, String name, String from, String to, String input, TypeError.BaseArgumentType type) {
+    public ValueOutOfRangeError(
+            ArgumentReader reader, String name, String from, String to, String input, TypeError.BaseArgumentType type) {
         this.reader = reader;
 
         this.name = name;
@@ -40,7 +40,12 @@ public class ValueOutOfRangeError extends ArgumentException {
         this.type = type;
     }
 
-    public ValueOutOfRangeError(ArgumentReader reader, String name, Collection<String> options, String input, TypeError.BaseArgumentType type) {
+    public ValueOutOfRangeError(
+            ArgumentReader reader,
+            String name,
+            Collection<String> options,
+            String input,
+            TypeError.BaseArgumentType type) {
         this.reader = reader;
 
         this.name = name;

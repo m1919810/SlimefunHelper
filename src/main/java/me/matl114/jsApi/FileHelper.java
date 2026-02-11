@@ -5,6 +5,14 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.Map;
 import me.matl114.utils.ApiMethod;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.nbt.NbtCompound;
@@ -19,27 +27,19 @@ import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.representer.Representer;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.Map;
-
-
 public class FileHelper {
     @ApiMethod
-    public static File getConfigFolder(){
+    public static File getConfigFolder() {
         return FabricLoader.getInstance().getConfigDirectory();
     }
+
     @ApiMethod
-    public static File getGameFolder(){
+    public static File getGameFolder() {
         return FabricLoader.getInstance().getGameDirectory();
     }
+
     @ApiMethod
-    public static File getFile(String path){
+    public static File getFile(String path) {
         return new File(path);
     }
     /**
@@ -183,7 +183,7 @@ public class FileHelper {
         // jar.toString() begins with file:
         // i want to trim it out...
         Path jarFile = Paths.get(
-            URLDecoder.decode(jar.toString(), StandardCharsets.UTF_8).substring("file:".length()));
+                URLDecoder.decode(jar.toString(), StandardCharsets.UTF_8).substring("file:".length()));
         FileSystem fs = FileSystems.newFileSystem(jarFile, Map.of());
         DirectoryStream<Path> directoryStream = Files.newDirectoryStream(fs.getPath(from));
         Path to = new File(toPath).toPath();
@@ -283,7 +283,6 @@ public class FileHelper {
      * @return The content of the resource as a string
      * @throws RuntimeException if the resource cannot be read
      */
-
     public static String readResourceString(String resource) {
         try (var inputStream = readResource(resource)) {
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
@@ -357,10 +356,12 @@ public class FileHelper {
             throw new RuntimeException(e);
         }
     }
+
     @ApiMethod
     public static void writeFileString(File str, String string) {
         writeFileString(str, string, false);
     }
+
     @ApiMethod
     public static void writeFileString(File str, String string, boolean append) {
         try {
@@ -409,7 +410,7 @@ public class FileHelper {
     }
 
     private static final Gson PRETTY_GSON = createDefaultGsonBuilder() // 可选：序列化null值
-        .create();
+            .create();
 
     private static final Gson COMPACT_GSON = createCompactGsonBuilder().create();
 
@@ -511,7 +512,7 @@ public class FileHelper {
         } else if (existing.isJsonObject() && json.isJsonObject()) {
             // Merge objects (overwrites duplicate keys)
             json.getAsJsonObject().entrySet().forEach(entry -> existing.getAsJsonObject()
-                .add(entry.getKey(), entry.getValue()));
+                    .add(entry.getKey(), entry.getValue()));
             writeJson(file, existing, pretty);
         } else {
             // Cannot merge different types, replace
@@ -580,14 +581,17 @@ public class FileHelper {
             throw new RuntimeException(e);
         }
     }
+
     @ApiMethod
     public static <T> String dumpYaml(T object) {
         return YAML.dump(object);
     }
+
     @ApiMethod
     public static <T, W> String dumpYamlAsMap(T object) {
         return YAML.dumpAsMap(object);
     }
+
     @ApiMethod
     public static <T> void writeYaml(File path, T object, boolean pretty) {
         try {
@@ -599,12 +603,14 @@ public class FileHelper {
             throw new RuntimeException(e);
         }
     }
+
     @ApiMethod
     public NbtElement readNbtFile(String filepath, boolean compressed) throws IOException {
         return readNbtFile(new File(filepath), compressed);
     }
+
     @ApiMethod
-    public NbtElement readNbtFile(File file, boolean compressed) throws IOException{
+    public NbtElement readNbtFile(File file, boolean compressed) throws IOException {
         if (!file.exists()) {
             throw new IOException("NBT file does not exist: " + file);
         }
@@ -621,10 +627,12 @@ public class FileHelper {
             throw new IOException("Failed to parse NBT file: " + file, e.getCause());
         }
     }
+
     @ApiMethod
-    public void writeNbtFile(String file, NbtCompound nbt, boolean compressed ) throws IOException {
+    public void writeNbtFile(String file, NbtCompound nbt, boolean compressed) throws IOException {
         writeNbtFile(new File(file), nbt, compressed);
     }
+
     @ApiMethod
     public void writeNbtFile(File file, NbtCompound nbt, boolean compressed) throws IOException {
         ensureParentDir(file);
@@ -639,7 +647,6 @@ public class FileHelper {
             }
         }
     }
-
 
     /**
      * Reads the entire binary content of a file into a byte array.
@@ -685,9 +692,9 @@ public class FileHelper {
     public static void writeBinaryFile(File file, byte[] data, boolean append) {
         try {
             ensureParentDir(file);
-            StandardOpenOption[] options = append ?
-                new StandardOpenOption[]{StandardOpenOption.CREATE, StandardOpenOption.APPEND} :
-                new StandardOpenOption[]{StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
+            StandardOpenOption[] options = append
+                    ? new StandardOpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.APPEND}
+                    : new StandardOpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
 
             Files.write(file.toPath(), data, options);
         } catch (IOException e) {
@@ -718,7 +725,6 @@ public class FileHelper {
         writeBinaryFile(new File(path), data, append);
     }
 
-
     // =========================== 辅助方法 ===========================
     /**
      * Creates a custom GsonBuilder with default settings.
@@ -726,7 +732,6 @@ public class FileHelper {
      *
      * @return A configured GsonBuilder
      */
-
     private static GsonBuilder createDefaultGsonBuilder() {
         return new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeNulls();
     }
@@ -790,7 +795,7 @@ public class FileHelper {
         DumperOptions dumperOptions = new DumperOptions();
         LoaderOptions loaderOptions = new LoaderOptions();
         return new Yaml(
-            new CustomConstructor(loaderOptions), new Representer(dumperOptions), dumperOptions, loaderOptions);
+                new CustomConstructor(loaderOptions), new Representer(dumperOptions), dumperOptions, loaderOptions);
     }
 
     /**
@@ -852,5 +857,4 @@ public class FileHelper {
 
         return new Yaml(constructor, representer, dumperOptions, loaderOptions);
     }
-
 }

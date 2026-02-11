@@ -14,12 +14,15 @@ import org.spongepowered.asm.mixin.Shadow;
 @Environment(EnvType.CLIENT)
 public abstract class ItemStackMixin implements ItemStackAccess {
 
+    @Shadow
+    @Final
+    @Deprecated
+    @Nullable
+    private Item item;
 
-    @Shadow @Final @Deprecated @Nullable private Item item;
-
-//    @Override
+    //    @Override
     public void setItem(Item item) {
-        //todo: do it later
+        // todo: do it later
     }
 
     @Override

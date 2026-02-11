@@ -1,6 +1,5 @@
 package me.matl114.versioned.impl;
 
-import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VNbt;
@@ -19,18 +18,19 @@ public class Nbt_v1_21_11 implements VNbt {
 
     @Override
     public NbtElement readNbt(String element) {
-        try{
-            return StringNbtReader.fromOps(ItemStackUtils.registry().getOps(NbtOps.INSTANCE)).read(element);
-        }catch (CommandSyntaxException e){
+        try {
+            return StringNbtReader.fromOps(ItemStackUtils.registry().getOps(NbtOps.INSTANCE))
+                    .read(element);
+        } catch (CommandSyntaxException e) {
             throw new RuntimeException("Could not deserialize found element ", e);
         }
     }
 
     @Override
     public NbtElement readNbtNoRegistry(String element) {
-        try{
+        try {
             return StringNbtReader.fromOps(NbtOps.INSTANCE).read(element);
-        }catch (CommandSyntaxException e){
+        } catch (CommandSyntaxException e) {
             throw new RuntimeException("Could not deserialize found element ", e);
         }
     }

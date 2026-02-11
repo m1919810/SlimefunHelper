@@ -1,30 +1,28 @@
 package me.matl114.utils.collections;
 
-import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
-public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collection<V>, Set<V> {
+public class DirtyCollectionImpl<S extends Collection<V>, V> implements Collection<V>, Set<V> {
     @Getter
     protected final S delegate;
-    public DirtyCollectionImpl(S value){
+
+    public DirtyCollectionImpl(S value) {
         this.delegate = value;
     }
 
     private volatile boolean dirty = false;
 
-    public void setDirty(){
+    public void setDirty() {
         setDirty(true);
     }
-
 
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
     }
-
 
     public boolean isDirty() {
         return dirty;
@@ -45,7 +43,6 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
         return this.delegate.contains(o);
     }
 
-
     @NotNull
     @Override
     public Object[] toArray() {
@@ -60,7 +57,7 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
 
     @Override
     public boolean add(V v) {
-        if(this.delegate.add(v)){
+        if (this.delegate.add(v)) {
             setDirty();
             return true;
         }
@@ -69,7 +66,7 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
 
     @Override
     public boolean remove(Object o) {
-        if(this.delegate.remove(o)){
+        if (this.delegate.remove(o)) {
             setDirty();
             return true;
         }
@@ -83,7 +80,7 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
 
     @Override
     public boolean addAll(@NotNull Collection<? extends V> c) {
-        if(this.delegate.addAll(c)){
+        if (this.delegate.addAll(c)) {
             setDirty();
             return true;
         }
@@ -92,7 +89,7 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
 
     @Override
     public boolean retainAll(@NotNull Collection<?> c) {
-        if(this.delegate.retainAll(c)){
+        if (this.delegate.retainAll(c)) {
             setDirty();
             return true;
         }
@@ -101,7 +98,7 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
 
     @Override
     public boolean removeAll(@NotNull Collection<?> c) {
-        if(this.delegate.removeAll(c)){
+        if (this.delegate.removeAll(c)) {
             setDirty();
             return true;
         }
@@ -110,7 +107,7 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
 
     @Override
     public void clear() {
-        if(!this.delegate.isEmpty()){
+        if (!this.delegate.isEmpty()) {
             setDirty();
             this.delegate.clear();
         }
@@ -132,12 +129,13 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
         return new DirtyIterator(this.delegate.iterator());
     }
 
-
-    private class DirtyIterator implements Iterator<V>{
+    private class DirtyIterator implements Iterator<V> {
         final Iterator<V> delegate;
-        DirtyIterator(Iterator<V> delegate){
+
+        DirtyIterator(Iterator<V> delegate) {
             this.delegate = delegate;
         }
+
         @Override
         public boolean hasNext() {
             return delegate.hasNext();
@@ -147,7 +145,8 @@ public class DirtyCollectionImpl <S extends Collection<V>,V> implements Collecti
         public V next() {
             return delegate.next();
         }
-        public void remove(){
+
+        public void remove() {
             setDirty();
             this.delegate.remove();
         }

@@ -1,18 +1,18 @@
 package me.matl114.managers.config;
 
-//TODO: RegistryRef
-//TODO: RegistrySetRef
-//TODO: ListRef
-
-import lombok.Getter;
-import me.matl114.utils.config.AttrKeyValue;
+// TODO: RegistryRef
+// TODO: RegistrySetRef
+// TODO: ListRef
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import lombok.Getter;
+import me.matl114.utils.config.AttrKeyValue;
 
-public class ListRef extends ObjectRef<List<String>>{
-    public static final Class<List<String>> TYPE = (Class<List<String>>)(Class) List.class;
+public class ListRef extends ObjectRef<List<String>> {
+    public static final Class<List<String>> TYPE = (Class<List<String>>) (Class) List.class;
+
     @Getter
     public List<Predicate<String>> elementValidator = new ArrayList<>();
 
@@ -20,26 +20,25 @@ public class ListRef extends ObjectRef<List<String>>{
         super(object);
         addValidator(this::validateInternal);
     }
-    public boolean validateElement(String val){
-        for(Predicate<String> validator : elementValidator){
-            if(!validator.test(val)){
+
+    public boolean validateElement(String val) {
+        for (Predicate<String> validator : elementValidator) {
+            if (!validator.test(val)) {
                 return false;
             }
         }
         return true;
     }
 
-    public void addElementValidator(Predicate<String> validator){
+    public void addElementValidator(Predicate<String> validator) {
         elementValidator.add(validator);
     }
 
-    public void removeElementValidator(Predicate<Predicate<String>> validator){
+    public void removeElementValidator(Predicate<Predicate<String>> validator) {
         elementValidator.removeIf(validator);
     }
 
-
-
-    private boolean validateInternal(List<String> v){
+    private boolean validateInternal(List<String> v) {
         return v.stream().allMatch(this::validateElement);
     }
 
@@ -55,10 +54,9 @@ public class ListRef extends ObjectRef<List<String>>{
 
     @Override
     public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if(otherRef instanceof ListRef listRef){
+        if (otherRef instanceof ListRef listRef) {
             listRef.set(new ArrayList<>(this.get()));
             return true;
-
         }
         return false;
     }

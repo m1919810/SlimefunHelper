@@ -4,6 +4,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import com.mojang.serialization.JsonOps;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import me.matl114.utils.chat.SimpleOrderedTextVisitor;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
@@ -13,17 +18,11 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
-
 public class ChatUtils {
     public static boolean isHighSurrogate(char c) {
         return c >= 0xD800 && c <= 0xDBFF;
     }
+
     public static boolean isLowSurrogate(char c) {
         return c >= 0xDC00 && c <= 0xDFFF;
     }
@@ -32,6 +31,7 @@ public class ChatUtils {
     public static boolean isNormalCharacter(char c) {
         return (!isHighSurrogate(c) && !isLowSurrogate(c));
     }
+
     public static String toUnicodedString(String str) {
         StringBuilder unicodeStr = new StringBuilder();
 
@@ -43,28 +43,36 @@ public class ChatUtils {
         }
         return unicodeStr.toString();
     }
+
     public static char toFullWidth(char c) {
 
-            if (c >= 'a' && c <= 'z') {
-                // 转换为全角字母
-                return ((char) (c + 0xFEE0));
-            } else if (c >= 'A' && c <= 'Z') {
-                // 转换为全角字母
-                return  ((char) (c + 0xFEE0));
-            } else if (c >= '0' && c <= '9') {
-                // 转换为全角数字
-                return ((char) (c + 0xFEE0));
-            } else {
-                // 其他字符保持不变
-                return c;
-            }
-
+        if (c >= 'a' && c <= 'z') {
+            // 转换为全角字母
+            return ((char) (c + 0xFEE0));
+        } else if (c >= 'A' && c <= 'Z') {
+            // 转换为全角字母
+            return ((char) (c + 0xFEE0));
+        } else if (c >= '0' && c <= '9') {
+            // 转换为全角数字
+            return ((char) (c + 0xFEE0));
+        } else {
+            // 其他字符保持不变
+            return c;
+        }
     }
+
     private static final Pattern FORMAT_PATTERN = Pattern.compile("(§[0-9a-fk-orx])|(\\n)", Pattern.CASE_INSENSITIVE);
-    private static final Style EMPTY = Style.EMPTY.withItalic(false); // Paper - Improve Legacy Component serialization size
-    private static final Style RESET = Style.EMPTY.withBold(false).withItalic(false).withUnderline(false).withStrikethrough(false).withObfuscated(false);
+    private static final Style EMPTY =
+            Style.EMPTY.withItalic(false); // Paper - Improve Legacy Component serialization size
+    private static final Style RESET = Style.EMPTY
+            .withBold(false)
+            .withItalic(false)
+            .withUnderline(false)
+            .withStrikethrough(false)
+            .withObfuscated(false);
     private static final Map<Character, Formatting> formatMap;
     private static final Map<TextColor, Formatting> colorToFormat;
+
     static {
         ImmutableMap.Builder<Character, Formatting> builder = ImmutableMap.builder();
         for (Formatting format : Formatting.values()) {
@@ -72,15 +80,16 @@ public class ChatUtils {
         }
         formatMap = builder.build();
         colorToFormat = new HashMap<>();
-        TextColor.FORMATTING_TO_COLOR.forEach((f,t)->colorToFormat.put(t,f));
+        TextColor.FORMATTING_TO_COLOR.forEach((f, t) -> colorToFormat.put(t, f));
     }
+
     @ApiMethod
-    public static MutableText textFromLegacyString(String value){
-        if(value == null){
+    public static MutableText textFromLegacyString(String value) {
+        if (value == null) {
             return Text.empty();
         }
         MutableText base = Text.empty();
-        //Object currentStyle = ChatEnum.STYLE_EMPTY;
+        // Object currentStyle = ChatEnum.STYLE_EMPTY;
         Style currentStyle = EMPTY;
         Matcher matcher = FORMAT_PATTERN.matcher(value);
         String match = null;
@@ -89,29 +98,31 @@ public class ChatUtils {
         boolean hasReset = false;
         boolean needsAdd = false;
         find_any:
-        while (matcher.find()){
+        while (matcher.find()) {
             int groupId = 0;
-            while((match = matcher.group(++ groupId)) == null){
-            }
+            while ((match = matcher.group(++groupId)) == null) {}
             int index = matcher.start(groupId);
-            if(index > currentIndex){
+            if (index > currentIndex) {
                 needsAdd = false;
-                Text addition = Text.literal(value.substring(currentIndex, index)).setStyle(currentStyle);
+                Text addition =
+                        Text.literal(value.substring(currentIndex, index)).setStyle(currentStyle);
                 currentIndex = index;
                 base.append(addition);
             }
-            switch (groupId){
+            switch (groupId) {
                 case 1:
                     char c = match.toLowerCase(java.util.Locale.ENGLISH).charAt(1);
-                    if(c == 'x'){
+                    if (c == 'x') {
                         hexColor = new StringBuilder("#");
-                    }else if(hexColor != null){
+                    } else if (hexColor != null) {
                         hexColor.append(c);
-                        if(hexColor.length() == 7){
-                            currentStyle = RESET.withColor(TextColor.parse(hexColor.toString()).result().get());
+                        if (hexColor.length() == 7) {
+                            currentStyle = RESET.withColor(TextColor.parse(hexColor.toString())
+                                    .result()
+                                    .get());
                             hexColor = null;
                         }
-                    }else {
+                    } else {
                         Formatting format = formatMap.get(c);
                         if (format.isModifier() && format != Formatting.RESET) {
                             switch (format) {
@@ -159,34 +170,38 @@ public class ChatUtils {
                     needsAdd = true;
                     break;
                 case 2:
-                    if(needsAdd){
-                        Text addition = Text.literal(value.substring(currentIndex, index)).setStyle(currentStyle);
+                    if (needsAdd) {
+                        Text addition = Text.literal(value.substring(currentIndex, index))
+                                .setStyle(currentStyle);
                         base.append(addition);
                     }
-                    //换行 means end
+                    // 换行 means end
                     return base;
             }
             currentIndex = matcher.end(groupId);
         }
         int len = value.length();
-        if(currentIndex < value.length() || needsAdd){
+        if (currentIndex < value.length() || needsAdd) {
             Text addition = Text.literal(value.substring(currentIndex, len)).setStyle(currentStyle);
             base.append(addition);
         }
         return base;
     }
+
     @ApiMethod
     public static Stream<Text> textStream(Text comp) {
-        return com.google.common.collect.Streams.concat(new Stream[]{Stream.of(comp), comp.getSiblings().stream().flatMap(ChatUtils::textStream)});
+        return com.google.common.collect.Streams.concat(
+                new Stream[] {Stream.of(comp), comp.getSiblings().stream().flatMap(ChatUtils::textStream)});
     }
+
     @ApiMethod
-    public static String textToLegacyString(Text component){
+    public static String textToLegacyString(Text component) {
         if (component == null) return "";
         StringBuilder out = new StringBuilder();
 
         boolean hadFormat = false;
         Iterator<Text> textIterator = textStream(component).iterator();
-        while (textIterator.hasNext()){
+        while (textIterator.hasNext()) {
             Text c = textIterator.next();
             Style modi = c.getStyle();
             TextColor color = modi.getColor();
@@ -235,79 +250,17 @@ public class ChatUtils {
         return out.toString();
     }
 
-    public static String translatedTextToLegacyString(Text component){
+    public static String translatedTextToLegacyString(Text component) {
         if (component == null) return "";
         StringBuilder out = new StringBuilder();
         final AtomicBoolean hadFormat = new AtomicBoolean(false);
-        component.visit((StringVisitable.StyledVisitor<? extends Object>) (style, str)->{
-            Style modi = style;
-            TextColor color = modi.getColor();
-            if (
-                //c.getContent() != PlainTextContent.EMPTY ||
-                color != null) {
-                if (color != null) {
-                    Formatting format = colorToFormat.get(color);
-                    if (format != null) {
-                        out.append(format);
-                    } else {
-                        out.append('§').append("x");
-                        for (char magic : color.getName().substring(1).toCharArray()) {
-                            out.append('§').append(magic);
-                        }
-                    }
-                    hadFormat.set(true);// = true;
-                } else if (hadFormat.get()) {
-                    out.append("§r");
-                    hadFormat.set(false);// = false;
-                }
-            }
-            if (modi.isBold()) {
-                out.append(Formatting.BOLD);
-                hadFormat.set(true);// = true;
-            }
-            if (modi.isItalic()) {
-                out.append(Formatting.ITALIC);
-                hadFormat.set(true);
-            }
-            if (modi.isUnderlined()) {
-                out.append(Formatting.UNDERLINE);
-                hadFormat.set(true);
-            }
-            if (modi.isStrikethrough()) {
-                out.append(Formatting.STRIKETHROUGH);
-                hadFormat.set(true);
-            }
-            if (modi.isObfuscated()) {
-                out.append(Formatting.OBFUSCATED);
-                hadFormat.set(true);
-            }
-            out.append(str);
-            return Optional.empty();
-        }, Style.EMPTY);
-//        for (var txt : text){
-//            txt.accept(((index, style, codePoint) -> {
-//
-//            }));
-//        }
-        return out.toString();
-    }
-
-    //todo need test
-    public static String orderedTextToLegacyString(OrderedText... text){
-        if (text == null) return "";
-        StringBuilder out = new StringBuilder();
-        MutableObject<Style> currentStyle = new MutableObject<>(null);
-        final AtomicBoolean hadFormat = new AtomicBoolean(false);
-        for (var txt : text){
-            txt.accept(((index, style, codePoint) -> {
-                if(!Objects.equals(style, currentStyle.getValue())){
-                    //update only when change style
-                    currentStyle.setValue(style);
+        component.visit(
+                (StringVisitable.StyledVisitor<? extends Object>) (style, str) -> {
                     Style modi = style;
                     TextColor color = modi.getColor();
                     if (
-                        //c.getContent() != PlainTextContent.EMPTY ||
-                        color != null) {
+                    // c.getContent() != PlainTextContent.EMPTY ||
+                    color != null) {
                         if (color != null) {
                             Formatting format = colorToFormat.get(color);
                             if (format != null) {
@@ -318,15 +271,79 @@ public class ChatUtils {
                                     out.append('§').append(magic);
                                 }
                             }
-                            hadFormat.set(true);// = true;
+                            hadFormat.set(true); // = true;
                         } else if (hadFormat.get()) {
                             out.append("§r");
-                            hadFormat.set(false);// = false;
+                            hadFormat.set(false); // = false;
                         }
                     }
                     if (modi.isBold()) {
                         out.append(Formatting.BOLD);
-                        hadFormat.set(true);// = true;
+                        hadFormat.set(true); // = true;
+                    }
+                    if (modi.isItalic()) {
+                        out.append(Formatting.ITALIC);
+                        hadFormat.set(true);
+                    }
+                    if (modi.isUnderlined()) {
+                        out.append(Formatting.UNDERLINE);
+                        hadFormat.set(true);
+                    }
+                    if (modi.isStrikethrough()) {
+                        out.append(Formatting.STRIKETHROUGH);
+                        hadFormat.set(true);
+                    }
+                    if (modi.isObfuscated()) {
+                        out.append(Formatting.OBFUSCATED);
+                        hadFormat.set(true);
+                    }
+                    out.append(str);
+                    return Optional.empty();
+                },
+                Style.EMPTY);
+        //        for (var txt : text){
+        //            txt.accept(((index, style, codePoint) -> {
+        //
+        //            }));
+        //        }
+        return out.toString();
+    }
+
+    // todo need test
+    public static String orderedTextToLegacyString(OrderedText... text) {
+        if (text == null) return "";
+        StringBuilder out = new StringBuilder();
+        MutableObject<Style> currentStyle = new MutableObject<>(null);
+        final AtomicBoolean hadFormat = new AtomicBoolean(false);
+        for (var txt : text) {
+            txt.accept(((index, style, codePoint) -> {
+                if (!Objects.equals(style, currentStyle.getValue())) {
+                    // update only when change style
+                    currentStyle.setValue(style);
+                    Style modi = style;
+                    TextColor color = modi.getColor();
+                    if (
+                    // c.getContent() != PlainTextContent.EMPTY ||
+                    color != null) {
+                        if (color != null) {
+                            Formatting format = colorToFormat.get(color);
+                            if (format != null) {
+                                out.append(format);
+                            } else {
+                                out.append('§').append("x");
+                                for (char magic : color.getName().substring(1).toCharArray()) {
+                                    out.append('§').append(magic);
+                                }
+                            }
+                            hadFormat.set(true); // = true;
+                        } else if (hadFormat.get()) {
+                            out.append("§r");
+                            hadFormat.set(false); // = false;
+                        }
+                    }
+                    if (modi.isBold()) {
+                        out.append(Formatting.BOLD);
+                        hadFormat.set(true); // = true;
                     }
                     if (modi.isItalic()) {
                         out.append(Formatting.ITALIC);
@@ -352,8 +369,10 @@ public class ChatUtils {
         }
         return out.toString();
     }
+
     @ApiMethod
-    public static String translateAlternateColorCodes(char altColorChar, char translateTo, @NotNull String textToTranslate) {
+    public static String translateAlternateColorCodes(
+            char altColorChar, char translateTo, @NotNull String textToTranslate) {
         Preconditions.checkArgument(textToTranslate != null, "Cannot translate null text");
 
         char[] b = textToTranslate.toCharArray();
@@ -365,56 +384,80 @@ public class ChatUtils {
         }
         return new String(b);
     }
+
     @ApiMethod
-    public static String textToString(Text com){
-        try{
+    public static String textToString(Text com) {
+        try {
             String val = textToLegacyString(com);
-            return translateAlternateColorCodes('§','&', val);
-        }catch (Throwable e){
+            return translateAlternateColorCodes('§', '&', val);
+        } catch (Throwable e) {
             return "";
         }
-
     }
+
     @ApiMethod
-    public static MutableText stringToText(String origin){
-        try{
-            String val = translateAlternateColorCodes('&','§', origin);
-            return  textFromLegacyString(val);
-        }catch (Throwable e){
+    public static MutableText stringToText(String origin) {
+        try {
+            String val = translateAlternateColorCodes('&', '§', origin);
+            return textFromLegacyString(val);
+        } catch (Throwable e) {
             return Text.empty();
         }
     }
+
     @ApiMethod
-    public static Text getDisplayedLocation(Vec3d vec3d){
+    public static Text getDisplayedLocation(Vec3d vec3d) {
         return getDisplayedLocation(vec3d.x, vec3d.y, vec3d.z);
     }
+
     @ApiMethod
-    public static Text getDisplayedLocationDouble(Vec3d vec3d){
+    public static Text getDisplayedLocationDouble(Vec3d vec3d) {
         return getDisplayedLocationDouble(vec3d.x, vec3d.y, vec3d.z);
     }
+
     @ApiMethod
-    public static Text getDisplayedLocationDouble(double x,double y ,double z){
-        return Text.literal("[%.2f,%.2f,%.2f]".formatted(x, y, z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+    public static Text getDisplayedLocationDouble(double x, double y, double z) {
+        return Text.literal("[%.2f,%.2f,%.2f]".formatted(x, y, z))
+                .setStyle(Style.EMPTY
+                        .withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(x, y, z)))
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord"))))
+                .formatted(Formatting.GREEN);
     }
+
     @ApiMethod
-    public static Text getDisplayedLong(long l){
-        return Text.literal("[" + Long.toString(l) + "]").setStyle(Style.EMPTY.withClickEvent(new ClickEvent.CopyToClipboard(Long.toString(l))).withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+    public static Text getDisplayedLong(long l) {
+        return Text.literal("[" + Long.toString(l) + "]")
+                .setStyle(Style.EMPTY
+                        .withClickEvent(new ClickEvent.CopyToClipboard(Long.toString(l)))
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord"))))
+                .formatted(Formatting.GREEN);
     }
+
     @ApiMethod
-    public static Text getDisplayedLocation(double x,double y ,double z){
-        return Text.literal("[%d,%d,%d]".formatted((int)x, (int)y, (int)z)).setStyle(Style.EMPTY.withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(x,y,z))).withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord")))).formatted(Formatting.GREEN);
+    public static Text getDisplayedLocation(double x, double y, double z) {
+        return Text.literal("[%d,%d,%d]".formatted((int) x, (int) y, (int) z))
+                .setStyle(Style.EMPTY
+                        .withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(x, y, z)))
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord"))))
+                .formatted(Formatting.GREEN);
     }
+
     @ApiMethod
-    public static MutableText getClickCopyTargetText(String literal){
+    public static MutableText getClickCopyTargetText(String literal) {
         String targetShow = "[%s]".formatted(literal);
-        return  getClickCopyText(targetShow, literal);
+        return getClickCopyText(targetShow, literal);
     }
+
     @ApiMethod
-    public static MutableText getClickCopyText(String literal, String copy){
-        return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy text"))).withClickEvent(new ClickEvent.CopyToClipboard(copy)));
+    public static MutableText getClickCopyText(String literal, String copy) {
+        return Text.literal(literal)
+                .setStyle(Style.EMPTY
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy text")))
+                        .withClickEvent(new ClickEvent.CopyToClipboard(copy)));
     }
+
     @ApiMethod
-    public static MutableText concatLineText(List<Text> texts){
+    public static MutableText concatLineText(List<Text> texts) {
         int size = texts.size();
         MutableText text = Text.empty();
 
@@ -428,61 +471,72 @@ public class ChatUtils {
 
         return text;
     }
+
     @ApiMethod
-    public static MutableText getHoverShowText(String literal, List<Text> showText){
-        return Text.literal(literal).setStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(concatLineText(showText))));
+    public static MutableText getHoverShowText(String literal, List<Text> showText) {
+        return Text.literal(literal)
+                .setStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(concatLineText(showText))));
     }
 
     @ApiMethod
     @Nullable
-    public static String parseTranslation(String key){
+    public static String parseTranslation(String key) {
         return Language.getInstance().get(key, key);
     }
 
-    public static boolean hasTranslation(String key){
+    public static boolean hasTranslation(String key) {
         return Language.getInstance().hasTranslation(key);
     }
 
     @ApiMethod
-    public static List<Text> parseTooltipsTranslation(String key, String defaultVal){
+    public static List<Text> parseTooltipsTranslation(String key, String defaultVal) {
         String tooltipValue = Language.getInstance().get(key, defaultVal);
         String[] splites = tooltipValue.split("\n");
         return Arrays.stream(splites).map(Text::literal).map(Text.class::cast).toList();
     }
 
-    public static String getOrderedTextString(OrderedText... text){
+    public static String getOrderedTextString(OrderedText... text) {
         var re = new SimpleOrderedTextVisitor();
-        for (var txt : text){
+        for (var txt : text) {
             txt.accept(re);
         }
         return re.getContent().toString();
     }
+
     @ApiMethod
-    public static MutableText copyText(Text text){
+    public static MutableText copyText(Text text) {
         MutableText newLine = MutableText.of(text.getContent());
         newLine.setStyle(text.getStyle());
         text.getSiblings().forEach(newLine::append);
         return newLine;
     }
+
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
+
     @ApiMethod
-    public static String textToJsonString(Text text){
-        if(text == null)return null;
-        try{
-            var re = TextCodecs.CODEC.encodeStart(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), text).getOrThrow(JsonParseException::new);
+    public static String textToJsonString(Text text) {
+        if (text == null) return null;
+        try {
+            var re = TextCodecs.CODEC
+                    .encodeStart(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), text)
+                    .getOrThrow(JsonParseException::new);
             return GSON.toJson(re);
-        }catch (Throwable e){
+        } catch (Throwable e) {
             return null;
         }
     }
 
     @ApiMethod
-    public static Text textFromJsonString(String jsonRaw){
-        try{
-            if(jsonRaw == null)return null;
+    public static Text textFromJsonString(String jsonRaw) {
+        try {
+            if (jsonRaw == null) return null;
             JsonElement jsonElement = JsonParser.parseString(jsonRaw);
-            return jsonElement == null ? null : TextCodecs.CODEC.parse(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), jsonElement).getOrThrow(JsonParseException::new);
-        }catch (Throwable e){
+            return jsonElement == null
+                    ? null
+                    : TextCodecs.CODEC
+                            .parse(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), jsonElement)
+                            .getOrThrow(JsonParseException::new);
+        } catch (Throwable e) {
             return null;
         }
     }

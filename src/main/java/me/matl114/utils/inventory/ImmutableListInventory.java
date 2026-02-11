@@ -1,9 +1,8 @@
 package me.matl114.utils.inventory;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import net.minecraft.item.ItemStack;
-
-import java.util.List;
 
 @AllArgsConstructor
 public class ImmutableListInventory extends ImmutableInventory {
@@ -23,6 +22,4 @@ public class ImmutableListInventory extends ImmutableInventory {
     public ItemStack getStack(int slot) {
         return itemStacks.get(slot);
     }
-
-
 }

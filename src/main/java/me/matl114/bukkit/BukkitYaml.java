@@ -1,6 +1,8 @@
 package me.matl114.bukkit;
 
-
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
@@ -14,19 +16,14 @@ import org.yaml.snakeyaml.nodes.*;
 import org.yaml.snakeyaml.reader.UnicodeReader;
 import org.yaml.snakeyaml.representer.Representer;
 
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
-
-public class BukkitYaml  {
+public class BukkitYaml {
     /** @deprecated */
     @Deprecated
     protected static final String COMMENT_PREFIX = "# ";
     /** @deprecated */
     @Deprecated
     protected static final String BLANK_CONFIG = "{}\n";
+
     private final DumperOptions yamlDumperOptions = new DumperOptions();
     private final LoaderOptions yamlLoaderOptions;
     private final YamlConstructor constructor;
@@ -38,17 +35,22 @@ public class BukkitYaml  {
         this.yamlLoaderOptions = new LoaderOptions();
         this.yamlLoaderOptions.setMaxAliasesForCollections(Integer.MAX_VALUE);
         this.constructor = new YamlConstructor(this.yamlLoaderOptions);
-        this.yaml = new Yaml(this.constructor, new Representer(this.yamlDumperOptions), this.yamlDumperOptions, this.yamlLoaderOptions);
+        this.yaml = new Yaml(
+                this.constructor,
+                new Representer(this.yamlDumperOptions),
+                this.yamlDumperOptions,
+                this.yamlLoaderOptions);
     }
+
     private void adjustNodeComments(MappingNode node) {
         if (node.getBlockComments() == null && !node.getValue().isEmpty()) {
-            Node firstNode = ((NodeTuple)node.getValue().get(0)).getKeyNode();
+            Node firstNode = ((NodeTuple) node.getValue().get(0)).getKeyNode();
             List<CommentLine> lines = firstNode.getBlockComments();
             if (lines != null) {
                 int index = -1;
 
-                for(int i = 0; i < lines.size(); ++i) {
-                    if (((CommentLine)lines.get(i)).getCommentType() == CommentType.BLANK_LINE) {
+                for (int i = 0; i < lines.size(); ++i) {
+                    if (((CommentLine) lines.get(i)).getCommentType() == CommentType.BLANK_LINE) {
                         index = i;
                     }
                 }
@@ -59,19 +61,21 @@ public class BukkitYaml  {
                 }
             }
         }
-
     }
-    public static class InvalidConfigException extends Exception{
-        public InvalidConfigException(String va){
+
+    public static class InvalidConfigException extends Exception {
+        public InvalidConfigException(String va) {
             super(va);
         }
-        public InvalidConfigException(Throwable e){
+
+        public InvalidConfigException(Throwable e) {
             super(e);
         }
     }
-    public BukkitItemStack getItemStackFromString(String string) throws InvalidConfigException{
 
-        //this.yamlLoaderOptions.setProcessComments(this.options().parseComments());
+    public BukkitItemStack getItemStackFromString(String string) throws InvalidConfigException {
+
+        // this.yamlLoaderOptions.setProcessComments(this.options().parseComments());
         MappingNode node;
         try {
             Throwable var20 = null;
@@ -82,7 +86,7 @@ public class BukkitYaml  {
                     Node rawNode = this.yaml.compose(reader);
 
                     try {
-                        node = (MappingNode)rawNode;
+                        node = (MappingNode) rawNode;
                     } catch (ClassCastException var16) {
                         throw new InvalidConfigException("Top level is not a Map.");
                     }
@@ -90,7 +94,6 @@ public class BukkitYaml  {
                     if (reader != null) {
                         reader.close();
                     }
-
                 }
             } catch (Throwable var18) {
                 if (var20 == null) {
@@ -106,25 +109,25 @@ public class BukkitYaml  {
             throw new InvalidConfigException(e);
         }
 
-
         if (node != null) {
             this.adjustNodeComments(node);
-//            this.options().setHeader(this.loadHeader(this.getCommentLines(node.getBlockComments())));
-//            this.options().setFooter(this.getCommentLines(node.getEndComments()));
+            //            this.options().setHeader(this.loadHeader(this.getCommentLines(node.getBlockComments())));
+            //            this.options().setFooter(this.getCommentLines(node.getEndComments()));
             this.constructor.flattenMapping(node);
             Iterator var4 = node.getValue().iterator();
 
-            while(true) {
-                while(var4.hasNext()) {
-                    NodeTuple nodeTuple = (NodeTuple)var4.next();
+            while (true) {
+                while (var4.hasNext()) {
+                    NodeTuple nodeTuple = (NodeTuple) var4.next();
                     Node key = nodeTuple.getKeyNode();
                     String keyString = String.valueOf(this.constructor.construct(key));
 
                     Node value;
-                    for(value = nodeTuple.getValueNode(); value instanceof AnchorNode; value = ((AnchorNode)value).getRealNode()) {
-                    }
+                    for (value = nodeTuple.getValueNode();
+                            value instanceof AnchorNode;
+                            value = ((AnchorNode) value).getRealNode()) {}
 
-                    if (value instanceof MappingNode && !this.hasSerializedTypeKey((MappingNode)value)) {
+                    if (value instanceof MappingNode && !this.hasSerializedTypeKey((MappingNode) value)) {
                         throw new UnsupportedOperationException();
                     } else {
                         return (BukkitItemStack) this.constructor.construct(value);
@@ -135,15 +138,14 @@ public class BukkitYaml  {
         throw new InvalidConfigException("this config contains null");
     }
 
-
     private boolean hasSerializedTypeKey(MappingNode node) {
         Iterator var3 = node.getValue().iterator();
 
-        while(var3.hasNext()) {
-            NodeTuple nodeTuple = (NodeTuple)var3.next();
+        while (var3.hasNext()) {
+            NodeTuple nodeTuple = (NodeTuple) var3.next();
             Node keyNode = nodeTuple.getKeyNode();
             if (keyNode instanceof ScalarNode) {
-                String key = ((ScalarNode)keyNode).getValue();
+                String key = ((ScalarNode) keyNode).getValue();
                 if (key.equals("==")) {
                     return true;
                 }
@@ -152,7 +154,6 @@ public class BukkitYaml  {
 
         return false;
     }
-
 
     public class YamlConstructor extends SafeConstructor {
         /** @deprecated */
@@ -175,13 +176,13 @@ public class BukkitYaml  {
             return this.constructObject(node);
         }
 
-        protected Map<Object, Object> newMap(MappingNode node){
+        protected Map<Object, Object> newMap(MappingNode node) {
             return createDefaultMap(node.getValue().size());
         }
-        protected List<Object> newList(SequenceNode node){
+
+        protected List<Object> newList(SequenceNode node) {
             return createDefaultList(node.getValue().size());
         }
-
 
         private class ConstructCustomObject extends SafeConstructor.ConstructYamlMap {
             private ConstructCustomObject() {
@@ -193,15 +194,15 @@ public class BukkitYaml  {
                 if (node.isTwoStepsConstruction()) {
                     throw new YAMLException("Unexpected referential mapping structure. Node: " + node);
                 } else {
-                    Map<?, ?> raw = (Map)super.construct(node);
+                    Map<?, ?> raw = (Map) super.construct(node);
                     if (!raw.containsKey("==")) {
                         return raw;
                     } else {
                         Map<String, Object> typed = new LinkedHashMap(raw.size());
                         Iterator var5 = raw.entrySet().iterator();
 
-                        while(var5.hasNext()) {
-                            Map.Entry<?, ?> entry = (Map.Entry)var5.next();
+                        while (var5.hasNext()) {
+                            Map.Entry<?, ?> entry = (Map.Entry) var5.next();
                             typed.put(entry.getKey().toString(), entry.getValue());
                         }
 
@@ -220,12 +221,4 @@ public class BukkitYaml  {
             }
         }
     }
-
-
-
-
-
-
-
-
 }

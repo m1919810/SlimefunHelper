@@ -4,7 +4,8 @@ import net.minecraft.text.Text;
 
 public interface TextProvider {
     Text getLabel(DrawableWidget element);
-    static TextProvider of(Text text){
-        return (b)->text;
+
+    static TextProvider of(Text text) {
+        return (b) -> text;
     }
 }

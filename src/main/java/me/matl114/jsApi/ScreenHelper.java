@@ -1,5 +1,7 @@
 package me.matl114.jsApi;
 
+import java.util.List;
+import javax.annotation.Nonnull;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.utils.ApiMethod;
 import net.minecraft.client.MinecraftClient;
@@ -15,80 +17,78 @@ import net.minecraft.text.Text;
 import xyz.wagyourtail.jsmacros.client.api.classes.inventory.Inventory;
 import xyz.wagyourtail.jsmacros.client.api.classes.inventory.PlayerInventory;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-
 @ApiMethod
 public class ScreenHelper {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
     @Nonnull
-    public static Object createInventoryView(HandledScreen s){
+    public static Object createInventoryView(HandledScreen s) {
         return Inventory.create(s);
     }
+
     @Nonnull
-    public static Object createServerInventoryView(){
+    public static Object createServerInventoryView() {
         ClientPlayerEntity player = mc.player;
         HandledScreen<?> handledScreen = ClientPlayerAccess.of(player).getServerOpeningScreen();
-        //create backpack inventory if null
+        // create backpack inventory if null
         return handledScreen != null ? Inventory.create(handledScreen) : Inventory.create();
     }
 
-
-    public static ScreenHandler getScreenHandler(Object handled){
+    public static ScreenHandler getScreenHandler(Object handled) {
         return unwrapHandler(handled);
     }
 
-    private static ScreenHandler unwrapHandler(Object obj){
-        if(obj instanceof ScreenHandler sh){
+    private static ScreenHandler unwrapHandler(Object obj) {
+        if (obj instanceof ScreenHandler sh) {
             return sh;
-        }else {
+        } else {
             return JsHelper.unwrap(obj, HandledScreen.class).getScreenHandler();
         }
     }
 
-    public static int getSyncId(Object screen){
+    public static int getSyncId(Object screen) {
         return unwrapHandler(screen).syncId;
     }
 
-    public static boolean isInPlayerInventory(Object handled, int slotIndex){
+    public static boolean isInPlayerInventory(Object handled, int slotIndex) {
         return unwrapHandler(handled).slots.get(slotIndex).inventory instanceof PlayerInventory;
     }
 
-    public static boolean isInContainerInventory(Object handled, int slotIndex){
+    public static boolean isInContainerInventory(Object handled, int slotIndex) {
         return !isInPlayerInventory(handled, slotIndex);
     }
 
-
-    public static boolean canPlaceInSlot(Object handled, int slotIndex, Object itemStack){
+    public static boolean canPlaceInSlot(Object handled, int slotIndex, Object itemStack) {
         Slot slot = unwrapHandler(handled).slots.get(slotIndex);
         ItemStack stack = JsHelper.unwrap(itemStack, ItemStack.class);
         return slot.canInsert(stack);
     }
 
-    public static boolean canTakeFromSlot(Object handled, int slotIndex){
+    public static boolean canTakeFromSlot(Object handled, int slotIndex) {
         Slot slot = unwrapHandler(handled).slots.get(slotIndex);
         return slot.canTakeItems(mc.player);
     }
 
-    public static List<Slot> getScreenSlots(Object handled){
+    public static List<Slot> getScreenSlots(Object handled) {
         return unwrapHandler(handled).slots;
     }
 
-    public static void setSlotItem(Slot slot, ItemStack stack){
+    public static void setSlotItem(Slot slot, ItemStack stack) {
         slot.setStack(stack);
     }
 
-    public static ItemStack getSlotItem(Slot slot){
+    public static ItemStack getSlotItem(Slot slot) {
         return slot.getStack();
     }
-
 
     public static String getScreenName(Screen s) {
         if (s == null) {
             return null;
         } else if (s instanceof HandledScreen) {
             if (s instanceof GenericContainerScreen) {
-                return String.format("%d Row Chest", ((GenericContainerScreenHandler)((GenericContainerScreen)s).getScreenHandler()).getRows());
+                return String.format(
+                        "%d Row Chest",
+                        ((GenericContainerScreenHandler) ((GenericContainerScreen) s).getScreenHandler()).getRows());
             } else if (s instanceof Generic3x3ContainerScreen) {
                 return "3x3 Container";
             } else if (s instanceof AnvilScreen) {
@@ -128,7 +128,9 @@ public class ScreenHelper {
             } else if (s instanceof HorseScreen) {
                 return "Horse";
             } else {
-                return s instanceof CreativeInventoryScreen ? "Creative Inventory" : s.getClass().getName();
+                return s instanceof CreativeInventoryScreen
+                        ? "Creative Inventory"
+                        : s.getClass().getName();
             }
         } else if (s instanceof ChatScreen) {
             return "Chat";
