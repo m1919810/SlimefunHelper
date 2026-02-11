@@ -476,9 +476,7 @@ public class ProjectileESP extends BaseModule {
             Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
             RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
             RenderUtils.drawSolidBox(
-                    stack,
-                    finalPosition.add(RenderTasks.SMALL_FROM),
-                    finalPosition.add(RenderTasks.SMALL_TO));
+                    stack, finalPosition.add(RenderTasks.SMALL_FROM), finalPosition.add(RenderTasks.SMALL_TO));
         }
     }
 
@@ -491,9 +489,7 @@ public class ProjectileESP extends BaseModule {
                 Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
                 RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
                 RenderUtils.drawSolidBox(
-                        stack,
-                        finalPosition.add(RenderTasks.SMALL_FROM),
-                        finalPosition.add(RenderTasks.SMALL_TO));
+                        stack, finalPosition.add(RenderTasks.SMALL_FROM), finalPosition.add(RenderTasks.SMALL_TO));
             } else {
                 Entity hitEntity = ((EntityHitResult) result).getEntity();
                 RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);

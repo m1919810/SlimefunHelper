@@ -13,7 +13,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 public class RenderUtils {
@@ -115,10 +114,6 @@ public class RenderUtils {
 
     public static void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
         VRender.getInstance().drawOutlinedBoxCameraCoord(matrix, from, to);
-    }
-
-    public static void drawSolidBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to) {
-
     }
 
     public static void drawSolidBox(MatrixStack matrix, Vec3d from, Vec3d to) {

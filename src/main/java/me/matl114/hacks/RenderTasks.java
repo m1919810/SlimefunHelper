@@ -302,9 +302,7 @@ public class RenderTasks {
             RenderUtils.setAsCurrentShaderColor(color1, 0.25F);
             RenderUtils.drawSolidBox(stack, startBox.getMinPos(), startBox.getMaxPos());
             RenderUtils.drawSolidBox(
-                    stack,
-                    startBox.getMinPos().add(delta),
-                    startBox.getMaxPos().add(delta));
+                    stack, startBox.getMinPos().add(delta), startBox.getMaxPos().add(delta));
             for (var ver : CollisionUtil.getBoxVertices(startBox))
                 RenderUtils.drawLineVirtual(stack, ver, ver.add(delta), color2);
         }

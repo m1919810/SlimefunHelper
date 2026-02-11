@@ -39,7 +39,7 @@ public abstract class MatrixStackMixin implements me.matl114.versioned.api.Matri
         return this.peek().getPositionMatrix();
     }
 
-    public Matrix3f peekNormal(){
+    public Matrix3f peekNormal() {
         return this.peek().getNormalMatrix();
     }
 
