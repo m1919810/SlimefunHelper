@@ -69,7 +69,7 @@ public class SlimefunModels extends BaseModule {
         }
     }
 
-    public void onModelOverride(Event<ItemModel> event) {
+    public void onModelOverride(Event<Identifier> event) {
         if (event.context != null) return;
 
         if (enableModel.get()) {
@@ -83,7 +83,7 @@ public class SlimefunModels extends BaseModule {
                         Optional<ItemModel> modelOptional =
                                 modelCache.computeIfAbsent(identifier, RenderListener::getOptionalModelOf);
                         if (modelOptional.isPresent()) {
-                            event.context(modelOptional.get());
+                            event.context(identifier);
                             return;
                         }
                     }

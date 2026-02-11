@@ -55,9 +55,9 @@ public class NewStyleModel extends BaseModule {
 
     private Map<Identifier, Optional<ItemModel>> cache = new HashMap<>();
 
-    private Map<Item, Optional<ItemModel>> cacheItem = new HashMap<>();
+    private Map<Item, Identifier> cacheItem = new HashMap<>();
 
-    public void onModelOverride(Event<ItemModel> event) {
+    public void onModelOverride(Event<Identifier> event) {
         if (event.context != null) return;
         ItemStack item = event.getArgs(0);
         if (enableEnchant.get()) {
@@ -85,15 +85,17 @@ public class NewStyleModel extends BaseModule {
                                                 : new Identifier(
                                                         NAMESPACE, MODEL_PATH + identifier2.getPath() + "_" + level))));
                         Optional<ItemModel> modelId = cache.computeIfAbsent(id, RenderListener::getModModel);
-                        modelId.ifPresent(event::context);
+                        if (modelId.isPresent()) {
+                            event.context(id);
+                        }
                     }
                 }
             }
         }
         if (shouldEnableNewStyle(item)) {
             var model = cacheItem.get(item.getItem());
-            if (model != null && model.isPresent()) {
-                event.context(model.get());
+            if (model != null) {
+                event.context(model);
             }
         }
     }
@@ -108,7 +110,7 @@ public class NewStyleModel extends BaseModule {
             Optional<ItemModel> modelId = RenderListener.getModModel(id);
             // todo: what?
             if (modelId.isPresent()) {
-                cacheItem.put(item, modelId);
+                cacheItem.put(item, id);
                 Debug.info("Loading new-version model", id);
             }
         }

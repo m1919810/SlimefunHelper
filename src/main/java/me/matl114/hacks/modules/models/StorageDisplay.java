@@ -19,7 +19,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
-import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -187,7 +186,7 @@ public class StorageDisplay extends BaseModule {
         }
     }
 
-    public void onGceChickenModel(Event<ItemModel> IItemModelEvent) {
+    public void onGceChickenModel(Event<Identifier> IItemModelEvent) {
         if (IItemModelEvent.context() != null) return;
         if (isActive()) {
             ItemStack stack = IItemModelEvent.getArgs(0);
@@ -195,8 +194,8 @@ public class StorageDisplay extends BaseModule {
             if (optionalChicken != null) {
                 String val = dnaInfo.get(optionalChicken);
                 if (val != null) {
-                    RenderListener.getModModel(new Identifier("slimefunhelper", "gce/" + val))
-                            .ifPresent(IItemModelEvent::context);
+                    Identifier id = new Identifier("slimefunhelper", "gce/" + val);
+                    RenderListener.getModModel(id).ifPresent((v) -> IItemModelEvent.context(id));
                 }
             }
         }

@@ -31,7 +31,7 @@ public class RenderListener {
     @ExtraArgs(
             value = {ItemStack.class},
             names = {"originalItemStack"})
-    private static final EventChannel<ItemModel> customModelOverride = new EventChannel<>();
+    private static final EventChannel<Identifier> customModelOverride = new EventChannel<>();
 
     public static Identifier wrapAsModModel(Identifier id) {
         return id;
