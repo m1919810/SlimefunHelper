@@ -171,133 +171,133 @@ public class Render_v1_21_11 implements VRender {
         bufferBuilder
                 .vertex(matrix4f, minX, minY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(1, 0, 0)
+                .normal(matrix4f, 1, 0, 0)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, maxX, minY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(1, 0, 0)
+                .normal(matrix4f, 1, 0, 0)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, maxX, minY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 0, 1)
+                .normal(matrix4f, 0, 0, 1)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, maxX, minY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 0, 1)
+                .normal(matrix4f, 0, 0, 1)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, minX, minY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(1, 0, 0)
+                .normal(matrix4f, 1, 0, 0)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, maxX, minY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(1, 0, 0)
+                .normal(matrix4f, 1, 0, 0)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, minX, minY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 0, 1)
+                .normal(matrix4f, 0, 0, 1)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, minX, minY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 0, 1)
+                .normal(matrix4f, 0, 0, 1)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, minX, minY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 1, 0)
+                .normal(matrix4f, 0, 1, 0)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, minX, maxY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 1, 0)
+                .normal(matrix4f, 0, 1, 0)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, maxX, minY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 1, 0)
+                .normal(matrix4f, 0, 1, 0)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, maxX, maxY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 1, 0)
+                .normal(matrix4f, 0, 1, 0)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, maxX, minY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 1, 0)
+                .normal(matrix4f, 0, 1, 0)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, maxX, maxY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 1, 0)
+                .normal(matrix4f, 0, 1, 0)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, minX, minY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 1, 0)
+                .normal(matrix4f, 0, 1, 0)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, minX, maxY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 1, 0)
+                .normal(matrix4f, 0, 1, 0)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, minX, maxY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(1, 0, 0)
+                .normal(matrix4f, 1, 0, 0)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, maxX, maxY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(1, 0, 0)
+                .normal(matrix4f, 1, 0, 0)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, maxX, maxY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 0, 1)
+                .normal(matrix4f, 0, 0, 1)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, maxX, maxY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 0, 1)
+                .normal(matrix4f, 0, 0, 1)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, minX, maxY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(1, 0, 0)
+                .normal(matrix4f, 1, 0, 0)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, maxX, maxY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(1, 0, 0)
+                .normal(matrix4f, 1, 0, 0)
                 .lineWidth(2);
 
         bufferBuilder
                 .vertex(matrix4f, minX, maxY, minZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 0, 1)
+                .normal(matrix4f, 0, 0, 1)
                 .lineWidth(2);
         bufferBuilder
                 .vertex(matrix4f, minX, maxY, maxZ)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
-                .normal(0, 0, 1)
+                .normal(matrix4f, 0, 0, 1)
                 .lineWidth(2);
     }
 
