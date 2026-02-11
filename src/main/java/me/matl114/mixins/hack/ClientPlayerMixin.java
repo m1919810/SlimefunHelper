@@ -126,7 +126,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Shadow
     private PlayerInput lastPlayerInput;
 
-
     @Getter
     @Unique
     public HandledScreen keepedInv = null;
