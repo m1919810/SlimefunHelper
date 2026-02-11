@@ -126,8 +126,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Shadow
     private PlayerInput lastPlayerInput;
 
-    @Shadow
-    protected abstract boolean canSprint(boolean allowTouchingWater);
 
     @Getter
     @Unique
