@@ -171,7 +171,7 @@ public class BowEnhance extends BaseModule {
                     if (entity != null) {
                         RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
                         Box box = RenderUtils.getLerpedBox(entity, tickDelta);
-                        RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), box.getMinPos(), box.getMaxPos());
+                        RenderUtils.drawSolidBox(stack, box.getMinPos(), box.getMaxPos());
                     }
                 } finally {
                     RenderUtils.stopDrawVirtual(stack);

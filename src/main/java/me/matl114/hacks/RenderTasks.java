@@ -263,7 +263,7 @@ public class RenderTasks {
         @Override
         public void render(MatrixStack stack, float partialTicks) {
             RenderUtils.setAsCurrentShaderColor(color, opacity);
-            RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startVec, endVec);
+            RenderUtils.drawSolidBox(stack, startVec, endVec);
         }
     }
 
@@ -300,11 +300,9 @@ public class RenderTasks {
         @Override
         public void render(MatrixStack stack, float partialTicks) {
             RenderUtils.setAsCurrentShaderColor(color1, 0.25F);
-            RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), startBox.getMinPos(), startBox.getMaxPos());
+            RenderUtils.drawSolidBox(stack, startBox.getMinPos(), startBox.getMaxPos());
             RenderUtils.drawSolidBox(
-                    stack.peek().getPositionMatrix(),
-                    startBox.getMinPos().add(delta),
-                    startBox.getMaxPos().add(delta));
+                    stack, startBox.getMinPos().add(delta), startBox.getMaxPos().add(delta));
             for (var ver : CollisionUtil.getBoxVertices(startBox))
                 RenderUtils.drawLineVirtual(stack, ver, ver.add(delta), color2);
         }
@@ -325,7 +323,7 @@ public class RenderTasks {
         @Override
         public void render(MatrixStack stack, float partialTicks) {
             RenderUtils.setAsCurrentShaderColor(color, 0.25F);
-            RenderUtils.drawQuad(stack.peek().getPositionMatrix(), abcd[0], abcd[1], abcd[2], abcd[3]);
+            RenderUtils.drawQuad(stack, abcd[0], abcd[1], abcd[2], abcd[3]);
         }
     }
 
@@ -373,7 +371,7 @@ public class RenderTasks {
         public void render(MatrixStack stack, float partialTicks) {
             RenderUtils.setAsCurrentShaderColor(color, 1.0F);
             RenderUtils.drawSolidBox(
-                    stack.peek().getPositionMatrix(),
+                    stack,
                     entity.getBoundingBox().getMinPos(),
                     entity.getBoundingBox().getMaxPos());
         }

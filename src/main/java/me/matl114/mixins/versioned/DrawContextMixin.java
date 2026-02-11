@@ -69,4 +69,8 @@ public abstract class DrawContextMixin implements MatrixStack {
                 mat4.m30(), mat4.m31());
         this.matrices.set(result);
     }
+
+    public Matrix3f peekNormal(){
+        return new Matrix3f().identity();
+    }
 }

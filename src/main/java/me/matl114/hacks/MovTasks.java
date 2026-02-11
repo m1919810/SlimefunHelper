@@ -436,7 +436,6 @@ public class MovTasks {
                 }
             } else {
                 int ExtraTokenNeeded = (int) Math.ceil(((Math.max(len, len2)) / speedArg));
-                ;
                 // +1代表这个包发出去之后的结果
                 int tokenNow = context.currentTokenInTick.get() + 1;
                 //            tokenLimit = Math.max(tokenLimit, 1);

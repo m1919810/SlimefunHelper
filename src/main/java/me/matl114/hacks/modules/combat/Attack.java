@@ -162,7 +162,7 @@ public class Attack extends BaseModule {
                     float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
                     RenderUtils.setAsCurrentShaderColor(Color.GREEN, opacity);
                     Box box = RenderUtils.getLerpedBox(entity, tickDelta);
-                    RenderUtils.drawSolidBox(stack.peek().getPositionMatrix(), box.getMinPos(), box.getMaxPos());
+                    RenderUtils.drawSolidBox(stack, box.getMinPos(), box.getMaxPos());
                 }
             } finally {
                 RenderUtils.stopDrawVirtual(stack);

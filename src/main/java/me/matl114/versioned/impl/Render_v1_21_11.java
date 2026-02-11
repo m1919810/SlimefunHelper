@@ -16,7 +16,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
-import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public class Render_v1_21_11 implements VRender {
@@ -154,14 +153,14 @@ public class Render_v1_21_11 implements VRender {
     }
 
     @Override
-    public void drawOutlinedBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to) {
+    public void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
         VertexConsumerProvider.Immediate vcp = getVCP();
         VertexConsumer consumer = vcp.getBuffer(LINES);
-        drawOutlinedBox(matrix, consumer, from, to);
+        drawOutlinedBox(matrix.peek(), consumer, from, to);
         vcp.draw(LINES);
     }
 
-    public void drawOutlinedBox(Matrix4f matrix4f, VertexConsumer bufferBuilder, Vec3d from, Vec3d to) {
+    public void drawOutlinedBox(MatrixStack.Entry matrix4f, VertexConsumer bufferBuilder, Vec3d from, Vec3d to) {
         float minX = (float) from.getX();
         float minY = (float) from.getY();
         float minZ = (float) from.getZ();
@@ -303,14 +302,14 @@ public class Render_v1_21_11 implements VRender {
     }
 
     @Override
-    public void drawSolidBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to) {
+    public void drawSolidBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
         VertexConsumerProvider.Immediate vcp = getVCP();
         VertexConsumer consumer = vcp.getBuffer(QUADS);
-        drawSolidBox(matrix, consumer, from, to);
+        drawSolidBox(matrix.peek(), consumer, from, to);
         vcp.draw(QUADS);
     }
 
-    public void drawSolidBox(Matrix4f matrix, VertexConsumer bufferBuilder, Vec3d from, Vec3d to) {
+    public void drawSolidBox(MatrixStack.Entry matrix, VertexConsumer bufferBuilder, Vec3d from, Vec3d to) {
         float minX = (float) from.x;
         float minY = (float) from.y;
         float minZ = (float) from.z;
@@ -398,20 +397,21 @@ public class Render_v1_21_11 implements VRender {
     }
 
     @Override
-    public void drawQuadCameraCoord(Matrix4f matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
+    public void drawQuadCameraCoord(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
         VertexConsumerProvider.Immediate vcp = getVCP();
         VertexConsumer bufferBuilder = vcp.getBuffer(QUADS);
+        var matrix4 = matrix4f.peek();
         bufferBuilder
-                .vertex(matrix4f, (float) a.x, (float) a.y, (float) a.z)
+                .vertex(matrix4, (float) a.x, (float) a.y, (float) a.z)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3]);
         bufferBuilder
-                .vertex(matrix4f, (float) b.x, (float) b.y, (float) b.z)
+                .vertex(matrix4, (float) b.x, (float) b.y, (float) b.z)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3]);
         bufferBuilder
-                .vertex(matrix4f, (float) c.x, (float) c.y, (float) c.z)
+                .vertex(matrix4, (float) c.x, (float) c.y, (float) c.z)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3]);
         bufferBuilder
-                .vertex(matrix4f, (float) d.x, (float) d.y, (float) d.z)
+                .vertex(matrix4, (float) d.x, (float) d.y, (float) d.z)
                 .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3]);
         vcp.draw(QUADS);
     }

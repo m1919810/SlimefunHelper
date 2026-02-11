@@ -1,6 +1,7 @@
 package me.matl114.versioned.api;
 
 import net.minecraft.client.gui.DrawContext;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
@@ -11,6 +12,8 @@ public interface MatrixStack {
     public void popMatrix();
 
     public Matrix4f peek3D();
+
+    public Matrix3f peekNormal();
 
     public void translate(float x, float y);
 

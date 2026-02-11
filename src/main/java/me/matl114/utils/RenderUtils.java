@@ -13,7 +13,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
 
 public class RenderUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -109,31 +108,23 @@ public class RenderUtils {
 
     public static void drawOutlinedBox(MatrixStack matrix, Vec3d from, Vec3d to) {
         Vec3d vec3d = getCameraPos();
-        drawOutlinedBoxCameraCoord(matrix.peek().getPositionMatrix(), from.subtract(vec3d), to.subtract(vec3d));
+        drawOutlinedBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
     }
 
     public static void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
-        drawOutlinedBoxCameraCoord(matrix.peek().getPositionMatrix(), from, to);
-    }
-
-    public static void drawOutlinedBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to) {
         VRender.getInstance().drawOutlinedBoxCameraCoord(matrix, from, to);
     }
 
-    public static void drawSolidBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to) {
-        VRender.getInstance().drawSolidBoxCameraCoord(matrix, from, to);
-    }
-
-    public static void drawSolidBox(Matrix4f matrix, Vec3d from, Vec3d to) {
+    public static void drawSolidBox(MatrixStack matrix, Vec3d from, Vec3d to) {
         Vec3d vec3d = getCameraPos();
-        drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
+        VRender.getInstance().drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
     }
 
-    public static void drawQuadCameraCoord(Matrix4f matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
+    public static void drawQuadCameraCoord(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
         VRender.getInstance().drawQuadCameraCoord(matrix4f, a, b, c, d);
     }
 
-    public static void drawQuad(Matrix4f matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
+    public static void drawQuad(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
         Vec3d vec3d = getCameraPos();
         drawQuadCameraCoord(matrix4f, a.subtract(vec3d), b.subtract(vec3d), c.subtract(vec3d), d.subtract(vec3d));
     }
