@@ -7,7 +7,6 @@ import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
-import net.minecraft.entity.TypedEntityData;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
@@ -88,7 +87,7 @@ public class EntityUtils {
     static {
         for(Item item: Registries.ITEM){
             if(item instanceof SpawnEggItem egg){
-                ITEM2SPAWN_ENTITY.put(item, egg.getEntityType(new ItemStack(item)));
+                ITEM2SPAWN_ENTITY.put(item, egg.getEntityType(ItemStackUtils.registry(), new ItemStack(item)));
             }
         }
     }
@@ -100,8 +99,8 @@ public class EntityUtils {
     }
     public static EntityType<?> getStoredEntityType(ItemStack stack){
         if(stack != null && stack.getItem() instanceof BlockItem block && block.getBlock() instanceof SpawnerBlock spawner && ItemStackUtils.hasInPatch(stack, DataComponentTypes.BLOCK_ENTITY_DATA)){
-            TypedEntityData<?> component = ItemStackUtils.getInPatch(stack, DataComponentTypes.BLOCK_ENTITY_DATA);
-            return getSpawnerEntityType(component.getNbtWithoutId());
+            NbtComponent component = ItemStackUtils.getInPatch(stack, DataComponentTypes.BLOCK_ENTITY_DATA);
+            return getSpawnerEntityType(component.getNbt());
         }
         return null;
     }

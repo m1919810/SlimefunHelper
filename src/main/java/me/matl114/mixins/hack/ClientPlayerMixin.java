@@ -19,7 +19,6 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.command.permission.PermissionPredicate;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -117,7 +116,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Shadow private PlayerInput lastPlayerInput;
 
-    @Shadow protected abstract boolean canSprint(boolean allowTouchingWater);
 
     @Getter
     @Unique
@@ -220,9 +218,9 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     }
 
 
-    @Inject(method = "getPermissions", at = @At("HEAD"), cancellable = true)
-    protected void grantAllClientPermissions(CallbackInfoReturnable<PermissionPredicate> cir){
-        cir.setReturnValue(PermissionPredicate.ALL);
+    @Inject(method = "getPermissionLevel", at = @At("HEAD"), cancellable = true)
+    protected void grantAllClientPermissions(CallbackInfoReturnable<Integer> cir){
+        cir.setReturnValue(4);
     }
 
 
@@ -360,13 +358,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
 
 
-    @ModifyExpressionValue(method = "tickNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;keepOpenThroughPortal()Z"))
-    private boolean onPortalGui(boolean original){
-        if(ExtraTasks.getClientExtra().portalGui.get())return true;
-        return original;
-    }
-
-
     //redirection conflict with viafabricplus
 //    @Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;hasForwardMovement()Z"))
 //    private boolean allDirectionSprint(Input instance){
@@ -384,7 +375,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Unique
     @Override
     public ItemEntity dropItem(ItemStack stack, boolean throwRandomly, boolean retainOwnership){
-        if(!stack.isEmpty() && this.getEntityWorld().isClient() && InvTasks.SUPPRESS_DROPITEM_SPAWN.get() && !MinecraftClient.getInstance().isOnThread()){
+        if(!stack.isEmpty() && this.getWorld().isClient() && InvTasks.SUPPRESS_DROPITEM_SPAWN.get() && !MinecraftClient.getInstance().isOnThread()){
             this.swingHand(Hand.MAIN_HAND);
             return null;
         }else{

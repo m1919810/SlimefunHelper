@@ -39,9 +39,9 @@ public abstract class InGameHudMixin {
             this.tmpValue3 = true;
             this.tmpValue2 = MinecraftClient.getInstance().options.hudHidden;
             client.options.hudHidden = false;
-            if(!this.client.debugHudEntryList.isF3Enabled()){
+            if(!debugHud.shouldShowDebugHud()){
                 this.tmpValue = true;
-                this.client.debugHudEntryList.setF3Enabled(true);
+                debugHud.toggleDebugHud();
             }else {
                 this.tmpValue = false;
             }
@@ -53,7 +53,7 @@ public abstract class InGameHudMixin {
             tmpValue3 = false;
             client.options.hudHidden = this.tmpValue2;
             if(this.tmpValue){
-                client.debugHudEntryList.setF3Enabled(false);
+                debugHud.toggleDebugHud();
             }
         }
     }

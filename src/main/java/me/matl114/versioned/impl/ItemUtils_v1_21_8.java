@@ -13,7 +13,7 @@ import net.minecraft.nbt.NbtOps;
 import java.util.List;
 import java.util.Map;
 
-public class ItemUtils_v1_21_11 implements VItem {
+public class ItemUtils_v1_21_8 implements VItem {
     @Override
     public boolean canGlide(ItemStack stack) {
         return stack.contains(DataComponentTypes.GLIDER);
@@ -21,7 +21,7 @@ public class ItemUtils_v1_21_11 implements VItem {
 
     @Override
     public boolean isSpear(ItemStack stack) {
-        return stack.contains(DataComponentTypes.KINETIC_WEAPON);
+        return false;
     }
 
     @Override

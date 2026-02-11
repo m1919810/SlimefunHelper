@@ -14,7 +14,6 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.KeyInput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -101,7 +100,7 @@ public abstract class ScreenMixin extends AbstractParentElement implements Scree
         return focused;
     }
     @Inject(method = "keyPressed",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;switchFocus(Lnet/minecraft/client/gui/navigation/GuiNavigationPath;)V",shift = At.Shift.BEFORE),cancellable = true)
-    private void onKeyPressed(KeyInput input, CallbackInfoReturnable<Boolean> cir) {
+    private void onKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if(this instanceof ButtonNotFocusedScreenAccess access && !access.enableSwitchUsingKey()){
             cir.setReturnValue(false);
         }

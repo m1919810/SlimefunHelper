@@ -5,7 +5,7 @@ import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.render.item.KeyedItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
@@ -45,7 +45,7 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
 
 
     @Inject(method = "render", at = @At("RETURN"))
-    private void onRender1(MatrixStack matrices, OrderedRenderCommandQueue orderedRenderCommandQueue, int light, int overlay, int i, CallbackInfo ci) {
+    private void onRender1(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, CallbackInfo ci) {
         if(attachedRender != null){
             matrices.push();
             try{
@@ -88,7 +88,7 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
                     MinecraftClient.getInstance().gameRenderer.getDiffuseLighting().setShaderLights(DiffuseLighting.Type.ITEMS_FLAT);
                 }
 
-                attachedRender.render(matrices, orderedRenderCommandQueue, light, overlay, i);
+                attachedRender.render(matrices, vertexConsumers, light, overlay);
             }finally {
                 matrices.pop();
             }

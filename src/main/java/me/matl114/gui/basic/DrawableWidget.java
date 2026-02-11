@@ -10,8 +10,6 @@ import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
@@ -122,7 +120,9 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
      */
     @Override
     public final void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        render0(VDrawContext.of(context), mouseX, mouseY, delta, false);
+        VDrawContext vdraw = VDrawContext.of(context);
+        render0(vdraw, mouseX, mouseY, delta, false);
+        vdraw.tryDraw();
     }
     protected void checkSelect(boolean disableSelect, int mouseX, int mouseY){
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
@@ -155,7 +155,6 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     public void renderAbsolute(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect){
         if(this.renderHandler != null){
             this.renderHandler.renderExtraAbsoluteCoord(this, context, mouseX, mouseY , delta, this.alpha, this.selected);
-            context.tryDraw();
         }
     }
 
@@ -282,7 +281,7 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
         return false;
     }
 
-    //------------------------------------- public functions left for -------------------------------------
+    //------------------------------------- default functions left for -------------------------------------
 
 
     public final void forEachChild(Consumer<ClickableWidget> consumer) {
@@ -327,41 +326,5 @@ public abstract class DrawableWidget implements Element,Drawable, net.minecraft.
     public boolean startDrag(Screen screen, double mouseX, double mouseY){
         return false;
     }
-    // -------------------------------- API compat for higher version
-    //will only be modified on main thread
-    public static int THREAD_SAFE_MODIFIER_CACHE = 0;
-    public static boolean THREAD_SAFE_DOUBLE_CLICK = false;
 
-    public final boolean mouseClicked(Click click, boolean doubled) {
-        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
-        THREAD_SAFE_DOUBLE_CLICK = doubled;
-        return this.mouseClicked(click.x(), click.y(), click.button());
-    }
-
-    public final boolean mouseReleased(Click click) {
-        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
-        return this.mouseReleased(click.x(), click.y(), click.button());
-    }
-
-    public final boolean mouseDragged(Click click, double offsetX, double offsetY) {
-        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
-        return this.mouseDragged(click.x(), click.y(), click.button(), offsetX, offsetY);
-    }
-    
-
-    public final boolean keyPressed(KeyInput input) {
-        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
-        return this.keyPressed(input.key(), input.scancode(), input.modifiers());
-    }
-
-    public final boolean keyReleased(KeyInput input) {
-        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
-        return this.keyReleased(input.key(), input.scancode(), input.modifiers());
-    }
-
-    public final boolean charTyped(CharInput input) {
-        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
-        return this.charTyped((char) input.codepoint(), input.modifiers());
-    }
-    
 }

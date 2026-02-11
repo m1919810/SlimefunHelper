@@ -29,9 +29,6 @@ repositories {
 		url 'https://jitpack.io'
 	}
 	maven {
-		url 'https://repo.destroystokyo.com/repository/maven-public'
-	}
-	maven {
 		url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots'
 	}
 
@@ -56,7 +53,10 @@ dependencies {
 		transitive = false
 	}
 	//mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	mappings files("mapping/yarn-1.21.11+build-special-v4.local-v2.jar")
+	mappings loom.layered {
+		mappings file("mapping/yarn-1.21.8+build-special-v2.local-v2.jar")
+	}
+
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"

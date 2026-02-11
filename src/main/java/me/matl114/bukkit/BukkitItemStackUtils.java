@@ -1,7 +1,6 @@
 package me.matl114.bukkit;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.authlib.properties.Property;
@@ -74,7 +73,7 @@ public class BukkitItemStackUtils {
 
 
     public static String getHashFromProfile(ProfileComponent profileComponent){
-        var pps= profileComponent.getGameProfile().properties().get("textures");
+        var pps= profileComponent.properties().get("textures");
         if(pps == null || pps.isEmpty())return null;
         Property ppt = Iterables.getFirst(pps,null);
         if(ppt == null)return null;
@@ -96,7 +95,7 @@ public class BukkitItemStackUtils {
     public static PropertyMap buildPropertyMap(PropertyMap oldMap, String hash){
         try{
             Property property = BukkitPlayerProfile.encodeUrlToProperty(BukkitPlayerProfile.fromHashToUrl(hash), BukkitPlayerProfile.PlayerTextures.SkinModel.CLASSIC, null);
-            PropertyMap map1 = new PropertyMap(LinkedHashMultimap.create());
+            PropertyMap map1 = new PropertyMap();
             map1.putAll(oldMap);
             map1.removeAll("textures");
             map1.put("textures", property);

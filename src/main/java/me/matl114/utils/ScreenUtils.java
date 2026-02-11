@@ -5,14 +5,11 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.utils.collections.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.navigation.GuiNavigationType;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.gui.screen.option.KeybindsScreen;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.input.MouseInput;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.Window;
@@ -95,7 +92,7 @@ public class ScreenUtils {
     }
 
     public static boolean hasShiftDown(){
-        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT) || InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+        return Screen.hasShiftDown();
     }
 
     public static boolean isToggle(int keyCode) {
@@ -147,6 +144,7 @@ public class ScreenUtils {
         return modifiers;
     }
 
+
     //internal methods from MCClient
 
     public static void wrapScreenError(Runnable task, String errorTitle, String screenName) {
@@ -180,9 +178,9 @@ public class ScreenUtils {
                     mc.setNavigationType(GuiNavigationType.KEYBOARD_ARROW);
             }
         }
-        KeyInput keyInput = new KeyInput(key, scancode, modifiers);
+
         if (action == 1 && (!(screen instanceof KeybindsScreen) || ((KeybindsScreen)screen).lastKeyCodeUpdateTime <= Util.getMeasuringTimeMs() - 20L)) {
-            if (mc.options.fullscreenKey.matchesKey(keyInput)) {
+            if (mc.options.fullscreenKey.matchesKey(key, scancode)) {
                 mc.getWindow().toggleFullscreen();
                 mc.options.getFullscreen().setValue(mc.getWindow().isFullscreen());
                 return;
@@ -196,23 +194,15 @@ public class ScreenUtils {
             wrapScreenError(() -> {
                 if (action != 1 && action != 2) {
                     if (action == 0) {
-                        bls[0] = screen.keyReleased(keyInput);
+                        bls[0] = screen.keyReleased(key, scancode, modifiers);
                     }
                 } else {
-                    InputUtil.Key key2;
                     screen.applyKeyPressNarratorDelay();
-                    bls[0] = screen.keyPressed(keyInput);
-                    if(bls[0]){
-                        if (mc.currentScreen == null) {
-                            key2 = InputUtil.fromKeyCode(keyInput);
-                            KeyBinding.setKeyPressed(key2, false);
-                        }
-                    }
+                    bls[0] = screen.keyPressed(key, scancode, modifiers);
                 }
 
             }, "keyPressed event handler", screen.getClass().getCanonicalName());
             if (bls[0]) {
-
                 return;
             }
         }
@@ -220,7 +210,7 @@ public class ScreenUtils {
         InputUtil.Key key2;
         boolean var10000;
         label184: {
-            key2 = InputUtil.fromKeyCode(keyInput);
+            key2 = InputUtil.fromKeyCode(key, scancode);
             bl3 = screen == null;
             if (!bl3) {
                 label180: {
@@ -245,7 +235,7 @@ public class ScreenUtils {
             KeyBinding.setKeyPressed(key2, false);
 
         } else {
-            boolean bl5 =  InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 292);
+            boolean bl5 =  InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292);
 
             if (bl3) {
                 if (bl5) {
@@ -263,41 +253,31 @@ public class ScreenUtils {
         if (screen != null) {
             mc.setNavigationType(GuiNavigationType.MOUSE);
         }
-        MouseInput mouseInput = new MouseInput(button, mods);
+
         boolean bl = action == 1;
-        final Mouse mouse = mc.mouse;
-        MouseInput i = mouse.modifyMouseInput(mouseInput, bl);
+
+        int i = button;
         if (bl) {
 
-            mouse.activeButton = i;
-        } else if (mouse.activeButton != null) {
+            mc.mouse.activeButton = i;
+        } else if (mc.mouse.activeButton != -1) {
 
-            mouse.activeButton = null;
+            mc.mouse.activeButton = -1;
         }
 
 
         boolean[] bls = new boolean[]{false};
         if (mc.getOverlay() == null) {
-            double d = mouse.getX() * (double)mc.getWindow().getScaledWidth() / (double)mc.getWindow().getWidth();
-            double e = mouse.getY() * (double)mc.getWindow().getScaledHeight() / (double)mc.getWindow().getHeight();
-            Click click = new Click(d, e, mouseInput);
+            double d = mc.mouse.getX() * (double)mc.getWindow().getScaledWidth() / (double)mc.getWindow().getWidth();
+            double e = mc.mouse.getY() * (double)mc.getWindow().getScaledHeight() / (double)mc.getWindow().getHeight();
             if (bl) {
                 screen.applyMousePressScrollNarratorDelay();
                 wrapScreenError(() -> {
-                    long l = Util.getMeasuringTimeMs();
-                    boolean bl2 = mouse.lastMouseClick != null && l  - mouse.lastMouseClick.time() < 250L &&
-                        //remove screen check
-                       // mouse.lastMouseClick.screen() == screen &&
-                        mouse.lastMouseButton == button;
-                    bls[0] = screen.mouseClicked(click, bl2);
-                    if(bls[0]){
-                        mouse.lastMouseClick = new Mouse.MouseClickTime(l, screen);
-                        mouse.lastMouseButton = button;
-                    }
+                    bls[0] = screen.mouseClicked(d, e, i);
                 }, "mouseClicked event handler", screen.getClass().getCanonicalName());
             } else {
                 wrapScreenError(() -> {
-                    bls[0] = screen.mouseReleased(click);
+                    bls[0] = screen.mouseReleased(d, e, i);
                 }, "mouseReleased event handler", screen.getClass().getCanonicalName());
             }
         }

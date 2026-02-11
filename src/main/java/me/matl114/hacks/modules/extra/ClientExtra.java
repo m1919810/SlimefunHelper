@@ -109,7 +109,7 @@ public class ClientExtra extends BaseModule {
             ScreenAccess.of(screen).openFromCurrent();
         }else{
             //严重问题
-            mc.disconnect(screen, false, true);
+            mc.disconnect(screen, false);
         }
     }
 

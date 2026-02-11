@@ -1,20 +1,13 @@
 package me.matl114.gui.basic;
 
 import lombok.Getter;
-import me.matl114.managers.input.KeyCode;
-import me.matl114.utils.ClientUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.ScreenUtils;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.input.MouseInput;
 import org.apache.commons.compress.utils.Lists;
 
 import java.util.List;
@@ -79,14 +72,8 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
-            if(this.delegate instanceof DrawableWidget widget){
-                if(widget.mouseClicked(translatedMouseX, translatedMouseY, button)){
-                    return true;
-                }
-            }else{
-                if(this.delegate.mouseClicked(new Click(translatedMouseX, translatedMouseY, new MouseInput(button, DrawableWidget.THREAD_SAFE_MODIFIER_CACHE)), DrawableWidget.THREAD_SAFE_DOUBLE_CLICK)){
-                    return true;
-                }
+            if(this.delegate.mouseClicked(translatedMouseX, translatedMouseY, button)){
+                return true;
             }
 
         }
@@ -104,15 +91,10 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
-            if(this.delegate instanceof DrawableWidget widget){
-                if(widget.mouseReleased(translatedMouseX, translatedMouseY, button)){
-                    return true;
-                }
-            }else{
-                if(this.delegate.mouseReleased(new Click(translatedMouseX, translatedMouseY, new MouseInput(button, DrawableWidget.THREAD_SAFE_MODIFIER_CACHE)))){
-                    return true;
-                }
+            if(this.delegate.mouseReleased(translatedMouseX, translatedMouseY, button)){
+                return true;
             }
+
         }
 
         return false;
@@ -143,16 +125,9 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
             }
-            if(this.delegate instanceof DrawableWidget widget){
-                if(widget.mouseDragged(translatedMouseX, translatedMouseY, button, deltaX * this.textureScale, deltaY * this.textureScale)){
-                    return true;
-                }
-            }else{
-                if(this.delegate.mouseDragged(new Click(translatedMouseX, translatedMouseY, new MouseInput(button, DrawableWidget.THREAD_SAFE_MODIFIER_CACHE)), deltaX * this.textureScale, deltaY * this.textureScale)){
-                    return true;
-                }
+            if(this.delegate.mouseDragged(translatedMouseX, translatedMouseY, button, deltaX * this.textureScale, deltaY * this.textureScale)){
+                return true;
             }
-
 
         }
 
@@ -179,23 +154,17 @@ public class ContentDelegateWidget<W extends Element & Drawable  & Selectable> e
 
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if(this.delegate instanceof DrawableWidget drawable){
-            return drawable.keyPressed(keyCode, scanCode, modifiers);
-        }else return this.delegate != null && this.delegate.keyPressed(new KeyInput(keyCode, scanCode, modifiers));
+        return this.delegate != null && this.delegate.keyPressed(keyCode, scanCode, modifiers);
     }
 
 
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if(this.delegate instanceof DrawableWidget drawable){
-            return drawable.keyReleased(keyCode, scanCode, modifiers);
-        }else return this.delegate != null && this.delegate.keyReleased(new KeyInput(keyCode, scanCode, modifiers));
+        return this.delegate != null && this.delegate.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        if(this.delegate instanceof DrawableWidget drawable){
-            return drawable.charTyped(chr, modifiers);
-        }else return this.delegate != null && this.delegate.charTyped(new CharInput(chr, modifiers));
+        return this.delegate != null && this.delegate.charTyped(chr, modifiers);
     }
 
     @Override

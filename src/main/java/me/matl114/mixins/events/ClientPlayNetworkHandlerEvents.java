@@ -171,19 +171,20 @@ public abstract class ClientPlayNetworkHandlerEvents {
         Listener.getOtherPlayerExitPoint().broadcast(playerListEntry);
     }
 
-    @Redirect(method = "onEntityVelocityUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocityClient(Lnet/minecraft/util/math/Vec3d;)V"))
-    private void onEntityVelocityUpdate(Entity instance, Vec3d vec3d){
+    @Redirect(method = "onEntityVelocityUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocityClient(DDD)V"))
+    private void onEntityVelocityUpdate(Entity instance, double x, double y, double z){
         if(!Listener.getEntityClientVelocityUpdate().isEmpty()){
+            Vec3d vec3d = new Vec3d(x, y, z);
             Event<Vec3d> vcUpdate = new Event<>(vec3d  , true, true, instance);
             Listener.getEntityClientVelocityUpdate().handleValue(vcUpdate);
             if(vcUpdate.isCancelled()){
                 return;
             }else{
                 Vec3d vec3d1 = vcUpdate.context();
-                instance.setVelocityClient(vec3d1);
+                instance.setVelocityClient(vec3d1.getX(), vec3d1.getY(), vec3d1.getZ());
             }
         }else {
-            instance.setVelocityClient(vec3d);
+            instance.setVelocityClient(x, y, z);
         }
     }
 

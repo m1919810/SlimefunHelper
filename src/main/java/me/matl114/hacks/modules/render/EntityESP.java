@@ -103,7 +103,7 @@ public class EntityESP extends BaseModule {
                         if(MinecraftClient.getInstance().world!=null){
                             PlayerListEntry entry= MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(packet.getUuid());
                             if(entry!=null){
-                                text=Text.literal(entry.getProfile().name()).formatted(Formatting.GREEN);
+                                text=Text.literal(entry.getProfile().getName()).formatted(Formatting.GREEN);
                             }
                         }
 

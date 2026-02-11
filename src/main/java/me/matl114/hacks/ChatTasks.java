@@ -13,10 +13,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.hacks.modules.chat.AutoChat;
-import me.matl114.hacks.modules.chat.ChatCombine;
-import me.matl114.hacks.modules.chat.ChatExtra;
-import me.matl114.hacks.modules.chat.ClientSideCommand;
+import me.matl114.hacks.modules.chat.*;
 import me.matl114.events.Listener;
 import me.matl114.hacks.modules.combat.Attack;
 import me.matl114.hacks.modules.combat.BowEnhance;
@@ -73,6 +70,8 @@ public class ChatTasks {
     public static ClientSideCommand clientSideCommand;
     @Getter
     public static ChatCombine chatCombine;
+    @Getter
+    public static InGuiChatBox inGuiChatBox;
 
     private static void initModules(ModuleManager m){
         chatExtra = new ChatExtra()
@@ -85,6 +84,8 @@ public class ChatTasks {
             .register(m);
 
         chatCombine = new ChatCombine()
+            .register(m);
+        inGuiChatBox = new InGuiChatBox()
             .register(m);
     }
     static{
@@ -479,6 +480,11 @@ public class ChatTasks {
                         .select(List.of("confirm"), "")
                         .build()
                 )
+                .arg(
+                    SimpleCommandArgs.argumentBuilder()
+                        .name("display")
+                        .build()
+                )
                 .post(e -> e.executor(CommandContext.run(this::onSleep)))
                 .complete();
         }
@@ -489,8 +495,9 @@ public class ChatTasks {
                 return ;
             }
             String val = re.nextNonnull();
+            String val2 = re.nextArg();
             if("confirm".equals(val)){
-                Tasks.scheduleDelayed(()->RenderTasks.getSleepMode().setScreenSleeping(level), 1);
+                Tasks.scheduleDelayed(()->RenderTasks.getSleepMode().setCustomScreenSleeping(level, val2), 1);
             }else {
                 Debug.chat("使用sleep confirm 确认进入睡眠模式, 进入睡眠模式后可以按 "+ RenderTasks.getSleepMode().getWakeupButton() +" 键离开");
             }
@@ -971,7 +978,7 @@ public class ChatTasks {
                 case "spawn"->{
                     //todo: test if it works
                     Debug.chat("当前世界的出生点:");
-                    GlobalPos pos = mc.world.getSpawnPoint().globalPos();
+                    GlobalPos pos = GlobalPos.create(mc.world.getRegistryKey(), mc.world.getSpawnPos());
                     Debug.chat("World Spawn Point [World:", pos.dimension().getValue(), ",Pos:", ChatUtils.getDisplayedLocationDouble(Vec3d.of(pos.pos())), "]");
 //                        if(entity != null){
 //                           // mc.player.spawn
@@ -1014,9 +1021,9 @@ public class ChatTasks {
                 case "plist"->{
                     Debug.chat(Text.literal("当前可视的玩家列表").formatted(Formatting.GREEN));
                     mc.getNetworkHandler().getPlayerList().stream()
-                        .sorted(Comparator.comparing(e -> e.getProfile().name()))
+                        .sorted(Comparator.comparing(e -> e.getProfile().getName()))
                         .map(entry ->{
-                            var val =  Text.literal(  "%-16s (Display: ".formatted(entry.getProfile().name()) ).append(entry.getDisplayName() ==null ? Text.literal("null") : entry.getDisplayName()).append(Text.literal(", GameMode: " + entry.getGameMode().name() + ")"));
+                            var val =  Text.literal(  "%-16s (Display: ".formatted(entry.getProfile().getName()) ).append(entry.getDisplayName() ==null ? Text.literal("null") : entry.getDisplayName()).append(Text.literal(", GameMode: " + entry.getGameMode().name() + ")"));
                             Debug.info(val);
                             return  val;
                         })
@@ -1054,9 +1061,9 @@ public class ChatTasks {
                     PlayerListEntry entry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(user0);
                     if(entry != null){
                         Debug.chat("查询到PlayerEntry");
-                        Debug.chat(Text.literal("名字: ").formatted(Formatting.GRAY), entry.getProfile().name());
-                        Debug.chat(Text.literal("UUID: ").formatted(Formatting.GRAY), ChatUtils.getClickCopyTargetText(entry.getProfile().id().toString()).formatted(Formatting.GREEN));
-                        Debug.chat(Text.literal("Property: ").formatted(Formatting.GRAY),  ChatUtils.getHoverShowText("[点击查看具体数据]", List.of(Text.literal(entry.getProfile().properties().toString()))) );
+                        Debug.chat(Text.literal("名字: ").formatted(Formatting.GRAY), entry.getProfile().getName());
+                        Debug.chat(Text.literal("UUID: ").formatted(Formatting.GRAY), ChatUtils.getClickCopyTargetText(entry.getProfile().getId().toString()).formatted(Formatting.GREEN));
+                        Debug.chat(Text.literal("Property: ").formatted(Formatting.GRAY),  ChatUtils.getHoverShowText("[点击查看具体数据]", List.of(Text.literal(entry.getProfile().getProperties().toString()))) );
                         Debug.chat(Text.literal("GameMode: ").formatted(Formatting.GRAY), entry.getGameMode().name());
                         Debug.chat(Text.literal("DisplayName: ").formatted(Formatting.GRAY), entry.getDisplayName() == null ?  Text.literal("null") : entry.getDisplayName());
                         //todo need test

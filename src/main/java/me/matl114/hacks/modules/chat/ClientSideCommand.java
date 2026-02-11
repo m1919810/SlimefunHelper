@@ -28,7 +28,6 @@ import net.minecraft.command.EntitySelector;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.ItemStackArgument;
 import net.minecraft.command.argument.ItemStackArgumentType;
-import net.minecraft.command.permission.PermissionPredicate;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.CommandTreeS2CPacket;
 import net.minecraft.resource.featuretoggle.FeatureFlags;
@@ -176,7 +175,7 @@ public class ClientSideCommand extends BaseModule {
     private boolean dispatchVanillaCommand(String command){
         // Debug.info(command);
         if(mc.player == null)return false;
-        mc.player.setPermissions(PermissionPredicate.ALL);
+        mc.player.setClientPermissionLevel(4);
         try{
             ParseResults<ClientCommandSource> parse = (ParseResults) mc.getNetworkHandler().getCommandDispatcher().parse(command, (ClientCommandSource) mc.getNetworkHandler().getCommandSource());
             if (parse.getReader().canRead()) {

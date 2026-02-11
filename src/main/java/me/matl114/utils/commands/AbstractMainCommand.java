@@ -499,7 +499,7 @@ public  class AbstractMainCommand implements CustomTabExecutor, InterruptionHand
     }
 
     public static Supplier<Stream<String>> playerListNameSupplier() {
-        return () -> MinecraftClient.getInstance().getNetworkHandler().getPlayerList().stream().map(PlayerListEntry::getProfile).map(GameProfile::name);
+        return () -> MinecraftClient.getInstance().getNetworkHandler().getPlayerList().stream().map(PlayerListEntry::getProfile).map(GameProfile::getName);
     }
 
     public static void checkArgument(boolean argument, String... msg) {

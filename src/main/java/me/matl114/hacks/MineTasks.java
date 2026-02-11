@@ -97,7 +97,7 @@ public class MineTasks {
         }
         {
             main.subBuilder(SubCommand.taskBuilder())
-                .name("seedore")
+                .name("seed")
                 .helper("<operation> <seed> 进行seed操作")
                 .arg(
                     SimpleCommandArgs.argumentBuilder()

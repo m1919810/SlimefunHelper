@@ -2,10 +2,8 @@ package me.matl114.gui;
 
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 
 import java.util.Iterator;
@@ -51,7 +49,7 @@ public class GenericScreen extends Screen {
 
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public final boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         //call for all children
         Iterator var5 = this.children().iterator();
         Element element;
@@ -68,28 +66,24 @@ public class GenericScreen extends Screen {
     }
     protected Draggable draggingElement = null;
 
-
-    protected boolean doubleClicking = false;
-
-
     @Override
-    public final boolean mouseReleased(Click click) {
-        if(click.button() == 0 && draggingElement != null){
+    public final boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if(button == 0 && draggingElement != null){
             //stop dragging here
-            draggingElement.releaseDrag(this, click.x(), click.y());
+            draggingElement.releaseDrag(this, mouseX, mouseY);
             draggingElement = null;
         }
-        return super.mouseReleased(click);
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
-    public final boolean mouseClicked(Click click, boolean input) {
+    public final boolean mouseClicked(double mouseX, double mouseY, int button) {
         //remove the fucking super method
         boolean val = false;
         for (Element element : this.children()) {
-            if (element.mouseClicked(click, input)) {
+            if (element.mouseClicked(mouseX, mouseY, button)) {
                 this.setFocused(element);
-                if (click.button() == 0) {
+                if (button == 0) {
                     this.setDragging(true);
                 }
 
@@ -97,9 +91,9 @@ public class GenericScreen extends Screen {
                 break;
             }
         }
-        if(click.button() == 0){
+        if(button == 0){
             for (var iter: this.children()){
-                if(iter instanceof Draggable drag && drag.startDrag(this, click.x(), click.y())){
+                if(iter instanceof Draggable drag && drag.startDrag(this, mouseX, mouseY)){
                     //start drag this element
                     draggingElement = drag;
                     break;
@@ -110,16 +104,17 @@ public class GenericScreen extends Screen {
     }
 
     @Override
-    public final boolean mouseDragged(Click click, double deltaX, double deltaY) {
-        return this.draggingElement != null && click.button() == 0 && this.draggingElement.mouseDragged(click, deltaX, deltaY);
+    public final boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        return this.draggingElement != null && button == 0 && this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
-    public final boolean keyPressed(KeyInput click) {
-        if (super.keyPressed(click)) {
+    @Override
+    public final boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
             //we mixin the input field of these
             //it will return tru at keyPressed
-        } else if (this.client.options.inventoryKey.matchesKey(click)) {
+        } else if (this.client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
             this.close();
             return true;
         }

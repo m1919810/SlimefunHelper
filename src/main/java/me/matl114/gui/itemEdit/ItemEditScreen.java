@@ -1,8 +1,6 @@
 package me.matl114.gui.itemEdit;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.LinkedHashMultimap;
-import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
@@ -555,9 +553,9 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 String hash = this.skullHashProfile.getOriginValue();
                 if(hash != null && !hash.isEmpty()){
                     if(lastComponent != null){
-                        PropertyMap map = BukkitItemStackUtils.buildPropertyMap(lastComponent.getGameProfile().properties(), hash);
+                        PropertyMap map = BukkitItemStackUtils.buildPropertyMap(lastComponent.properties(), hash);
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE,
-                            ProfileComponent.ofStatic(new GameProfile(lastComponent.getGameProfile().id(), lastComponent.getGameProfile().name(), map)));
+                            new ProfileComponent(lastComponent.name(), lastComponent.uuid(), map));
                     }else {
                         //generate empty
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, BukkitItemStackUtils.buildPlayerHeadProfileCSCoreLib(hash));
@@ -565,7 +563,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 }else {
                     //empty hash remove
                     if(lastComponent != null){
-                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, ProfileComponent.ofStatic(new GameProfile(lastComponent.getGameProfile().id(), lastComponent.getGameProfile().name(), new PropertyMap(LinkedHashMultimap.create()))));
+                        ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, new ProfileComponent(lastComponent.name(), lastComponent.uuid(), new PropertyMap()));
                     }else {
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, null);
                     }

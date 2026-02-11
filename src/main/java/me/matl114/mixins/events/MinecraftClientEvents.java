@@ -72,7 +72,7 @@ public abstract class MinecraftClientEvents {
                 ci.cancel();
                 //FIX: even if post set is cancelled , the screen must be initialized or exception will be thrown
                 if(this.currentScreen != null){
-                    (this.currentScreen).init(getWindow().getScaledWidth(), getWindow().getScaledHeight());
+                    (this.currentScreen).init(MinecraftClient.getInstance(), getWindow().getScaledWidth(), getWindow().getScaledHeight());
                 }
                 return;
             }

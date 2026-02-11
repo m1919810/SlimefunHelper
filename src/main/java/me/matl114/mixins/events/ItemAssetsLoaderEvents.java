@@ -30,7 +30,7 @@ public abstract class ItemAssetsLoaderEvents {
             Collection<Identifier> ids = RenderListener.getReloadingResources(resourceManager);
             Map<Identifier, ItemAsset> autoAssets = new HashMap<>(ids.size());
             for(Identifier id : ids){
-                autoAssets.put(id, new ItemAsset(new BasicItemModel.Unbaked(id, new ArrayList<>()), new ItemAsset.Properties(true, false, 1.0F)));
+                autoAssets.put(id, new ItemAsset(new BasicItemModel.Unbaked(id, new ArrayList<>()), new ItemAsset.Properties(true, false)));
             }
             return autoAssets;
         }, executor);

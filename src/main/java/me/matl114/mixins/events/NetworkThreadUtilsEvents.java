@@ -8,7 +8,6 @@ import me.matl114.events.Event;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.network.NetworkThreadUtils;
-import net.minecraft.network.PacketApplyBatcher;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.util.crash.CrashException;
@@ -19,10 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 
 @Environment(EnvType.CLIENT)
-@Mixin(PacketApplyBatcher.Entry.class)
+@Mixin(NetworkThreadUtils.class)
 public abstract class NetworkThreadUtilsEvents {
-    @WrapOperation(method = "apply", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V"))
-    private void wrapPacketHandle(Packet instance, PacketListener t, Operation<Void> original){
+    @WrapOperation(method = "method_11072", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V"))
+    private static void wrapPacketHandle(Packet instance, PacketListener t, Operation<Void> original){
         if(!Listener.prepacketListenerApplyPoint(instance, t)){
             try{
                 original.call(instance, t);

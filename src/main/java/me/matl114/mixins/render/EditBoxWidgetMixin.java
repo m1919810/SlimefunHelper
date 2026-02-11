@@ -13,8 +13,6 @@ import net.minecraft.client.gui.EditBox;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.client.gui.widget.ScrollableTextFieldWidget;
-import net.minecraft.client.gui.widget.ScrollableWidget;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -89,8 +87,8 @@ public abstract class EditBoxWidgetMixin extends ScrollableTextFieldWidget imple
     }
 
     @Inject(method = "keyPressed", at = @At(value = "RETURN"), cancellable = true)
-    public void fixInventoryKeyPressedWhenFocused(KeyInput input, CallbackInfoReturnable<Boolean> cir){
-        if(this.isFocused() && MinecraftClient.getInstance().options.inventoryKey.matchesKey(input)){
+    public void fixInventoryKeyPressedWhenFocused(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
+        if(this.isFocused() && MinecraftClient.getInstance().options.inventoryKey.matchesKey(keyCode, scanCode)){
             cir.setReturnValue(true);
         }
     }

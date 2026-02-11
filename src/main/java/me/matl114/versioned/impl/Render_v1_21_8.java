@@ -8,7 +8,6 @@ import me.matl114.utils.RenderUtils;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -21,7 +20,7 @@ import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 
-public class Render_v1_21_11 implements VRender {
+public class Render_v1_21_8 implements VRender {
     // RGBA
     public int[] cacheRenderColor = new int[4];
     {
@@ -42,13 +41,13 @@ public class Render_v1_21_11 implements VRender {
             .build()
         );
 
-    public static final RenderLayer LINES = RenderLayer.of("slimefunhelper:debug_lines", RenderSetup.builder(DEBUG_LINES)
-        .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
-        .outputTarget(OutputTarget.ITEM_ENTITY_TARGET)
-        .build()
+    public static final RenderLayer LINES = RenderLayer.of("slimefunhelper:debug_lines", 1536, DEBUG_LINES,RenderLayer.MultiPhaseParameters.builder()
+        .layering(RenderPhase.VIEW_OFFSET_Z_LAYERING)
+        .target(RenderPhase.ITEM_ENTITY_TARGET)
+        .build(false)
     );
 
-    public static final RenderPipeline.Snippet DEBUG_LINES_STRIP_SNIPPET = RenderPipeline.builder(new RenderPipeline.Snippet[]{RenderPipelines.TRANSFORMS_PROJECTION_FOG_SNIPPET, RenderPipelines.GLOBALS_SNIPPET}).withVertexShader("core/rendertype_lines").withFragmentShader("core/rendertype_lines").withBlend(BlendFunction.TRANSLUCENT).withCull(false).withVertexFormat(VertexFormats.POSITION_COLOR_NORMAL_LINE_WIDTH, VertexFormat.DrawMode.LINES).buildSnippet();
+    public static final RenderPipeline.Snippet DEBUG_LINES_STRIP_SNIPPET = RenderPipeline.builder(new RenderPipeline.Snippet[]{RenderPipelines.TRANSFORMS_PROJECTION_FOG_SNIPPET, RenderPipelines.GLOBALS_SNIPPET}).withVertexShader("core/rendertype_lines").withFragmentShader("core/rendertype_lines").withBlend(BlendFunction.TRANSLUCENT).withCull(false).withVertexFormat(VertexFormats.POSITION_COLOR_NORMAL, VertexFormat.DrawMode.LINES).buildSnippet();
 
     public static final RenderPipeline DEBUG_LINES_STRIP = RenderPipelines.register(
         RenderPipeline.builder(DEBUG_LINES_STRIP_SNIPPET)
@@ -57,11 +56,12 @@ public class Render_v1_21_11 implements VRender {
             .build()
     );
     @ApiStatus.Experimental
-    public static final RenderLayer LINES_STRIP = RenderLayer.of("slimefunhelper:debug_lines_strip", RenderSetup.builder(DEBUG_LINES_STRIP)
-        .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
-        .outputTarget(OutputTarget.ITEM_ENTITY_TARGET)
-        .build()
-    );
+    public static final RenderLayer LINES_STRIP = RenderLayer.of(
+        "slimefunhelper:debug_lines_strip",  1536, DEBUG_LINES_STRIP, RenderLayer.MultiPhaseParameters.builder()
+                .layering(RenderPhase.VIEW_OFFSET_Z_LAYERING)
+                .target(RenderPhase.ITEM_ENTITY_TARGET)
+                .build(false)
+            );
 
 
     public static final RenderPipeline DEBUG_QUADS = RenderPipelines.register(
@@ -71,9 +71,8 @@ public class Render_v1_21_11 implements VRender {
             .build()
     );
 
-    public static final RenderLayer QUADS = RenderLayer.of("slimefunhelper:debug_quads", RenderSetup.builder(DEBUG_QUADS).
-        translucent()
-        .build()
+    public static final RenderLayer QUADS = RenderLayer.of("slimefunhelper:debug_quads", 1536, false, true, DEBUG_QUADS, RenderLayer.MultiPhaseParameters.builder()
+        .build(false)
     );
 
     @Override
@@ -91,11 +90,11 @@ public class Render_v1_21_11 implements VRender {
             consumer.vertex(entry, prev)
                 .color(color.getRed(), color.getGreen(), color.getBlue(), 255)
                 .normal(entry, normal)
-                .lineWidth(2);
+                ;
             consumer.vertex(entry, next)
                 .color(color.getRed(), color.getGreen(), color.getBlue(), 255)
                 .normal(entry, normal)
-                .lineWidth(2);
+                ;
         }
         vcp.draw(LINES);
     }
@@ -113,9 +112,9 @@ public class Render_v1_21_11 implements VRender {
             Vector3f next = points.get(i).toVector3f();
             Vector3f normal = new Vector3f(next).sub(prev).normalize();
             consumer.vertex(entry, prev).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                .normal(entry, normal).lineWidth(1);
+                .normal(entry, normal);
             consumer.vertex(entry, next).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                .normal(entry, normal).lineWidth(1);
+                .normal(entry, normal);
         }
         vcp.draw(LINES);
     }
@@ -131,9 +130,9 @@ public class Render_v1_21_11 implements VRender {
             Vector3f next = points.get(i).toVector3f();
             Vector3f normal = new Vector3f(next).sub(prev).normalize();
             consumer.vertex(entry, prev).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                .normal(entry, normal).lineWidth(1);
+                .normal(entry, normal);
             consumer.vertex(entry, next).color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                .normal(entry, normal).lineWidth(1);
+                .normal(entry, normal);
         }
         vcp.draw(LINES);
     }
@@ -157,111 +156,111 @@ public class Render_v1_21_11 implements VRender {
         bufferBuilder.vertex(matrix4f, minX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
                 .normal(1, 0, 0)
-                    .lineWidth(2);
+                    ;
         bufferBuilder.vertex(matrix4f, maxX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, maxX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, maxX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, minX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, maxX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, minX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, minX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
-            .lineWidth(2);
+            ;
 
 
         bufferBuilder.vertex(matrix4f, minX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, minX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, maxX, minY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, maxX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, maxX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, maxX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, minX, minY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, minX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 1, 0)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, minX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, maxX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1,0, 0)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, maxX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, maxX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, minX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, maxX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(1, 0, 0)
-            .lineWidth(2);
+            ;
 
         bufferBuilder.vertex(matrix4f, minX, maxY, minZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
-            .lineWidth(2);
+            ;
         bufferBuilder.vertex(matrix4f, minX, maxY, maxZ)
             .color(cacheRenderColor[0], cacheRenderColor[1], cacheRenderColor[2], cacheRenderColor[3])
             .normal(0, 0, 1)
-            .lineWidth(2);
+            ;
 
     }
     @Override

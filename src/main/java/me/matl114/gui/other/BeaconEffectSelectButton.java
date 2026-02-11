@@ -11,7 +11,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.PressableWidget;
-import net.minecraft.client.input.AbstractInput;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
@@ -50,13 +49,13 @@ public class BeaconEffectSelectButton extends PressableWidget {
     }
 
     @Override
-    public void onPress(AbstractInput input) {
+    public void onPress() {
         currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (ScreenUtils.hasShiftDown()? -1 : 1);
         updateCurrentEffect();
     }
 
     @Override
-    protected void drawIcon(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         Identifier identifier;
         if (this.isSelected()) {
             identifier = BUTTON_HIGHLIGHTED_TEXTURE;
@@ -66,10 +65,6 @@ public class BeaconEffectSelectButton extends PressableWidget {
 
         context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, identifier, this.getX(), this.getY(), this.width, this.height);
         this.renderExtra(context);
-    }
-
-    public void renderWidget(VDrawContext context, int mouseX, int mouseY, float delta) {
-
     }
 
     protected void renderExtra(DrawContext context){

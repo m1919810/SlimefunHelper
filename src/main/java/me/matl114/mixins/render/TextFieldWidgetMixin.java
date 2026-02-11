@@ -12,7 +12,6 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;
@@ -100,8 +99,8 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
     }
 
     @Inject(method = "keyPressed", at = @At(value = "RETURN"), cancellable = true)
-    public void fixInventoryKeyPressedWhenFocused(KeyInput input, CallbackInfoReturnable<Boolean> cir){
-        if(this.isFocused() && MinecraftClient.getInstance().options.inventoryKey.matchesKey(input)){
+    public void fixInventoryKeyPressedWhenFocused(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir){
+        if(this.isFocused() && MinecraftClient.getInstance().options.inventoryKey.matchesKey(keyCode, scanCode)){
             cir.setReturnValue(true);
         }
     }

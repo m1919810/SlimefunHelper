@@ -4,8 +4,6 @@ import me.matl114.managers.input.SimpleInputManager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Keyboard;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,16 +14,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class KeyBoardEvents {
     @Inject(method = "onKey", cancellable = true,
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/Keyboard;debugCrashStartTime:J", ordinal = 0))
-    private void onKeyboardInput(long window, int action, KeyInput input, CallbackInfo ci)
+    private void onKeyboardInput(long windowPointer, int key, int scanCode, int action, int modifiers, CallbackInfo ci)
     {
-        if(SimpleInputManager.getInstance().onKeyInput(input.key(), input.scancode(), input.modifiers(), action)){
+        if(SimpleInputManager.getInstance().onKeyInput(key,scanCode,modifiers,action)){
             ci.cancel();
         }
     }
 
     @Inject(method = "onChar", cancellable = true, at = @At(value = "FIELD", target = "Lnet/minecraft/client/Keyboard;client:Lnet/minecraft/client/MinecraftClient;", ordinal = 0))
-    private void onChar(long window, CharInput input, CallbackInfo ci){
-        if(SimpleInputManager.getInstance().onCharTyped(input.codepoint(), input.modifiers())){
+    private void onChar(long window, int codePoint, int modifiers, CallbackInfo ci){
+        if(SimpleInputManager.getInstance().onCharTyped(codePoint, modifiers)){
             ci.cancel();
         }
     }

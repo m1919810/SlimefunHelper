@@ -1873,8 +1873,8 @@ public final class CollisionUtil {
         private net. minecraft.block.ShapeContext delegate;
         private boolean delegated;
 
-        public LazyEntityCollisionContext(final net.minecraft.entity.Entity entity) {
-            super(false, false, 0.0, null, false, entity);
+        public LazyEntityCollisionContext(final Entity entity) {
+            super(false, false, 0.0, null, null, entity);
         }
 
         public boolean isDelegated() {

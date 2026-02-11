@@ -10,14 +10,12 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.item.ItemModelManager;
 import net.minecraft.client.render.item.ItemRenderState;
-import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.item.model.ItemModel;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.HeldItemContext;
 import net.minecraft.world.World;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -29,10 +27,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Environment(EnvType.CLIENT)
 @Mixin(ItemModelManager.class)
 public abstract class ItemModelManagerEvents {
-    @Shadow public abstract void clearAndUpdate(ItemRenderState renderState, ItemStack stack, ItemDisplayContext displayContext, @Nullable World world, @Nullable HeldItemContext heldItemContext, int seed);
+    @Shadow public abstract void clearAndUpdate(ItemRenderState renderState, ItemStack stack, ItemDisplayContext displayContext, @Nullable World world, @Nullable LivingEntity entity, int seed);
 
     @Inject(method = "update", at = @At("HEAD"))
-    public void onItemModelLoad(ItemRenderState renderState, ItemStack stack, ItemDisplayContext displayContext, World world, HeldItemContext heldItemContext, int seed, CallbackInfo ci, @Local(argsOnly = true) LocalRef<ItemStack> argument){
+    public void onItemModelLoad(ItemRenderState renderState, ItemStack stack, ItemDisplayContext displayContext, World world, LivingEntity entity, int seed, CallbackInfo ci, @Local(argsOnly = true) LocalRef<ItemStack> argument){
         Event<ItemStack> itemStackEvent = new Event<>(stack, true, true);
         RenderListener.getItemDataOverrideForModel().handleValue(itemStackEvent);
         if(!itemStackEvent.isCancelled() && itemStackEvent.context() != stack) {
@@ -54,8 +52,8 @@ public abstract class ItemModelManagerEvents {
         return original;
     }
 
-    @Inject(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/item/model/ItemModel;update(Lnet/minecraft/client/render/item/ItemRenderState;Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/item/ItemModelManager;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/util/HeldItemContext;I)V"))
-    public void onItemRenderDetached(ItemRenderState renderState, ItemStack stack, ItemDisplayContext displayContext, World world, HeldItemContext heldItemContext, int seed, CallbackInfo ci){
+    @Inject(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/item/model/ItemModel;update(Lnet/minecraft/client/render/item/ItemRenderState;Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/item/ItemModelManager;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/entity/LivingEntity;I)V"))
+    public void onItemRenderDetached(ItemRenderState renderState, ItemStack stack, ItemDisplayContext displayContext, World world, LivingEntity entity, int seed, CallbackInfo ci){
         ItemStack info = RenderListener.getContainedItemInfo(stack);
         if(info != null) {
             ItemRenderStateAccess stateAccess = ItemRenderStateAccess.of(renderState);
@@ -64,7 +62,7 @@ public abstract class ItemModelManagerEvents {
                 state2 = new ItemRenderState();
             }
             // init attached info
-            clearAndUpdate(state2, info, displayContext, world, heldItemContext, seed);
+            clearAndUpdate(state2, info, displayContext, world, entity, seed);
             ItemRenderStateAccess.of(renderState).setAttachedRenderState(state2);
         }else{
             ItemRenderStateAccess.of(renderState).setAttachedRenderState(null);

@@ -560,7 +560,7 @@ public class MovTasks {
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
         Box oldBox = entity.getBoundingBox();
         CollisionUtil.getCollisions(
-            entity.getEntityWorld(), entity, entity.dimensions.getBoxAt(pos), collisionsVoxel, collisionsBB,
+            entity.getWorld(), entity, entity.dimensions.getBoxAt(pos), collisionsVoxel, collisionsBB,
             //may cancel unloaded chunks?
             //COLLISION_FLAG_COLLIDE_WITH_UNLOADED_CHUNKS |
             ignoreChunkBorder ?
@@ -973,7 +973,7 @@ public class MovTasks {
         if(CollisionUtil.isEmpty(currBoundingBox))return;
         Box collisionBox = makeCollectorBoxInvolvingCollision(currBoundingBox, movement, entity.getStepHeight(), entity.isOnGround());
         CollisionUtil.getCollisions(
-            entity.getEntityWorld(), entity, collisionBox, intoVoxels, intoAABB,
+            entity.getWorld(), entity, collisionBox, intoVoxels, intoAABB,
             ignoreUnloadedChunk ?  COLLISION_FLAG_CHECK_BORDER : (COLLISION_FLAG_CHECK_BORDER | COLLISION_FLAG_COLLIDE_WITH_UNLOADED_CHUNKS),
             null,null,null
         );

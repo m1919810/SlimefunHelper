@@ -14,7 +14,6 @@ import net.minecraft.network.PacketCallbacks;
 import net.minecraft.network.handler.PacketSizeLogger;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
-import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -38,7 +37,7 @@ public class ClientConnectionEvents {
         }
     }
     @Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lio/netty/channel/ChannelFutureListener;Z)V",at=@At("HEAD"),cancellable = true)
-    private void sendPacket(Packet<?> packet, @Nullable ChannelFutureListener listener, boolean flush, CallbackInfo ci, @Local(argsOnly = true) LocalRef<Packet<?>> packetLocalRef) {
+    private void sendPacket(Packet<?> packet,  ChannelFutureListener listener, boolean flush, CallbackInfo ci, @Local(argsOnly = true) LocalRef<Packet<?>> packetLocalRef) {
         //fix: null values from cancelled send Events
         if(packet == null){
             ci.cancel();
@@ -53,7 +52,7 @@ public class ClientConnectionEvents {
         }
     }
     @Inject(method = "sendInternal", at = @At("RETURN"))
-    private void sendPacketPost(Packet<?> packet, @Nullable ChannelFutureListener listener, boolean flush, CallbackInfo ci){
+    private void sendPacketPost(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo ci){
         Listener.getPacketPostSendPoint().broadcast(packet);
     }
 

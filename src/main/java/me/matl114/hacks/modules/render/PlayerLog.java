@@ -38,12 +38,12 @@ public class PlayerLog extends BaseModule {
 
     public void onPlayerJoin(Event<PlayerListEntry> entry){
         if(enable.get()){
-            Debug.chat(ChatUtils.stringToText(String.format(logFormatIn.get(), entry.context().getProfile().name())));
+            Debug.chat(ChatUtils.stringToText(String.format(logFormatIn.get(), entry.context().getProfile().getName())));
         }
     }
     public void onPlayerExit(Event<PlayerListEntry> entry){
         if(enable.get()){
-            Debug.chat(ChatUtils.stringToText(String.format(logFormatOut.get(), entry.context().getProfile().name())));
+            Debug.chat(ChatUtils.stringToText(String.format(logFormatOut.get(), entry.context().getProfile().getName())));
         }
     }
 }

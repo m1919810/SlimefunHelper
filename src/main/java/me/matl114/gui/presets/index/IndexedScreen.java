@@ -75,9 +75,9 @@ public abstract class IndexedScreen<T, W extends Element & Drawable & Selectable
         createDelegate();
         addDrawableChild(this.subScreenDelegate);
     }
-    public void resize(int width, int height) {
+    public void resize(MinecraftClient client, int width, int height) {
         saveSelected();
-        super.resize(width,height);
+        super.resize(client,width,height);
     }
     public void close() {
         super.close();

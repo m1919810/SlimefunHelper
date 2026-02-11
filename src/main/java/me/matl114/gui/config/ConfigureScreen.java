@@ -78,9 +78,9 @@ public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedSc
 //            originValue.put(key,Config.saveFrom(value.getText(), originval));
 //        });
 //    }
-    public void resize(int width, int height) {
+    public void resize(MinecraftClient client, int width, int height) {
         saveEntryToValues();
-        super.resize(width,height);
+        super.resize(client,width,height);
 
     }
     public void close() {

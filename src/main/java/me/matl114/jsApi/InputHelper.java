@@ -6,8 +6,6 @@ import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
 
 @ApiMethod
 public class InputHelper {
@@ -53,7 +51,7 @@ public class InputHelper {
      */
     public static void keyAction(int key, int scancode, int action, int modifiers){
         mc.execute(()->{
-            mc.keyboard.onKey(mc.getWindow().getHandle(), action, new KeyInput( key, scancode, modifiers));
+            mc.keyboard.onKey(mc.getWindow().getHandle(), key, scancode, action, modifiers);
         });
     }
 
@@ -77,7 +75,7 @@ public class InputHelper {
             if (element != null && mc.getOverlay() == null) {
                 if (Character.charCount(codePoint) == 1) {
                     ScreenUtils.wrapScreenError(() -> {
-                        element.charTyped(new CharInput(codePoint, modifiers));
+                        element.charTyped((char)codePoint, modifiers);
                     }, "charTyped event handler", element.getClass().getCanonicalName());
                 } else {
                     char[] var6 = Character.toChars(codePoint);
@@ -86,7 +84,7 @@ public class InputHelper {
                     for(int var8 = 0; var8 < var7; ++var8) {
                         char c = var6[var8];
                         ScreenUtils.wrapScreenError(() -> {
-                            element.charTyped(new CharInput(c, modifiers));
+                            element.charTyped(c, modifiers);
                         }, "charTyped event handler", element.getClass().getCanonicalName());
                     }
                 }
