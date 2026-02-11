@@ -38,6 +38,6 @@ public abstract class HandledScreenEvents {
             locals = LocalCapture.CAPTURE_FAILHARD)
     public void onRenderSlot(
             DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci, @Local Slot slot) {
-        RenderListener.renderSlotInScreen(context, (HandledScreen<?>) (Object) this, slot, mouseX, mouseY);
+        RenderListener.renderSlotInScreen(context, (HandledScreen<?>) (Object) this, slot);
     }
 }

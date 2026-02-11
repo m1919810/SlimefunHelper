@@ -5,6 +5,7 @@ import lombok.Getter;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.PressableWidget;
@@ -59,8 +60,8 @@ public class BeaconEffectSelectButton extends PressableWidget {
         currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (ScreenUtils.hasShiftDown() ? -1 : 1);
         updateCurrentEffect();
     }
-
-    public void renderWidget(VDrawContext context, int mouseX, int mouseY, float delta) {
+    @Override
+    public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         Identifier identifier;
         if (this.isSelected()) {
             identifier = BUTTON_HIGHLIGHTED_TEXTURE;
@@ -72,7 +73,7 @@ public class BeaconEffectSelectButton extends PressableWidget {
         this.renderExtra(context);
     }
 
-    protected void renderExtra(VDrawContext context) {
+    protected void renderExtra(DrawContext context) {
         if (this.currentSprite != null) {
             context.drawSprite(this.getX() + 2, this.getY() + 2, 0, 18, 18, this.currentSprite);
         } else {

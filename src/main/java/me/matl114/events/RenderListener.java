@@ -112,14 +112,14 @@ public class RenderListener {
     @Getter
     @Broadcast
     @ExtraArgs(
-            value = {HandledScreen.class, Slot.class, int.class, int.class},
-            names = {"renderer", "stack", "mouseX", "mouseY"})
+            value = {HandledScreen.class, Slot.class},
+            names = {"renderer", "stack"})
     private static final EventChannel<DrawContext> renderSlot = new EventChannel<>();
 
     public static void renderSlotInScreen(
-            DrawContext context, HandledScreen<?> renderer, Slot stack, int mouseX, int mouseY) {
+            DrawContext context, HandledScreen<?> renderer, Slot stack) {
         if (renderSlot.isEmpty()) return;
-        Event<DrawContext> contextEvent = new Event<>(context, false, false, renderer, stack, mouseX, mouseY);
+        Event<DrawContext> contextEvent = new Event<>(context, false, false, renderer, stack);
         renderSlot.handleValue(contextEvent);
     }
 
