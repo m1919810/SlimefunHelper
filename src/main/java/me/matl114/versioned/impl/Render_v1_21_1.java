@@ -29,11 +29,11 @@ public class Render_v1_21_1 implements VRender {
     }
 
     @Override
-    public void drawOutlinedBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to) {
+    public void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
         BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION);
-        drawOutlinedBox(matrix, bufferBuilder, from, to);
+        drawOutlinedBox(matrix.peek(), bufferBuilder, from, to);
         //        Vec3d vec3d = new Vec3d(matrix.transformPosition((float) from.x, (float) from.y, (float) from.z, new
         // Vector3f()));
         //        Vec3d vec3d1 = new Vec3d(matrix.transformPosition((float) to.x, (float) to.y, (float) to.z, new
@@ -43,23 +43,24 @@ public class Render_v1_21_1 implements VRender {
     }
 
     @Override
-    public void drawSolidBoxCameraCoord(Matrix4f matrix, Vec3d from, Vec3d to) {
+    public void drawSolidBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
         BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
-        drawSolidBox(matrix, bufferBuilder, from, to);
+        drawSolidBox(matrix.peek(), bufferBuilder, from, to);
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
     }
 
     @Override
-    public void drawQuadCameraCoord(Matrix4f matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
+    public void drawQuadCameraCoord(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionProgram);
         BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
-        bufferBuilder.vertex(matrix4f, (float) a.x, (float) a.y, (float) a.z);
-        bufferBuilder.vertex(matrix4f, (float) b.x, (float) b.y, (float) b.z);
-        bufferBuilder.vertex(matrix4f, (float) c.x, (float) c.y, (float) c.z);
-        bufferBuilder.vertex(matrix4f, (float) d.x, (float) d.y, (float) d.z);
+        var matrix4 = matrix4f.peek();
+        bufferBuilder.vertex(matrix4, (float) a.x, (float) a.y, (float) a.z);
+        bufferBuilder.vertex(matrix4, (float) b.x, (float) b.y, (float) b.z);
+        bufferBuilder.vertex(matrix4, (float) c.x, (float) c.y, (float) c.z);
+        bufferBuilder.vertex(matrix4, (float) d.x, (float) d.y, (float) d.z);
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
     }
 
@@ -124,7 +125,7 @@ public class Render_v1_21_1 implements VRender {
         }
     }
 
-    public static void drawOutlinedBox(Matrix4f matrix, BufferBuilder bufferBuilder, Vec3d from, Vec3d to) {
+    public static void drawOutlinedBox(MatrixStack.Entry matrix, BufferBuilder bufferBuilder, Vec3d from, Vec3d to) {
         float minX = (float) from.getX();
         float minY = (float) from.getY();
         float minZ = (float) from.getZ();
@@ -168,7 +169,7 @@ public class Render_v1_21_1 implements VRender {
         bufferBuilder.vertex(matrix, minX, maxY, minZ);
     }
 
-    public static void drawSolidBox(Matrix4f matrix, BufferBuilder bufferBuilder, Vec3d from, Vec3d to) {
+    public static void drawSolidBox(MatrixStack.Entry matrix, BufferBuilder bufferBuilder, Vec3d from, Vec3d to) {
         float minX = (float) from.x;
         float minY = (float) from.y;
         float minZ = (float) from.z;
@@ -205,88 +206,5 @@ public class Render_v1_21_1 implements VRender {
         bufferBuilder.vertex(matrix, minX, minY, maxZ);
         bufferBuilder.vertex(matrix, minX, maxY, maxZ);
         bufferBuilder.vertex(matrix, minX, maxY, minZ);
-    }
-
-    public static void drawOutlinedBox(MatrixStack stack, BufferBuilder bufferBuilder, Vec3d from, Vec3d to) {
-        float minX = (float) from.getX();
-        float minY = (float) from.getY();
-        float minZ = (float) from.getZ();
-        float maxX = (float) to.getX();
-        float maxY = (float) to.getY();
-        float maxZ = (float) to.getZ();
-        bufferBuilder.vertex(minX, minY, minZ);
-        bufferBuilder.vertex(maxX, minY, minZ);
-
-        bufferBuilder.vertex(maxX, minY, minZ);
-        bufferBuilder.vertex(maxX, minY, maxZ);
-
-        bufferBuilder.vertex(maxX, minY, maxZ);
-        bufferBuilder.vertex(minX, minY, maxZ);
-
-        bufferBuilder.vertex(minX, minY, maxZ);
-        bufferBuilder.vertex(minX, minY, minZ);
-
-        bufferBuilder.vertex(minX, minY, minZ);
-        bufferBuilder.vertex(minX, maxY, minZ);
-
-        bufferBuilder.vertex(maxX, minY, minZ);
-        bufferBuilder.vertex(maxX, maxY, minZ);
-
-        bufferBuilder.vertex(maxX, minY, maxZ);
-        bufferBuilder.vertex(maxX, maxY, maxZ);
-
-        bufferBuilder.vertex(minX, minY, maxZ);
-        bufferBuilder.vertex(minX, maxY, maxZ);
-
-        bufferBuilder.vertex(minX, maxY, minZ);
-        bufferBuilder.vertex(maxX, maxY, minZ);
-
-        bufferBuilder.vertex(maxX, maxY, minZ);
-        bufferBuilder.vertex(maxX, maxY, maxZ);
-
-        bufferBuilder.vertex(maxX, maxY, maxZ);
-        bufferBuilder.vertex(minX, maxY, maxZ);
-
-        bufferBuilder.vertex(minX, maxY, maxZ);
-        bufferBuilder.vertex(minX, maxY, minZ);
-    }
-
-    public static void drawSolidBox(BufferBuilder bufferBuilder, Vec3d from, Vec3d to) {
-        float minX = (float) from.x;
-        float minY = (float) from.y;
-        float minZ = (float) from.z;
-        float maxX = (float) to.x;
-        float maxY = (float) to.y;
-        float maxZ = (float) to.z;
-
-        bufferBuilder.vertex(minX, minY, minZ);
-        bufferBuilder.vertex(maxX, minY, minZ);
-        bufferBuilder.vertex(maxX, minY, maxZ);
-        bufferBuilder.vertex(minX, minY, maxZ);
-
-        bufferBuilder.vertex(minX, maxY, minZ);
-        bufferBuilder.vertex(minX, maxY, maxZ);
-        bufferBuilder.vertex(maxX, maxY, maxZ);
-        bufferBuilder.vertex(maxX, maxY, minZ);
-
-        bufferBuilder.vertex(minX, minY, minZ);
-        bufferBuilder.vertex(minX, maxY, minZ);
-        bufferBuilder.vertex(maxX, maxY, minZ);
-        bufferBuilder.vertex(maxX, minY, minZ);
-
-        bufferBuilder.vertex(maxX, minY, minZ);
-        bufferBuilder.vertex(maxX, maxY, minZ);
-        bufferBuilder.vertex(maxX, maxY, maxZ);
-        bufferBuilder.vertex(maxX, minY, maxZ);
-
-        bufferBuilder.vertex(minX, minY, maxZ);
-        bufferBuilder.vertex(maxX, minY, maxZ);
-        bufferBuilder.vertex(maxX, maxY, maxZ);
-        bufferBuilder.vertex(minX, maxY, maxZ);
-
-        bufferBuilder.vertex(minX, minY, minZ);
-        bufferBuilder.vertex(minX, minY, maxZ);
-        bufferBuilder.vertex(minX, maxY, maxZ);
-        bufferBuilder.vertex(minX, maxY, minZ);
     }
 }

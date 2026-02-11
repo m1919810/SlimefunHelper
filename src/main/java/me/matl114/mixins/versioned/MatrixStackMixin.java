@@ -1,6 +1,7 @@
 package me.matl114.mixins.versioned;
 
 import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,6 +37,10 @@ public abstract class MatrixStackMixin implements me.matl114.versioned.api.Matri
 
     public Matrix4f peek3D() {
         return this.peek().getPositionMatrix();
+    }
+
+    public Matrix3f peekNormal(){
+        return this.peek().getNormalMatrix();
     }
 
     public void translate(float x, float y) {

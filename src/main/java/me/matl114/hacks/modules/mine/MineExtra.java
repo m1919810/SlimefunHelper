@@ -192,7 +192,7 @@ public class MineExtra extends BaseModule {
                             Vec3d vec3d = pos.add(box.getCenter());
                             float clamped = MathHelper.clamp(progress, 0.0F, 1.0F);
                             RenderUtils.drawSolidBox(
-                                    renderEvent.context.peek().getPositionMatrix(),
+                                    renderEvent.context,
                                     vec3d.add(vec3.multiply(-clamped)),
                                     vec3d.add(vec3.multiply(clamped)));
                         }
@@ -228,7 +228,7 @@ public class MineExtra extends BaseModule {
                                 Vec3d vec3d = doubleMineVec.add(box.getCenter());
                                 float clamped = MathHelper.clamp(progressFail, 0.0F, 1.0F);
                                 RenderUtils.drawSolidBox(
-                                        renderEvent.context.peek().getPositionMatrix(),
+                                        renderEvent.context,
                                         vec3d.add(vec3.multiply(-clamped)),
                                         vec3d.add(vec3.multiply(clamped)));
                             }
