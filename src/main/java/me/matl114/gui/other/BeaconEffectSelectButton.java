@@ -3,7 +3,6 @@ package me.matl114.gui.other;
 import java.util.List;
 import lombok.Getter;
 import me.matl114.utils.ScreenUtils;
-import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
@@ -60,6 +59,7 @@ public class BeaconEffectSelectButton extends PressableWidget {
         currentIndex = currentIndex + EFFECTS_BEACON.size() + 1 + (ScreenUtils.hasShiftDown() ? -1 : 1);
         updateCurrentEffect();
     }
+
     @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         Identifier identifier;

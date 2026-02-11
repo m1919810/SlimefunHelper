@@ -124,7 +124,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Shadow
     public Input input;
 
-
     @Shadow
     private boolean lastSprinting;
 

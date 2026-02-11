@@ -94,6 +94,7 @@ spotless {
 				.style('PALANTIR')
 
 		removeUnusedImports()
+		trimTrailingWhitespace()
 		endWithNewline()
 	}
 }
