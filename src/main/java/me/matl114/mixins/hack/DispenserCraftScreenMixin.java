@@ -3,6 +3,7 @@ package me.matl114.mixins.hack;
 import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.InvTasks;
+import me.matl114.utils.world.ContainerPosition;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -51,6 +52,14 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
     }
 
     @Unique
+    private ContainerPosition containerPosition;
+
+    @Unique
+    public ContainerPosition getContainerPosition() {
+        return this.containerPosition;
+    }
+
+    @Unique
     public HandledScreen<?> castHandled() {
         return this;
     }
@@ -73,6 +82,7 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
         this.pos = InvTasks.predictScreenFrom((b) -> b == Blocks.DISPENSER || b == Blocks.DROPPER);
         if (this.pos != null && this.world != null) {
             cacheBlockType = this.world.getBlockState(this.pos).getBlock();
+            containerPosition = ContainerPosition.ofSingle(world, pos);
         }
     }
 }

@@ -37,6 +37,6 @@ public abstract class WorldRendererEvents {
         matrixStack.multiplyPositionMatrix(positionMatrix);
         // fixme: Event
 
-        RenderListener.renderMoreTasks(matrixStack, tickCounter.getTickProgress(false));
+        RenderListener.renderWorldTasks(matrixStack, tickCounter.getTickProgress(false));
     }
 }

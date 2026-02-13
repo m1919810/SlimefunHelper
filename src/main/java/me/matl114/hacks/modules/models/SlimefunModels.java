@@ -160,15 +160,26 @@ public class SlimefunModels extends BaseModule {
                     || name.equals("vanilla")) {
                 continue;
             }
+            if (name.equals(OUR_NAMESPACE)) {
+                pack.findResources(ResourceType.CLIENT_RESOURCES, "slimefunhelper", "models/slimefunitem", (i, j) -> {
+                    String realNamespace = i.getNamespace();
+                    if (!i.getPath().endsWith(".json")) return;
+                    String realPath = i.getPath().replaceFirst("^models/", "").replaceAll(".json$", "");
+                    Identifier fullPathId = new Identifier(realNamespace, realPath);
+                    Debug.info("load custom slimefun item model:", fullPathId);
+                    String[] splits = realPath.split("/");
+                    customItemModels.put(splits[splits.length - 1].toUpperCase(Locale.ROOT), fullPathId);
+                    id.add(fullPathId);
+                });
+            } else {
+                Set<String> namespacess = pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
 
-            Set<String> namespacess = pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
-
-            for (String namespace : namespacess) {
-                if (true) {
+                for (String namespace : namespacess) {
                     // Debug.info("in namespace ",namespace);
                     pack.findResources(ResourceType.CLIENT_RESOURCES, namespace, "models", (i, j) -> {
                         /// Debug.info("finding resource ",i,j);
                         String realNamespace = i.getNamespace();
+                        if (!i.getPath().endsWith(".json")) return;
                         String realPath =
                                 i.getPath().replaceFirst("^models/", "").replaceAll(".json$", "");
                         String[] splits = realPath.split("/");
@@ -180,10 +191,6 @@ public class SlimefunModels extends BaseModule {
                                 ? new Identifier(
                                         realNamespace, String.join("/", Arrays.copyOfRange(splits, 1, splits.length)))
                                 : fullPathId;
-
-                        //                            if(OUR_NAMESPACE.equals(namespace)){
-                        //                                Debug.info("try test slimefun item model",shouldModelId);
-                        //                            }
                         boolean testResult = predicate.test(shouldModelId.toString());
                         if (OUR_NAMESPACE.equals(namespace) || testResult) {
                             // custom item

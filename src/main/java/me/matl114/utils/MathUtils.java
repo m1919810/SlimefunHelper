@@ -13,6 +13,10 @@ public class MathUtils {
         return x * x;
     }
 
+    public static int s2(int x) {
+        return x * x;
+    }
+
     public static double squareSum(double... x) {
         double sum = 0;
         for (double y : x) {

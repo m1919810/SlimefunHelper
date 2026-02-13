@@ -41,7 +41,8 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
 
     DisplayWidget keyLabel;
     DrawableWidget interactPlace;
-    private static final Identifier SEARCH_TEXTURE = new Identifier("slimefunhelper", "textures/gui/search.png");
+    private static final Identifier SEARCH_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/search");
+    private static final Identifier LIST_TAG_SPRITE = new Identifier("slimefunhelper", "gui/list_tag");
     private static final List<Text> SEARCH_TOOLTIPS = List.of(Text.literal("从注册标中选择"), Text.literal("选择后点击确认"));
 
     private void openRegistrySearch(Registry<T> registry, TextFieldWidget widget) {
@@ -92,8 +93,8 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
             this.interactPlace = interactPlace;
             TextFieldWidget widget = interactPlace.getDelegate();
             ExecutableWidget.instance(dx - dy + 1, 1, dy - 1, dy - 1)
-                    .setElementHandler(IconElement.fixed(
-                                    SEARCH_TEXTURE,
+                    .setElementHandler(IconElement.fixedGui(
+                                    SEARCH_TEXTURE_SPRITE,
                                     ButtonAction.run(() -> this.openRegistrySearch(thisRegistry, widget)))
                             .withTooltips(TooltipHandler.of(SEARCH_TOOLTIPS)))
                     .addToSub(this);
@@ -128,18 +129,14 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
                             this.keyValueHolder.getValue(),
                             McWidgetHelpers.getWrongRedTextBoxColorProvider(this.keyValueHolder::isValidate)))
                     .addDrawableChild(ExecutableWidget.instance(dvalue - dy + 1, 1, dy - 2, dy - 2)
-                            .setElementHandler(IconElement.fixed(
-                                            new Identifier("slimefunhelper", "textures/gui/list_tag.png"),
-                                            ButtonAction.run(() -> {
-                                                ScreenAccess.of(new ListModifyScreen(
-                                                                listKeyValueHolder, listAttrKeyValue -> {
-                                                                    listKeyValueHolder.setOriginValue(
-                                                                            ((AttrKeyValue.ListAttrKeyValue)
-                                                                                            listAttrKeyValue)
-                                                                                    .getOriginValue());
-                                                                }))
-                                                        .openFromCurrent();
-                                            }))
+                            .setElementHandler(IconElement.fixedGui(LIST_TAG_SPRITE, ButtonAction.run(() -> {
+                                        ScreenAccess.of(new ListModifyScreen(listKeyValueHolder, listAttrKeyValue -> {
+                                                    listKeyValueHolder.setOriginValue(
+                                                            ((AttrKeyValue.ListAttrKeyValue) listAttrKeyValue)
+                                                                    .getOriginValue());
+                                                }))
+                                                .openFromCurrent();
+                                    }))
                                     .withTooltips(TooltipHandler.of(List.of(Text.literal("点击打开 列表编辑界面"))))))
                     .addToSub(this);
         } else {

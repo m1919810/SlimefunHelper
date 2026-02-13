@@ -24,8 +24,8 @@ public class PageButtonElement extends ButtonElement {
         return new PageButtonElement(NEXT, maxPage, page, set, 1);
     }
 
-    protected static final Identifier ARROW_LEFT = new Identifier("slimefunhelper", "textures/gui/arrow_left.png");
-    protected static final Identifier ARROW_RIGHT = new Identifier("slimefunhelper", "textures/gui/arrow_right.png");
+    protected static final Identifier ARROW_LEFT_SPRITE = new Identifier("slimefunhelper", "gui/arrow_left");
+    protected static final Identifier ARROW_RIGHT_SPRITE = new Identifier("slimefunhelper", "gui/arrow_right");
 
     public PageButtonElement(List<Text> pageSwitch, int maxPage, AtomicInteger page, boolean left) {
         this(pageSwitch, maxPage, page::get, page::set, left ? -1 : 1);
@@ -59,17 +59,14 @@ public class PageButtonElement extends ButtonElement {
                 0,
                 element.getTextureWidth(),
                 element.getTextureHeight());
-
-        context.drawTexturedQuad(
-                delta < 0 ? ARROW_LEFT : ARROW_RIGHT,
-                (int) (0.125f * element.getTextureWidth()),
-                (int) (0.875 * element.getTextureWidth()),
-                (int) (0.125f * element.getTextureHeight()),
-                (int) (0.875 * element.getTextureHeight()),
+        float x = (0.125f * element.getTextureWidth());
+        float y = (0.125f * element.getTextureHeight());
+        context.drawGuiTexture(
+                delta < 0 ? ARROW_LEFT_SPRITE : ARROW_RIGHT_SPRITE,
+                (int) x,
+                (int) y,
                 0,
-                0,
-                1,
-                0,
-                1);
+                (int) (element.getTextureWidth() - x),
+                (int) (element.getTextureHeight() - y));
     }
 }

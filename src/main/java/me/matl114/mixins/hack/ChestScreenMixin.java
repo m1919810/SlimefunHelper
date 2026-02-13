@@ -2,9 +2,12 @@ package me.matl114.mixins.hack;
 
 import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.hacks.InvTasks;
+import me.matl114.utils.world.ContainerPosition;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.Block;
+import net.minecraft.block.ChestBlock;
+import net.minecraft.block.enums.ChestType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -58,6 +61,14 @@ public abstract class ChestScreenMixin extends HandledScreen<GenericContainerScr
     @Unique
     private ClientWorld world;
 
+    @Unique
+    private ContainerPosition containerPosition;
+
+    @Unique
+    public ContainerPosition getContainerPosition() {
+        return this.containerPosition;
+    }
+
     @Inject(
             method = "<init>",
             at =
@@ -72,7 +83,13 @@ public abstract class ChestScreenMixin extends HandledScreen<GenericContainerScr
         // everything
         this.pos = InvTasks.predictScreenFrom((b) -> true);
         if (this.pos != null && this.world != null) {
-            cacheBlockType = this.world.getBlockState(this.pos).getBlock();
+            var state = this.world.getBlockState(this.pos);
+            cacheBlockType = state.getBlock();
+            if (this.cacheBlockType instanceof ChestBlock && state.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE) {
+                this.containerPosition = ContainerPosition.resolveDoubleChest(world, pos, state);
+            } else {
+                this.containerPosition = ContainerPosition.ofSingle(world, pos);
+            }
         }
     }
 }

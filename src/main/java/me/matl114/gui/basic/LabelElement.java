@@ -7,7 +7,7 @@ import net.minecraft.util.Identifier;
 
 public class LabelElement extends RawTextElement {
     protected static final Identifier BACKGROUND_RESOURCE =
-            new Identifier("slimefunhelper", "textures/gui/recipecontainer.png");
+            new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
 
     public static LabelElement instance(Text text) {
         return new LabelElement(text, Colors.WHITE);

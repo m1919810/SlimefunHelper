@@ -269,7 +269,7 @@ public class RecipeDatabase extends BaseModule {
             String title = screen.getTitle().getString();
             if (title != null) {
                 title = title.replaceAll("§.", "");
-                if (Pattern.matches(multiBlockRecipeType.get(), title)) {
+                if (Pattern.matches(slimefunBookTitle.get(), title)) {
                     Tasks.addPacketCatcher(
                             new Tasks.TimedPacketCatcher<InventoryS2CPacket>(InventoryS2CPacket.class, 20) {
                                 @Override

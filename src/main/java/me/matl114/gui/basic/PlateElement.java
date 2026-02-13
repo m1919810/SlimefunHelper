@@ -6,7 +6,7 @@ import net.minecraft.util.Identifier;
 public class PlateElement extends AbstractElement {
     private static final int xTextureOffset = 0;
     private static final int yTextureOffset = 66;
-    public static final Identifier TEXTURE = new Identifier("slimefunhelper", "textures/gui/recipecontainer.png");
+    public static final Identifier TEXTURE = new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
     private int color = -1; // 0xFFBB0000;
     private boolean catchInteract;
 

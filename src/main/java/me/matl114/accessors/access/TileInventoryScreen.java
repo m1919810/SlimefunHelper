@@ -1,5 +1,6 @@
 package me.matl114.accessors.access;
 
+import me.matl114.utils.world.ContainerPosition;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.world.ClientWorld;
@@ -17,8 +18,11 @@ public interface TileInventoryScreen {
     public Block getBlockType();
 
     @Nullable
+    public ContainerPosition getContainerPosition();
+
+    @Nullable
     default boolean isVirtual() {
-        return getPos() == null || getWorld() == null;
+        return getContainerPosition() == null;
     }
 
     static TileInventoryScreen of(HandledScreen<?> handledScreen) {

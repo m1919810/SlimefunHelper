@@ -145,18 +145,17 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     ExecutableWidget snbt;
     ExecutableWidget guide;
 
-    protected static final Identifier SAVE_TEXTURE = new Identifier("slimefunhelper", "textures/gui/save.png");
+    protected static final Identifier SAVE_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/save");
     protected static final List<Text> SAVE_TOOLTIPS = List.of(Text.literal("点击保存当前状态到保存物品中"));
 
-    protected static final Identifier COPYCMD_TEXTURE =
-            new Identifier("slimefunhelper", "textures/gui/copy_command.png");
+    protected static final Identifier COPYCMD_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/copy_command");
     protected static final List<Text> GIVE_TOOLTIPS = List.of(Text.literal("点击拷贝该物品的/give指令"));
-    protected static final Identifier EDITOR_TEXTURE = new Identifier("slimefunhelper", "textures/gui/editor.png");
+    protected static final Identifier EDITOR_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/editor");
     protected static final List<Text> EDITOR_TOOLTIPS = List.of(Text.literal("点击打开NBT编辑器"));
     protected static final List<Text> SNBT_TOOLTIPS = List.of(Text.literal("点击打开SNBT编辑器"));
-    protected static final Identifier SNBT_TEXTURE = new Identifier("slimefunhelper", "textures/gui/snbt_editor.png");
+    protected static final Identifier SNBT_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/snbt_editor");
     protected static final List<Text> GUIDE_TOOLTIPS = List.of(Text.literal("点击打开 物品配方记录书"));
-    protected static final Identifier GUIDE_TEXTURE = new Identifier("slimefunhelper", "textures/gui/list_tag.png");
+    protected static final Identifier GUIDE_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/list_tag");
     protected ItemProcessingSubScreen currentSubScreen;
 
     ContentDelegateWidget<EditBoxWidget> optionalMultiLine;
@@ -221,26 +220,28 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 .addTo(this);
         // 生成切换按钮
         this.saveItem = ExecutableWidget.instance(this.x + CONTENT_START_X + 1, this.y + CONTENT_START_Y + 1, 18, 18)
-                .setElementHandler(IconElement.fixed(SAVE_TEXTURE, ButtonAction.run(this::executeSave))
+                .setElementHandler(IconElement.fixedGui(SAVE_TEXTURE_SPRITE, ButtonAction.run(this::executeSave))
                         .withTooltips(TooltipHandler.of(SAVE_TOOLTIPS)))
                 .addTo(this);
         this.copyCommand = ExecutableWidget.instance(
                         this.x + CONTENT_START_X + 21, this.y + CONTENT_START_Y + 1, 18, 18)
-                .setElementHandler(IconElement.fixed(COPYCMD_TEXTURE, ButtonAction.run(this::executeCmdCopy))
+                .setElementHandler(IconElement.fixedGui(COPYCMD_TEXTURE_SPRITE, ButtonAction.run(this::executeCmdCopy))
                         .withTooltips(TooltipHandler.of(GIVE_TOOLTIPS)))
                 .addTo(this);
         this.editor = ExecutableWidget.instance(this.x + CONTENT_START_X + 41, this.y + CONTENT_START_Y + 1, 18, 18)
                 .setElementHandler(
-                        IconElement.fixed(EDITOR_TEXTURE, ButtonAction.run(() -> this.setState(State.EDITOR)))
+                        IconElement.fixedGui(EDITOR_TEXTURE_SPRITE, ButtonAction.run(() -> this.setState(State.EDITOR)))
                                 .withTooltips(TooltipHandler.of(EDITOR_TOOLTIPS)))
                 .addTo(this);
         this.snbt = ExecutableWidget.instance(this.x + CONTENT_START_X + 61, this.y + CONTENT_START_Y + 1, 18, 18)
-                .setElementHandler(IconElement.fixed(SNBT_TEXTURE, ButtonAction.run(() -> this.setState(State.SNBT)))
-                        .withTooltips(TooltipHandler.of(SNBT_TOOLTIPS)))
+                .setElementHandler(
+                        IconElement.fixedGui(SNBT_TEXTURE_SPRITE, ButtonAction.run(() -> this.setState(State.SNBT)))
+                                .withTooltips(TooltipHandler.of(SNBT_TOOLTIPS)))
                 .addTo(this);
         this.guide = ExecutableWidget.instance(this.x + CONTENT_START_X + 81, this.y + CONTENT_START_Y + 1, 18, 18)
-                .setElementHandler(IconElement.fixed(
-                                GUIDE_TEXTURE, ButtonAction.run(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu))
+                .setElementHandler(IconElement.fixedGui(
+                                GUIDE_TEXTURE_SPRITE,
+                                ButtonAction.run(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu))
                         .withTooltips(TooltipHandler.of(GUIDE_TOOLTIPS)))
                 .addTo(this);
 
@@ -272,7 +273,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         ItemStack lastResult;
         ExecutableWidget formatButton;
         EditBoxWidget widget;
-        protected static final Identifier FORMAT_TEXTURE = new Identifier("slimefunhelper", "textures/gui/format.png");
+        protected static final Identifier FORMAT_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/format");
         protected static final List<Text> FORMAT = List.of(Text.literal("格式化NBT字符串"));
 
         protected ItemStack validateItemStack(NbtElement element) {
@@ -303,7 +304,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                             ItemEditScreen.this.processingSubScreen.getTextureHeight() - 20)
                     .getDelegate();
             this.formatButton = ExecutableWidget.instance(141, -19, 18, 18)
-                    .setElementHandler(IconElement.fixed(FORMAT_TEXTURE, ButtonAction.run(() -> {
+                    .setElementHandler(IconElement.fixedGui(FORMAT_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                 this.itemAttrValue.applyFormatting((str) -> {
                                     if (this.widget != null) widget.setText(str);
                                 });
@@ -924,8 +925,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                     ItemComponentModifyConfirmScreen.this.y + CONTENT_START_Y + 1,
                                     18,
                                     18)
-                            .setElementHandler(IconElement.fixed(
-                                            SnbtItemProcessingSubScreen.FORMAT_TEXTURE, ButtonAction.run(() -> {
+                            .setElementHandler(IconElement.fixedGui(
+                                            SnbtItemProcessingSubScreen.FORMAT_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                                 this.element.applyFormatting((str) -> {
                                                     if (this.widget != null) widget.setText(str);
                                                 });

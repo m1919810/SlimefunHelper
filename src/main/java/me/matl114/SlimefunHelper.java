@@ -10,6 +10,7 @@ import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.bukkit.BukkitSerializationMock;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.gui.GuiMain;
 import me.matl114.hacks.Tasks;
 import me.matl114.jsApi.SlimefunHelperApi;
 import me.matl114.managers.TaskManagers;
@@ -83,6 +84,7 @@ public class SlimefunHelper implements ModInitializer {
         TaskManagers.init();
         Listener.init();
         RenderListener.init();
+        GuiMain.init();
         Tasks.init();
         BridgeMain.init();
         SlimefunHelperApi.init();

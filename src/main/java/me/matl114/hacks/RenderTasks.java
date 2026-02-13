@@ -322,8 +322,13 @@ public class RenderTasks {
 
         @Override
         public void render(MatrixStack stack, float partialTicks) {
-            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
-            RenderUtils.drawQuad(stack, abcd[0], abcd[1], abcd[2], abcd[3]);
+            RenderUtils.drawQuad(
+                    stack,
+                    abcd[0],
+                    abcd[1],
+                    abcd[2],
+                    abcd[3],
+                    new Color(color.getRed(), color.getGreen(), color.getBlue(), 64));
         }
     }
 
