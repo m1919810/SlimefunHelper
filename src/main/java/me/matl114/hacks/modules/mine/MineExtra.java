@@ -14,6 +14,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ColorUtils;
 import me.matl114.utils.RenderUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.util.math.MatrixStack;
@@ -172,8 +173,7 @@ public class MineExtra extends BaseModule {
                     Vec3d pos = Vec3d.of(blockPos);
                     // 超过200格的不渲染
                     if (mc.player.getPos().squaredDistanceTo(pos) < 40000) {
-                        RenderUtils.setAsCurrentShaderColor(Color.BLUE, 1.0F);
-                        RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0));
+                        RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0), Color.BLUE);
                         float progress = PlayerInteractionAccess.of(mc.interactionManager)
                                 .getCurrentMiningProgress(true);
                         if (progress > 0.0F) {
@@ -188,13 +188,13 @@ public class MineExtra extends BaseModule {
                             Vec3d vec3 =
                                     box.getMaxPos().subtract(box.getMinPos()).multiply(0.5);
 
-                            RenderUtils.setAsCurrentShaderColor(Color.YELLOW, 0.25F);
                             Vec3d vec3d = pos.add(box.getCenter());
                             float clamped = MathHelper.clamp(progress, 0.0F, 1.0F);
                             RenderUtils.drawSolidBox(
                                     renderEvent.context,
                                     vec3d.add(vec3.multiply(-clamped)),
-                                    vec3d.add(vec3.multiply(clamped)));
+                                    vec3d.add(vec3.multiply(clamped)),
+                                    ColorUtils.withAlpha(Color.YELLOW, 0.25F));
                         }
                     }
 
@@ -206,9 +206,11 @@ public class MineExtra extends BaseModule {
                                 && !Objects.equals(doubleMineVec, pos)) {
                             float progressFail = PlayerInteractionAccess.of(mc.interactionManager)
                                     .getFailBreakMiningProgress();
-                            RenderUtils.setAsCurrentShaderColor(Color.MAGENTA, 1.0F);
                             RenderUtils.drawOutlinedBox(
-                                    renderEvent.context, doubleMineVec, doubleMineVec.add(1.0, 1.0, 1.0));
+                                    renderEvent.context,
+                                    doubleMineVec,
+                                    doubleMineVec.add(1.0, 1.0, 1.0),
+                                    Color.MAGENTA);
                             if (progressFail > 0.0F) {
                                 BlockState state = mc.world.getBlockState(doubleMinePos);
                                 Box box;
@@ -224,13 +226,13 @@ public class MineExtra extends BaseModule {
                                         .subtract(box.getMinPos())
                                         .multiply(0.5);
 
-                                RenderUtils.setAsCurrentShaderColor(Color.ORANGE, 0.25F);
                                 Vec3d vec3d = doubleMineVec.add(box.getCenter());
                                 float clamped = MathHelper.clamp(progressFail, 0.0F, 1.0F);
                                 RenderUtils.drawSolidBox(
                                         renderEvent.context,
                                         vec3d.add(vec3.multiply(-clamped)),
-                                        vec3d.add(vec3.multiply(clamped)));
+                                        vec3d.add(vec3.multiply(clamped)),
+                                        ColorUtils.withAlpha(Color.ORANGE, 0.25F));
                             }
                         }
                     }

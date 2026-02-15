@@ -262,8 +262,7 @@ public class RenderTasks {
 
         @Override
         public void render(MatrixStack stack, float partialTicks) {
-            RenderUtils.setAsCurrentShaderColor(color, opacity);
-            RenderUtils.drawSolidBox(stack, startVec, endVec);
+            RenderUtils.drawSolidBox(stack, startVec, endVec, ColorUtils.withAlpha(color, opacity));
         }
     }
 
@@ -278,8 +277,7 @@ public class RenderTasks {
 
         @Override
         public void render(MatrixStack stack, float partialTicks) {
-            RenderUtils.setAsCurrentShaderColor(color, 1.0F);
-            RenderUtils.drawOutlinedBox(stack, startVec, endVec);
+            RenderUtils.drawOutlinedBox(stack, startVec, endVec, color);
         }
     }
 
@@ -299,10 +297,10 @@ public class RenderTasks {
 
         @Override
         public void render(MatrixStack stack, float partialTicks) {
-            RenderUtils.setAsCurrentShaderColor(color1, 0.25F);
-            RenderUtils.drawSolidBox(stack, startBox.getMinPos(), startBox.getMaxPos());
+            Color color = ColorUtils.withAlpha(color1, 0.25F);
+            RenderUtils.drawSolidBox(stack, startBox.getMinPos(), startBox.getMaxPos(), color);
             RenderUtils.drawSolidBox(
-                    stack, startBox.getMinPos().add(delta), startBox.getMaxPos().add(delta));
+                    stack, startBox.getMinPos().add(delta), startBox.getMaxPos().add(delta), color);
             for (var ver : CollisionUtil.getBoxVertices(startBox))
                 RenderUtils.drawLineVirtual(stack, ver, ver.add(delta), color2);
         }
@@ -322,8 +320,13 @@ public class RenderTasks {
 
         @Override
         public void render(MatrixStack stack, float partialTicks) {
-            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
-            RenderUtils.drawQuad(stack, abcd[0], abcd[1], abcd[2], abcd[3]);
+            RenderUtils.drawQuad(
+                    stack,
+                    abcd[0],
+                    abcd[1],
+                    abcd[2],
+                    abcd[3],
+                    new Color(color.getRed(), color.getGreen(), color.getBlue(), 64));
         }
     }
 
@@ -369,11 +372,11 @@ public class RenderTasks {
 
         @Override
         public void render(MatrixStack stack, float partialTicks) {
-            RenderUtils.setAsCurrentShaderColor(color, 1.0F);
             RenderUtils.drawSolidBox(
                     stack,
                     entity.getBoundingBox().getMinPos(),
-                    entity.getBoundingBox().getMaxPos());
+                    entity.getBoundingBox().getMaxPos(),
+                    color);
         }
     }
 
@@ -388,11 +391,11 @@ public class RenderTasks {
 
         @Override
         public void render(MatrixStack stack, float partialTicks) {
-            RenderUtils.setAsCurrentShaderColor(color, 0.25F);
             RenderUtils.drawOutlinedBox(
                     stack,
                     entity.getBoundingBox().getMinPos(),
-                    entity.getBoundingBox().getMaxPos());
+                    entity.getBoundingBox().getMaxPos(),
+                    ColorUtils.withAlpha(color, 0.25F));
         }
     }
 
@@ -431,12 +434,16 @@ public class RenderTasks {
     @Getter
     public static SleepMode sleepMode;
 
+    @Getter
+    public static CustomOverlay customOverlay;
+
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         entityESP = new EntityESP().register(m);
         playerLog = new PlayerLog().register(m);
         projectileESP = new ProjectileESP().register(m);
         sleepMode = new SleepMode().register(m);
+        customOverlay = new CustomOverlay().register(m);
     }
 
     static {

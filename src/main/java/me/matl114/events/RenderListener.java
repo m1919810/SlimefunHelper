@@ -94,7 +94,7 @@ public class RenderListener {
             names = {"ticksDelta"})
     private static final EventChannel<MatrixStack> renderLayerTasks = new EventChannel<>();
 
-    public static void renderMoreTasks(MatrixStack stack, float tickDelta) {
+    public static void renderWorldTasks(MatrixStack stack, float tickDelta) {
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
 
         try {

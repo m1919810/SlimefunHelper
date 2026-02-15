@@ -20,6 +20,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ColorUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RenderUtils;
@@ -169,9 +170,9 @@ public class BowEnhance extends BaseModule {
                     Entity entity =
                             CombatTasks.getTargetSelector().searchAimableEntity(itemInUse.getItem() instanceof BowItem);
                     if (entity != null) {
-                        RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
                         Box box = RenderUtils.getLerpedBox(entity, tickDelta);
-                        RenderUtils.drawSolidBox(stack, box.getMinPos(), box.getMaxPos());
+                        RenderUtils.drawSolidBox(
+                                stack, box.getMinPos(), box.getMaxPos(), ColorUtils.withAlpha(Color.GREEN, 0.25F));
                     }
                 } finally {
                     RenderUtils.stopDrawVirtual(stack);

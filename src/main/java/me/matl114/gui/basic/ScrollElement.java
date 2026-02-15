@@ -45,7 +45,7 @@ public class ScrollElement extends AbstractElement {
         this.valueTracker = valueTracker;
         this.activate = activate;
     }
-
+    // not a sprite
     private static final Identifier SCROLLER_BACKGROUND =
             new Identifier("minecraft", "textures/gui/container/creative_inventory/tab_items.png");
     private static final Identifier SCROLLER_TEXTURE =

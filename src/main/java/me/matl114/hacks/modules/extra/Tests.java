@@ -1,10 +1,12 @@
 package me.matl114.hacks.modules.extra;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.IntRef;
@@ -12,6 +14,22 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ChatUtils;
+import me.matl114.utils.ColorUtils;
+import me.matl114.utils.MathUtils;
+import me.matl114.utils.RenderUtils;
+import me.matl114.utils.render.ColorQuad;
+import me.matl114.utils.render.Quad;
+import me.matl114.utils.render.UV;
+import me.matl114.versioned.api.VRender;
+import net.minecraft.client.render.*;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.decoration.DisplayEntity;
+import net.minecraft.item.ItemDisplayContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 public class Tests extends BaseModule {
@@ -130,17 +148,208 @@ public class Tests extends BaseModule {
         }
     }
 
+    boolean start = false;
+    Vec3d vec3d;
+
     public void doTest() {
-        if (mc.player == null) return;
+        if (!start) {
+            start = true;
+            vec3d = RenderUtils.getCameraPos().add(mc.player.getRotationVector().multiply(5));
+            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(this::onRender).setAutoStop(() -> !start));
+        } else {
+            start = false;
+        }
+    }
 
-        // todo: try fix tp-into-lava issue
-        Vec3d target = mc.player.getPos().add(mc.player.getRotationVector().multiply(20));
-        RenderTasks.drawBox(mc.player.dimensions.getBoxAt(target), 200, Color.RED);
-        MovTasks.generateTpSequence(mc.player.getPos(), target, true, 1000, true);
+    private static float TEXT_HEIGHT = 9.0F;
 
-        // todo: try to simulate a explosion to escape anti cheat
-        // todo: try to send clientbound packets to server (wtf to see if grimac got mistaken)
-        // todo: try to gain advantage from OnGround packets
+    private void onRender(MatrixStack stack, float partialTick) {
+        Vec3d related = vec3d.subtract(RenderUtils.getCameraPos());
+        stack.push();
+        stack.translate(related.x - 30, related.y, related.z);
+        VRender.getInstance()
+                .drawSolidBoxCameraCoord(
+                        stack, RenderTasks.FROM, RenderTasks.TO, ColorUtils.withAlpha(Color.BLUE, 0.25F));
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 0, 0), Color.RED);
+        RenderUtils.drawLineVirtualCameraCoord(stack, new Vec3d(0, -10, 0), new Vec3d(0, 10, 0), Color.GREEN);
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 0, 10), Color.BLUE);
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 10, 10), Color.YELLOW);
+        //        Quaternionf ROTATE_X = RotationAxis.NEGATIVE_Z.rotationDegrees(180);
+        //        stack.multiply(new Quaternionf(ROTATE_X.x, ROTATE_X.y, ROTATE_X.z, ROTATE_X.w));
+        stack.push();
+        stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.VERTICAL, 0, 0));
 
+        stack.scale(0.025F, 0.025F, 1.0F);
+        //        Quaternionf ROTATE_X = RotationAxis.POSITIVE_X.rotationDegrees(180);
+        //        stack.multiply(ROTATE_X);
+        // todo: 可视范围是不是和法线有关
+        // todo: 默认是向坐标系的x + y + 渲染， 可视范围是z-
+        // todo: 翻转y轴后向 x + y - 渲染 可视范围z +
+        // todo: 如何调试法线
+        stack.push();
+        int x = Tasks.getSecond() % 20;
+        int y = Tasks.getSecond() % 20;
+        // 问题
+        //        mc.gameRenderer.getEntityRenderDispatcher().getQueue().submitText(
+        //            stack, x, y, ChatUtils.stringToText("&6测试&a语句").asOrderedText(), false,
+        // TextRenderer.TextLayerType.POLYGON_OFFSET,0xF000F0,-1, 0,0
+        //        );
+
+        stack.translate(x, y, 0);
+        VRender.getInstance()
+                .drawTextCameraCoord(
+                        ChatUtils.stringToText("&6测试&a语句").asOrderedText(),
+                        stack,
+                        Vec3d.ZERO,
+                        VRender.createTextPositionFlag(-1, -1),
+                        Color.WHITE,
+                        VRender.DEFAULT_TEXT);
+
+        RenderUtils.drawOutlinedBoxCameraCoord(stack, new Vec3d(-9, -4.5F, 0), new Vec3d(9, 4.5F, 0), Color.YELLOW);
+        stack.pop();
+        VRender.getInstance()
+                .drawTextCameraCoord(
+                        ChatUtils.stringToText("&aX").asOrderedText(),
+                        stack,
+                        new Vec3d(100, 0, 0),
+                        VRender.createTextPositionFlag(0, 0),
+                        Color.WHITE,
+                        VRender.DEFAULT_TEXT);
+        VRender.getInstance()
+                .drawTextCameraCoord(
+                        ChatUtils.stringToText("&aY").asOrderedText(),
+                        stack,
+                        new Vec3d(0, 100, 0),
+                        VRender.createTextPositionFlag(0, 0),
+                        Color.WHITE,
+                        VRender.DEFAULT_TEXT);
+        List<Vec3d> lines = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            lines.add(new Vec3d(i, 150 - MathUtils.s2(50 - i) * 150.0D / 2500.0D, 0));
+        }
+        RenderUtils.drawStripLineVirtualCameraCoord(stack, lines, Color.PINK);
+        RenderUtils.drawQuadCameraCoord(
+                stack,
+                new Vec3d(0, 0, 0),
+                new Vec3d(0, 25, 0),
+                new Vec3d(12, 48, 0),
+                new Vec3d(12, 23, 0),
+                Color.YELLOW);
+        stack.translate(1, 1, 1);
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 0, 10), Color.PINK);
+
+        MatrixStack stack2 = new MatrixStack();
+        stack2.push();
+        stack2.translate(0, 0, -20);
+
+        RenderUtils.drawLineVirtualCameraCoord(stack2, Vec3d.ZERO, new Vec3d(10, 0, 0), Color.RED);
+        RenderUtils.drawLineVirtualCameraCoord(stack2, Vec3d.ZERO, new Vec3d(0, 10, 0), Color.GREEN);
+        RenderUtils.drawLineVirtualCameraCoord(stack2, Vec3d.ZERO, new Vec3d(0, 0, 10), Color.BLUE);
+        RenderUtils.drawLineVirtualCameraCoord(stack2, Vec3d.ZERO, new Vec3d(100, 100, 100), Color.YELLOW);
+
+        stack2.push();
+        stack2.scale(0.25F, 0.25F, 1.0F);
+        VRender.getInstance()
+                .drawTextCameraCoord(
+                        ChatUtils.stringToText("&6X").asOrderedText(),
+                        stack2,
+                        new Vec3d(40, 0, 0),
+                        VRender.createTextPositionFlag(0, 0),
+                        Color.WHITE,
+                        VRender.DEFAULT_TEXT);
+        VRender.getInstance()
+                .drawTextCameraCoord(
+                        ChatUtils.stringToText("&6Y").asOrderedText(),
+                        stack2,
+                        new Vec3d(0, 40, 0),
+                        VRender.createTextPositionFlag(0, 0),
+                        Color.WHITE,
+                        VRender.DEFAULT_TEXT);
+        VRender.getInstance()
+                .drawTextCameraCoord(
+                        ChatUtils.stringToText("&cScreen&6Y").asOrderedText(),
+                        stack2,
+                        new Vec3d(0, -40, 0),
+                        VRender.createTextPositionFlag(0, 0),
+                        Color.WHITE,
+                        VRender.DEFAULT_TEXT);
+        Text orderedText = ChatUtils.stringToText("&6为什么&a不显示");
+        VRender.getInstance()
+                .drawTextCameraCoord(
+                        orderedText.asOrderedText(),
+                        stack2,
+                        Vec3d.ZERO,
+                        VRender.createTextPositionFlag(0, 0),
+                        Color.WHITE,
+                        VRender.DEFAULT_TEXT);
+        int width = mc.textRenderer.getWidth(orderedText);
+        RenderUtils.drawOutlinedBoxCameraCoord(
+                stack2,
+                new Vec3d(-width / 2.0f, -TEXT_HEIGHT / 2.0F, 0),
+                new Vec3d(width / 2.0F, TEXT_HEIGHT / 2.0, 0),
+                Color.YELLOW);
+        stack.pop();
+        //
+        RenderUtils.drawOutlinedBox(stack, new Vec3d(10, 10, 10), new Vec3d(40, 40, 40), Color.YELLOW);
+        stack.pop();
+        stack.push();
+        stack.translate(related.x, related.y, related.z);
+        RenderUtils.drawSolidBox(
+                stack,
+                vec3d.add(RenderTasks.SMALL_FROM),
+                vec3d.add(RenderTasks.SMALL_TO),
+                ColorUtils.withAlpha(Color.BLUE, 0.25F));
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 0, 0), Color.RED);
+        RenderUtils.drawLineVirtualCameraCoord(stack, new Vec3d(0, -10, 0), new Vec3d(0, 10, 0), Color.GREEN);
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 0, 10), Color.BLUE);
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 10, 10), Color.YELLOW);
+
+        RenderUtils.drawOutlinedBoxCameraCoord(stack, new Vec3d(10, 10, 0), new Vec3d(40, 40, 0), Color.YELLOW);
+        stack.push();
+        stack.translate(10, 10, 0);
+        VRender.getInstance()
+                .drawTexturedQuadCameraCoord(
+                        new Identifier("slimefunhelper", "textures/gui/format.png"),
+                        stack,
+                        Quad.textureXY(0, 0, 40, 40, 0),
+                        UV.DEFAULT,
+                        ColorQuad.of(-1));
+        VRender.getInstance()
+                .drawGuiSpriteQuadCameraCoord(
+                        new Identifier("slimefunhelper", "gui/format"),
+                        stack,
+                        Quad.textureXY(50, 0, 90, 40, 0),
+                        UV.DEFAULT,
+                        ColorQuad.of(-1));
+        VRender.getInstance()
+                .drawGuiQuadCameraCoord(
+                        stack,
+                        Quad.textureXY(100, 0, 140, 40, 0),
+                        ColorQuad.ofGradient(Color.WHITE, Color.RED, Color.GREEN, Color.BLUE));
+        VRender.getInstance()
+                .drawTexturedQuadCameraCoord(
+                        new Identifier("slimefunhelper", "textures/custom/genshin_impact.png"),
+                        stack,
+                        Quad.textureXY(0, 50, 40, 90, 0),
+                        UV.DEFAULT,
+                        ColorQuad.of(-1));
+        stack.pop();
+
+        stack.pop();
+        stack.push();
+        stack.translate(related.x, related.y, related.z + 30);
+        VRender.getInstance()
+                .drawSolidBoxCameraCoord(
+                        stack, RenderTasks.FROM, RenderTasks.TO, ColorUtils.withAlpha(Color.BLUE, 0.25F));
+
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 0, 0), Color.RED);
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 10, 0), Color.GREEN);
+        RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 0, 10), Color.BLUE);
+        stack.translate(0, 0, 10);
+        ItemStack itemStack = new ItemStack(Items.DIAMOND_SWORD);
+        VRender.getInstance()
+                .drawItemCameraCoord(
+                        itemStack, stack, Vec3d.ZERO, ItemDisplayContext.FIRST_PERSON_RIGHT_HAND, VRender.DEFAULT_ITEM);
+        stack.pop();
     }
 }

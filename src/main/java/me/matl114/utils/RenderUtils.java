@@ -1,18 +1,24 @@
 package me.matl114.utils;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.*;
 import java.util.List;
+import me.matl114.utils.render.ColorQuad;
+import me.matl114.utils.render.Quad;
 import me.matl114.utils.world.RegionPos;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.*;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Quaternionf;
 import org.lwjgl.opengl.GL11;
 
 public class RenderUtils {
@@ -69,25 +75,47 @@ public class RenderUtils {
      * note: start mush be pair with stop!
      * @param matrixStack
      */
+    private static float storedLineWidth;
+
+    private static boolean startVirtual = false;
+
     public static void startDrawVirtual(MatrixStack matrixStack) {
-        matrixStack.push();
-        GL11.glEnable(GL11.GL_BLEND);
-        // remove this
-        //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthMask(false);
+        if (!startVirtual) {
+            startVirtual = true;
+            matrixStack.push();
+            GL11.glEnable(GL11.GL_BLEND);
+            // remove this
+            //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+            storedLineWidth = RenderSystem.getShaderLineWidth();
+            RenderSystem.lineWidth(2.0F);
+            GL11.glDepthMask(false);
+        }
     }
 
-    public static void stopDrawVirtual(MatrixStack matrixStack) {
-        setAsCurrentShaderColor(Color.WHITE, 1.0f);
-        GL11.glDisable(GL11.GL_BLEND);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthMask(true);
-        matrixStack.pop();
+    public static boolean stopDrawVirtual(MatrixStack matrixStack) {
+        if (startVirtual) {
+            startVirtual = false;
+            resetCurrentShaderColor();
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            RenderSystem.lineWidth(storedLineWidth);
+            GL11.glDepthMask(true);
+            matrixStack.pop();
+            return true;
+        } else return false;
     }
     // in world coord
     public static void drawStripLineVirtual(MatrixStack matrixStack, List<Vec3d> path, Color color) {
-        VRender.getInstance().drawStripLineVirtual(matrixStack, path, color);
+        if (path.size() < 2) return;
+        Vec3d vec3d = getCameraPos();
+        VRender.getInstance()
+                .drawStripLineVirtualCameraCoord(
+                        matrixStack, path.stream().map(v -> v.subtract(vec3d)).toList(), color);
+    }
+
+    public static void drawStripLineVirtualCameraCoord(MatrixStack matrixStack, List<Vec3d> path, Color color) {
+        VRender.getInstance().drawStripLineVirtualCameraCoord(matrixStack, path, color);
     }
 
     // in world coord
@@ -100,39 +128,43 @@ public class RenderUtils {
     }
     // in world coord
     public static void drawLineVirtual(MatrixStack matrixStack, List<Vec3d> pairs, Color color) {
-        VRender.getInstance().drawLineVirtual(matrixStack, pairs, color);
+        if (pairs.size() < 2) return;
+        Vec3d vec3d = getCameraPos();
+        VRender.getInstance()
+                .drawLineVirtualCameraCoord(
+                        matrixStack, pairs.stream().map(v -> v.subtract(vec3d)).toList(), color);
     }
 
     public static void drawLineVirtualCameraCoord(MatrixStack matrixStack, List<Vec3d> pairs, Color color) {
         VRender.getInstance().drawLineVirtualCameraCoord(matrixStack, pairs, color);
     }
 
-    public static void drawOutlinedBox(MatrixStack matrix, Vec3d from, Vec3d to) {
+    public static void drawOutlinedBox(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
         Vec3d vec3d = getCameraPos();
-        drawOutlinedBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
+        drawOutlinedBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d), color);
     }
 
-    public static void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
-        VRender.getInstance().drawOutlinedBoxCameraCoord(matrix, from, to);
+    public static void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
+        VRender.getInstance().drawOutlinedBoxCameraCoord(matrix, from, to, color);
     }
 
-    public static void drawSolidBox(MatrixStack matrix, Vec3d from, Vec3d to) {
+    public static void drawSolidBox(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
         Vec3d vec3d = getCameraPos();
-        VRender.getInstance().drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
+        VRender.getInstance().drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d), color);
     }
 
-    public static void drawQuadCameraCoord(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
-        VRender.getInstance().drawQuadCameraCoord(matrix4f, a, b, c, d);
+    public static void drawQuadCameraCoord(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d, Color color) {
+        VRender.getInstance().drawQuadCameraCoord(matrix4f, new Quad(a, b, c, d), ColorQuad.of(color.getRGB()));
     }
 
-    public static void drawQuad(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d) {
+    public static void drawQuad(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d, Color color) {
         Vec3d vec3d = getCameraPos();
-        drawQuadCameraCoord(matrix4f, a.subtract(vec3d), b.subtract(vec3d), c.subtract(vec3d), d.subtract(vec3d));
+        drawQuadCameraCoord(
+                matrix4f, a.subtract(vec3d), b.subtract(vec3d), c.subtract(vec3d), d.subtract(vec3d), color);
     }
 
-    public static void setAsCurrentShaderColor(Color color, float opacity) {
-        VRender.getInstance().setAsShaderColor(color, opacity);
-    }
+    @Deprecated
+    public static void resetCurrentShaderColor() {}
 
     public static Box getLerpedBox(Entity e, float partialTicks) {
         // When an entity is removed, it stops moving and its lastRenderX/Y/Z
@@ -156,5 +188,108 @@ public class RenderUtils {
 
     public static Vec3d getLerpedDelta(Entity e, float partialTicks) {
         return getLerpedPos(e, partialTicks).subtract(e.getPos());
+    }
+
+    public static Quaternionf getBillboardRotation(DisplayEntity.BillboardMode renderState, float pitch, float yaw) {
+        Quaternionf rotation = new Quaternionf();
+        Camera camera = mc.gameRenderer.getCamera();
+        Quaternionf var10000;
+        switch (renderState) {
+            case FIXED -> var10000 = rotation.rotationYXZ(-0.017453292F * yaw, 0.017453292F * pitch, 0.0F);
+            case HORIZONTAL -> var10000 =
+                    rotation.rotationYXZ(-0.017453292F * yaw, 0.017453292F * getNegatedPitch(camera.getPitch()), 0.0F);
+            case VERTICAL -> var10000 =
+                    rotation.rotationYXZ(-0.017453292F * getBackwardsYaw(camera.getYaw()), 0.017453292F * pitch, 0.0F);
+            case CENTER -> var10000 = rotation.rotationYXZ(
+                    -0.017453292F * getBackwardsYaw(camera.getYaw()),
+                    0.017453292F * getNegatedPitch(camera.getPitch()),
+                    0.0F);
+            default -> throw new MatchException((String) null, (Throwable) null);
+        }
+
+        return var10000;
+    }
+
+    private static float getBackwardsYaw(float yaw) {
+        return yaw - 180.0F;
+    }
+
+    private static float getNegatedPitch(float pitch) {
+        return -pitch;
+    }
+
+    public static VertexConsumer getSpriteVertexConsumer(VertexConsumer vertexConsumer, Sprite sprite) {
+        return new SpriteTexturedVertexConsumer(vertexConsumer, sprite);
+    }
+
+    public static class SpriteTexturedVertexConsumer implements VertexConsumer {
+        private final VertexConsumer delegate;
+        private final Sprite sprite;
+
+        public SpriteTexturedVertexConsumer(VertexConsumer delegate, Sprite sprite) {
+            this.delegate = delegate;
+            this.sprite = sprite;
+        }
+
+        public VertexConsumer vertex(float x, float y, float z) {
+            this.delegate.vertex(x, y, z);
+            return this;
+        }
+
+        public VertexConsumer color(int red, int green, int blue, int alpha) {
+            this.delegate.color(red, green, blue, alpha);
+            return this;
+        }
+
+        public VertexConsumer color(int argb) {
+            this.delegate.color(argb);
+            return this;
+        }
+
+        public VertexConsumer texture(float u, float v) {
+            this.delegate.texture(this.sprite.getFrameU(u), this.sprite.getFrameV(v));
+            return this;
+        }
+
+        public VertexConsumer overlay(int u, int v) {
+            this.delegate.overlay(u, v);
+            return this;
+        }
+
+        public VertexConsumer light(int u, int v) {
+            this.delegate.light(u, v);
+            return this;
+        }
+
+        public VertexConsumer normal(float x, float y, float z) {
+            this.delegate.normal(x, y, z);
+            return this;
+        }
+
+        public void vertex(
+                float x,
+                float y,
+                float z,
+                int color,
+                float u,
+                float v,
+                int overlay,
+                int light,
+                float normalX,
+                float normalY,
+                float normalZ) {
+            this.delegate.vertex(
+                    x,
+                    y,
+                    z,
+                    color,
+                    this.sprite.getFrameU(u),
+                    this.sprite.getFrameV(v),
+                    overlay,
+                    light,
+                    normalX,
+                    normalY,
+                    normalZ);
+        }
     }
 }

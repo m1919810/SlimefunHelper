@@ -33,7 +33,7 @@ public class SlimefunScreen extends GenericBackGroundScreen {
     protected static final List<Text> SEARCH_DEFAULT =
             List.of(Text.literal("当前屏幕不支持搜索功能!").formatted(Formatting.RED));
     protected static Identifier CANCEL_GUI_TEXTURE = new Identifier("minecraft", "container/beacon/cancel");
-    private static final Identifier SEARCH_TEXTURE = new Identifier("slimefunhelper", "textures/gui/search.png");
+    private static final Identifier SEARCH_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/search");
 
     protected List<Text> getSearchButtonTooltips() {
         return SEARCH_DEFAULT;
@@ -61,7 +61,7 @@ public class SlimefunScreen extends GenericBackGroundScreen {
         this.searchButton = ExecutableWidget.instance(this.x + this.backgroundWidth - 3, this.y + 38, 26, 26)
                 .setMouseHandler(InputHandler.run(this::close))
                 .setRenderHandler(PlateElement.instance()
-                        .combineRender(RenderHandler.ofPositionResource(SEARCH_TEXTURE, 4, 4, 18, 18))
+                        .combineRender(RenderHandler.ofGuiTextures(SEARCH_TEXTURE_SPRITE, 4, 4, 18, 18))
                         .withTooltips(TooltipHandler.of(this::getSearchButtonTooltips)))
                 .addTo(this);
         super.initBackground();

@@ -1,8 +1,6 @@
 package me.matl114.hacks.modules.models;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
@@ -10,6 +8,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.ResourceUtils;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
@@ -52,6 +51,8 @@ public class NewStyleModel extends BaseModule {
         super.registerAll();
         registerListener(RenderListener.getCustomModelOverride(), this::onModelOverride);
         registerListener(RenderListener.getResourceReload(), this::onRefreshCache);
+        registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlas);
+        registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
     }
 
     private Map<Identifier, Optional<BakedModel>> cache = new HashMap<>();
@@ -99,6 +100,30 @@ public class NewStyleModel extends BaseModule {
         }
     }
 
+    public void onAtlas(Event<Set<Identifier>> event) {
+        if (event.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
+            event.context()
+                    .addAll(ResourceUtils.lookupResources(
+                            event.getArgs(0),
+                            "slimefunhelper",
+                            "slimefunhelper",
+                            "textures",
+                            ".png",
+                            s -> s.startsWith("enchanted_book") || s.startsWith("new-version")));
+        }
+    }
+
+    public void onModelSupply(Event<Set<Identifier>> event) {
+        event.context()
+                .addAll(ResourceUtils.lookupResources(
+                        event.getArgs(0),
+                        "slimefunhelper",
+                        "slimefunhelper",
+                        "models",
+                        ".json",
+                        s -> s.startsWith("enchanted_book") || s.startsWith("new-version")));
+    }
+
     public void onRefreshCache(Event<ResourceManager> event) {
         cache.clear();
         cacheItem.clear();
@@ -126,11 +151,6 @@ public class NewStyleModel extends BaseModule {
 
     public static boolean isNewVersion(ItemStack stack) {
         return ItemStackUtils.getCustomDataReadOnly(stack).contains(PATH_OF_NEW_VERSION);
-    }
-
-    public ModelIdentifier resolveNewModel(ItemStack stack) {
-        Item item = stack.getItem();
-        return NEW_VERSION_ITEMS.get(item);
     }
 
     public final Map<Item, ModelIdentifier> NEW_VERSION_ITEMS = new HashMap<>();

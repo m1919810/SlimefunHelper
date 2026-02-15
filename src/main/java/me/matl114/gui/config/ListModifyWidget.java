@@ -28,10 +28,10 @@ public class ListModifyWidget extends ScrollableListWidget {
         addScrollingWidget(getListEndAdd(0, 0));
     }
 
-    private static final Identifier SHIFT_UP_TEXTURE = new Identifier("slimefunhelper", "textures/gui/move_up.png");
-    private static final Identifier SHIFT_DOWN_TEXTURE = new Identifier("slimefunhelper", "textures/gui/move_down.png");
-    private static final Identifier DEL_TEXTURE = new Identifier("slimefunhelper", "textures/gui/remove.png");
-    private static final Identifier NEW_TEXTURE = new Identifier("slimefunhelper", "textures/gui/add.png");
+    private static final Identifier SHIFT_UP_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/move_up");
+    private static final Identifier SHIFT_DOWN_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/move_down");
+    private static final Identifier DEL_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/remove");
+    private static final Identifier NEW_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/add");
     private static final List<Text> SHIFT_UP_TOOLTIPS = List.of(Text.literal("上移"));
     private static final List<Text> SHIFT_DOWN_TOOLTIPS = List.of(Text.literal("下移"));
     private static final List<Text> DEL_TOOLTIPS = List.of(Text.literal("删除"));
@@ -49,7 +49,7 @@ public class ListModifyWidget extends ScrollableListWidget {
         return new SubScreenWidget(startX, curHeight, width, height)
                 .addDrawableChild(wrap1)
                 .addDrawableChild(ExecutableWidget.instance(width + 1, 1, buttonSize - 2, buttonSize - 2)
-                        .setElementHandler(IconElement.fixed(SHIFT_UP_TEXTURE, ButtonAction.run(() -> {
+                        .setElementHandler(IconElement.fixedGui(SHIFT_UP_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     if (this.controller.shiftUp(listIndex)) {
                                         refreshList();
                                     }
@@ -57,7 +57,7 @@ public class ListModifyWidget extends ScrollableListWidget {
                                 .setActive(listIndex != 0)
                                 .withTooltips(TooltipHandler.of(SHIFT_UP_TOOLTIPS))))
                 .addDrawableChild(ExecutableWidget.instance(width + buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
-                        .setElementHandler(IconElement.fixed(SHIFT_DOWN_TEXTURE, ButtonAction.run(() -> {
+                        .setElementHandler(IconElement.fixedGui(SHIFT_DOWN_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     if (this.controller.shiftDown(listIndex)) {
                                         refreshList();
                                     }
@@ -66,7 +66,7 @@ public class ListModifyWidget extends ScrollableListWidget {
                                 .withTooltips(TooltipHandler.of(SHIFT_DOWN_TOOLTIPS))))
                 .addDrawableChild(
                         ExecutableWidget.instance(width + 2 * buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
-                                .setElementHandler(IconElement.fixed(DEL_TEXTURE, ButtonAction.run(() -> {
+                                .setElementHandler(IconElement.fixedGui(DEL_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                             if (this.controller.del(listIndex)) {
                                                 refreshList();
                                             }
@@ -74,7 +74,7 @@ public class ListModifyWidget extends ScrollableListWidget {
                                         .withTooltips(TooltipHandler.of(DEL_TOOLTIPS))))
                 .addDrawableChild(
                         ExecutableWidget.instance(width + 3 * buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
-                                .setElementHandler(IconElement.fixed(NEW_TEXTURE, ButtonAction.run(() -> {
+                                .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                             if (this.controller.insert(listIndex)) {
                                                 refreshList();
                                             }
@@ -91,7 +91,7 @@ public class ListModifyWidget extends ScrollableListWidget {
                         startY + height * controller.size(),
                         buttonSize,
                         buttonSize)
-                .setElementHandler(IconElement.fixed(NEW_TEXTURE, ButtonAction.run(() -> {
+                .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
                             if (this.controller.insert(-1)) {
                                 refreshList();
                             }

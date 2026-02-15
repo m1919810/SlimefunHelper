@@ -175,8 +175,8 @@ public class ChatUtils {
                                 .setStyle(currentStyle);
                         base.append(addition);
                     }
-                    // 换行 means end
-                    return base;
+                    // ignore \n
+                    // return base;
             }
             currentIndex = matcher.end(groupId);
         }

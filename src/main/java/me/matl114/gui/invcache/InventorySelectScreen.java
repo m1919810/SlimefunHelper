@@ -13,6 +13,7 @@ import me.matl114.gui.presets.grids.GridSelectSubScreen;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.utils.WorldUtils;
+import me.matl114.utils.world.ContainerPosition;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -90,17 +91,14 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
                             if (l) {
                                 openInventoryViewScreen(screen);
                             } else if (screen instanceof TileInventoryScreen tile
-                                    && tile.getPos() != null
+                                    && !tile.isVirtual()
                                     && WorldUtils.areWorldEquals(
                                             MinecraftClient.getInstance().world, tile.getWorld())) {
-                                BlockPos pos = tile.getPos();
+                                ContainerPosition pos = tile.getContainerPosition();
                                 RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
                                         120,
-                                        new RenderTasks.BoxObject(
-                                                pos.toCenterPos().add(RenderTasks.FROM),
-                                                pos.toCenterPos().add(RenderTasks.TO),
-                                                Color.GREEN),
-                                        new RenderTasks.LineToTargetObject(pos.toCenterPos(), Color.RED)));
+                                        new RenderTasks.BoxObject(pos.getBoundingBox(), Color.GREEN),
+                                        new RenderTasks.LineToTargetObject(pos.getCenterPosition(), Color.RED)));
                                 this.close();
                             }
                         }))

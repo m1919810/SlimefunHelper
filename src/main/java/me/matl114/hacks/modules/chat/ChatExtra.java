@@ -108,7 +108,7 @@ public class ChatExtra extends BaseModule {
     public final IntRef chatHistoryLength = builder(Configs.CHAT_CONFIG, Integer.class)
             .path(CHAT_HISTORY_LENGTH)
             .defaultValue(100)
-            .validator(Configs.intHigher(100))
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     @ApiStatus.Experimental

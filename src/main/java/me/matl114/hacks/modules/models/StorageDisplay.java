@@ -19,6 +19,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.ResourceUtils;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
@@ -184,6 +185,32 @@ public class StorageDisplay extends BaseModule {
                 }
                 event.context(item);
             }
+        }
+    }
+
+    public void onGceChickenModelLoad(Event<Set<Identifier>> reloadEvent) {
+        reloadEvent
+                .context()
+                .addAll(ResourceUtils.lookupResources(
+                        reloadEvent.getArgs(0),
+                        "slimefunhelper",
+                        "slimefunhelper",
+                        "models",
+                        ".json",
+                        s -> s.startsWith("gce")));
+    }
+
+    public void onGceChickenTextureLoad(Event<Set<Identifier>> reloadEvent) {
+        if (reloadEvent.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
+            reloadEvent
+                    .context()
+                    .addAll(ResourceUtils.lookupResources(
+                            reloadEvent.getArgs(0),
+                            "slimefunhelper",
+                            "slimefunhelper",
+                            "textures",
+                            ".png",
+                            s -> s.startsWith("gce")));
         }
     }
 

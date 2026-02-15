@@ -154,7 +154,9 @@ public class ChatTasks {
             switch (re) {
                 case "command" -> Tasks.scheduleDelayed(ChatTasks::reloadAllCommand, 1);
                     // case "vanilla" -> Tasks.scheduleDelayed(ChatTasks::reloadVanillaClientCommand, 1);
-                case "module" -> Tasks.scheduleDelayed(HackModules::reloadModuleGroups, 1);
+                case "module" -> {
+                    CompletableFuture.runAsync(() -> mc.execute(HackModules::reloadModuleGroups));
+                }
                 default -> Debug.chat("不支持的参数类型: " + re);
             }
             return true;

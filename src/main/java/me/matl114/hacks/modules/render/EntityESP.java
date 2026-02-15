@@ -213,8 +213,8 @@ public class EntityESP extends BaseModule {
                                     getShaderColorByEntityType(entity));
                         }
                         if (doBoxTrace) {
-                            RenderUtils.setAsCurrentShaderColor(getShaderColorByEntityType(entity), 1.0F);
-                            RenderUtils.drawOutlinedBox(stack, box.getMinPos(), box.getMaxPos());
+                            RenderUtils.drawOutlinedBox(
+                                    stack, box.getMinPos(), box.getMaxPos(), getShaderColorByEntityType(entity));
                         }
                     }
                     if (renderLevel == EntityInternalAccess.RENDER_LEVEL_DISABLE) {

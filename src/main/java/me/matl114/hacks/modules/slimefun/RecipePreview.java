@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.slimefun;
 public class RecipePreview {
     //    public static final String[] HOTKEYS = {"  recipe-display-add: LEFT_CONTROL,BUTTON_1"};
     //    private static final Identifier TEXTURE = new
-    // Identifier("minecraft","textures/gui/container/crafting_table.png");
     //    private static final Map<Slot, RenderRecipeRecord> CURRENT = new Reference2ReferenceOpenHashMap<>(4);
     //    private static HandledScreen<?> CURRENT_HANDLING_SCREEN;
     //    private static interface RenderRecipeRecord{
@@ -118,6 +117,11 @@ public class RecipePreview {
     ////            releaseAllDisplayRecipe();
     ////            return;
     ////        }
+    //        if(!Screen.hasControlDown()){
+    //            //if not control anyMore;
+    //            releaseAllDisplayRecipe();
+    //            return;
+    //        }
     //        if(!Screen.hasControlDown()){
     //            //if not control anyMore;
     //            releaseAllDisplayRecipe();

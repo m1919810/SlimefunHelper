@@ -41,7 +41,7 @@ public class TestingScreen extends Screen {
         //            @Override
         //            public void renderAtCentered(DrawableWidget element, VDrawContext context, int mouseX, int mouseY,
         // float delta, float alpha, boolean shouldHighlight) {
-        //                Identifier texture = new Identifier("slimefunhelper", "textures/gui/recipecontainer.png");
+        //                Identifier texture = new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
         //
         //                int xTextureOffset = 0;
         //                int yTextureOffset = 66;
@@ -94,7 +94,6 @@ public class TestingScreen extends Screen {
         //        element2 = new DisplayWidget(this.x + 36, this.y + 36, 36, 36)
         //            .setTextureScale(0.125f)
         //            .setRenderHandler(RenderHandler.ofElementTextureSize(new
-        // Identifier("slimefunhelper","textures/gui/arrow_left.png")))
         //            .setExtraDepth(100)
         //        ;
         //        addDrawableChild(element2);

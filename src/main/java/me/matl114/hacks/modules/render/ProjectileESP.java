@@ -14,10 +14,7 @@ import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
-import me.matl114.utils.RaycastUtils;
-import me.matl114.utils.RenderUtils;
+import me.matl114.utils.*;
 import me.matl114.utils.containers.MetaData;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.CrossbowUser;
@@ -474,9 +471,11 @@ public class ProjectileESP extends BaseModule {
         RenderUtils.drawStripLineVirtual(stack, vec3ds, clr);
         if (!vec3ds.isEmpty()) {
             Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
-            RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
             RenderUtils.drawSolidBox(
-                    stack, finalPosition.add(RenderTasks.SMALL_FROM), finalPosition.add(RenderTasks.SMALL_TO));
+                    stack,
+                    finalPosition.add(RenderTasks.SMALL_FROM),
+                    finalPosition.add(RenderTasks.SMALL_TO),
+                    ColorUtils.withAlpha(Color.GREEN, 0.25F));
         }
     }
 
@@ -487,14 +486,16 @@ public class ProjectileESP extends BaseModule {
         if (!vec3ds.isEmpty()) {
             if (result == null || result.getType() != HitResult.Type.ENTITY) {
                 Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
-                RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
                 RenderUtils.drawSolidBox(
-                        stack, finalPosition.add(RenderTasks.SMALL_FROM), finalPosition.add(RenderTasks.SMALL_TO));
+                        stack,
+                        finalPosition.add(RenderTasks.SMALL_FROM),
+                        finalPosition.add(RenderTasks.SMALL_TO),
+                        ColorUtils.withAlpha(Color.GREEN, 0.25F));
             } else {
                 Entity hitEntity = ((EntityHitResult) result).getEntity();
-                RenderUtils.setAsCurrentShaderColor(Color.GREEN, 0.25F);
                 Box box = RenderUtils.getLerpedBox(hitEntity, tickDelta);
-                RenderUtils.drawSolidBox(stack, box.getMinPos(), box.getMaxPos());
+                RenderUtils.drawSolidBox(
+                        stack, box.getMinPos(), box.getMaxPos(), ColorUtils.withAlpha(Color.GREEN, 0.25F));
             }
         }
     }

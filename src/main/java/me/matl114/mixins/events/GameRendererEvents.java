@@ -8,7 +8,6 @@ import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,10 +19,10 @@ public abstract class GameRendererEvents {
     @Inject(
             at =
                     @At(
-                            value = "FIELD",
-                            target = "Lnet/minecraft/client/render/GameRenderer;renderHand:Z",
-                            opcode = Opcodes.GETFIELD,
-                            ordinal = 0),
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/WorldRenderer;render(Lnet/minecraft/client/render/RenderTickCounter;ZLnet/minecraft/client/render/Camera;Lnet/minecraft/client/render/GameRenderer;Lnet/minecraft/client/render/LightmapTextureManager;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
+                            shift = At.Shift.AFTER),
             method = "renderWorld(Lnet/minecraft/client/render/RenderTickCounter;)V")
     public void renderMore(
             RenderTickCounter tickCounter,
@@ -34,6 +33,6 @@ public abstract class GameRendererEvents {
         matrixStack.multiplyPositionMatrix(matrix4f2);
         // fixme: Event
 
-        RenderListener.renderMoreTasks(matrixStack, tickDelta);
+        RenderListener.renderWorldTasks(matrixStack, tickDelta);
     }
 }
