@@ -31,13 +31,11 @@ public interface VRender {
 
     public void drawLineVirtualCameraCoord(MatrixStack matrixStack, List<Vec3d> pairs, Color color);
 
-    public void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to);
+    public void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color);
 
-    public void drawSolidBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to);
+    public void drawSolidBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color);
 
     public void drawQuadCameraCoord(MatrixStack matrix4f, Quad quad, ColorQuad color);
-
-    public void setAsShaderColor(Color color, float opacity);
 
     /**
      * pass the coordinate of the "center"

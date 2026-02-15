@@ -364,7 +364,7 @@
 	"config.index.chat-combine": "聊天合并模块",
 	"config.index.resource": "资源包管理模块",
 	"config.index.detect-entity": "实体追踪模块",
-	"config.index.render": "资源包管理模块",
+	"config.index.render": "基础渲染模块",
 	"config.index.player-io": "玩家列表模块",
 	"config.index.test": "测试模块",
 	"config.index.other": "其他设置",

@@ -73,8 +73,17 @@ public class RenderUtils {
      * note: start mush be pair with stop!
      * @param matrixStack
      */
-    public static void startDrawVirtual(MatrixStack matrixStack) {
-        matrixStack.push();
+    private static boolean drawVirtual;
+
+    public static boolean startDrawVirtual(MatrixStack matrixStack) {
+        if (!drawVirtual) {
+            drawVirtual = true;
+            matrixStack.push();
+            return true;
+        } else {
+            return false;
+        }
+
         //        GL11.glEnable(GL11.GL_BLEND);
         //        //remove this
         ////        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -82,12 +91,18 @@ public class RenderUtils {
         //        GL11.glDepthMask(false);
     }
 
-    public static void stopDrawVirtual(MatrixStack matrixStack) {
-        setAsCurrentShaderColor(Color.WHITE, 1.0f);
-        //        GL11.glDisable(GL11.GL_BLEND);
-        //        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        //        GL11.glDepthMask(true);
-        matrixStack.pop();
+    public static boolean stopDrawVirtual(MatrixStack matrixStack) {
+        if (drawVirtual) {
+            drawVirtual = false;
+            resetCurrentShaderColor();
+            //        GL11.glDisable(GL11.GL_BLEND);
+            //        GL11.glEnable(GL11.GL_DEPTH_TEST);
+            //        GL11.glDepthMask(true);
+            matrixStack.pop();
+            return true;
+        } else {
+            return false;
+        }
     }
     // in world coord
     public static void drawStripLineVirtual(MatrixStack matrixStack, List<Vec3d> path, Color color) {
@@ -123,18 +138,18 @@ public class RenderUtils {
         VRender.getInstance().drawLineVirtualCameraCoord(matrixStack, pairs, color);
     }
 
-    public static void drawOutlinedBox(MatrixStack matrix, Vec3d from, Vec3d to) {
+    public static void drawOutlinedBox(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
         Vec3d vec3d = getCameraPos();
-        drawOutlinedBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
+        drawOutlinedBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d), color);
     }
 
-    public static void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
-        VRender.getInstance().drawOutlinedBoxCameraCoord(matrix, from, to);
+    public static void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
+        VRender.getInstance().drawOutlinedBoxCameraCoord(matrix, from, to, color);
     }
 
-    public static void drawSolidBox(MatrixStack matrix, Vec3d from, Vec3d to) {
+    public static void drawSolidBox(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
         Vec3d vec3d = getCameraPos();
-        VRender.getInstance().drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d));
+        VRender.getInstance().drawSolidBoxCameraCoord(matrix, from.subtract(vec3d), to.subtract(vec3d), color);
     }
 
     public static void drawQuadCameraCoord(MatrixStack matrix4f, Vec3d a, Vec3d b, Vec3d c, Vec3d d, Color color) {
@@ -147,13 +162,8 @@ public class RenderUtils {
                 matrix4f, a.subtract(vec3d), b.subtract(vec3d), c.subtract(vec3d), d.subtract(vec3d), color);
     }
 
-    public static void setAsCurrentShaderColor(Color color, float opacity) {
-        VRender.getInstance().setAsShaderColor(color, opacity);
-    }
-
-    public static void resetCurrentShaderColor() {
-        VRender.getInstance().setAsShaderColor(Color.WHITE, 1.0F);
-    }
+    @Deprecated
+    public static void resetCurrentShaderColor() {}
 
     public static Box getLerpedBox(Entity e, float partialTicks) {
         // When an entity is removed, it stops moving and its lastRenderX/Y/Z

@@ -29,8 +29,6 @@ import org.jetbrains.annotations.ApiStatus;
 import org.joml.Vector3f;
 
 public class Render_v1_21_11 implements VRender {
-    // RGBA
-    public int cachedRenderColor = -1;
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     // mapping MultiBufferSource - VertexConsumerProvider
@@ -174,10 +172,10 @@ public class Render_v1_21_11 implements VRender {
     }
 
     @Override
-    public void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
+    public void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
         VertexConsumerProvider.Immediate vcp = getVCP();
         VertexConsumer consumer = vcp.getBuffer(LINES);
-        drawOutlinedBox(matrix.peek(), consumer, from, to, this.cachedRenderColor);
+        drawOutlinedBox(matrix.peek(), consumer, from, to, color.getRGB());
         vcp.draw(LINES);
     }
 
@@ -324,10 +322,10 @@ public class Render_v1_21_11 implements VRender {
     }
 
     @Override
-    public void drawSolidBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to) {
+    public void drawSolidBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
         VertexConsumerProvider.Immediate vcp = getVCP();
         VertexConsumer consumer = vcp.getBuffer(QUADS);
-        drawSolidBox(matrix.peek(), consumer, from, to, this.cachedRenderColor);
+        drawSolidBox(matrix.peek(), consumer, from, to, color.getRGB());
         vcp.draw(QUADS);
     }
 
@@ -384,14 +382,6 @@ public class Render_v1_21_11 implements VRender {
                     .color(color);
         }
         vcp.draw(QUADS);
-    }
-
-    @Override
-    public void setAsShaderColor(Color color, float opacity) {
-        cachedRenderColor = ((int) (opacity * 255.0F) & 255) << 24
-                | (color.getRed() & 255) << 16
-                | (color.getGreen() & 255) << 8
-                | (color.getBlue() & 255);
     }
 
     private static final float TEXT_HEIGHT = 9.0f;

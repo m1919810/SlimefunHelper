@@ -15,26 +15,21 @@ import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
+import me.matl114.utils.ColorUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
 import me.matl114.utils.render.UV;
 import me.matl114.versioned.api.VRender;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerLikeState;
 import net.minecraft.client.render.*;
-import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 
 public class Tests extends BaseModule {
@@ -172,8 +167,9 @@ public class Tests extends BaseModule {
         Vec3d related = vec3d.subtract(RenderUtils.getCameraPos());
         stack.push();
         stack.translate(related.x - 30, related.y, related.z);
-        RenderUtils.setAsCurrentShaderColor(Color.BLUE, 0.25f);
-        VRender.getInstance().drawSolidBoxCameraCoord(stack, RenderTasks.FROM, RenderTasks.TO);
+        VRender.getInstance()
+                .drawSolidBoxCameraCoord(
+                        stack, RenderTasks.FROM, RenderTasks.TO, ColorUtils.withAlpha(Color.BLUE, 0.25F));
         RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 0, 0), Color.RED);
         RenderUtils.drawLineVirtualCameraCoord(stack, new Vec3d(0, -10, 0), new Vec3d(0, 10, 0), Color.GREEN);
         RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 0, 10), Color.BLUE);
@@ -209,8 +205,7 @@ public class Tests extends BaseModule {
                         Color.WHITE,
                         VRender.DEFAULT_TEXT);
 
-        RenderUtils.setAsCurrentShaderColor(Color.YELLOW, 1.0F);
-        RenderUtils.drawOutlinedBoxCameraCoord(stack, new Vec3d(-9, -4.5F, 0), new Vec3d(9, 4.5F, 0));
+        RenderUtils.drawOutlinedBoxCameraCoord(stack, new Vec3d(-9, -4.5F, 0), new Vec3d(9, 4.5F, 0), Color.YELLOW);
         stack.pop();
         VRender.getInstance()
                 .drawTextCameraCoord(
@@ -245,9 +240,6 @@ public class Tests extends BaseModule {
 
         MatrixStack stack2 = new MatrixStack();
         stack2.push();
-        if ((Boolean) mc.options.getBobView().getValue()) {
-            bobView(stack2, mc.gameRenderer.getCamera().getLastTickProgress());
-        }
         stack2.translate(0, 0, -20);
 
         RenderUtils.drawLineVirtualCameraCoord(stack2, Vec3d.ZERO, new Vec3d(10, 0, 0), Color.RED);
@@ -290,27 +282,29 @@ public class Tests extends BaseModule {
                         VRender.createTextPositionFlag(0, 0),
                         Color.WHITE,
                         VRender.DEFAULT_TEXT);
-        RenderUtils.setAsCurrentShaderColor(Color.YELLOW, 1.0F);
         int width = mc.textRenderer.getWidth(orderedText);
         RenderUtils.drawOutlinedBoxCameraCoord(
                 stack2,
                 new Vec3d(-width / 2.0f, -TEXT_HEIGHT / 2.0F, 0),
-                new Vec3d(width / 2.0F, TEXT_HEIGHT / 2.0, 0));
+                new Vec3d(width / 2.0F, TEXT_HEIGHT / 2.0, 0),
+                Color.YELLOW);
         stack.pop();
         //
-        RenderUtils.drawOutlinedBox(stack, new Vec3d(10, 10, 10), new Vec3d(40, 40, 40));
+        RenderUtils.drawOutlinedBox(stack, new Vec3d(10, 10, 10), new Vec3d(40, 40, 40), Color.YELLOW);
         stack.pop();
         stack.push();
         stack.translate(related.x, related.y, related.z);
-        RenderUtils.setAsCurrentShaderColor(Color.BLUE, 0.25f);
-        RenderUtils.drawSolidBox(stack, vec3d.add(RenderTasks.SMALL_FROM), vec3d.add(RenderTasks.SMALL_TO));
+        RenderUtils.drawSolidBox(
+                stack,
+                vec3d.add(RenderTasks.SMALL_FROM),
+                vec3d.add(RenderTasks.SMALL_TO),
+                ColorUtils.withAlpha(Color.BLUE, 0.25F));
         RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 0, 0), Color.RED);
         RenderUtils.drawLineVirtualCameraCoord(stack, new Vec3d(0, -10, 0), new Vec3d(0, 10, 0), Color.GREEN);
         RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 0, 10), Color.BLUE);
         RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 10, 10), Color.YELLOW);
 
-        RenderUtils.setAsCurrentShaderColor(Color.YELLOW, 1.0F);
-        RenderUtils.drawOutlinedBoxCameraCoord(stack, new Vec3d(10, 10, 0), new Vec3d(40, 40, 0));
+        RenderUtils.drawOutlinedBoxCameraCoord(stack, new Vec3d(10, 10, 0), new Vec3d(40, 40, 0), Color.YELLOW);
         stack.push();
         stack.translate(10, 10, 0);
         VRender.getInstance()
@@ -327,65 +321,35 @@ public class Tests extends BaseModule {
                         Quad.textureXY(50, 0, 90, 40, 0),
                         UV.DEFAULT,
                         ColorQuad.of(-1));
-        //        VRender.getInstance().drawGuiQuadCameraCoord(
-        //            stack, Quad.textureXY(100, 0, 140, 40, 0), ColorQuad.ofGradient(Color.WHITE, Color.RED,
-        // Color.GREEN, Color.BLUE)
-        //        );
-        //        VRender.getInstance().drawTexturedQuadCameraCoord(
-        //            new Identifier("slimefunhelper", "textures/custom/genshin_impact.png"),stack,
-        //            Quad.textureXY(0, 50, 40, 90, 0), UV.DEFAULT, ColorQuad.of(-1)
-        //        );
+        VRender.getInstance()
+                .drawGuiQuadCameraCoord(
+                        stack,
+                        Quad.textureXY(100, 0, 140, 40, 0),
+                        ColorQuad.ofGradient(Color.WHITE, Color.RED, Color.GREEN, Color.BLUE));
+        VRender.getInstance()
+                .drawTexturedQuadCameraCoord(
+                        new Identifier("slimefunhelper", "textures/custom/genshin_impact.png"),
+                        stack,
+                        Quad.textureXY(0, 50, 40, 90, 0),
+                        UV.DEFAULT,
+                        ColorQuad.of(-1));
         stack.pop();
 
         stack.pop();
         stack.push();
         stack.translate(related.x, related.y, related.z + 30);
-        VRender.getInstance().setAsShaderColor(Color.BLUE, 0.25F);
-        VRender.getInstance().drawSolidBoxCameraCoord(stack, RenderTasks.FROM, RenderTasks.TO);
+        VRender.getInstance()
+                .drawSolidBoxCameraCoord(
+                        stack, RenderTasks.FROM, RenderTasks.TO, ColorUtils.withAlpha(Color.BLUE, 0.25F));
 
         RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(10, 0, 0), Color.RED);
         RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 10, 0), Color.GREEN);
         RenderUtils.drawLineVirtualCameraCoord(stack, Vec3d.ZERO, new Vec3d(0, 0, 10), Color.BLUE);
         stack.translate(0, 0, 10);
         ItemStack itemStack = new ItemStack(Items.DIAMOND_SWORD);
-        ItemRenderState state = new ItemRenderState();
-        // fixed : looks normal from Z -
-        // gui: looks normal from z +
-        // on ground : looks normal
-        // HEAD
-        mc.getItemModelManager()
-                .clearAndUpdate(state, itemStack, ItemDisplayContext.FIRST_PERSON_RIGHT_HAND, mc.world, null, -999);
-        //        OrderedRenderCommandQueueImpl queue = new OrderedRenderCommandQueueImpl();
-        state.render(
-                stack, mc.gameRenderer.getEntityRenderDispatcher().getQueue(), 0XFF00FF, OverlayTexture.DEFAULT_UV, 0);
-        //        ItemCommandRenderer itemRenderer = new ItemCommandRenderer();
-        //        VertexConsumerProvider.Immediate vcp = Render_v1_21_11.getVCP();
-        //        for (var entry : queue.getBatchingQueues().values()){
-        //            itemRenderer.render(entry,  vcp, Render_v1_21_11.getOutlineVCP());
-        //        }
-
+        VRender.getInstance()
+                .drawItemCameraCoord(
+                        itemStack, stack, Vec3d.ZERO, ItemDisplayContext.FIRST_PERSON_RIGHT_HAND, VRender.DEFAULT_ITEM);
         stack.pop();
     }
-
-    private void bobView(MatrixStack matrices, float tickProgress) {
-        Entity var4 = mc.getCameraEntity();
-        if (var4 instanceof AbstractClientPlayerEntity abstractClientPlayerEntity) {
-            MatrixStack inverse = new MatrixStack();
-            ClientPlayerLikeState clientPlayerLikeState = abstractClientPlayerEntity.getState();
-            float f = clientPlayerLikeState.getReverseLerpedDistanceMoved(tickProgress);
-            float g = clientPlayerLikeState.lerpMovement(tickProgress);
-            inverse.multiply(RotationAxis.POSITIVE_X.rotationDegrees(
-                    -Math.abs(MathHelper.cos((double) (f * 3.1415927F - 0.2F)) * g) * 5.0F));
-            inverse.multiply(
-                    RotationAxis.POSITIVE_Z.rotationDegrees(-MathHelper.sin((double) (f * 3.1415927F)) * g * 3.0F));
-            inverse.translate(
-                    -MathHelper.sin((double) (f * 3.1415927F)) * g * 0.5F,
-                    Math.abs(MathHelper.cos((double) (f * 3.1415927F)) * g),
-                    0.0F);
-            // 将 inverse 矩阵乘入当前矩阵栈
-            matrices.multiplyPositionMatrix(inverse.peek().getPositionMatrix());
-        }
-    }
-
-    private void fogView(MatrixStack matrices, float tickProgress) {}
 }

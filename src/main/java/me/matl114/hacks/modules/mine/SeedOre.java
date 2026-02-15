@@ -410,14 +410,14 @@ public class SeedOre extends BaseModule {
 
             for (Map.Entry<Ore, Set<Vec3d>> oreRenders : chunk.entrySet()) {
                 if (oreRenders.getKey().active.getOriginValue() == Boolean.TRUE) {
-                    RenderUtils.setAsCurrentShaderColor(oreRenders.getKey().color, 1.0F);
+                    Color color = oreRenders.getKey().color;
                     for (Vec3d pos : oreRenders.getValue()) {
                         Vec3d centerPos = BlockPos.ofFloored(pos).toCenterPos();
 
                         // event.renderer.boxLines(pos.x, pos.y, pos.z, pos.x + 1, pos.y + 1, pos.z + 1,
                         // oreRenders.getKey().color, 0);
                         RenderUtils.drawOutlinedBox(
-                                event, centerPos.add(RenderTasks.FROM), centerPos.add(RenderTasks.TO));
+                                event, centerPos.add(RenderTasks.FROM), centerPos.add(RenderTasks.TO), color);
                     }
                 }
             }

@@ -168,7 +168,9 @@ public class SlimefunModels extends BaseModule {
                     Identifier fullPathId = new Identifier(realNamespace, realPath);
                     Debug.info("load custom slimefun item model:", fullPathId);
                     String[] splits = realPath.split("/");
-                    customItemModels.put(splits[splits.length - 1].toUpperCase(Locale.ROOT), fullPathId);
+                    customItemModels.put(
+                            splits[splits.length - 1].toUpperCase(Locale.ROOT),
+                            RenderListener.wrapAsModModel(fullPathId));
                     id.add(fullPathId);
                 });
             } else {
