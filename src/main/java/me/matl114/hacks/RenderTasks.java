@@ -434,12 +434,16 @@ public class RenderTasks {
     @Getter
     public static SleepMode sleepMode;
 
+    @Getter
+    public static CustomOverlay customOverlay;
+
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         entityESP = new EntityESP().register(m);
         playerLog = new PlayerLog().register(m);
         projectileESP = new ProjectileESP().register(m);
         sleepMode = new SleepMode().register(m);
+        customOverlay = new CustomOverlay().register(m);
     }
 
     static {

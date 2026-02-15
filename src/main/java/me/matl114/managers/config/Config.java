@@ -1,5 +1,6 @@
 package me.matl114.managers.config;
 
+import com.google.common.base.Preconditions;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -439,6 +440,14 @@ public class Config implements RefMap {
         }
 
         public SettingBuilder<T> validator(Predicate<T> va) {
+            // validate default value
+            Preconditions.checkArgument(
+                    va.test(this.defaultValue.orElse(null)),
+                    "config default value validation failure: {0}",
+                    String.join(".", this.path));
+            // validate current value
+            Preconditions.checkArgument(
+                    va.test(getRef().getValue()), "config value validation failure: {0}", String.join(".", this.path));
             getRef().addValidator(va);
             return this;
         }

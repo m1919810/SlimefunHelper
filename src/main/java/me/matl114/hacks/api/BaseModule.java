@@ -272,12 +272,12 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
         }
 
         public WrapperSettingBuilder<W> validator(Predicate<W> va) {
-            getRef().addValidator(new NamedPredicate<>(this.module, va, REASON_VALIDATOR));
+            super.validator(new NamedPredicate<>(this.module, va, REASON_VALIDATOR));
             return this;
         }
 
         public WrapperSettingBuilder<W> updateListener(Consumer<W> va) {
-            getRef().addUpdateListenerWithUpdate(new NamedConsumer<>(this.module, va, REASON_UPDATE_LISTENER));
+            super.updateListener(new NamedConsumer<>(this.module, va, REASON_UPDATE_LISTENER));
             return this;
         }
 

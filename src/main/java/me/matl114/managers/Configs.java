@@ -3,6 +3,7 @@ package me.matl114.managers;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -10,6 +11,7 @@ import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.ConfigLoader;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 public class Configs {
     // todo add schema for config
@@ -100,6 +102,15 @@ public class Configs {
             JsonParser.parseString(x);
             return true;
         } catch (JsonParseException | NullPointerException pse) {
+            return false;
+        }
+    };
+
+    public static final Predicate<String> IDENTIFIER_VALIDATOR = x -> {
+        try {
+            Objects.requireNonNull(Identifier.tryParse(x));
+            return true;
+        } catch (Throwable e) {
             return false;
         }
     };

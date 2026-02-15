@@ -15,7 +15,19 @@ public class ColorUtils {
         return new Color((color.getRGB() & 0x00FFFFFF) | (alpha << 24), true);
     }
 
+    public static int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | (alpha << 24);
+    }
+
     public static Color withAlpha(Color color, float alpha) {
         return withAlpha(color, (int) (alpha * 255));
+    }
+
+    public static int withAlpha(int color, float alpha) {
+        return withAlpha(color, (int) (alpha * 255.0F));
+    }
+
+    public static int orWithAlpha(int color, int alpha) {
+        return (color & 0XFF000000) == 0 ? withAlpha(color, alpha) : color;
     }
 }

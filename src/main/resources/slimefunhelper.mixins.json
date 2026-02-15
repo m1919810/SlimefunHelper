@@ -68,6 +68,7 @@
 		"hack.PlayerEntityMixin",
 		"hack.PlayerInteractionMixin",
 		"hack.SlimeBlockMixin",
+		"hack.SplashOverlayMixin",
 		"hack.VillagerTradeScreenMixin",
 		"hack.WorldRenderMixin",
 		"render.EditBoxWidgetMixin",
