@@ -12,6 +12,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.gui.screen.Screen;
@@ -157,18 +158,27 @@ public class FastCraft extends BaseModule {
 
         ExecutableWidget putLastRecipeButton = ExecutableWidget.instance(120, screen.height / 2 - 25, 24, 12)
                 .setElementHandler(new ButtonElement(
-                        TextProvider.of(Text.literal("合成")),
-                        ButtonAction.run(() -> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown()))))
+                                TextProvider.of(Text.translatable("widget.fast-craft.craft")),
+                                ButtonAction.run(() -> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown())))
+                        .withTooltips(TooltipHandler.of(
+                                ChatUtils.parseTooltipsTranslation("widget.fast-craft.craft.tooltips", ""))))
                 .addToSub(recipeSubScreen);
 
         ExecutableWidget toggleLockRecipeButton = ExecutableWidget.instance(95, screen.height / 2 - 25, 24, 12)
-                .setElementHandler(
-                        new ButtonElement(TextProvider.of(Text.literal("锁")), ButtonAction.run(this::toggleRecipeLock)))
+                .setElementHandler(new ButtonElement(
+                                TextProvider.of(Text.translatable("widget.fast-craft.lock")),
+                                ButtonAction.run(this::toggleRecipeLock))
+                        .withTooltips(TooltipHandler.of(
+                                ChatUtils.parseTooltipsTranslation("widget.fast-craft.lock.tooltips", ""))))
                 .addToSub(recipeSubScreen);
         Runnable toggle = TaskManagers.getToggleTask(TOGGLE_DROP_CRAFT);
 
         ExecutableWidget toggleDropButton = ExecutableWidget.instance(120, screen.height / 2 - 72, 24, 12)
-                .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("喷射")), ButtonAction.run(toggle)))
+                .setElementHandler(new ButtonElement(
+                                TextProvider.of(Text.translatable("widget.fast-craft.toggle-drop")),
+                                ButtonAction.run(toggle))
+                        .withTooltips(TooltipHandler.of(
+                                ChatUtils.parseTooltipsTranslation("widget.fast-craft.toggle-drop.tooltips", ""))))
                 .addToSub(recipeSubScreen);
         // todo: fix coordinates here
         DrawableWidget itemDisplay = DisplayWidget.instance(150, access.getScreenY() + 56, 18, 18)
@@ -196,18 +206,27 @@ public class FastCraft extends BaseModule {
 
         ExecutableWidget putLastRecipeButton = ExecutableWidget.instance(150, screen.height / 2 - 38, 24, 12)
                 .setElementHandler(new ButtonElement(
-                        TextProvider.of(Text.literal("合成")),
-                        ButtonAction.run(() -> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown()))))
+                                TextProvider.of(Text.translatable("widget.fast-craft.craft")),
+                                ButtonAction.run(() -> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown())))
+                        .withTooltips(TooltipHandler.of(
+                                ChatUtils.parseTooltipsTranslation("widget.fast-craft.craft.tooltips", ""))))
                 .addToSub(recipeSubScreen);
 
         ExecutableWidget toggleLockRecipeButton = ExecutableWidget.instance(150, screen.height / 2 - 25, 24, 12)
-                .setElementHandler(
-                        new ButtonElement(TextProvider.of(Text.literal("锁")), ButtonAction.run(this::toggleRecipeLock)))
+                .setElementHandler(new ButtonElement(
+                                TextProvider.of(Text.translatable("widget.fast-craft.lock")),
+                                ButtonAction.run(this::toggleRecipeLock))
+                        .withTooltips(TooltipHandler.of(
+                                ChatUtils.parseTooltipsTranslation("widget.fast-craft.lock.tooltips", ""))))
                 .addToSub(recipeSubScreen);
         Runnable toggle = TaskManagers.getToggleTask(TOGGLE_DROP_CRAFT);
 
         ExecutableWidget toggleDropButton = ExecutableWidget.instance(150, screen.height / 2 - 72, 24, 12)
-                .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("喷射")), ButtonAction.run(toggle)))
+                .setElementHandler(new ButtonElement(
+                                TextProvider.of(Text.translatable("widget.fast-craft.toggle-drop")),
+                                ButtonAction.run(toggle))
+                        .withTooltips(TooltipHandler.of(
+                                ChatUtils.parseTooltipsTranslation("widget.fast-craft.toggle-drop.tooltips", ""))))
                 .addToSub(recipeSubScreen);
 
         DrawableWidget itemDisplay = DisplayWidget.instance(132, access.getScreenY() + 55, 18, 18)

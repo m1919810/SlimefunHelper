@@ -25,6 +25,7 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtInt;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.*;
@@ -206,11 +207,17 @@ public class ItemStackUtils {
         return DelegateRegistryWrapperLookup.INSTANCE;
     }
 
+    private static DynamicRegistryManager cachedRegistry;
+
     @Nonnull
     public static DynamicRegistryManager registry() {
         if (mc.getNetworkHandler() != null) {
-            return mc.getNetworkHandler().getRegistryManager();
+            return cachedRegistry = mc.getNetworkHandler().getRegistryManager();
         } else {
+            // when asking registry() offline, just return the cache value
+            if (cachedRegistry != null) {
+                return cachedRegistry;
+            }
             if (staticRegistry == null) {
                 staticRegistry = ClientDynamicRegistryType.createCombinedDynamicRegistries()
                         .getCombinedRegistryManager();

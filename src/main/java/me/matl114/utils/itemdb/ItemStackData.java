@@ -102,6 +102,16 @@ public interface ItemStackData {
         }
     }
 
+    public static ItemStackData wrapAsData(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return EMPTY;
+        } else {
+            stack = stack.copyWithCount(1);
+            JsonElement element = serialize(stack);
+            return new DataSource(element, stack);
+        }
+    }
+
     public static final ItemStackData EMPTY = new ItemStackData() {
 
         @Override
@@ -152,6 +162,13 @@ public interface ItemStackData {
 
         public DataSource(@Nonnull JsonElement jsonRaw) {
             this.jsonRaw = jsonRaw;
+        }
+
+        private DataSource(@Nonnull JsonElement jsonRaw, ItemStack itemStack) {
+            this.jsonRaw = jsonRaw;
+            this.stack = itemStack;
+            this.resolve = true;
+            this.valid = true;
         }
 
         @Override

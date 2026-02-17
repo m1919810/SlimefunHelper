@@ -248,8 +248,10 @@
 	"move-speed.sprint.all-direction-sprint.tooltips": "按住向后行走键时也可以疾跑\u000A尽量打开疾跑切换按钮或者自动疾跑",
 	"move-speed.timer": "运动加速齿轮",
 	"move-speed.timer.tooltips": "仅加速玩家的运动刻\u000A用于一些少见的绕过",
-	"move-safety.unbreakable-elytra": "无限鞘翅",
-	"move-safety.unbreakable-elytra.tooltips": "让你使用鞘翅且不掉耐久\u000A在GrimAC服务器中可能会损失部分动量",
+	"elytra.unbreakable-elytra.enable": "无限鞘翅:启用",
+	"elytra.unbreakable-elytra.enable.tooltips": "让你使用鞘翅且不掉耐久\u000A在GrimAC服务器中可能会损失部分动量",
+	"elytra.unbreakable-elytra.period": "无限鞘翅:刷新率",
+	"elytra.unbreakable-elytra.delay": "无限鞘翅:停止飞行时间",
 	"proxy-server.host": "代理服务器",
 	"proxy-server.port": "代理端口",
 	"proxy-server.enable": "启用代理",
@@ -397,6 +399,7 @@
 	"config.index.quick-buttons": "便捷按钮设置",
 	"config.index.quick-move": "瞬移模块",
 	"config.index.move-safety": "移动安全性模块",
+	"config.index.elytra": "鞘翅模块",
 	"config.index.move-distance": "移动距离参数",
 	"config.index.move-speed": "移动速度参数",
 	"config.index.proxy-server": "网络代理模块",
@@ -429,5 +432,12 @@
 	"widget.fast-trade.toggle-drop.tooltips" : "切换喷射模式",
 	"widget.fast-trade.trade-info.0": "右键物品以打开物品编辑器",
 	"widget.fast-trade.trade-info.1": "交易信息",
-	"widget.fast-trade.no-select": "暂无选中交易"
+	"widget.fast-trade.no-select": "暂无选中交易",
+	"widget.fast-trade.trade-info.max-trade": "- §7最大交易数: §a%s",
+	"widget.fast-trade.trade-info.current-trade": "- §7当前交易数: §a%s",
+	"widget.fast-trade.trade-info.default-count": "- §7默认数量: §a%s",
+	"widget.fast-trade.trade-info.price-multiplier": "- §7价格倍率: §a%s",
+	"widget.fast-trade.trade-info.demand-bonus": "- §7需求奖励: §a%s",
+	"widget.fast-trade.trade-info.special-price": "- §7基准价格: §a%s"
+	
 }

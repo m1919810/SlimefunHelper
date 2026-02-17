@@ -277,7 +277,10 @@ public class ItemCache {
     public Pair<String, ItemStackData> getOrRegisterItem(ItemStackData stackData) {
         Pair<String, ItemStackData> pair = byItem.get(stackData);
         if (pair == null) {
-            return registerInternal(stackData);
+            return registerInternal(
+                    stackData instanceof ItemStackData.DataSource dataSource
+                            ? dataSource
+                            : ItemStackData.wrapAsData(stackData.getItemStack()));
         } else {
             markForReference(pair.getFirst());
             return pair;
@@ -288,7 +291,7 @@ public class ItemCache {
         ItemStackData stackData = ItemStackData.wrapRaw(stack);
         Pair<String, ItemStackData> pair = byItem.get(stackData);
         if (pair == null) {
-            stackData = ItemStackData.wrapCopy(stack);
+            stackData = ItemStackData.wrapAsData(stack);
             return registerInternal(stackData);
         } else {
             markForReference(pair.getFirst());
