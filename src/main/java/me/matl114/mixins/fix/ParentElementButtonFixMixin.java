@@ -1,6 +1,6 @@
 package me.matl114.mixins.fix;
 
-import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
+import me.matl114.accessors.gui.CustomFocusBehaviourScreenAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.Element;
@@ -24,7 +24,7 @@ public interface ParentElementButtonFixMixin {
         if (!returnValue) {
             // Debug.info("miss!");
             Element defaultVal = null;
-            if (((ParentElement) ((Object) this)) instanceof ButtonNotFocusedScreenAccess access) {
+            if (((ParentElement) ((Object) this)) instanceof CustomFocusBehaviourScreenAccess access) {
                 // force=!access.doKeepButtonWhenClicked();
                 defaultVal = access.getDefaultElement();
             }

@@ -117,11 +117,12 @@ public class RecipeDatabase extends BaseModule {
     @Getter
     boolean loaded = false;
 
-    public void ensureLoaded() {
+    public boolean ensureLoaded() {
         if (!loaded) {
             // trigger load
-            InvTasks.getCustomItemDatabase().getAccess();
+            return InvTasks.getCustomItemDatabase().checkAccess();
         }
+        return true;
     }
 
     private static final String RECIPE_FILE = "sfhelper-configs/recipes/recipe-data.json";
@@ -240,13 +241,11 @@ public class RecipeDatabase extends BaseModule {
     }
 
     public void putSlimefunEntry(SlimefunRecipeEntry entry) {
-        ensureLoaded();
-        putInternal(entry);
+        if (ensureLoaded()) putInternal(entry);
     }
 
     public void validateRecipeType(String rid, ItemStack icon) {
-        ensureLoaded();
-        putRecipeType(rid, icon);
+        if (ensureLoaded()) putRecipeType(rid, icon);
     }
 
     private static final Set<?> SCREEN_TYPES = Set.of(
@@ -308,41 +307,42 @@ public class RecipeDatabase extends BaseModule {
 
             if (id != null) {
                 boolean shouldUpdate = false;
-                ensureLoaded();
+                if (ensureLoaded()) {
+                    if (id2Recipe.containsKey(id)) {
 
-                if (id2Recipe.containsKey(id)) {
-
-                    // 存在这个,
-                    SlimefunRecipeEntry entry = id2Recipe.get(id);
-                    if (entry.output().isEmpty() && !slots.get(16).getStack().isEmpty()) {
-                        shouldUpdate = true;
-                    } else if (lockExistingData.get()) {
-                        shouldUpdate = false;
-                    } else {
-                        ItemStack[] ingredient = entry.inputs();
-                        if (ingredient.length == 9) {
-                            for (int i = 0; i < 9; ++i) {
-                                ItemStack stackI = slots.get(recipeSlots[i]).getStack();
-                                // if it is lock, return immediately
-                                if (isLockedItem(stackI)) return;
-                                if (!ItemStackUtils.matchItemWithoutLore(ingredient[i], stackI)) {
-                                    shouldUpdate = true;
-                                    break;
-                                }
-                            }
-                            // 都是相同的,不进行update
-                        } else {
+                        // 存在这个,
+                        SlimefunRecipeEntry entry = id2Recipe.get(id);
+                        if (entry.output().isEmpty()
+                                && !slots.get(16).getStack().isEmpty()) {
                             shouldUpdate = true;
+                        } else if (lockExistingData.get()) {
+                            shouldUpdate = false;
+                        } else {
+                            ItemStack[] ingredient = entry.inputs();
+                            if (ingredient.length == 9) {
+                                for (int i = 0; i < 9; ++i) {
+                                    ItemStack stackI = slots.get(recipeSlots[i]).getStack();
+                                    // if it is lock, return immediately
+                                    if (isLockedItem(stackI)) return;
+                                    if (!ItemStackUtils.matchItemWithoutLore(ingredient[i], stackI)) {
+                                        shouldUpdate = true;
+                                        break;
+                                    }
+                                }
+                                // 都是相同的,不进行update
+                            } else {
+                                shouldUpdate = true;
+                            }
                         }
+                    } else {
+                        for (int i = 0; i < 9; ++i) {
+                            ItemStack stackI = slots.get(recipeSlots[i]).getStack();
+                            // if it is lock, return immediately
+                            if (isLockedItem(stackI)) return;
+                        }
+                        // 不存在这个
+                        shouldUpdate = true;
                     }
-                } else {
-                    for (int i = 0; i < 9; ++i) {
-                        ItemStack stackI = slots.get(recipeSlots[i]).getStack();
-                        // if it is lock, return immediately
-                        if (isLockedItem(stackI)) return;
-                    }
-                    // 不存在这个
-                    shouldUpdate = true;
                 }
                 if (shouldUpdate) {
                     ItemStack rtypeIcon = slots.get(10).getStack();
@@ -380,33 +380,35 @@ public class RecipeDatabase extends BaseModule {
     }
 
     public CraftingType getCraftType(String rid) {
-        ensureLoaded();
-        return id2CraftType.get(rid);
+        if (ensureLoaded()) return id2CraftType.get(rid);
+        return null;
     }
 
     public SlimefunRecipeEntry getRecipeEntry(String id) {
-        ensureLoaded();
-        return id2Recipe.get(id);
+        if (ensureLoaded()) return id2Recipe.get(id);
+        return null;
     }
 
     public Map<String, CraftingType> getId2CraftType() {
-        ensureLoaded();
-        return Collections.unmodifiableMap(id2CraftType);
+        if (ensureLoaded()) {
+            return Collections.unmodifiableMap(id2CraftType);
+        }
+        return Map.of();
     }
 
     public Map<String, SlimefunRecipeEntry> getId2Recipe() {
-        ensureLoaded();
-        return Collections.unmodifiableMap(id2Recipe);
+        if (ensureLoaded()) return Collections.unmodifiableMap(id2Recipe);
+        return Map.of();
     }
 
     public Map<String, MultiBlockEntry> getMultiBlockRegistry() {
-        ensureLoaded();
-        return Collections.unmodifiableMap(multiBlockRegistry);
+        if (ensureLoaded()) return Collections.unmodifiableMap(multiBlockRegistry);
+        return Map.of();
     }
 
     public Set<MultiBlockEntry> getPotentialMultiBlocks(Block block) {
-        ensureLoaded();
-        return multiBlockIndexedByBlockPotentials.getOrDefault(block, Set.of());
+        if (ensureLoaded()) return multiBlockIndexedByBlockPotentials.getOrDefault(block, Set.of());
+        return Set.of();
     }
 
     public static final ItemStack ITEM_NULL_TYPE = new ItemStack(Items.BARRIER);

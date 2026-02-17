@@ -64,7 +64,7 @@ public class ChatTasks {
     public static ChatExtra chatExtra;
 
     @Getter
-    public static AutoChat autoChat;
+    public static ChatTools chatTools;
 
     @Getter
     public static ClientSideCommand clientSideCommand;
@@ -78,7 +78,7 @@ public class ChatTasks {
     private static void initModules(ModuleManager m) {
         chatExtra = new ChatExtra().register(m);
 
-        autoChat = new AutoChat().register(m);
+        chatTools = new ChatTools().register(m);
 
         clientSideCommand = new ClientSideCommand().register(m);
 
@@ -937,6 +937,13 @@ public class ChatTasks {
                         sendMessage(var1, Text.literal("找不到实体或者玩家: " + var).formatted(Formatting.RED));
                         return;
                     }
+                }
+                case "pos" -> {
+                    pos = resolveCoord(var1, re.next(), re.next(), re.next());
+                }
+                case "special" -> {
+                    String specialType = re.nextNonnull();
+                    pos = specialPositions(specialType, var1);
                 }
                 case "clear" -> {
                     mark = null;

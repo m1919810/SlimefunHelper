@@ -2,8 +2,7 @@ package me.matl114.mixins.render;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
-import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
+import me.matl114.accessors.gui.CustomFocusBehaviourScreenAccess;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.DisplayWidget;
 import net.fabricmc.api.EnvType;
@@ -104,7 +103,7 @@ public abstract class ScreenMixin extends AbstractParentElement implements Scree
         Element focused = super.getFocused();
         //  Debug.info("getFocused called");
         if (focused == null
-                && (Object) this instanceof ButtonNotFocusedScreenAccess access
+                && (Object) this instanceof CustomFocusBehaviourScreenAccess access
                 && access.autoSelectDefaultElementWhenNotFocused()
                 && (focused = access.getDefaultElement()) != null) {
             // Debug.info("to default Value");
@@ -123,7 +122,7 @@ public abstract class ScreenMixin extends AbstractParentElement implements Scree
                             shift = At.Shift.BEFORE),
             cancellable = true)
     private void onKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (this instanceof ButtonNotFocusedScreenAccess access && !access.enableSwitchUsingKey()) {
+        if (this instanceof CustomFocusBehaviourScreenAccess access && !access.enableSwitchUsingNavigation()) {
             cir.setReturnValue(false);
         }
     }

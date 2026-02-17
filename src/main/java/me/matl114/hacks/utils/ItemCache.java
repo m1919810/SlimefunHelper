@@ -34,6 +34,7 @@ public class ItemCache {
     @Getter
     volatile boolean loaded;
 
+    private volatile boolean loading = false;
     boolean dirty = false;
     Set<String> activeIds = new LinkedHashSet<>();
     Map<String, ItemStackData> map = new LinkedHashMap<>();
@@ -65,11 +66,26 @@ public class ItemCache {
             }
             // auto getAccess if not
             // 10 sec after you enter the game, run Async
-            CompletableFuture.runAsync(this::getAccess);
+            ScheduleService.launchAsyncDelayedTask(this::getAccess, 1000);
         });
     }
     // may refer to unloaded content sometimes, so load is needed
-    public synchronized ItemCache getAccess() {
+    public boolean checkAccess() {
+        if (this.loaded) {
+            return true;
+        } else if (this.loading) {
+            return false;
+        } else {
+            try {
+                CompletableFuture.runAsync(this::getAccess);
+                return false;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+    }
+    // totally async method
+    private synchronized ItemCache getAccess() {
         if (this.loaded) {
             return this;
         } else {
@@ -84,40 +100,56 @@ public class ItemCache {
     public static final String PREFIX = "customitems:";
 
     public void load() {
-        JsonObject jsonObject;
-        lock.lock();
+        loading = true;
         try {
-            if (loaded) {
-                return;
-            }
             try {
-                String jsonStr = ConfigLoader.loadExternalJson(this.fileName);
-                jsonObject = gson.fromJson(jsonStr, JsonObject.class);
+                // check the access to registry(),
+                ItemStackUtils.registry();
             } catch (Throwable e) {
-                Debug.info("Error while loading ItemDatabase");
-                Debug.info(e);
-                loaded = false;
-                return;
+                throw new IllegalStateException("Illegal access to registry!", e);
             }
-            map = new LinkedHashMap<>();
-            map = new LinkedHashMap<>(
-                    MAP_CODEC.decode(JsonOps.INSTANCE, jsonObject).getOrThrow().getFirst());
-            dirty = false;
-            byItem = new HashMap<>();
-            map.forEach((key, value) -> {
-                byItem.put(value, Pair.of(key, value));
-            });
-            activeIds.clear();
+            JsonObject jsonObject;
+            Debug.info("Start loading item cache");
+            long startTime = System.currentTimeMillis();
+            lock.lock();
             try {
-                itemDataBaseLoad.broadcast(null);
-            } catch (Throwable e) {
-                Debug.info("Error while loading ItemDatabase");
-                Debug.info(e);
-            }
+                if (loaded) {
+                    return;
+                }
+                try {
+                    String jsonStr = ConfigLoader.loadExternalJson(this.fileName);
+                    jsonObject = gson.fromJson(jsonStr, JsonObject.class);
+                } catch (Throwable e) {
+                    Debug.info("Error while loading ItemDatabase");
+                    Debug.info(e);
+                    loaded = false;
+                    return;
+                }
+                map = new LinkedHashMap<>();
+                map = new LinkedHashMap<>(MAP_CODEC
+                        .decode(JsonOps.INSTANCE, jsonObject)
+                        .getOrThrow()
+                        .getFirst());
+                dirty = false;
+                byItem = new HashMap<>();
+                map.forEach((key, value) -> {
+                    byItem.put(value, Pair.of(key, value));
+                });
+                activeIds.clear();
+                Debug.info("Finish data loading of item cache, using", System.currentTimeMillis() - startTime, "ms");
+                try {
+                    itemDataBaseLoad.broadcast(null);
+                } catch (Throwable e) {
+                    Debug.info("Error while loading ItemDatabase");
+                    Debug.info(e);
+                }
 
-            loaded = true;
+                loaded = true;
+            } finally {
+                lock.unlock();
+            }
         } finally {
-            lock.unlock();
+            loading = false;
         }
     }
 

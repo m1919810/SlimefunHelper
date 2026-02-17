@@ -292,9 +292,11 @@ public class SleepMode extends BaseModule {
 
         if (ensureSleepingScreen()) {
             if (currentRenderingSleeping != null) {
+                shouldFreshSleepScreen = true;
                 if (shouldFreshSleepScreen) {
                     shouldFreshSleepScreen = false;
-
+                    // 清除frame
+                    RenderSystem.clear(16640, MinecraftClient.IS_SYSTEM_MAC);
                     int i = (int) (mc.mouse.getX()
                             * (double) mc.getWindow().getScaledWidth()
                             / (double) mc.getWindow().getWidth());

@@ -97,6 +97,16 @@ public class ScreenUtils {
         return Screen.hasShiftDown();
     }
 
+    public static boolean hasCtrlDown() {
+        return Screen.hasControlDown();
+    }
+
+    public static boolean hasEnterDown() {
+        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 257)
+                || InputUtil.isKeyPressed(
+                        MinecraftClient.getInstance().getWindow().getHandle(), 355);
+    }
+
     public static boolean isToggle(int keyCode) {
         return keyCode == 257 || keyCode == 32 || keyCode == 335;
     }

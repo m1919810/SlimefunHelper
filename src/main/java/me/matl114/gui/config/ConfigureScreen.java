@@ -1,14 +1,11 @@
 package me.matl114.gui.config;
 
-import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
 import me.matl114.gui.GenericScreen;
 import me.matl114.managers.config.Config;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Element;
 import net.minecraft.text.Text;
-import org.spongepowered.asm.mixin.Unique;
 
-public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedScreenAccess {
+public class ConfigureScreen extends GenericScreen {
     private Config config;
     //    private HashMap<String,Object> originValue;
     // private HashMap<String,Object> values;
@@ -107,16 +104,6 @@ public class ConfigureScreen extends GenericScreen implements ButtonNotFocusedSc
         //            config.setValueNoNew(originValue.get(value),Config.cutToPath(value));
         //        }
         //        config.save();
-    }
-
-    @Unique
-    public Element getDefaultElement() {
-        return null;
-    }
-
-    @Unique
-    public boolean doFocusButtonWhenClicked() {
-        return false;
     }
 
     public void saveEntryToValues() {

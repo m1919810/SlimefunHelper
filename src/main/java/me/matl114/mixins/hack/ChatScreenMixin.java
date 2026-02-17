@@ -3,11 +3,12 @@ package me.matl114.mixins.hack;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.accessors.access.ChatScreenAccess;
-import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
+import me.matl114.accessors.gui.CustomFocusBehaviourScreenAccess;
 import me.matl114.hacks.ChatTasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -19,13 +20,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ChatScreen.class)
-public abstract class ChatScreenMixin extends Screen implements ButtonNotFocusedScreenAccess, ChatScreenAccess {
+public abstract class ChatScreenMixin extends Screen implements CustomFocusBehaviourScreenAccess, ChatScreenAccess {
     @Shadow
     public abstract void sendMessage(String chatText, boolean addToHistory);
 
@@ -34,6 +33,15 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
 
     @Shadow
     private int messageHistoryIndex;
+
+    @Unique
+    public void resetMessageHistoryIndex() {
+        messageHistoryIndex = MinecraftClient.getInstance()
+                .inGameHud
+                .getChatHud()
+                .getMessageHistory()
+                .size();
+    }
 
     public TextFieldWidget getInputWidget() {
         return chatField;
@@ -65,32 +73,10 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     }
 
     @Unique
-    public boolean doFocusButtonWhenClicked() {
+    public boolean canFocusButtonWhenClicked() {
         return false;
     }
     // resize
-
-    // keep-inv and save config when send
-    @Inject(
-            method = "keyPressed",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/client/gui/screen/ChatScreen;sendMessage(Ljava/lang/String;Z)V",
-                            shift = At.Shift.AFTER),
-            cancellable = true)
-    private void onCancelCloseScreenAfterSend(
-            int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (ChatTasks.getChatExtra().keepChatInv.get()) {
-            // FIX: reset history index so pgup pgdown can work correctly
-            messageHistoryIndex = MinecraftClient.getInstance()
-                    .inGameHud
-                    .getChatHud()
-                    .getMessageHistory()
-                    .size();
-            cir.setReturnValue(true);
-        }
-    }
 
     // warn: do not cancel normalize, conflict with other mods
     @Redirect(method = "normalize", at = @At(value = "INVOKE", target = "Ljava/lang/String;trim()Ljava/lang/String;"))
@@ -127,5 +113,23 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
             return StringHelper.truncateChat(text);
         }
         return text;
+    }
+
+    @WrapOperation(
+            method = "render",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/widget/TextFieldWidget;render(Lnet/minecraft/client/gui/DrawContext;IIF)V"))
+    private void onRender(
+            TextFieldWidget instance, DrawContext context, int x, int y, float v, Operation<Void> original) {
+        if (ChatTasks.getChatExtra().obfLogin.get()) {
+            if (!ChatTasks.getChatExtra().onChatObfRender(instance, context, x, y, v)) {
+                original.call(instance, context, x, y, v);
+            }
+        } else {
+            original.call(instance, context, x, y, v);
+        }
     }
 }

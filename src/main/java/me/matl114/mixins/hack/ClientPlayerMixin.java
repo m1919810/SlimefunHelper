@@ -276,6 +276,10 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         this.lastSneaking = !this.isSneaking();
     }
 
+    public void resyncOnGround() {
+        this.lastOnGround = !this.isOnGround();
+    }
+
     public void resyncPos() {
         this.lastX = 0;
         this.lastZ = 0;

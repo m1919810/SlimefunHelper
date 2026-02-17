@@ -7,6 +7,8 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 public interface ChatScreenAccess extends ScreenAccess {
     public TextFieldWidget getInputWidget();
 
+    public void resetMessageHistoryIndex();
+
     static ChatScreenAccess of(ChatScreen screen) {
         return (ChatScreenAccess) screen;
     }

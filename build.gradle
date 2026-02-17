@@ -161,7 +161,9 @@ jar {
 
 }
 tasks.named("runClient", JavaExec) {
-	jvmArgs("-XX:+AllowEnhancedClassRedefinition", "-XX:-OmitStackTraceInFastThrow")
+	jvmArgs("-XX:+AllowEnhancedClassRedefinition", "-XX:-OmitStackTraceInFastThrow"
+			//, "-Dmixin.debug.export=true"
+	)
 }
 //
 //tasks.named('downloadAssets', JavaExec) {

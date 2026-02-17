@@ -109,7 +109,9 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     }
 
     @Override
-    public void fill(int x1, int y1, int x2, int y2, int z, int color) {}
+    public void fill(int x1, int y1, int x2, int y2, int z, int color) {
+        this.drawContext.fill(x1, y1, x2, y2, z, color);
+    }
 
     private void addInternal(Runnable runnable) {
         if (this.delayedDrawing != null) {

@@ -21,6 +21,8 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
     public void resyncSprint();
 
     public void resyncSneak();
+
+    public void resyncOnGround();
     //    public void resyncPos();
     //    public void resyncRot();
     //    public void syncLocationPackets();

@@ -446,7 +446,7 @@ public class Config implements RefMap {
                     "config default value validation failure: {0}",
                     String.join(".", this.path));
             // validate current value
-            if(!va.test(getRef().getValue())){
+            if (!va.test(getRef().getValue())) {
                 getRef().setValue(this.defaultValue.orElse(null));
             }
             getRef().addValidator(va);
