@@ -9,7 +9,6 @@ import me.matl114.gui.basic.*;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.modules.inv.FastCraft;
 import me.matl114.managers.TaskManagers;
-import me.matl114.utils.ChatUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
@@ -29,7 +28,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
     private static final int TRADE_ICON_HEIGHT = 9;
     private static final Identifier TRADE_ARROW_OUT_OF_STOCK_TEXTURE =
             Identifier.ofVanilla("container/villager/out_of_stock");
-    private static final Identifier TRADE_ARROW_TEXTURE = new Identifier("slimefunhelper", "trade_arrow");
+    private static final Identifier TRADE_ARROW_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/trade_arrow");
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     private MerchantScreen screen;
 
@@ -89,7 +88,10 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                 .addToSub(this);
         DisplayWidget.instance(2 * (SLOT_WIDTH + 2), 5, TRADE_ICON_WIDTH, TRADE_ICON_HEIGHT)
                 .setRenderHandler(IconElement.statedGuiPredicate(
-                                TRADE_ARROW_TEXTURE, TRADE_ARROW_OUT_OF_STOCK_TEXTURE, ButtonAction.empty(), (el) -> {
+                                TRADE_ARROW_TEXTURE_SPRITE,
+                                TRADE_ARROW_OUT_OF_STOCK_TEXTURE,
+                                ButtonAction.empty(),
+                                (el) -> {
                                     var trade = getCurrentTrade();
                                     return trade != null && !trade.isDisabled();
                                 })
@@ -103,14 +105,22 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                             builder.add(Text.translatable("widget.fast-trade.trade-info.1")
                                     .formatted(Formatting.GREEN));
                             builder.add(Text.literal("------------------").formatted(Formatting.GREEN));
-                            builder.add(ChatUtils.stringToText("- &7最大交易数: &a%d".formatted(trade.getMaxUses())));
-                            builder.add(ChatUtils.stringToText("- &7当前交易数: &a%d".formatted(trade.getUses())));
-                            builder.add(ChatUtils.stringToText("- &7默认数量: &a%d"
-                                    .formatted(trade.getFirstBuyItem().count())));
-                            builder.add(
-                                    ChatUtils.stringToText("- &7价格倍率: &a%.2f".formatted(trade.getPriceMultiplier())));
-                            builder.add(ChatUtils.stringToText("- &7需求奖励: &a%d".formatted(trade.getDemandBonus())));
-                            builder.add(ChatUtils.stringToText("- &7基准价格: &a%d".formatted(trade.getSpecialPrice())));
+                            builder.add(Text.translatable(
+                                    "widget.fast-trade.trade-info.max-trade", String.valueOf(trade.getMaxUses())));
+                            builder.add(Text.translatable(
+                                    "widget.fast-trade.trade-info.current-trade", String.valueOf(trade.getUses())));
+                            builder.add(Text.translatable(
+                                    "widget.fast-trade.trade-info.default-count",
+                                    String.valueOf(trade.getFirstBuyItem().count())));
+                            builder.add(Text.translatable(
+                                    "widget.fast-trade.trade-info.price-multiplier",
+                                    "%.2f".formatted(trade.getPriceMultiplier())));
+                            builder.add(Text.translatable(
+                                    "widget.fast-trade.trade-info.demand-bonus",
+                                    String.valueOf(trade.getDemandBonus())));
+                            builder.add(Text.translatable(
+                                    "widget.fast-trade.trade-info.special-price",
+                                    String.valueOf(trade.getSpecialPrice())));
                             return builder.build();
                         }))
                         .withPresentCondition(this::active))

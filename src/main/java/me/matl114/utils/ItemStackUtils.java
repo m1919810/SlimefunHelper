@@ -218,11 +218,17 @@ public class ItemStackUtils {
         return DelegateRegistryWrapperLookup.INSTANCE;
     }
 
+    private static DynamicRegistryManager cachedRegistry;
+
     @Nonnull
     public static DynamicRegistryManager registry() {
         if (mc.getNetworkHandler() != null) {
-            return mc.getNetworkHandler().getRegistryManager();
+            return cachedRegistry = mc.getNetworkHandler().getRegistryManager();
         } else {
+            // when asking registry() offline, just return the cache value
+            if (cachedRegistry != null) {
+                return cachedRegistry;
+            }
             if (staticRegistry == null) {
                 staticRegistry = ClientDynamicRegistryType.createCombinedDynamicRegistries()
                         .getCombinedRegistryManager();

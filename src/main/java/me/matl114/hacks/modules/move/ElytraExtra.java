@@ -6,6 +6,7 @@ import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -17,12 +18,26 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 
 public class ElytraExtra extends BaseModule {
-    public static final String[] MOVE_UNBREAKABLE_ELYTRA = {"move-safety", "unbreakable-elytra"};
+    public static final String[] MOVE_UNBREAKABLE_ELYTRA = {"elytra", "unbreakable-elytra", "enable"};
+
+    public static final String[] MOVE_ELYTRA_CHECK_PREIOD = {"elytra", "unbreakable-elytra", "period"};
+
+    public static final String[] MOVE_ELYTRA_DELAY = {"elytra", "unbreakable-elytra", "delay"};
 
     public ElytraExtra() {}
 
     public final FlagRef enableUnbreakableElytra =
             flagBuilder(Configs.MOV_CONFIG, MOVE_UNBREAKABLE_ELYTRA).build();
+
+    public final IntRef period = builder(Configs.MOV_CONFIG, MOVE_ELYTRA_CHECK_PREIOD, IntRef.TYPE)
+            .defaultValue(16)
+            .validator(Configs.INT_POSITIVE)
+            .build();
+
+    public final IntRef delay = builder(Configs.MOV_CONFIG, MOVE_ELYTRA_DELAY, IntRef.TYPE)
+            .defaultValue(3)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
     @Override
     public void registerAll() {
@@ -40,7 +55,7 @@ public class ElytraExtra extends BaseModule {
     private int fakeGlidePoseTime = 0;
 
     public void runElytraUnbreakable(Event<Integer> tickEvent) {
-        if (enableUnbreakableElytra.get() && tickEvent.context() >= 18) {
+        if (enableUnbreakableElytra.get() && tickEvent.context() >= period.get()) {
             fakeGlideTime += 1;
             fakeGlidePoseTime += 1;
             if (mc.player != null && mc.player.isFallFlying()) {
@@ -60,7 +75,7 @@ public class ElytraExtra extends BaseModule {
                             //                    Debug.info("not glide anymore");
                         }
                     },
-                    3);
+                    delay.get());
 
             tickEvent.context(0);
         }

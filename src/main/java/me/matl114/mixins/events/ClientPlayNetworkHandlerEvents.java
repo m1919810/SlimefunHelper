@@ -45,6 +45,9 @@ public abstract class ClientPlayNetworkHandlerEvents {
         }
     }
 
+    @Unique
+    boolean escapeSendEvent = false;
+
     @Inject(method = "sendChatCommand", at = @At("HEAD"), cancellable = true)
     private void onChat0(String command, CallbackInfo ci, @Local(argsOnly = true) LocalRef<String> commandRef) {
         String chatContent = "/" + command;
@@ -54,17 +57,29 @@ public abstract class ClientPlayNetworkHandlerEvents {
             ci.cancel();
             return;
         }
-        if (value.context() == null || value.context().isEmpty()) {
+        String valueChange = value.context();
+        if (valueChange == null || valueChange.isEmpty()) {
             ci.cancel();
             return;
         }
-        if (!Objects.equals(chatContent, value.context())) {
-            commandRef.set(value.context());
+        if (!Objects.equals(chatContent, valueChange)) {
+            if (valueChange.startsWith("/")) {
+                commandRef.set(valueChange.substring(1));
+            } else {
+                // change a command to a chat message
+                ci.cancel();
+                escapeSendEvent = true;
+                sendChatMessage(valueChange);
+            }
         }
     }
 
     @Inject(method = "sendChatMessage", at = @At("HEAD"), cancellable = true)
     private void onChat2(String content, CallbackInfo ci, @Local(argsOnly = true) LocalRef<String> contentRef) {
+        if (escapeSendEvent) {
+            escapeSendEvent = false;
+            return;
+        }
         Event<String> value = new Event<>(content, true, true);
         Listener.getChatSend().handleValue(value);
         if (value.isCancelled()) {
@@ -153,6 +168,9 @@ public abstract class ClientPlayNetworkHandlerEvents {
 
     @Shadow
     public abstract ClientConnection getConnection();
+
+    @Shadow
+    public abstract void sendChatMessage(String content);
 
     @Inject(
             method = "onPlayerPositionLook",
