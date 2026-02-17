@@ -44,9 +44,10 @@
 	"chat-screen-tools.cached": "聊天框工具:缓存值",
 	"chat-screen-tools.enable-quick-chars": "聊天框工具:启用快捷特殊字符",
 	"chat-screen-tools.quick-chars": "聊天框工具:快捷特殊字符",
-	"chat-helper.auto-chat-period": "聊天框工具:自动发送间隔",
-	"chat-helper.auto-chat-multiple": "聊天框工具:自动发送倍率",
-	
+	"chat-screen-tools.auto-chat-period": "聊天框工具:自动发送间隔",
+	"chat-screen-tools.auto-chat-multiple": "聊天框工具:自动发送倍率",
+	"chat-helper.enable-tab-fix": "聊天助手:Tab强显示",
+	"chat-helper.enable-tab-fix.tooltips": "当仅键入/的时候,若该项勾选,则会tab出全部内容\n,否则不会显示tab",
 	"chat-helper.ignore-chat-len-limit": "聊天助手:忽略聊天框长度限制",
 	"chat-helper.ignore-chat-len-limit.tooltips": "虽然忽略了,但是服务端仍旧可能拒收或者踢出玩家",
 	"chat-helper.escape-trim-chat": "聊天助手:保留聊天前后空格",

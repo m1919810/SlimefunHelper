@@ -1,5 +1,7 @@
 package me.matl114.mixins.hack;
 
+import com.llamalad7.mixinextras.sugar.Local;
+import java.util.Objects;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.accessors.gui.CustomFocusBehaviourScreenAccess;
 import me.matl114.hacks.ChatTasks;
@@ -21,6 +23,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -35,6 +38,9 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
 
     @Shadow
     private int messageHistoryIndex;
+
+    @Shadow
+    protected String originalChatText;
 
     @Unique
     public void resetMessageHistoryIndex() {
@@ -71,6 +77,20 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
     //        return returnValue;
     //    }
     // interface
+    @ModifyArg(
+            method = "onChatFieldUpdate",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/screen/ChatInputSuggestor;setWindowActive(Z)V"))
+    private boolean fixChatInputSuggestor(boolean windowActive, @Local(argsOnly = true) String chatText) {
+        if (ChatTasks.getChatExtra().tabFix.get()) {
+            return true;
+        } else {
+            return !Objects.equals(chatText, this.originalChatText);
+        }
+    }
+
     @Unique
     public Element getDefaultElement() {
         return this.chatField;
