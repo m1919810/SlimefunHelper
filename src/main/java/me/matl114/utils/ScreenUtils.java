@@ -28,7 +28,6 @@ import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
-import org.lwjgl.glfw.GLFW;
 
 public class ScreenUtils {
     private static final Map<ScreenHandlerType<?>, HandledScreens.Provider<?, ?>> PROVIDERS = Maps.newHashMap();
@@ -100,8 +99,18 @@ public class ScreenUtils {
     }
 
     public static boolean hasShiftDown() {
-        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
-                || InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 340)
+                || InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 344);
+    }
+
+    public static boolean hasCtrlDown() {
+        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 342)
+                || InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 346);
+    }
+
+    public static boolean hasEnterDown() {
+        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 257)
+                || InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 355);
     }
 
     public static boolean isToggle(int keyCode) {

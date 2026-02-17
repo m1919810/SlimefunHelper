@@ -53,10 +53,11 @@ public class SaveItem extends BaseModule {
         });
     }
 
-    public void ensureLoad() {
+    public boolean ensureLoad() {
         if (!loaded) {
-            InvTasks.getCustomItemDatabase().getAccess();
+            return InvTasks.getCustomItemDatabase().checkAccess();
         }
+        return true;
     }
 
     public static final String SAVE_PATH = "sfhelper-configs/recipes/saved-items.json";
@@ -121,14 +122,17 @@ public class SaveItem extends BaseModule {
         if (player == null) return false;
 
         ItemStack heldItem = ScreenUtils.getSelectingOrHandItem();
-
-        if (heldItem != null && !heldItem.isEmpty()) {
-            ensureLoad();
-            addSaveItem(heldItem);
-            return true;
-        } else if (heldItem != null) {
-            Debug.chat(Text.literal("不能保存空物品").formatted(Formatting.RED));
+        if (ensureLoad()) {
+            if (heldItem != null && !heldItem.isEmpty()) {
+                addSaveItem(heldItem);
+                return true;
+            } else if (heldItem != null) {
+                Debug.chat(Text.literal("不能保存空物品").formatted(Formatting.RED));
+            }
+        } else {
+            Debug.chat(Text.literal("数据库正在加载,请稍后重试..."));
         }
+
         return false;
     }
 

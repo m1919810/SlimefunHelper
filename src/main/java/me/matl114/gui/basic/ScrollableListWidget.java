@@ -122,14 +122,10 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
             context.getMatrices().translateZ(this.priority);
         }
         if (textureScale != 1.0f) {
-            context.getMatrices().pushMatrix();
             context.getMatrices().scale(textureScale, textureScale);
         }
 
         renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
-        if (textureScale != 1.0f) {
-            context.getMatrices().popMatrix();
-        }
         context.disableScissor();
         context.getMatrices().popMatrix();
         renderAbsolute(context, mouseX, mouseY, delta, disableSelect);

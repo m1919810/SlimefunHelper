@@ -111,7 +111,9 @@ public class PacketDebugger extends BaseModule {
                             ", Pitch:",
                             moveC2SPacket.getPitch(0.0F),
                             ", Yaw:",
-                            moveC2SPacket.getYaw(0.0F));
+                            moveC2SPacket.getYaw(0.0F),
+                            ", onGround:",
+                            moveC2SPacket.isOnGround());
                 } else {
                     ExtraTasks.debug("Send", type.getPacketId().id());
                 }

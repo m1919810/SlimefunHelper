@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.move;
 
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
@@ -19,6 +20,7 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerAbilities;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
 import net.minecraft.util.math.Vec3d;
@@ -33,6 +35,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public static final String[] MOVE_SPEED_OVERRIDE_TASK = {"hotkeys", "toggle-flight-speed"};
     public static final String[] MOVE_SPEED_WALK_VAL = {"move-speed", "walk-speed"};
     public static final String[] MOVE_SPEED_OVERRIDE_WALK = {"move-speed", "walk-speed-override"};
+    public static final String[] ON_GROUND_WHEN_MINE = {"move-safety", "flight", "onground-when-mine"};
 
     public CreativeFlight() {
         bindFlag(canFly);
@@ -83,6 +86,9 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             .defaultValue(0.1)
             .build();
 
+    public final FlagRef onGroundWhenMine =
+            flagBuilder(Configs.MOV_CONFIG, ON_GROUND_WHEN_MINE).build();
+
     public boolean serverSideCanFly = false;
 
     @Override
@@ -115,6 +121,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         registerListener(Listener.getPacketListenerPoint(PlayerAbilitiesS2CPacket.class), this::onAbility);
         registerListener(Listener.getPacketListenerPoint(UpdatePlayerAbilitiesC2SPacket.class), this::onAbilityUpdate);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onStartMine);
     }
 
     public void onAbility(Event<PlayerAbilitiesS2CPacket> event) {
@@ -196,8 +203,52 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         }
     }
 
+    private int mineTick = 0;
+    private int lastTimeModifyOnGround = 0;
+
+    @Override
+    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+        var player = movementManagerEvent.context.playerStatus.entity;
+        boolean onGround = player.isOnGround();
+        if (!onGround && onGroundWhenMine.get() && isInMiningAction()) {
+            // instabreak problems
+            mineTick = 2;
+
+            player.setOnGround(true);
+            // server side onGround may change without noticing us, so
+            ClientPlayerAccess.of(player).resyncOnGround();
+            lastTimeModifyOnGround = 2;
+        } else if (mineTick > 0) {
+            --mineTick;
+            player.setOnGround(true);
+            // server side onGround may change without noticing us, so
+            ClientPlayerAccess.of(player).resyncOnGround();
+            lastTimeModifyOnGround = onGround ? 1 : 2;
+        }
+    }
+
+    public boolean isInMiningAction() {
+        // compact for minebot and instant mining
+        return mc.interactionManager.isBreakingBlock() || (lastStartMinePacket + 1 >= Tasks.getTick());
+    }
+
+    private int lastStartMinePacket = 0;
+
+    public void onStartMine(Event<PlayerActionC2SPacket> actionPacket) {
+        if (onGroundWhenMine.get()
+                && actionPacket.context().getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) {
+            lastStartMinePacket = Tasks.getTick();
+        }
+    }
+
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        // do not restore, because client need this to calculate mining speed
+        //        if(lastTimeModifyOnGround > 0){
+        //            movementManagerEvent.context.playerStatus.entity.setOnGround(lastTimeModifyOnGround == 1);
+        //            lastTimeModifyOnGround = 0;
+        //        }
+        lastTimeModifyOnGround = 0;
         return true;
     }
 
@@ -280,6 +331,14 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             case AC_GRIM -> {
                 overrideFlySpeed.set(false);
                 overrideWalkSpeed.set(false);
+            }
+        }
+        switch (modulePreset) {
+            case HACKING -> {
+                onGroundWhenMine.set(true);
+            }
+            default -> {
+                onGroundWhenMine.set(false);
             }
         }
     }

@@ -68,4 +68,8 @@ public class FlagRef extends Ref<Boolean> {
             callUpdate();
         }
     }
+
+    public void toggle() {
+        set(!get());
+    }
 }

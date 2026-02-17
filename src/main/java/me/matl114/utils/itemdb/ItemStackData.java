@@ -168,7 +168,7 @@ public interface ItemStackData {
                     valid = true;
                 } catch (Throwable e) {
                     Debug.info("Error while resolving ItemStackData:", jsonRaw);
-                    Debug.info(e);
+                    Debug.info("Caused by:", e.getMessage());
                     valid = false;
                 }
             }

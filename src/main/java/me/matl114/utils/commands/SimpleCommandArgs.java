@@ -238,18 +238,19 @@ public class SimpleCommandArgs {
                                 new ArgumentInputStream.ArgumentReaderResult(
                                         selected, "true", reader, reader.cursor(), false));
                     }
-
-                } else {
-                    // the argument is broken, expect a argument but no argument is here
-                    break;
+                    continue;
                 }
-            } else {
-                Argument selected = argSet.remove(0);
-                reader.step();
-                argsMap.put(
-                        selected,
-                        new ArgumentInputStream.ArgumentReaderResult(selected, arg, reader, reader.cursor(), false));
+                //                else {
+                //                    // the argument is broken, expect a argument but no argument is here
+                //                    break;
+                //                }
+                // - maybe part of a number
             }
+            Argument selected = argSet.remove(0);
+            reader.step();
+            argsMap.put(
+                    selected,
+                    new ArgumentInputStream.ArgumentReaderResult(selected, arg, reader, reader.cursor(), false));
         }
         return new ArgumentInputStream(reader, args, argsMap);
     }

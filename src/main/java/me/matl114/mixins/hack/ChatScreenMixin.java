@@ -1,30 +1,32 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.accessors.access.ChatScreenAccess;
-import me.matl114.accessors.gui.ButtonNotFocusedScreenAccess;
+import me.matl114.accessors.gui.CustomFocusBehaviourScreenAccess;
 import me.matl114.hacks.ChatTasks;
+import me.matl114.hacks.utils.chat.ChatScreenTextFieldWidget;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.StringHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ChatScreen.class)
-public abstract class ChatScreenMixin extends Screen implements ButtonNotFocusedScreenAccess, ChatScreenAccess {
+public abstract class ChatScreenMixin extends Screen implements CustomFocusBehaviourScreenAccess, ChatScreenAccess {
     @Shadow
     public abstract void sendMessage(String chatText, boolean addToHistory);
 
@@ -33,6 +35,18 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
 
     @Shadow
     private int messageHistoryIndex;
+
+    @Unique
+    public void resetMessageHistoryIndex() {
+        messageHistoryIndex = MinecraftClient.getInstance()
+                .inGameHud
+                .getChatHud()
+                .getMessageHistory()
+                .size();
+    }
+
+    @Accessor("chatInputSuggestor")
+    public abstract ChatInputSuggestor getSuggestor();
 
     public TextFieldWidget getInputWidget() {
         return chatField;
@@ -63,31 +77,10 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
     }
 
     @Unique
-    public boolean doFocusButtonWhenClicked() {
+    public boolean canFocusButtonWhenClicked() {
         return false;
     }
     // resize
-
-    // keep-inv and save config when send
-    @Inject(
-            method = "keyPressed",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/client/gui/screen/ChatScreen;sendMessage(Ljava/lang/String;Z)V",
-                            shift = At.Shift.AFTER),
-            cancellable = true)
-    private void onCancelCloseScreenAfterSend(KeyInput input, CallbackInfoReturnable<Boolean> cir) {
-        if (ChatTasks.getChatExtra().keepChatInv.get()) {
-            // FIX: reset history index so pgup pgdown can work correctly
-            messageHistoryIndex = MinecraftClient.getInstance()
-                    .inGameHud
-                    .getChatHud()
-                    .getMessageHistory()
-                    .size();
-            cir.setReturnValue(true);
-        }
-    }
 
     // warn: do not cancel normalize, conflict with other mods
     @Redirect(method = "normalize", at = @At(value = "INVOKE", target = "Ljava/lang/String;trim()Ljava/lang/String;"))
@@ -124,5 +117,16 @@ public abstract class ChatScreenMixin extends Screen implements ButtonNotFocused
             return StringHelper.truncateChat(text);
         }
         return text;
+    }
+
+    @Inject(
+            method = "init",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;setMaxLength(I)V",
+                            shift = At.Shift.BEFORE))
+    private void modifyTextFieldWidget(CallbackInfo ci) {
+        this.chatField = new ChatScreenTextFieldWidget((ChatScreen) (Screen) this);
     }
 }
