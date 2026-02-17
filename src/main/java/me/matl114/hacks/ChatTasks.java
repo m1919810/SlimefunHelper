@@ -911,7 +911,7 @@ public class ChatTasks {
                     .helper("<type> [extra] 标注一个位置为临时缓存位置")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("type")
-                            .select(List.of("player", "camera", "this", "cross", "clear"), "camera")
+                            .select(List.of("player", "camera", "this", "pos", "special", "cross", "clear"), "camera")
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("extra")

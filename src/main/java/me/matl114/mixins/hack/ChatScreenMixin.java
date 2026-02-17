@@ -5,11 +5,12 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.accessors.gui.CustomFocusBehaviourScreenAccess;
 import me.matl114.hacks.ChatTasks;
+import me.matl114.hacks.utils.chat.ChatScreenTextFieldWidget;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -19,8 +20,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ChatScreen.class)
@@ -42,6 +46,9 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
                 .getMessageHistory()
                 .size();
     }
+
+    @Accessor("chatInputSuggestor")
+    public abstract ChatInputSuggestor getSuggestor();
 
     public TextFieldWidget getInputWidget() {
         return chatField;
@@ -115,21 +122,14 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
         return text;
     }
 
-    @WrapOperation(
-            method = "render",
+    @Inject(
+            method = "init",
             at =
                     @At(
                             value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/gui/widget/TextFieldWidget;render(Lnet/minecraft/client/gui/DrawContext;IIF)V"))
-    private void onRender(
-            TextFieldWidget instance, DrawContext context, int x, int y, float v, Operation<Void> original) {
-        if (ChatTasks.getChatExtra().obfLogin.get()) {
-            if (!ChatTasks.getChatExtra().onChatObfRender(instance, context, x, y, v)) {
-                original.call(instance, context, x, y, v);
-            }
-        } else {
-            original.call(instance, context, x, y, v);
-        }
+                            target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;setMaxLength(I)V",
+                            shift = At.Shift.BEFORE))
+    private void modifyTextFieldWidget(CallbackInfo ci) {
+        this.chatField = new ChatScreenTextFieldWidget((ChatScreen) (Screen) this);
     }
 }

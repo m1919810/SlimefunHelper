@@ -210,7 +210,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         var player = movementManagerEvent.context.playerStatus.entity;
         boolean onGround = player.isOnGround();
-        if (!onGround && onGroundWhenMine.get() && isInMiningAction()) {
+        if (!onGround && onGroundWhenMine.get() && isInMiningAction() && !player.getAbilities().creativeMode) {
             // instabreak problems
             mineTick = 2;
 

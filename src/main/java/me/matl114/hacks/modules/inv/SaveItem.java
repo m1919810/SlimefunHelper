@@ -130,7 +130,7 @@ public class SaveItem extends BaseModule {
                 Debug.chat(Text.literal("不能保存空物品").formatted(Formatting.RED));
             }
         } else {
-            Debug.chat(Text.literal("数据库损坏!请检查日志或注册表"));
+            Debug.chat(Text.literal("数据库正在加载,请稍后重试..."));
         }
 
         return false;
