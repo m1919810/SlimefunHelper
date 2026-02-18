@@ -322,7 +322,7 @@
 	"hotkeys.wake-up-screen": "离开睡眠状态",
 	"hotkeys.wake-up-screen.tooltips": "!!sleep指令启动的睡眠状态,只能通过该按键离开",
 	"hotkeys-toggle.quick-mine": "快速挖掘",
-
+	"hotkeys.toggle-flying": "切换飞行状态",
 	"hotkeys-toggle.mine-bot": "MineBot",
 	"hotkeys-toggle.mine-oneblock": "PacketMine",
 	"hotkeys-toggle.detect-entity": "实体追踪",

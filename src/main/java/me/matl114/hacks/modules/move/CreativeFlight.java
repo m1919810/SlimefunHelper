@@ -21,6 +21,7 @@ import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
 import net.minecraft.util.math.Vec3d;
@@ -29,6 +30,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     private static LegalMovementManager.DelegateMovementModifier instance;
     public static final String[] TOGGLE_FLIGHT = {"hotkeys-toggle", "toggle-flight"};
     public static final String[] MOVE_FLIGHT_ANTIKICK = {"move-safety", "flight", "antikick"};
+    public static final String[] MOVE_FLIGHT_SAFETY_1 = {"move-safety", "flight", "fake-1"};
     public static final String[] MOVE_SPEED_OVERRIDE_FLY = {"move-speed", "fly-speed-override"};
     public static final String[] MOVE_SPEED_FLY_VAL_CREATIVE = {"move-speed", "fly-speed-creative"};
     public static final String[] MOVE_SPEED_FLY_VAL = {"move-speed", "fly-speed"};
@@ -36,6 +38,8 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public static final String[] MOVE_SPEED_WALK_VAL = {"move-speed", "walk-speed"};
     public static final String[] MOVE_SPEED_OVERRIDE_WALK = {"move-speed", "walk-speed-override"};
     public static final String[] ON_GROUND_WHEN_MINE = {"move-safety", "flight", "onground-when-mine"};
+
+    public static final String[] FLIGTH_HOTKEY = {"hotkeys", "toggle-flying"};
 
     public CreativeFlight() {
         bindFlag(canFly);
@@ -89,6 +93,14 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public final FlagRef onGroundWhenMine =
             flagBuilder(Configs.MOV_CONFIG, ON_GROUND_WHEN_MINE).build();
 
+    public final KeyBindRef toggleFlyStateKeyBind = hotkey(FLIGTH_HOTKEY)
+            .defaultValue(new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::onFlightToggle))
+            .build();
+
+    public final FlagRef fake1 =
+            flagBuilder(Configs.MOV_CONFIG, MOVE_FLIGHT_SAFETY_1).build();
+
     public boolean serverSideCanFly = false;
 
     @Override
@@ -122,6 +134,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         registerListener(Listener.getPacketListenerPoint(UpdatePlayerAbilitiesC2SPacket.class), this::onAbilityUpdate);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onStartMine);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerInputC2SPacket.class), this::onInterceptFlyInput);
     }
 
     public void onAbility(Event<PlayerAbilitiesS2CPacket> event) {
@@ -298,6 +311,27 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
 
         //        }
 
+    }
+
+    public void onFlightToggle() {
+        if (mc.player.getAbilities().flying) {
+            mc.player.getAbilities().flying = false;
+        } else if (mc.player.getAbilities().allowFlying) {
+            mc.player.getAbilities().flying = true;
+            // mc.player.setPos(mc.player.getX(), mc.player.getY() + 0.001, mc.player.getZ());
+            Vec3d vec3d = mc.player.getVelocity();
+            mc.player.setVelocity(vec3d.x, 0, vec3d.z);
+            mc.player.setOnGround(false);
+        } else {
+            Debug.chat("You are not allowed to fly");
+        }
+    }
+
+    public void onInterceptFlyInput(Event<PlayerInputC2SPacket> inputPacketEvent) {
+        //        if(fake1.get() && !serverSideCanFly && mc.player.getAbilities().flying){
+        //            // hack fly
+        //            inputPacketEvent.cancel();
+        //        }
     }
 
     private void setMotionY(double motionY) {
