@@ -196,35 +196,40 @@ public class ChestHistory extends BaseModule {
 
         if (enableTitle.get()) {
             if (mc.player != null) {
-                BlockLocation location = BlockLocation.of(mc.player);
-                Vec3d cameraPos = RenderUtils.getCameraPos();
-                Set<Vec3d> bigChestsPositions = new HashSet<>();
-                for (var entry : screens.entrySet()) {
-                    if (entry.getKey().isInRenderRange(location, AUTO_REFRESH_RANGE)) {
-                        Vec3d renderPos = entry.getKey().getCenterPosition();
-                        if (bigChestsPositions.contains(renderPos)) {
-                            continue;
-                        } else {
-                            bigChestsPositions.add(renderPos);
-                        }
-                        Vec3d delta = renderPos.subtract(cameraPos);
-                        stack.push();
-                        stack.translate(delta.x, delta.y + 0.25, delta.z);
-                        // title的高度是9 我们希望这个9在 0.75 ~ 1.0之间
-                        // 我希望他看向我
-                        stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
-                        stack.scale(0.03125F, 0.03125F, 1);
-                        VRender.getInstance()
+                RenderUtils.startDrawVirtual(stack);
+                try{
+                    BlockLocation location = BlockLocation.of(mc.player);
+                    Vec3d cameraPos = RenderUtils.getCameraPos();
+                    Set<Vec3d> bigChestsPositions = new HashSet<>();
+                    for (var entry : screens.entrySet()) {
+                        if (entry.getKey().isInRenderRange(location, AUTO_REFRESH_RANGE)) {
+                            Vec3d renderPos = entry.getKey().getCenterPosition();
+                            if (bigChestsPositions.contains(renderPos)) {
+                                continue;
+                            } else {
+                                bigChestsPositions.add(renderPos);
+                            }
+                            Vec3d delta = renderPos.subtract(cameraPos);
+                            stack.push();
+                            stack.translate(delta.x, delta.y + 0.25, delta.z);
+                            // title的高度是9 我们希望这个9在 0.75 ~ 1.0之间
+                            // 我希望他看向我
+                            stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
+                            stack.scale(0.03125F, 0.03125F, 1);
+                            VRender.getInstance()
                                 .drawTextCameraCoord(
-                                        entry.getValue().getValue().getTitle().asOrderedText(),
-                                        stack,
-                                        Vec3d.ZERO,
-                                        POSITION_FLAG,
-                                        Color.WHITE,
-                                        VRender.DEFAULT_TEXT);
+                                    entry.getValue().getValue().getTitle().asOrderedText(),
+                                    stack,
+                                    Vec3d.ZERO,
+                                    POSITION_FLAG,
+                                    Color.WHITE,
+                                    VRender.DEFAULT_TEXT);
 
-                        stack.pop();
+                            stack.pop();
+                        }
                     }
+                }finally {
+                    RenderUtils.stopDrawVirtual(stack);
                 }
             }
         }
