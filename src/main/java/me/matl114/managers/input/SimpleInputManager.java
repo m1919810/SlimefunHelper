@@ -32,6 +32,7 @@ public class SimpleInputManager implements IInputManager {
         for (Integer i : key.getRelatedKeyCode()) {
             keyBindings.put(i, key);
         }
+        key.addRegisteredManager(this);
     }
 
     public void unregisterHotKeys(IHotKey key) {

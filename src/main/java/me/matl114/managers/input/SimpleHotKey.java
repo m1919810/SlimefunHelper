@@ -3,9 +3,7 @@ package me.matl114.managers.input;
 import com.google.common.util.concurrent.Runnables;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import lombok.Getter;
 import lombok.Setter;
 import me.matl114.events.Event;
@@ -25,16 +23,7 @@ public class SimpleHotKey implements IHotKey {
     @Setter
     private InputHandler inputHandler = InputHandler.EMPTY;
 
-    private final List<IInputManager> registeredManagers = new ArrayList<>();
-
-    @Override
-    public <T extends IHotKey> T register(IInputManager manager) {
-        if (!registeredManagers.contains(manager)) {
-            registeredManagers.add(manager);
-            return (IHotKey.super.register(manager));
-        }
-        return (T) this;
-    }
+    private final Set<IInputManager> registeredManagers = new LinkedHashSet<>();
 
     public void reload() {
         for (IInputManager manager : registeredManagers) {
@@ -62,6 +51,11 @@ public class SimpleHotKey implements IHotKey {
             this.keyCode = keyCode;
             setValueFromString(this.keyCode);
         }
+    }
+
+    @Override
+    public void addRegisteredManager(IInputManager manager) {
+        registeredManagers.add(manager);
     }
 
     @Override
