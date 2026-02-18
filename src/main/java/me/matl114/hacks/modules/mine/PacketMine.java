@@ -11,6 +11,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -54,14 +55,23 @@ public class PacketMine extends BaseModule {
                 if (pos != null) {
                     double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
                     if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
-                        Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
-                        Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-                        for (int i = 0; i < multiplePackets.get(); ++i) {
-                            PlayerInteractionAccess.of(mc.interactionManager).sendStopBreakPacket(pos, dir);
+                        BlockState blockState = mc.world.getBlockState(pos);
+                        if (canMine(blockState)) {
+                            Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
+                            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+                            for (int i = 0; i < multiplePackets.get(); ++i) {
+                                PlayerInteractionAccess.of(mc.interactionManager)
+                                        .sendStopBreakPacket(pos, dir);
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    public boolean canMine(BlockState state) {
+        // do not mine liquid, that's a disaster
+        return state.getBlock().getHardness() > 0.0F && !state.isLiquid();
     }
 }
