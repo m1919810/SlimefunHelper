@@ -98,9 +98,8 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
         }
     }
 
-
     @Inject(method = "clear", at = @At("HEAD"))
-    private void onClear(CallbackInfo ci){
+    private void onClear(CallbackInfo ci) {
         attachedRender = null;
     }
 }

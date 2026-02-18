@@ -79,6 +79,7 @@
 	"render.nightvision": "渲染:夜视",
 	"render.eff-setting.force-no": "渲染:禁用药水负面效果",
 	"render.eff-setting.types":"渲染:禁用药水列表",
+	"render.optimize-game-menu": "渲染:优化游戏菜单界面",
 	"resource.server.ignore-server-request": "忽略服务端资源包请求",
 	"resource.server.ignore-server-request.tooltips": "假接受资源包,并打印下载url",
 	"detect-entity.calculate-trace": "实体检测:启用轨迹计算",
