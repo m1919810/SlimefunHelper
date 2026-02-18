@@ -518,6 +518,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     // stable when no horizontal velocity exists landing <- what the fuck
     // see log analysis for more information
     // todo: grim code analysis
+    // todo: can not work in 1.21.11
     public static class NoFallLazyBypassGrim extends NoFallDelegate {
         int lastResyncTime = -1;
         int lastNoFall = -1;

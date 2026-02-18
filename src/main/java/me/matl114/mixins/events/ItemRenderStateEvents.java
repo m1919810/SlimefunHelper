@@ -15,7 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemRenderState.class)
 public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
-
     @Shadow
     private ItemDisplayContext modelTransformationMode;
 
@@ -30,7 +29,7 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
         attachedRender = state;
         // mark a difference in the cache
         //        if (state != null) {
-        //            addModelKey(state);
+        //            addModelKey(state instanceof KeyedItemRenderState keyed ? keyed.getModelKey() : state);
         //        }
     }
 

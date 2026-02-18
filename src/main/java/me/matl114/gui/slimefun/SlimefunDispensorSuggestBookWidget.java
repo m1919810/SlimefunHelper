@@ -438,7 +438,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
 
     protected static final int HOVER_DX = 96;
     protected static final int HOVER_DY = 42;
-
+    // todo: fix resolve failure air item
     protected void setHoveringRecipe(RecipeEntry entry, double mouseX, double mouseY) {
         if (this.hovering != null) {
             DrawableWidget widget = SlimefunEntryListScreen.generateRecipeEntryContent(entry, -24, 0)

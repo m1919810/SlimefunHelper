@@ -197,7 +197,7 @@ public class ChestHistory extends BaseModule {
         if (enableTitle.get()) {
             if (mc.player != null) {
                 RenderUtils.startDrawVirtual(stack);
-                try{
+                try {
                     BlockLocation location = BlockLocation.of(mc.player);
                     Vec3d cameraPos = RenderUtils.getCameraPos();
                     Set<Vec3d> bigChestsPositions = new HashSet<>();
@@ -217,18 +217,21 @@ public class ChestHistory extends BaseModule {
                             stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
                             stack.scale(0.03125F, 0.03125F, 1);
                             VRender.getInstance()
-                                .drawTextCameraCoord(
-                                    entry.getValue().getValue().getTitle().asOrderedText(),
-                                    stack,
-                                    Vec3d.ZERO,
-                                    POSITION_FLAG,
-                                    Color.WHITE,
-                                    VRender.DEFAULT_TEXT);
+                                    .drawTextCameraCoord(
+                                            entry.getValue()
+                                                    .getValue()
+                                                    .getTitle()
+                                                    .asOrderedText(),
+                                            stack,
+                                            Vec3d.ZERO,
+                                            POSITION_FLAG,
+                                            Color.WHITE,
+                                            VRender.DEFAULT_TEXT);
 
                             stack.pop();
                         }
                     }
-                }finally {
+                } finally {
                     RenderUtils.stopDrawVirtual(stack);
                 }
             }

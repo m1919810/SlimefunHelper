@@ -2,6 +2,8 @@ package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
+import java.util.Objects;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.accessors.gui.CustomFocusBehaviourScreenAccess;
 import me.matl114.hacks.ChatTasks;
@@ -38,6 +40,9 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
     @Shadow
     private int messageHistoryIndex;
 
+    @Shadow
+    protected String originalChatText;
+
     @Unique
     public void resetMessageHistoryIndex() {
         messageHistoryIndex = MinecraftClient.getInstance()
@@ -62,18 +67,35 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
     // 在mouseClick中选择
 
     // 防止选中原输出框时候不进行setFocus
-    @WrapOperation(
-            method = "mouseClicked",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;mouseClicked(DDI)Z"))
-    private boolean fixMouseClickedOnChatFocusLost(
-            TextFieldWidget instance, double v, double v2, int i, Operation<Boolean> original) {
-        boolean returnValue = original.call(instance, v, v2, i);
-        if (returnValue) {
-            this.setFocused(instance);
-        }
-        return returnValue;
-    }
+    // already fixed by ojng
+
+    //    private boolean fixMouseClickedOnChatFocusLost(ChatInputSuggestor instance, Click click, Operation<Boolean>
+    // original) {
+    //        boolean returnValue = original.call(instance, click);
+    //        if(returnValue){
+    //            this.setFocused(instance);
+    //        }
+    //        return returnValue;
+    //    }
     // interface
+    @WrapOperation(
+            method = "onChatFieldUpdate",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/screen/ChatInputSuggestor;setWindowActive(Z)V"))
+    private void fixChatInputSuggestor(
+            ChatInputSuggestor instance,
+            boolean windowActive,
+            Operation<Void> original,
+            @Local(argsOnly = true) String chatText) {
+        if (ChatTasks.getChatExtra().tabFix.get()) {
+            original.call(instance, true);
+        } else {
+            original.call(instance, !Objects.equals(chatText, this.originalChatText));
+        }
+    }
+
     @Unique
     public Element getDefaultElement() {
         return this.chatField;
