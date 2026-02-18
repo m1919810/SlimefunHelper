@@ -98,7 +98,7 @@ public class ItemCache {
 
     public static Codec<Map<String, ItemStackData>> MAP_CODEC = Codec.unboundedMap(Codec.STRING, ItemStackData.CODEC);
     public static final String PREFIX = "customitems:";
-
+    // todo: 解析旧版数据失败
     public void load() {
         loading = true;
         try {

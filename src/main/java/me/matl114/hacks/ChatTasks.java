@@ -506,7 +506,7 @@ public class ChatTasks {
                             .intValue()
                             .bool()
                             .build())
-                    .post(e -> e.executor(CommandContext.run(this::onSleep)))
+                    .post(e -> e.executor(CommandContext.run(this::onDebugRender)))
                     .complete();
         }
 

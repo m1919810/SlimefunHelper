@@ -449,7 +449,7 @@ public class RecipeDatabase extends BaseModule {
         final ItemStackDataWithAmount output;
         final ItemStack[] finalizedIngredients;
         final ItemStack finalizedOutput;
-
+        // todo: resolve failure use icon not corrct
         public SlimefunRecipeEntry(
                 String rid,
                 String id,

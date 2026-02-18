@@ -414,6 +414,7 @@ public class Render_v1_21_11 implements VRender {
                 displayInfo.layerType(),
                 displayInfo.backgroundColor(),
                 displayInfo.light());
+        getVCP().draw();
         stack.pop();
     }
 
