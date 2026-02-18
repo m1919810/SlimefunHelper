@@ -105,6 +105,7 @@ public class Render_v1_21_1 implements VRender {
                 displayInfo.layerType(),
                 displayInfo.backgroundColor(),
                 displayInfo.light());
+        mc.getBufferBuilders().getEntityVertexConsumers().draw();
         //        GL11.glDisable(GL11.GL_DEPTH_TEST);
         //        GL11.glDepthMask(false);
         stack.pop();
