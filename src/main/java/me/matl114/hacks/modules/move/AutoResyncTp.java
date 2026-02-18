@@ -42,36 +42,35 @@ public class AutoResyncTp extends BaseModule {
         if (ticksTilExpire > Tasks.getTick() && pos != null) {
             // auto resync
             PlayerPositionLookS2CPacket packet1 = event.context;
-            if (hasMove(packet1)) {
-                Vec3d resyncPos = new Vec3d(packet1.getX(), packet1.getY(), packet1.getZ());
-                double sqdistance = resyncPos.squaredDistanceTo(mc.player.getPos());
-                double sqdistance2 = resyncPos.squaredDistanceTo(pos);
-                if (sqdistance > 1E-4
-                        && sqdistance < MathUtils.s2(128)
-                        && sqdistance2 > 1E-4
-                        && sqdistance2 < MathUtils.s2(128)) {
-                    // don't so far, it may be a real teleport
-                    if (logAutoResync.get()) {
-                        Debug.chat("Auto Resync triggered!");
-                    }
-                    mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.getTeleportId()));
-                    mc.player.setPosition(resyncPos);
-                    //                    mc.getNetworkHandler().sendPacket(new
-                    // PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(),
-                    // false));
-                    MovTasks.executeTp(pos, 200, false, true);
-                    ticksTilExpire = -1;
-                    pos = null;
-                    event.cancel();
+            Vec3d resyncPos = packet1.change().position();
+            double sqdistance = resyncPos.squaredDistanceTo(mc.player.getPos());
+            double sqdistance2 = resyncPos.squaredDistanceTo(pos);
+            if (hasMove(packet1)
+                    && sqdistance > 1E-4
+                    && sqdistance < MathUtils.s2(128)
+                    && sqdistance2 > 1E-4
+                    && sqdistance2 < MathUtils.s2(128)) {
+                // don't so far, it may be a real teleport
+                if (logAutoResync.get()) {
+                    Debug.chat("Auto Resync triggered!");
                 }
+                mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.teleportId()));
+                mc.player.setPosition(resyncPos);
+                //                    mc.getNetworkHandler().sendPacket(new
+                // PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(),
+                // false));
+                MovTasks.executeTp(pos, 200, false, true);
+                ticksTilExpire = -1;
+                pos = null;
+                event.cancel();
             }
         }
     }
 
     public boolean hasMove(PlayerPositionLookS2CPacket packet) {
-        boolean bl = packet.getFlags().contains(PositionFlag.X);
-        boolean bl2 = packet.getFlags().contains(PositionFlag.Y);
-        boolean bl3 = packet.getFlags().contains(PositionFlag.Z);
+        boolean bl = packet.relatives().contains(PositionFlag.X);
+        boolean bl2 = packet.relatives().contains(PositionFlag.Y);
+        boolean bl3 = packet.relatives().contains(PositionFlag.Z);
         return bl || bl2 || bl3;
     }
 }

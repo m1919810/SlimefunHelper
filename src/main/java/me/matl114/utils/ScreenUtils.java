@@ -22,7 +22,9 @@ import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.crash.CrashException;
+import net.minecraft.util.crash.CrashReport;
+import net.minecraft.util.crash.CrashReportSection;
 
 public class ScreenUtils {
     private static final Map<ScreenHandlerType<?>, HandledScreens.Provider<?, ?>> PROVIDERS = Maps.newHashMap();
@@ -168,6 +170,20 @@ public class ScreenUtils {
 
     // internal methods from MCClient
 
+    public static void wrapScreenError(Runnable task, String errorTitle, String screenName) {
+        try {
+            task.run();
+        } catch (Throwable var6) {
+            Throwable throwable = var6;
+            CrashReport crashReport = CrashReport.create(throwable, errorTitle);
+            CrashReportSection crashReportSection = crashReport.addElement("Affected screen");
+            crashReportSection.add("Screen name", () -> {
+                return screenName;
+            });
+            throw new CrashException(crashReport);
+        }
+    }
+
     public static void simulateKeyAction(Screen screen, int key, int scancode, int action, int modifiers) {
         if (screen != null) {
             switch (key) {
@@ -200,7 +216,7 @@ public class ScreenUtils {
 
         if (screen != null) {
             boolean[] bls = new boolean[] {false};
-            Screen.wrapScreenError(
+            wrapScreenError(
                     () -> {
                         if (action != 1 && action != 2) {
                             if (action == 0) {
@@ -288,14 +304,14 @@ public class ScreenUtils {
                     / (double) mc.getWindow().getHeight();
             if (bl) {
                 screen.applyMousePressScrollNarratorDelay();
-                Screen.wrapScreenError(
+                ScreenUtils.wrapScreenError(
                         () -> {
                             bls[0] = screen.mouseClicked(d, e, i);
                         },
                         "mouseClicked event handler",
                         screen.getClass().getCanonicalName());
             } else {
-                Screen.wrapScreenError(
+                ScreenUtils.wrapScreenError(
                         () -> {
                             bls[0] = screen.mouseReleased(d, e, i);
                         },
@@ -320,40 +336,41 @@ public class ScreenUtils {
                         / (double) mc.getWindow().getHeight();
                 screen.mouseScrolled(g, h, e, f);
                 screen.applyMousePressScrollNarratorDelay();
-            } else if (mc.player != null) {
-                if (mc.mouse.eventDeltaHorizontalWheel != 0.0
-                        && Math.signum(e) != Math.signum(mc.mouse.eventDeltaHorizontalWheel)) {
-                    mc.mouse.eventDeltaHorizontalWheel = 0.0;
-                }
-
-                if (mc.mouse.eventDeltaVerticalWheel != 0.0
-                        && Math.signum(f) != Math.signum(mc.mouse.eventDeltaVerticalWheel)) {
-                    mc.mouse.eventDeltaVerticalWheel = 0.0;
-                }
-
-                mc.mouse.eventDeltaHorizontalWheel += e;
-                mc.mouse.eventDeltaVerticalWheel += f;
-                int i = (int) mc.mouse.eventDeltaHorizontalWheel;
-                int j = (int) mc.mouse.eventDeltaVerticalWheel;
-                if (i == 0 && j == 0) {
-                    return;
-                }
-
-                mc.mouse.eventDeltaHorizontalWheel -= (double) i;
-                mc.mouse.eventDeltaVerticalWheel -= (double) j;
-                int k = j == 0 ? -i : j;
-                if (mc.player.isSpectator()) {
-                    if (mc.inGameHud.getSpectatorHud().isOpen()) {
-                        mc.inGameHud.getSpectatorHud().cycleSlot(-k);
-                    } else {
-                        float l = MathHelper.clamp(
-                                mc.player.getAbilities().getFlySpeed() + (float) j * 0.005F, 0.0F, 0.2F);
-                        mc.player.getAbilities().setFlySpeed(l);
-                    }
-                } else {
-                    mc.player.getInventory().scrollInHotbar((double) k);
-                }
             }
+            //            else if (mc.player != null) {
+            //                if (mc.mouse.eventDeltaHorizontalWheel != 0.0
+            //                        && Math.signum(e) != Math.signum(mc.mouse.eventDeltaHorizontalWheel)) {
+            //                    mc.mouse.eventDeltaHorizontalWheel = 0.0;
+            //                }
+            //
+            //                if (mc.mouse.eventDeltaVerticalWheel != 0.0
+            //                        && Math.signum(f) != Math.signum(mc.mouse.eventDeltaVerticalWheel)) {
+            //                    mc.mouse.eventDeltaVerticalWheel = 0.0;
+            //                }
+            //
+            //                mc.mouse.eventDeltaHorizontalWheel += e;
+            //                mc.mouse.eventDeltaVerticalWheel += f;
+            //                int i = (int) mc.mouse.eventDeltaHorizontalWheel;
+            //                int j = (int) mc.mouse.eventDeltaVerticalWheel;
+            //                if (i == 0 && j == 0) {
+            //                    return;
+            //                }
+            //
+            //                mc.mouse.eventDeltaHorizontalWheel -= (double) i;
+            //                mc.mouse.eventDeltaVerticalWheel -= (double) j;
+            //                int k = j == 0 ? -i : j;
+            //                if (mc.player.isSpectator()) {
+            //                    if (mc.inGameHud.getSpectatorHud().isOpen()) {
+            //                        mc.inGameHud.getSpectatorHud().cycleSlot(-k);
+            //                    } else {
+            //                        float l = MathHelper.clamp(
+            //                                mc.player.getAbilities().getFlySpeed() + (float) j * 0.005F, 0.0F, 0.2F);
+            //                        mc.player.getAbilities().setFlySpeed(l);
+            //                    }
+            //                } else {
+            //                    mc.player.getInventory().scrollInHotbar((double) k);
+            //                }
+            // }
         }
     }
 }

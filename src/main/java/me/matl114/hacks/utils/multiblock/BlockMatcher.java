@@ -31,7 +31,7 @@ public interface BlockMatcher {
 
     public static record Tagged(TagKey<Block> blockTagKey) implements BlockMatcher {
         public Set<Block> getPotentials() {
-            return Registries.BLOCK.getEntryList(blockTagKey).orElseThrow().stream()
+            return Registries.BLOCK.getOrThrow(blockTagKey).stream()
                     .map(RegistryEntry::value)
                     .collect(Collectors.toUnmodifiableSet());
         }

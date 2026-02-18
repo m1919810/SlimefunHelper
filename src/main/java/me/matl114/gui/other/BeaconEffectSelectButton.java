@@ -8,6 +8,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.PressableWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
@@ -69,15 +70,17 @@ public class BeaconEffectSelectButton extends PressableWidget {
             identifier = BUTTON_TEXTURE;
         }
 
-        context.drawGuiTexture(identifier, this.getX(), this.getY(), this.width, this.height);
+        context.drawGuiTexture(
+                RenderLayer::getGuiTextured, identifier, this.getX(), this.getY(), this.width, this.height);
         this.renderExtra(context);
     }
 
     protected void renderExtra(DrawContext context) {
         if (this.currentSprite != null) {
-            context.drawSprite(this.getX() + 2, this.getY() + 2, 0, 18, 18, this.currentSprite);
+            context.drawSpriteStretched(
+                    RenderLayer::getGuiTextured, this.currentSprite, this.getX() + 2, this.getY() + 2, 18, 18);
         } else {
-            context.drawGuiTexture(NO_PATH, this.getX() + 2, this.getY() + 2, 18, 18);
+            context.drawGuiTexture(RenderLayer::getGuiTextured, NO_PATH, this.getX() + 2, this.getY() + 2, 18, 18);
         }
     }
 

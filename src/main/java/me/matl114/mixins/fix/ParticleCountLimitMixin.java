@@ -17,7 +17,8 @@ public abstract class ParticleCountLimitMixin {
         if (packet.getCount() > 1000) {
             return new ParticleS2CPacket(
                     packet.getParameters(),
-                    packet.isLongDistance(),
+                    packet.shouldForceSpawn(),
+                    packet.isImportant(),
                     packet.getX(),
                     packet.getY(),
                     packet.getZ(),

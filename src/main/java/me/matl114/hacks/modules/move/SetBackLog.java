@@ -51,12 +51,14 @@ public class SetBackLog extends BaseModule {
     public Vec3d lastDesyncPos = Vec3d.ZERO;
 
     public void onSetBack(Event<PlayerPositionLookS2CPacket> event) {
-        PlayerPositionLookS2CPacket packet = event.context;
-        int tpId = packet.getTeleportId();
+        PlayerPositionLookS2CPacket packet0 = event.context;
+        int tpId = packet0.teleportId();
         maxTpId = Math.max(maxTpId, tpId);
         if (mc.player != null) {
             lastDesyncPos = mc.player.getPos();
         }
+        var packet = packet0.change().position();
+
         if (logResync.get()) {
             String logFormat = logResyncFormat.get();
             try {

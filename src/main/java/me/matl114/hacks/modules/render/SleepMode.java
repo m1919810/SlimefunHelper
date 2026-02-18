@@ -1,7 +1,7 @@
 package me.matl114.hacks.modules.render;
 
+import com.mojang.blaze3d.systems.ProjectionType;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.systems.VertexSorter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
@@ -13,7 +13,6 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.collections.Point;
 import net.minecraft.client.Keyboard;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
@@ -272,7 +271,7 @@ public class SleepMode extends BaseModule {
         }
         if (refresh) {
             // clear current  view
-            mc.getFramebuffer().clear(true);
+            mc.getFramebuffer().clear();
             mc.getFramebuffer().endRead();
             mc.getFramebuffer().beginWrite(true);
             return true;
@@ -296,7 +295,7 @@ public class SleepMode extends BaseModule {
                 if (shouldFreshSleepScreen) {
                     shouldFreshSleepScreen = false;
                     // 清除frame
-                    RenderSystem.clear(16640, MinecraftClient.IS_SYSTEM_MAC);
+                    RenderSystem.clear(16640);
                     int i = (int) (mc.mouse.getX()
                             * (double) mc.getWindow().getScaledWidth()
                             / (double) mc.getWindow().getWidth());
@@ -304,7 +303,7 @@ public class SleepMode extends BaseModule {
                             * (double) mc.getWindow().getScaledHeight()
                             / (double) mc.getWindow().getHeight());
                     Window window = mc.getWindow();
-                    RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
+                    RenderSystem.clear(256);
                     Matrix4f matrix4f = (new Matrix4f())
                             .setOrtho(
                                     0.0F,
@@ -313,18 +312,18 @@ public class SleepMode extends BaseModule {
                                     0.0F,
                                     1000.0F,
                                     21000.0F);
-                    RenderSystem.setProjectionMatrix(matrix4f, VertexSorter.BY_Z);
+                    RenderSystem.setProjectionMatrix(matrix4f, ProjectionType.ORTHOGRAPHIC);
                     Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
                     matrix4fStack.pushMatrix();
                     matrix4fStack.translation(0.0F, 0.0F, -11000.0F);
-                    RenderSystem.applyModelViewMatrix();
+                    //                    RenderSystem.applyModelViewMatrix();
                     DiffuseLighting.enableGuiDepthLighting();
                     DrawContext drawContext = new DrawContext(mc, gameRenderer.buffers.getEntityVertexConsumers());
 
                     currentRenderingSleeping.renderWithTooltip(drawContext, i, j, tickCounter.getLastDuration());
                     drawContext.draw();
                     matrix4fStack.popMatrix();
-                    RenderSystem.applyModelViewMatrix();
+                    //                    RenderSystem.applyModelViewMatrix();
                 }
             } else {
                 setUpSleepingScreen(getDefaultDisplayText());

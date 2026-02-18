@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -16,7 +18,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
@@ -83,48 +84,28 @@ public abstract class MouseEvents {
         }
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "tick",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/gui/screen/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V",
-                            ordinal = 0))
-    private void onMouseMove(
-            Runnable task,
-            String errorTitle,
-            String screenName,
-            @Local(ordinal = 2) double f,
-            @Local(ordinal = 3) double g) {
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;mouseMoved(DD)V"))
+    private void onMouseMove(Screen instance, double f, double g, Operation<Void> original) {
         Event<Mouse> event = new Event<>((Mouse) (Object) this, true, false, f, g);
         Listener.getMouseMove().handleValue(event);
         if (!event.isCancelled()) {
-            Screen.wrapScreenError(task, errorTitle, screenName);
+            original.call(instance, f, g);
         }
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "tick",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/gui/screen/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V",
-                            ordinal = 1))
-    private void onMouseDrag(
-            Runnable task,
-            String errorTitle,
-            String screenName,
-            @Local(ordinal = 2) double f,
-            @Local(ordinal = 3) double g,
-            @Local(ordinal = 4) double h,
-            @Local(ordinal = 5) double i) {
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;mouseDragged(DDIDD)Z"))
+    private boolean onMouseDrag(
+            Screen instance, double f, double g, int activeButton, double h, double i, Operation<Boolean> original) {
         Event<Mouse> event = new Event<>((Mouse) (Object) this, true, false, f, g, h, i);
         Listener.getMouseDrag().handleValue(event);
         if (!event.isCancelled()) {
-            Screen.wrapScreenError(task, errorTitle, screenName);
+            original.call(instance, f, g, activeButton, h, i);
         }
+        return false;
     }
 
     @Inject(

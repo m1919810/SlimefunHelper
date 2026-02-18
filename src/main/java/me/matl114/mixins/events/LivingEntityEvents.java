@@ -60,8 +60,8 @@ public abstract class LivingEntityEvents extends Entity implements EntityAccess<
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/entity/LivingEntity;getWorld()Lnet/minecraft/world/World;",
-                            ordinal = 5,
+                            target = "Lnet/minecraft/util/profiler/Profiler;pop()V",
+                            ordinal = 2,
                             shift = At.Shift.BEFORE))
     private void overrideJumpCooldown(CallbackInfo ci) {
         if (nextJumpCooldown != null) {

@@ -6,8 +6,7 @@ import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
@@ -33,37 +32,27 @@ public class RenderListener {
     @ExtraArgs(
             value = {ItemStack.class},
             names = {"originalItemStack"})
-    private static final EventChannel<BakedModel> customModelOverride = new EventChannel<>();
+    private static final EventChannel<Identifier> customModelOverride = new EventChannel<>();
 
-    public static ModelIdentifier wrapAsModModel(Identifier id) {
-        return new ModelIdentifier(id, RESOURCE_SPECIAL_VARIANT);
+    public static Identifier wrapAsModModel(Identifier id) {
+        return id;
     }
 
-    public static Optional<BakedModel> getModModel(Identifier id) {
+    public static Optional<ItemModel> getModModel(Identifier id) {
         return Optional.ofNullable(getModelOf(wrapAsModModel(id)));
     }
 
-    public static Optional<BakedModel> getOptionalModelOf(ModelIdentifier id) {
+    public static Optional<ItemModel> getOptionalModelOf(Identifier id) {
         return Optional.ofNullable(getModelOf(id));
     }
 
-    public static BakedModel getModelOf(ModelIdentifier modeled) {
-        BakedModel model;
-        model = mc.getBakedModelManager().getModel(modeled);
-        if (model == null || model == mc.getBakedModelManager().getMissingModel()) {
-            return getCustomModelOf(modeled.id());
-        } else {
-            return model;
-        }
+    public static ItemModel getModelOf(Identifier modeled) {
+        return getCustomModelOf(modeled);
     }
 
-    public static BakedModel getCustomModelOf(Identifier identifier) {
-        BakedModel model = mc.getBakedModelManager().getModel(identifier);
-        if (model == null || model == mc.getBakedModelManager().getMissingModel()) {
-            return null;
-        } else {
-            return model;
-        }
+    public static ItemModel getCustomModelOf(Identifier identifier) {
+        ItemModel model = mc.getBakedModelManager().getItemModel(identifier);
+        return model == mc.getBakedModelManager().missingItemModel ? null : model;
     }
 
     public static final String RESOURCE_SPECIAL_VARIANT = "fabric_resource";

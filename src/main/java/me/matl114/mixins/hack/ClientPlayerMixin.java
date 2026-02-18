@@ -210,7 +210,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Unique
     public double getAttributeValue(RegistryEntry<EntityAttribute> attribute) {
-        if (attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED
+        if (attribute == EntityAttributes.MOVEMENT_SPEED
                 && MovTasks.getCreativeFlight().overrideWalkSpeed.get()) {
             return MovTasks.getCreativeFlight().getOverridingWalkSpeed();
         }

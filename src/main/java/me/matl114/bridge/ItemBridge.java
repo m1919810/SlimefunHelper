@@ -9,6 +9,6 @@ public class ItemBridge {
     public static Item TESTITEM;
 
     static {
-        TESTITEM = Items.register("myitem", new Item(new Item.Settings()));
+        TESTITEM = Items.register("myitem", Item::new);
     }
 }

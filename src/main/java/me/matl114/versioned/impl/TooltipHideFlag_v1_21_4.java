@@ -13,9 +13,9 @@ import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.component.type.UnbreakableComponent;
 import net.minecraft.item.BlockPredicatesChecker;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.trim.ArmorTrim;
+import net.minecraft.item.equipment.trim.ArmorTrim;
 
-public enum TooltipHideFlag_v1_21_1 implements VHideFlag {
+public enum TooltipHideFlag_v1_21_4 implements VHideFlag {
     HIDE_ALL("全部", componentPredicate(HIDE_TOOLTIP), ItemStackUtils.TooltipsToggle.byComponent(HIDE_TOOLTIP)),
     HIDE_ADDITIONAL(
             "额外",
@@ -48,7 +48,7 @@ public enum TooltipHideFlag_v1_21_1 implements VHideFlag {
             ItemStackUtils.TooltipsToggle.onComponent(DYED_COLOR, DyedColorComponent::withShowInTooltip)),
     HIDE_ARMOR_TRIM(
             "盔甲纹饰",
-            componentPredicate(TRIM, inv(armorTrim -> armorTrim.showInTooltip), false),
+            componentPredicate(TRIM, inv(ArmorTrim::showInTooltip), false),
             ItemStackUtils.TooltipsToggle.onComponent(TRIM, ArmorTrim::withShowInTooltip)),
     HIDE_STORED_ENCHANTS(
             "附魔书",
@@ -59,7 +59,7 @@ public enum TooltipHideFlag_v1_21_1 implements VHideFlag {
     public Predicate<ItemStack> hideFlagGetter;
     public ItemStackUtils.TooltipsToggle toggle;
 
-    TooltipHideFlag_v1_21_1(String display, Predicate<ItemStack> stack, ItemStackUtils.TooltipsToggle toggle) {
+    TooltipHideFlag_v1_21_4(String display, Predicate<ItemStack> stack, ItemStackUtils.TooltipsToggle toggle) {
         this.hideFlagGetter = stack;
         this.toggle = toggle;
         this.display = display;

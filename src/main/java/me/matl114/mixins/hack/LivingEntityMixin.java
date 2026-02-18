@@ -24,9 +24,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends Entity implements LivingEntityAccess {
 
-    @Shadow
-    protected int fallFlyingTicks;
-
     @Accessor("jumpingCooldown")
     public abstract void setJumpingCooldown(int cooldown);
 
@@ -79,7 +76,7 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     }
 
     @ModifyExpressionValue(
-            method = "travel",
+            method = "travelMidAir",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;getSlipperiness()F"))
     private float onIgnoreSlipperiness(float original) {
         if (MovTasks.getNoSlowDown().blockFrac.get()) {

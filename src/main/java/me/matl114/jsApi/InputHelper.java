@@ -5,7 +5,6 @@ import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
 
 @ApiMethod
 public class InputHelper {
@@ -74,7 +73,7 @@ public class InputHelper {
             Element element = mc.currentScreen;
             if (element != null && mc.getOverlay() == null) {
                 if (Character.charCount(codePoint) == 1) {
-                    Screen.wrapScreenError(
+                    ScreenUtils.wrapScreenError(
                             () -> {
                                 element.charTyped((char) codePoint, modifiers);
                             },
@@ -86,7 +85,7 @@ public class InputHelper {
 
                     for (int var8 = 0; var8 < var7; ++var8) {
                         char c = var6[var8];
-                        Screen.wrapScreenError(
+                        ScreenUtils.wrapScreenError(
                                 () -> {
                                     element.charTyped(c, modifiers);
                                 },

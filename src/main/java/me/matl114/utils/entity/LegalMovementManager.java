@@ -8,6 +8,7 @@ import me.matl114.events.Event;
 import me.matl114.utils.EntityUtils;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.util.PlayerInput;
 
 public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity> {
     final List<MovementModifier> hacks = new ArrayList<>();
@@ -134,44 +135,48 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
             // rotated
             float diff = EntityUtils.getSafeYawDiff(originYaw, player.getYaw());
             Input input = player.input;
-            float forwardSpeed;
-            float sidewaySpeed;
+            int forwardSpeed;
+            int sidewaySpeed;
             boolean w, a, s, d;
+            int movementForward = (input.playerInput.forward() ? 1 : 0) + (input.playerInput.backward() ? -1 : 0);
+            int movementSideways = (input.playerInput.left() ? 1 : 0) + (input.playerInput.right() ? -1 : 0);
             if (diff < 22.5 && diff >= -22.5) {
                 // do nothing
                 return;
             } else if (diff < 67.5 && diff >= 22.5) {
                 // turn to
-                forwardSpeed = (input.movementForward - input.movementSideways);
-                sidewaySpeed = (input.movementForward + input.movementSideways);
+                forwardSpeed = (movementForward - movementSideways);
+                sidewaySpeed = (movementForward + movementSideways);
             } else if (diff >= 67.5 && diff < 90.0F + 22.5F) {
-                forwardSpeed = -input.movementSideways;
-                sidewaySpeed = input.movementForward;
+                forwardSpeed = -movementSideways;
+                sidewaySpeed = movementForward;
             } else if (diff >= 90.0F + 22.5F && diff < 90.0F + 67.5F) {
-                forwardSpeed = (-input.movementForward - input.movementSideways);
-                sidewaySpeed = (input.movementForward - input.movementSideways);
+                forwardSpeed = (-movementForward - movementSideways);
+                sidewaySpeed = (movementForward - movementSideways);
             } else if (diff >= 90.0F + 67.5F || diff < -90.0F - 67.5F) {
-                forwardSpeed = -input.movementForward;
-                sidewaySpeed = -input.movementSideways;
+                forwardSpeed = -movementForward;
+                sidewaySpeed = -movementSideways;
             } else if (diff >= -90.0F - 67.5F && diff < -90.0F - 22.5F) {
-                forwardSpeed = (-input.movementForward + input.movementSideways);
-                sidewaySpeed = (-input.movementForward - input.movementSideways);
+                forwardSpeed = (-movementForward + movementSideways);
+                sidewaySpeed = (-movementForward - movementSideways);
             } else if (diff >= -90.0F - 22.5F && diff < -90.0F + 22.5F) {
-                forwardSpeed = input.movementSideways;
-                sidewaySpeed = -input.movementForward;
+                forwardSpeed = movementSideways;
+                sidewaySpeed = -movementForward;
             } else if (diff >= -90.0F + 22.5F && diff < -22.5F) {
-                forwardSpeed = (input.movementForward + input.movementSideways);
-                sidewaySpeed = (-input.movementForward + input.movementSideways);
+                forwardSpeed = (movementForward + movementSideways);
+                sidewaySpeed = (-movementForward + movementSideways);
             } else {
                 return;
             }
             // sync values
-            input.movementForward = forwardSpeed > 0 ? 1.0F : (forwardSpeed < 0 ? -1.0F : 0.0F);
-            input.movementSideways = sidewaySpeed > 0 ? 1.0F : (sidewaySpeed < 0 ? -1.0F : 0.0F);
-            input.pressingForward = input.movementForward > 0;
-            input.pressingBack = input.movementForward < 0;
-            input.pressingLeft = input.movementSideways > 0;
-            input.pressingRight = input.movementSideways < 0;
+            input.playerInput = new PlayerInput(
+                    forwardSpeed > 0,
+                    forwardSpeed < 0,
+                    sidewaySpeed > 0,
+                    sidewaySpeed < 0,
+                    input.playerInput.jump(),
+                    input.playerInput.sneak(),
+                    input.playerInput.sprint());
         }
     }
 

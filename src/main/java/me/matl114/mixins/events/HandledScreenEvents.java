@@ -1,6 +1,6 @@
 package me.matl114.mixins.events;
 
-import com.llamalad7.mixinextras.sugar.Local;
+import java.util.Iterator;
 import me.matl114.events.RenderListener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -29,15 +29,14 @@ public abstract class HandledScreenEvents {
     }
 
     @Inject(
-            method = "render",
+            method = "drawSlots",
             at =
                     @At(
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;)V"),
             locals = LocalCapture.CAPTURE_FAILHARD)
-    public void onRenderSlot(
-            DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci, @Local Slot slot) {
+    public void onRenderSlot(DrawContext context, CallbackInfo ci, Iterator var2, Slot slot) {
         RenderListener.renderSlotInScreen(context, (HandledScreen<?>) (Object) this, slot);
     }
 }

@@ -19,7 +19,6 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
-import org.lwjgl.opengl.GL11;
 
 public class RenderUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -83,13 +82,13 @@ public class RenderUtils {
         if (!startVirtual) {
             startVirtual = true;
             matrixStack.push();
-            GL11.glEnable(GL11.GL_BLEND);
+            //            GL11.glEnable(GL11.GL_BLEND);
             // remove this
             //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            GL11.glDisable(GL11.GL_DEPTH_TEST);
+            //            GL11.glDisable(GL11.GL_DEPTH_TEST);
             storedLineWidth = RenderSystem.getShaderLineWidth();
             RenderSystem.lineWidth(2.0F);
-            GL11.glDepthMask(false);
+            //            GL11.glDepthMask(false);
         }
     }
 
@@ -97,10 +96,10 @@ public class RenderUtils {
         if (startVirtual) {
             startVirtual = false;
             resetCurrentShaderColor();
-            GL11.glDisable(GL11.GL_BLEND);
-            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            //            GL11.glDisable(GL11.GL_BLEND);
+            //            GL11.glEnable(GL11.GL_DEPTH_TEST);
             RenderSystem.lineWidth(storedLineWidth);
-            GL11.glDepthMask(true);
+            //            GL11.glDepthMask(true);
             matrixStack.pop();
             return true;
         } else return false;

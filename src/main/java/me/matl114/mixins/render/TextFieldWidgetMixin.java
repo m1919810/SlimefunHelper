@@ -1,6 +1,9 @@
 package me.matl114.mixins.render;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ColorProvider;
@@ -12,6 +15,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;
@@ -20,7 +24,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -93,21 +96,29 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
         super(x, y, width, height, message);
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "renderWidget",
             at =
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lnet/minecraft/util/Identifier;IIII)V"))
-    public void redirectBorderBoxRender(DrawContext instance, Identifier texture, int x, int y, int width, int height) {
+                                    "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIII)V"))
+    public void redirectBorderBoxRender(
+            DrawContext instance,
+            Function<Identifier, RenderLayer> renderLayers,
+            Identifier sprite,
+            int x,
+            int y,
+            int width,
+            int height,
+            Operation<Void> original) {
         // only override specific widget behaviour
         if (boxColorProvider != null) {
             // use custom color provided
             McWidgetHelpers.drawTextWidgetBox(
                     this, instance, x, y, width, height, this.isFocused(), this.boxColorProvider);
         } else {
-            instance.drawGuiTexture(texture, x, y, width, height);
+            original.call(instance, renderLayers, sprite, x, y, width, height);
         }
     }
 

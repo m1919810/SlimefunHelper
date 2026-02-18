@@ -20,6 +20,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.MaceItem;
 import net.minecraft.text.Text;
+import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -161,7 +162,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         entityStage = ENTITY_STAGE_ALIVE;
         holdingMace = args.getMainHandStack().getItem() instanceof MaceItem;
         lastHeight = args.getY();
-        safeDistance = args.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) + noFallSafeDistance.get();
+        safeDistance = args.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) + noFallSafeDistance.get();
         // reset
         if (args.isOnGround()
                 || args.isTouchingWater()
@@ -603,9 +604,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if (module.isActive() && duplicateCount >= 1) {
                 // do not make velocity input
                 // Debug.info("check input");
-                var input = movementManagerEvent.context.playerStatus.entity.input;
-                input.movementForward = 0;
-                input.movementSideways = 0;
+                ClientPlayerEntity entity = movementManagerEvent.context.playerStatus.entity;
+                var input = entity.input;
+                var input0 = input.playerInput;
+                input.playerInput = new PlayerInput(
+                        false, false, input0.left(), input0.right(), input0.jump(), input0.sneak(), input0.sprint());
+                //                input.movementForward = 0;
+                //                input.movementSideways = 0;
             }
         }
 

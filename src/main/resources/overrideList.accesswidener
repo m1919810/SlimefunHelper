@@ -1,9 +1,4 @@
 accessWidener	v1	named
-accessible class net/minecraft/client/render/model/json/ModelOverrideList$BakedOverride
-accessible field net/minecraft/client/render/model/json/ModelOverrideList overrides [Lnet/minecraft/client/render/model/json/ModelOverrideList$BakedOverride;
-accessible class net/minecraft/client/render/model/BakedModelManager$BakingResult
-accessible field net/minecraft/client/render/model/BakedModelManager$BakingResult readyForUpload Ljava/util/concurrent/CompletableFuture;
-accessible method net/minecraft/client/gui/widget/ClickableWidget clicked (DD)Z
 accessible method net/minecraft/client/world/ClientWorld getPendingUpdateManager ()Lnet/minecraft/client/network/PendingUpdateManager;
 accessible method net/minecraft/client/network/ClientPlayerInteractionManager sendSequencedPacket (Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V
 accessible class net/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier
@@ -14,12 +9,11 @@ accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPa
 accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractHandler <init> (Lnet/minecraft/util/Hand;)V
 accessible method net/minecraft/util/shape/VoxelShape getPointPositions (Lnet/minecraft/util/math/Direction$Axis;)Lit/unimi/dsi/fastutil/doubles/DoubleList;
 accessible class net/minecraft/client/gui/screen/Screen$PositionedTooltip
-accessible method net/minecraft/client/gui/DrawContext drawTexturedQuad (Lnet/minecraft/util/Identifier;IIIIIFFFF)V
+
 accessible field net/minecraft/nbt/NbtCompound entries Ljava/util/Map;
 accessible field net/minecraft/text/TextColor FORMATTING_TO_COLOR Ljava/util/Map;
 accessible method net/minecraft/util/Identifier <init> (Ljava/lang/String;Ljava/lang/String;)V
-accessible field net/minecraft/component/type/ItemEnchantmentsComponent showInTooltip Z
-accessible field net/minecraft/item/trim/ArmorTrim showInTooltip Z
+
 accessible field net/minecraft/item/ItemStack components Lnet/minecraft/component/ComponentMapImpl;
 accessible field net/minecraft/component/ComponentMapImpl changedComponents Lit/unimi/dsi/fastutil/objects/Reference2ObjectMap;
 accessible method net/minecraft/component/ComponentMapImpl onWrite ()V
@@ -28,7 +22,6 @@ accessible method net/minecraft/item/ItemStack copyComponentsToNewStackIgnoreEmp
 accessible method net/minecraft/nbt/NbtCompound <init> (Ljava/util/Map;)V
 accessible field net/minecraft/client/render/model/json/ModelElementFace textureId Ljava/lang/String;
 accessible field net/minecraft/client/render/model/json/ModelElementFace cullFace Lnet/minecraft/util/math/Direction;
-accessible method net/minecraft/client/gui/DrawContext tryDraw ()V
 accessible field net/minecraft/client/gui/EditBox selectionEnd I
 accessible method net/minecraft/component/ComponentChanges <init> (Lit/unimi/dsi/fastutil/objects/Reference2ObjectMap;)V
 accessible field net/minecraft/client/render/GameRenderer buffers Lnet/minecraft/client/render/BufferBuilderStorage;
@@ -55,8 +48,10 @@ accessible class net/minecraft/client/world/ClientChunkManager$ClientChunkMap
 accessible field net/minecraft/client/world/ClientChunkManager chunks Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;
 accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap chunks Ljava/util/concurrent/atomic/AtomicReferenceArray;
 accessible field net/minecraft/client/gui/widget/ScrollableWidget scrollbarDragged Z
-accessible field net/minecraft/client/Mouse eventDeltaHorizontalWheel D
-accessible field net/minecraft/client/Mouse eventDeltaVerticalWheel D
 accessible field net/minecraft/client/Mouse activeButton I
 accessible field net/minecraft/network/ClientConnection channel Lio/netty/channel/Channel;
-accessible method net/minecraft/client/gui/DrawContext drawTexturedQuad (Lnet/minecraft/util/Identifier;IIIIIFFFFFFFF)V
+accessible method net/minecraft/client/gui/DrawContext drawTexturedQuad (Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIIIFFFFI)V
+
+accessible field net/minecraft/component/type/ItemEnchantmentsComponent showInTooltip Z
+accessible field net/minecraft/client/render/model/BakedModelManager missingItemModel Lnet/minecraft/client/render/item/model/ItemModel;
+accessible field net/minecraft/client/recipebook/ClientRecipeBook recipes Ljava/util/Map;

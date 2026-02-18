@@ -116,7 +116,7 @@ public class GenericScreen extends Screen {
 
     public void resetScreen() {
         // schedule refresh
-        this.initTabNavigation();
+        this.clearAndInit();
         // mc.executeSync(()->this.init(mc,mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight()));
     }
 }

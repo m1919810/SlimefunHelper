@@ -185,7 +185,7 @@ public class MineBot extends BaseModule {
                 var optionalUnbreaking = ItemStackUtils.registry()
                         .getOptional(RegistryKeys.ENCHANTMENT)
                         .orElseThrow()
-                        .getEntry(Enchantments.UNBREAKING);
+                        .getOptional(Enchantments.UNBREAKING);
                 int multiply = 1;
                 if (optionalUnbreaking.isPresent()) {
                     multiply = EnchantmentHelper.getLevel(optionalUnbreaking.get(), item) + 1;

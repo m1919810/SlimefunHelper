@@ -44,9 +44,6 @@ public abstract class MinecraftClientEvents {
     public HitResult crosshairTarget;
 
     @Shadow
-    private Profiler profiler;
-
-    @Shadow
     public abstract Window getWindow();
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
@@ -253,8 +250,8 @@ public abstract class MinecraftClientEvents {
                             shift = At.Shift.BEFORE,
                             ordinal = 1),
             locals = LocalCapture.CAPTURE_FAILSOFT)
-    public void onPostTick(CallbackInfo ci) {
-        this.profiler.swap("post-tick");
+    public void onPostTick(CallbackInfo ci, @Local Profiler profiler) {
+        profiler.swap("post-tick");
         Listener.getPostTick().broadcast(null);
     }
 

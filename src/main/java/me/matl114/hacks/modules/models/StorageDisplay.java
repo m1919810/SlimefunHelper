@@ -20,7 +20,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
-import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -65,6 +64,8 @@ public class StorageDisplay extends BaseModule {
         registerListener(RenderListener.getDetachedItemStackInformation(), this::onProductsSpecialPlugin, 1000);
         registerListener(RenderListener.getCustomModelOverride(), this::onGceChickenModel);
         registerListener(Listener.getPostTick(), this::onCacheClean);
+        registerListener(RenderListener.getAtlasSourceSupply(), this::onGceChickenTextureLoad);
+        registerListener(RenderListener.getAsyncItemModelSupply(), this::onGceChickenModelLoad);
     }
 
     public void onContainerSpawner(Event<ItemStack> event) {
@@ -214,16 +215,16 @@ public class StorageDisplay extends BaseModule {
         }
     }
 
-    public void onGceChickenModel(Event<BakedModel> bakedModelEvent) {
-        if (bakedModelEvent.context() != null) return;
+    public void onGceChickenModel(Event<Identifier> IItemModelEvent) {
+        if (IItemModelEvent.context() != null) return;
         if (isActive()) {
-            ItemStack stack = bakedModelEvent.getArgs(0);
+            ItemStack stack = IItemModelEvent.getArgs(0);
             String optionalChicken = handlePureChickenDNAInfo(stack);
             if (optionalChicken != null) {
                 String val = dnaInfo.get(optionalChicken);
                 if (val != null) {
-                    RenderListener.getModModel(new Identifier("slimefunhelper", "gce/" + val))
-                            .ifPresent(bakedModelEvent::context);
+                    Identifier id = new Identifier("slimefunhelper", "gce/" + val);
+                    RenderListener.getModModel(id).ifPresent((v) -> IItemModelEvent.context(id));
                 }
             }
         }

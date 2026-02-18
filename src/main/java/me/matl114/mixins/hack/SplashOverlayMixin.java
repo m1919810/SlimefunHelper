@@ -7,6 +7,7 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.utils.ColorUtils;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.SplashOverlay;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,7 +23,7 @@ public abstract class SplashOverlayMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/gui/DrawContext;drawTexture(Lnet/minecraft/util/Identifier;IIIIFFIIII)V",
+                                    "Lnet/minecraft/client/gui/DrawContext;drawTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V",
                             ordinal = 1,
                             shift = At.Shift.AFTER))
     private void onRenderOverlay(
@@ -47,13 +48,14 @@ public abstract class SplashOverlayMixin {
                     GL11.GL_ONE, // SourceFactor.ONE (alpha) = 1
                     GL11.GL_ONE_MINUS_SRC_ALPHA // DestFactor.ONE_MINUS_SRC_ALPHA (alpha) = 771
                     );
-            context.drawTexturedQuad(identifier, 0, i, 0, j, 0, 0, 1, 0, 1, 1.0F, 1.0F, 1.0F, alpha);
+            context.drawTexturedQuad(
+                    RenderLayer::getGuiTextured, identifier, 0, i, 0, j, 0, 1, 0, 1, ColorUtils.withAlpha(-1, alpha));
         }
     }
 
     @ModifyExpressionValue(
             method = "renderProgressBar",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/ColorHelper$Argb;getArgb(IIII)I"))
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/ColorHelper;getArgb(IIII)I"))
     private int onOverrideProgressbar(int original, @Local(ordinal = 5) int j) {
         return ColorUtils.orWithAlpha(
                 RenderTasks.getCustomOverlay().colorProgressbar.get(), j);

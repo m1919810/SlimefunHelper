@@ -9,8 +9,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.Item;
@@ -55,11 +54,11 @@ public class NewStyleModel extends BaseModule {
         registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
     }
 
-    private Map<Identifier, Optional<BakedModel>> cache = new HashMap<>();
+    private Map<Identifier, Optional<ItemModel>> cache = new HashMap<>();
 
-    private Map<Item, Optional<BakedModel>> cacheItem = new HashMap<>();
+    private Map<Item, Identifier> cacheItem = new HashMap<>();
 
-    public void onModelOverride(Event<BakedModel> event) {
+    public void onModelOverride(Event<Identifier> event) {
         if (event.context != null) return;
         ItemStack item = event.getArgs(0);
         if (enableEnchant.get()) {
@@ -86,16 +85,18 @@ public class NewStyleModel extends BaseModule {
                                                         NAMESPACE, MODEL_PATH + identifier2.getPath() + OVER_MAX_VALUE)
                                                 : new Identifier(
                                                         NAMESPACE, MODEL_PATH + identifier2.getPath() + "_" + level))));
-                        Optional<BakedModel> modelId = cache.computeIfAbsent(id, RenderListener::getModModel);
-                        modelId.ifPresent(event::context);
+                        Optional<ItemModel> modelId = cache.computeIfAbsent(id, RenderListener::getModModel);
+                        if (modelId.isPresent()) {
+                            event.context(id);
+                        }
                     }
                 }
             }
         }
         if (shouldEnableNewStyle(item)) {
             var model = cacheItem.get(item.getItem());
-            if (model != null && model.isPresent()) {
-                event.context(model.get());
+            if (model != null) {
+                event.context(model);
             }
         }
     }
@@ -131,9 +132,10 @@ public class NewStyleModel extends BaseModule {
             Identifier id = new Identifier(
                     NAMESPACE,
                     PATH_OF_NEW_VERSION + "/" + Registries.ITEM.getId(item).getPath());
-            Optional<BakedModel> modelId = RenderListener.getModModel(id);
+            Optional<ItemModel> modelId = RenderListener.getModModel(id);
+            // todo: what?
             if (modelId.isPresent()) {
-                cacheItem.put(item, modelId);
+                cacheItem.put(item, id);
                 Debug.info("Loading new-version model", id);
             }
         }
@@ -153,5 +155,5 @@ public class NewStyleModel extends BaseModule {
         return ItemStackUtils.getCustomDataReadOnly(stack).contains(PATH_OF_NEW_VERSION);
     }
 
-    public final Map<Item, ModelIdentifier> NEW_VERSION_ITEMS = new HashMap<>();
+    public final Map<Item, ItemModel> NEW_VERSION_ITEMS = new HashMap<>();
 }

@@ -2,7 +2,6 @@ package me.matl114.versioned.impl;
 
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.Map;
 import me.matl114.utils.ItemStackUtils;
@@ -18,7 +17,7 @@ import net.minecraft.util.Unit;
 public class ItemUtils_v1_21_1 implements VItem {
     @Override
     public boolean canGlide(ItemStack stack) {
-        return stack.getItem() instanceof ElytraItem;
+        return stack.contains(DataComponentTypes.GLIDER);
     }
 
     @Override
@@ -30,7 +29,8 @@ public class ItemUtils_v1_21_1 implements VItem {
     public boolean isWeapon(ItemStack stack) {
         if (stack.getItem() instanceof MaceItem) {
             return true;
-        } else if (stack.getItem() instanceof ToolItem tool) {
+        } else if (stack.contains(DataComponentTypes.TOOL)) {
+            Item tool = stack.getItem();
             if (tool instanceof AxeItem) {
                 return true;
             } else if (tool instanceof MiningToolItem) {
@@ -45,7 +45,7 @@ public class ItemUtils_v1_21_1 implements VItem {
 
     @Override
     public boolean isTool(ItemStack stack) {
-        return stack.getItem() instanceof ToolItem;
+        return stack.contains(DataComponentTypes.TOOL);
     }
 
     @Override
@@ -60,12 +60,15 @@ public class ItemUtils_v1_21_1 implements VItem {
 
     @Override
     public NbtCompound toNbt(ItemStack tag) {
-        return (NbtCompound) tag.encodeAllowEmpty(ItemStackUtils.registry());
+        if (tag.isEmpty()) {
+            return new NbtCompound();
+        }
+        return (NbtCompound) tag.toNbt(ItemStackUtils.registry());
     }
 
     @Override
     public CustomModelDataComponent createModelData(int cmd) {
-        return new CustomModelDataComponent(cmd);
+        return new CustomModelDataComponent(List.of((float) cmd), List.of(), List.of(), List.of());
     }
 
     private static final Map<ComponentType<?>, Codec<?>> VERSIONED;
@@ -74,16 +77,14 @@ public class ItemUtils_v1_21_1 implements VItem {
         var builder = ImmutableMap.<ComponentType<?>, Codec<?>>builder();
         builder.put(
                 DataComponentTypes.CUSTOM_MODEL_DATA,
-                Codec.withAlternative(CustomModelDataComponent.CODEC, RecordCodecBuilder.create((instance) -> {
-                    return instance.group(Codec.FLOAT
-                                    .listOf()
-                                    .optionalFieldOf("floats", List.of())
-                                    .forGetter(s -> s.value() == 0 ? List.of() : List.of((float) s.value())))
-                            .apply(
-                                    instance,
-                                    floats -> new CustomModelDataComponent(
-                                            floats.isEmpty() ? 0 : (int) (float) floats.get(0)));
-                })));
+                Codec.withAlternative(
+                        CustomModelDataComponent.CODEC,
+                        Codec.INT.xmap(
+                                i -> new CustomModelDataComponent(List.of((float) i), List.of(), List.of(), List.of()),
+                                v -> v.floats().stream()
+                                        .findFirst()
+                                        .map(Number::intValue)
+                                        .orElse(0))));
         builder.put(
                 DataComponentTypes.UNBREAKABLE,
                 Codec.withAlternative(

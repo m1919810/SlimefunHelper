@@ -24,8 +24,8 @@ import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.screen.AbstractRecipeScreenHandler;
+import net.minecraft.recipe.NetworkRecipeId;
+import net.minecraft.screen.AbstractCraftingScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Unique;
@@ -72,7 +72,7 @@ public class FastCraft extends BaseModule {
         }
     }
 
-    public void onRecipeClicked(Event<RecipeEntry<?>> event) {
+    public void onRecipeClicked(Event<NetworkRecipeId> event) {
         if (!isLock()) {
             lastCrafted = event.context();
         }
@@ -85,12 +85,12 @@ public class FastCraft extends BaseModule {
 
     @Getter // todo: make it configurable, like, open a fucking menu and select
     // todo: hard in higher version of mc
-    private RecipeEntry<?> lastCrafted;
+    private NetworkRecipeId lastCrafted;
 
     public void placeLastCraftingRecipe(
-            HandledScreen<? extends AbstractRecipeScreenHandler> craftingScreen, boolean doCraft) {
+            HandledScreen<? extends AbstractCraftingScreenHandler> craftingScreen, boolean doCraft) {
         // var recipeBook = craftingScreen.getRecipeBookWidget();
-        RecipeEntry<?> last = lastCrafted;
+        NetworkRecipeId last = lastCrafted;
         if (last != null) {
             mc.interactionManager.clickRecipe(craftingScreen.getScreenHandler().syncId, last, true);
             if (doCraft) {
@@ -101,7 +101,7 @@ public class FastCraft extends BaseModule {
                         maxCraft = Math.min(maxCraft, val.getMaxCount());
                     }
                 }
-                int slot = craftingScreen.getScreenHandler().getCraftingResultSlotIndex();
+                int slot = craftingScreen.getScreenHandler().getOutputSlot().getIndex();
                 craftAtSlotIndex(craftingScreen, maxCraft, slot);
             }
         } else {

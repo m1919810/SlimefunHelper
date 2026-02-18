@@ -13,7 +13,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.EditBox;
 import net.minecraft.client.gui.widget.EditBoxWidget;
-import net.minecraft.client.gui.widget.ScrollableWidget;
+import net.minecraft.client.gui.widget.ScrollableTextFieldWidget;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(EditBoxWidget.class)
-public abstract class EditBoxWidgetMixin extends ScrollableWidget implements TextFieldAccess {
+public abstract class EditBoxWidgetMixin extends ScrollableTextFieldWidget implements TextFieldAccess {
     @Unique
     private static final ColorProvider ORIGIN_PROVIDER = McWidgetHelpers.getDefaultTextBoxColorProvider();
 
@@ -84,8 +84,9 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
     }
     // override ALL EditBox behaviour
     @Override
-    protected void drawBox(DrawContext context, int x, int y, int width, int height) {
-        McWidgetHelpers.drawTextWidgetBox(this, context, x, y, width, height, this.isFocused(), this.boxColorProvider);
+    protected void drawBox(DrawContext context) {
+        McWidgetHelpers.drawTextWidgetBox(
+                this, context, getX(), getY(), width, height, this.isFocused(), this.boxColorProvider);
     }
 
     @Inject(method = "setFocused", at = @At("HEAD"))
@@ -106,7 +107,7 @@ public abstract class EditBoxWidgetMixin extends ScrollableWidget implements Tex
 
     @Unique
     public boolean canStartDrag(double mouseX, double mouseY) {
-        return this.isWithinBounds(mouseX, mouseY) || super.scrollbarDragged;
+        return this.isMouseOver(mouseX, mouseY) || super.scrollbarDragged;
     }
 
     @Unique

@@ -45,7 +45,7 @@ public class CombatExtra extends BaseModule {
 
     public double getAttackRange() {
         double d = range.get();
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE) + d;
+        return mc.player.getAttributeValue(EntityAttributes.ENTITY_INTERACTION_RANGE) + d;
     }
 
     @Override
@@ -69,10 +69,9 @@ public class CombatExtra extends BaseModule {
         if (shieldPredict.get()
                 && mc.player != null
                 && trackerUpdateS2CPacket.id() == mc.player.getId()
+                && mc.player.isUsingItem()
                 && VItem.getInstance().isShield(mc.player.getActiveItem())
-                && !mc.player
-                        .getItemCooldownManager()
-                        .isCoolingDown(mc.player.getActiveItem().getItem())) {
+                && !mc.player.getItemCooldownManager().isCoolingDown(mc.player.getActiveItem())) {
             // shield not in cooldown
             // block shield from
             for (var trackerUpdate : trackerUpdateS2CPacket.trackedValues()) {
@@ -107,9 +106,7 @@ public class CombatExtra extends BaseModule {
         if (shieldPredict.get()
                 && mc.player.isUsingItem()
                 && VItem.getInstance().isShield(mc.player.getActiveItem())
-                && !mc.player
-                        .getItemCooldownManager()
-                        .isCoolingDown(mc.player.getActiveItem().getItem())) {
+                && !mc.player.getItemCooldownManager().isCoolingDown(mc.player.getActiveItem())) {
             mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
                 return new PlayerInteractItemC2SPacket(
                         mc.player.getActiveHand(), sequence, mc.player.getYaw(), mc.player.getPitch());
@@ -126,7 +123,7 @@ public class CombatExtra extends BaseModule {
             try {
                 synchronized (CombatExtra.class) {
                     // async update, synchronize to protect concurrent cooldown update,
-                    mc.player.getItemCooldownManager().set(packet.item(), packet.cooldown());
+                    mc.player.getItemCooldownManager().set(packet.cooldownGroup(), packet.cooldown());
                     //                if(mc.player.isUsingItem() && mc.player.getActiveItem().getItem() == shield){
                     //
                     //                }

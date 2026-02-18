@@ -38,7 +38,7 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.*;
 import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
-import net.minecraft.recipe.RecipeEntry;
+import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -340,7 +340,7 @@ public class Listener {
 
     @Getter
     @Broadcast
-    private static final EventChannel<RecipeEntry<?>> clickCraftingRecipe = new EventChannel<>();
+    private static final EventChannel<NetworkRecipeId> clickCraftingRecipe = new EventChannel<>();
 
     // packet events
     @Cancelable

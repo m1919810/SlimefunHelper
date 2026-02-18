@@ -14,8 +14,7 @@ import me.matl114.managers.config.ListRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VItem;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.ItemStack;
@@ -56,7 +55,7 @@ public class SlimefunModels extends BaseModule {
         registerListener(RenderListener.getItemDataOverrideForModel(), this::onItemOverride);
     }
 
-    private final Map<ModelIdentifier, Optional<BakedModel>> modelCache = new HashMap<>();
+    private final Map<Identifier, Optional<ItemModel>> modelCache = new HashMap<>();
 
     public void onResourceReload(Event<ResourceManager> resourceManager) {
         customModelDatas.clear();
@@ -70,7 +69,7 @@ public class SlimefunModels extends BaseModule {
         }
     }
 
-    public void onModelOverride(Event<BakedModel> event) {
+    public void onModelOverride(Event<Identifier> event) {
         if (event.context != null) return;
 
         if (enableModel.get()) {
@@ -79,12 +78,12 @@ public class SlimefunModels extends BaseModule {
             try {
                 String id = ItemStackUtils.getSfId(nbt);
                 if (id != null) {
-                    ModelIdentifier identifier = customItemModels.get(id);
+                    Identifier identifier = customItemModels.get(id);
                     if (identifier != null) {
-                        Optional<BakedModel> modelOptional =
+                        Optional<ItemModel> modelOptional =
                                 modelCache.computeIfAbsent(identifier, RenderListener::getOptionalModelOf);
                         if (modelOptional.isPresent()) {
-                            event.context(modelOptional.get());
+                            event.context(identifier);
                             return;
                         }
                     }
@@ -111,7 +110,7 @@ public class SlimefunModels extends BaseModule {
     }
 
     private final Map<String, CustomModelDataComponent> customModelDatas = new HashMap<>();
-    private final Map<String, ModelIdentifier> customItemModels = new HashMap<>();
+    private final Map<String, Identifier> customItemModels = new HashMap<>();
     private static final String OUR_NAMESPACE = "slimefunhelper";
 
     public void loadCustomModelDatas() {
@@ -194,15 +193,13 @@ public class SlimefunModels extends BaseModule {
                                 ? new Identifier(
                                         realNamespace, String.join("/", Arrays.copyOfRange(splits, 1, splits.length)))
                                 : fullPathId;
-                        ModelIdentifier wrappedId = RenderListener.wrapAsModModel(fullPathId);
-
-                        //                            if(OUR_NAMESPACE.equals(namespace)){
-                        //                                Debug.info("try test slimefun item model",shouldModelId);
-                        //                            }
-                        if (OUR_NAMESPACE.equals(namespace) || predicate.test(shouldModelId.toString())) {
+                        boolean testResult = predicate.test(shouldModelId.toString());
+                        if (OUR_NAMESPACE.equals(namespace) || testResult) {
                             // custom item
                             Debug.info("load custom slimefun item model:", shouldModelId);
-                            customItemModels.put(splits[splits.length - 1].toUpperCase(Locale.ROOT), wrappedId);
+                            if (testResult) {
+                                customItemModels.put(splits[splits.length - 1].toUpperCase(Locale.ROOT), fullPathId);
+                            }
                             id.add(fullPathId);
                         }
                     });

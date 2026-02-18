@@ -21,13 +21,13 @@ public abstract class GameRendererEvents {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/WorldRenderer;render(Lnet/minecraft/client/render/RenderTickCounter;ZLnet/minecraft/client/render/Camera;Lnet/minecraft/client/render/GameRenderer;Lnet/minecraft/client/render/LightmapTextureManager;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
+                                    "Lnet/minecraft/client/render/WorldRenderer;render(Lnet/minecraft/client/util/ObjectAllocator;Lnet/minecraft/client/render/RenderTickCounter;ZLnet/minecraft/client/render/Camera;Lnet/minecraft/client/render/GameRenderer;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
                             shift = At.Shift.AFTER),
             method = "renderWorld(Lnet/minecraft/client/render/RenderTickCounter;)V")
     public void renderMore(
             RenderTickCounter tickCounter,
             CallbackInfo ci,
-            @Local(ordinal = 1) Matrix4f matrix4f2,
+            @Local(ordinal = 2) Matrix4f matrix4f2,
             @Local(ordinal = 1) float tickDelta) {
         MatrixStack matrixStack = new MatrixStack();
         matrixStack.multiplyPositionMatrix(matrix4f2);

@@ -66,7 +66,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Inject(
             method = "tickMovement",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick(ZF)V", shift = At.Shift.AFTER))
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick()V", shift = At.Shift.AFTER))
     public void onPostInputTick(CallbackInfo ci) {
         if (!Listener.getPlayerKeyboardInputTick().isEmpty()) {
             Listener.getPlayerKeyboardInputTick().handleValue(new Event<>(this.input, false, false));

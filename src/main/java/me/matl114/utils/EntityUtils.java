@@ -91,7 +91,7 @@ public class EntityUtils {
     static {
         for (Item item : Registries.ITEM) {
             if (item instanceof SpawnEggItem egg) {
-                ITEM2SPAWN_ENTITY.put(item, egg.getEntityType(new ItemStack(item)));
+                ITEM2SPAWN_ENTITY.put(item, egg.getEntityType(null, new ItemStack(item)));
             }
         }
     }
