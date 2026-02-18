@@ -21,8 +21,5 @@ public interface IHotKey {
 
     public void setInputHandler(SimpleHotKey.InputHandler handler);
 
-    default <T extends IHotKey> T register(IInputManager manager) {
-        manager.registerHotKeys(this);
-        return (T) this;
-    }
+    public void addRegisteredManager(IInputManager manager);
 }
