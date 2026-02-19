@@ -1,4 +1,4 @@
-package com.jsmacrosce.jsmacros.core.language;
+package xyz.wagyourtail.jsmacros.core.language;
 
 public class BaseScriptContext<T> {
     public T getContext(){

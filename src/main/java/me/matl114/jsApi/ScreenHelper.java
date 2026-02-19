@@ -9,13 +9,12 @@ import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
-import xyz.wagyourtail.jsmacros.client.api.classes.inventory.Inventory;
-import xyz.wagyourtail.jsmacros.client.api.classes.inventory.PlayerInventory;
 
 @ApiMethod
 public class ScreenHelper {
@@ -23,7 +22,7 @@ public class ScreenHelper {
 
     @Nonnull
     public static Object createInventoryView(HandledScreen s) {
-        return Inventory.create(s);
+        return JsMacrosBridge.getInstance().wrap(s);
     }
 
     @Nonnull
@@ -31,7 +30,7 @@ public class ScreenHelper {
         ClientPlayerEntity player = mc.player;
         HandledScreen<?> handledScreen = ClientPlayerAccess.of(player).getServerOpeningScreen();
         // create backpack inventory if null
-        return handledScreen != null ? Inventory.create(handledScreen) : Inventory.create();
+        return handledScreen != null ? createInventoryView(handledScreen) : JsMacrosBridge.getInstance().createInventory();
     }
 
     public static ScreenHandler getScreenHandler(Object handled) {

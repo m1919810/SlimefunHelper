@@ -1,4 +1,4 @@
-package com.jsmacrosce.jsmacros.client.api.library.impl;
+package xyz.wagyourtail.jsmacros.client.api.library.impl;
 
 import org.jspecify.annotations.Nullable;
 
