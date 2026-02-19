@@ -12,6 +12,7 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.commons.Method;
 import xyz.wagyourtail.jsmacros.core.Core;
 import xyz.wagyourtail.jsmacros.core.library.BaseLibrary;
+import xyz.wagyourtail.jsmacros.core.library.Library;
 import xyz.wagyourtail.jsmacros.core.library.LibraryRegistry;
 
 /**
@@ -31,7 +32,8 @@ public class SlimefunHelperApi {
 
             }
             try{
-                currentJsApi = null;
+                currentJsApi = com.jsmacrosce.jsmacros.core.Core.class;
+                initCE();
                 break find;
             }catch (Throwable e){
 
@@ -59,7 +61,7 @@ public class SlimefunHelperApi {
         LibraryRegistry registry = jsMacrosInstance.libraryRegistry;
         Class<?> baseLib = BaseLibrary.class;
 
-        List<Class<?>> clazzes = createSlimefunHelperApi(baseLib);
+        List<Class<?>> clazzes = createSlimefunHelperApi(baseLib, Library.class);
         for (var clazz : clazzes) {
             registry.addLibrary((Class<? extends BaseLibrary>) clazz);
         }
@@ -67,7 +69,16 @@ public class SlimefunHelperApi {
     }
 
     private static void initCE(){
+        com.jsmacrosce.jsmacros.core.Core jsMacrosInstance = com.jsmacrosce.jsmacros.core.Core.getInstance();
+        JsMacrosBridge.Holder.bridge = new JsMacrosBridge.JsMacrosCE();
+        com.jsmacrosce.jsmacros.core.library.LibraryRegistry registry = jsMacrosInstance.libraryRegistry;
+        Class<?> baseLib = com.jsmacrosce.jsmacros.core.library.BaseLibrary.class;
 
+        List<Class<?>> clazzes = createSlimefunHelperApi(baseLib, com.jsmacrosce.jsmacros.core.library.Library.class);
+        for (var clazz : clazzes) {
+            registry.addLibrary((Class<? extends com.jsmacrosce.jsmacros.core.library.BaseLibrary>) clazz);
+        }
+        Debug.info("Successfully injected jsMacrosCE library");
     }
 
     public static void init() {
@@ -78,60 +89,60 @@ public class SlimefunHelperApi {
 
     private static List<Class<?>> slimefunHelperApi;
 
-    public static synchronized List<Class<?>> createSlimefunHelperApi(Class<?> libBase) {
+    public static synchronized List<Class<?>> createSlimefunHelperApi(Class<?> libBase, Class<?> libAnnotation) {
         if (slimefunHelperApi == null) {
             slimefunHelperApi = new ArrayList<>();
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, ClientHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, Consts.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, DataHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, InputHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, KeyBindingHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, PacketHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, RenderHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, ReflectHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, MovTasks.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, Tasks.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, CombatTasks.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, MineTasks.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, InvTasks.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, CommonUtils.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, JsHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, RegistryHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, Debug.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, ChatUtils.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, InventoryUtils.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, ItemStackHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, CollectionUtils.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, FileHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, RaycastUtils.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, WorldHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, NBTHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, EnumHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, EntityHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, ScreenHelper.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, ClientUtils.class));
-            slimefunHelperApi.add(buildLibForJsMacros(libBase, ItemStackUtils.class));
-            //            buildLibForJsMacros(libBase, ClientHelper.class);
+            List<Class<?>> apiClasses = List.of(
+                ClientHelper.class,
+                Consts.class,
+                DataHelper.class,
+                InputHelper.class,
+                KeyBindingHelper.class,
+                PacketHelper.class,
+                RenderHelper.class,
+                ReflectHelper.class,
+                MovTasks.class,
+                Tasks.class,
+                CombatTasks.class,
+                MineTasks.class,
+                InvTasks.class,
+                CommonUtils.class,
+                JsHelper.class,
+                RegistryHelper.class,
+                Debug.class,
+                ChatUtils.class,
+                InventoryUtils.class,
+                ItemStackHelper.class,
+                CollectionUtils.class,
+                FileHelper.class,
+                RaycastUtils.class,
+                WorldHelper.class,
+                NBTHelper.class,
+                EnumHelper.class,
+                EntityHelper.class,
+                ScreenHelper.class,
+                ClientUtils.class,
+                ItemStackUtils.class
+            );
+
+            for (Class<?> clazz : apiClasses) {
+                slimefunHelperApi.add(buildLibForJsMacros(libBase, libAnnotation, clazz));
+            }
             // todo: 适配PacketByteBufferHelper
         }
         return slimefunHelperApi;
     }
 
-    public static synchronized Class<?> buildLibForJsMacros(Class<?> targetBaseClass, Class<?> utilityClass) {
+    public static synchronized Class<?> buildLibForJsMacros(Class<?> targetBaseClass, Class<?> libClass, Class<?> utilityClass) {
         try {
             // 检查是否有ApiMethod注解
             boolean hasApiMethodAnnotation = false;
             if (utilityClass.getAnnotation(ApiMethod.class) != null) {
                 hasApiMethodAnnotation = true;
             }
-            boolean hasLibraryAnnotation = false;
-            Class libraryClass = null;
-            try {
-                libraryClass = Class.forName("xyz.wagyourtail.jsmacros.core.library.Library");
-                hasLibraryAnnotation = true;
-            } catch (Throwable e) {
-                // 如果没有找到Library类，不处理
-            }
+            Class libraryClass = libClass;
+            boolean hasLibraryAnnotation = libraryClass != null;
+
 
             String className = utilityClass.getName() + "LibImpl";
             String internalName = className.replace('.', '/');
