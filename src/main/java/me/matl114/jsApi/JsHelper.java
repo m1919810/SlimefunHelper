@@ -1,55 +1,15 @@
 package me.matl114.jsApi;
 
-import com.google.common.base.Suppliers;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.function.Supplier;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
-import org.apache.commons.lang3.NotImplementedException;
-import xyz.wagyourtail.jsmacros.client.api.classes.inventory.Inventory;
-import xyz.wagyourtail.jsmacros.client.api.classes.math.Pos2D;
-import xyz.wagyourtail.jsmacros.client.api.classes.math.Pos3D;
-import xyz.wagyourtail.jsmacros.client.api.library.impl.FJavaUtils;
-import xyz.wagyourtail.jsmacros.core.helpers.BaseHelper;
 
 @ApiMethod
 public class JsHelper {
     public static <T> T unwrap(Object what, Class<T> type) {
-        if (type.isInstance(what)) {
-            return type.cast(what);
-        } else {
-            if (what instanceof BaseHelper<?> base) {
-                var raw = base.getRaw();
-                return type.cast(raw);
-            }
-            if (what instanceof Pos3D pos3) {
-                return type.cast(new Vec3d(pos3.x, pos3.y, pos3.z));
-            }
-            if (what instanceof Pos2D pos2D) {
-                return type.cast(new Vec2f((float) pos2D.x, (float) pos2D.y));
-            }
-            if (what instanceof Inventory<?> inventory) {
-                return type.cast(inventory.getRawContainer());
-            }
-            try {
-                return type.cast(what);
-            } catch (Throwable e) {
-                throw new UnsupportedOperationException("This type is not supported to unwrap: "
-                        + what.getClass().getName());
-            }
-            //            try{
-            //                Method method = what.getClass().getMethod("getRaw");
-            //                method.setAccessible(true);
-            //                return (T) method.invoke(what);
-            //            }catch (Throwable e){
-            //                return (T)what;
-            //            }
-        }
+        return JsMacrosBridge.getInstance().unwrap(what, type);
     }
 
     private static WrappingMethod lookupWrappingMethod(String clazzName, String methodName) {
@@ -124,32 +84,10 @@ public class JsHelper {
     //            .build();
     //        jsInstanceWrappers = wrappers;
     //    }
-    private static final Supplier<?> javaUtilInstance = Suppliers.memoize(() -> {
-        try {
-            return new FJavaUtils();
-        } catch (Throwable e) {
-            throw new RuntimeException("Failed to instantiate JavaUtil Instance", e);
-        }
-    });
+
 
     public static <T> T wrap(Object object) throws Throwable {
-        FJavaUtils javaUtils = (FJavaUtils) javaUtilInstance.get();
-        Object ret = javaUtils.getHelperFromRaw(object);
-        if (ret != null) {
-            return (T) ret;
-        }
-        if (object instanceof Vec3d vec3d) {
-            return (T) new Pos3D(vec3d);
-        }
-        if (object instanceof Vec2f vec2f) {
-            return (T) new Pos2D(vec2f.x, vec2f.y);
-        }
-        if (object instanceof HandledScreen handledScreen) {
-            return (T) Inventory.create(handledScreen);
-        }
-
-        throw new UnsupportedOperationException(
-                "This type of instance is not supported to wrap" + ", use JavaUtils.getHelperFromRaw instead");
+        return (T) JsMacrosBridge.getInstance().wrap(object);
     }
 
     public static interface WrappingMethod {
@@ -161,6 +99,6 @@ public class JsHelper {
     }
 
     public static void runSingleRepeat(Object object, String flag, boolean debug) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 }

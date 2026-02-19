@@ -1,4 +1,4 @@
-package xyz.wagyourtail.jsmacros.client.api.classes.inventory;
+package com.jsmacrosce.jsmacros.client.api.classes.inventory;
 
 public class PlayerInventory {
 }

@@ -34,17 +34,19 @@ repositories {
 	}
 
 }
+sourceSets {
+	stubs{
+		compileClasspath += configurations.runtimeClasspath
+	}
+}
 //apply plugin: 'com.gradleup.shadow'
 //apply plugin: 'java'
-
 
 fabricApi {
 	configureDataGeneration()
 }
 configurations {
 	//buildtoolsImplementation.extendsFrom(compileClasspath)
-	// Dependencies only used for the guide export, but not shipped
-
 	runtimeClasspath.extendsFrom implementation
 }
 
@@ -60,10 +62,7 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	modCompileOnly files("libs/jsmacros-1.21-1.9.3.jar")
-	modCompileOnly files("libs/jsmacros-1.21-js-extension.jar")
-	modCompileOnly files("libs/graal-sdk-23.0.1.jar")
-
+	compileOnly sourceSets.stubs.output
 	api 'com.github.houbb:pinyin:0.4.0'
 	api 'io.netty:netty-handler-proxy:4.1.97.Final'
 	api 'org.yaml:snakeyaml:1.30'
@@ -175,7 +174,7 @@ tasks.named("runClient", JavaExec) {
 //			'http.proxyPort': '7890'
 //	]
 //}
-
+//
 //tasks.named("build"){
 //	//why can not it be directly accessed, I don't understand
 //	//shit gradle

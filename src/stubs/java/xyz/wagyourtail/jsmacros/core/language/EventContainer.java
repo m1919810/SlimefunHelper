@@ -1,4 +1,4 @@
-package com.jsmacrosce.jsmacros.core.language;
+package xyz.wagyourtail.jsmacros.core.language;
 
 public class EventContainer<T extends BaseScriptContext<?>> {
     public T getCtx(){
