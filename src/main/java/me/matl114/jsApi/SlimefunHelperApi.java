@@ -20,16 +20,23 @@ import xyz.wagyourtail.jsmacros.core.library.LibraryRegistry;
  */
 public class SlimefunHelperApi {
     private static void initTask() {
+        Class<?> currentJsApi;
+        find:
         try {
-            Core jsMacrosInstance = Core.getInstance();
-            LibraryRegistry registry = jsMacrosInstance.libraryRegistry;
-            Class<?> baseLib = BaseLibrary.class;
+            try{
+                currentJsApi = Core.class;
+                initXYZ();
+                break find;
+            }catch (Throwable e){
 
-            List<Class<?>> clazzes = createSlimefunHelperApi(baseLib);
-            for (var clazz : clazzes) {
-                registry.addLibrary((Class<? extends BaseLibrary>) clazz);
             }
-            Debug.info("Successfully injected jsMacros library");
+            try{
+                currentJsApi = null;
+                break find;
+            }catch (Throwable e){
+
+            }
+            throw new IllegalStateException("No JsMacros instance found");
         } catch (Throwable e) {
             Debug.info("JsMacros library inject failed, caused by: ");
             e.printStackTrace();
@@ -44,6 +51,23 @@ public class SlimefunHelperApi {
             //            }
             Debug.info("Mock lib test success");
         }
+    }
+
+    private static void initXYZ(){
+        Core jsMacrosInstance = Core.getInstance();
+        JsMacrosBridge.Holder.bridge = new JsMacrosBridge.JsMacrosXYZ();
+        LibraryRegistry registry = jsMacrosInstance.libraryRegistry;
+        Class<?> baseLib = BaseLibrary.class;
+
+        List<Class<?>> clazzes = createSlimefunHelperApi(baseLib);
+        for (var clazz : clazzes) {
+            registry.addLibrary((Class<? extends BaseLibrary>) clazz);
+        }
+        Debug.info("Successfully injected jsMacros library");
+    }
+
+    private static void initCE(){
+
     }
 
     public static void init() {

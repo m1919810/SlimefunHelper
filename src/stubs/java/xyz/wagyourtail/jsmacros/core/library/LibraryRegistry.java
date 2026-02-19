@@ -1,4 +1,4 @@
-package com.jsmacrosce.jsmacros.core.library;
+package xyz.wagyourtail.jsmacros.core.library;
 
 public class LibraryRegistry {
     public synchronized void addLibrary(Class<? extends BaseLibrary> clazz) {}

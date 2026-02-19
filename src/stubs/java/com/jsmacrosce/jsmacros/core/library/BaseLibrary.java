@@ -1,4 +1,4 @@
-package xyz.wagyourtail.jsmacros.core.library;
+package com.jsmacrosce.jsmacros.core.library;
 
 public class BaseLibrary {
 }

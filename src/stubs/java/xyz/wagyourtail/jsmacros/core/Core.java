@@ -1,6 +1,6 @@
-package com.jsmacrosce.jsmacros.core;
+package xyz.wagyourtail.jsmacros.core;
 
-import com.jsmacrosce.jsmacros.core.library.LibraryRegistry;
+import xyz.wagyourtail.jsmacros.core.library.LibraryRegistry;
 
 public class Core {
     public LibraryRegistry libraryRegistry;

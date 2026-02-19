@@ -1,4 +1,4 @@
-package com.jsmacrosce.jsmacros.client.api.classes.math;
+package xyz.wagyourtail.jsmacros.client.api.classes.math;
 
 public class Pos2D {
     public double x;

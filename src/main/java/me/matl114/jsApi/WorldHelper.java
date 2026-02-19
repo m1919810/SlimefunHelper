@@ -30,8 +30,7 @@ public class WorldHelper {
     }
 
     public static Object getBlockData(World world, BlockPos pos) throws Throwable {
-        Class<?> clazz = Class.forName("xyz.wagyourtail.jsmacros.client.api.helpers.world.BlockDataHelper");
-        return clazz.getConstructors()[0].newInstance(world.getBlockState(pos), world.getBlockEntity(pos), pos);
+        return JsMacrosBridge.getInstance().newBlockData(world.getBlockState(pos), world.getBlockEntity(pos), pos);
     }
 
     public static boolean isWorldClient(World world) {
