@@ -65,6 +65,8 @@ public class StorageDisplay extends BaseModule {
         registerListener(RenderListener.getDetachedItemStackInformation(), this::onProductsSpecialPlugin, 1000);
         registerListener(RenderListener.getCustomModelOverride(), this::onGceChickenModel);
         registerListener(Listener.getPostTick(), this::onCacheClean);
+        registerListener(RenderListener.getAtlasSourceSupply(), this::onGceChickenTextureLoad);
+        registerListener(RenderListener.getAsyncItemModelSupply(), this::onGceChickenModelLoad);
     }
 
     public void onContainerSpawner(Event<ItemStack> event) {

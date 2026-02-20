@@ -29,6 +29,7 @@ import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.RangedWeaponItem;
@@ -126,7 +127,10 @@ public class BowEnhance extends BaseModule {
                 if (searchEntity) {
                     Entity entity = CombatTasks.targetSelector.searchAimableEntity(stack.getItem() instanceof BowItem);
                     if (entity != null) {
-
+                        Debug.chat(Text.literal("[Bow Aim] Aim at %s"
+                                        .formatted(entity instanceof PlayerEntity player ? "player " : "entity "))
+                                .append(EntityUtils.getEntityDisplayable(entity))
+                                .formatted(Formatting.GREEN));
                         // calculate lerp by speed
                         targetEntity = entity;
                     } else {
