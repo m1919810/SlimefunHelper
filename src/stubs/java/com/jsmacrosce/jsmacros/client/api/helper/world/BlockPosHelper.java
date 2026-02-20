@@ -1,7 +1,7 @@
-package xyz.wagyourtail.jsmacros.client.api.helpers.world;
+package com.jsmacrosce.jsmacros.client.api.helper.world;
 
+import com.jsmacrosce.jsmacros.core.helpers.BaseHelper;
 import net.minecraft.util.math.BlockPos;
-import xyz.wagyourtail.jsmacros.core.helpers.BaseHelper;
 
 public class BlockPosHelper extends BaseHelper<BlockPos> {
     public BlockPosHelper(BlockPos b) {
@@ -31,5 +31,4 @@ public class BlockPosHelper extends BaseHelper<BlockPos> {
     public int getZ() {
         return base.getZ();
     }
-
 }

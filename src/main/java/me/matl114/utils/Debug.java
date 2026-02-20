@@ -18,13 +18,12 @@ public class Debug {
         logger.info(string);
     }
 
-    public static void chat(Text... string) {
-
-        MutableText text = Text.literal("");
-        for (var tx : string) {
-            text.append(tx);
+    public static void chat(Object string) {
+        if (string instanceof Text txt) {
+            sendPlayer(txt);
+        } else {
+            sendPlayer(Text.literal(string == null ? "null" : string.toString()));
         }
-        sendPlayer(text);
     }
 
     public static void sendPlayer(Text text) {
@@ -61,9 +60,6 @@ public class Debug {
     //            MinecraftClient.getInstance().player.sendMessage(Text.of(String.join(" ", string)));
     //        }
     //    }
-    public static void info(Throwable throwable) {
-        throwable.printStackTrace();
-    }
 
     public static void info(Object... objs) {
         info(String.join(
@@ -72,6 +68,10 @@ public class Debug {
     }
 
     public static void info(Object object) {
+        if (object instanceof Throwable throwable) {
+            logger.info("Printing stack trace:", throwable);
+            return;
+        }
         logger.info(object != null ? object.toString() : "null");
     }
 

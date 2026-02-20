@@ -30,7 +30,9 @@ public class ScreenHelper {
         ClientPlayerEntity player = mc.player;
         HandledScreen<?> handledScreen = ClientPlayerAccess.of(player).getServerOpeningScreen();
         // create backpack inventory if null
-        return handledScreen != null ? createInventoryView(handledScreen) : JsMacrosBridge.getInstance().createInventory();
+        return handledScreen != null
+                ? createInventoryView(handledScreen)
+                : JsMacrosBridge.getInstance().createInventory();
     }
 
     public static ScreenHandler getScreenHandler(Object handled) {
