@@ -55,3 +55,5 @@ accessible method net/minecraft/client/gui/DrawContext drawTexturedQuad (Ljava/u
 accessible field net/minecraft/component/type/ItemEnchantmentsComponent showInTooltip Z
 accessible field net/minecraft/client/render/model/BakedModelManager missingItemModel Lnet/minecraft/client/render/item/model/ItemModel;
 accessible field net/minecraft/client/recipebook/ClientRecipeBook recipes Ljava/util/Map;
+
+accessible class net/minecraft/component/ComponentMap$Builder$SimpleComponentMap
