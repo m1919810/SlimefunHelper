@@ -57,6 +57,11 @@ public class ReflectHelper {
 
     public static void logClassInfo(Object what) {
         Class<?> clazz = what instanceof Class<?> ? (Class<?>) what : what.getClass();
+        Debug.chat(Text.literal("=== " + clazz.getSimpleName() + "的信息 ===").formatted(Formatting.YELLOW));
+        String type;
+        Debug.chat(Text.literal("类型: " + Modifier.toString(clazz.getModifiers())));
+        Debug.chat(Text.literal("父类: " + clazz.getSuperclass()));
+        Debug.chat(Text.literal("接口: " + Arrays.asList(clazz.getInterfaces())));
         Debug.chat(
                 Text.literal("=== " + getClassNameForLog(clazz) + " 的构造器信息 ===").formatted(Formatting.GREEN));
 
@@ -158,6 +163,28 @@ public class ReflectHelper {
                 .toList();
     }
 
+    public static void logPrivateMethodsInfo(Object what) {
+        Class<?> clazz = what instanceof Class<?> ? (Class<?>) what : what.getClass();
+        Debug.chat(Text.literal("=== " + getClassNameForLog(clazz) + " 的私有方法信息 ===")
+                .formatted(Formatting.GREEN));
+        for (var method : clazz.getDeclaredMethods()) {
+            if (!Modifier.isPublic(method.getModifiers())) {
+                String str = getMethodInfo(method);
+                Debug.chat(str);
+                Debug.chat(Text.literal("=========").formatted(Formatting.GREEN));
+            }
+        }
+    }
+
+    public static List<String> getPrivateMethodInfo(Object what) {
+        Class<?> clazz = what instanceof Class<?> ? (Class<?>) what : what.getClass();
+
+        return Arrays.stream(clazz.getDeclaredMethods())
+                .filter(s -> !Modifier.isPublic(s.getModifiers()))
+                .map(ReflectHelper::getMethodInfo)
+                .toList();
+    }
+
     public static String getMethodInfo(Executable constructor) {
         StringBuilder sb = new StringBuilder();
         // 修饰符
@@ -196,6 +223,17 @@ public class ReflectHelper {
                 }
             }
         }
+        return sb.toString();
+    }
+
+    public static String getFieldInfo(Field field) {
+        StringBuilder sb = new StringBuilder();
+        // 修饰符
+        sb.append(Modifier.toString(field.getModifiers())).append(" ");
+        // 构造器名
+        // 构建泛型
+        sb.append(field.getAnnotatedType().getType().getTypeName()).append(" ");
+        sb.append(field.getName());
         return sb.toString();
     }
 

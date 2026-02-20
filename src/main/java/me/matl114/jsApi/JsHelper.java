@@ -62,30 +62,6 @@ public class JsHelper {
         MinecraftClient.getInstance().execute(runnable);
     }
 
-    //    private static final Map<Class, WrappingMethod> jsInstanceWrappers ;
-    //    static{
-    //        Map<Class, WrappingMethod> wrappers = ImmutableMap.<Class, WrappingMethod>builder()
-    //            .put(Entity.class,
-    // lookupWrappingMethod("xyz.wagyourtail.jsmacros.client.api.helpers.world.entity.EntityHelper", "create"))
-    //            .put(ItemStack.class,
-    // lookupWrappingConstructor("xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper",
-    // ItemStack.class))
-    //            .put(NbtElement.class,
-    // lookupWrappingMethod("xyz.wagyourtail.jsmacros.client.api.helpers.NBTElementHelper", "wrap"))
-    //            .put(Block.class,
-    // lookupWrappingConstructor("xyz.wagyourtail.jsmacros.client.api.helpers.world.BlockHelper", Block.class))
-    //            .put(BlockPos.class,
-    // lookupWrappingConstructor("xyz.wagyourtail.jsmacros.client.api.helpers.world.BlockPosHelper", BlockPos.class))
-    //            .put(Packet.class,
-    // lookupWrappingConstructor("xyz.wagyourtail.jsmacros.client.api.helpers.PacketByteBufferHelper", Packet.class))
-    //            .put(PacketByteBuf.class,
-    // lookupWrappingConstructor("xyz.wagyourtail.jsmacros.client.api.helpers.PacketByteBufferHelper",
-    // PacketByteBuf.class))
-    //            .build();
-    //        jsInstanceWrappers = wrappers;
-    //    }
-
-
     public static <T> T wrap(Object object) throws Throwable {
         return (T) JsMacrosBridge.getInstance().wrap(object);
     }

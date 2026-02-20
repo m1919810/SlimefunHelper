@@ -1,8 +1,7 @@
 package com.jsmacrosce.jsmacros.client.api.library.impl;
 
-import org.jspecify.annotations.Nullable;
-
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public class FJavaUtils {
     @Nullable

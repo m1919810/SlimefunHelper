@@ -7,8 +7,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import org.joml.Vector3d;
 import org.joml.Vector3f;
-import xyz.wagyourtail.jsmacros.client.api.classes.math.Pos3D;
-import xyz.wagyourtail.jsmacros.client.api.helpers.world.BlockPosHelper;
 
 @ApiMethod
 public class DataHelper {
@@ -25,23 +23,24 @@ public class DataHelper {
             return (Vec3d) pos3d;
         } else if (pos3d instanceof Vec3i pos) {
             return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
-        } else if (pos3d instanceof Pos3D pos) {
-            Pos3D pos3D = (Pos3D) pos3d;
-            return new Vec3d(pos3D.x, pos3D.y, pos3D.z);
-        } else if (pos3d instanceof BlockPosHelper pos3D) {
-            BlockPosHelper blockPosHelper = (BlockPosHelper) pos3d;
-            return new Vec3d(blockPosHelper.getX(), blockPosHelper.getY(), blockPosHelper.getZ());
         } else if (pos3d instanceof Vector3d pos3D) {
             return new Vec3d(pos3D.x, pos3D.y, pos3D.z);
         } else if (pos3d instanceof Vector3f pos3D) {
             return new Vec3d(pos3D.x, pos3D.y, pos3D.z);
         } else {
-            throw new IllegalArgumentException("Unsupported vec3 type: " + pos3d.getClass());
+            Object cast = JsMacrosBridge.getInstance().forceUnwrap(pos3d, Object.class);
+            if (cast instanceof Vec3d vec3d) {
+                return vec3d;
+            } else if (cast instanceof Vec3i vec3i) {
+                return Vec3d.of(vec3i);
+            } else {
+                throw new IllegalArgumentException("Unsupported vec3 type: " + pos3d.getClass());
+            }
         }
     }
 
     public static Object createPos3d(Object pos) {
-        return new Pos3D(createVec(pos));
+        return JsMacrosBridge.getInstance().wrap(createVec(pos));
     }
 
     public static BlockPos createBlockPos(double x, double y, double z) {
