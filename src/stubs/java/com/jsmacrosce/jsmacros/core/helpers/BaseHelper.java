@@ -23,5 +23,4 @@ public abstract class BaseHelper<T> {
         }
         return base.equals(obj);
     }
-
 }

@@ -113,7 +113,7 @@ public class ItemStackHelper {
     }
 
     public static Object getHelperItem(ItemStack stack) {
-        return new xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper(stack);
+        return JsMacrosBridge.getInstance().wrapItemStack(stack);
     }
 
     public static Inventory createInventory(List<?> list, int size) {
@@ -129,10 +129,9 @@ public class ItemStackHelper {
     }
 
     public static Inventory createJSMappingInventory(List<?> list, int size) {
-        List<xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper> helpers =
-                (List<xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper>) list;
+        List helpers = list;
         if (helpers.size() < size) {
-            helpers.add(new xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper(ItemStack.EMPTY));
+            helpers.add(JsMacrosBridge.getInstance().wrapItemStack(ItemStack.EMPTY));
         }
         return new Inventory() {
             @Override
@@ -142,20 +141,19 @@ public class ItemStackHelper {
 
             @Override
             public boolean isEmpty() {
-                return helpers.stream()
-                        .allMatch(xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper::isEmpty);
+                return helpers.stream().allMatch(JsMacrosBridge.getInstance()::isItemEmpty);
             }
 
             @Override
             public ItemStack getStack(int slot) {
-                return helpers.get(slot).getRaw();
+                return JsMacrosBridge.getInstance().unwrapItemStack(helpers.get(slot));
             }
 
             @Override
             public ItemStack removeStack(int slot, int amount) {
-                xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper helper = helpers.get(slot);
-                if (!helper.isEmpty() && amount > 0) {
-                    return helper.getRaw().split(amount);
+                Object helper = helpers.get(slot);
+                if (!JsMacrosBridge.getInstance().isItemEmpty(helper) && amount > 0) {
+                    return JsMacrosBridge.getInstance().unwrapItemStack(helper).split(amount);
                 } else {
                     return ItemStack.EMPTY;
                 }
@@ -163,20 +161,18 @@ public class ItemStackHelper {
 
             @Override
             public ItemStack removeStack(int slot) {
-                ItemStack itemStack = helpers.get(slot).getRaw();
+                ItemStack itemStack = JsMacrosBridge.getInstance().unwrapItemStack(helpers.get(slot));
                 if (itemStack.isEmpty()) {
                     return ItemStack.EMPTY;
                 } else {
-                    helpers.set(
-                            slot,
-                            new xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper(ItemStack.EMPTY));
+                    helpers.set(slot, JsMacrosBridge.getInstance().wrapItemStack(ItemStack.EMPTY));
                     return itemStack;
                 }
             }
 
             @Override
             public void setStack(int slot, ItemStack stack) {
-                helpers.set(slot, new xyz.wagyourtail.jsmacros.client.api.helpers.inventory.ItemStackHelper(stack));
+                helpers.set(slot, JsMacrosBridge.getInstance().wrapItemStack(stack));
             }
 
             @Override

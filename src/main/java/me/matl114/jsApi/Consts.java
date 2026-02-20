@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import me.matl114.utils.ApiMethod;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
-import xyz.wagyourtail.jsmacros.core.language.EventContainer;
 
 /**
  * this provides the common consts which may be used in js Scripts
@@ -203,13 +202,12 @@ public interface Consts {
     });
 
     public static void importConstantToContext(Object context0) throws Throwable {
-        EventContainer<?> context = (EventContainer<?>) context0;
-        var ctx0 = context.getCtx().getContext();
-        var bindingMap = ReflectHelper.invoke(ctx0, "getBindings", "js");
+        var bindingMap = JsMacrosBridge.getInstance().getRunningCtxBinding(context0);
         importConstantNames(bindingMap);
     }
 
     public static void importConstantNames(Object varMap) throws Throwable {
+        // here varMap is raw Value object
         var map = ConstantMap.get();
         Map<String, Object> obj = new LinkedHashMap<>(map);
         var alias = AliasMap.get();
@@ -221,9 +219,19 @@ public interface Consts {
         // polygolt Value
         Method m = ReflectHelper.findMethodByType(varMap, "putMember", String.class, Object.class)
                 .get(0);
+        Method get = ReflectHelper.findMethodByType(varMap, "getMember", String.class)
+                .get(0);
+        Method invoke = ReflectHelper.findMethodByType(varMap, "invokeMember", String.class, Object[].class)
+                .get(0);
+        Object javaFactory = get.invoke(varMap, "Java");
         obj.forEach((k, v) -> {
             try {
-                m.invoke(varMap, k, v);
+                Object toPut = v;
+                if (v instanceof Class<?> clazz) {
+                    // wrap as
+                    toPut = invoke.invoke(javaFactory, "type", new Object[] {clazz.getName()});
+                }
+                m.invoke(varMap, k, toPut);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }

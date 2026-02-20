@@ -1,4 +1,3 @@
 package xyz.wagyourtail.jsmacros.core.library;
 
-public class BaseLibrary {
-}
+public class BaseLibrary {}

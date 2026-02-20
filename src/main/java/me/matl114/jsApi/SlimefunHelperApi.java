@@ -3,6 +3,7 @@ package me.matl114.jsApi;
 import static me.matl114.utils.ASMUtils.*;
 import static org.objectweb.asm.Opcodes.*;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -10,6 +11,7 @@ import me.matl114.hacks.*;
 import me.matl114.utils.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.Method;
+import xyz.wagyourtail.jsmacros.client.JsMacrosClient;
 import xyz.wagyourtail.jsmacros.core.Core;
 import xyz.wagyourtail.jsmacros.core.library.BaseLibrary;
 import xyz.wagyourtail.jsmacros.core.library.Library;
@@ -24,19 +26,29 @@ public class SlimefunHelperApi {
         Class<?> currentJsApi;
         find:
         try {
-            try{
-                currentJsApi = Core.class;
+            xyz:
+            try {
+                try {
+                    currentJsApi = Core.class;
+                } catch (Throwable e) {
+                    break xyz;
+                }
                 initXYZ();
                 break find;
-            }catch (Throwable e){
-
+            } catch (Throwable e) {
+                Debug.info(e);
             }
-            try{
-                currentJsApi = com.jsmacrosce.jsmacros.core.Core.class;
+            ce:
+            try {
+                try {
+                    currentJsApi = com.jsmacrosce.jsmacros.core.Core.class;
+                } catch (Throwable e) {
+                    break ce;
+                }
                 initCE();
                 break find;
-            }catch (Throwable e){
-
+            } catch (Throwable e) {
+                Debug.info(e);
             }
             throw new IllegalStateException("No JsMacros instance found");
         } catch (Throwable e) {
@@ -55,26 +67,57 @@ public class SlimefunHelperApi {
         }
     }
 
-    private static void initXYZ(){
-        Core jsMacrosInstance = Core.getInstance();
-        JsMacrosBridge.Holder.bridge = new JsMacrosBridge.JsMacrosXYZ();
+    private static void initXYZ() throws Exception {
+        Field field = Arrays.stream(Core.class.getFields())
+                .filter(s -> Modifier.isStatic(s.getModifiers()))
+                .filter(s -> s.getType() == Core.class)
+                .peek(s -> s.setAccessible(true))
+                .findFirst()
+                .orElse(null);
+        if (field == null) {
+            field = Arrays.stream(JsMacrosClient.class.getFields())
+                    .filter(s -> Modifier.isStatic(s.getModifiers()))
+                    .filter(s -> s.getType() == Core.class)
+                    .peek(s -> s.setAccessible(true))
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (field == null) throw new IllegalStateException("No valid core find");
+        Core jsMacrosInstance = (Core) field.get(null);
+        JsMacrosBridge.Holder.bridge = new JsMacrosBridge.JsMacrosXYZ(jsMacrosInstance);
         LibraryRegistry registry = jsMacrosInstance.libraryRegistry;
         Class<?> baseLib = BaseLibrary.class;
 
-        List<Class<?>> clazzes = createSlimefunHelperApi(baseLib, Library.class);
+        List<Class<?>> clazzes = createSlimefunHelperApi(baseLib, Library.class, Core.class);
         for (var clazz : clazzes) {
             registry.addLibrary((Class<? extends BaseLibrary>) clazz);
         }
         Debug.info("Successfully injected jsMacros library");
     }
 
-    private static void initCE(){
-        com.jsmacrosce.jsmacros.core.Core jsMacrosInstance = com.jsmacrosce.jsmacros.core.Core.getInstance();
-        JsMacrosBridge.Holder.bridge = new JsMacrosBridge.JsMacrosCE();
+    private static void initCE() throws Exception {
+        Field field = Arrays.stream(com.jsmacrosce.jsmacros.core.Core.class.getFields())
+                .filter(s -> Modifier.isStatic(s.getModifiers()))
+                .filter(s -> s.getType() == com.jsmacrosce.jsmacros.core.Core.class)
+                .peek(s -> s.setAccessible(true))
+                .findFirst()
+                .orElse(null);
+        if (field == null) {
+            field = Arrays.stream(com.jsmacrosce.jsmacros.client.JsMacrosClient.class.getFields())
+                    .filter(s -> Modifier.isStatic(s.getModifiers()))
+                    .filter(s -> s.getType() == com.jsmacrosce.jsmacros.core.Core.class)
+                    .peek(s -> s.setAccessible(true))
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (field == null) throw new IllegalStateException("No valid core find");
+        com.jsmacrosce.jsmacros.core.Core jsMacrosInstance = (com.jsmacrosce.jsmacros.core.Core) field.get(null);
+        JsMacrosBridge.Holder.bridge = new JsMacrosBridge.JsMacrosCE(jsMacrosInstance);
         com.jsmacrosce.jsmacros.core.library.LibraryRegistry registry = jsMacrosInstance.libraryRegistry;
         Class<?> baseLib = com.jsmacrosce.jsmacros.core.library.BaseLibrary.class;
 
-        List<Class<?>> clazzes = createSlimefunHelperApi(baseLib, com.jsmacrosce.jsmacros.core.library.Library.class);
+        List<Class<?>> clazzes = createSlimefunHelperApi(
+                baseLib, com.jsmacrosce.jsmacros.core.library.Library.class, com.jsmacrosce.jsmacros.core.Core.class);
         for (var clazz : clazzes) {
             registry.addLibrary((Class<? extends com.jsmacrosce.jsmacros.core.library.BaseLibrary>) clazz);
         }
@@ -89,51 +132,52 @@ public class SlimefunHelperApi {
 
     private static List<Class<?>> slimefunHelperApi;
 
-    public static synchronized List<Class<?>> createSlimefunHelperApi(Class<?> libBase, Class<?> libAnnotation) {
+    public static synchronized List<Class<?>> createSlimefunHelperApi(
+            Class<?> libBase, Class<?> libAnnotation, Class<?> runnerClass) {
         if (slimefunHelperApi == null) {
             slimefunHelperApi = new ArrayList<>();
             List<Class<?>> apiClasses = List.of(
-                ClientHelper.class,
-                Consts.class,
-                DataHelper.class,
-                InputHelper.class,
-                KeyBindingHelper.class,
-                PacketHelper.class,
-                RenderHelper.class,
-                ReflectHelper.class,
-                MovTasks.class,
-                Tasks.class,
-                CombatTasks.class,
-                MineTasks.class,
-                InvTasks.class,
-                CommonUtils.class,
-                JsHelper.class,
-                RegistryHelper.class,
-                Debug.class,
-                ChatUtils.class,
-                InventoryUtils.class,
-                ItemStackHelper.class,
-                CollectionUtils.class,
-                FileHelper.class,
-                RaycastUtils.class,
-                WorldHelper.class,
-                NBTHelper.class,
-                EnumHelper.class,
-                EntityHelper.class,
-                ScreenHelper.class,
-                ClientUtils.class,
-                ItemStackUtils.class
-            );
+                    ClientHelper.class,
+                    Consts.class,
+                    DataHelper.class,
+                    InputHelper.class,
+                    KeyBindingHelper.class,
+                    PacketHelper.class,
+                    RenderHelper.class,
+                    ReflectHelper.class,
+                    MovTasks.class,
+                    Tasks.class,
+                    CombatTasks.class,
+                    MineTasks.class,
+                    InvTasks.class,
+                    CommonUtils.class,
+                    JsHelper.class,
+                    RegistryHelper.class,
+                    Debug.class,
+                    ChatUtils.class,
+                    InventoryUtils.class,
+                    ItemStackHelper.class,
+                    CollectionUtils.class,
+                    FileHelper.class,
+                    RaycastUtils.class,
+                    WorldHelper.class,
+                    NBTHelper.class,
+                    EnumHelper.class,
+                    EntityHelper.class,
+                    ScreenHelper.class,
+                    ClientUtils.class,
+                    ItemStackUtils.class);
 
             for (Class<?> clazz : apiClasses) {
-                slimefunHelperApi.add(buildLibForJsMacros(libBase, libAnnotation, clazz));
+                slimefunHelperApi.add(buildLibForJsMacros(libBase, libAnnotation, runnerClass, clazz));
             }
             // todo: 适配PacketByteBufferHelper
         }
         return slimefunHelperApi;
     }
 
-    public static synchronized Class<?> buildLibForJsMacros(Class<?> targetBaseClass, Class<?> libClass, Class<?> utilityClass) {
+    public static synchronized Class<?> buildLibForJsMacros(
+            Class<?> targetBaseClass, Class<?> libClass, Class<?> runerClass, Class<?> utilityClass) {
         try {
             // 检查是否有ApiMethod注解
             boolean hasApiMethodAnnotation = false;
@@ -142,7 +186,6 @@ public class SlimefunHelperApi {
             }
             Class libraryClass = libClass;
             boolean hasLibraryAnnotation = libraryClass != null;
-
 
             String className = utilityClass.getName() + "LibImpl";
             String internalName = className.replace('.', '/');
@@ -267,14 +310,19 @@ public class SlimefunHelperApi {
             }
 
             // 处理方法
-
+            Constructor targetBaseClassContructor = targetBaseClass.getConstructors()[0];
+            String typeDesc =
+                    ByteCodeUtils.getMethodDescriptor("", targetBaseClassContructor.getParameterTypes(), void.class);
             // 生成构造函数，初始化final字段
-            MethodVisitor constructor = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+            MethodVisitor constructor = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", typeDesc, null, null);
             constructor.visitCode();
 
             // 调用父类构造函数
             constructor.visitVarInsn(Opcodes.ALOAD, 0);
-            constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, baseClassInternalName, "<init>", "()V", false);
+            for (var i = 0; i < targetBaseClassContructor.getParameterCount(); ++i) {
+                constructor.visitVarInsn(ALOAD, i + 1);
+            }
+            constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, baseClassInternalName, "<init>", typeDesc, false);
 
             // 初始化所有final字段
             for (java.lang.reflect.Field field : utilityClass.getDeclaredFields()) {
