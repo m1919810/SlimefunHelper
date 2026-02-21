@@ -436,7 +436,8 @@ public class FileHelper {
     public static void writeJson(File file, JsonElement json, boolean pretty) {
         try {
             ensureParentDir(file);
-            try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            try (FileOutputStream ofile = new FileOutputStream(file);
+                    Writer writer = new OutputStreamWriter(ofile, StandardCharsets.UTF_8)) {
                 Gson gson = pretty ? PRETTY_GSON : COMPACT_GSON;
                 gson.toJson(json, writer);
             }
@@ -480,7 +481,8 @@ public class FileHelper {
     public static void writeJson(File file, JsonElement json, Gson gson) {
         try {
             ensureParentDir(file);
-            try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            try (FileOutputStream ofile = new FileOutputStream(file);
+                    Writer writer = new OutputStreamWriter(ofile, StandardCharsets.UTF_8)) {
                 gson.toJson(json, writer);
             }
         } catch (IOException ex) {
@@ -596,7 +598,8 @@ public class FileHelper {
     public static <T> void writeYaml(File path, T object, boolean pretty) {
         try {
             ensureParentDir(path);
-            try (Writer writer = new OutputStreamWriter(new FileOutputStream(path), StandardCharsets.UTF_8)) {
+            try (FileOutputStream ofile = new FileOutputStream(path);
+                    Writer writer = new OutputStreamWriter(ofile, StandardCharsets.UTF_8)) {
                 (pretty ? YAML : COMPACT_YAML).dump(object, writer);
             }
         } catch (IOException e) {
