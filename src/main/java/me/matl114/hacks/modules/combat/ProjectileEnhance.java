@@ -142,7 +142,7 @@ public class ProjectileEnhance extends BaseModule {
             ItemStack stack = mc.player.getStackInHand(hand);
             Item itemType = ItemStackAccess.of(stack).getRealItem();
             // access to the item before it is used up to 0 count
-            if (itemType != Items.AIR) {
+            if (itemType != Items.AIR && itemType != null) {
                 ItemStack stackOrigin = stack;
                 // make a stackCopy of origin item with 1 count
                 stack = new ItemStack(itemType);

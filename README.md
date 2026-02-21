@@ -112,3 +112,10 @@ slimefunHelper对jsMacros的脚本运行环境注入了部分lib和utils,同时�
 - 等
 
 其中Consts之中还提供了方法用于向js运行环境导入所有的常用java类
+之后会提供相关wiki或文档
+
+## 不支持的模组
+
+暂时和以下的模组冲突
+- Lithium
+- Language-reload

@@ -77,9 +77,9 @@ public class CombatExtra extends BaseModule {
             for (var trackerUpdate : trackerUpdateS2CPacket.trackedValues()) {
                 // the ordinal  of LIVING FLAGS in LivingEntity, may vary with versionsl pls check
                 if (trackerUpdate.id() == VDataFlag.ID_LIVING_FLAGS) {
-                    byte byteValue = (byte) trackerUpdate.value();
-                    boolean bl = ((Byte) byteValue & VDataFlag.USING_ITEM_FLAG_INDEX) > 0;
-                    Hand hand = ((Byte) byteValue & VDataFlag.OFFHAND_ACTIVE_FLAG_INDEX) > 0
+                    byte byteValue = ((Number) trackerUpdate.value()).byteValue();
+                    boolean bl = (byteValue & VDataFlag.USING_ITEM_FLAG_INDEX) > 0;
+                    Hand hand = (byteValue & VDataFlag.OFFHAND_ACTIVE_FLAG_INDEX) > 0
                             ? Hand.OFF_HAND
                             : Hand.MAIN_HAND;
                     // cooldown should be ok,
