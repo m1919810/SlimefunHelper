@@ -289,6 +289,6 @@ public class TargetSelector extends BaseModule {
     private static boolean canPlayerDirectlySee(Entity entity) {
         // 横向距离小于300
         return entity.getPos().subtract(mc.player.getPos()).horizontalLengthSquared() < 90000
-                && !RaycastUtils.raycastAnyBlock(mc.player, mc.player.getEyePos(), entity.getEyePos());
+                && !RaycastUtils.raycastAnySolidBlock(mc.player, mc.player.getEyePos(), entity.getEyePos());
     }
 }

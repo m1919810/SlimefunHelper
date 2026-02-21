@@ -183,7 +183,7 @@ public class SlimefunTasks {
     public static Stream<RecipeEntry> getAllSlimefunRecipeEntry() {
         return getRecipeDatabase().getId2Recipe().values().stream().map(RecipeEntry.class::cast);
     }
-
+    // todo: can not search from vanilla items
     public static List<RecipeEntry> getInventoryRelativeRecipes(Screen inventory, boolean hard) {
         if (!(inventory instanceof HandledScreen<?> handled)) return List.of();
         var handler = handled.getScreenHandler();

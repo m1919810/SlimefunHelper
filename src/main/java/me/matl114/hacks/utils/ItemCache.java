@@ -234,7 +234,7 @@ public class ItemCache {
         activeIds.add(id);
     }
 
-    public ItemStackData getItem(String id) {
+    private ItemStackData getItem(String id) {
         markForReference(id);
         return map.get(id);
     }
@@ -300,12 +300,18 @@ public class ItemCache {
     }
 
     public String getItemIdOrNull(ItemStack stack) {
-        var pair = byItem.get(ItemStackData.wrapRaw(stack));
-        if (pair == null) {
-            return null;
+        if (ItemStackUtils.hasInPatch(stack)) {
+            var pair = byItem.get(ItemStackData.wrapRaw(stack));
+            if (pair == null) {
+                return null;
+            } else {
+                markForReference(pair.getFirst());
+                return pair.getFirst();
+            }
         } else {
-            markForReference(pair.getFirst());
-            return pair.getFirst();
+            // use vanilla id for
+            Identifier identifier = Registries.ITEM.getId(stack.getItem());
+            return identifier == null ? "minecraft:air" : identifier.toString();
         }
     }
 

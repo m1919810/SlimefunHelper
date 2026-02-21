@@ -380,7 +380,7 @@ public class ProjectileESP extends BaseModule {
 
                 if (path.size() > 2) {
                     lastPos = path.get(path.size() - 2);
-                    if (RaycastUtils.raycastAnyBlock(owner, lastPos, arrowPos)
+                    if (RaycastUtils.raycastAnySolidBlock(owner, lastPos, arrowPos)
                             || RaycastUtils.raycastHitAnyEntityExceptPlayer(owner, lastPos, arrowPos)) {
                         break;
                     }
@@ -413,7 +413,7 @@ public class ProjectileESP extends BaseModule {
 
                 if (path.size() > 2) {
                     lastPos = path.get(path.size() - 2);
-                    result = RaycastUtils.raycastBlockResult(owner, lastPos, arrowPos);
+                    result = RaycastUtils.raycastSolidBlockResult(owner, lastPos, arrowPos);
                     if (result != null && result.getType() != HitResult.Type.MISS) {
                         break;
                     }
@@ -517,7 +517,7 @@ public class ProjectileESP extends BaseModule {
             trace.add(startpos);
             if (trace.size() > 2) {
                 lastPos = trace.get(trace.size() - 2);
-                if (RaycastUtils.raycastAnyBlock(fireball, lastPos, startpos)
+                if (RaycastUtils.raycastAnySolidBlock(fireball, lastPos, startpos)
                         || RaycastUtils.raycastHitAnyEntityExceptPlayer(fireball, lastPos, startpos)) {
                     break;
                 }
