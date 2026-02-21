@@ -223,20 +223,20 @@ public class Config implements RefMap {
     }
 
     public void save(@Nonnull File file) {
-        try {
-            if (!file.exists()) {
-                createFile();
-            }
-            Map savedData = (Map) this.ref.getAsPrimitive();
+        if (!file.exists()) {
+            createFile();
+        }
+        Map savedData = (Map) this.ref.getAsPrimitive();
 
-            DumperOptions options = new DumperOptions();
-            options.setIndent(2); // 设置缩进为 2 空格
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK); // 使用块风格
-            options.setPrettyFlow(true); // 启用漂亮的流式显示
-            Yaml yaml = new Yaml(options);
-            yaml.dump(savedData, new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
-        } catch (IOException var3) {
-            IOException e = var3;
+        DumperOptions options = new DumperOptions();
+        options.setIndent(2); // 设置缩进为 2 空格
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK); // 使用块风格
+        options.setPrettyFlow(true); // 启用漂亮的流式显示
+        Yaml yaml = new Yaml(options);
+        try (FileOutputStream fout = new FileOutputStream(file);
+                OutputStreamWriter owrite = new OutputStreamWriter(fout, StandardCharsets.UTF_8)) {
+            yaml.dump(savedData, owrite);
+        } catch (IOException e) {
             this.logger.log(Level.SEVERE, "Exception while saving a Config file", e);
         } finally {
             markForSave = false;
