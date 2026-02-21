@@ -23,14 +23,14 @@ import net.minecraft.world.RaycastContext;
 public class RaycastUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    public static boolean raycastAnyBlock(Entity e, Vec3d from, Vec3d to) {
-        BlockHitResult bResult = raycastBlockResult(e, from, to);
+    public static boolean raycastAnySolidBlock(Entity e, Vec3d from, Vec3d to) {
+        BlockHitResult bResult = raycastSolidBlockResult(e, from, to);
         return bResult != null && bResult.getType() != HitResult.Type.MISS;
     }
 
-    public static BlockHitResult raycastBlockResult(Entity e, Vec3d from, Vec3d to) {
+    public static BlockHitResult raycastSolidBlockResult(Entity e, Vec3d from, Vec3d to) {
         return mc.world.raycast(
-                new RaycastContext(from, to, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.ANY, e));
+                new RaycastContext(from, to, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, e));
     }
 
     public static boolean raycastHitAnyEntity(Entity e, Vec3d from, Vec3d to) {
