@@ -79,9 +79,7 @@ public class CombatExtra extends BaseModule {
                 if (trackerUpdate.id() == VDataFlag.ID_LIVING_FLAGS) {
                     byte byteValue = ((Number) trackerUpdate.value()).byteValue();
                     boolean bl = (byteValue & VDataFlag.USING_ITEM_FLAG_INDEX) > 0;
-                    Hand hand = (byteValue & VDataFlag.OFFHAND_ACTIVE_FLAG_INDEX) > 0
-                            ? Hand.OFF_HAND
-                            : Hand.MAIN_HAND;
+                    Hand hand = (byteValue & VDataFlag.OFFHAND_ACTIVE_FLAG_INDEX) > 0 ? Hand.OFF_HAND : Hand.MAIN_HAND;
                     // cooldown should be ok,
                     // the only position the server disable shield correctly should be cooldown
                     // so we kick it back

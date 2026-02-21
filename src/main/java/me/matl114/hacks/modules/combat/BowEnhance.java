@@ -128,9 +128,9 @@ public class BowEnhance extends BaseModule {
                     Entity entity = CombatTasks.targetSelector.searchAimableEntity(stack.getItem() instanceof BowItem);
                     if (entity != null) {
                         Debug.chat(Text.literal("[Bow Aim] Aim at %s"
-                                .formatted(entity instanceof PlayerEntity player ? "player " : "entity "))
-                            .append(EntityUtils.getEntityDisplayable(entity))
-                            .formatted(Formatting.GREEN));
+                                        .formatted(entity instanceof PlayerEntity player ? "player " : "entity "))
+                                .append(EntityUtils.getEntityDisplayable(entity))
+                                .formatted(Formatting.GREEN));
                         // calculate lerp by speed
                         targetEntity = entity;
                     } else {
