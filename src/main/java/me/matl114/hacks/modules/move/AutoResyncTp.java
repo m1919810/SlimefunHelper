@@ -53,40 +53,60 @@ public class AutoResyncTp extends BaseModule {
 
     public void onSetBack(Event<PlayerPositionLookS2CPacket> event) {
         if (event.isCancelled()) return;
-        if (ticksTilExpire > Tasks.getTick() && pos != null) {
+        if (ticksTilExpire > Tasks.getTick() && pos != null && mc.player != null) {
             // auto resync
             Vec3d resyncToPos = pos.orElseGet(mc.player::getPos);
             PlayerPositionLookS2CPacket packet1 = event.context;
-            if (hasMove(packet1)) {
-                Vec3d resyncPos = new Vec3d(packet1.getX(), packet1.getY(), packet1.getZ());
-                double sqdistance = resyncPos.squaredDistanceTo(mc.player.getPos());
-                double sqdistance2 = resyncPos.squaredDistanceTo(resyncToPos);
-                if (sqdistance > 1E-4
-                        && sqdistance < MathUtils.s2(128)
-                        && sqdistance2 > 1E-4
-                        && sqdistance2 < MathUtils.s2(128)) {
-                    // don't so far, it may be a real teleport
-                    if (logAutoResync.get()) {
-                        Debug.chat("Auto Resync triggered!");
-                    }
-                    mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.getTeleportId()));
-                    mc.player.setPosition(resyncPos);
-                    //                    mc.getNetworkHandler().sendPacket(new
-                    // PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(),
-                    // false));
-                    MovTasks.executeTp(resyncToPos, 200, false, true);
-                    ticksTilExpire = -1;
-                    pos = null;
-                    event.cancel();
+            Vec3d resyncPos = getPosition(packet1);
+            double sqdistance = resyncPos.squaredDistanceTo(mc.player.getPos());
+            double sqdistance2 = resyncPos.squaredDistanceTo(resyncToPos);
+            if (sqdistance > 1E-4
+                    && sqdistance < MathUtils.s2(128)
+                    && sqdistance2 > 1E-4
+                    && sqdistance2 < MathUtils.s2(128)) {
+                // don't so far, it may be a real teleport
+                if (logAutoResync.get()) {
+                    Debug.chat("Auto Resync triggered!");
                 }
+                mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.getTeleportId()));
+                mc.player.setPosition(resyncPos);
+                //                    mc.getNetworkHandler().sendPacket(new
+                // PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(),
+                // false));
+                MovTasks.executeTp(resyncToPos, 200, false, true);
+                ticksTilExpire = -1;
+                pos = null;
+                event.cancel();
             }
         }
     }
 
-    public boolean hasMove(PlayerPositionLookS2CPacket packet) {
+    public Vec3d getPosition(PlayerPositionLookS2CPacket packet) {
         boolean bl = packet.getFlags().contains(PositionFlag.X);
+        var playerEntity = mc.player;
+        ;
         boolean bl2 = packet.getFlags().contains(PositionFlag.Y);
         boolean bl3 = packet.getFlags().contains(PositionFlag.Z);
-        return bl || bl2 || bl3;
+        double e;
+        if (bl) {
+            e = playerEntity.getX() + packet.getX();
+        } else {
+            e = packet.getX();
+        }
+
+        double g;
+        if (bl2) {
+            g = playerEntity.getY() + packet.getY();
+        } else {
+            g = packet.getY();
+        }
+
+        double i;
+        if (bl3) {
+            i = playerEntity.getZ() + packet.getZ();
+        } else {
+            i = packet.getZ();
+        }
+        return new Vec3d(e, g, i);
     }
 }
