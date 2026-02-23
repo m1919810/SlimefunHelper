@@ -422,6 +422,7 @@ public class Attack extends BaseModule {
         // rewrite tp system
         Deque<MovTasks.MovInfo> movementStack = new ArrayDeque<>();
         Deque<MovTasks.MovInfo> shouldMoveBackStack = new ArrayDeque<>();
+        Vec3d currentStartPos = mc.player.getPos();
         movementStack.addLast(MovTasks.MovInfo.createNoUpdate(mc.player.getPos()));
         shouldMoveBackStack.addFirst(MovTasks.MovInfo.createNoUpdate(mc.player.getPos()));
         boolean alreadyInRange = alreadyAtTarget
@@ -514,11 +515,10 @@ public class Attack extends BaseModule {
             //                );
 
             // force resync position to origin
-            if (!shouldMoveBackStack.isEmpty()) {
-                Vec3d finalId = shouldMoveBackStack.peekLast().vec3d();
-                mc.player.setPosition(finalId);
+            if (!shouldMoveBackStack.isEmpty() || !movementStack.isEmpty()) {
+                mc.player.setPosition(currentStartPos);
                 // feature
-                MovTasks.setupAutoResync(finalId, 10);
+                MovTasks.setupAutoResync();
             }
             // check fall damage
             List<MovTasks.MovInfo> movementList = Streams.concat(movementStack.stream(), shouldMoveBackStack.stream())
