@@ -22,6 +22,8 @@ public class AttackArua extends BaseModule {
     public static final String[] AUTO_ATTACK = {"hotkeys-toggle", "auto-att"};
     public static final String[] ONCE_MAX = {"att-bot", "max-at-once"};
 
+    public static final String[] CUSTOM_ATTACKING_RATE = {"att-bot", "auto-att-rate"};
+
     public AttackArua() {
         bindFlag(enable);
     }
@@ -46,6 +48,11 @@ public class AttackArua extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final IntRef customRate = builder(Configs.COMBAT_CONFIG, CUSTOM_ATTACKING_RATE, IntRef.TYPE)
+            .defaultValue(0)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -61,33 +68,35 @@ public class AttackArua extends BaseModule {
             Attack attack = CombatTasks.getAttack();
             boolean holdingWeapon = CombatTasks.isHoldingWeapon(mc.player);
             // force consider attack interval legal mode
-            if (attack.legalMode.get()) {
-                if (++interval <= 2) {
-                    return;
-                }
-            }
-            interval = 0;
-            if (attack.legalMode.get()
-                    || ((holdingWeapon && cooldownWeapon.get()) || (!holdingWeapon && cooldownHand.get()))) {
-                // do not attack because of legal mode
+            interval += 1;
+            int custom = customRate.get();
+            if (custom <= interval) {
+                if (attack.legalMode.get()
+                        || ((holdingWeapon && cooldownWeapon.get()) || (!holdingWeapon && cooldownHand.get()))) {
+                    // do not attack because of legal mode
 
-                if (mc.player.getAttackCooldownProgress(0.5F) > 0.98) {
-                    // ready for attack
-                    // force attack
-                    // 十分之七的概率当前攻击， 以此制作概率性的攻击时延
-                    if (timeRandom.nextInt(10) > 6) {
-                        attack.tryAttack(true);
+                    if (mc.player.getAttackCooldownProgress(0.5F) > 0.98) {
+                        // ready for attack
+                        // force attack
+                        // 十分之七的概率当前攻击， 以此制作概率性的攻击时延
+                        if (timeRandom.nextInt(10) > 6) {
+                            interval = 0;
+                            attack.tryAttack(true);
+                        }
                     }
-                }
-            } else {
-                // attack! attack! attack!
-                List<Entity> targets = attack.getCurrentRangeEntities();
-                int max = maxTargetPerTick.get();
-                if (!targets.isEmpty()) {
-                    for (Entity target : targets) {
-                        if (attack.attackEntity(target)) break;
-                        if (--max <= 0) {
-                            return;
+                } else {
+                    // attack! attack! attack!
+
+                    List<Entity> targets = attack.getCurrentRangeEntities();
+                    int max = maxTargetPerTick.get();
+                    if (!targets.isEmpty()) {
+                        // attack this kick
+                        interval = 0;
+                        for (Entity target : targets) {
+                            if (attack.attackEntity(target)) break;
+                            if (--max <= 0) {
+                                return;
+                            }
                         }
                     }
                 }
