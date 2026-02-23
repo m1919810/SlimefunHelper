@@ -32,6 +32,7 @@
 	"mine-bot.right-click.tooltips": "适配破坏魔杖",
 	"mine-bot.durability-protect": "MineBot:耐久保护",
 	"mine-bot.durability-protect.tooltips": "当耐久过低时,自动关闭MineBot",
+	"mine-arua.block-whitelist": "挖掘光环:白名单",
 	"aaxray.enable-simple": "反矿物混淆:简单模式",
 	"aaxray.simple-detect-packet-limit" : "反矿物混淆:简单模式发包限制",
 	"aaxray.enable-seed": "反矿物混淆:种子模式",
@@ -225,6 +226,7 @@
 	"move-safety.log-resync-format.tooltips": "需要提供一个格式化字符串\n提供的参数列表为三个浮点数",
 	
 	"move-safety.log-auto-resync": "AutoResync日志",
+	"move-safety.auto-resync-expire-tick": "AutoResync时限",
 	"move-safety.log-auto-resync.tooltips": "自动拉回功能日志,又称AntiLag\n目前并不支持主动拉回以避免和反作弊冲突\n仅在TP功能或者通过API调用触发",
 	"move-safety.no-fall.toggle": "禁用掉落伤害(NoFall)",
 	"move-safety.no-fall.toggle.tooltips": "切换是否启用NoFall",
