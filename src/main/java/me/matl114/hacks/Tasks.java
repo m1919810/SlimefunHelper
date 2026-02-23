@@ -109,6 +109,9 @@ public class Tasks {
                 case "client_crash" -> {
                     clientCrash(args);
                 }
+                case "client_lite_crash"->{
+                    clientLiteCrash(args);
+                }
             }
         } catch (Throwable e) {
             Debug.info(e);
@@ -151,6 +154,12 @@ public class Tasks {
                 throw new CrashException(new CrashReport("test crash", new NullPointerException()));
             });
         });
+    }
+
+    public static void clientLiteCrash(String[] args) {
+        Tasks.scheduleDelayed(() -> {
+            throw new CrashException(new CrashReport("test crash", new NullPointerException()));
+        }, 1);
     }
     // todo: delay tp
 
@@ -358,6 +367,8 @@ public class Tasks {
                     if (task.execute()) {
                         iter.remove();
                     }
+                } catch (CrashException | StackOverflowError e) {
+                    throw e;
                 } catch (Throwable e) {
                     Debug.info("unexpected error while executing TimedTask:");
                     Debug.info(e);
