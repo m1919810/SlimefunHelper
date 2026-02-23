@@ -223,8 +223,8 @@ public class BowTp extends BaseModule {
                     playerPos.add(0, maxMace, 0), 0, maxMace - 2 - deltaY, false);
             // +height
             double maceHeightMultiplier = maxMace + height;
-            // real height is owner.getEyeY() - 0.10000000149011612
-            double minAvailableHeight = getFireArrowPositionHeight(player, target);
+            // the stack already contains the height.
+            double minAvailableHeight = 0.0F;
 
             if (maceHeightMultiplier - minAvailableHeight > 0.0) {
                 Debug.chat(Text.literal("[Bow Attack] Bow Attack Simulation: simulate height %.2f"
@@ -267,6 +267,7 @@ public class BowTp extends BaseModule {
     }
 
     private double getFireArrowPositionHeight(PlayerEntity player, Entity target) {
+        // real height is owner.getEyeY() - 0.10000000149011612
         return target.getBoundingBox().getLengthY() - player.getEyeHeight(player.getPose()) + 0.11 + deltaY.get();
     }
 
