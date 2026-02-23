@@ -31,6 +31,7 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class BowTp extends BaseModule {
@@ -233,7 +234,8 @@ public class BowTp extends BaseModule {
                 movementStack.addLast(MovTasks.MovInfo.createNoUpdate(playerPos.add(0, maceHeightMultiplier, 0)));
                 // Debug.info("add", playerPos.add(0, maceHeightMultiplier,0));
                 // create the movement with pitchYaw update
-                movementStack.addLast(new MovTasks.MovInfo(playerPos.add(0, minAvailableHeight, 0), null, false, null));
+                movementStack.addLast(new MovTasks.MovInfo(
+                        playerPos.add(0, minAvailableHeight, 0), null, false, new Vec2f(89, mc.player.getYaw())));
 
                 return true;
             }
