@@ -296,7 +296,7 @@ public class ProjectileEnhance extends BaseModule {
                                     MovTasks.scheduleFarawayMoveInternal(
                                             movements, false, MovTasks.MovingContext.create(currentPlayerPos), true);
 
-                                    MovTasks.setupAutoResync(mc.player.getPos(), 10);
+                                    MovTasks.setupAutoResync();
                                     break pearl_tp;
                                 }
 
