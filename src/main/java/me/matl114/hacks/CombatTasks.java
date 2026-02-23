@@ -212,6 +212,9 @@ public class CombatTasks {
     public static ProjectileEnhance projectileEnhance;
 
     @Getter
+    public static BowTp bowTp;
+
+    @Getter
     public static AutoTotem autoTotem;
 
     @Getter
@@ -227,6 +230,7 @@ public class CombatTasks {
         projectileEnhance = new ProjectileEnhance().register(m);
         autoTotem = new AutoTotem().register(m);
         totemLog = new TotemLog().register(m);
+        bowTp = new BowTp().register(m);
     }
 
     static {

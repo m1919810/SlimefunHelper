@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.combat;
 
 import com.google.common.collect.ImmutableList;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -101,6 +102,10 @@ public class TargetSelector extends BaseModule {
         return true;
     }
 
+    public boolean canAttackWithBow(Entity target) {
+        return checkWeapon(target, true) && canAttack(target);
+    }
+
     private boolean passNameCheck(Entity e) {
         if (e instanceof PlayerEntity pl) {
             String name = pl.getNameForScoreboard();
@@ -159,10 +164,14 @@ public class TargetSelector extends BaseModule {
     }
 
     public List<Entity> getAttackableEntities(double nearby) {
+        return getAttackableEntities(nearby, this::canAttack);
+    }
+
+    private List<Entity> getAttackableEntities(double nearby, Predicate<Entity> predicate) {
         List<Entity> entities = new ArrayList<>();
         List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
         for (var e : et) {
-            if (isTargetInRange(e, nearby) && canAttack(e)) {
+            if (isTargetInRange(e, nearby) && predicate.test(e)) {
                 entities.add(e);
             }
         }
@@ -174,11 +183,15 @@ public class TargetSelector extends BaseModule {
     }
 
     public List<Entity> getAimableEntities(boolean commonBow) {
+        return getAimableEntities(commonBow ? this::canAttackWithBow : this::canAttack);
+    }
+
+    public List<Entity> getAimableEntities(Predicate<Entity> predicate) {
         List<Entity> entities = new ArrayList<>();
         List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
         for (var e : et) {
             // 普通弹射物， 无法攻击末影人和贝壳， 过滤掉
-            if (canAttack(e) && checkWeapon(e, commonBow) && canPlayerDirectlySee(e)) {
+            if (predicate.test(e) && canPlayerDirectlySee(e)) {
                 entities.add(e);
             }
         }
@@ -191,20 +204,26 @@ public class TargetSelector extends BaseModule {
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect) {
+        return searchAttackEntity(nearby, autoSelect, null);
+    }
+
+    public Entity searchAttackEntity(double nearby, boolean autoSelect, Predicate<Entity> predicate) {
         if (mc.player == null) return null;
         // when tp reach, also attack the targeted entity first
+        Predicate<Entity> combinedPredicate =
+                predicate != null ? (e) -> canAttack(e) && predicate.test(e) : this::canAttack;
         if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
             Entity entityCheck = ((EntityHitResult) mc.crosshairTarget).getEntity();
             // fix: check attackable when not auto
-            if (!autoSelect || canAttack(entityCheck)) {
+            if (!autoSelect || combinedPredicate.test(entityCheck)) {
                 return entityCheck;
             }
         }
-        HitResult result = RaycastUtils.createEntityOnlyCrossHairResult(mc.player, nearby, 1.0F, this::canAttack);
+        HitResult result = RaycastUtils.createEntityOnlyCrossHairResult(mc.player, nearby, 1.0F, combinedPredicate);
         if (result != null && result.getType() == HitResult.Type.ENTITY) {
             // focusing entity， attack
             // should respect whitelist
-            if (canAttack(((EntityHitResult) result).getEntity())) {
+            if (combinedPredicate.test(((EntityHitResult) result).getEntity())) {
                 //                    mc.interactionManager.attackEntity(mc.player,
                 // ((EntityHitResult)result).getEntity());
                 //                    mc.player.swingHand(Hand.MAIN_HAND);
@@ -219,7 +238,7 @@ public class TargetSelector extends BaseModule {
             // stop if player only want to mine a block
             return null;
         }
-        List<Entity> targets = getAttackableEntities(nearby);
+        List<Entity> targets = getAttackableEntities(nearby, combinedPredicate);
         // Debug.info(pos);
         // fixed: if player is targeting a faraway entity, then it should be privileged
         // fixed: should not target entity at back of me, because some anticheat place fake players to test killarua;
@@ -240,21 +259,30 @@ public class TargetSelector extends BaseModule {
     }
 
     public Entity searchAimableEntity(boolean commonBow) {
+        return searchAimableEntity(commonBow, null);
+    }
+
+    public Entity searchAimableEntity(boolean commonBow, Predicate<Entity> predicate) {
         if (mc.player == null) return null;
         // when tp reach, also attack the targeted entity first
+        Predicate<Entity> originPredicate = commonBow ? this::canAttackWithBow : this::canAttack;
+        Predicate<Entity> combinedPredicate =
+                predicate != null ? (e) -> originPredicate.test(e) && predicate.test(e) : originPredicate;
         if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
-            return ((EntityHitResult) mc.crosshairTarget).getEntity();
+            Entity entity = ((EntityHitResult) mc.crosshairTarget).getEntity();
+            if (combinedPredicate.test(entity)) {
+                return entity;
+            }
         }
         // 25格子之内的瞄准
 
-        HitResult result = RaycastUtils.createEntityOnlyCrossHairResult(
-                mc.player, 25, 1.0F, entityCheck -> canAttack(entityCheck) && checkWeapon(entityCheck, commonBow));
+        HitResult result = RaycastUtils.createEntityOnlyCrossHairResult(mc.player, 25, 1.0F, combinedPredicate);
         if (result != null && result.getType() == HitResult.Type.ENTITY) {
             // focusing entity， attack
             // should respect whitelist
             return ((EntityHitResult) result).getEntity();
         }
-        List<Entity> targets = getAimableEntities(commonBow);
+        List<Entity> targets = getAimableEntities(combinedPredicate);
         // filter raycast
         // 考虑夹角
         Vec3d vec3d = mc.player.getEyePos();
