@@ -1675,8 +1675,13 @@ public class MovTasks {
     // fixme: fake flight causes fallflying fly
 
     @ApiMethod
-    public static void setupAutoResync(Vec3d pos, int timeoutTick) {
-        getAutoResyncTp().setAutoResyncSchedule(pos, timeoutTick);
+    public static void setupAutoResync(Vec3d pos) {
+        getAutoResyncTp().setAutoResyncSchedule(Optional.of(pos));
+    }
+
+    @ApiMethod
+    public static void setupAutoResync() {
+        getAutoResyncTp().setAutoResyncSchedule(Optional.empty());
     }
 
     private static boolean fixPositionSetBackFallDamage(Event<PlayerPositionLookS2CPacket> packet) {

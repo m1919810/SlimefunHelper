@@ -313,7 +313,7 @@ public class BowEnhance extends BaseModule {
                         MovTasks.scheduleFarawayMoveInternal(
                                 movements, false, MovTasks.MovingContext.create(currentPlayerPos), true);
 
-                        MovTasks.setupAutoResync(mc.player.getPos(), 10);
+                        MovTasks.setupAutoResync();
                         // disable later autoAim because we have sent the pitchYaw
                         makeAim = false;
                         break make_movements;
@@ -512,7 +512,7 @@ public class BowEnhance extends BaseModule {
                         MovTasks.scheduleFarawayMoveInternal(
                                 movements, false, MovTasks.MovingContext.create(currentPlayerPos), true);
 
-                        MovTasks.setupAutoResync(mc.player.getPos(), 10);
+                        MovTasks.setupAutoResync();
                         // disable later autoAim because we have sent the pitchYaw
                         break make_movements;
                     }
