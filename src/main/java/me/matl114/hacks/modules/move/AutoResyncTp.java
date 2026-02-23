@@ -11,10 +11,9 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
-import net.minecraft.entity.EntityPosition;
+import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.util.math.Vec3d;
 
 @SuppressWarnings("all")
@@ -83,8 +82,8 @@ public class AutoResyncTp extends BaseModule {
     }
 
     public Vec3d getPosition(PlayerPositionLookS2CPacket packet) {
-        EntityPosition entityPosition = EntityPosition.fromEntity(mc.player);
-        EntityPosition entityPosition2 = EntityPosition.apply(entityPosition, packet.change(), packet.relatives());
+        PlayerPosition entityPosition = PlayerPosition.fromEntity(mc.player);
+        PlayerPosition entityPosition2 = PlayerPosition.apply(entityPosition, packet.change(), packet.relatives());
         return entityPosition2.position();
     }
 }
