@@ -107,7 +107,7 @@ public class Tasks {
                 case "client_crash" -> {
                     clientCrash(args);
                 }
-                case "client_lite_crash"->{
+                case "client_lite_crash" -> {
                     clientLiteCrash(args);
                 }
             }
@@ -148,9 +148,11 @@ public class Tasks {
     }
 
     public static void clientLiteCrash(String[] args) {
-        Tasks.scheduleDelayed(() -> {
-            throw new CrashException(new CrashReport("test crash", new NullPointerException()));
-        }, 1);
+        Tasks.scheduleDelayed(
+                () -> {
+                    throw new CrashException(new CrashReport("test crash", new NullPointerException()));
+                },
+                1);
     }
     // todo: delay tp
 
