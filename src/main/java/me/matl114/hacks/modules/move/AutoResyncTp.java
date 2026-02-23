@@ -14,7 +14,6 @@ import me.matl114.utils.MathUtils;
 import net.minecraft.entity.EntityPosition;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.util.math.Vec3d;
 
 @SuppressWarnings("all")
