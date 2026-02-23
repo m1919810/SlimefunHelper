@@ -145,7 +145,7 @@ public class Tasks {
     // store the crash exception
 
     public static void clientCrash(String[] args) {
-        mc.player = null;
+        mc.world = null;
         CompletableFuture.runAsync(() -> {
             mc.execute(() -> {
                 throw new CrashException(new CrashReport("test crash", new NullPointerException()));
