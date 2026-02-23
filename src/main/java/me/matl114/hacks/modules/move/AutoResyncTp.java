@@ -11,6 +11,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
+import net.minecraft.entity.EntityPosition;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
@@ -57,11 +58,10 @@ public class AutoResyncTp extends BaseModule {
             // auto resync
             Vec3d resyncToPos = pos.orElseGet(mc.player::getPos);
             PlayerPositionLookS2CPacket packet1 = event.context;
-            Vec3d resyncPos = packet1.change().position();
+            Vec3d resyncPos = getPosition(packet1);
             double sqdistance = resyncPos.squaredDistanceTo(mc.player.getPos());
             double sqdistance2 = resyncPos.squaredDistanceTo(resyncToPos);
-            if (hasMove(packet1)
-                    && sqdistance > 1E-4
+            if (sqdistance > 1E-4
                     && sqdistance < MathUtils.s2(128)
                     && sqdistance2 > 1E-4
                     && sqdistance2 < MathUtils.s2(128)) {
@@ -82,10 +82,9 @@ public class AutoResyncTp extends BaseModule {
         }
     }
 
-    public boolean hasMove(PlayerPositionLookS2CPacket packet) {
-        boolean bl = packet.relatives().contains(PositionFlag.X);
-        boolean bl2 = packet.relatives().contains(PositionFlag.Y);
-        boolean bl3 = packet.relatives().contains(PositionFlag.Z);
-        return bl || bl2 || bl3;
+    public Vec3d getPosition(PlayerPositionLookS2CPacket packet) {
+        EntityPosition entityPosition = EntityPosition.fromEntity(mc.player);
+        EntityPosition entityPosition2 = EntityPosition.apply(entityPosition, packet.change(), packet.relatives());
+        return entityPosition2.position();
     }
 }
