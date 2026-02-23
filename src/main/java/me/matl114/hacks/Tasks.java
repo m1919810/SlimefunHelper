@@ -85,7 +85,7 @@ public class Tasks {
     }
 
     public static List<String> getSpecialTaskName() {
-        return List.of("xray_demo", "writable_book_generate", "strider_fix", "client_crash");
+        return List.of("xray_demo", "writable_book_generate", "strider_fix", "client_crash", "client_lite_crash");
     }
 
     @ApiMethod
@@ -361,8 +361,11 @@ public class Tasks {
                         iter.remove();
                     }
                 } catch (CrashException | StackOverflowError e) {
+                    // remove exceptional task
+                    iter.remove();
                     throw e;
                 } catch (Throwable e) {
+                    // log exception and remove
                     Debug.info("unexpected error while executing TimedTask:");
                     Debug.info(e);
                     iter.remove();
