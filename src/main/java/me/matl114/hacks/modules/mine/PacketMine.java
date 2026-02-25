@@ -72,6 +72,6 @@ public class PacketMine extends BaseModule {
 
     public boolean canMine(BlockState state) {
         // do not mine liquid, that's a disaster
-        return state.getBlock().getHardness() > 0.0F && !state.isLiquid();
+        return state.getBlock().getHardness() >= 0.0F && !state.isLiquid();
     }
 }
