@@ -185,8 +185,18 @@ public interface ItemStackData {
                     stack = ItemStackData.deserialize(this.jsonRaw).copyWithCount(1);
                     valid = true;
                 } catch (Throwable e) {
-                    Debug.info("Error while resolving ItemStackData:", jsonRaw);
-                    Debug.info("Caused by:", e.getMessage());
+                    try {
+                        // it may throw exception if registry is not valid, at that time, do not print message and
+                        // jsonRaw
+                        ItemStackUtils.registry();
+                        String jsonMsg = jsonRaw.toString();
+                        Debug.info(
+                                "Error while resolving ItemStackData:",
+                                jsonMsg.length() > 256 ? jsonMsg.substring(0, 256) : jsonMsg);
+                        Debug.info("Caused by:", e.getMessage());
+                    } catch (Throwable t) {
+                        // do not print anything
+                    }
                     valid = false;
                 }
             }

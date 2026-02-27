@@ -6,7 +6,6 @@ import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
 import net.minecraft.client.render.item.model.ItemModel;
@@ -136,7 +135,7 @@ public class NewStyleModel extends BaseModule {
             // todo: what?
             if (modelId.isPresent()) {
                 cacheItem.put(item, id);
-                Debug.info("Loading new-version model", id);
+                // Debug.info("Loading new-version model", id);
             }
         }
     }
