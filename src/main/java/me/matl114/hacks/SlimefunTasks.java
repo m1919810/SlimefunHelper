@@ -28,6 +28,7 @@ import net.minecraft.recipe.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 
@@ -371,6 +372,34 @@ public class SlimefunTasks {
             } else {
                 Debug.chat("不存在的id: ", id);
             }
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                    .name("banlist")
+                    .helper("查询服务器禁用物品列表")
+                    .post(e -> e.executor(CommandContext.run(this::onBanlist)))
+                    .complete();
+        }
+
+        public void onBanlist(ArgumentInputStream re) {
+            String command = "/sf unbanitem ";
+            ClientUtils.getServerCommandTabResult(command).thenAccept(s -> {
+                Debug.chat("禁用粘液物品列表");
+                Map<String, RecipeEntry> records = getAllRecipes();
+                for (var i : s) {
+                    RecipeEntry entry = records.get(i);
+                    Text name = null;
+                    if (entry != null) {
+                        name = entry.output().getName();
+                    }
+                    if (name != null) {
+                        Debug.chat(i, " (", name, ")");
+                    } else {
+                        Debug.chat(i);
+                    }
+                }
+            });
         }
     }
 
