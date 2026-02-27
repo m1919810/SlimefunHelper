@@ -6,6 +6,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.Map;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.DataVersion;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
@@ -60,7 +61,9 @@ public class ItemUtils_v1_21_1 implements VItem {
 
     @Override
     public NbtCompound toNbt(ItemStack tag) {
-        return (NbtCompound) tag.encodeAllowEmpty(ItemStackUtils.registry());
+        NbtCompound nbt = (NbtCompound) tag.encodeAllowEmpty(ItemStackUtils.registry());
+        nbt.putInt(DataVersion.DATA_VERSION_FLAG, DataVersion.getDataVersion());
+        return nbt;
     }
 
     @Override

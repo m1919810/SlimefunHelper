@@ -65,6 +65,7 @@ public final class CraftItemStack extends BukkitItemStack {
                                                 .getOrDefault(type, codec);
                                         var dataResult = codec.decode(entry.getValue());
                                         if (dataResult.isSuccess()) {
+                                            // do not return error when not success
                                             reference2ObjectMap.put(
                                                     type, dataResult.result().map(Pair::getFirst));
                                         }
