@@ -107,7 +107,11 @@ public class ChestHistory extends BaseModule {
                 // remove related single chests
                 screens.put(containerPosition, new MutableEntry<>(state, screen));
                 if (screens.size() > MAX_INV_CACHE_SIZE) {
-                    screens.entrySet().iterator().remove();
+                    var iter = screens.entrySet().iterator();
+                    if (iter.hasNext()) {
+                        iter.next();
+                        iter.remove();
+                    }
                 }
             }
 

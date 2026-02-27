@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.render;
 
 import com.mojang.blaze3d.systems.ProjectionType;
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
@@ -141,6 +142,7 @@ public class SleepMode extends BaseModule {
                 // intercept send, else left for super
                 this.sendMessage(this.chatField.getText(), true);
                 this.chatField.setText("");
+                ChatScreenAccess.of(this).resetMessageHistoryIndex();
                 return true;
             } else return super.keyPressed(keyCode, scanCode, modifiers);
         }

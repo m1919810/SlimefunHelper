@@ -1,19 +1,102 @@
 package me.matl114.utils.commands;
 
+import com.google.common.collect.Streams;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.utils.interruptions.ArgumentException;
 import net.minecraft.entity.player.PlayerEntity;
 
 public class SimpleCommandArgs {
+    public static interface TabResult {
+        public static TabResult EMPTY = (s, arg) -> Stream.empty();
+
+        @Nonnull
+        public Stream<String> completeInternal(PlayerEntity sender, List<InputArgument> args) throws ArgumentException;
+
+        @Nonnull
+        default Stream<String> completeOrEmpty(PlayerEntity sender, List<InputArgument> args) {
+            try {
+                return completeInternal(sender, args);
+            } catch (ArgumentException e) {
+                return Stream.empty();
+            }
+        }
+
+        default TabResult combine(TabResult result) {
+            return (s, arg) -> Stream.concat(completeOrEmpty(s, arg), result.completeOrEmpty(s, arg));
+        }
+
+        public static TabResult ofFunction(Function<PlayerEntity, List<String>> f) {
+            return (s, arg) -> {
+                var list = f.apply(s);
+                return list == null ? Stream.empty() : list.stream();
+            };
+        }
+
+        public static TabResult ofStreamFunction(Function<PlayerEntity, Stream<String>> f) {
+            return (s, arg) -> {
+                var list = f.apply(s);
+                return list == null ? Stream.empty() : list;
+            };
+        }
+
+        public static TabResult ofSupplier(Supplier<List<String>> supplier) {
+            return (s, arg) -> {
+                var list = supplier.get();
+                return list == null ? Stream.empty() : list.stream();
+            };
+        }
+
+        public static TabResult ofStreamSupplier(Supplier<Stream<String>> supplier) {
+            return (s, arg) -> {
+                var list = supplier.get();
+                return list == null ? Stream.empty() : list;
+            };
+        }
+
+        public static TabResult ofDispatcher(BiFunction<PlayerEntity, String, Stream<String>> f) {
+            return (p, args) -> {
+                if (args.isEmpty()) return Stream.empty();
+                var re = args.get(args.size() - 1);
+                String result = re.result();
+                return result == null ? Stream.empty() : f.apply(p, result);
+            };
+        }
+
+        public static TabResult ofArgDispatcher(BiFunction<PlayerEntity, InputArgument, Stream<String>> f) {
+            return (p, args) -> {
+                if (args.isEmpty()) return Stream.empty();
+                var re = args.get(args.size() - 1);
+                return re == null ? Stream.empty() : f.apply(p, re);
+            };
+        }
+
+        default TabResult ofOptional(Predicate<List<InputArgument>> predicate) {
+            return (p, args) -> {
+                if (predicate.test(args)) return completeOrEmpty(p, args);
+                return Stream.empty();
+            };
+        }
+
+        default TabResult orElse(Predicate<List<InputArgument>> predicate, TabResult result) {
+            return (p, args) -> {
+                if (predicate.test(args)) return completeOrEmpty(p, args);
+                return result.completeOrEmpty(p, args);
+            };
+        }
+    }
     // todo: add Argument type,  consume more args
     // todo: use StringReader
     public static class Argument implements TabProvider {
@@ -26,7 +109,7 @@ public class SimpleCommandArgs {
         @Setter
         private String defaultValue = null;
 
-        public Function<PlayerEntity, List<String>> tabCompletor = (p) -> List.of();
+        public TabResult tabCompletor = TabResult.EMPTY;
 
         public Argument(String argsName) {
             this.argsName = argsName;
@@ -43,8 +126,12 @@ public class SimpleCommandArgs {
             return argsAlias.contains(arg);
         }
 
-        public List<String> getTab(PlayerEntity sender) {
-            return tabCompletor.apply(sender);
+        public Stream<String> getTab(PlayerEntity sender, List<InputArgument> args) {
+            try {
+                return tabCompletor.completeOrEmpty(sender, args);
+            } catch (ArgumentException argumentException) {
+                return Stream.of("参数错误");
+            }
         }
     }
 
@@ -60,15 +147,20 @@ public class SimpleCommandArgs {
 
         String name;
         String defaultValue;
-        List<Function<PlayerEntity, Stream<String>>> tabCompletor = new ArrayList<>();
+        List<TabResult> tabCompletor = new ArrayList<>();
+
+        public ArgumentBuilder tabCompletor(TabResult result) {
+            tabCompletor.add(result);
+            return this;
+        }
 
         public ArgumentBuilder tabSupplier(Supplier<Stream<String>> list) {
-            tabCompletor.add((p) -> list.get());
+            tabCompletor.add(TabResult.ofStreamSupplier(list));
             return this;
         }
 
         public ArgumentBuilder tabCompletor(Function<PlayerEntity, Stream<String>> list) {
-            tabCompletor.add(list);
+            tabCompletor.add(TabResult.ofStreamFunction(list));
             return this;
         }
 
@@ -145,15 +237,34 @@ public class SimpleCommandArgs {
             return this;
         }
 
+        public ArgumentBuilder dispatchLast(BiFunction<PlayerEntity, String, Stream<String>> f) {
+            tabCompletor(TabResult.ofDispatcher(f));
+            return this;
+        }
+
+        public ArgumentBuilder dispatchLast(Function<String, Stream<String>> f) {
+            dispatchLast((p, str) -> f.apply(str));
+            return this;
+        }
+
+        public ArgumentBuilder dispatchLastArg(Function<InputArgument, Stream<String>> f) {
+            dispatchLastArg((p, str) -> f.apply(str));
+            return this;
+        }
+
+        public ArgumentBuilder dispatchLastArg(BiFunction<PlayerEntity, InputArgument, Stream<String>> f) {
+            tabCompletor(TabResult.ofArgDispatcher(f));
+            return this;
+        }
+
         public Argument build() {
             var arg = new Argument(name);
             arg.setDefaultValue(defaultValue);
-            arg.tabCompletor = (cmd) -> {
-                List<String> strings = new ArrayList<>();
-                for (var en : tabCompletor) {
-                    en.apply(cmd).forEach(strings::add);
-                }
-                return strings;
+            List<TabResult> tabResultList = List.copyOf(tabCompletor);
+            arg.tabCompletor = (p, args) -> {
+                return Streams.concat((Stream<String>[]) tabCompletor.stream()
+                        .map(s -> s.completeOrEmpty(p, args))
+                        .toArray(Stream[]::new));
             };
             arg.argsAlias.addAll(alias);
             return arg;
@@ -179,10 +290,18 @@ public class SimpleCommandArgs {
         }
     }
 
+    public void setTabCompletor(String arg, TabResult tabCompletor) {
+        for (Argument a : args) {
+            if (a.argsName.equals(arg)) {
+                a.tabCompletor = tabCompletor;
+            }
+        }
+    }
+
     public void setTabCompletor(String arg, Supplier<List<String>> tabCompletor) {
         for (Argument a : args) {
             if (a.argsName.equals(arg)) {
-                a.tabCompletor = (o) -> tabCompletor.get();
+                a.tabCompletor = TabResult.ofSupplier(tabCompletor);
             }
         }
     }
@@ -190,7 +309,7 @@ public class SimpleCommandArgs {
     public void setTabCompletor(String arg, Function<PlayerEntity, List<String>> tabCompletor) {
         for (Argument a : args) {
             if (a.argsName.equals(arg)) {
-                a.tabCompletor = tabCompletor;
+                a.tabCompletor = TabResult.ofFunction(tabCompletor);
             }
         }
     }
