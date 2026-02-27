@@ -1,5 +1,6 @@
 package me.matl114.hacks;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.context.*;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -331,6 +332,7 @@ public class ChatTasks {
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("filter")
+                            .select("<namespace_filter>:<path_filter>")
                             .defaultValue("")
                             .build())
                     .post(e -> e.executor(CommandContext.run(this::onListRegistry)))
@@ -373,6 +375,7 @@ public class ChatTasks {
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("filter")
+                            .select("<namespace_filter>:<path_filter>")
                             .defaultValue("")
                             .build())
                     .post(e -> e.executor(CommandContext.run(this::onResource)))
@@ -470,7 +473,15 @@ public class ChatTasks {
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("confirm")
-                            .select(List.of("confirm"), "")
+                            .dispatchLastArg((str) -> {
+                                int val = str.getInt();
+                                if (val > 0) {
+                                    return Stream.of("confirm");
+                                } else {
+                                    return Stream.of("第一个参数请输入正整数");
+                                }
+                            })
+                            .defaultValue("")
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder().name("display").build())
                     .post(e -> e.executor(CommandContext.run(this::onSleep)))
@@ -503,8 +514,7 @@ public class ChatTasks {
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("state")
-                            .intValue()
-                            .bool()
+                            .dispatchLastArg(s -> onDebugRenderTab(s.nonnullResult()))
                             .build())
                     .post(e -> e.executor(CommandContext.run(this::onDebugRender)))
                     .complete();
@@ -521,43 +531,86 @@ public class ChatTasks {
             }
         }
 
+        public Stream<String> onDebugRenderTab(String type) {
+            return switch (type) {
+                case "collision", "combat", "bow-aim" -> CommandUtils.bools().stream();
+                case "debug-tick" -> CommandUtils.numbers().stream();
+                default -> Stream.empty();
+            };
+        }
+
+        SimpleCommandArgs.TabResult XResult = SimpleCommandArgs.TabResult.ofStreamFunction(
+                p -> Stream.of("%.2f %.2f %.2f".formatted(p.getX(), p.getY(), p.getZ()), "~ ~ ~", "^ ^ ^"));
+
+        private SimpleCommandArgs.TabResult createXResult() {
+            return XResult;
+        }
+
+        SimpleCommandArgs.TabResult TpaResult = SimpleCommandArgs.TabResult.ofSupplier(this::specialPositionType)
+                .combine(SimpleCommandArgs.TabResult.ofStreamSupplier(
+                        () -> mc.world != null ? EntityUtils.getWorldPlayerNames(false) : Stream.empty()))
+                .combine(SimpleCommandArgs.TabResult.ofStreamSupplier(
+                        () -> (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY)
+                                ? Stream.of(((EntityHitResult) (mc.crosshairTarget))
+                                        .getEntity()
+                                        .getUuidAsString())
+                                : Stream.empty()));
+
+        private SimpleCommandArgs.TabResult createTpaResult() {
+            return TpaResult;
+        }
+
+        SimpleCommandArgs.TabResult YResult = SimpleCommandArgs.TabResult.ofStreamFunction(
+                        p -> Stream.of("%.2f".formatted(p.getY()), "~"))
+                .orElse(
+                        s -> {
+                            return !s.isEmpty()
+                                    && !s.get(s.size() - 1).nonnullResult().startsWith("^");
+                        },
+                        SimpleCommandArgs.TabResult.ofStreamSupplier(() -> Stream.of("^")));
+
+        private SimpleCommandArgs.TabResult createYResult() {
+            return YResult;
+        }
+
+        SimpleCommandArgs.TabResult ZResult = SimpleCommandArgs.TabResult.ofStreamFunction(
+                        p -> Stream.of("%.2f".formatted(p.getZ()), "~"))
+                .orElse(
+                        s -> {
+                            return !s.isEmpty()
+                                    && !s.get(s.size() - 1).nonnullResult().startsWith("^");
+                        },
+                        SimpleCommandArgs.TabResult.ofStreamSupplier(() -> Stream.of("^")));
+
+        private SimpleCommandArgs.TabResult createZResult() {
+            return ZResult;
+        }
+
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("tp")
                     .helper("<x> <y> <z> [-far] 执行模拟tp行为")
-                    .arg(createX("x").build())
-                    .arg(createY("y").build())
-                    .arg(createZ("z").build())
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("x")
+                            .tabCompletor(createXResult())
+                            .defaultValue("~")
+                            .build())
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("y")
+                            .tabCompletor(createYResult())
+                            .defaultValue("~")
+                            .build())
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("z")
+                            .tabCompletor(createZResult())
+                            .defaultValue("~")
+                            .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("far")
                             .bool(false)
                             .build())
                     .post(e -> e.executor(CommandContext.run(this::onTp)))
                     .complete();
-        }
-
-        private SimpleCommandArgs.ArgumentBuilder createX(String name) {
-            return SimpleCommandArgs.argumentBuilder()
-                    .name(name)
-                    .tabCompletor(p -> Stream.of("%.2f %.2f %.2f".formatted(p.getX(), p.getY(), p.getZ())))
-                    .select(List.of("~ ~ ~", "^ ^ ^"))
-                    .defaultValue("~");
-        }
-
-        private SimpleCommandArgs.ArgumentBuilder createY(String name) {
-            return SimpleCommandArgs.argumentBuilder()
-                    .name(name)
-                    .tabCompletor(p -> Stream.of("%.2f %.2f".formatted(p.getY(), p.getZ())))
-                    .select(List.of("~ ~", "^ ^"))
-                    .defaultValue("~");
-        }
-
-        private SimpleCommandArgs.ArgumentBuilder createZ(String name) {
-            return SimpleCommandArgs.argumentBuilder()
-                    .name("z")
-                    .tabCompletor(p -> Stream.of("%.2f".formatted(p.getZ())))
-                    .select(List.of("~", "^"))
-                    .defaultValue("~");
         }
 
         public void onTp(PlayerEntity p, ArgumentInputStream re) {
@@ -628,16 +681,7 @@ public class ChatTasks {
                     .helper("<target> [-far] 传送到特殊目标位置")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("target")
-                            .select(specialPositionType())
-                            .tabSupplier(
-                                    () -> mc.world != null ? EntityUtils.getWorldPlayerNames(false) : Stream.empty())
-                            .tabSupplier(() -> (mc.crosshairTarget != null
-                                            && mc.crosshairTarget.getType() == HitResult.Type.ENTITY)
-                                    ? Stream.of(((EntityHitResult) (mc.crosshairTarget))
-                                            .getEntity()
-                                            .getUuidAsString())
-                                    : Stream.empty())
-                            .defaultValue("~")
+                            .tabCompletor(createTpaResult())
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("far")
@@ -771,19 +815,22 @@ public class ChatTasks {
                     .post(s -> s.subBuilder(SubCommand.taskBuilder())
                             .name("to")
                             .helper("<coord> 自动传送旅行")
-                            .arg(createX("x")
-                                    .select(specialPositionType())
-                                    .tabSupplier(() ->
-                                            mc.world != null ? EntityUtils.getWorldPlayerNames(false) : Stream.empty())
-                                    .tabSupplier(() -> (mc.crosshairTarget != null
-                                                    && mc.crosshairTarget.getType() == HitResult.Type.ENTITY)
-                                            ? Stream.of(((EntityHitResult) (mc.crosshairTarget))
-                                                    .getEntity()
-                                                    .getUuidAsString())
-                                            : Stream.empty())
+                            .arg(SimpleCommandArgs.argumentBuilder()
+                                    .name("x")
+                                    .tabCompletor(createXResult())
+                                    .tabCompletor(createTpaResult())
+                                    .defaultValue("~")
                                     .build())
-                            .arg(createY("y").build())
-                            .arg(createZ("z").build())
+                            .arg(SimpleCommandArgs.argumentBuilder()
+                                    .name("y")
+                                    .tabCompletor(createYResult())
+                                    .defaultValue("~")
+                                    .build())
+                            .arg(SimpleCommandArgs.argumentBuilder()
+                                    .name("z")
+                                    .tabCompletor(createZResult())
+                                    .defaultValue("~")
+                                    .build())
                             .post(e -> e.executor(CommandContext.run(this::onTravel)))
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
@@ -915,10 +962,36 @@ public class ChatTasks {
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("extra")
-                            .tabSupplier(() -> EntityUtils.getWorldPlayerNames(true))
+                            .tabCompletor(this::onMarkTab)
+                            .build())
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("extra2")
+                            .tabCompletor(createYResult()
+                                    .ofOptional(
+                                            args -> args.get(0).nonnullResult().equals("pos")))
+                            .defaultValue("~")
+                            .build())
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("extra3")
+                            .tabCompletor(createZResult()
+                                    .ofOptional(
+                                            args -> args.get(0).nonnullResult().equals("pos")))
+                            .defaultValue("~")
                             .build())
                     .post(e -> e.executor(CommandContext.run(this::onMark)))
                     .complete();
+        }
+
+        public Stream<String> onMarkTab(PlayerEntity p, List<InputArgument> arguments) {
+            if (arguments.isEmpty()) return Stream.empty();
+            String string = arguments.get(arguments.size() - 1).result();
+            if (string == null) return Stream.empty();
+            return switch (string) {
+                case "player" -> EntityUtils.getWorldPlayerNames(true);
+                case "special" -> createTpaResult().completeOrEmpty(p, arguments);
+                case "pos" -> createXResult().completeOrEmpty(p, arguments);
+                default -> Stream.empty();
+            };
         }
 
         public void onMark(PlayerEntity var1, ArgumentInputStream re) {
@@ -926,7 +999,7 @@ public class ChatTasks {
             Vec3d pos;
             switch (type) {
                 case "this" -> pos = var1.getPos();
-                case "camera" -> pos = mc.player.getPos();
+                case "camera" -> pos = RenderUtils.getCameraFeetPos();
                 case "cross" -> pos = mc.crosshairTarget.getPos();
                 case "player" -> {
                     String var = re.nextNonnull();
@@ -961,7 +1034,8 @@ public class ChatTasks {
                             .setAutoStop(() -> mark != pos));
         }
 
-        List<String> infoTypes = List.of("death", "spawn", "nbt", "inventory", "ender", "plist", "team", "pentry");
+        List<String> infoTypes =
+                List.of("death", "spawn", "nbt", "inventory", "ender", "plist", "team", "pentry", "waypoint");
 
         {
             main.subBuilder(SubCommand.taskBuilder())
@@ -973,12 +1047,32 @@ public class ChatTasks {
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("user")
-                            .tabSupplier(() -> EntityUtils.getWorldPlayerNames(false))
+                            .dispatchLast(this::onInfoTab)
                             .select("#me")
                             .defaultValue("#me")
                             .build())
                     .post(e -> e.executor(CommandContext.run(this::onInfo)))
                     .complete();
+        }
+
+        public Stream<String> onInfoTab(String string) {
+            return switch (string) {
+                case "nbt", "inventory", "ender" -> EntityUtils.getWorldPlayerNames(true);
+                case "pentry", "team" -> getPlayerListNames();
+                case "waypoint" -> getWaypointNames();
+                default -> Stream.empty();
+            };
+        }
+
+        public Stream<String> getPlayerListNames() {
+            return mc.getNetworkHandler().getPlayerList().stream()
+                    .map(PlayerListEntry::getProfile)
+                    .map(GameProfile::getName);
+        }
+
+        public Stream<String> getWaypointNames() {
+
+            return Stream.empty();
         }
 
         public void onInfo(ArgumentInputStream re) {
@@ -1164,6 +1258,9 @@ public class ChatTasks {
                         Debug.chat("该玩家没有PlayerEntry");
                     }
                 }
+                case "waypoint" -> {
+                    Debug.chat("当前版本并不支持waypoint查询");
+                }
             }
         }
 
@@ -1203,7 +1300,7 @@ public class ChatTasks {
                     .post(e -> e.executor(CommandContext.run(this::onToggle)))
                     .complete();
         }
-
+        // todo: rewrite toggle command, add custom keybind command
         public void onToggle(ArgumentInputStream re) {
             String toggle = re.nextNonnull();
             String state = re.nextNonnull();

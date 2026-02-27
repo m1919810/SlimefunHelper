@@ -9,11 +9,13 @@ import java.util.Locale;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.basic.*;
 import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.utils.Debug;
+import me.matl114.utils.collections.Point;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -61,6 +63,7 @@ public class ConnectionProxy extends BaseModule {
         super.registerAll();
         registerListener(Listener.getConnectionChannelInitialize(), this::onPipelineInitialize);
         registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
+        registerListener(Listener.getResolutionChange(), this::onResolutionChange);
     }
 
     public void onPipelineInitialize(Event<ChannelPipeline> chEvent) {
@@ -108,14 +111,32 @@ public class ConnectionProxy extends BaseModule {
         }
     }
 
+    private ContentDelegateWidget<ExecutableWidget> delegateWidget = new ContentDelegateWidget<>(0, 0, 100, 20);
+
     public void onScreenInitialize(Event<Screen> screenEvent) {
         if (screenEvent.context() instanceof MultiplayerScreen mp) {
+            ExecutableWidget executableWidget = ExecutableWidget.instance(0, 0, 100, 20)
+                    .setElementHandler(new ButtonElement(
+                            TextProvider.of(Text.literal("http settings")),
+                            ButtonAction.run(() -> Tasks.getConfigSystem().openConfigScreen(Configs.HTTP_CONFIG))));
+            delegateWidget.setContentDelegate(executableWidget);
+            delegateWidget.addTo(mp);
+            delegateWidget.setX(mp.width - 205);
+            delegateWidget.setY(5);
             ScreenAccess.of(mp)
                     .addDrawableChildTo(ButtonWidget.builder(Text.literal("http settings"), b -> Tasks.getConfigSystem()
                                     .openConfigScreen(Configs.HTTP_CONFIG))
                             // .width(70)
                             .dimensions(mp.width - 205, 5, 100, 20)
                             .build());
+        }
+    }
+
+    public void onResolutionChange(Event<Point> resolutionChange) {
+        if (mc.currentScreen instanceof MultiplayerScreen) {
+            int x = resolutionChange.context().x;
+            delegateWidget.setX(x - 205);
+            delegateWidget.setY(5);
         }
     }
 
