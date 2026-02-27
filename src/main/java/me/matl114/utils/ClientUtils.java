@@ -21,6 +21,16 @@ public class ClientUtils {
 
     public static CompletableFuture<List<String>> getServerPluginResources() {
         String command = "/version ";
+        return getServerCommandTabResult(command);
+    }
+
+    public static List<String> getServerCommands() {
+        return mc.getNetworkHandler().getCommandDispatcher().getRoot().getChildren().stream()
+                .map(CommandNode::getName)
+                .toList();
+    }
+
+    public static CompletableFuture<List<String>> getServerCommandTabResult(String command) {
         StringReader ojReader = new StringReader(command);
         ojReader.skip();
         var dispatcher = mc.getNetworkHandler().getCommandDispatcher();
@@ -34,11 +44,5 @@ public class ClientUtils {
                             .sorted()
                             .toList();
                 }));
-    }
-
-    public static List<String> getServerCommands() {
-        return mc.getNetworkHandler().getCommandDispatcher().getRoot().getChildren().stream()
-                .map(CommandNode::getName)
-                .toList();
     }
 }
