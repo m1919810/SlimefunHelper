@@ -5,13 +5,10 @@ import com.mojang.brigadier.context.*;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.tree.CommandNode;
-import com.mojang.datafixers.util.Either;
-import io.netty.buffer.ByteBuf;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import lombok.Getter;
@@ -45,22 +42,17 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.EnderChestInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.visitor.NbtTextFormatter;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Uuids;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.waypoint.TrackedWaypoint;
-import net.minecraft.world.waypoint.Waypoint;
 
 public class ChatTasks {
     public static void init() {}
@@ -1075,22 +1067,12 @@ public class ChatTasks {
         public Stream<String> getPlayerListNames() {
             return mc.getNetworkHandler().getPlayerList().stream()
                     .map(PlayerListEntry::getProfile)
-                    .map(GameProfile::name);
+                    .map(GameProfile::getName);
         }
 
         public Stream<String> getWaypointNames() {
 
-            return Stream.concat(
-                    getPlayerListNames(),
-                    getWaypoints()
-                            .map(TrackedWaypoint::getSource)
-                            .map(s -> s.map(UUID::toString, Function.identity())));
-        }
-
-        public Stream<TrackedWaypoint> getWaypoints() {
-            List<TrackedWaypoint> waypoints = new ArrayList<>();
-            mc.getNetworkHandler().getWaypointHandler().forEachWaypoint(mc.player, waypoints::add);
-            return waypoints.stream();
+            return Stream.empty();
         }
 
         public void onInfo(ArgumentInputStream re) {
@@ -1277,56 +1259,7 @@ public class ChatTasks {
                     }
                 }
                 case "waypoint" -> {
-                    Debug.chat("查询中");
-                    PlayerListEntry entry;
-                    final String lookup;
-                    if ((entry = mc.getNetworkHandler().getPlayerListEntry(user)) != null) {
-                        lookup = entry.getProfile().id().toString();
-                    } else {
-                        lookup = user;
-                    }
-                    getWaypoints()
-                            .filter(s ->
-                                    lookup.equalsIgnoreCase(s.getSource().map(UUID::toString, Function.identity())))
-                            .forEach(s -> {
-                                Debug.chat("Information about waypoint:", user);
-                                ByteBuf buf = NetworkUtils.createBytebuf();
-                                s.writeBuf(buf);
-                                PacketByteBuf byteBuf = new PacketByteBuf(buf);
-                                Either<UUID, String> either =
-                                        byteBuf.readEither(Uuids.PACKET_CODEC, PacketByteBuf::readString);
-                                Waypoint.Config config = (Waypoint.Config) Waypoint.Config.PACKET_CODEC.decode(byteBuf);
-                                Debug.chat("config: ");
-                                var configNbt = Waypoint.Config.CODEC
-                                        .encodeStart(NbtOps.INSTANCE, config)
-                                        .getOrThrow();
-                                Debug.chat(new NbtTextFormatter("").apply(configNbt));
-                                int varInt = byteBuf.readVarInt();
-                                Debug.chat("type: "
-                                        + switch (varInt) {
-                                            case 0 -> "Empty";
-                                            case 1 -> "Pos";
-                                            case 2 -> "Chunk";
-                                            case 3 -> "Direction";
-                                            default -> "Unknown";
-                                        });
-                                switch (varInt) {
-                                    case 1 -> {
-                                        Debug.chat(
-                                                "Pos :",
-                                                byteBuf.readVarInt(),
-                                                byteBuf.readVarInt(),
-                                                byteBuf.readVarInt());
-                                    }
-                                    case 2 -> {
-                                        Debug.chat("Chunk :", byteBuf.readVarInt(), byteBuf.readVarInt());
-                                    }
-                                    case 3 -> {
-                                        Debug.chat("Azimuth :", byteBuf.readFloat());
-                                    }
-                                }
-                                buf.release();
-                            });
+                    Debug.chat("当前版本并不支持waypoint查询");
                 }
             }
         }

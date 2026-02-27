@@ -47,7 +47,7 @@ public class RenderUtils {
         var d = mc.gameRenderer.getCamera();
         if (d == null) return Vec3d.ZERO;
         Entity entity = d.getFocusedEntity();
-        Vec3d pos = d.getCameraPos();
+        Vec3d pos = d.getPos();
         if (entity != null) {
             pos.add(0, entity.getStandingEyeHeight(), 0);
         }
