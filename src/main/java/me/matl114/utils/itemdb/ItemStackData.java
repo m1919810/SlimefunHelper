@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 import me.matl114.utils.CustomItemStackBuilder;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.api.VItem;
 import me.matl114.versioned.api.VNbt;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -52,7 +53,8 @@ public interface ItemStackData {
         if (json.isJsonObject()) {
             JsonObject jsonMap = json.getAsJsonObject();
             try {
-                ItemStack stack = ItemStack.CODEC
+                ItemStack stack = VItem.getInstance()
+                        .getVersionedCodec()
                         .decode(ItemStackUtils.registry().getOps(JsonOps.INSTANCE), jsonMap)
                         .getOrThrow()
                         .getFirst();
@@ -64,7 +66,8 @@ public interface ItemStackData {
             String jsonString = json.getAsString();
             try {
                 NbtCompound nbtElement = (NbtCompound) VNbt.getInstance().readNbt(jsonString);
-                ItemStack stack = ItemStack.CODEC
+                ItemStack stack = VItem.getInstance()
+                        .getVersionedCodec()
                         .decode(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), nbtElement)
                         .getOrThrow()
                         .getFirst();
@@ -79,9 +82,7 @@ public interface ItemStackData {
         if (stack.isEmpty()) {
             return JsonNull.INSTANCE;
         } else {
-            NbtCompound nbt = (NbtCompound) ItemStack.CODEC
-                    .encodeStart(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), stack)
-                    .getOrThrow();
+            NbtCompound nbt = VItem.getInstance().toNbt(stack);
             return new JsonPrimitive(VNbt.getInstance().writeNbt(nbt));
         }
     }

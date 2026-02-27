@@ -1,16 +1,27 @@
 package me.matl114.versioned.impl;
 
-import com.mojang.serialization.Codec;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.DataVersion;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.CustomModelDataComponent;
+import net.minecraft.component.type.*;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.RegistryOps;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextCodecs;
+import net.minecraft.util.JsonHelper;
 
 public class ItemUtils_v1_21_11 implements VItem {
     @Override
@@ -50,6 +61,12 @@ public class ItemUtils_v1_21_11 implements VItem {
 
     @Override
     public NbtCompound toNbt(ItemStack tag) {
+        NbtCompound tagCompound = toNbt0(tag);
+        tagCompound.putInt(DataVersion.DATA_VERSION_FLAG, DataVersion.getDataVersion());
+        return tagCompound;
+    }
+
+    private NbtCompound toNbt0(ItemStack tag) {
         return tag.isEmpty()
                 ? new NbtCompound()
                 : (NbtCompound) ItemStack.CODEC
@@ -62,8 +79,111 @@ public class ItemUtils_v1_21_11 implements VItem {
         return new CustomModelDataComponent(List.of((float) cmd), List.of(), List.of(), List.of());
     }
 
+    private final Map<ComponentType<?>, Codec<?>> versionCompatCodecs;
+    private final Codec<Text> TEXT_CODEC;
+
+    public static Codec<Text> codec(int maxSerializedLength) {
+        final Codec<String> codec = Codec.string(0, maxSerializedLength);
+        return new Codec<Text>() {
+            public <T> DataResult<Pair<Text, T>> decode(DynamicOps<T> ops, T input) {
+                DynamicOps<JsonElement> dynamicOps = toJsonOps(ops);
+                return codec.decode(ops, input).flatMap((pair) -> {
+                    try {
+                        JsonElement jsonElement = JsonParser.parseString((String) pair.getFirst());
+                        return TextCodecs.CODEC.parse(dynamicOps, jsonElement).map((text) -> {
+                            return Pair.of(text, pair.getSecond());
+                        });
+                    } catch (JsonParseException var3) {
+                        JsonParseException jsonParseException = var3;
+                        Objects.requireNonNull(jsonParseException);
+                        return DataResult.error(jsonParseException::getMessage);
+                    }
+                });
+            }
+
+            public <T> DataResult<T> encode(Text text, DynamicOps<T> dynamicOps, T object) {
+                DynamicOps<JsonElement> dynamicOps2 = toJsonOps(dynamicOps);
+                return TextCodecs.CODEC.encodeStart(dynamicOps2, text).flatMap((json) -> {
+                    try {
+                        return codec.encodeStart(dynamicOps, JsonHelper.toSortedString(json));
+                    } catch (IllegalArgumentException var4) {
+                        IllegalArgumentException illegalArgumentException = var4;
+                        Objects.requireNonNull(illegalArgumentException);
+                        return DataResult.error(illegalArgumentException::getMessage);
+                    }
+                });
+            }
+
+            private static <T> DynamicOps<JsonElement> toJsonOps(DynamicOps<T> ops) {
+                if (ops instanceof RegistryOps<T> registryOps) {
+                    return registryOps.withDelegate(JsonOps.INSTANCE);
+                } else {
+                    return JsonOps.INSTANCE;
+                }
+            }
+        };
+    }
+
+    {
+        Codec<Text> STRINGIFY_CODEC = codec(Integer.MAX_VALUE);
+
+        TEXT_CODEC = Codec.of(TextCodecs.CODEC, Codec.withAlternative(STRINGIFY_CODEC, TextCodecs.CODEC));
+    }
+
+    {
+        var builder = ImmutableMap.<ComponentType<?>, Codec<?>>builder();
+        builder.put(
+                DataComponentTypes.CUSTOM_MODEL_DATA,
+                Codec.withAlternative(
+                        CustomModelDataComponent.CODEC,
+                        Codec.INT.xmap(
+                                i -> new CustomModelDataComponent(List.of((float) i), List.of(), List.of(), List.of()),
+                                v -> v.floats().stream()
+                                        .findFirst()
+                                        .map(Number::intValue)
+                                        .orElse(0))));
+        builder.put(DataComponentTypes.CUSTOM_NAME, TEXT_CODEC);
+        builder.put(DataComponentTypes.ITEM_NAME, TEXT_CODEC);
+        builder.put(
+                DataComponentTypes.LORE,
+                TEXT_CODEC.sizeLimitedListOf(256).xmap(LoreComponent::new, LoreComponent::lines));
+        builder.put(
+                DataComponentTypes.ENCHANTMENTS,
+                Codec.withAlternative(
+                        ItemEnchantmentsComponent.CODEC,
+                        ItemEnchantmentsComponent.CODEC.fieldOf("levels").codec()));
+        builder.put(
+                DataComponentTypes.STORED_ENCHANTMENTS,
+                Codec.withAlternative(
+                        ItemEnchantmentsComponent.CODEC,
+                        ItemEnchantmentsComponent.CODEC.fieldOf("levels").codec()));
+        builder.put(
+                DataComponentTypes.DYED_COLOR,
+                Codec.withAlternative(
+                        DyedColorComponent.CODEC,
+                        DyedColorComponent.CODEC.fieldOf("rgb").codec()));
+        builder.put(
+                DataComponentTypes.CAN_BREAK,
+                Codec.withAlternative(
+                        BlockPredicatesComponent.CODEC,
+                        BlockPredicatesComponent.CODEC.fieldOf("predicates").codec()));
+        builder.put(
+                DataComponentTypes.CAN_PLACE_ON,
+                Codec.withAlternative(
+                        BlockPredicatesComponent.CODEC,
+                        BlockPredicatesComponent.CODEC.fieldOf("predicates").codec()));
+        var attributeCodec = AttributeModifiersComponent.Entry.CODEC
+                .listOf()
+                .xmap(AttributeModifiersComponent::new, AttributeModifiersComponent::modifiers);
+        builder.put(
+                DataComponentTypes.ATTRIBUTE_MODIFIERS,
+                Codec.withAlternative(
+                        attributeCodec, attributeCodec.fieldOf("modifiers").codec()));
+        versionCompatCodecs = builder.build();
+    }
+
     @Override
     public Map<ComponentType<?>, Codec<?>> getVersionCompatCodecs() {
-        return Map.of();
+        return versionCompatCodecs;
     }
 }
