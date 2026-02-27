@@ -2,6 +2,7 @@ package me.matl114.utils.commands;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,7 +19,7 @@ public class ArgumentInputStream {
     @Accessors(fluent = true)
     @Setter
     @Getter
-    public static class ArgumentReaderResult {
+    public static class ArgumentReaderResult implements InputArgument {
         // the index lies at the next index of result, where it just read the result, so the result is at top of
         // alreadyRead arguments
         // or the index lies at the end of the reader, where the result is not found, anywhere
@@ -176,6 +177,15 @@ public class ArgumentInputStream {
         return new ArgumentReaderResult(argument, argument.getDefaultValue(), reader, reader.cursor(), true);
     }
 
+    public InputArgument peekNext() {
+        if (hasNext()) {
+            SimpleCommandArgs.Argument arg = arguments[i];
+            return argsMap.computeIfAbsent(arg, this::createDefault);
+        } else {
+            throw new RuntimeException("Illegal to access undeclared argument");
+        }
+    }
+
     @Nonnull
     public ArgumentReaderResult next() {
         if (hasNext()) {
@@ -237,19 +247,26 @@ public class ArgumentInputStream {
 
     @Nullable
     public List<String> getTabComplete(PlayerEntity sender) {
+        List<InputArgument> argumentInputs = new ArrayList<>();
         for (int i = 0; i <= arguments.length; i++) {
-            if (i == arguments.length || argsMap.get(arguments[i]) == null) {
+            InputArgument argument;
+            if (i == arguments.length || (argument = argsMap.get(arguments[i])) == null) {
                 if (i == 0) {
                     return null;
                 }
                 final int index = i - 1;
-                List<String> tablist = arguments[index].tabCompletor.apply(sender);
-                tablist = tablist == null ? List.of() : tablist;
+                // remove the current tabbing element
+                argumentInputs.remove(argumentInputs.size() - 1);
+                Stream<String> tablist = arguments[index].getTab(sender, argumentInputs);
+                tablist = tablist == null ? Stream.empty() : tablist;
                 ArgumentReaderResult result = argsMap.get(arguments[index]);
-                String resultResult = result == null ? null : result.result();
-                return tablist.stream()
-                        .filter(s -> resultResult != null && s.contains(resultResult))
+                String resultResult =
+                        ((result != null && result.result() != null) ? result.result() : "").toLowerCase(Locale.ROOT);
+                return tablist.filter(s -> s.toLowerCase(Locale.ROOT).contains(resultResult))
                         .toList();
+            } else {
+
+                argumentInputs.add(argument);
             }
         }
         return null;

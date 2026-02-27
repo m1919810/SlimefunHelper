@@ -42,6 +42,17 @@ public class RenderUtils {
         return d == null ? Vec3d.ZERO : d.getCameraPos();
     }
 
+    public static Vec3d getCameraFeetPos() {
+        var d = mc.gameRenderer.getCamera();
+        if (d == null) return Vec3d.ZERO;
+        Entity entity = d.getFocusedEntity();
+        Vec3d pos = d.getCameraPos();
+        if (entity != null) {
+            pos.add(0, entity.getStandingEyeHeight(), 0);
+        }
+        return pos;
+    }
+
     public static BlockPos getCameraBlockPos() {
         Camera camera = mc.gameRenderer.getCamera();
         if (camera == null) return BlockPos.ORIGIN;

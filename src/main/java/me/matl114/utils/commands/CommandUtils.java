@@ -187,13 +187,37 @@ public class CommandUtils {
                 TypeError.BaseArgumentType.FLOAT);
     }
 
+    public static final List<String> BOOLS = List.of("true", "false");
+    public static final List<String> INTS = List.of("0", "1", "16", "64", "114514", "2147483647");
+    public static final List<String> FLOATS = List.of("0.0", "1.0", "2.0", "3.0", "3.14159", "1.57079", "6.283185");
+
+    public static Supplier<List<String>> boolSupplier() {
+        return () -> BOOLS;
+    }
+
+    public static List<String> bools() {
+        return BOOLS;
+    }
+
+    public static Supplier<Stream<String>> boolStreamSupplier() {
+        return BOOLS::stream;
+    }
+
+    public static List<String> numbers() {
+        return INTS;
+    }
+
+    public static List<String> floats() {
+        return FLOATS;
+    }
+
     /**
      * Creates a supplier that provides common number values for tab completion.
      *
      * @return A supplier that returns a list of common number values
      */
     public static Supplier<List<String>> numberSupplier() {
-        return () -> List.of("0", "1", "16", "64", "114514", "2147483647");
+        return () -> INTS;
     }
 
     /**
@@ -202,11 +226,11 @@ public class CommandUtils {
      * @return A supplier that returns a list of common float values
      */
     public static Supplier<List<String>> floatSupplier() {
-        return () -> List.of("0.0", "1.0", "2.0", "3.0", "3.14159", "1.57079", "6.283185");
+        return () -> FLOATS;
     }
 
     public static Supplier<Stream<String>> numberStreamSupplier() {
-        return () -> Stream.of("0", "1", "16", "64", "114514", "2147483647");
+        return INTS::stream;
     }
 
     /**
@@ -215,6 +239,6 @@ public class CommandUtils {
      * @return A supplier that returns a list of common float values
      */
     public static Supplier<Stream<String>> floatStreamSupplier() {
-        return () -> Stream.of("0.0", "1.0", "2.0", "3.0", "3.14159", "1.57079", "6.283185");
+        return FLOATS::stream;
     }
 }
