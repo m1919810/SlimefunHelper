@@ -82,6 +82,7 @@
 		"defaultRequire": 1
 	},
 	"mixins": [
+		"events.EntityTypeEvents",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
 		"fix.ScreenHandlerFixMixin"

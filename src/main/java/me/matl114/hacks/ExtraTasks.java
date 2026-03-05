@@ -4,10 +4,7 @@ import lombok.Getter;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.hacks.modules.extra.BeaconEnhance;
-import me.matl114.hacks.modules.extra.ClientExtra;
-import me.matl114.hacks.modules.extra.PacketDebugger;
-import me.matl114.hacks.modules.extra.Tests;
+import me.matl114.hacks.modules.extra.*;
 import me.matl114.utils.Debug;
 
 public class ExtraTasks {
@@ -36,12 +33,17 @@ public class ExtraTasks {
     @Getter
     public static BeaconEnhance beaconEnhance;
 
+    @Getter
+    public static EnderEyeLog enderEyeLog;
+
     private static void initModules(ModuleManager m) {
         clientExtra = new ClientExtra().register(m);
         ;
         tests = new Tests().register(m);
         packetDebugger = new PacketDebugger().register(m);
         beaconEnhance = new BeaconEnhance().register(m);
+
+        enderEyeLog = new EnderEyeLog().register(m);
     }
 
     static {

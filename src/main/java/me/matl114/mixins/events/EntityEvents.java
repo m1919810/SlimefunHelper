@@ -11,8 +11,10 @@ import me.matl114.utils.containers.MetaData;
 import me.matl114.utils.entity.ProgressWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -93,6 +95,9 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
     @Shadow
     protected abstract boolean getFlag(int index);
 
+    @Shadow
+    protected abstract void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition);
+
     @Unique
     public void setDataFlag(int index, boolean val) {
         this.setFlag(index, val);
@@ -113,5 +118,16 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
     public void onEntityDataUpdate(List<DataTracker.SerializedEntry<?>> dataEntries, CallbackInfo ci) {
         Entity entity = (Entity) (Object) (this);
         Listener.getEntityDataListener().broadcast(entity, dataEntries);
+    }
+
+    @Inject(
+            method = "setRemoved",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/entity/Entity;onRemove(Lnet/minecraft/entity/Entity$class_5529;)V",
+                            shift = At.Shift.AFTER))
+    public void onEntityRemoved(Entity.class_5529 reason, CallbackInfo ci) {
+        Listener.getEntityRemoveListener().broadcast((Entity) (Object) this, reason);
     }
 }

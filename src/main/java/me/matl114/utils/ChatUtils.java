@@ -406,6 +406,15 @@ public class ChatUtils {
     }
 
     @ApiMethod
+    public static Text getDisplayedLocation(double x, double z) {
+        return Text.literal("[%.2f,~,%.2f]".formatted(x, z))
+                .setStyle(Style.EMPTY
+                        .withClickEvent(new ClickEvent.CopyToClipboard("%.2f ~ %.2f".formatted(x, z)))
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord"))))
+                .formatted(Formatting.GREEN);
+    }
+
+    @ApiMethod
     public static Text getDisplayedLocation(Vec3d vec3d) {
         return getDisplayedLocation(vec3d.x, vec3d.y, vec3d.z);
     }
