@@ -104,6 +104,11 @@ public class ScreenUtils {
     }
 
     public static boolean hasCtrlDown() {
+        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 341)
+                || InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 345);
+    }
+
+    public static boolean hasAltDown() {
         return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 342)
                 || InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), 346);
     }
