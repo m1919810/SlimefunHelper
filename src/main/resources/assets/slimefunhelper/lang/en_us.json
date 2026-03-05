@@ -112,6 +112,7 @@
 	"other.no-disconnect-on-network-error.tooltips": "当出现了客户端方的网络协议错误\n不断开连接,同时打印错误内容",
 	"other.keep-gui-open-on-portal":"PortalGUI",
 	"other.no-client-crash": "崩端错误处理",
+	"other.enable-ender-eye-log": "启用末影之眼日志",
 	"other.enable-beacon-enhance": "启用信标增强",
 	"packet-debugger.debug-packet-in": "调试: 接受发包",
 	"packet-debugger.debug-packet-out": "调试: 发送发包",
