@@ -473,7 +473,7 @@ public class Listener {
 
     @Getter
     @Broadcast
-    @ExtraArgs(value = {Entity.class_5529.class})
+    @ExtraArgs(value = {Entity.RemovalReason.class})
     private static final EventChannel<Entity> entityRemoveListener = new EventChannel<>();
 
     // client interactions and attacks

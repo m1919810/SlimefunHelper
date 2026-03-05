@@ -120,14 +120,8 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
         Listener.getEntityDataListener().broadcast(entity, dataEntries);
     }
 
-    @Inject(
-            method = "setRemoved",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/entity/Entity;onRemove(Lnet/minecraft/entity/Entity$class_5529;)V",
-                            shift = At.Shift.AFTER))
-    public void onEntityRemoved(Entity.class_5529 reason, CallbackInfo ci) {
+    @Inject(method = "setRemoved", at = @At("RETURN"))
+    public void onEntityRemoved(Entity.RemovalReason reason, CallbackInfo ci) {
         Listener.getEntityRemoveListener().broadcast((Entity) (Object) this, reason);
     }
 }
