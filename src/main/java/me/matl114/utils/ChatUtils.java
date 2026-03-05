@@ -409,8 +409,10 @@ public class ChatUtils {
     public static Text getDisplayedLocation(double x, double z) {
         return Text.literal("[%.2f,~,%.2f]".formatted(x, z))
                 .setStyle(Style.EMPTY
-                        .withClickEvent(new ClickEvent.CopyToClipboard("%.2f ~ %.2f".formatted(x, z)))
-                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord"))))
+                        .withClickEvent(
+                                new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "%.2f ~ %.2f".formatted(x, z)))
+                        .withHoverEvent(
+                                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord"))))
                 .formatted(Formatting.GREEN);
     }
 

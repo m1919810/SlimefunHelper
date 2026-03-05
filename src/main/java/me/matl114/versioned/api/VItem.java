@@ -15,8 +15,10 @@ import net.minecraft.component.ComponentType;
 import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Unit;
 import org.jetbrains.annotations.Nullable;
@@ -149,11 +151,17 @@ public interface VItem {
 
                         return (Map) reference2ObjectMap;
                     });
-
+    Codec<RegistryEntry<Item>> ITEM_CODEC = Registries.ITEM.getEntryCodec().validate((entry) -> {
+        return entry.matches(Items.AIR.getRegistryEntry())
+                ? DataResult.error(() -> {
+                    return "Item must not be minecraft:air";
+                })
+                : DataResult.success(entry);
+    });
     MapCodec<ItemStack> ITEM_STACK_MAP_CODEC = MapCodec.recursive("ItemStack", (codec) -> {
         return RecordCodecBuilder.mapCodec((instance) -> {
             return instance.group(
-                            Item.ENTRY_CODEC.fieldOf("id").forGetter(ItemStack::getRegistryEntry),
+                            ITEM_CODEC.fieldOf("id").forGetter(ItemStack::getRegistryEntry),
                             Codec.INT.fieldOf("count").orElse(1).forGetter(ItemStack::getCount),
                             VItem.COMPONENT_CHANGES_CODEC
                                     .optionalFieldOf("components", ComponentChanges.EMPTY)
