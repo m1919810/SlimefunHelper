@@ -39,11 +39,13 @@ public class RenderUtils {
     // vertexBuffer可以缓存buffer的行为，可以在不同的变换矩阵下重复使用， 使用bind();draw(viewMatrix, projMatrix, shader);unbind();
     // projMatrix从RenderSystem.getProjectionMatrix();获取, shader从RenderSystem.getShader();获取,
     // viewMatrix是正常传参中的玩家位置matrixStack.position
+    @ApiMethod
     public static Vec3d getCameraPos() {
         var d = mc.getBlockEntityRenderDispatcher().camera;
         return d == null ? Vec3d.ZERO : d.getPos();
     }
 
+    @ApiMethod
     public static Vec3d getCameraFeetPos() {
         var d = mc.gameRenderer.getCamera();
         if (d == null) return Vec3d.ZERO;
@@ -55,6 +57,7 @@ public class RenderUtils {
         return pos;
     }
 
+    @ApiMethod
     public static BlockPos getCameraBlockPos() {
         Camera camera = mc.getBlockEntityRenderDispatcher().camera;
         if (camera == null) return BlockPos.ORIGIN;
@@ -62,11 +65,13 @@ public class RenderUtils {
         return camera.getBlockPos();
     }
 
+    @ApiMethod
     public static Vec3d getClientLookVec(float partialTicks) {
         if (mc.player == null) return Vec3d.ZERO;
         return mc.player.getRotationVec(partialTicks);
     }
 
+    @ApiMethod
     public static Vec3d getTracerOrigin(float partialTicks) {
         Vec3d start = getClientLookVec(partialTicks).multiply(10);
         if (mc.options.getPerspective() == Perspective.THIRD_PERSON_FRONT) start = start.negate();
@@ -177,6 +182,7 @@ public class RenderUtils {
     @Deprecated
     public static void resetCurrentShaderColor() {}
 
+    @ApiMethod
     public static Box getLerpedBox(Entity e, float partialTicks) {
         // When an entity is removed, it stops moving and its lastRenderX/Y/Z
         // values are no longer updated.
@@ -186,6 +192,7 @@ public class RenderUtils {
         return e.getBoundingBox().offset(offset);
     }
 
+    @ApiMethod
     public static Vec3d getLerpedPos(Entity e, float partialTicks) {
         // When an entity is removed, it stops moving and its lastRenderX/Y/Z
         // values are no longer updated.
@@ -197,10 +204,12 @@ public class RenderUtils {
         return new Vec3d(x, y, z);
     }
 
+    @ApiMethod
     public static Vec3d getLerpedDelta(Entity e, float partialTicks) {
         return getLerpedPos(e, partialTicks).subtract(e.getPos());
     }
 
+    @ApiMethod
     public static Quaternionf getBillboardRotation(DisplayEntity.BillboardMode renderState, float pitch, float yaw) {
         Quaternionf rotation = new Quaternionf();
         Camera camera = mc.gameRenderer.getCamera();
@@ -221,14 +230,17 @@ public class RenderUtils {
         return var10000;
     }
 
+    @ApiMethod
     private static float getBackwardsYaw(float yaw) {
         return yaw - 180.0F;
     }
 
+    @ApiMethod
     private static float getNegatedPitch(float pitch) {
         return -pitch;
     }
 
+    @ApiMethod
     public static VertexConsumer getSpriteVertexConsumer(VertexConsumer vertexConsumer, Sprite sprite) {
         return new SpriteTexturedVertexConsumer(vertexConsumer, sprite);
     }

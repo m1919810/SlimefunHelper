@@ -40,6 +40,9 @@ import org.jetbrains.annotations.Nullable;
 
 @ApiMethod
 public class ItemStackUtils {
+    public static CustomItemStackBuilder builder() {
+        return new CustomItemStackBuilder();
+    }
 
     public static VHideFlag[] getHideFlags() {
         return TooltipHideFlag_v1_21_1.values();

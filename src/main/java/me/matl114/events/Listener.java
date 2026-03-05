@@ -31,6 +31,7 @@ import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
@@ -450,6 +451,7 @@ public class Listener {
     @Getter // vc update
     @Cancelable
     @Modifiable
+    @ExtraArgs({Entity.class})
     private static final EventChannel<Vec3d> entityClientVelocityUpdate = new EventChannel<>();
 
     @Getter
@@ -462,6 +464,17 @@ public class Listener {
             value = {List.class},
             names = {"updatedEntry"})
     private static final EventChannel<Entity> entityDataListener = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    @Modifiable
+    @ExtraArgs(value = {SpawnReason.class})
+    private static final EventChannel<Entity> entityCreateListener = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    @ExtraArgs(value = {Entity.class_5529.class})
+    private static final EventChannel<Entity> entityRemoveListener = new EventChannel<>();
 
     // client interactions and attacks
     @Getter // handle player uses and attacks
