@@ -12,6 +12,18 @@ public class JsHelper {
         return JsMacrosBridge.getInstance().unwrap(what, type);
     }
 
+    public static <T extends Enum<T>> T toEnum(Object what, Class<T> type) {
+        if (type.isInstance(what)) {
+            return type.cast(what);
+        } else {
+            if (what instanceof String str) {
+                return Enum.valueOf(type, str.toUpperCase(Locale.ROOT));
+            } else {
+                return unwrap(what, type);
+            }
+        }
+    }
+
     private static WrappingMethod lookupWrappingMethod(String clazzName, String methodName) {
         try {
             Class<?> clazz = Class.forName(clazzName);
