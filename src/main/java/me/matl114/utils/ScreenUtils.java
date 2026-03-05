@@ -101,6 +101,10 @@ public class ScreenUtils {
         return Screen.hasControlDown();
     }
 
+    public static boolean hasAltDown() {
+        return Screen.hasAltDown();
+    }
+
     public static boolean hasEnterDown() {
         return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 257)
                 || InputUtil.isKeyPressed(
