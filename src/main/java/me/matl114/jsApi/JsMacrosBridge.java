@@ -149,12 +149,12 @@ public interface JsMacrosBridge {
 
     public static class JsMacrosCE implements JsMacrosBridge {
         com.jsmacrosce.jsmacros.core.Core core;
-        com.jsmacrosce.jsmacros.client.api.library.FJavaUtils javaUtils;
+        com.jsmacrosce.jsmacros.api.library.FJavaUtils javaUtils;
 
         public JsMacrosCE(com.jsmacrosce.jsmacros.core.Core core) {
             this.core = core;
             try {
-                javaUtils = new com.jsmacrosce.jsmacros.client.api.library.FJavaUtils(core);
+                javaUtils = new com.jsmacrosce.jsmacros.api.library.FJavaUtils(core);
             } catch (Throwable e) {
 
             }
@@ -167,10 +167,10 @@ public interface JsMacrosBridge {
                 var raw = base.getRaw();
                 return type.cast(raw);
             }
-            if (what instanceof com.jsmacrosce.jsmacros.client.api.classes.math.Pos3D pos3) {
+            if (what instanceof com.jsmacrosce.jsmacros.api.math.Pos3D pos3) {
                 return type.cast(new Vec3d(pos3.x, pos3.y, pos3.z));
             }
-            if (what instanceof com.jsmacrosce.jsmacros.client.api.classes.math.Pos2D pos2D) {
+            if (what instanceof com.jsmacrosce.jsmacros.api.math.Pos2D pos2D) {
                 return type.cast(new Vec2f((float) pos2D.x, (float) pos2D.y));
             }
             if (what instanceof com.jsmacrosce.jsmacros.client.api.classes.inventory.Inventory<?> inventory) {
@@ -194,12 +194,12 @@ public interface JsMacrosBridge {
 
         @Override
         public Object wrap(Object object) {
-            com.jsmacrosce.jsmacros.client.api.library.FJavaUtils javaUtils = this.javaUtils;
+            com.jsmacrosce.jsmacros.api.library.FJavaUtils javaUtils = this.javaUtils;
             if (object instanceof Vec3d vec3d) {
-                return new com.jsmacrosce.jsmacros.client.api.classes.math.Pos3D(vec3d);
+                return new com.jsmacrosce.jsmacros.api.math.Pos3D(vec3d);
             }
             if (object instanceof Vec2f vec2f) {
-                return new com.jsmacrosce.jsmacros.client.api.classes.math.Pos2D(vec2f.x, vec2f.y);
+                return new com.jsmacrosce.jsmacros.api.math.Pos2D(vec2f.x, vec2f.y);
             }
             if (object instanceof HandledScreen handledScreen) {
                 return com.jsmacrosce.jsmacros.client.api.classes.inventory.Inventory.create(handledScreen);
