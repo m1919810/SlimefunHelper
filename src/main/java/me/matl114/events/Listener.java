@@ -31,7 +31,7 @@ import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
@@ -468,7 +468,7 @@ public class Listener {
     @Getter
     @Cancelable
     @Modifiable
-    @ExtraArgs(value = {SpawnReason.class})
+    @ExtraArgs(value = {EntityType.class})
     private static final EventChannel<Entity> entityCreateListener = new EventChannel<>();
 
     @Getter

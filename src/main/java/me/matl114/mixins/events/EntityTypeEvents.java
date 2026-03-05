@@ -30,7 +30,7 @@ public abstract class EntityTypeEvents {
             Operation<T> original,
             @Local(argsOnly = true) SpawnReason spawnReason) {
         T val = original.call(instance, tEntityType, world);
-        Event<Entity> event = new Event<Entity>(val, true, true, tEntityType, spawnReason);
+        Event<Entity> event = new Event<Entity>(val, true, true, tEntityType);
         Listener.getEntityCreateListener().handleValue(event);
         if (event.isCancelled()) {
             return null;
