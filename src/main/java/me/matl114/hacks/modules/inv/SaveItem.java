@@ -143,6 +143,7 @@ public class SaveItem extends BaseModule {
             Debug.chat(Text.literal("该物品已经保存过了!").formatted(Formatting.YELLOW));
         } else {
             savedItemDataMap.put(dataPair.getFirst(), dataPair.getSecond());
+            dirty = true;
             Debug.chat(Text.literal("成功保存物品!").formatted(Formatting.GREEN));
         }
     }
@@ -151,6 +152,7 @@ public class SaveItem extends BaseModule {
         ensureLoad();
         String id = InvTasks.getCustomItemDatabase().getItemIdOrNull(item);
         if (id != null && savedItemDataMap.remove(id) != null) {
+            dirty = true;
             Debug.chat(Text.literal("已经成功移除这个保存物品").formatted(Formatting.GREEN));
         }
     }

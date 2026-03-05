@@ -50,7 +50,10 @@ public class SavedItemWidget extends SubScreenWidget {
         ExecutableWidget.instance(75, 36, 25, 16)
                 .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("Give")), ButtonAction.run(() -> {
                             if (MinecraftClient.getInstance().player != null
-                                    && MinecraftClient.getInstance().player.isCreative()) {
+                                    && MinecraftClient.getInstance()
+                                            .interactionManager
+                                            .getCurrentGameMode()
+                                            .isCreative()) {
                                 InvTasks.creativeAddItem(this.itemStack, 64);
                             } else {
                                 Debug.chat(Text.literal("当前并不处于创造模式,无法获取保存物品!").formatted(Formatting.YELLOW));
