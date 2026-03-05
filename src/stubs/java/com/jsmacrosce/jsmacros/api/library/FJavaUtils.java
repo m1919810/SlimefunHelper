@@ -1,4 +1,4 @@
-package com.jsmacrosce.jsmacros.client.api.library;
+package com.jsmacrosce.jsmacros.api.library;
 
 import com.jsmacrosce.jsmacros.core.Core;
 import java.util.Objects;

@@ -1,4 +1,4 @@
-package com.jsmacrosce.jsmacros.client.api.classes.math;
+package com.jsmacrosce.jsmacros.api.math;
 
 import net.minecraft.util.math.Vec3d;
 
