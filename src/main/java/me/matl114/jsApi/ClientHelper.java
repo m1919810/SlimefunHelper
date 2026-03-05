@@ -4,6 +4,7 @@ import java.util.concurrent.locks.LockSupport;
 import me.matl114.utils.ApiMethod;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.world.ClientWorld;
 
@@ -17,6 +18,10 @@ public class ClientHelper {
 
     public static ClientPlayerEntity getPlayer() {
         return mc.player;
+    }
+
+    public static ClientPlayerInteractionManager getInteractions() {
+        return mc.interactionManager;
     }
 
     public static ClientWorld getWorld() {
