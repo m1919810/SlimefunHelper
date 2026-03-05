@@ -149,12 +149,12 @@ public interface JsMacrosBridge {
 
     public static class JsMacrosCE implements JsMacrosBridge {
         com.jsmacrosce.jsmacros.core.Core core;
-        com.jsmacrosce.jsmacros.client.api.library.impl.FJavaUtils javaUtils;
+        com.jsmacrosce.jsmacros.client.api.library.FJavaUtils javaUtils;
 
         public JsMacrosCE(com.jsmacrosce.jsmacros.core.Core core) {
             this.core = core;
             try {
-                javaUtils = new com.jsmacrosce.jsmacros.client.api.library.impl.FJavaUtils();
+                javaUtils = new com.jsmacrosce.jsmacros.client.api.library.FJavaUtils(core);
             } catch (Throwable e) {
 
             }
@@ -194,7 +194,7 @@ public interface JsMacrosBridge {
 
         @Override
         public Object wrap(Object object) {
-            com.jsmacrosce.jsmacros.client.api.library.impl.FJavaUtils javaUtils = this.javaUtils;
+            com.jsmacrosce.jsmacros.client.api.library.FJavaUtils javaUtils = this.javaUtils;
             if (object instanceof Vec3d vec3d) {
                 return new com.jsmacrosce.jsmacros.client.api.classes.math.Pos3D(vec3d);
             }
