@@ -134,7 +134,10 @@ public class SlimefunGuide extends BaseModule {
                                                 if (ScreenUtils.hasShiftDown()) {
                                                     InvTasks.copyGiveCommand(entry.copy());
                                                 } else {
-                                                    if (mc.player != null && mc.player.isCreative()) {
+                                                    if (mc.player != null
+                                                            && mc.interactionManager
+                                                                    .getCurrentGameMode()
+                                                                    .isCreative()) {
                                                         InvTasks.creativeAddItem(entry.copy(), 64);
                                                     } else {
                                                         Debug.chat(Text.literal("当前并不处于创造模式,无法获取保存物品!")
