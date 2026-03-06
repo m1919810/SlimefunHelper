@@ -5,6 +5,7 @@ import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.index.IndexedScreen;
 import me.matl114.managers.config.Config;
+import me.matl114.managers.config.StringRef;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
@@ -43,8 +44,13 @@ public class ConfigurateNewStyleScreen extends IndexedScreen<Config, ConfigureLi
                 .setActivePredicate((el) -> getGlobal() == val);
     }
 
+    private StringRef filterWidget;
+
     @Override
     protected ConfigureListWidget createSelectingDisplayWidget(Config val) {
+        if (filterWidget == null) {
+            filterWidget = new StringRef("");
+        }
         return ConfigureListWidget.createConfigConfigure(
                 val,
                 20,
@@ -55,7 +61,13 @@ public class ConfigurateNewStyleScreen extends IndexedScreen<Config, ConfigureLi
                 buttonWidth,
                 buttonHeight,
                 this.width - configButtonWidth - 30,
-                this.height - 20);
+                this.height - 20,
+                filterWidget);
+    }
+
+    protected void onIndexChange() {
+        super.onIndexChange();
+        this.filterWidget = new StringRef("");
     }
 
     // TODO ：should we make first-level index
