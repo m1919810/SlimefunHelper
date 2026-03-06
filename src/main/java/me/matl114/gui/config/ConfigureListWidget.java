@@ -9,10 +9,12 @@ import me.matl114.gui.presets.index.IndexedSubScreen;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.lists.ListUnmodifiableWidget;
 import me.matl114.managers.config.Config;
+import me.matl114.managers.config.StringRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CollectionUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.PropertyTracker;
+import me.matl114.utils.containers.ArgsMap;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
@@ -33,14 +35,28 @@ public class ConfigureListWidget
             int inputDx,
             int dy,
             int dx,
-            int maxDy) {
+            int maxDy,
+            StringRef filterWidget) {
 
-        return new ConfigureListWidget(config, x, y, dx, maxDy, indexDx, dy, blankDx, inputDx, buttonDx);
+        return new ConfigureListWidget(
+                config,
+                x,
+                y,
+                dx,
+                maxDy,
+                indexDx,
+                dy,
+                blankDx,
+                inputDx,
+                buttonDx,
+                new ArgsMap().put(FILTER_TEXT_WIDGET, filterWidget));
     }
 
     protected Config config;
     protected Map<String, ListEntryWidgetController> cache;
     private static final Map<String, String> cachedConfigUserSelectIndex = new HashMap<>();
+    public static final String FILTER_TEXT_WIDGET = "slimefunhelper:configure_list_widget/filter_text_widget";
+    private ArgsMap argsMap;
     private ContentDelegateWidget<TextFieldWidget> filterInputWidget;
     private boolean initialized = false;
     protected int blankDx;
@@ -48,6 +64,7 @@ public class ConfigureListWidget
     protected int buttonDx;
     // <key> : <value>
     // button blank input
+    // todo: put widgets and other things in
     private ConfigureListWidget(
             Config config,
             int x,
@@ -58,13 +75,15 @@ public class ConfigureListWidget
             int indexDy,
             int blankDx,
             int inputDx,
-            int buttonDx) {
+            int buttonDx,
+            ArgsMap args) {
         super(getConfigIndexes(config), x, y, dx, dy, indexDx, indexDy);
         this.config = config;
         this.blankDx = blankDx;
         this.inputDx = inputDx;
         this.buttonDx = buttonDx;
         this.initialized = true;
+        this.argsMap = args;
         init();
     }
 
@@ -84,22 +103,20 @@ public class ConfigureListWidget
     @Override
     public void setGlobal(Pair<String, Map<String, AttrKeyValue<?>>> config) {
         cachedConfigUserSelectIndex.put(this.config.getConfigName(), config.getFirst());
-        this.selectIndexToDisplay(config);
+        this.selectIndexToDisplay(config, false);
     }
 
     @Override
     protected ListUnmodifiableWidget createSelectingDisplayWidget(Pair<String, Map<String, AttrKeyValue<?>>> val) {
+        String str = val.getFirst();
         return new ListUnmodifiableWidget(
-                this.cache.computeIfAbsent(
-                        val.getFirst(),
-                        (str) -> ListEntryWidgetController.immutable(
-                                this.getFromKeyOr(str, Map.of()).getSecond().values().stream()
-                                        .filter(this::applyFilter)
-                                        .toList(),
-                                b -> b.generateKeyValueInput(
-                                        blankDx, 0, this.buttonDx, blankDx, inputDx, this.buttonDy),
-                                buttonDy,
-                                buttonDx + blankDx + inputDx)),
+                ListEntryWidgetController.immutable(
+                        this.getFromKeyOr(str, Map.of()).getSecond().values().stream()
+                                .filter(this::applyFilter)
+                                .toList(),
+                        b -> b.generateKeyValueInput(blankDx, 0, this.buttonDx, blankDx, inputDx, this.buttonDy),
+                        buttonDy,
+                        buttonDx + blankDx + inputDx),
                 20,
                 buttonDy,
                 buttonDx + blankDx + inputDx + 10,
@@ -150,13 +167,14 @@ public class ConfigureListWidget
         // cancel init in super
         if (!initialized) return;
         this.cache = new LinkedHashMap<>();
+        StringRef filterWidget = this.argsMap.get(FILTER_TEXT_WIDGET);
         this.filterInputWidget = McWidgetHelpers.createTextFieldEditBox(
                         this.indexDx + 20,
                         1,
                         this.inputDx + this.blankDx + this.buttonDx + 20,
                         this.buttonDy - 2,
                         PropertyTracker.event(this::refreshFilter),
-                        "")
+                        filterWidget.get())
                 .addToSub(this);
         ;
         super.init();
@@ -186,10 +204,12 @@ public class ConfigureListWidget
     }
 
     protected void refreshFilter(String filter) {
+        StringRef filterWidget = this.argsMap.get(FILTER_TEXT_WIDGET);
+        filterWidget.set(filter);
         String value = cachedConfigUserSelectIndex.get(this.config.getConfigName());
         if (value != null) {
             recreateIndexWidget(value);
-            selectIndexToDisplay(getFromKey(value));
+            selectIndexToDisplay(getFromKey(value), true);
         }
     }
 

@@ -3,6 +3,7 @@ package me.matl114.gui.config;
 import me.matl114.gui.GenericScreen;
 import me.matl114.managers.config.Config;
 import net.minecraft.client.MinecraftClient;
+import me.matl114.managers.config.StringRef;
 import net.minecraft.text.Text;
 
 public class ConfigureScreen extends GenericScreen {
@@ -31,6 +32,8 @@ public class ConfigureScreen extends GenericScreen {
     private static final int buttonHeight = 20;
     ConfigureListWidget configs;
     //    private HashMap<String, TextFieldWidget> textEntryBox = new HashMap<>();
+    private final StringRef filterWidget = new StringRef("");
+
     protected void init() {
         super.init();
         if (configs != null) {
@@ -47,7 +50,8 @@ public class ConfigureScreen extends GenericScreen {
                 buttonWidth,
                 buttonHeight,
                 this.width - 20,
-                this.height - 40);
+                this.height - 40,
+                filterWidget);
         addDrawableChild(configs);
         //        List<DrawableWidget> drawableWidgets = originValue.entrySet().stream().map((entry)->{
         //            var subscreen = new SubScreenWidget(0, 0, 2 *buttonWidth + 20, buttonHeight)
