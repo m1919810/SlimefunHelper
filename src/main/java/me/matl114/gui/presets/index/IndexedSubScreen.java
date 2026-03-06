@@ -44,11 +44,11 @@ public abstract class IndexedSubScreen<T, W extends Element & Drawable & Selecta
         this.displayedList =
                 new ContentDelegateWidget<>(this.indexDx, 0, this.dx - this.indexDx, this.dy).addToSub(this);
         T selected = getGlobal();
-        selectIndexToDisplay(selected);
+        selectIndexToDisplay(selected, false);
     }
 
-    public void selectIndexToDisplay(T key) {
-        if (!Objects.equals(currentSelected, key)) {
+    public void selectIndexToDisplay(T key, boolean force) {
+        if (!Objects.equals(currentSelected, key) || force) {
             if (currentSelected != null) {
                 saveSelected();
             }

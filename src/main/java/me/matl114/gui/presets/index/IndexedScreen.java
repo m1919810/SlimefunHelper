@@ -56,7 +56,7 @@ public abstract class IndexedScreen<T, W extends Element & Drawable & Selectable
     protected void onIndexChange() {
         // resize(this.client, this.width, this.height);
         if (subScreenDelegate != null) {
-            subScreenDelegate.selectIndexToDisplay(getGlobal());
+            subScreenDelegate.selectIndexToDisplay(getGlobal(), false);
         }
     }
 
