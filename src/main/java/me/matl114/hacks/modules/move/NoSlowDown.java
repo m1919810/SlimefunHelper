@@ -29,6 +29,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
@@ -143,8 +144,16 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public void onSneakStatus() {
         if (sneakStatus) {
             sneakStatus = false;
+            mc.getNetworkHandler()
+                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
+            mc.getNetworkHandler()
+                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
             ClientPlayerAccess.of(mc.player).resyncSneak();
-            mc.getNetworkHandler().sendPacket(new PlayerInputC2SPacket(mc.player.getLastPlayerInput()));
+            // fix: both packet should be considered for versions
+            mc.getNetworkHandler()
+                    .sendPacket(new PlayerInputC2SPacket(PlayerInputUtils.of(mc.player.input.playerInput)
+                            .sneak(true)
+                            .toPlayerInput()));
             Debug.chat("[NoSlow] 取消当前伪造潜行状态");
         } else {
             Entity entity;

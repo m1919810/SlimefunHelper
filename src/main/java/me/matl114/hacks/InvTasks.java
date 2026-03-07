@@ -1,7 +1,6 @@
 package me.matl114.hacks;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.ints.*;
 import java.util.*;
@@ -901,9 +900,22 @@ public class InvTasks {
         // handler or player inv
 
         ScreenHandler screenHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        ScreenHandler currentHandler = mc.player.currentScreenHandler;
+
         int syncId = screenHandler.syncId;
         // won't miss any inject
-        mc.interactionManager.clickSlot(syncId, slotId, button, actionType, mc.player);
+        boolean shouldReplace = syncId != currentHandler.syncId;
+        try {
+            if (shouldReplace) {
+                // use fake screen handler
+                mc.player.currentScreenHandler = screenHandler;
+            }
+            mc.interactionManager.clickSlot(syncId, slotId, button, actionType, mc.player);
+        } finally {
+            if (shouldReplace) {
+                mc.player.currentScreenHandler = currentHandler;
+            }
+        }
         return;
     }
 

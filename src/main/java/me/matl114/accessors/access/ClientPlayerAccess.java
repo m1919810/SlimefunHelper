@@ -36,6 +36,10 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
     }
 
     public void setLastOnGroundFlag(boolean lastOnGround);
+
+    public void resyncPos();
+
+    public void resyncRot();
     //    public void resyncPos();
     //    public void resyncRot();
     //    public void syncLocationPackets();

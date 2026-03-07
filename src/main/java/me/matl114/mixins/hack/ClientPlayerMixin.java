@@ -274,8 +274,8 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         this.lastSprinting = lastSprint;
     }
 
-    public void resyncSneak() {
-        this.lastSneaking = !this.isSneaking();
+    public void setLastSneakFlag(boolean lastSprint) {
+        this.lastSneaking = lastSprint;
     }
 
     @Unique
@@ -284,12 +284,16 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         this.lastOnGround = lastOnGround;
     }
 
+    @Unique
+    @Override
     public void resyncPos() {
         this.lastX = 0;
         this.lastZ = 0;
         this.lastBaseY = 0;
     }
 
+    @Unique
+    @Override
     public void resyncRot() {
         this.lastPitch = 0;
         this.lastYaw = 0;

@@ -19,6 +19,7 @@ import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
+import net.minecraft.util.PlayerInput;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -33,10 +34,15 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Shadow
     public Input input;
 
-
     @Shadow
     @Final
     public ClientPlayNetworkHandler networkHandler;
+
+    @Shadow
+    private PlayerInput lastPlayerInput;
+
+    @Shadow
+    protected abstract void sendSneakingPacket();
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -127,6 +133,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Unique
     private void onPlayerInputPackets() {
+        this.sendSneakingPacket();
         if (!this.lastPlayerInput.equals(this.input.playerInput)) {
             this.networkHandler.sendPacket(new PlayerInputC2SPacket(this.input.playerInput));
             this.lastPlayerInput = this.input.playerInput;

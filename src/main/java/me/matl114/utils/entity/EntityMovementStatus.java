@@ -2,8 +2,6 @@ package me.matl114.utils.entity;
 
 import me.matl114.utils.EntityUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.UseEffectsComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -102,9 +100,7 @@ public class EntityMovementStatus<T extends Entity> {
         if (this.entity instanceof ClientPlayerEntity p) {
             vec2f = vec2f.multiply(0.98F);
             if (p.isUsingItem() && !p.hasVehicle()) {
-                vec2f = vec2f.multiply(p.getActiveItem()
-                        .getOrDefault(DataComponentTypes.USE_EFFECTS, UseEffectsComponent.DEFAULT)
-                        .speedMultiplier());
+                vec2f = vec2f.multiply(0.2F);
             }
             if (p.shouldSlowDown()) {
                 float f = (float) p.getAttributeValue(EntityAttributes.SNEAKING_SPEED);

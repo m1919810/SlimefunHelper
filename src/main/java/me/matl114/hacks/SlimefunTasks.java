@@ -399,6 +399,7 @@ public class SlimefunTasks {
                         Debug.chat(i);
                     }
                 }
+                Debug.chat("注:当前列表可能不全,如果服务器禁用物品过多");
             });
         }
     }

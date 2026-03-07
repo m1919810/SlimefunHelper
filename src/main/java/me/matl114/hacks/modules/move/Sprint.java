@@ -12,10 +12,13 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 
 public class Sprint extends BaseModule implements LegalMovementManager.MovementModifier {
     public static final String[] MOVE_AUTO_TOGGLE_SPRINT = {"move-speed", "sprint", "legal-auto-sprint"};
+    public static final String[] FAKE_SPRINT = {"move-speed", "sprint", "fake-sprint"};
+    public static final String[] FAKE_SPRINT_MODE = {"move-speed", "sprint", "fake-sprint-mode"};
     public static final String[] MOVE_ALL_DIRECTION_SPRINT = {"move-speed", "sprint", "all-direction-sprint"};
     public static final String[] MOVE_SPRINT_BYPASS_MODE = {"move-speed", "sprint", "bypass-mode"};
 
@@ -33,6 +36,14 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
     public final FlagRef autoSprintLegal =
             flagBuilder(Configs.MOV_CONFIG, MOVE_AUTO_TOGGLE_SPRINT).build();
+
+    public final FlagRef fakeSprint =
+            flagBuilder(Configs.MOV_CONFIG, FAKE_SPRINT).build();
+
+    public final EnumRef<Configs.BypassMode> fakeSprintMode = builder(
+                    Configs.MOV_CONFIG, FAKE_SPRINT_MODE, Configs.BypassMode.class)
+            .defaultValue(Configs.BypassMode.NO_BYPASS)
+            .build();
 
     public final FlagRef directionalSprint =
             flagBuilder(Configs.MOV_CONFIG, MOVE_ALL_DIRECTION_SPRINT).build();
@@ -100,7 +111,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
         // Debug.info(player.input.movementForward);
         if (directionalSprint.get()
-                && (player.input.movementForward < -1E-5)
+                && (player.input.playerInput.backward() && !player.input.playerInput.forward())
                 && !(player.isTouchingWater() && !player.isSubmergedInWater())
                 && !(player.horizontalCollision && !player.collidedSoftly)) {
             // give the ticket
@@ -111,10 +122,14 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         }
     }
 
+    boolean fakeSprintThisTick = false;
+
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        if (directionalSprint.get() && (player.input.movementForward < -0.05) && player.isSprinting()) {
+        if (directionalSprint.get()
+                && (player.input.playerInput.backward() && !player.input.playerInput.forward())
+                && player.isSprinting()) {
 
             if (directionalSprintMode.getValue() == Configs.BypassMode.BYPASS_GRIM) {
                 workRotationThisTick = true;
@@ -129,15 +144,29 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
             // }
 
         }
+        if (player.isSprinting()) {
+            if (fakeSprint.get() && !fakeSprintMode.get().hasAc()) {
+                fakeSprintThisTick = true;
+                player.setSprinting(false);
+                player.input.playerInput = PlayerInputUtils.of(player.input.playerInput)
+                        .sprint(false)
+                        .toPlayerInput();
+            }
+        }
     }
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
         enableSprintDirectionalThisTick = false;
-        if (!enabledThisTick) return true;
-        if (workRotationThisTick) {
+        if (enabledThisTick) {
+            if (workRotationThisTick) {
 
-            movementManagerEvent.context.playerStatus.restoreRotation();
+                movementManagerEvent.context.playerStatus.restoreRotation();
+            }
+        }
+        if (fakeSprintThisTick) {
+            movementManagerEvent.context.playerStatus.entity.setSprinting(true);
+            fakeSprintThisTick = false;
         }
         return true;
     }

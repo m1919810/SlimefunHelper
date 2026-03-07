@@ -50,7 +50,7 @@ public abstract class PlayerEntityMixin extends LivingEntity
     }
 
     @Unique
-    private static final int HISTORY_LEN = 16;
+    private static final int HISTORY_LEN = 20;
 
     @Unique
     private Vec3d[] historyPositionQueue = new Vec3d[HISTORY_LEN];
