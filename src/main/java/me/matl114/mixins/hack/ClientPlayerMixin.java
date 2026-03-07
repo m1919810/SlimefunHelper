@@ -126,6 +126,21 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Shadow
     private PlayerInput lastPlayerInput;
 
+    @Shadow
+    private double lastXClient;
+
+    @Shadow
+    private double lastZClient;
+
+    @Shadow
+    private double lastYClient;
+
+    @Shadow
+    private float lastPitchClient;
+
+    @Shadow
+    private float lastYawClient;
+
     @Getter
     @Unique
     public HandledScreen keepedInv = null;
@@ -279,15 +294,16 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         this.lastOnGround = lastOnGround;
     }
 
-    //    public void resyncPos(){
-    //        this.lastX =0;
-    //        this.lastZ =0;
-    //        this.lastBaseY = 0;
-    //    }
-    //    public void resyncRot(){
-    //        this.lastPitch = 0;
-    //        this.lastYaw = 0;
-    //    }
+    public void resyncPos() {
+        this.lastXClient = 0;
+        this.lastZClient = 0;
+        this.lastYClient = 0;
+    }
+
+    public void resyncRot() {
+        this.lastPitchClient = 0;
+        this.lastYawClient = 0;
+    }
 
     //    @Unique
     //    public void syncLocationPackets(){

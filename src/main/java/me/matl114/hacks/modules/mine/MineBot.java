@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -15,6 +16,7 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -103,9 +105,10 @@ public class MineBot extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef legalMode = builder(Configs.MINE_CONFIG, Boolean.class)
+    public final EnumRef<Configs.MineTargetingMode> legalMode = builder(
+                    Configs.MINE_CONFIG, Configs.MineTargetingMode.class)
             .path(MINE_BOT_LEGAL_MODE)
-            .defaultValue(false)
+            .defaultValue(Configs.MineTargetingMode.NO_BYPASS)
             .build();
 
     public final FlagRef toolProtect = builder(Configs.MINE_CONFIG, Boolean.class)
@@ -215,6 +218,7 @@ public class MineBot extends BaseModule {
         }
         int tryMine = 0;
         boolean insta = false;
+        Vec2f originPy = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         do {
             Vec3d playerPos = mc.player.getEyePos();
             ;
@@ -245,9 +249,40 @@ public class MineBot extends BaseModule {
                 // use real Direction
                 Vec3d shouldFacing = lastMinePos.toCenterPos().subtract(mc.player.getEyePos());
                 Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+                switch (legalMode.get()) {
+                    case SWING_HAND_AND_ROT -> {
+                        Vec3d rotate2f = mc.player.getRotationVector();
+                        Vec3d rotateXZ = new Vec3d(rotate2f.x, 0, rotate2f.z);
+                        // out of the sight
+                        if (rotateXZ.dotProduct(shouldFacing) < 0) {
+                            mc.player.setYaw(EntityUtils.getSafeYaw(mc.player, mc.player.getYaw() + 180));
+                            mc.getNetworkHandler()
+                                    .sendPacket(VPacket.newLookAndOnGround(
+                                            mc.player.getYaw(),
+                                            mc.player.getPitch(),
+                                            mc.player.isOnGround(),
+                                            mc.player.horizontalCollision));
+                        }
+                    }
+                    case SWING_HAND_AND_TARGET -> {
+                        Vec3d facing = shouldFacing.normalize();
+                        Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(facing);
+                        if (Math.abs(EntityUtils.getSafeYawDiff(mc.player.getYaw(), pitchYaw.y)) > 30) {
+                            mc.player.setPitch(pitchYaw.x);
+                            mc.player.setYaw(pitchYaw.y);
+                            mc.getNetworkHandler()
+                                    .sendPacket(VPacket.newLookAndOnGround(
+                                            mc.player.getYaw(),
+                                            mc.player.getPitch(),
+                                            mc.player.isOnGround(),
+                                            mc.player.horizontalCollision));
+                        }
+                    }
+                }
                 mc.interactionManager.updateBlockBreakingProgress(lastMinePos, dir);
                 // fake a swing packet , so that we can bypass some packet check
-                if (legalMode.get()) {
+
+                if (legalMode.get().hasSwing()) {
                     mc.player.swingHand(Hand.MAIN_HAND);
                 }
 
@@ -257,7 +292,11 @@ public class MineBot extends BaseModule {
             }
 
         } while (!mc.interactionManager.isBreakingBlock() && tryMine < maxInstaMine.get());
-
+        if (mc.player.getPitch() != originPy.x || mc.player.getYaw() != originPy.y) {
+            mc.player.setPitch(originPy.x);
+            mc.player.setYaw(originPy.y);
+            ClientPlayerAccess.of(mc.player).resyncRot();
+        }
         if (tryMine == 0) {
             noBlockAroundTick++;
             if (noBlockAroundTick > NO_BLOCK_MENTION_LIMIT) {

@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -165,11 +166,12 @@ public class RecipeTasks {
     }
 
     public static Stream<ItemStack> streamIngredientOptions(Ingredient ingredient) {
-        return ingredient
-                .getCustomIngredient()
-                .getMatchingItems()
-                .map(RegistryEntry::value)
-                .map(ItemStack::new);
+        CustomIngredient ingredients = ingredient.getCustomIngredient();
+        if (ingredients != null)
+            return ingredients.getMatchingItems().map(RegistryEntry::value).map(ItemStack::new);
+        else {
+            return Stream.empty();
+        }
     }
 
     public static List<Ingredient> getIngredients(NetworkRecipeId recipeEntry) {
