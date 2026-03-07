@@ -2,8 +2,8 @@ package me.matl114.gui.config;
 
 import me.matl114.gui.GenericScreen;
 import me.matl114.managers.config.Config;
-import net.minecraft.client.MinecraftClient;
 import me.matl114.managers.config.StringRef;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
 public class ConfigureScreen extends GenericScreen {
