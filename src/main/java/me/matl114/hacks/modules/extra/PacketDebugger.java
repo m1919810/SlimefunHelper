@@ -69,7 +69,7 @@ public class PacketDebugger extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle);
         registerListener(Listener.getPacketPostSendPoint(), this::onPacketSend);
-        registerListener(Listener.getPacketAcceptPoint(), this::onPacketReceive);
+        registerListener(Listener.getPacketPoint(), this::onPacket);
     }
 
     public void onPacketHandle(Event<Packet<?>> packetEvent) {
@@ -121,7 +121,7 @@ public class PacketDebugger extends BaseModule {
         }
     }
 
-    public void onPacketReceive(Event<Packet<?>> packetEvent) {
+    public void onPacket(Event<Packet<?>> packetEvent) {
         if (packetEvent.isCancelled()) return;
         if (interceptPacket.get()) {
             Packet<?> type = packetEvent.context();

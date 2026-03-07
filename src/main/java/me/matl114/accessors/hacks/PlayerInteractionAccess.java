@@ -11,6 +11,8 @@ public interface PlayerInteractionAccess {
 
     public void sendStopBreakPacket(BlockPos pos, Direction direction);
 
+    public void syncSelectedHotbar(int x);
+
     public boolean preCalculateInstantBreak(BlockPos pos);
 
     public float calculateBreakingSpeed(BlockPos pos);

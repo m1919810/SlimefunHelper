@@ -107,4 +107,7 @@ public class SlimefunHelper implements ModInitializer {
     //
 
     // todo: js dev: tp+ litematica, tp + breakblock
+
+    // todo: breakSystem problem
+    // todo: sneak packets
 }

@@ -682,6 +682,18 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
                             // Debug.info("update 4");
                             module.lastOnGroundHeight = entity.pos.getY();
+                            //                            if(duplicateCount == 1){
+                            //                                mc.getNetworkHandler()
+                            //                                    .sendPacket(VPacket.newPositionAndOnGround(
+                            //                                        entity.pos.getX(),
+                            //                                        entity.pos.getY() + 100,
+                            //                                        entity.pos.getZ(),
+                            //                                        false,
+                            //                                        entity.horizontalCollision));
+                            //                                mc.getNetworkHandler().sendPacket(new
+                            // ClientTickEndC2SPacket());
+                            //                            }
+                            // todo: shit, can we just abort current movements and up
                             mc.getNetworkHandler()
                                     .sendPacket(VPacket.newPositionAndOnGround(
                                             entity.pos.getX(),
@@ -689,6 +701,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                             entity.pos.getZ(),
                                             false,
                                             entity.horizontalCollision));
+                            // mc.getNetworkHandler().sendPacket(new ClientTickEndC2SPacket());
+
                             //                            entity.entity.setPos(entity.pos.getX(), entity.entity.getY(),
                             // entity.pos.getZ());
                             //                            entity.entity.setVelocity(0.0, 0.0, 0.0);

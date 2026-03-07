@@ -1,8 +1,10 @@
 package me.matl114.mixins.hack;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MineTasks;
@@ -18,9 +20,11 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.network.SequencedPacketCreator;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -132,17 +136,37 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Final
     private ClientPlayNetworkHandler networkHandler;
 
+    @Override
+    @Unique
     public void sendStopBreakPacket(BlockPos pos, Direction direction) {
         this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
             return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
         }));
     }
 
+    @Override
+    @Unique
     public void sendStartBreakPacket(BlockPos pos, Direction direction) {
         this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
+            BlockState state = client.world.getBlockState(pos);
+            if (!state.isAir()
+                    && state.calcBlockBreakingDelta(this.client.player, this.client.player.getEntityWorld(), pos)
+                            >= 1.0F) {
+                // insta break
+            } else {
+                currentBreakingPos = pos;
+                currentBreakingProgress = 0.0F;
+            }
             return new PlayerActionC2SPacket(
                     PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction, sequence);
         }));
+    }
+
+    @Override
+    @Unique
+    public void syncSelectedHotbar(int x) {
+        client.player.getInventory().setSelectedSlot(x);
+        this.syncSelectedSlot();
     }
     //    public void autoSendStopPacket(){
     //        if(currentBreakingPos != null){
@@ -523,6 +547,9 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Shadow
     protected abstract boolean isCurrentlyBreaking(BlockPos pos);
 
+    @Shadow
+    protected abstract void syncSelectedSlot();
+
     @Inject(
             method = "attackBlock",
             at =
@@ -751,5 +778,16 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 }
             }
         }
+    }
+
+    @ModifyExpressionValue(
+            method = "clickSlot",
+            at =
+                    @At(
+                            value = "FIELD",
+                            target =
+                                    "Lnet/minecraft/entity/player/PlayerEntity;currentScreenHandler:Lnet/minecraft/screen/ScreenHandler;"))
+    public ScreenHandler onClickSlot(ScreenHandler original, @Local(argsOnly = true) PlayerEntity player) {
+        return player instanceof ClientPlayerAccess clientPlayer ? clientPlayer.getServerScreenHandler() : original;
     }
 }

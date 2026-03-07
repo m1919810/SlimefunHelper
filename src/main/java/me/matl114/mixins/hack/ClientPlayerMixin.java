@@ -219,7 +219,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
             method = "applyMovementSpeedFactors",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldSlowDown()Z"))
     private boolean noSlowSneak(boolean original) {
-        if (MovTasks.getNoSlowDown().sneak.get()) {
+        if (MovTasks.getNoSlowDown().shouldNoSlowSneak()) {
             return false;
         }
         return original;
@@ -256,23 +256,27 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     //        return super.getEntityInteractionRange();
     //    }
 
-    public void resyncSprint() {
-        this.lastSprinting = !this.isSprinting();
+    @Override
+    @Unique
+    public void setLastSprintFlag(boolean lastSprint) {
+        this.lastSprinting = lastSprint;
     }
 
-    public void resyncSneak() {
+    public void setLastSneakFlag(boolean lastSprint) {
         this.lastPlayerInput = new PlayerInput(
                 this.lastPlayerInput.forward(),
                 this.lastPlayerInput.backward(),
                 this.lastPlayerInput.left(),
                 this.lastPlayerInput.right(),
                 this.lastPlayerInput.jump(),
-                !this.isSneaking(),
+                lastSprint,
                 this.lastPlayerInput.sprint());
     }
 
-    public void resyncOnGround() {
-        this.lastOnGround = !this.isOnGround();
+    @Unique
+    @Override
+    public void setLastOnGroundFlag(boolean lastOnGround) {
+        this.lastOnGround = lastOnGround;
     }
 
     //    public void resyncPos(){

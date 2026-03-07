@@ -29,7 +29,7 @@ accessible field net/minecraft/client/render/GameRenderer buffers Lnet/minecraft
 accessible field net/minecraft/client/MinecraftClient disconnecting Z
 accessible field net/minecraft/entity/LivingEntity LIVING_FLAGS Lnet/minecraft/entity/data/TrackedData;
 accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;
-accessible method net/minecraft/entity/player/PlayerEntity adjustMovementForSneaking (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/entity/Entity adjustMovementForSneaking (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/entity/Entity findCollisionsForMovement (Lnet/minecraft/entity/Entity;Lnet/minecraft/world/World;Ljava/util/List;Lnet/minecraft/util/math/Box;)Ljava/util/List;
 accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Box;Ljava/util/List;)Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/block/AbstractBlock getCollisionShape (Lnet/minecraft/block/BlockState;Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/ShapeContext;)Lnet/minecraft/util/shape/VoxelShape;
@@ -70,3 +70,10 @@ accessible field net/minecraft/client/render/GameRenderer pool Lnet/minecraft/cl
 accessible class net/minecraft/network/PacketApplyBatcher$Entry
 accessible field net/minecraft/client/gui/DrawContext tooltipDrawer Ljava/lang/Runnable;
 accessible field net/minecraft/client/render/model/BakedModelManager missingModels Lnet/minecraft/client/render/model/ModelBaker$BlockItemModels;
+
+accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractAtHandler
+accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractAtHandler <init> (Lnet/minecraft/util/Hand;Lnet/minecraft/util/math/Vec3d;)V
+accessible field net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket entityId I
+accessible field net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket type Lnet/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler;
+accessible method net/minecraft/entity/LivingEntity getMovementSpeed (F)F
+accessible method net/minecraft/entity/LivingEntity applyClimbingSpeed (Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;
