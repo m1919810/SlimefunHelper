@@ -9,10 +9,8 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
-import me.matl114.events.RenderListener;
 import me.matl114.hacks.ACPostTasks;
 import me.matl114.hacks.MovTasks;
-import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
@@ -24,13 +22,11 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -78,7 +74,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         registerListener(Listener.getEntityTrackDataUpdate(), this::onServerSyncSneak);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onInteractSend);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
     }
 
     public final FlagRef sneak =
@@ -321,30 +316,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    public void onRender(Event<MatrixStack> event) {
-        if (true) {
-            try {
-                RenderUtils.startDrawVirtual(event.context());
-                BlockPos pos = mc.player.getVelocityAffectingPos();
-                RenderUtils.drawOutlinedBox(
-                        event.context(),
-                        pos.toCenterPos().add(RenderTasks.FROM),
-                        pos.toCenterPos().add(RenderTasks.TO),
-                        Color.GREEN);
-
-                Vec3d vec3d = mc.player.getPos();
-                Vec3d vec3dSupportingBlock = vec3d.subtract(0, 0.500001F, 0);
-                BlockPos underBlock = BlockPos.ofFloored(vec3dSupportingBlock);
-                RenderUtils.drawOutlinedBox(
-                        event.context(),
-                        underBlock.toCenterPos().add(RenderTasks.FROM),
-                        underBlock.toCenterPos().add(RenderTasks.TO),
-                        Color.MAGENTA);
-            } finally {
-                RenderUtils.stopDrawVirtual(event.context());
-            }
-        }
-    }
     // todo: still some bug
     // todo: mystery setback
     BlockPos cachedPos;

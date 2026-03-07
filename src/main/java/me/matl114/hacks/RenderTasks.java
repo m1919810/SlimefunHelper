@@ -27,6 +27,7 @@ public class RenderTasks {
 
     public static Color STATIC_DEBUG_COLOR = null;
     public static int DEBUG_TICK = 16;
+    public static boolean DEBUG_RENDER_STANDING = false;
     public static boolean DEBUG_RENDER_COLLISION = false;
     public static boolean DEBUG_RENDER_COMBAT = false;
     public static boolean DEBUG_RENDER_COLLISION_RENDERING = false;
@@ -43,6 +44,33 @@ public class RenderTasks {
         if (DEBUG_RENDER_COLLISION_RENDERING && DEBUG_RENDER_COLLISION) {
             RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
                     DEBUG_TICK, new BoxObject(box.getMinPos(), box.getMaxPos(), STATIC_DEBUG_COLOR)));
+        }
+    }
+
+    public static void onDebugRenderTick(Event<MatrixStack> event) {
+        if (RenderTasks.DEBUG_RENDER_STANDING) {
+            if (mc.player != null) {
+                try {
+                    RenderUtils.startDrawVirtual(event.context());
+                    BlockPos pos = mc.player.getVelocityAffectingPos();
+                    RenderUtils.drawOutlinedBox(
+                            event.context(),
+                            pos.toCenterPos().add(RenderTasks.FROM),
+                            pos.toCenterPos().add(RenderTasks.TO),
+                            Color.GREEN);
+
+                    Vec3d vec3d = mc.player.getPos();
+                    Vec3d vec3dSupportingBlock = vec3d.subtract(0, 0.500001F, 0);
+                    BlockPos underBlock = BlockPos.ofFloored(vec3dSupportingBlock);
+                    RenderUtils.drawOutlinedBox(
+                            event.context(),
+                            underBlock.toCenterPos().add(RenderTasks.FROM),
+                            underBlock.toCenterPos().add(RenderTasks.TO),
+                            Color.MAGENTA);
+                } finally {
+                    RenderUtils.stopDrawVirtual(event.context());
+                }
+            }
         }
     }
 
@@ -448,7 +476,7 @@ public class RenderTasks {
 
     static {
         RenderListener.getRenderLayerTasks().registerHandler(RenderTasks::onRenderVirtualTasks);
-
+        RenderListener.getRenderLayerTasks().registerHandler(RenderTasks::onDebugRenderTick);
         moduleManager.registerFactories(RenderTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
     }
