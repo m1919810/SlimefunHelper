@@ -22,6 +22,7 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
             Text.literal("使用鼠标点击以追加鼠标键"),
             Text.literal("点击右侧D以删除末尾键"),
             Text.literal("点击右侧R以撤销本次修改"),
+            Text.literal("点击右侧U以还原为默认值"),
             Text.literal("点击空白处或者其他构件以取消选中"));
     MultiKeyBind keyBind;
     MultiKeyBind resetKeyBind;

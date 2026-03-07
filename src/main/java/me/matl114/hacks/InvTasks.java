@@ -40,7 +40,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.PlayerScreenHandler;
@@ -50,7 +49,6 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -901,43 +899,12 @@ public class InvTasks {
     public static void clickSlotAsync(int slotId, int button, SlotActionType actionType) {
         if (mc.player == null) return;
         // handler or player inv
+
         ScreenHandler screenHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
         int syncId = screenHandler.syncId;
-        DefaultedList<Slot> defaultedList = screenHandler.slots;
-        int i = defaultedList.size();
-        List<ItemStack> list = Lists.newArrayListWithCapacity(i);
-
-        for (Slot slot : defaultedList) {
-            list.add(slot.getStack().copy());
-        }
-
-        InvTasks.SUPPRESS_DROPITEM_SPAWN.set(true);
-        // catch all exceptions that might occur
-        try {
-            screenHandler.onSlotClick(slotId, button, actionType, mc.player);
-        } finally {
-            InvTasks.SUPPRESS_DROPITEM_SPAWN.set(false);
-        }
-
-        Int2ObjectMap<ItemStack> int2ObjectMap = new Int2ObjectOpenHashMap();
-
-        for (int j = 0; j < i; ++j) {
-            ItemStack itemStack = (ItemStack) list.get(j);
-            ItemStack itemStack2 = ((Slot) defaultedList.get(j)).getStack();
-            if (!ItemStack.areEqual(itemStack, itemStack2)) {
-                int2ObjectMap.put(j, itemStack2.copy());
-            }
-        }
-
-        mc.getNetworkHandler()
-                .sendPacket(new ClickSlotC2SPacket(
-                        syncId,
-                        screenHandler.getRevision(),
-                        slotId,
-                        button,
-                        actionType,
-                        screenHandler.getCursorStack().copy(),
-                        int2ObjectMap));
+        // won't miss any inject
+        mc.interactionManager.clickSlot(syncId, slotId, button, actionType, mc.player);
+        return;
     }
 
     private static final IntRef SPEED = Configs.INV_CONFIG.getInt(InvExtra.INV_CLICK_LIMIT);

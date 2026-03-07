@@ -1,7 +1,7 @@
 package me.matl114.events;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class EventChannelDispatcher<T> extends EventChannel<T> {
@@ -11,16 +11,17 @@ public class EventChannelDispatcher<T> extends EventChannel<T> {
 
     public EventChannelDispatcher(Function<T, ?> dispatcher) {
         this.dispatcher = dispatcher;
-        this.channels = new HashMap<>();
+        // todo: avoid async events error
+        this.channels = new ConcurrentHashMap<>();
     }
 
     @Override
     public boolean handleValue(Event<T> express) {
         boolean val = super.handleValue(express);
         Object typeDispatch = dispatcher.apply(express.context());
-        if (channels.containsKey(typeDispatch)) {
-            var channel = channels.get(typeDispatch);
-            if (channel != null && !channel.isEmpty()) {
+        var channel = channels.get(typeDispatch);
+        if (channel != null) {
+            if (!channel.isEmpty()) {
                 channel.handleValue((Event) express);
             }
         }

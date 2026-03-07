@@ -17,7 +17,9 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -30,6 +32,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntity implements ClientPlayerEntityAccess {
     @Shadow
     public Input input;
+
+
+    @Shadow
+    @Final
+    public ClientPlayNetworkHandler networkHandler;
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -96,19 +103,33 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Inject(
             method = "tick",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasVehicle()Z"),
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/network/AbstractClientPlayerEntity;tick()V",
+                            shift = At.Shift.AFTER),
             cancellable = true)
     public void onAfterTick(CallbackInfo ci) {
         if (hasVehicle()) {
             if (!this.movementManager.preInputProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)) {
                 ci.cancel();
+                onPlayerInputPackets();
                 onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
             }
         } else {
             if (!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)) {
                 ci.cancel();
+                onPlayerInputPackets();
                 onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
             }
+        }
+    }
+
+    @Unique
+    private void onPlayerInputPackets() {
+        if (!this.lastPlayerInput.equals(this.input.playerInput)) {
+            this.networkHandler.sendPacket(new PlayerInputC2SPacket(this.input.playerInput));
+            this.lastPlayerInput = this.input.playerInput;
         }
     }
 
