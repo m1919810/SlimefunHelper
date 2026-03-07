@@ -36,7 +36,11 @@ public class Tests extends BaseModule {
     public static final String[] TEST_ARGS1 = {"test", "arg1"};
     public static final String[] TEST_ARGS2 = {"test", "arg2"};
     public static final String[] TEST_MOVEMENT_TEST = {"test", "movement-test-1"};
-    public static final String[] TEST_HOTKEY = {"hotkeys", "test-func"};
+    public static final String[] TEST_HOTKEY = {"hotkeys", "test-func-1"};
+
+    public static final String[] TEST_HOTKEY_2 = {"hotkeys", "test-func-2"};
+    public static final String[] TEST_HOTKEY_3 = {"hotkeys", "test-func-3"};
+    public static final String[] TEST_HOTKEY_4 = {"hotkeys", "test-func-4"};
 
     public static final String[] TEST_TOGGLE_1 = {"hotkeys-toggle", "hktest1"};
     public static final String[] TEST_TOGGLE_2 = {"hotkeys-toggle", "hktest2"};

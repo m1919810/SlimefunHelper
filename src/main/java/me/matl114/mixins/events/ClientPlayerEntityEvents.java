@@ -96,7 +96,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Inject(
             method = "tick",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasVehicle()Z"),
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/AbstractClientPlayerEntity;tick()V", shift = At.Shift.AFTER),
             cancellable = true)
     public void onAfterTick(CallbackInfo ci) {
         if (hasVehicle()) {

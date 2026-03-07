@@ -69,7 +69,7 @@ public class PacketDebugger extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle);
         registerListener(Listener.getPacketPostSendPoint(), this::onPacketSend);
-        registerListener(Listener.getPacketAcceptPoint(), this::onPacketReceive);
+        registerListener(Listener.getPacketPoint(), this::onPacket);
     }
 
     public void onPacketHandle(Event<Packet<?>> packetEvent) {
@@ -78,8 +78,7 @@ public class PacketDebugger extends BaseModule {
             Packet<?> type = packetEvent.context();
             if (typesDebug.contains(type.getPacketId())) {
                 if (type instanceof PlayerPositionLookS2CPacket positionLookS2CPacket) {
-                    Vec3d vec3d = new Vec3d(
-                            positionLookS2CPacket.getX(), positionLookS2CPacket.getY(), positionLookS2CPacket.getZ());
+                    Vec3d vec3d = positionLookS2CPacket.change().position();
                     ExtraTasks.debug(
                             "Accept",
                             type.getPacketId().id(),
@@ -87,9 +86,9 @@ public class PacketDebugger extends BaseModule {
                             vec3d.y,
                             vec3d.z,
                             ", Pitch:",
-                            positionLookS2CPacket.getPitch(),
+                            positionLookS2CPacket.change().pitch(),
                             ", Yaw:",
-                            positionLookS2CPacket.getYaw());
+                            positionLookS2CPacket.change().yaw());
                 } else {
                     ExtraTasks.debug("Accept", type.getPacketId().id());
                 }
@@ -122,7 +121,7 @@ public class PacketDebugger extends BaseModule {
         }
     }
 
-    public void onPacketReceive(Event<Packet<?>> packetEvent) {
+    public void onPacket(Event<Packet<?>> packetEvent) {
         if (packetEvent.isCancelled()) return;
         if (interceptPacket.get()) {
             Packet<?> type = packetEvent.context();

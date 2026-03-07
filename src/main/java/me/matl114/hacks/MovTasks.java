@@ -448,7 +448,7 @@ public class MovTasks {
                         packets.get(i + emptyMoveCnt).failure();
                         if (considerNoFall && i > 0) {
                             if (Math.abs(maxY - minY)
-                                    > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1) {
+                                    > mc.player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) - 1) {
 
                                 //                                mc.player.fallDistance = MovTasks.
                                 // FORCE_RESET_DISTANCE;
@@ -514,7 +514,7 @@ public class MovTasks {
             }
         }
         if (considerNoFall) {
-            if (Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1) {
+            if (Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) - 1) {
                 packets.get(packets.size() - 1).add(() -> {
                     ClientPlayerAccess.of(mc.player).setForceNoFall(true); // = MovTasks. FORCE_RESET_DISTANCE;
                     // in case that resync packet cause OnGround falldamage
@@ -540,7 +540,7 @@ public class MovTasks {
         final List<Box> collisionsBB = new java.util.ArrayList<>();
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
         CollisionUtil.getCollisions(
-                mc.player.getWorld(),
+                mc.world,
                 mc.player,
                 involved,
                 collisionsVoxel,
@@ -624,7 +624,7 @@ public class MovTasks {
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
         Box oldBox = entity.getBoundingBox();
         CollisionUtil.getCollisions(
-                entity.getWorld(),
+                entity.getEntityWorld(),
                 entity,
                 entity.dimensions.getBoxAt(pos),
                 collisionsVoxel,
@@ -736,7 +736,7 @@ public class MovTasks {
 
         double currentY = current.y;
         double targetY = target.y;
-        World world = mc.player.getWorld();
+        World world = mc.world;
         double horizontalY;
 
         if (len <= farawayTp) {
@@ -1107,7 +1107,7 @@ public class MovTasks {
         Box collisionBox = makeCollectorBoxInvolvingCollision(
                 currBoundingBox, movement, entity.getStepHeight(), entity.isOnGround());
         CollisionUtil.getCollisions(
-                entity.getWorld(),
+                entity.getEntityWorld(),
                 entity,
                 collisionBox,
                 intoVoxels,
@@ -1316,7 +1316,7 @@ public class MovTasks {
             if (!vec.isEmpty()) {
                 currentPos = vec.get(vec.size() - 1);
             }
-            Vec3d currentTry = to.getBottomCenter().subtract(currentPos);
+            Vec3d currentTry = to.getHorizontalCenter().subtract(currentPos);
             double len = Math.max(1.0F, currentTry.length() - availableRange + 1.0F);
             currentTry = currentTry.normalize().multiply(Math.min(maxAtOnce, len));
             if (len >= maxAtOnce) {
@@ -1687,15 +1687,15 @@ public class MovTasks {
     private static boolean fixPositionSetBackFallDamage(Event<PlayerPositionLookS2CPacket> packet) {
         if (packet.context() instanceof PlayerPositionLookS2CPacket setBackPackets) {
             // real setback , not a tp
-            Vec3d target = new Vec3d(setBackPackets.getX(), setBackPackets.getY(), setBackPackets.getZ());
+            Vec3d target = setBackPackets
+                    .change()
+                    .position(); // new Vec3d(setBackPackets.getX(), setBackPackets.getY(), setBackPackets.getZ());
             // len < 200, may be the set back of a single movement
             double lenSqr = mc.player.getPos().squaredDistanceTo(target);
             // len > 3, not be setback packets of anticheat
             if (lenSqr < 60000 && lenSqr > 10) {
                 double deltaY = target.y - mc.player.getY();
-                if (deltaY < 0
-                        && Math.abs(deltaY)
-                                > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE)) {
+                if (deltaY < 0 && Math.abs(deltaY) > mc.player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE)) {
                     // fix setback packets cause fallDistance
                     mc.player.setOnGround(false);
                     ClientPlayerAccess.of(mc.player).setForceNoFall(true);
@@ -2167,6 +2167,9 @@ public class MovTasks {
     @Getter
     public static ElytraExtra elytraExtra;
 
+    @Getter
+    public static MovTest movTest;
+
     private static void initModules(ModuleManager m) {
         // move
         movExtra = new MovExtra().register(m);
@@ -2181,6 +2184,7 @@ public class MovTasks {
         moveTimer = new MoveTimer().register(m);
         stepHeight = new StepHeight().register(m);
         elytraExtra = new ElytraExtra().register(m);
+        movTest = new MovTest().register(m);
     }
 
     static {

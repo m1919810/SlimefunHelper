@@ -2,6 +2,7 @@ package me.matl114;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import me.matl114.bridge.BridgeMain;
@@ -69,10 +70,12 @@ public class SlimefunHelper implements ModInitializer {
                 (resourceManager, executor) -> CompletableFuture.supplyAsync(() -> {
                     Debug.info("check model plugin work");
                     ModConfig.reloadModConfig();
-                    return RenderListener.getReloadingResources(resourceManager);
+                    // we removed the itemModel auto register to ItemAssetsLoader
+                    return Set.of(); // RenderListener.getReloadingResources(resourceManager.getResourceManager());
                 }),
                 (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {
-                    pluginContext.addModels(data);
+                    // here we should auto register these to BasicItemModel s or SpecialItemModels
+                    //				pluginContext.addModels(data);
                 });
 
         BukkitSerializationMock.init();
@@ -104,4 +107,7 @@ public class SlimefunHelper implements ModInitializer {
     //
 
     // todo: js dev: tp+ litematica, tp + breakblock
+
+    // todo: breakSystem problem
+    // todo: sneak packets
 }

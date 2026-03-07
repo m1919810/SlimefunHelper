@@ -2,6 +2,8 @@ package me.matl114.versioned.api;
 
 public interface VDataFlag {
     int ID_FLAGS = 0;
+    int ON_FIRE_FLAG_INDEX = 0;
+    int SNEAKING_FLAG_INDEX = 1;
     int FALL_FLYING_FLAG_INDEX = 7;
     int ID_AIR = 1;
     int ID_CUSTOM_NAME = 2;
