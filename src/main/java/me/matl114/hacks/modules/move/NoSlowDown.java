@@ -23,12 +23,12 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.entity.LegalMovementManager;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
@@ -143,8 +143,12 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public void onSneakStatus() {
         if (sneakStatus) {
             sneakStatus = false;
+            // fix: shit
+            mc.getNetworkHandler()
+                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+            mc.getNetworkHandler()
+                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
             ClientPlayerAccess.of(mc.player).resyncSneak();
-            mc.getNetworkHandler().sendPacket(new PlayerInputC2SPacket(mc.player.getLastPlayerInput()));
             Debug.chat("[NoSlow] 取消当前伪造潜行状态");
         } else {
             Entity entity;
@@ -310,9 +314,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
         if (shouldNoSlowSneak()) {
-            args.input.playerInput = PlayerInputUtils.of(args.input.playerInput)
-                    .sneak(mc.options.sneakKey.isPressed())
-                    .toPlayerInput();
+
+            args.input.sneaking = mc.options.sneakKey.isPressed();
         }
     }
 
@@ -398,8 +401,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             if (!lastPredictWasSneakEdge && args.isSneaking()) {
                 // in lower version,
                 // ClientPlayerAccess.of(args).setLastSneakFlag(args.isSneaking());
-                args.input.playerInput =
-                        PlayerInputUtils.of(args.input.playerInput).sneak(false).toPlayerInput();
+                args.input.sneaking = false;
             }
             if (lastPredictWasSneakEdge) {
                 ClientPlayerAccess.of(mc.player).resyncSneak();

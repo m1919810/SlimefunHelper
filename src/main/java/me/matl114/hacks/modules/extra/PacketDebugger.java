@@ -78,7 +78,8 @@ public class PacketDebugger extends BaseModule {
             Packet<?> type = packetEvent.context();
             if (typesDebug.contains(type.getPacketId())) {
                 if (type instanceof PlayerPositionLookS2CPacket positionLookS2CPacket) {
-                    Vec3d vec3d = positionLookS2CPacket.change().position();
+                    Vec3d vec3d = new Vec3d(
+                            positionLookS2CPacket.getX(), positionLookS2CPacket.getY(), positionLookS2CPacket.getZ());
                     ExtraTasks.debug(
                             "Accept",
                             type.getPacketId().id(),
@@ -86,9 +87,9 @@ public class PacketDebugger extends BaseModule {
                             vec3d.y,
                             vec3d.z,
                             ", Pitch:",
-                            positionLookS2CPacket.change().pitch(),
+                            positionLookS2CPacket.getPitch(),
                             ", Yaw:",
-                            positionLookS2CPacket.change().yaw());
+                            positionLookS2CPacket.getYaw());
                 } else {
                     ExtraTasks.debug("Accept", type.getPacketId().id());
                 }

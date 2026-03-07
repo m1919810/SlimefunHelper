@@ -83,6 +83,23 @@ public class Configs {
         }
     }
 
+    public enum MineTargetingMode implements ConfigEnum {
+        NO_BYPASS,
+        SWING_HAND,
+        SWING_HAND_AND_ROT,
+        SWING_HAND_AND_TARGET;
+
+        public boolean hasSwing() {
+            return this != NO_BYPASS;
+        }
+
+        @Override
+        public Text getDisplay() {
+            return Text.translatable(
+                    "configenum.mine-targeting-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
+    }
+
     static {
         // load Enums
 

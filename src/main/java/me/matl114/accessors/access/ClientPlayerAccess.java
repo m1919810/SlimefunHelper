@@ -26,7 +26,7 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
     public void setLastSprintFlag(boolean lastSprint);
 
     default void resyncSneak() {
-        setLastSneakFlag(!((ClientPlayerEntity) this).input.playerInput.sneak());
+        setLastSneakFlag(!((ClientPlayerEntity) this).isSneaking());
     }
 
     public void setLastSneakFlag(boolean lastSprint);
@@ -36,6 +36,10 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
     }
 
     public void setLastOnGroundFlag(boolean lastOnGround);
+
+    public void resyncPos();
+
+    public void resyncRot();
     //    public void resyncPos();
     //    public void resyncRot();
     //    public void syncLocationPackets();

@@ -310,8 +310,8 @@ public class InvTasks {
     @ApiMethod
     public static ItemStack getHotbarStack(int hotbar) {
         return hotbar == 40
-                ? mc.player.getInventory().getStack(40)
-                : mc.player.getInventory().getMainStacks().get(hotbar);
+                ? mc.player.getInventory().offHand.get(0)
+                : mc.player.getInventory().main.get(hotbar);
     }
 
     @ApiMethod
@@ -900,9 +900,22 @@ public class InvTasks {
         // handler or player inv
 
         ScreenHandler screenHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        ScreenHandler currentHandler = mc.player.currentScreenHandler;
+
         int syncId = screenHandler.syncId;
         // won't miss any inject
-        mc.interactionManager.clickSlot(syncId, slotId, button, actionType, mc.player);
+        boolean shouldReplace = syncId != currentHandler.syncId;
+        try {
+            if (shouldReplace) {
+                // use fake screen handler
+                mc.player.currentScreenHandler = screenHandler;
+            }
+            mc.interactionManager.clickSlot(syncId, slotId, button, actionType, mc.player);
+        } finally {
+            if (shouldReplace) {
+                mc.player.currentScreenHandler = currentHandler;
+            }
+        }
         return;
     }
 
