@@ -235,6 +235,7 @@
 	"move-speed.no-slowdown.fake-sneak": "伪潜行: 启用",
 	"move-speed.no-slowdown.fake-sneak.tooltips": "该功能会拦截玩家潜行输入\n让反作弊认为玩家不在潜行",
 	"move-speed.no-slowdown.fake-sneak-mode": "伪潜行: 绕过模式",
+	"move-speed.no-slowdown.fake-sneak-mode.tooltips": "1.21.1以上的客户端需要选择对应的绕过方案才可以正常使用",
 	"move-speed.no-slowdown.fake-sneak-status-mode": "伪造潜行状态: 绕过模式",
 	"move-speed.no-slowdown.fake-sneak-status-mode.tooltips": "和\"伪造潜行状态\"功能相关\n若选取绕过GrimAC,该功能需要一个实体以交互",
 	"move-safety.check-setback-packets": "反作弊回弹日志",
