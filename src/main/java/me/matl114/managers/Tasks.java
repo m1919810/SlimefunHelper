@@ -5,9 +5,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.managers.task.DelayedTimedTask;
 import me.matl114.managers.task.RepeatTask;
 import me.matl114.managers.task.Task;
+import me.matl114.managers.task.TimedTask;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
@@ -74,7 +74,7 @@ public class Tasks {
 
     @ApiMethod
     public static void scheduleDelayed(Runnable task, int delay) {
-        taskQueue.addLast(new DelayedTimedTask(task, delay));
+        taskQueue.addLast(new TimedTask.Impl(task, delay));
     }
 
     @ApiMethod
