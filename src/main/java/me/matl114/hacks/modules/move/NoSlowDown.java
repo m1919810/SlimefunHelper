@@ -313,6 +313,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+        // todo: what is this
         if (shouldNoSlowSneak()) {
 
             args.input.sneaking = mc.options.sneakKey.isPressed();
