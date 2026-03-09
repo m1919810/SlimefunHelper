@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 public class BukkitSerializationMock {
     public static BukkitItemFactory ITEM_FACTORY_INSTANCE = new BukkitItemFactory();
 
-    public static void init() {
+    static {
         Debug.info("loading bukkitMock!");
     }
 

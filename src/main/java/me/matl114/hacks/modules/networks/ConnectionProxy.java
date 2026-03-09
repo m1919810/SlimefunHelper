@@ -10,7 +10,7 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
-import me.matl114.hacks.Tasks;
+import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -118,17 +118,18 @@ public class ConnectionProxy extends BaseModule {
             ExecutableWidget executableWidget = ExecutableWidget.instance(0, 0, 100, 20)
                     .setElementHandler(new ButtonElement(
                             TextProvider.of(Text.literal("http settings")),
-                            ButtonAction.run(() -> Tasks.getConfigSystem().openConfigScreen(Configs.HTTP_CONFIG))));
+                            ButtonAction.run(() -> MainTasks.getConfigSystem().openConfigScreen(Configs.HTTP_CONFIG))));
             delegateWidget.setContentDelegate(executableWidget);
             delegateWidget.addTo(mp);
             delegateWidget.setX(mp.width - 205);
             delegateWidget.setY(5);
             ScreenAccess.of(mp)
-                    .addDrawableChildTo(ButtonWidget.builder(Text.literal("http settings"), b -> Tasks.getConfigSystem()
-                                    .openConfigScreen(Configs.HTTP_CONFIG))
-                            // .width(70)
-                            .dimensions(mp.width - 205, 5, 100, 20)
-                            .build());
+                    .addDrawableChildTo(
+                            ButtonWidget.builder(Text.literal("http settings"), b -> MainTasks.getConfigSystem()
+                                            .openConfigScreen(Configs.HTTP_CONFIG))
+                                    // .width(70)
+                                    .dimensions(mp.width - 205, 5, 100, 20)
+                                    .build());
         }
     }
 

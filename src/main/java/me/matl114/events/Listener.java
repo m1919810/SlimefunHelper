@@ -12,6 +12,12 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import lombok.Getter;
+import me.matl114.events.annotations.*;
+import me.matl114.events.catchers.AbstractTypedPacketCatcher;
+import me.matl114.events.catchers.PacketCatcher;
+import me.matl114.events.channels.EventChannel;
+import me.matl114.events.channels.EventChannelDispatcher;
+import me.matl114.events.channels.PacketEventChannel;
 import me.matl114.hacks.MovTasks;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.IInputManager;
@@ -588,6 +594,60 @@ public class Listener {
         packetPostHandlePoint.handleValue(packetEvent);
     }
 
+    private static final Map<Class<?>, ArrayDeque<PacketCatcher>> preCatchers = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, ArrayDeque<PacketCatcher>> postCatchers = new ConcurrentHashMap<>();
+
+    public static <T extends Packet<?>> void addPrePacketCatcher(PacketCatcher packet) {
+        Class<?> dequeCls =
+                packet instanceof AbstractTypedPacketCatcher abstractType ? abstractType.packetClass : Packet.class;
+        var re = preCatchers.computeIfAbsent(dequeCls, k -> new ArrayDeque<>());
+        synchronized (re) {
+            re.addLast(packet);
+        }
+    }
+
+    public static <T extends Packet<?>> void addPostPacketCatcher(PacketCatcher packet) {
+        Class<?> dequeCls =
+                packet instanceof AbstractTypedPacketCatcher abstractType ? abstractType.packetClass : Packet.class;
+        var re = postCatchers.computeIfAbsent(dequeCls, k -> new ArrayDeque<>());
+        synchronized (re) {
+            re.addLast(packet);
+        }
+    }
+
+    public static void onPacketEventCatch(
+            Map<Class<?>, ArrayDeque<PacketCatcher>> packetCatchers, Event<? extends Packet<?>> packet) {
+        Packet<?> pkt = packet.context();
+        ArrayDeque<PacketCatcher> re = packetCatchers.get(Packet.class);
+        if (re != null) {
+            onPacketCatcherArrayWalk(re, packet);
+        }
+        if (packet.isCancelled()) return;
+        ArrayDeque<PacketCatcher> re2 = packetCatchers.get(Listener.getMappedPacketClass(pkt.getClass()));
+        if (re2 != null) {
+            onPacketCatcherArrayWalk(re2, packet);
+        }
+    }
+
+    private static void onPacketCatcherArrayWalk(ArrayDeque<PacketCatcher> re, Event<? extends Packet<?>> packet) {
+        if (packet.isCancelled()) return;
+        synchronized (re) {
+            var iter = re.iterator();
+            while (iter.hasNext()) {
+                var handler = iter.next();
+                boolean removal = handler.catchEvent(packet);
+                if (removal) {
+                    iter.remove();
+                }
+                if (packet.isCancelled()) {
+                    return;
+                }
+            }
+        }
+    }
+
+    // todo: turn to predicate use Task.getTick() as timer
+
     public static void sendPacketNoEvents(Packet<?> packet) {
         var re = MinecraftClient.getInstance().getNetworkHandler();
         if (re != null) {
@@ -626,6 +686,14 @@ public class Listener {
     }
 
     static {
-        // ConnectionListener.init();
+        Listener.getPacketPreHandlePoint()
+                .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(preCatchers, ev));
+        Listener.getPacketSendPoint()
+                .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(preCatchers, ev));
+
+        Listener.getPacketPostHandlePoint()
+                .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
+        Listener.getPacketPostSendPoint()
+                .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
     }
 }

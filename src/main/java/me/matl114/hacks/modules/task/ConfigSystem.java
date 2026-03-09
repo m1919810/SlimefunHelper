@@ -1,6 +1,6 @@
 package me.matl114.hacks.modules.task;
 
-import me.matl114.hacks.Tasks;
+import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.KeyBindRef;
@@ -19,10 +19,10 @@ public class ConfigSystem extends BaseModule {
             .build();
 
     public void openConfigMenu() {
-        Tasks.openConfigNewStyleScreen();
+        MainTasks.openConfigNewStyleScreen();
     }
 
     public void openConfigScreen(Config config) {
-        Tasks.openConfigScreen(config);
+        MainTasks.openConfigScreen(config);
     }
 }

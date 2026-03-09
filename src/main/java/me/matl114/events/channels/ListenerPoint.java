@@ -1,4 +1,4 @@
-package me.matl114.events;
+package me.matl114.events.channels;
 
 public class ListenerPoint<W> extends EntryPoint<W> {
     @Override

@@ -1,4 +1,6 @@
-package me.matl114.events;
+package me.matl114.events.channels;
+
+import me.matl114.events.Event;
 
 public class EventChannel<T> extends ListenerPoint<Event<T>> {
     private static final Object[] VALUES = new Object[0];

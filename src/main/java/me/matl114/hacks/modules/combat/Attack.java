@@ -14,6 +14,7 @@ import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;

@@ -2,9 +2,9 @@ package me.matl114.hacks.modules.combat;
 
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
