@@ -17,6 +17,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.move.*;
+import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.utils.entity.LegalMovementManager;

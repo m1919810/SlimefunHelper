@@ -1,4 +1,4 @@
-package me.matl114.events;
+package me.matl114.events.channels;
 
 import java.util.ArrayList;
 import java.util.List;

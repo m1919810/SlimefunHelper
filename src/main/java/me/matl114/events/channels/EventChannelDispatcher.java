@@ -1,8 +1,9 @@
-package me.matl114.events;
+package me.matl114.events.channels;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import me.matl114.events.Event;
 
 public class EventChannelDispatcher<T> extends EventChannel<T> {
     public Function<T, ?> dispatcher;

@@ -1,9 +1,10 @@
 package me.matl114.utils;
 
-import com.google.common.collect.Maps;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 import me.matl114.accessors.access.HandledScreenAccess;
+import me.matl114.events.Listener;
+import me.matl114.events.catchers.PacketCatcherImpl;
 import me.matl114.utils.collections.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
@@ -16,9 +17,8 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.Window;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
+import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
@@ -26,48 +26,8 @@ import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 
+@ApiMethod
 public class ScreenUtils {
-    private static final Map<ScreenHandlerType<?>, HandledScreens.Provider<?, ?>> PROVIDERS = Maps.newHashMap();
-
-    static {
-        register(ScreenHandlerType.GENERIC_9X1, GenericContainerScreen::new);
-        register(ScreenHandlerType.GENERIC_9X2, GenericContainerScreen::new);
-        register(ScreenHandlerType.GENERIC_9X3, GenericContainerScreen::new);
-        register(ScreenHandlerType.GENERIC_9X4, GenericContainerScreen::new);
-        register(ScreenHandlerType.GENERIC_9X5, GenericContainerScreen::new);
-        register(ScreenHandlerType.GENERIC_9X6, GenericContainerScreen::new);
-        register(ScreenHandlerType.GENERIC_3X3, Generic3x3ContainerScreen::new);
-        register(ScreenHandlerType.ANVIL, AnvilScreen::new);
-        register(ScreenHandlerType.BEACON, BeaconScreen::new);
-        register(ScreenHandlerType.BLAST_FURNACE, BlastFurnaceScreen::new);
-        register(ScreenHandlerType.BREWING_STAND, BrewingStandScreen::new);
-        register(ScreenHandlerType.CRAFTING, CraftingScreen::new);
-        register(ScreenHandlerType.ENCHANTMENT, EnchantmentScreen::new);
-        register(ScreenHandlerType.FURNACE, FurnaceScreen::new);
-        register(ScreenHandlerType.GRINDSTONE, GrindstoneScreen::new);
-        register(ScreenHandlerType.HOPPER, HopperScreen::new);
-        register(ScreenHandlerType.LECTERN, LecternScreen::new);
-        register(ScreenHandlerType.LOOM, LoomScreen::new);
-        register(ScreenHandlerType.MERCHANT, MerchantScreen::new);
-        register(ScreenHandlerType.SHULKER_BOX, ShulkerBoxScreen::new);
-        register(ScreenHandlerType.SMITHING, SmithingScreen::new);
-        register(ScreenHandlerType.SMOKER, SmokerScreen::new);
-        register(ScreenHandlerType.CARTOGRAPHY_TABLE, CartographyTableScreen::new);
-        register(ScreenHandlerType.STONECUTTER, StonecutterScreen::new);
-    }
-
-    private static <M extends ScreenHandler, U extends Screen & ScreenHandlerProvider<M>> void register(
-            ScreenHandlerType<? extends M> type, HandledScreens.Provider<M, U> provider) {
-        HandledScreens.Provider<?, ?> provider2 = (HandledScreens.Provider) PROVIDERS.put(type, provider);
-        if (provider2 != null) {
-            throw new IllegalStateException("Duplicate registration for " + Registries.SCREEN_HANDLER.getId(type));
-        }
-    }
-
-    public static <T extends ScreenHandler> HandledScreens.Provider getProvider(ScreenHandlerType<T> type) {
-        return (HandledScreens.Provider) PROVIDERS.get(type);
-    }
-
     public static Point getMouseCoord(MinecraftClient client) {
         return getMouseCoord(client, client.mouse);
     }
@@ -93,6 +53,33 @@ public class ScreenUtils {
             return mc.player.getStackInHand(Hand.MAIN_HAND);
         }
         return null;
+    }
+
+    public CompletableFuture<HandledScreen<?>> getOpenScreenFuture() {
+        int currentSyncId = mc.player.currentScreenHandler.syncId;
+        CompletableFuture<HandledScreen<?>> cf = new CompletableFuture<>();
+        Listener.addPostPacketCatcher(new PacketCatcherImpl<>(OpenScreenS2CPacket.class, (packetEvent) -> {
+            var packet = packetEvent.context();
+            int syncId = packet.getSyncId();
+            if (currentSyncId != syncId && syncId != 0) {
+                if (mc.currentScreen instanceof HandledScreen<?> handled) {
+                    Listener.addPostPacketCatcher(new PacketCatcherImpl<>(InventoryS2CPacket.class, (packet2Event) -> {
+                        var packet2 = packet2Event.context();
+                        if (packet2.getSyncId() == syncId) {
+                            // execute immediately after the update of menu
+                            cf.complete(handled);
+                            return true;
+                        }
+                        return false;
+                    }));
+                } else {
+                    cf.complete(null);
+                }
+                return true;
+            }
+            return false;
+        }));
+        return cf;
     }
 
     public static boolean hasShiftDown() {

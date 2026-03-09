@@ -57,14 +57,6 @@ accessible field net/minecraft/client/render/model/BakedModelManager missingItem
 accessible field net/minecraft/client/recipebook/ClientRecipeBook recipes Ljava/util/Map;
 
 accessible class net/minecraft/component/ComponentMap$Builder$SimpleComponentMap
-accessible field net/minecraft/client/render/GameRenderer guiState Lnet/minecraft/client/gui/render/state/GuiRenderState;
-accessible field net/minecraft/client/render/GameRenderer guiRenderer Lnet/minecraft/client/gui/render/GuiRenderer;
-accessible field net/minecraft/client/render/GameRenderer fogRenderer Lnet/minecraft/client/render/fog/FogRenderer;
-accessible field net/minecraft/client/render/GameRenderer pool Lnet/minecraft/client/util/Pool;
-
-accessible class net/minecraft/network/PacketApplyBatcher$Entry
-accessible field net/minecraft/client/gui/DrawContext tooltipDrawer Ljava/lang/Runnable;
-accessible field net/minecraft/client/render/model/BakedModelManager missingModels Lnet/minecraft/client/render/model/ModelBaker$BlockItemModels;
 
 accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractAtHandler
 accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractAtHandler <init> (Lnet/minecraft/util/Hand;Lnet/minecraft/util/math/Vec3d;)V

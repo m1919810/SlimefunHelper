@@ -1,5 +1,7 @@
-package me.matl114.events;
+package me.matl114.events.channels;
 
+import me.matl114.events.Event;
+import me.matl114.events.Listener;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.Packet;
 
