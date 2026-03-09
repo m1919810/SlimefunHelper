@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import me.matl114.hacks.*;
+import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.Method;
@@ -173,6 +174,7 @@ public class SlimefunHelperApi {
                     CollectionUtils.class,
                     RaycastUtils.class,
                     ClientUtils.class,
+                    ScreenUtils.class,
                     ItemStackUtils.class);
 
             for (Class<?> clazz : apiClasses) {

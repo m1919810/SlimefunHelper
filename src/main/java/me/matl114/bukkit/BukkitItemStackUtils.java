@@ -20,7 +20,9 @@ public class BukkitItemStackUtils {
             new ConfigurationSerializableDataType(BukkitItemStack.class);
     public static ItemStack STACK_FORBIDDEN = new ItemStack(Items.BARRIER, 1);
 
-    public static void init() {
+    public static void init() {}
+
+    static {
         Debug.info("Bukkit ItemStack Utils enabled");
     }
 

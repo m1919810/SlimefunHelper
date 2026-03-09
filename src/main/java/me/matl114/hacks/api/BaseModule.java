@@ -6,7 +6,7 @@ import java.util.function.Predicate;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import me.matl114.events.ListenerPoint;
+import me.matl114.events.channels.ListenerPoint;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.hacks.utils.Named;
 import me.matl114.hacks.utils.NamedConsumer;

@@ -23,8 +23,8 @@ import lombok.experimental.Accessors;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.catchers.TimedPacketCatcherImpl;
 import me.matl114.hacks.InvTasks;
-import me.matl114.hacks.Tasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
@@ -269,20 +269,18 @@ public class RecipeDatabase extends BaseModule {
             if (title != null) {
                 title = title.replaceAll("§.", "");
                 if (Pattern.matches(slimefunBookTitle.get(), title)) {
-                    Tasks.addPacketCatcher(
-                            new Tasks.TimedPacketCatcher<InventoryS2CPacket>(InventoryS2CPacket.class, 20) {
-                                @Override
-                                public int catchPacket(InventoryS2CPacket packet) {
-                                    if (packet.syncId() == container.getScreenHandler().syncId) {
-                                        // execute immediately after the update of menu
-                                        mc.executeSync(() -> {
-                                            onScreenContent(container);
-                                        });
-                                        return REMOVAL & (~CANCEL);
-                                    }
-                                    return (~REMOVAL) & (~CANCEL);
+                    Listener.addPostPacketCatcher(
+                            new TimedPacketCatcherImpl<>(InventoryS2CPacket.class, 20, (packetEvent) -> {
+                                var packet = packetEvent.context();
+                                if (packet.syncId() == container.getScreenHandler().syncId) {
+                                    // execute immediately after the update of menu
+                                    mc.executeSync(() -> {
+                                        onScreenContent(container);
+                                    });
+                                    return true;
                                 }
-                            });
+                                return false;
+                            }));
                 }
             }
         }

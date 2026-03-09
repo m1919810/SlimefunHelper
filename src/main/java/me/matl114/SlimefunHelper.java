@@ -6,14 +6,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import me.matl114.bridge.BridgeMain;
-import me.matl114.bukkit.BukkitItemStackUtils;
-import me.matl114.bukkit.BukkitSerializationMock;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.gui.GuiMain;
-import me.matl114.hacks.Tasks;
+import me.matl114.hacks.MainTasks;
 import me.matl114.jsApi.SlimefunHelperApi;
 import me.matl114.managers.TaskManagers;
+import me.matl114.managers.Tasks;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
 import net.fabricmc.api.ModInitializer;
@@ -77,15 +76,15 @@ public class SlimefunHelper implements ModInitializer {
                     // here we should auto register these to BasicItemModel s or SpecialItemModels
                     //				pluginContext.addModels(data);
                 });
-
-        BukkitSerializationMock.init();
-        BukkitItemStackUtils.init();
-
+        // tasks and listeners
         TaskManagers.init();
+        Tasks.init();
         Listener.init();
         RenderListener.init();
+        // gui system
         GuiMain.init();
-        Tasks.init();
+        // hacks main
+        MainTasks.init();
         BridgeMain.init();
         SlimefunHelperApi.init();
     }

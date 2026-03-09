@@ -29,7 +29,9 @@ import me.matl114.hacks.modules.chat.*;
 import me.matl114.hacks.modules.combat.Attack;
 import me.matl114.hacks.modules.combat.BowEnhance;
 import me.matl114.hacks.modules.combat.ProjectileEnhance;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
+import me.matl114.managers.task.RepeatTask;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.*;
 import me.matl114.utils.commands.CommandContext;
@@ -192,7 +194,7 @@ public class ChatTasks {
                 case "saved" -> Tasks.scheduleDelayed(SlimefunTasks.getSlimefunGuide()::openSaveItemMenu, 1);
                 case "itemedit" -> Tasks.scheduleDelayed(InvTasks::openEditorForPlayer, 1);
                 case "invcache" -> Tasks.scheduleDelayed(InvTasks::openInventoryCacheScreen, 1);
-                case "config" -> Tasks.scheduleDelayed(Tasks::openConfigNewStyleScreen, 1);
+                case "config" -> Tasks.scheduleDelayed(MainTasks::openConfigNewStyleScreen, 1);
                 default -> Tasks.scheduleDelayed(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu, 1);
             }
             Debug.chat(Text.literal("成功打开界面").formatted(Formatting.GREEN));
@@ -214,7 +216,7 @@ public class ChatTasks {
             String next = s.nextNonnull();
             switch (next) {
                 case "open" -> {
-                    Tasks.scheduleDelayed(Tasks::openConfigNewStyleScreen, 1);
+                    Tasks.scheduleDelayed(MainTasks::openConfigNewStyleScreen, 1);
                     Debug.chat(Text.literal("成功打开配置文件界面").formatted(Formatting.GREEN));
                 }
                 case "reload" -> {
@@ -230,7 +232,7 @@ public class ChatTasks {
                     .helper("<taskid> <args> 运行内置任务")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("taskid")
-                            .tabSupplier(() -> Tasks.getSpecialTaskName().stream())
+                            .tabSupplier(() -> MainTasks.getSpecialTaskName().stream())
                             .build())
                     .post(e -> e.executor(this::onTask))
                     .complete();
@@ -242,7 +244,7 @@ public class ChatTasks {
             String[] extraArg = reader.getRemainingArgs();
 
             try {
-                Tasks.runSpecialTask(val, extraArg);
+                MainTasks.runSpecialTask(val, extraArg);
             } catch (Throwable e) {
                 Debug.chat("运行Task出现错误!:", e.getMessage());
                 Debug.info(e);
@@ -256,7 +258,7 @@ public class ChatTasks {
                     .helper("<taskid> <args> 运行内置任务")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("taskid")
-                            .tabSupplier(() -> Tasks.getSpecialTaskName().stream())
+                            .tabSupplier(() -> MainTasks.getSpecialTaskName().stream())
                             .build())
                     .post(e -> e.executor(this::onAsyncTask))
                     .complete();
@@ -267,7 +269,7 @@ public class ChatTasks {
             String[] extraArg = reader.getRemainingArgs();
             CompletableFuture.runAsync(() -> {
                 try {
-                    Tasks.runSpecialTask(val, extraArg);
+                    MainTasks.runSpecialTask(val, extraArg);
                 } catch (Throwable e) {
                     Debug.chat("运行Task出现错误!:", e.getMessage());
                     Debug.info(e);
@@ -862,7 +864,7 @@ public class ChatTasks {
                     parsedCoord = resolveCoord(var1, xcoord, re.next(), re.next());
                 }
                 if (parsedCoord == null) return;
-                travelTask = new Tasks.RepeatTimedTask(20, 2) {
+                travelTask = new RepeatTask(20, 2) {
                     Vec3d pos0 = parsedCoord;
                     final ClientPlayerEntity currentPlayer = mc.player;
                     final long startingTime = System.currentTimeMillis();
@@ -913,7 +915,7 @@ public class ChatTasks {
                     long lastTick;
                     //                                Vec3d vec3d = Vec3d.ZERO;
                     @Override
-                    public boolean runTask0() {
+                    public boolean runTask() {
                         if (mc.player == null) return false;
                         MovTasks.doingTp = false;
                         mc.player.setOnGround(false);
@@ -959,7 +961,7 @@ public class ChatTasks {
             }
         }
 
-        public static Tasks.RepeatTimedTask travelTask;
+        public static RepeatTask travelTask;
         // todo add elytra support
         {
             main.subBuilder(SubCommand.taskBuilder())

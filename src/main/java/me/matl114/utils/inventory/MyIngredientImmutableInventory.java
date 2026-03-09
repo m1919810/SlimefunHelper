@@ -1,8 +1,8 @@
 package me.matl114.utils.inventory;
 
 import java.util.Arrays;
-import me.matl114.hacks.Tasks;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
+import me.matl114.managers.Tasks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
