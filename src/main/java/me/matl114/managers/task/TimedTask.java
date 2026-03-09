@@ -14,4 +14,19 @@ public abstract class TimedTask implements Task {
         }
         return false;
     }
+
+    public static class Impl extends TimedTask {
+        Runnable task;
+
+        public Impl(Runnable runnable, int delay) {
+            super(delay);
+            this.task = runnable;
+        }
+
+        @Override
+        public boolean runTask() {
+            task.run();
+            return true;
+        }
+    }
 }
