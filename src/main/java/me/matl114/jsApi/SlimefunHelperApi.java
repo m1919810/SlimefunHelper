@@ -75,7 +75,13 @@ public class SlimefunHelperApi {
                 .findFirst()
                 .orElse(null);
         if (field == null) {
-            field = Arrays.stream(JsMacrosClient.class.getFields())
+            Class<?> jsMacrosClient;
+            try {
+                jsMacrosClient = JsMacrosClient.class;
+            } catch (Throwable e) {
+                jsMacrosClient = Class.forName("xyz.wagyourtail.jsmacros.client.JsMacros");
+            }
+            field = Arrays.stream(jsMacrosClient.getFields())
                     .filter(s -> Modifier.isStatic(s.getModifiers()))
                     .filter(s -> s.getType() == Core.class)
                     .peek(s -> s.setAccessible(true))

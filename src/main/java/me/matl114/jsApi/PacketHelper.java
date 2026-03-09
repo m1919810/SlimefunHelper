@@ -183,4 +183,8 @@ public class PacketHelper {
     }
 
     public static void sendStopMining(int x, int y, int z, Object direction) {}
+
+    public static void syncSelectedHotbar(int x) {
+        PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(x);
+    }
 }
