@@ -10,7 +10,6 @@ import me.matl114.managers.Tasks;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 
 public class PostManager extends BaseModule {
@@ -27,8 +26,7 @@ public class PostManager extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::peekPingPacketIn);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(CommonPingS2CPacket.class), this::postPongPacketOut);
-        registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::preTickEnd);
-        registerListener(Listener.getPacketPostSendPoint().getChannel(ClientTickEndC2SPacket.class), this::postTickEnd);
+        registerListener(Listener.getPostTick(), this::postTickEnd);
         registerListener(Listener.getServerDisconnectPoint(), this::onDisconnectReset);
         registerListener(Listener.getGameTick(), this::onWatchPingLongTimeNoSent);
         registerListener(Listener.getPacketPoint().getChannel(CommonPongC2SPacket.class), this::prePongPacketOut);
@@ -94,11 +92,7 @@ public class PostManager extends BaseModule {
         //        }
     }
 
-    public void preTickEnd(Event<ClientTickEndC2SPacket> event) {
-        // runQueue(mc.getNetworkHandler(), queuePackets);
-    }
-
-    public void postTickEnd(Event<ClientTickEndC2SPacket> event) {
+    public void postTickEnd(Event<Void> event) {
         runAllPostTickPackets(mc.getNetworkHandler());
         // flush pong packets
         //        for(var pongPacket : delayedPingPackets) {
@@ -119,7 +113,7 @@ public class PostManager extends BaseModule {
         // fix anything wrong wtf
         if (peekPingRequest < 0) peekPingRequest = 0;
         // anyway ,flush
-        // runAllQueuePackets(mc.getNetworkHandler());
+        //    runAllQueuePackets(mc.getNetworkHandler());
     }
 
     private void runAllPostTickPackets(ClientPlayNetworkHandler handler) {

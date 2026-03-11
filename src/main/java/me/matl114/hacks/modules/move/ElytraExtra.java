@@ -31,6 +31,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ElytraItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -271,8 +272,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 var slot = slots.get(i);
                 if (slot.inventory instanceof PlayerInventory pinv
                         && VItem.getInstance().canGlide(slot.getStack())
-                        && mc.player.canEquip(slot.getStack(), EquipmentSlot.CHEST)
-                        && !slot.getStack().willBreakNextUse()) {
+                        && mc.player.getPreferredEquipmentSlot(slot.getStack()) == EquipmentSlot.CHEST
+                        && ElytraItem.isUsable(slot.getStack())) {
                     return i;
                 }
             }
@@ -314,9 +315,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 if (canBeUsedAsFireworks(stack)) {
                     // 40-> offhand
                     delayQueue.add(new IndexEntry<>(
-                            packet.context().getHand() == Hand.MAIN_HAND
-                                    ? mc.player.getInventory().getSelectedSlot()
-                                    : 40,
+                            packet.context().getHand() == Hand.MAIN_HAND ? mc.player.getInventory().selectedSlot : 40,
                             packet.context()));
                     packet.cancel();
                 }
@@ -446,7 +445,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public void flushRockets() {
         flushing = true;
-        int selected = mc.player.getInventory().getSelectedSlot();
+        int selected = mc.player.getInventory().selectedSlot;
         try {
             while (!delayQueue.isEmpty()) {
                 var packetEntry = delayQueue.poll();

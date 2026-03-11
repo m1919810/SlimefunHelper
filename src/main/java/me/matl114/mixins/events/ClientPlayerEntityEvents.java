@@ -1,5 +1,6 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.BidirectionalIterator;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
@@ -17,6 +18,11 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.item.ElytraItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.stat.StatHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -141,12 +147,26 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         headNode.insertAfter(wrapper);
     }
 
+    @Unique
+    private boolean checkElytra() {
+        ItemStack itemStack = this.getEquippedStack(EquipmentSlot.CHEST);
+        if (itemStack.isOf(Items.ELYTRA) && ElytraItem.isUsable(itemStack)) {
+            this.startFallFlying();
+            return true;
+        }
+        return false;
+    }
+
     @Override
-    public boolean checkGliding() {
+    public boolean checkFallFlying() {
         boolean fallflying = this.isFallFlying();
         boolean shouldSwitch = false;
         if (!fallflying) {
-            shouldSwitch = this.canGlide() && !this.isTouchingWater();
+            shouldSwitch = !this.isOnGround()
+                    && !this.isFallFlying()
+                    && !this.isTouchingWater()
+                    && !this.hasStatusEffect(StatusEffects.LEVITATION)
+                    && checkElytra();
         }
         Event<Boolean> switchGliding = new Event<>(shouldSwitch, true, true, fallflying);
         Listener.getPlayerSwitchFallFlying().handleValue(switchGliding);
@@ -158,18 +178,35 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         }
         if (!fallflying) {
             if (switchFlag) {
-                startGliding();
+                startFallFlying();
                 return true;
             } else {
                 return false;
             }
         } else {
             if (switchFlag) {
-                stopGliding();
+                stopFallFlying();
                 return true;
             } else {
                 return false;
             }
         }
+    }
+
+    @ModifyExpressionValue(
+            method = "tickMovement",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"))
+    private boolean rewriteElytra1(boolean original) {
+        return true;
+    }
+
+    @ModifyExpressionValue(
+            method = "tickMovement",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/item/ElytraItem;isUsable(Lnet/minecraft/item/ItemStack;)Z"))
+    private boolean rewriteElytra2(boolean original) {
+        return true;
     }
 }
