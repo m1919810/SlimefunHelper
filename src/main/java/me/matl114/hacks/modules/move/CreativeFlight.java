@@ -39,8 +39,6 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public static final String[] MOVE_SPEED_OVERRIDE_WALK = {"move-speed", "walk-speed-override"};
     public static final String[] ON_GROUND_WHEN_MINE = {"move-safety", "flight", "onground-when-mine"};
 
-    public static final String[] FLIGTH_HOTKEY = {"hotkeys", "toggle-flying"};
-
     public CreativeFlight() {
         bindFlag(canFly);
         if (instance == null) {
@@ -92,11 +90,6 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
 
     public final FlagRef onGroundWhenMine =
             flagBuilder(Configs.MOV_CONFIG, ON_GROUND_WHEN_MINE).build();
-
-    public final KeyBindRef toggleFlyStateKeyBind = hotkey(FLIGTH_HOTKEY)
-            .defaultValue(new MultiKeyBind())
-            .registerHotkey(HotKeyUtils.wrapAsHandler(this::onFlightToggle))
-            .build();
 
     public final FlagRef fake1 =
             flagBuilder(Configs.MOV_CONFIG, MOVE_FLIGHT_SAFETY_1).build();
@@ -311,20 +304,6 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
 
         //        }
 
-    }
-
-    public void onFlightToggle() {
-        if (mc.player.getAbilities().flying) {
-            mc.player.getAbilities().flying = false;
-        } else if (mc.player.getAbilities().allowFlying) {
-            mc.player.getAbilities().flying = true;
-            // mc.player.setPos(mc.player.getX(), mc.player.getY() + 0.001, mc.player.getZ());
-            Vec3d vec3d = mc.player.getVelocity();
-            mc.player.setVelocity(vec3d.x, 0, vec3d.z);
-            mc.player.setOnGround(false);
-        } else {
-            Debug.chat("You are not allowed to fly");
-        }
     }
 
     public void onInterceptFlyInput(Event<PlayerInputC2SPacket> inputPacketEvent) {

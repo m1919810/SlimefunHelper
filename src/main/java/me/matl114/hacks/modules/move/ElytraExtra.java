@@ -1,9 +1,12 @@
 package me.matl114.hacks.modules.move;
 
 import java.util.Deque;
+import java.util.Locale;
+import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.regex.Pattern;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.accessors.access.FireworkRocketEntityAccess;
 import me.matl114.accessors.access.ItemStackAccess;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
@@ -14,11 +17,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
-import me.matl114.managers.config.StringRef;
-import me.matl114.utils.Debug;
+import me.matl114.managers.config.*;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.LegalMovementManager;
@@ -26,11 +25,14 @@ import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.FireworksComponent;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -40,7 +42,9 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Vec3d;
 
 public class ElytraExtra extends BaseModule implements LegalMovementManager.MovementModifier {
     private static LegalMovementManager.DelegateMovementModifier instance;
@@ -54,15 +58,21 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public static final String[] MOVE_ELYTRA_ARMOR_ARMOR_MODE = {"elytra", "armor-fly", "armor-mode"};
 
-    public static final String[] MOVE_ELYTRA_MOTION_CONTROL = {"elytra", "simple-flight-control", "enable-motion"};
+    public static final String[] ELYTRA_FIREWORKS_TICKS = {
+        "elytra", "custom-fireworks", "firework-delay-multiply-vanilla"
+    };
 
-    public static final String[] MOVE_ELYTRA_HEIGHT_CONTROL = {"elytra", "simple-flight-control", "enable-height"};
+    public static final String[] ELYTRA_FIREWORKS_TICKS_CUSTOM = {
+        "elytra", "custom-fireworks", "firework-delay-cooldown-custom"
+    };
 
     public static final String[] ELYTRA_CUSTOM_FIREWORKS = {"elytra", "custom-fireworks", "firework-item-id"};
 
-    public static final String[] ELYTRA_FLIGHT_CONTROL = {"elytra", "flight-control", "enable"};
+    public static final String[] AUTO_USE_FIREWORKS = {"elytra", "custom-fireworks", "firework-auto-use-vanilla"};
 
-    public static final String[] ELYTRA_FLIGHT_CONTROL_FIREWORKS = {"elytra", "custom-fireworks", "enable-fireworks"};
+    public static final String[] FIREWORKS_BUFFER = {"elytra", "custom-fireworks", "firework-effect-remain-ticks"};
+    // public static final String[] ELYTRA_FLIGHT_CONTROL_FIREWORKS = {"elytra", "custom-fireworks",
+    // "enable-fireworks"};
 
     public ElytraExtra() {
         if (instance == null) {
@@ -98,17 +108,30 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .validator(Configs.REGEX_VALIDATOR)
             .build();
 
-    public final FlagRef useFireworks =
-            flagBuilder(Configs.MOV_CONFIG, ELYTRA_FLIGHT_CONTROL_FIREWORKS).build();
+    public final IntRef fireworkTicks = builder(Configs.MOV_CONFIG, ELYTRA_FIREWORKS_TICKS, IntRef.TYPE)
+            .defaultValue(10)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
-    public final FlagRef simpleControlM =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_MOTION_CONTROL).build();
+    public final IntRef customFireworkTicks = builder(Configs.MOV_CONFIG, ELYTRA_FIREWORKS_TICKS_CUSTOM, IntRef.TYPE)
+            .defaultValue(100)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
-    public final FlagRef simpleControlH =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_HEIGHT_CONTROL).build();
+    public final FireworkTimer timerVanilla = new FireworkTimer(fireworkTicks);
 
-    public final FlagRef controlE =
-            flagBuilder(Configs.MOV_CONFIG, ELYTRA_FLIGHT_CONTROL).build();
+    public final FireworkTimer timerCustom = new FireworkTimer(customFireworkTicks);
+
+    public final FlagRef autoRocket =
+            flagBuilder(Configs.MOV_CONFIG, AUTO_USE_FIREWORKS).build();
+
+    public final IntRef rocketBuffer = builder(Configs.MOV_CONFIG, FIREWORKS_BUFFER, IntRef.TYPE)
+            .defaultValue(5)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
+
+    // public final FlagRef useFireworks =
+    //        flagBuilder(Configs.MOV_CONFIG, ELYTRA_FLIGHT_CONTROL_FIREWORKS).build();
 
     @Override
     public void registerAll() {
@@ -119,6 +142,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetBack);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onUseFireworks);
+        registerListener(Listener.getEntityClientVelocityUpdate(), this::onPlayerVelocity);
+        registerListener(Listener.getEntityTrackDataUpdate(), this::onFireworkOwner);
+        registerListener(Listener.getEntityRemoveListener(), this::onFireworkRemove);
     }
 
     // TODO: fake elytra flight figure it out: NO USE, server player pose will not change
@@ -330,7 +356,43 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    public void sendUsePacket(float pitch, float yaw) {
+    public ItemStack findRocket() {
+        ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
+        if (canBeUsedAsFireworks(stack)) {
+            return stack;
+        } else {
+            stack = mc.player.getStackInHand(Hand.OFF_HAND);
+            if (canBeUsedAsFireworks(stack)) {
+                return stack;
+            } else {
+                // check hotbars
+                for (var i = 0; i < 9; ++i) {
+                    if (canBeUsedAsFireworks(mc.player.getInventory().getStack(i))) {
+                        return mc.player.getInventory().getStack(i);
+                    }
+                }
+                for (var i = 0; i < mc.player.currentScreenHandler.slots.size(); i++) {
+                    var slot = mc.player.currentScreenHandler.slots.get(i);
+                    if (slot.inventory instanceof PlayerInventory && canBeUsedAsFireworks(slot.getStack())) {
+                        return slot.getStack();
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    public int getRocketLevel(ItemStack stack) {
+        if (stack.isOf(Items.FIREWORK_ROCKET)) {
+            FireworksComponent component = stack.get(DataComponentTypes.FIREWORKS);
+            if (component != null) {
+                return 1 + component.flightDuration();
+            }
+        }
+        return 1;
+    }
+
+    private void sendUsePacket(float pitch, float yaw) {
         ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
         if (canBeUsedAsFireworks(stack)) {
             mc.interactionManager.sendSequencedPacket(
@@ -341,16 +403,31 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 mc.interactionManager.sendSequencedPacket(
                         mc.world, s -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, yaw, pitch));
             } else {
+                // check hotbars
                 int idx = -1;
+
+                for (var i = 0; i < 9; ++i) {
+                    if (canBeUsedAsFireworks(mc.player.getInventory().getStack(i))) {
+                        idx = i;
+                        break;
+                    }
+                }
+                if (idx != -1) {
+                    int selected = mc.player.getInventory().getSelectedSlot();
+                    PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(idx);
+                    mc.interactionManager.sendSequencedPacket(
+                            mc.world, s -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, s, yaw, pitch));
+                    PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
+                    return;
+                }
                 for (var i = 0; i < mc.player.currentScreenHandler.slots.size(); i++) {
                     var slot = mc.player.currentScreenHandler.slots.get(i);
                     if (slot.inventory instanceof PlayerInventory && canBeUsedAsFireworks(slot.getStack())) {
                         idx = i;
+                        break;
                     }
                 }
-                if (idx == -1) {
-
-                } else {
+                if (idx != -1) {
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, idx, 40, SlotActionType.SWAP, mc.player);
                     // use it in offhand
@@ -358,6 +435,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             mc.world, s -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, yaw, pitch));
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, idx, 40, SlotActionType.SWAP, mc.player);
+                    return;
                 }
             }
         }
@@ -454,7 +532,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     }
                     Listener.sendPacketNoEvents(packetEntry.val());
                 } else {
-                    sendCustomUseFireworkPacket(
+                    sendUsePacket(
                             packetEntry.val().getPitch(), packetEntry.val().getYaw());
                 }
             }
@@ -469,6 +547,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     // tested in mc.loyisa.cn 1.21.1 20260311
     // could not pass GrimAC > 1.21.2 in loyisa due to inventory packets disorders and player input packet check
     int lastFlushRocketTick = 0;
+
+    public void onPlayerVelocity(Event<Vec3d> fireworkEvent) {}
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
@@ -502,6 +582,90 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         } else {
             thisFallFlyingIsArmorFly = -1;
         }
+
+        // simple control
+
+    }
+
+    FireworkRocketEntity lastFireworkRocket;
+    int lastFireworkRocketTick = 0;
+    int lastFireworkThresholdTime = 0;
+    boolean lastFireworkIsDeadSignal = false;
+
+    public void onFireworkOwner(Event<DataTracker.SerializedEntry<?>> firework) {
+        if (firework.context().id() == VDataFlag.ID_FIREWORK_SHOOTER_ID
+                && firework.getArgs(0) instanceof FireworkRocketEntity fireworkEntity
+                && mc.player != null
+                && mc.player.isFallFlying()
+                && firework.context().value() instanceof OptionalInt opint
+                && opint.isPresent()
+                && opint.getAsInt() == mc.player.getId()) {
+            lastFireworkRocket = fireworkEntity;
+            lastFireworkRocketTick = Tasks.getTick();
+            lastFireworkIsDeadSignal = false;
+            lastFireworkThresholdTime = 0;
+        }
+    }
+
+    public void onFireworkRemove(Event<Entity> entityRemoveEvent) {
+        if (entityRemoveEvent.context() instanceof FireworkRocketEntity fire && fire == lastFireworkRocket) {
+            lastFireworkThresholdTime = FireworkRocketEntityAccess.of(fire).getLiveTicks();
+            lastFireworkIsDeadSignal = true;
+        }
+    }
+
+    public boolean canFireworkControlMotion() {
+        if (lastFireworkRocket != null) {
+            if (lastFireworkRocket.isAlive()) {
+                return true;
+            } else if (Tasks.getTick() < lastFireworkRocketTick + lastFireworkThresholdTime + rocketBuffer.get()) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    int cnt = 0;
+
+    public void launchFirework(float pitch, float yaw) {
+        boolean autoFirework = autoRocket.get() && lastFireworkRocket != null;
+        boolean emergency = autoFirework && lastFireworkIsDeadSignal;
+        var rocket = findRocket();
+        if (rocket != null) {
+            boolean isVanilla = rocket.isOf(Items.FIREWORK_ROCKET);
+            int level = getRocketLevel(rocket);
+            FireworkTimer timer = isVanilla ? timerVanilla : timerCustom;
+            boolean use = false;
+            if (autoFirework) {
+                if (lastFireworkRocket.isAlive()) {
+                    return;
+                } else if (emergency) {
+                    // time limit, do not double
+                    if (Tasks.getTick() < lastFireworkRocketTick + lastFireworkThresholdTime + rocketBuffer.get()) {
+                        use = true;
+                    }
+                    lastFireworkIsDeadSignal = false;
+                    // use = true;
+                } else {
+                    // already use, but server havn't sent our rocket
+                    // check buffer time, if can not control, use timer to restart the control
+                    if (canFireworkControlMotion()) {
+                        return;
+                    }
+                }
+            }
+            // timer use
+            if (!use && timer.tryFire(level)) {
+                use = true;
+            }
+            if (use) {
+                ACPostTasks.addPostTransactionAction((s) -> {
+                    sendCustomUseFireworkPacket(pitch, yaw);
+                });
+            }
+        }
     }
 
     @Override
@@ -513,7 +677,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             final int idx = this.thisTickSwitchingIndex;
             switchSlotToArmor(idx);
             // ACPostTasks.addPostTransactionAction((s)-> );
-            Debug.info("Post", mc.player.getEquippedStack(EquipmentSlot.CHEST));
             if (canContinueGliding()) {
                 // mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player,
                 // ClientCommandC2SPacket.Mode.START_FALL_FLYING));
@@ -531,6 +694,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         //        if(canContinueArmorGliding()){
         //            flushRockets();
         //        }
+
         return true;
     }
     // todo: Elytra Control
@@ -556,4 +720,36 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
+
+    public static enum MotionMode implements ConfigEnum {
+        VOID,
+        FIRE_WORKS;
+
+        @Override
+        public Text getDisplay() {
+            return Text.translatable("configenum.motion-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    public static class FireworkTimer {
+        int lastTimeFire = 0;
+        IntRef fireTicks;
+
+        public FireworkTimer(IntRef fireTicks) {
+            this.fireTicks = fireTicks;
+        }
+
+        public boolean tryFire(int level) {
+            if (lastTimeFire + fireTicks.get() * level < Tasks.getTick()) {
+                lastTimeFire = Tasks.getTick();
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        public void fire(int level) {
+            lastTimeFire = Tasks.getTick();
+        }
+    }
 }

@@ -79,6 +79,7 @@
 		"defaultRequire": 1
 	},
 	"mixins": [
+		"access.FireworkRocketEntityMixin",
 		"events.EntityTypeEvents",
 		"events.PlayerEntityEvents",
 		"fix.EnchantmentLevelFixMixin",
