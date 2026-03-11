@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.managers.Configs;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.ClientUtils;
@@ -36,9 +37,9 @@ public class SleepMode extends BaseModule {
 
     public SleepMode() {}
 
-    public static final String[] END_SLEEP_KEY = {"hotkeys", "wake-up-screen"};
+    public static final String[] END_SLEEP_KEY = {"render", "wake-up-screen"};
 
-    public final KeyBindRef keyBindRef = hotkey(END_SLEEP_KEY)
+    public final KeyBindRef keyBindRef = hotkey(Configs.RENDER_CONFIG, END_SLEEP_KEY)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_F11))
             .registerHotkey(SimpleHotKey.InputHandler.EMPTY)
             .build();

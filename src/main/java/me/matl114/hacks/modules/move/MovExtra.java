@@ -21,7 +21,7 @@ public class MovExtra extends BaseModule {
     public static final String[] MOVE_DISABLE_SETBACK_VELOCITY_RESET = {"move-safety", "disable-setback-velocity-reset"
     };
 
-    public static final String[] FLIGTH_HOTKEY = {"hotkeys", "toggle-flying"};
+    public static final String[] FLIGTH_HOTKEY = {"move-safety", "flight", "toggle-flying"};
 
     public MovExtra() {}
 
@@ -31,7 +31,7 @@ public class MovExtra extends BaseModule {
     public final FlagRef noVelocitySetback =
             flagBuilder(Configs.MOV_CONFIG, MOVE_DISABLE_SETBACK_VELOCITY_RESET).build();
 
-    public final KeyBindRef toggleFlyStateKeyBind = hotkey(FLIGTH_HOTKEY)
+    public final KeyBindRef toggleFlyStateKeyBind = hotkey(Configs.MOV_CONFIG, FLIGTH_HOTKEY)
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onFlightToggle))
             .build();

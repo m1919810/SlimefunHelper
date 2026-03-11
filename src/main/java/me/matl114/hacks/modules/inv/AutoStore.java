@@ -6,6 +6,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
@@ -23,7 +24,7 @@ public class AutoStore extends BaseModule {
     public AutoStore() {}
 
     public static final String[] AUTO_STORE = {"button-toggle", "auto-store"};
-    public final FlagRef enable = toggle(AUTO_STORE).build();
+    public final FlagRef enable = flagBuilder(Configs.TOGGLE_CONFIG, AUTO_STORE).build();
 
     @Override
     public void registerAll() {

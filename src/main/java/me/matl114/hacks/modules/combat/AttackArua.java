@@ -19,7 +19,8 @@ public class AttackArua extends BaseModule {
     public static final String[] DO_INTERVEL_WEAPON = {"att-bot", "respect-cooldown", "weapon"};
     public static final String[] DO_INTERVEL_HAND = {"att-bot", "respect-cooldown", "hand"};
 
-    public static final String[] AUTO_ATTACK = {"hotkeys-toggle", "auto-att"};
+    public static final String[] AUTO_ATTACK = {"att-bot", "auto-att"};
+    public static final String[] AUTO_ATTACK_HOTKEY = {"att-bot", "auto-att-hotkey"};
     public static final String[] ONCE_MAX = {"att-bot", "max-at-once"};
 
     public static final String[] CUSTOM_ATTACKING_RATE = {"att-bot", "auto-att-rate"};
@@ -28,11 +29,14 @@ public class AttackArua extends BaseModule {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = toggle(AUTO_ATTACK).build();
+    public final FlagRef enable =
+            flagBuilder(Configs.COMBAT_CONFIG, AUTO_ATTACK).build();
 
     public final KeyBindRef hotkey = toggleHotkey(
-                    AUTO_ATTACK,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_APOSTROPHE))
+                    Configs.COMBAT_CONFIG,
+                    AUTO_ATTACK_HOTKEY,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_APOSTROPHE),
+                    AUTO_ATTACK)
             .build();
 
     public final IntRef maxTargetPerTick = builder(Configs.COMBAT_CONFIG, ONCE_MAX, Integer.class)

@@ -29,7 +29,7 @@ public class ChatScreenTextFieldWidget extends TextFieldWidget {
     }
 
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        if (ChatTasks.getChatExtra().obfLogin.get()) {
+        if (ChatTasks.getChatTools().obfLogin.get()) {
             if (!ChatTasks.getChatExtra().onChatObfRender(this, context, mouseX, mouseY, deltaTicks)) {
                 super.renderWidget(context, mouseX, mouseY, deltaTicks);
             }

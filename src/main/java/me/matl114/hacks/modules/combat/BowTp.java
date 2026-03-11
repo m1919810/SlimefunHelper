@@ -42,13 +42,17 @@ public class BowTp extends BaseModule {
     public static final String[] TARGETING_DISTANCE = {"bow-att", "bowtp-target-distance"};
     public static final String[] RENDER_TARGET = {"bow-att", "bowtp-render-target"};
     public static final String[] DELTA_Y = {"bow-att", "bowtp-start-delta-y"};
-    public static final String[] HOTKEY_TOGGLE = {"hotkeys-toggle", "bowtp-attack"};
+    public static final String[] ENABLE = {"bow-att", "bowtp-enable"};
+
+    public static final String[] ENABLE_HOTKEY = {"bow-att", "bowtp-enable-hotkey"};
 
     public BowTp() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = toggle(HOTKEY_TOGGLE).build();
+    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, ENABLE).build();
+    public KeyBindRef keyBind = toggleHotkey(Configs.COMBAT_CONFIG, ENABLE_HOTKEY, new MultiKeyBind(), ENABLE)
+            .build();
 
     public DoubleRef tpDistance = builder(Configs.COMBAT_CONFIG, TP_ACCELERATE, DoubleRef.TYPE)
             .defaultValue(80.0D)
@@ -64,8 +68,6 @@ public class BowTp extends BaseModule {
             .defaultValue(0.0D)
             .validator(Configs.doubleRange(-1e-7, 100))
             .build();
-
-    public KeyBindRef keyBind = toggleHotkey(HOTKEY_TOGGLE, new MultiKeyBind()).build();
 
     @Override
     public void registerAll() {

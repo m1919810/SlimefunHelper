@@ -18,20 +18,20 @@ import org.jetbrains.annotations.ApiStatus;
 public class ForwardTp extends BaseModule {
     public static final String[] MOV_MAX_DISTANCE = {"quick-move", "max-distance"};
     public static final String[] QUICK_MOVE_IGNORE_COLLISION = {"quick-move", "ignore-move-collision"};
-    public static final String[] MOVE_FRONT = {"hotkeys", "quick-move"};
-    public static final String[] MOVE_WALL = {"hotkeys", "quick-to-wall"};
+    public static final String[] MOVE_FRONT = {"quick-move", "quick-move"};
+    public static final String[] MOVE_WALL = {"quick-move", "quick-to-wall"};
 
     @ApiStatus.Experimental
     public static final String[] MOVE_LEFT = {"hotkeys", "quick-vclip"};
 
     public ForwardTp() {}
 
-    public final KeyBindRef frontKey = hotkey(MOVE_FRONT)
+    public final KeyBindRef frontKey = hotkey(Configs.MOV_CONFIG, MOVE_FRONT)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_W, KeyCode.KEY_GRAVE_ACCENT))
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::quickMovFront))
             .build();
 
-    public final KeyBindRef wallKey = hotkey(MOVE_WALL)
+    public final KeyBindRef wallKey = hotkey(Configs.MOV_CONFIG, MOVE_WALL)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_W, KeyCode.KEY_F1))
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::quickMovTowardsWall))
             .build();

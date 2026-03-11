@@ -28,13 +28,14 @@ import net.minecraft.util.math.Vec3d;
 
 public class CreativeFlight extends BaseModule implements LegalMovementManager.MovementModifier {
     private static LegalMovementManager.DelegateMovementModifier instance;
-    public static final String[] TOGGLE_FLIGHT = {"hotkeys-toggle", "toggle-flight"};
+    public static final String[] FLIGHT = {"move-safety", "flight", "flight-enable"};
+    public static final String[] TOGGLE_FLIGHT = {"move-safety", "flight", "flight-enable-hotkey"};
     public static final String[] MOVE_FLIGHT_ANTIKICK = {"move-safety", "flight", "antikick"};
     public static final String[] MOVE_FLIGHT_SAFETY_1 = {"move-safety", "flight", "fake-1"};
     public static final String[] MOVE_SPEED_OVERRIDE_FLY = {"move-speed", "fly-speed-override"};
     public static final String[] MOVE_SPEED_FLY_VAL_CREATIVE = {"move-speed", "fly-speed-creative"};
     public static final String[] MOVE_SPEED_FLY_VAL = {"move-speed", "fly-speed"};
-    public static final String[] MOVE_SPEED_OVERRIDE_TASK = {"hotkeys", "toggle-flight-speed"};
+    public static final String[] MOVE_SPEED_OVERRIDE_TASK = {"move-speed", "toggle-flight-speed"};
     public static final String[] MOVE_SPEED_WALK_VAL = {"move-speed", "walk-speed"};
     public static final String[] MOVE_SPEED_OVERRIDE_WALK = {"move-speed", "walk-speed-override"};
     public static final String[] ON_GROUND_WHEN_MINE = {"move-safety", "flight", "onground-when-mine"};
@@ -48,10 +49,14 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         instance.setDelegate(this::cast);
     }
 
-    public final FlagRef canFly = toggle(TOGGLE_FLIGHT).defaultValue(false).build();
+    public final FlagRef canFly =
+            flagBuilder(Configs.MOV_CONFIG, FLIGHT).defaultValue(false).build();
 
     public final KeyBindRef keybind = toggleHotkey(
-                    TOGGLE_FLIGHT, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_F))
+                    Configs.MOV_CONFIG,
+                    TOGGLE_FLIGHT,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_F),
+                    FLIGHT)
             .build();
 
     public final FlagRef doAntiKick = builder(Configs.MOV_CONFIG, Boolean.class)
@@ -73,7 +78,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             .defaultValue(0.4)
             .build();
 
-    public final KeyBindRef overridingSpeedKeybind = hotkey(MOVE_SPEED_OVERRIDE_TASK)
+    public final KeyBindRef overridingSpeedKeybind = hotkey(Configs.MOV_CONFIG, MOVE_SPEED_OVERRIDE_TASK)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_LEFT_BRACKET))
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleSpeed))
             .build();
@@ -91,8 +96,8 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public final FlagRef onGroundWhenMine =
             flagBuilder(Configs.MOV_CONFIG, ON_GROUND_WHEN_MINE).build();
 
-    public final FlagRef fake1 =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_FLIGHT_SAFETY_1).build();
+    //    public final FlagRef fake1 =
+    //            flagBuilder(Configs.MOV_CONFIG, MOVE_FLIGHT_SAFETY_1).build();
 
     public boolean serverSideCanFly = false;
 

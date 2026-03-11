@@ -12,6 +12,7 @@ import me.matl114.managers.config.Config;
 import me.matl114.managers.config.StringRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CollectionUtils;
+import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.PropertyTracker;
 import me.matl114.utils.containers.ArgsMap;
@@ -146,17 +147,18 @@ public class ConfigureListWidget
     protected static List<Pair<String, Map<String, AttrKeyValue<?>>>> getConfigIndexes(Config config) {
         Map<String, Map<String, AttrKeyValue<?>>> originValueWithIndex = new LinkedHashMap<>();
 
-        for (var path : config.getPaths()) {
+        for (var path : config.getVisiblePaths()) {
             // todo: can we generate the widget by Ref, not attrKeyValue
-            if (ChatUtils.hasTranslation(path)) {
-                String[] cut = Config.cutToPath(path);
-                AttrKeyValue<?> keyValue = AttrKeyValue.ofConfigValue(path, config.get(cut));
-                // assert not empty
-                String index = cut[0];
-                originValueWithIndex
-                        .computeIfAbsent(index, (k) -> new LinkedHashMap<>())
-                        .put(path, keyValue);
+            if (!ChatUtils.hasTranslation(path)) {
+                Debug.info("Missing translation key for", path);
             }
+            String[] cut = Config.cutToPath(path);
+            AttrKeyValue<?> keyValue = AttrKeyValue.ofConfigValue(path, config.get(cut));
+            // assert not empty
+            String index = cut[0];
+            originValueWithIndex
+                    .computeIfAbsent(index, (k) -> new LinkedHashMap<>())
+                    .put(path, keyValue);
         }
         return originValueWithIndex.entrySet().stream()
                 .map(CollectionUtils::entryToPair)
