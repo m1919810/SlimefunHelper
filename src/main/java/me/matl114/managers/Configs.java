@@ -100,6 +100,15 @@ public class Configs {
         }
     }
 
+    public enum AutoInvMode implements ConfigEnum {
+        LAZY,
+        TICK;
+
+        public Text getDisplay() {
+            return Text.translatable("configenum.auto-inv-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
+    }
+
     static {
         // load Enums
 

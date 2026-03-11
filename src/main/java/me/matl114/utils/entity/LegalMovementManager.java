@@ -60,7 +60,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         this.playerPostHackStatus = new EntityMovementStatus<>(args);
     }
 
-    public void postInputTick() {
+    public void postInputTick(ClientPlayerEntity player) {
         if (this.playerStatus == null) {
             // illegal status
             return;
@@ -68,6 +68,27 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         for (var hack : this.currentTickEnableHacks) {
             hack.applyAfterInputTick(movementManagerEvent);
+        }
+    }
+
+    public boolean preTravelTick(ClientPlayerEntity args) {
+        if (this.playerStatus == null) {
+            return true;
+        }
+        Event<LegalMovementManager> movementManagerEvent = new Event<>(this, true, false);
+        for (var hack : this.currentTickEnableHacks) {
+            hack.applyBeforeTravelTick(movementManagerEvent);
+        }
+        return !movementManagerEvent.isCancelled();
+    }
+
+    public void postTravelTick(ClientPlayerEntity args) {
+        if (this.playerStatus == null) {
+            return;
+        }
+        Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
+        for (var hack : this.currentTickEnableHacks) {
+            hack.applyAfterTravelTick(movementManagerEvent);
         }
     }
 
@@ -222,6 +243,10 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
 
         default void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {}
 
+        default void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent) {}
+
+        default void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent) {}
+
         default void applyBeforeInputPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
 
         default void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
@@ -295,6 +320,14 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         @Override
         public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
             delegate.get().applyAfterInputTick(movementManagerEvent);
+        }
+
+        public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().applyBeforeTravelTick(movementManagerEvent);
+        }
+
+        public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().applyAfterTravelTick(movementManagerEvent);
         }
 
         @Override
@@ -396,6 +429,18 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
             for (var re : pipeline) {
                 re.applyAfterInputTick(movementManagerEvent);
+            }
+        }
+
+        public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent) {
+            for (var re : pipeline) {
+                re.applyBeforeTravelTick(movementManagerEvent);
+            }
+        }
+
+        public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent) {
+            for (var re : pipeline) {
+                re.applyAfterTravelTick(movementManagerEvent);
             }
         }
 

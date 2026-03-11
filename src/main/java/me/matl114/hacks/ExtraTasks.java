@@ -10,7 +10,9 @@ import me.matl114.utils.Debug;
 public class ExtraTasks {
     public static void init() {}
 
+    @Getter
     public static final ModuleGroup moduleManager = new ModuleGroup("Extra");
+
     public static boolean DEBUG_INTO_CHAT = true;
 
     public static void debug(Object... val) {
