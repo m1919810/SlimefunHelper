@@ -55,8 +55,6 @@ public class ChatExtra extends BaseModule {
 
     public static final String[] DO_NOT_SEND_EMPTY_MESSAGE = {"chat-helper", "dont-send-empty-message"};
 
-    public static final String[] OBF_LOGIN = {"chat-helper", "obf-login-message"};
-
     public static final String[] TAB_FIX = {"chat-helper", "enable-tab-fix"};
 
     public final FlagRef noChathudInputLimit =
@@ -104,8 +102,6 @@ public class ChatExtra extends BaseModule {
 
     public final FlagRef doNotSendEmptyMessage =
             flagBuilder(Configs.CHAT_CONFIG, DO_NOT_SEND_EMPTY_MESSAGE).build();
-
-    public final FlagRef obfLogin = flagBuilder(Configs.CHAT_CONFIG, OBF_LOGIN).build();
 
     public final FlagRef tabFix = flagBuilder(Configs.CHAT_CONFIG, TAB_FIX).build();
 
@@ -161,8 +157,9 @@ public class ChatExtra extends BaseModule {
         return sent;
     }
 
-    private static final String[] PASSWORD_ENCRYPT = {"simple-toggle", "password-encrypt"};
-    public final FlagRef encryptPass = toggle(PASSWORD_ENCRYPT).build();
+    private static final String[] PASSWORD_ENCRYPT = {"chat-screen-tools", "password-encrypt"};
+    public final FlagRef encryptPass =
+            flagBuilder(Configs.CHAT_CONFIG, PASSWORD_ENCRYPT).build();
 
     // add chat screen extra things
     public void onChatScreenInitialized(Event<Screen> screenEvent) {

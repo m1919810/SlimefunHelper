@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.inv;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.managers.Configs;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
@@ -20,9 +21,9 @@ public class PickItem extends BaseModule {
 
     public PickItem() {}
 
-    public static final String[] PICK_ITEM = {"hotkeys", "pick-item"};
+    public static final String[] PICK_ITEM = {"inventory", "pick-item"};
 
-    public final KeyBindRef pickItemHotkey = hotkey(PICK_ITEM)
+    public final KeyBindRef pickItemHotkey = hotkey(Configs.INV_CONFIG, PICK_ITEM)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.MOUSE_BUTTON_3))
             .registerHotkey(HotKeyUtils.asHandler(this::onPickItem))
             .build();

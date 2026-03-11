@@ -33,9 +33,8 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class ProjectileEnhance extends BaseModule {
-    public static final String TOGGLE_AUTO_AIM = "bow-aim";
-    public static final String[] BOW_ENHANCE = {"hotkeys-toggle", "bow-aim"};
-
+    public static final String[] BOW_ENHANCE = {"bow-att", "bow-enhance"};
+    public static final String[] BOW_ENHANCE_HOTKEY = {"bow-att", "bow-enhance-hotkey"};
     public static final String[] BOW_AIM = {"projectile", "aim-enable"};
 
     public static final String[] BOW_TP = {"projectile", "tp-enable"};
@@ -53,9 +52,13 @@ public class ProjectileEnhance extends BaseModule {
     public ProjectileEnhance() {}
 
     // we share the flag with BowEnhance, that's ok
-    public FlagRef enable = toggle(BOW_ENHANCE).build();
+    public FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, BOW_ENHANCE).build();
 
-    public KeyBindRef hotkey = toggleHotkey(BOW_ENHANCE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_H))
+    public KeyBindRef hotkey = toggleHotkey(
+                    Configs.COMBAT_CONFIG,
+                    BOW_ENHANCE_HOTKEY,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_H),
+                    BOW_ENHANCE)
             .build();
 
     public FlagRef enableAim = flagBuilder(Configs.COMBAT_CONFIG, BOW_AIM).build();

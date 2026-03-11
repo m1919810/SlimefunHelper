@@ -22,16 +22,21 @@ public class PacketMine extends BaseModule {
     public static final String[] MINE_ONEBLOCK_PACKET_MULTIPLE = {"mine-oneblock", "multiple-packets"};
     public static final String[] MINE_ONEBLOCK_PACKET_LAZY = {"mine-oneblock", "lazy-mode"};
     public static final String[] MINE_ONEBLOCK_PACKET_PICKAXE = {"mine-oneblock", "auto-pickaxe"};
-    public static final String[] MINE_ONEBLOCK_HOTKEY = {"hotkeys-toggle", "mine-oneblock"};
+    public static final String[] MINE_ONEBLOCK = {"mine-oneblock", "mine-oneblock"};
+    public static final String[] MINE_ONEBLOCK_HOTKEY = {"mine-oneblock", "mine-oneblock-hotkey"};
 
     public PacketMine() {
         bindFlag(autoEnable);
     }
 
-    public final FlagRef autoEnable = toggle(MINE_ONEBLOCK_HOTKEY).build();
+    public final FlagRef autoEnable =
+            flagBuilder(Configs.MINE_CONFIG, MINE_ONEBLOCK).build();
 
     public final KeyBindRef hotkey = toggleHotkey(
-                    MINE_ONEBLOCK_HOTKEY, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_O))
+                    Configs.MINE_CONFIG,
+                    MINE_ONEBLOCK_HOTKEY,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_O),
+                    MINE_ONEBLOCK)
             .build();
 
     public final IntRef multiplePackets = builder(Configs.MINE_CONFIG, Integer.class)

@@ -53,23 +53,31 @@ public class Tests extends BaseModule {
             .defaultValue(461)
             .build();
 
-    public final KeyBindRef key1 = toggleHotkey(
-                    TEST_TOGGLE_1, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_1))
+    public final KeyBindRef key1 = toggleConfigHotkey(
+                    Configs.TOGGLE_CONFIG,
+                    TEST_TOGGLE_1,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_1))
             .build();
 
-    public final KeyBindRef key2 = toggleHotkey(
-                    TEST_TOGGLE_2, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_2))
+    public final KeyBindRef key2 = toggleConfigHotkey(
+                    Configs.TOGGLE_CONFIG,
+                    TEST_TOGGLE_2,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_2))
             .build();
 
-    public final KeyBindRef key3 = toggleHotkey(
-                    TEST_TOGGLE_3, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_3))
+    public final KeyBindRef key3 = toggleConfigHotkey(
+                    Configs.TOGGLE_CONFIG,
+                    TEST_TOGGLE_3,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_3))
             .build();
 
-    public final KeyBindRef key4 = toggleHotkey(
-                    TEST_TOGGLE_4, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_4))
+    public final KeyBindRef key4 = toggleConfigHotkey(
+                    Configs.TOGGLE_CONFIG,
+                    TEST_TOGGLE_4,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_4))
             .build();
 
-    private final KeyBindRef testKeyBind = hotkey(TEST_HOTKEY)
+    private final KeyBindRef testKeyBind = hotkey(Configs.HOTKEY_CONFIG, TEST_HOTKEY)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T))
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::doTest))
             .build();

@@ -21,9 +21,9 @@ import net.minecraft.screen.slot.Slot;
 public class FastInv extends BaseModule {
     public static final String[] DO_SHIFT = {"fastinv", "apply-shift"};
     public static final String[] DO_DROP = {"fastinv", "apply-drop"};
-    public static final String[] DROP_HOTKEY = {"hotkeys", "fast-drop"};
-    public static final String[] QUICK_DROP_HOTKEY = {"hotkeys", "quick-drop"};
-    public static final String[] SHIFT_HOTKEY = {"hotkeys", "fast-mov"};
+    public static final String[] DROP_HOTKEY = {"fastinv", "fast-drop"};
+    public static final String[] QUICK_DROP_HOTKEY = {"fastinv", "quick-drop"};
+    public static final String[] SHIFT_HOTKEY = {"fastinv", "fast-mov"};
     public static final String[] FAST_INV = {"button-toggle", "fast-inv"};
     public static final String[] LEFT_ONE = {"button-toggle", "left-one"};
 
@@ -31,26 +31,29 @@ public class FastInv extends BaseModule {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = toggle(FAST_INV).build();
+    public final FlagRef enable = flagBuilder(Configs.TOGGLE_CONFIG, FAST_INV).build();
 
-    public final FlagRef enableLeftOne = toggle(LEFT_ONE).build();
+    public final FlagRef enableLeftOne =
+            flagBuilder(Configs.TOGGLE_CONFIG, LEFT_ONE).build();
 
     public final FlagRef enableDrop = flagBuilder(Configs.INV_CONFIG, DO_DROP).build();
 
     public final FlagRef enableShift = flagBuilder(Configs.INV_CONFIG, DO_SHIFT).build();
 
-    public final KeyBindRef shiftAction = hotkey(SHIFT_HOTKEY)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.MOUSE_BUTTON_1))
+    public final KeyBindRef shiftAction = hotkey(
+                    Configs.INV_CONFIG, SHIFT_HOTKEY, new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.MOUSE_BUTTON_1))
             .registerHotkey(HotKeyUtils.asHandler(this::onShiftAction))
             .build();
 
-    public final KeyBindRef dropAction = hotkey(DROP_HOTKEY)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q))
+    public final KeyBindRef dropAction = hotkey(
+                    Configs.INV_CONFIG, DROP_HOTKEY, new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q))
             .registerHotkey(HotKeyUtils.asHandler(this::onDropAction))
             .build();
 
-    public final KeyBindRef quickDropAction = hotkey(QUICK_DROP_HOTKEY)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q, KeyCode.MOUSE_BUTTON_1))
+    public final KeyBindRef quickDropAction = hotkey(
+                    Configs.INV_CONFIG,
+                    QUICK_DROP_HOTKEY,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q, KeyCode.MOUSE_BUTTON_1))
             .registerHotkey(HotKeyUtils.asHandler(this::onQuickDropAction))
             .build();
 

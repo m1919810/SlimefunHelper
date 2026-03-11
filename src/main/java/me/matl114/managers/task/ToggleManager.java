@@ -7,7 +7,6 @@ import java.util.Map;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.Refs;
 import me.matl114.utils.Debug;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
@@ -107,7 +106,16 @@ public interface ToggleManager extends TaskManager {
 
     public static FlagRef getToggleFlag(String value, boolean defaultValue) {
         String[] path = Config.cutToPath(value);
-        FlagRef defaultVal = (FlagRef) Refs.wrapInstance(defaultValue);
-        return (FlagRef) Configs.TOGGLE_CONFIG.getOrCreate(defaultVal, path);
+        FlagRef toggle = Configs.TOGGLE_CONFIG.getBoolean(path);
+        if (toggle == null) {
+            Configs.TOGGLE_CONFIG
+                    .builder(Boolean.class)
+                    .path(path)
+                    .defaultValue(defaultValue)
+                    .build();
+            toggle = Configs.TOGGLE_CONFIG.getBoolean(path);
+            Preconditions.checkNotNull(toggle);
+        }
+        return toggle;
     }
 }

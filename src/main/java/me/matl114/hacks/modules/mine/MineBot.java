@@ -51,7 +51,8 @@ public class MineBot extends BaseModule {
     public static final String[] MINE_BOT_LEGAL_MODE = {"mine-bot", "legal-mode"};
     private static final String[] MINE_BOT_RIGHT_CLICK = {"mine-bot", "right-click"};
     public static final String[] MINE_BOT_DURABILITY_PROTECT = {"mine-bot", "durability-protect"};
-    public static final String[] MINEBOT_HOTKEYS = {"hotkeys-toggle", "mine-bot"};
+    public static final String[] MINEBOT = {"mine-bot", "mine-bot"};
+    public static final String[] MINEBOT_HOTKEYS = {"mine-bot", "mine-bot-hotkey"};
     // should initialize before the config
     public Set<Block> whiteListed = new HashSet<>();
     private final Random rand = new Random();
@@ -60,10 +61,13 @@ public class MineBot extends BaseModule {
         whiteListed = RegistryUtils.parseWhiteList(Registries.BLOCK, regex);
     }
 
-    public final FlagRef enable = toggle(MINEBOT_HOTKEYS).build();
+    public final FlagRef enable = flagBuilder(Configs.MINE_CONFIG, MINEBOT).build();
 
     public final KeyBindRef keyBind = toggleHotkey(
-                    MINEBOT_HOTKEYS, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_B))
+                    Configs.MINE_CONFIG,
+                    MINEBOT_HOTKEYS,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_B),
+                    MINEBOT)
             .build();
 
     public final IntRef minY = builder(Configs.MINE_CONFIG, Integer.class)
@@ -347,21 +351,6 @@ public class MineBot extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getGameTick(), this::onTick);
-    }
-
-    public int a = 1;
-
-    {
-        boolean save = false;
-        // add version compat
-        if (Configs.MINE_CONFIG.contains(MINE_BOT_DOWN_PRIORITY)) {
-            FlagRef ref = Configs.MINE_CONFIG.getBoolean(MINE_BOT_DOWN_PRIORITY);
-            Configs.MINE_CONFIG.setValue(null, MINE_BOT_DOWN_PRIORITY);
-            save = true;
-            if (ref != null && ref.get()) {
-                mineBotMode.set(MineBotMode.LAYERED_UP);
-            }
-        }
     }
 
     public static enum MineBotMode implements ConfigEnum {

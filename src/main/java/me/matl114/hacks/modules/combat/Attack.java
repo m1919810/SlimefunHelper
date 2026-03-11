@@ -56,17 +56,21 @@ public class Attack extends BaseModule {
     public static final String[] COMBAT_EXACT_ATTACK = {"att-bot", "exact-tp"};
     public static final String[] COMBAT_LEGAL_TARGETTING = {"att-bot", "legal-targeting"};
     public static final String[] COMBAT_CRITIC = {"att-bot", "critic"};
-    public static final String[] HOTKEY_ATTACK = {"hotkeys-toggle", "always-att"};
+    public static final String[] ATTACK = {"att-bot", "always-att"};
+    public static final String[] HOTKEY_ATTACK = {"att-bot", "always-att-hotkey"};
     public static final String[] COMBAT_RENDER_TARGET = {"att-bot", "render-target"};
 
     public Attack() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = toggle(HOTKEY_ATTACK).build();
+    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, ATTACK).build();
 
     public final KeyBindRef hotkey = toggleHotkey(
-                    HOTKEY_ATTACK, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_K))
+                    Configs.COMBAT_CONFIG,
+                    HOTKEY_ATTACK,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_K),
+                    ATTACK)
             .build();
 
     public final FlagRef legalMode =

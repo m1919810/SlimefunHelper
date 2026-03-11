@@ -24,12 +24,12 @@ import net.minecraft.util.shape.VoxelShape;
 import org.joml.Vector2i;
 
 public class MineExtra extends BaseModule {
-    public static final String[] QUICK_MINE_HOTKEY = {"hotkeys-toggle", "quick-mine"};
+    public static final String[] QUICK_MINE = {"fast-break", "quick-mine"};
+    public static final String[] QUICK_MINE_HOTKEY = {"fast-break", "quick-mine-hotkey"};
     //    public static final String[] MINE_REACH_HOTKEY = {"hotkeys-toggle", "reach"};
     public static final String[] MINE_ENABLE_FAKE_INSTANT_BREAK = {"fast-break", "use-fake-instant-break"};
 
     public static final String[] MINE_BYPASS_FAST_BREAK_BYPASS_MODE = {"fast-break", "bypass-mode"};
-    public static final String[] REACH_TOGGLE = {"hotkeys-toggle", "reach"};
 
     public static final String[] MINE_FASTBREAK_THRESHOLD = {"fast-break", "break-threshold"};
     public static final String[] MINE_FASTBREAK_BREAKCOOLDOWN = {"fast-break", "break-cooldown"};
@@ -92,10 +92,14 @@ public class MineExtra extends BaseModule {
         }
     }
 
-    public final FlagRef quickMine = toggle(QUICK_MINE_HOTKEY).build();
+    public final FlagRef quickMine =
+            flagBuilder(Configs.MINE_CONFIG, QUICK_MINE).build();
 
     public final KeyBindRef quickMineKeyBind = toggleHotkey(
-                    QUICK_MINE_HOTKEY, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_M))
+                    Configs.MINE_CONFIG,
+                    QUICK_MINE_HOTKEY,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_M),
+                    QUICK_MINE)
             .build();
 
     public final FlagRef fakeInstaBreak = builder(Configs.MINE_CONFIG, Boolean.class)
@@ -126,11 +130,11 @@ public class MineExtra extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final FlagRef enableReach = toggle(REACH_TOGGLE).showConfig().build();
-
-    public final KeyBindRef reachKeybind = toggleHotkey(
-                    REACH_TOGGLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_R))
-            .build();
+    //    public final FlagRef enableReach = toggle(REACH_TOGGLE).showConfig().build();
+    //
+    //    public final KeyBindRef reachKeybind = toggleHotkey(
+    //                    REACH_TOGGLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_R))
+    //            .build();
 
     public final DoubleRef reachDistance = builder(Configs.MINE_CONFIG, Double.class)
             .path(MINE_FASTBREAK_REACH)

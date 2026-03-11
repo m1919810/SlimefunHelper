@@ -172,23 +172,34 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
         return builder(config, Boolean.class).path(path).defaultValue(false);
     }
 
-    public WrapperSettingBuilder<MultiKeyBind> hotkey(String... path) {
-        return builder(Configs.HOTKEY_CONFIG, MultiKeyBind.class).path(path);
+    public WrapperSettingBuilder<MultiKeyBind> hotkey(Config config, String... path) {
+        return builder(config, MultiKeyBind.class).path(path);
+    }
+
+    public WrapperSettingBuilder<MultiKeyBind> hotkey(Config config, String[] path, MultiKeyBind defaultValue) {
+        return builder(config, MultiKeyBind.class).path(path).defaultValue(defaultValue);
     }
     // todo: reconstruct
-    public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(String[] path, MultiKeyBind defaultValue) {
-        return builder(Configs.HOTKEY_CONFIG, MultiKeyBind.class)
+    public WrapperSettingBuilder<MultiKeyBind> toggleConfigHotkey(
+            Config config, String[] path, MultiKeyBind defaultValue) {
+        return builder(config, MultiKeyBind.class)
                 .path(path)
                 .defaultValue(defaultValue)
                 .registerHotkey(TaskManagers.getToggleHandler(path));
     }
 
-    public WrapperSettingBuilder<Boolean> toggle(String... path) {
-        // automatically hide toggle flags because they are always internal,
-        return builder(Configs.TOGGLE_CONFIG, Boolean.class)
+    public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(
+            Config config, String[] path, MultiKeyBind defaultValue, String[] togglePath) {
+
+        return builder(config, MultiKeyBind.class)
                 .path(path)
-                .defaultValue(false)
-                .hideConfig();
+                .defaultValue(defaultValue)
+                .registerHotkey(TaskManagers.getToggleHandler(config, togglePath));
+    }
+
+    public WrapperSettingBuilder<Boolean> toggle(Config config, String... path) {
+        // automatically hide toggle flags because they are always internal,
+        return builder(config, Boolean.class).path(path).defaultValue(false).hideConfig();
     }
 
     public <T extends Ref<?>> T registerConfig(T ref) {

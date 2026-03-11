@@ -35,6 +35,7 @@ public class ChatTools extends BaseModule {
     public static final String[] SPECIALCHARS = {"chat-screen-tools", "quick-chars"};
 
     public static final String[] CACHE = {"chat-screen-tools", "cached"};
+    public static final String[] OBF_LOGIN = {"chat-screen-tools", "obf-login-message"};
 
     public static final String[] CHAT_HELPER_PERIOD = {"chat-screen-tools", "auto-chat-period"};
     public static final String[] CHAT_HELPER_MULTIPLE = {"chat-screen-tools", "auto-chat-multiple"};
@@ -63,7 +64,7 @@ public class ChatTools extends BaseModule {
     public final StringRef chatCache =
             builder(Configs.CHAT_CONFIG, CACHE, String.class).defaultValue("").build();
 
-    public final FlagRef autoSend = toggle(AUTO_SEND).build();
+    public final FlagRef autoSend = toggle(Configs.TOGGLE_CONFIG, AUTO_SEND).build();
 
     public final IntRef period = builder(Configs.CHAT_CONFIG, Integer.class)
             .path(CHAT_HELPER_PERIOD)
@@ -75,7 +76,10 @@ public class ChatTools extends BaseModule {
             .defaultValue(1)
             .build();
 
-    public final FlagRef keepChatInv = toggle(KEEP_CHAT_INV).build();
+    public final FlagRef keepChatInv =
+            toggle(Configs.TOGGLE_CONFIG, KEEP_CHAT_INV).build();
+
+    public final FlagRef obfLogin = flagBuilder(Configs.CHAT_CONFIG, OBF_LOGIN).build();
 
     @Override
     public void onDisableModule() {

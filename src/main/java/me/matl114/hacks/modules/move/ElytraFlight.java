@@ -8,6 +8,8 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
@@ -17,6 +19,10 @@ import net.minecraft.util.math.Vec3d;
 
 public class ElytraFlight extends BaseModule implements LegalMovementManager.MovementModifier {
     // public static final String[]
+
+    public static final String[] MOVE_ELYTRA_FLY = {"elytra", "simple-flight-control", "enable-control"};
+
+    public static final String[] MOVE_ELYTRA_FLY_HOTKEY = {"elytra", "simple-flight-control", "enable-control-hotkey"};
 
     public static final String[] MOVE_ELYTRA_MOTION_CONTROL = {"elytra", "simple-flight-control", "enable-motion"};
 
@@ -33,6 +39,12 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public static final String[] ELYTRA_NO_FALL_WHEN_CONTROL = {
         "elytra", "simple-flight-control", "no-fall-when-landing"
     };
+
+    public FlagRef enable = flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_FLY).build();
+
+    public KeyBindRef hotkey = toggleHotkey(
+                    Configs.MOV_CONFIG, MOVE_ELYTRA_FLY_HOTKEY, new MultiKeyBind(), MOVE_ELYTRA_FLY)
+            .build();
 
     public final DoubleRef packetMotion = builder(Configs.MOV_CONFIG, ELYTRA_PACKET_MOTION_AMOUNT, DoubleRef.TYPE)
             .defaultValue(0.05)
@@ -68,6 +80,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             MovTasks.PLAYER_PIPELINE_ROT.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
+        bindFlag(enable);
     }
 
     @Override
@@ -77,7 +90,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     @Override
     public boolean mayModifyRotation() {
-        return motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS
+        return enable.get()
+                && motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS
                 && (simpleControlE.get()
                         || ((simpleControlM.get()
                                         && (mc.options.forwardKey.isPressed() != mc.options.backKey.isPressed()))
@@ -88,7 +102,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        if (player.isFallFlying()) {
+        if (player.isFallFlying() && enable.get()) {
             Vec3d controlMotion = new Vec3d(0, 0, 0);
             boolean shouldControl = false;
             double motionAmount = this.packetMotion.get();
@@ -185,7 +199,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        if (noFallLand.get()
+        if (enable.get()
+                && noFallLand.get()
                 && controllingTick
                 && !nextTickIsOnGroundTick
                 && player.isOnGround()

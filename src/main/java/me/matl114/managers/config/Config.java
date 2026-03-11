@@ -1,6 +1,7 @@
 package me.matl114.managers.config;
 
 import com.google.common.base.Preconditions;
+import com.mojang.serialization.Lifecycle;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -20,6 +21,10 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.config.AttrKeyValue;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.SimpleRegistry;
+import net.minecraft.registry.entry.RegistryEntryInfo;
+import net.minecraft.util.Identifier;
 import org.lwjgl.system.NonnullDefault;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -31,14 +36,27 @@ public class Config implements RefMap {
     // fixme: add schema and node structure
     protected Map<String, Object> fileMap;
     protected MapRef ref;
+    protected LinkedHashSet<String> buildOrder = new LinkedHashSet<>();
 
     @Getter
     private static final Set<Config> configs = new LinkedHashSet<>();
 
+    public static final SimpleRegistry<Config> REGISTRY = new SimpleRegistry<>(
+            RegistryKey.ofRegistry(Identifier.of("slimefunhelper", "configs")), Lifecycle.stable());
     private static final Set<Config> allConfigInternal = new LinkedHashSet<>();
+    RegistryKey<Config> registryKey;
 
     public void registerGlobal() {
         configs.add(this);
+        if (registryKey == null) {
+            RegistryKey<Config> registryKey = RegistryKey.of(
+                    REGISTRY.getKey(),
+                    Identifier.of(
+                            "slimefunhelper",
+                            configName.toLowerCase(Locale.ROOT).replace(" ", "_")));
+            this.registryKey = registryKey;
+            REGISTRY.add(this.registryKey, this, RegistryEntryInfo.DEFAULT);
+        }
     }
 
     public static void reloadAll() {
@@ -164,7 +182,7 @@ public class Config implements RefMap {
     //        return false;
     //    }
 
-    public boolean setValue(Object value, @Nonnull String... path) {
+    private boolean setValue(Object value, @Nonnull String... path) {
         Ref refo = Refs.wrapInstance(value);
         boolean update = this.setValue(refo, path);
         if (update) {
@@ -184,11 +202,8 @@ public class Config implements RefMap {
         }
         return re;
     }
-
-    public Config defaultVal(Object defaultValue, String... path) {
-        getOrCreate(Objects.requireNonNull(Refs.wrapInstance(defaultValue)), path);
-        return this;
-    }
+    // todo: remove all register method, only use builder
+    // todo: use LinkedHashSet to record builder's order, duplicate ignore, not in ignore
 
     public <T> Config validator(Predicate<T> validator, String... path) {
         Ref<T> ref = (Ref<T>) get(path);
@@ -197,7 +212,7 @@ public class Config implements RefMap {
     }
 
     @NonnullDefault
-    public Ref getOrCreate(Ref defaultValue, @Nonnull String... path) {
+    private Ref getOrCreate(Ref defaultValue, @Nonnull String... path) {
         Ref result = this.ref.getOrCreate(defaultValue, path);
         if (result != null) {
             result.setConfigReference(this);
@@ -268,8 +283,7 @@ public class Config implements RefMap {
         }
     }
 
-    @Override
-    public boolean setValue(Ref<?> value, String... path) {
+    private boolean setValue(Ref<?> value, String... path) {
         return this.ref.setValue(value, path);
     }
 
@@ -363,6 +377,10 @@ public class Config implements RefMap {
         return this.ref.getPaths();
     }
 
+    public Set<String> getVisiblePaths() {
+        return buildOrder;
+    }
+
     public static String[] cutToPath(String rawPath) {
         return rawPath.split("\\.");
     }
@@ -426,13 +444,14 @@ public class Config implements RefMap {
 
         public SettingBuilder<T> path(String... path) {
             this.path = path;
+            this.rootConfig.buildOrder.add(String.join(".", path));
             return this;
         }
 
         public SettingBuilder<T> defaultValue(T val) {
             this.defaultValue = Optional.ofNullable(val);
             var instance = Refs.wrapInstance(val);
-            ref = (Ref<T>) root.getOrCreate(instance, path);
+            ref = (Ref<T>) rootConfig.getOrCreate(instance, path);
             if (ref == instance) {
                 rootConfig.markForSave();
             }

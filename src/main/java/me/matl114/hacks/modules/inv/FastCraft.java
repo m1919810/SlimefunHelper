@@ -38,7 +38,8 @@ public class FastCraft extends BaseModule {
 
     public final FlagRef enable = flagBuilder(Configs.INV_CONFIG, FAST_CRAFT).build();
 
-    public final FlagRef dropCraft = toggle(TOGGLE_DROP_CRAFT).build();
+    public final FlagRef dropCraft =
+            flagBuilder(Configs.TOGGLE_CONFIG, TOGGLE_DROP_CRAFT).build();
 
     @Override
     public void registerAll() {

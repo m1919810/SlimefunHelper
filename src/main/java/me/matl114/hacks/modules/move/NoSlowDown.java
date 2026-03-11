@@ -46,8 +46,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public static final String[] NO_SLOW_DOWN_BLOCK_IN = {"move-speed", "no-slowdown", "when-in-block"};
     public static final String[] NO_SLOW_DOWN_BLOCK_SPECIAL = {"move-speed", "no-slowdown", "when-special-block"};
     public static final String[] FAKE_SNEAK = {"move-speed", "no-slowdown", "fake-sneak"};
+    public static final String[] FAKE_SNEAK_HOTKEY = {"move-speed", "no-slowdown", "fake-sneak-hotkey"};
     public static final String[] FAKE_SNEAK_MODE = {"move-speed", "no-slowdown", "fake-sneak-mode"};
-    public static final String[] FAKE_SNEAK_STATUS = {"hotkeys", "fake-sneak-status"};
+    public static final String[] FAKE_SNEAK_STATUS = {"move-speed", "fake-sneak-status"};
     public static final String[] FAKE_SNEAK_STATUS_MODE = {"move-speed", "no-slowdown", "fake-sneak-status-mode"};
 
     public static LegalMovementManager.DelegateMovementModifier instance;
@@ -97,12 +98,16 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public final FlagRef enableFakeSneak =
             flagBuilder(Configs.MOV_CONFIG, FAKE_SNEAK).build();
 
+    public final KeyBindRef keyBindRef = toggleHotkey(
+                    Configs.MOV_CONFIG, FAKE_SNEAK_HOTKEY, new MultiKeyBind(), FAKE_SNEAK)
+            .build();
+
     public final EnumRef<Configs.BypassMode> fakeSneakBypass = builder(
                     Configs.MOV_CONFIG, FAKE_SNEAK_MODE, Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
-    public final KeyBindRef fakeStatus = hotkey(FAKE_SNEAK_STATUS)
+    public final KeyBindRef fakeStatus = hotkey(Configs.MOV_CONFIG, FAKE_SNEAK_STATUS)
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onSneakStatus))
             .build();

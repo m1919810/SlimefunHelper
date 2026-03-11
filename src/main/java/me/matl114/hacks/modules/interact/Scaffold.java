@@ -37,7 +37,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.EmptyBlockView;
 
 public class Scaffold extends BaseModule {
-    public static final String[] SCAFFOLD_ENABLE = {"hotkeys-toggle", "scaffold"};
+    public static final String[] ENABLE = {"interact-scaffold", "scaffold"};
+    public static final String[] ENABLE_HOTKEY = {"interact-scaffold", "scaffold-hotkey"};
     public static final String[] INTERACT_SCAFFOLD_LEGAL = {"interact-scaffold", "legal-mode"};
     public static final String[] INTERACT_SCAFFOLD_TARGET_MODE = {"interact-scaffold", "legal-targeting"};
     public static final String[] INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE = {
@@ -48,10 +49,13 @@ public class Scaffold extends BaseModule {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = toggle(SCAFFOLD_ENABLE).build();
+    public final FlagRef enable = flagBuilder(Configs.INTERACT_CONFIG, ENABLE).build();
 
     public final KeyBindRef keyBind = toggleHotkey(
-                    SCAFFOLD_ENABLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_SEMICOLON))
+                    Configs.INTERACT_CONFIG,
+                    ENABLE_HOTKEY,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_SEMICOLON),
+                    ENABLE)
             .build();
 
     public final FlagRef legal =
