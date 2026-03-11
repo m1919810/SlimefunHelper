@@ -39,7 +39,7 @@ public class AutoTotem extends BaseModule {
         super.registerAll();
         registerListener(Listener.getGameTick(), this::onTick);
     }
-
+    // todo: add PreGameTick and PostGameTick
     public void onTick(Event<ClientPlayerEntity> ev) {
         var player = ev.context();
         if (enable.get()) {

@@ -4,12 +4,24 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.util.PlayerInput;
 
 public class PlayerInputUtils {
 
     public static Input of(PlayerInput input) {
         return new Input(input);
+    }
+
+    public static Input of(GameOptions options) {
+        return new Input(
+                options.forwardKey.isPressed(),
+                options.backKey.isPressed(),
+                options.leftKey.isPressed(),
+                options.rightKey.isPressed(),
+                options.jumpKey.isPressed(),
+                options.sneakKey.isPressed(),
+                options.sprintKey.isPressed());
     }
 
     @AllArgsConstructor
@@ -51,6 +63,10 @@ public class PlayerInputUtils {
 
         public int sidewaysSpeed() {
             return this.left == this.right ? 0 : (this.left ? 1 : -1);
+        }
+
+        public int upwardSpeed() {
+            return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
         }
     }
 }

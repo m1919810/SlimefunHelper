@@ -2169,6 +2169,9 @@ public class MovTasks {
     public static ElytraExtra elytraExtra;
 
     @Getter
+    public static ElytraFlight elytraFlight;
+
+    @Getter
     public static MovTest movTest;
 
     private static void initModules(ModuleManager m) {
@@ -2185,6 +2188,7 @@ public class MovTasks {
         moveTimer = new MoveTimer().register(m);
         stepHeight = new StepHeight().register(m);
         elytraExtra = new ElytraExtra().register(m);
+        elytraFlight = new ElytraFlight().register(m);
         movTest = new MovTest().register(m);
     }
 
