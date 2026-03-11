@@ -126,6 +126,7 @@ public class EnderEyeLog extends BaseModule {
                                                 int y = (int) Math.round(k * d + b);
                                                 Debug.chat("[EnderEye] ", ChatUtils.getDisplayedLocation(d, y));
                                             }
+                                            int findIdx = -1;
                                             filter:
                                             for (int d : i) {
                                                 int y = (int) Math.round(k * d + b);
@@ -139,10 +140,16 @@ public class EnderEyeLog extends BaseModule {
                                                     int minR = STRONGHOLD_DISTANCE_RANGES.getInt(idx);
                                                     int maxR = STRONGHOLD_DISTANCE_RANGES.getInt(idx + 1);
                                                     if (distanceSqrt >= minR && distanceSqrt <= maxR) {
-                                                        Debug.chat(
-                                                                "[EnderEye] Most probably at:",
-                                                                ChatUtils.getDisplayedLocation(d, y));
-                                                        break filter;
+                                                        if (findIdx == -1 || findIdx == idx) {
+                                                            findIdx = idx;
+                                                            Debug.chat(
+                                                                    "[EnderEye] Most probably at:",
+                                                                    ChatUtils.getDisplayedLocation(d, y),
+                                                                    ",In ring",
+                                                                    findIdx / 2 + 1);
+                                                        } else {
+                                                            break filter;
+                                                        }
                                                     }
                                                 }
                                             }

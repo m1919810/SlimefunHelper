@@ -209,7 +209,7 @@ public class ClientSideCommand extends BaseModule {
     private boolean handleClientSideGiveCommand(
             Map<String, ParsedArgument<ClientCommandSource, ?>> argsMap, String command) throws CommandSyntaxException {
         if (enableGive.get()) {
-            if (mc.player.isCreative()) {
+            if (mc.interactionManager.getCurrentGameMode().isCreative()) {
                 Debug.chat(Text.literal("尝试在客户端执行give指令").formatted(Formatting.GREEN));
                 ParsedArgument<ClientCommandSource, ?> entityArgument = argsMap.get("targets");
                 EntitySelector entitySelector = (EntitySelector) entityArgument.getResult();

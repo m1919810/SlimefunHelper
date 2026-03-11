@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.combat;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
@@ -11,7 +10,6 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -20,7 +18,6 @@ import net.minecraft.item.Items;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
 
 public class AutoTotem extends BaseModule {
     // todo: move to combat
@@ -32,9 +29,9 @@ public class AutoTotem extends BaseModule {
 
     public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, AUTO_TOTEM).build();
 
-    public final EnumRef<AutoInvMode> mode = builder(Configs.COMBAT_CONFIG, AutoInvMode.class)
+    public final EnumRef<Configs.AutoInvMode> mode = builder(Configs.COMBAT_CONFIG, Configs.AutoInvMode.class)
             .path(TOTEM_MODE)
-            .defaultValue(AutoInvMode.LAZY)
+            .defaultValue(Configs.AutoInvMode.LAZY)
             .build();
 
     @Override
@@ -48,7 +45,7 @@ public class AutoTotem extends BaseModule {
         if (enable.get()) {
             ScreenHandler handled = ClientPlayerAccess.of(player).getServerScreenHandler();
             int offHandSlot = handled != player.playerScreenHandler ? -1 : 40;
-            if (mode.get() == AutoInvMode.LAZY) {
+            if (mode.get() == Configs.AutoInvMode.LAZY) {
                 if (player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
 
                     List<Slot> slots = handled.slots;
@@ -60,7 +57,7 @@ public class AutoTotem extends BaseModule {
                         }
                     }
                 }
-            } else if (mode.get() == AutoInvMode.TICK) {
+            } else if (mode.get() == Configs.AutoInvMode.TICK) {
                 IntList totemList = new IntArrayList();
                 List<Slot> slots = handled.slots;
                 for (var i = 0; i < slots.size(); ++i) {
@@ -75,15 +72,6 @@ public class AutoTotem extends BaseModule {
                     InvTasks.clickSlotAsync(random, 40, SlotActionType.SWAP);
                 }
             }
-        }
-    }
-
-    public enum AutoInvMode implements ConfigEnum {
-        LAZY,
-        TICK;
-
-        public Text getDisplay() {
-            return Text.translatable("configenum.auto-inv-mode." + this.name().toLowerCase(Locale.ROOT));
         }
     }
 }

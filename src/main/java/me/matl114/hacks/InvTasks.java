@@ -330,15 +330,28 @@ public class InvTasks {
             return 0;
         }
     }
-    // from hotbars, backpack contents. offhand, equipments, craftingResult, craftingSlots
+    // from hotbars, backpack contents.  equipments (feet to head 36-39), offhand 40, (craftingResult 41, craftingSlots
+    // 42-45)
     private static final int[] INVENTORY_INDEX_TO_SCREEN_SLOT = new int[] {
         36, 37, 38, 39, 40, 41, 42, 43, 44, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-        28, 29, 30, 31, 32, 33, 34, 35, 45, 5, 6, 7, 8, 0, 1, 2, 3, 4
+        28, 29, 30, 31, 32, 33, 34, 35, 8, 7, 6, 5, 45, 0, 1, 2, 3, 4
     };
+    private static final int[] SCREEN_SLOT_TO_INVENTORY_INDEX = new int[46];
+
+    static {
+        for (var i = 0; i < INVENTORY_INDEX_TO_SCREEN_SLOT.length; ++i) {
+            SCREEN_SLOT_TO_INVENTORY_INDEX[INVENTORY_INDEX_TO_SCREEN_SLOT[i]] = i;
+        }
+    }
 
     @ApiMethod
     public static int getScreenSlotByInventoryIndex(int v) {
         return INVENTORY_INDEX_TO_SCREEN_SLOT[v];
+    }
+
+    @ApiMethod
+    public static int getInventoryIndexByScreenSlot(int v) {
+        return SCREEN_SLOT_TO_INVENTORY_INDEX[v];
     }
 
     @ApiMethod

@@ -6,6 +6,7 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
 import me.matl114.utils.ApiMethod;
+import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RaycastUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -42,10 +43,7 @@ public class PacketHelper {
     }
 
     public static int generateSequenceId() {
-        var re = mc.world.getPendingUpdateManager().incrementSequence();
-        int seq = re.getSequence();
-        re.close();
-        return seq;
+        return NetworkUtils.generateNextSequence();
     }
 
     public static void sendInventoryPacket(int slotId, int button, Object actionTypeStr) {
