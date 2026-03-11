@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.inv;
 
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
@@ -19,7 +20,7 @@ public class KeepInv extends BaseModule {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = toggle(KEEP_INV).build();
+    public final FlagRef enable = flagBuilder(Configs.TOGGLE_CONFIG, KEEP_INV).build();
 
     @Override
     public void registerAll() {

@@ -253,7 +253,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Override
     public double getBlockInteractionRange() {
         MineExtra mineExtra = MineTasks.getMineExtra();
-        if (mineExtra.enableReach.get()) {
+        if (true) {
             return mineExtra.getReachDistance();
         }
         return super.getBlockInteractionRange();

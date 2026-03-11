@@ -39,7 +39,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class ChestHistory extends BaseModule {
-    public static final String[] OPEN_INV_CACHE = new String[] {"hotkeys", "open-inv-cache"};
+    public static final String[] OPEN_INV_CACHE = new String[] {"inv-cache", "open-inv-cache"};
     public static final String[] INV_CACHE_IGNORE = new String[] {"inv-cache", "ignore-container-with-title"};
     public static final String[] INV_CACHE_SHOW_TITLE = new String[] {"inv-cache", "show-title"};
 
@@ -51,8 +51,8 @@ public class ChestHistory extends BaseModule {
 
     public ChestHistory() {}
 
-    public final KeyBindRef keyBind = hotkey(OPEN_INV_CACHE)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_J))
+    public final KeyBindRef keyBind = hotkey(
+                    Configs.INV_CONFIG, OPEN_INV_CACHE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_J))
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::openInventoryCacheScreen))
             .build();
 

@@ -33,7 +33,8 @@ public class MineArua extends BaseModule {
     }
 
     public static final String[] MINEARUA_WHILELIST = {"mine-arua", "block-whitelist"};
-    public static final String[] MINEARUA_HOTKEY = {"hotkeys-toggle", "mine-arua"};
+    public static final String[] MINEARUA = {"mine-arua", "mine-arua"};
+    public static final String[] MINEARUA_HOTKEY = {"mine-arua", "mine-arua-hotkey"};
     private BlockPos cachePosition;
     private int lastRefreshTick;
     public Set<Block> whiteList = new HashSet<>();
@@ -42,9 +43,13 @@ public class MineArua extends BaseModule {
         whiteList = RegistryUtils.parseWhiteList(Registries.BLOCK, str);
     }
 
-    public FlagRef enable = toggle(MINEARUA_HOTKEY).build();
+    public FlagRef enable = flagBuilder(Configs.MINE_CONFIG, MINEARUA).build();
 
-    public KeyBindRef keyBind = toggleHotkey(MINEARUA_HOTKEY, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_N))
+    public KeyBindRef keyBind = toggleHotkey(
+                    Configs.MINE_CONFIG,
+                    MINEARUA_HOTKEY,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_N),
+                    MINEARUA)
             .build();
 
     public StringRef whiteListRegex = builder(Configs.MINE_CONFIG, String.class)

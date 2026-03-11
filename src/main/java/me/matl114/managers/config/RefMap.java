@@ -3,7 +3,7 @@ package me.matl114.managers.config;
 public interface RefMap {
     public Ref<?> get(String... key);
 
-    public <T> Ref<T> getOrCreate(Ref<T> val, String... obj);
+    // public <T> Ref<T> getOrCreate(Ref<T> val, String... obj);
 
     public IntRef getInt(String... path);
 
@@ -19,5 +19,5 @@ public interface RefMap {
 
     public KeyBindRef getKeyBind(String... path);
 
-    boolean setValue(Ref<?> value, String... path);
+    // boolean setValue(Ref<?> value, String... path);
 }

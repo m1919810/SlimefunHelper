@@ -10,6 +10,7 @@ import java.util.regex.PatternSyntaxException;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.ConfigLoader;
+import net.minecraft.registry.*;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -217,10 +218,18 @@ public class Configs {
 
     public static final String[] HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN =
             new String[] {"hotkey-settings", "only-works-if-no-screen"};
+    // todo: change to config mapping
     public static final Config HOTKEY_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/hotkeys.yml", "hotkey settings")
-            .defaultVal(true, HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN)
             .markForSave();
+
+    static {
+        HOTKEY_CONFIG
+                .builder(Boolean.class)
+                .path(HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN)
+                .defaultValue(true)
+                .build();
+    }
     // TODO: add other-hotkeys
     // TODO: add Shulker display and shulker storage display
     // TODO: remove recipe display
@@ -230,6 +239,7 @@ public class Configs {
     // TODO: item editor template
     // TODO: !!travel add arguments
     //
+
     public static final Config TOGGLE_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/toggles.yml", "toggle settings")
             .markForSave();

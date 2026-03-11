@@ -46,7 +46,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
             this.selected.setFocused(false);
         }
         this.selected = subWidget;
-        if (super.isFocused()) {
+        if (this.selected != null && super.isFocused()) {
             this.selected.setFocused(true);
         }
         return (T) this;
@@ -160,6 +160,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
                 return true;
             }
         }
+        setSelected(null);
         return false;
     }
 

@@ -35,8 +35,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class EntityESP extends BaseModule {
-    public static final String[] DETECT_ENTITY_TOGGLE = {"hotkeys-toggle", "detect-entity"};
-
+    public static final String[] DETECT_ENTITY = {"detect-entity", "detect-entity"};
+    public static final String[] DETECT_ENTITY_TOGGLE = {"detect-entity", "detect-entity-hotkey"};
     public static final String[] DETECT_SPAWN_WHITELIST = {"detect-entity", "spawn-whitelist"};
     public static final String[] LOG_ON_SCREEN = {"detect-entity", "log-to-chat"};
     public static final String[] RAYTRACE_ENTITY = {"detect-entity", "ray-trace-entity"};
@@ -53,10 +53,14 @@ public class EntityESP extends BaseModule {
         types = set;
     }
 
-    public final FlagRef enable = toggle(DETECT_ENTITY_TOGGLE).build();
+    public final FlagRef enable =
+            flagBuilder(Configs.RENDER_CONFIG, DETECT_ENTITY).build();
 
     public final KeyBindRef hotkeyToggle = toggleHotkey(
-                    DETECT_ENTITY_TOGGLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_P))
+                    Configs.RENDER_CONFIG,
+                    DETECT_ENTITY_TOGGLE,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_P),
+                    DETECT_ENTITY)
             .build();
 
     public final StringRef whiteList = builder(Configs.RENDER_CONFIG, StringRef.TYPE)

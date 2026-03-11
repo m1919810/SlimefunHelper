@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.task;
 
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.managers.Configs;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
@@ -13,7 +14,7 @@ public class ConfigSystem extends BaseModule {
 
     public ConfigSystem() {}
 
-    public final KeyBindRef keyBind = hotkey(OPEN_MENU_HOTKEY)
+    public final KeyBindRef keyBind = hotkey(Configs.HOTKEY_CONFIG, OPEN_MENU_HOTKEY)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_G))
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::openConfigMenu))
             .build();

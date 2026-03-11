@@ -3,8 +3,10 @@ package me.matl114.managers;
 import java.io.*;
 import lombok.Getter;
 import me.matl114.hacks.*;
+import me.matl114.managers.config.Config;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.input.HotKeyUtils;
+import me.matl114.managers.input.IInputManager;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.task.TaskManager;
@@ -36,6 +38,48 @@ public class TaskManagers {
                 toggleTask.run();
             }
             return true;
+        };
+    }
+
+    public static SimpleHotKey.InputHandler getToggleHandler(Config config, String... path) {
+        String commonPath = String.join(".", path);
+        var flag = config.getBoolean(path);
+        if (flag != null) {
+            var toggleTask = ToggleManager.wrapFlagAsToggle(commonPath, flag);
+            return m -> {
+                ClientPlayerEntity player = m.getClient().player;
+                if (player != null && HotKeyUtils.isValidState()) {
+                    toggleTask.run();
+                }
+                return true;
+            };
+        } else {
+            throw new IllegalArgumentException("No Flag");
+        }
+    }
+
+    public static SimpleHotKey.InputHandler getToggleHandlerLazily(Config config, String... path) {
+        String commonPath = String.join(".", path);
+        return new SimpleHotKey.InputHandler() {
+            Runnable toggleTask;
+
+            @Override
+            public boolean handle(IInputManager manager) {
+                if (toggleTask == null) {
+                    var flag = config.getBoolean(path);
+                    if (flag != null) {
+                        toggleTask = ToggleManager.wrapFlagAsToggle(commonPath, flag);
+                    }
+                }
+                if (toggleTask != null) {
+                    ClientPlayerEntity player = manager.getClient().player;
+                    if (player != null && HotKeyUtils.isValidState()) {
+                        toggleTask.run();
+                    }
+                    return true;
+                }
+                return false;
+            }
         };
     }
 

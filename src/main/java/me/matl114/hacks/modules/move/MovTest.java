@@ -8,6 +8,7 @@ import me.matl114.hacks.ACPostTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.modules.extra.Tests;
+import me.matl114.managers.Configs;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
@@ -31,7 +32,7 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
         instance.setDelegate(this::cast);
     }
 
-    public KeyBindRef keyBindRef = hotkey(Tests.TEST_HOTKEY_2)
+    public KeyBindRef keyBindRef = hotkey(Configs.HOTKEY_CONFIG, Tests.TEST_HOTKEY_2)
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onMovTest))
             .build();

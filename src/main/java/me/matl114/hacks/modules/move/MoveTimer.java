@@ -9,17 +9,22 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 
 public class MoveTimer extends BaseModule {
-    public static final String[] MOVE_TIMER_ENABLE = {"hotkeys-toggle", "speed-timer"};
-    public static final String[] MOVE_TICK_TIMER = {"move-speed", "timer"};
+    public static final String[] MOVE_TIMER_ENABLE = {"move-speed", "timer", "timer-enable"};
+    public static final String[] MOVE_TIMER_ENABLE_HOTKEY = {"move-speed", "timer", "timer-enable-hotkey"};
+    public static final String[] MOVE_TICK_TIMER = {"move-speed", "timer", "multiply"};
 
     public MoveTimer() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = toggle(MOVE_TIMER_ENABLE).build();
+    public final FlagRef enable =
+            flagBuilder(Configs.MOV_CONFIG, MOVE_TIMER_ENABLE).build();
 
     public final KeyBindRef keyBind = toggleHotkey(
-                    MOVE_TIMER_ENABLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_Y))
+                    Configs.MOV_CONFIG,
+                    MOVE_TIMER_ENABLE_HOTKEY,
+                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_Y),
+                    MOVE_TIMER_ENABLE)
             .build();
 
     public final IntRef timer = builder(Configs.MOV_CONFIG, MOVE_TICK_TIMER, IntRef.TYPE)

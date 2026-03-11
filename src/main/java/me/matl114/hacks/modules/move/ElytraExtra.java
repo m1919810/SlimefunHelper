@@ -18,6 +18,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.LegalMovementManager;
@@ -55,7 +56,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public static final String[] MOVE_ELYTRA_DELAY = {"elytra", "unbreakable-elytra", "delay"};
 
     public static final String[] MOVE_ELYTRA_ARMOR_FLY = {"elytra", "armor-fly", "enable"};
-
+    public static final String[] MOVE_ELYTRA_ARMOR_FLY_HOTKEY = {"elytra", "armor-fly", "enable-hotkey"};
     public static final String[] MOVE_ELYTRA_ARMOR_ARMOR_MODE = {"elytra", "armor-fly", "armor-mode"};
 
     public static final String[] ELYTRA_FIREWORKS_TICKS = {
@@ -97,6 +98,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final FlagRef armorFly =
             flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY).build();
+
+    public final KeyBindRef keyBind = toggleHotkey(
+                    Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY_HOTKEY, new MultiKeyBind(), MOVE_ELYTRA_ARMOR_FLY)
+            .build();
 
     public final EnumRef<Configs.AutoInvMode> armorMode = builder(
                     Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_ARMOR_MODE, Configs.AutoInvMode.class)
