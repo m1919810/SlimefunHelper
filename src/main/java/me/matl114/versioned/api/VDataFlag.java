@@ -14,4 +14,9 @@ public interface VDataFlag {
     int ID_LIVING_FLAGS = 7;
     int USING_ITEM_FLAG_INDEX = 1;
     int OFFHAND_ACTIVE_FLAG_INDEX = 2;
+
+    // FireworkRockets
+    int ID_FIREWORK_ITEM = 8;
+    int ID_FIREWORK_SHOOTER_ID = 9;
+    int ID_FIREWORK_SHOT_AT_ANGLE = 10;
 }
