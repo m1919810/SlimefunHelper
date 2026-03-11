@@ -84,7 +84,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         if (!Listener.getPlayerKeyboardInputTick().isEmpty()) {
             Listener.getPlayerKeyboardInputTick().handleValue(new Event<>(this.input, false, false));
         }
-        getLegalMovementManager().postInputTick();
+        getLegalMovementManager().postInputTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
 
     @Inject(
@@ -163,5 +163,37 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Unique
     public void addMovementPacketWrapper(ProgressWrapper<ClientPlayerEntity> wrapper) {
         headNode.insertAfter(wrapper);
+    }
+
+    @Override
+    public boolean checkGliding() {
+        boolean fallflying = this.isFallFlying();
+        boolean shouldSwitch = false;
+        if (!fallflying) {
+            shouldSwitch = this.canGlide() && !this.isTouchingWater();
+        }
+        Event<Boolean> switchGliding = new Event<>(shouldSwitch, true, true, fallflying);
+        Listener.getPlayerSwitchFallFlying().handleValue(switchGliding);
+        boolean switchFlag;
+        if (switchGliding.isCancelled()) {
+            switchFlag = false;
+        } else {
+            switchFlag = switchGliding.context();
+        }
+        if (!fallflying) {
+            if (switchFlag) {
+                startGliding();
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            if (switchFlag) {
+                stopGliding();
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 }

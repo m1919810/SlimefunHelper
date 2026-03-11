@@ -80,6 +80,7 @@
 	},
 	"mixins": [
 		"events.EntityTypeEvents",
+		"events.PlayerEntityEvents",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix"
 	]

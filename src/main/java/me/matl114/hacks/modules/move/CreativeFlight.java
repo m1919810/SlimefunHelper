@@ -171,7 +171,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     }
 
     public double getOverridingFlySpeed() {
-        return (mc.player != null && mc.player.isCreative())
+        return (mc.player != null && mc.interactionManager.getCurrentGameMode().isCreative())
                 ? overrideFlySpeedCreative.get()
                 : overrideFlySpeedSurvival.get();
     }

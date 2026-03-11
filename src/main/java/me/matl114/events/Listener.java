@@ -39,6 +39,7 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -277,7 +278,7 @@ public class Listener {
     @Getter
     @Broadcast
     private static final EventChannel<Void> postTick = new EventChannel<>();
-
+    // todo: add Post Tick, Pre Tick, so on
     @Getter
     @Broadcast
     private static final EventChannel<ClientPlayerEntity> gameTick = new EventChannel<>();
@@ -444,6 +445,19 @@ public class Listener {
     @Modifiable
     @Cancelable
     private static final EventChannel<Integer> playerFallFlyingTick = new EventChannel<>();
+
+    @Getter
+    @Modifiable
+    @Cancelable // records whether a Elytra flying should be started, every condition is considered, you can use this
+    // event to also stop fallFlying
+    @ExtraArgs(
+            value = {Boolean.class},
+            names = {"currentFallFlying"})
+    private static final EventChannel<Boolean> playerSwitchFallFlying = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    private static final EventChannel<PlayerEntity> playerTravelingTick = new EventChannel<>();
 
     // entities
     @Getter
