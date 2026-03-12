@@ -213,7 +213,6 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
 
     @Override
     public boolean startDrag(Screen screen, double mouseX, double mouseY) {
-        // todo how?
         double translatedMouseX = mouseX - this.x;
         double translatedMouseY = mouseY - this.y;
         if (this.textureScale != 1.0f) {

@@ -46,6 +46,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 public class ElytraExtra extends BaseModule implements LegalMovementManager.MovementModifier {
     private static LegalMovementManager.DelegateMovementModifier instance;
@@ -150,6 +151,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onPlayerVelocity);
         registerListener(Listener.getEntityTrackDataUpdate(), this::onFireworkOwner);
         registerListener(Listener.getEntityRemoveListener(), this::onFireworkRemove);
+        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
     }
 
     // elytra unbreakable?
@@ -290,7 +292,16 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public int findElytra() {
         // only backpack can operate
         if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
-            var slots = mc.player.currentScreenHandler.slots;
+            // todo: check hotbar first
+            for (var i = 0; i < 9; ++i) {
+                var item = mc.player.getInventory().getStack(i);
+                if (VItem.getInstance().canGlide(item)
+                        && mc.player.canEquip(item, EquipmentSlot.CHEST)
+                        && !item.willBreakNextUse()) {
+                    return i + 36;
+                }
+            }
+            var slots = mc.player.playerScreenHandler.slots;
             for (var i = 0; i < slots.size(); i++) {
                 var slot = slots.get(i);
                 if (slot.inventory instanceof PlayerInventory pinv
@@ -610,6 +621,15 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             lastFireworkThresholdTime = FireworkRocketEntityAccess.of(fire).getLiveTicks();
             lastFireworkIsDeadSignal = true;
         }
+    }
+
+    public void onWorldSwitch(Event<World> event) {
+        if (lastFireworkRocket != null && lastFireworkRocket.isAlive()) {
+            lastFireworkIsDeadSignal = true;
+            lastFireworkThresholdTime =
+                    FireworkRocketEntityAccess.of(lastFireworkRocket).getLiveTicks();
+        }
+        lastFireworkRocket = null;
     }
 
     public boolean canFireworkControlMotion() {

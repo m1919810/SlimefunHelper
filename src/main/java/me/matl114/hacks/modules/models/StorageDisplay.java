@@ -3,9 +3,12 @@ package me.matl114.hacks.modules.models;
 import static me.matl114.utils.ItemStackUtils.*;
 import static me.matl114.utils.ItemStackUtils.getSfId;
 
+import it.unimi.dsi.fastutil.Function;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenCustomHashMap;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import me.matl114.bukkit.BukkitConfigDeserializor;
 import me.matl114.bukkit.BukkitItemStack;
@@ -20,6 +23,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -31,13 +35,22 @@ import net.minecraft.util.Identifier;
 public class StorageDisplay extends BaseModule {
     public static final String[] ENABLE_STORAGE_DISPLAY = {"model-config", "enable-storage-display"};
 
-    public StorageDisplay() {
-        bindFlag(storageDisplay);
-    }
+    public static final String[] ENABLE_SHULKER_DISPLAY = {"model-config", "enable-shulker-display"};
+
+    public static final String[] ENABLE_ITEM_INFO_DISPLAY = {"model-config", "enable-info-display"};
+
+    public StorageDisplay() {}
 
     public final FlagRef storageDisplay = builder(Configs.MODEL_CONFIG, ENABLE_STORAGE_DISPLAY, Boolean.class)
             .defaultValue(true)
             .build();
+
+    public final FlagRef infoDisplay = builder(Configs.MODEL_CONFIG, ENABLE_ITEM_INFO_DISPLAY, Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef shulkerDisplay =
+            flagBuilder(Configs.MODEL_CONFIG, ENABLE_SHULKER_DISPLAY).build();
 
     private static final Map<EntityType<?>, ItemStack> spawnEggNewStyleItem = new HashMap<>() {
         {
@@ -60,6 +73,7 @@ public class StorageDisplay extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getDetachedItemStackInformation(), this::onContainerSpawner, 1005);
+        registerListener(RenderListener.getDetachedItemStackInformation(), this::onContainerVanilla, 1000);
         registerListener(RenderListener.getDetachedItemStackInformation(), this::onContainerPluginStorage, 1000);
         registerListener(RenderListener.getDetachedItemStackInformation(), this::onProductsSpecialPlugin, 1000);
         registerListener(RenderListener.getCustomModelOverride(), this::onGceChickenModel);
@@ -72,7 +86,7 @@ public class StorageDisplay extends BaseModule {
         if (event.context() != null) {
             return;
         }
-        if (isActive()) {
+        if (infoDisplay.get()) {
             ItemStack stack = event.getArgs(0);
             EntityType<?> typed = EntityUtils.getStoredEntityType(stack);
             if (typed != null) {
@@ -84,10 +98,42 @@ public class StorageDisplay extends BaseModule {
         }
     }
 
+    public void onContainerVanilla(Event<ItemStack> event) {
+        if (event.context() != null) {
+            return;
+        }
+        if (shulkerDisplay.get()) {
+            ItemStack stack = event.getArgs(0);
+            var container = stack.get(DataComponentTypes.CONTAINER);
+            if (container != null) {
+                ItemStackWithTimeStamp timeStamp = asyncUpdateItemInfo(stack, ((st0) -> {
+                    ItemStack st = (ItemStack) st0;
+                    var con = st.get(DataComponentTypes.CONTAINER);
+                    ItemStack stackSample = null;
+                    if (con != null) {
+                        for (var item : con.iterateNonEmpty()) {
+                            if (stackSample == null) {
+                                stackSample = item.copy();
+                            } else if (!ItemStack.areItemsAndComponentsEqual(stackSample, item)) {
+                                return null;
+                            }
+                        }
+                    }
+                    return stackSample;
+                }));
+                // all the same, render
+                ItemStack result = timeStamp.itemStack;
+                if (result != null && !result.isEmpty()) {
+                    event.context(result);
+                }
+            }
+        }
+    }
+
     @AllArgsConstructor
     public static class ItemStackWithTimeStamp {
-        final long lastUpdated;
-        final ItemStack itemStack;
+        volatile long lastUpdated;
+        volatile ItemStack itemStack;
     }
 
     private final Map<ItemStack, ItemStackWithTimeStamp> storageItemStackCache =
@@ -118,26 +164,46 @@ public class StorageDisplay extends BaseModule {
         var entryIter = storageItemStackCache.entrySet().iterator();
         while (entryIter.hasNext()) {
             var enty = entryIter.next().getValue();
-            if (enty.lastUpdated < System.currentTimeMillis() - 10 * updateIntervalMs) {
+            if (enty.lastUpdated < System.currentTimeMillis() - updateIntervalMs) {
                 // 10秒没有更新了
                 entryIter.remove();
             }
         }
     }
 
-    private final long updateIntervalMs = 1000;
+    private final long updateIntervalMs = 10000;
+
+    @Nonnull
+    private ItemStackWithTimeStamp asyncUpdateItemInfo(ItemStack stack, Function<ItemStack, ItemStack> func) {
+        ItemStackWithTimeStamp timeStamp = storageItemStackCache.get(stack);
+        if (timeStamp == null || timeStamp.lastUpdated < System.currentTimeMillis() - updateIntervalMs) {
+            if (timeStamp == null) {
+                timeStamp = new ItemStackWithTimeStamp(System.currentTimeMillis(), null);
+            } else {
+                timeStamp.lastUpdated = System.currentTimeMillis();
+            }
+            ItemStack cleanStack = stack.copyWithCount(1);
+            final ItemStackWithTimeStamp currentUpdate = timeStamp;
+            storageItemStackCache.put(cleanStack, currentUpdate);
+            // update storage content async, do not block main thread
+            CompletableFuture.supplyAsync(() -> {
+                        return func.apply(cleanStack);
+                    })
+                    .thenAccept(s -> currentUpdate.itemStack = s);
+        }
+        return timeStamp;
+    }
 
     public void onContainerPluginStorage(Event<ItemStack> event) {
         if (event.context() != null) {
             return;
         }
-        if (isActive()) {
+        if (storageDisplay.get()) {
             ItemStack stack = event.getArgs(0);
             NbtCompound tag = getBukkitValueReadOnly(stack);
             // add nbt check before this
             if (hasAnyStorage(tag)) {
-                ItemStackWithTimeStamp timeStamp = storageItemStackCache.get(stack);
-                if (timeStamp == null || timeStamp.lastUpdated < System.currentTimeMillis() - updateIntervalMs) {
+                ItemStackWithTimeStamp timeStamp = asyncUpdateItemInfo(stack, (st) -> {
                     BukkitItemStack stored;
 
                     if ((stored = getNetworkStoraged(tag)) != null) {
@@ -153,12 +219,10 @@ public class StorageDisplay extends BaseModule {
                     } else {
                         stored = null;
                     }
-                    ItemStack stackRender = stored == null ? null : BukkitItemStackUtils.getAsDisplayItem(stored);
-                    timeStamp = new ItemStackWithTimeStamp(System.currentTimeMillis(), stackRender);
-                    ItemStack cleanStack = stack.copyWithCount(1);
-                    storageItemStackCache.put(cleanStack, timeStamp);
-                }
-                if (timeStamp.itemStack != null && !timeStamp.itemStack.isEmpty()) {
+                    return stored == null ? null : BukkitItemStackUtils.getAsDisplayItem(stored);
+                });
+                ItemStack result = timeStamp.itemStack;
+                if (result != null && !result.isEmpty()) {
                     event.context(timeStamp.itemStack);
                 }
             }
@@ -170,7 +234,7 @@ public class StorageDisplay extends BaseModule {
         if (event.context() != null) {
             return;
         }
-        if (isActive()) {
+        if (infoDisplay.get()) {
             ItemStack stack = event.getArgs(0);
             String sfid = ItemStackUtils.getSfId(stack);
             if (sfid != null) {
@@ -217,7 +281,7 @@ public class StorageDisplay extends BaseModule {
 
     public void onGceChickenModel(Event<Identifier> IItemModelEvent) {
         if (IItemModelEvent.context() != null) return;
-        if (isActive()) {
+        if (infoDisplay.get()) {
             ItemStack stack = IItemModelEvent.getArgs(0);
             String optionalChicken = handlePureChickenDNAInfo(stack);
             if (optionalChicken != null) {

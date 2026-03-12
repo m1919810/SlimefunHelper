@@ -75,7 +75,7 @@ public class ChestHistory extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPostOpenHandledScreen(), this::onOpenHandledScreen);
         registerListener(Listener.getGameJoinPoint(), this::onServerJoin);
-        registerListener(Listener.getGameTick(), this::onTick);
+        registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
     }
 

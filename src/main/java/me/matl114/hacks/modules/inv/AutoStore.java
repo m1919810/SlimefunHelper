@@ -29,7 +29,7 @@ public class AutoStore extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getGameTick(), this::onTick);
+        registerListener(Listener.getPreGameTick(), this::onTick);
     }
     // todo: rewrite this
     public void onTick(Event<ClientPlayerEntity> event) {

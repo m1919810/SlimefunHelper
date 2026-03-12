@@ -12,7 +12,7 @@ public class EventChannelDispatcher<T> extends EventChannel<T> {
 
     public EventChannelDispatcher(Function<T, ?> dispatcher) {
         this.dispatcher = dispatcher;
-        // todo: avoid async events error
+        // avoid async events error
         this.channels = new ConcurrentHashMap<>();
     }
 

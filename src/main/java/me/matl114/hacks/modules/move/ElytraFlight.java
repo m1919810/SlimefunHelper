@@ -224,6 +224,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             movementManagerEvent.context().playerStatus.entity.setNoGravity(modifyNoGravity);
             modifyNoGravity = null;
         }
+        controllingTick = false;
         return true;
     }
 }

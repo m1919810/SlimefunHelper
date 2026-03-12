@@ -58,6 +58,7 @@ public class SleepMode extends BaseModule {
         registerListener(Listener.getCharTyped(), this::interceptCharType);
         registerListener(Listener.getMouseMove(), this::interceptMouseMove);
         registerListener(Listener.getMouseDrag(), this::interceptMouseDragged);
+        registerListener(Listener.getPreSetScreen(), this::interceptSetScreen);
     }
 
     public void onGameRender(Event<GameRenderer> rendererEvent) {
@@ -411,6 +412,14 @@ public class SleepMode extends BaseModule {
                         (Double) event.extraArgs[2],
                         (Double) event.extraArgs[3]);
             }
+        }
+    }
+
+    public void interceptSetScreen(Event<Screen> setScreen) {
+        if (setScreen.context instanceof SleepOverlay) {
+            setScreen.cancel();
+            //
+            mc.setScreen(null);
         }
     }
 

@@ -86,7 +86,6 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
                             TooltipHandler.of(Streams.concat(CLICK_ITEM_TOOLTIPS.stream(), CLICK_COPY_TOOLTIPS.stream())
                                     .toList()));
         } else {
-            // todo: 增加说明
             labelElement = LabelElement.instance(Text.literal("虚拟容器(鼠标悬浮以查看说明)"))
                     .withTooltips(TooltipHandler.of(CLICK_ITEM_TOOLTIPS));
         }
