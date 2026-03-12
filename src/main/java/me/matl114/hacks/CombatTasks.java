@@ -219,7 +219,12 @@ public class CombatTasks {
 
     @Getter
     public static TotemLog totemLog;
+    // todo antikb
 
+    // todo
+    // todo: tpBot
+    // todo: Miss
+    // todo: AntiMiss how
     private static void initModules(ModuleManager m) {
         combatExtra = new CombatExtra().register(m);
         targetSelector = new TargetSelector().register(m);

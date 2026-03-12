@@ -74,9 +74,6 @@ public class DrawContext_v1_21_11 implements VDrawContext {
         return ColorHelper.mix(getShaderRGB(), a);
     }
 
-    // todo: add cached shader color
-    // todo: add color computation
-
     @Override
     public void drawGuiTexture(Identifier texture, int x, int y, int z, int width, int height) {
 
@@ -141,7 +138,7 @@ public class DrawContext_v1_21_11 implements VDrawContext {
             this.drawContext.tooltipDrawer = runnable;
         }
     }
-    // todo: color
+
     @Override
     public void drawTooltip(TextRenderer textRenderer, List<Text> text, Optional<TooltipData> data, int x, int y) {
         var trans = matrixStack.peek3D();

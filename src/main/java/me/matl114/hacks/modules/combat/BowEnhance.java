@@ -312,7 +312,6 @@ public class BowEnhance extends BaseModule {
                                                 currentPlayerPos.add(0, 9E-8, 0), null, true, redirectTarget)
                                         : MovTasks.MovInfo.create(currentPlayerPos.add(0, 9E-8, 0)));
 
-                        // todo: check if there is any problem
                         MovTasks.scheduleFarawayMoveInternal(
                                 movements, false, MovTasks.MovingContext.create(currentPlayerPos), true);
 
@@ -345,7 +344,6 @@ public class BowEnhance extends BaseModule {
         mc.player.setYaw(playerPitchYaw.y);
     }
 
-    // todo: should check
     public void bowActionDelayMovement(Event<PlayerActionC2SPacket> event, Entity entity, float initialVelocity) {
         // it is from a delayed packet, or, I can fire it without event
         if (canTp()) {
@@ -511,7 +509,6 @@ public class BowEnhance extends BaseModule {
 
                         movements.add(MovTasks.MovInfo.create(currentPlayerPos.add(0, 9E-8, 0)));
 
-                        // todo: check if there is any problem
                         MovTasks.scheduleFarawayMoveInternal(
                                 movements, false, MovTasks.MovingContext.create(currentPlayerPos), true);
 

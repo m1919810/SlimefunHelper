@@ -34,7 +34,8 @@ public class PostManager extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(CommonPongC2SPacket.class), this::prePongPacketOut);
         registerListener(Listener.getPreTick(), this::onPreTick);
     }
-    // todo: rewrite pong packets to avoid post check
+    // failure:
+    // rewrite pong packets to avoid post check
     // origin:
     // last tick
     // client tick end
@@ -45,7 +46,7 @@ public class PostManager extends BaseModule {
     // pong ->
     // this tick
     //
-    // todo: we rewrite as
+    // we rewrite as
     // last tick
     // client tick end
     //  <- ping

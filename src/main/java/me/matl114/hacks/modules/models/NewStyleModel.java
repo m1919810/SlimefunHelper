@@ -132,7 +132,7 @@ public class NewStyleModel extends BaseModule {
                     NAMESPACE,
                     PATH_OF_NEW_VERSION + "/" + Registries.ITEM.getId(item).getPath());
             Optional<ItemModel> modelId = RenderListener.getModModel(id);
-            // todo: what?
+
             if (modelId.isPresent()) {
                 cacheItem.put(item, id);
                 // Debug.info("Loading new-version model", id);

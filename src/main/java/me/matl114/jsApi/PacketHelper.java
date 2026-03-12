@@ -49,7 +49,7 @@ public class PacketHelper {
     public static void sendInventoryPacket(int slotId, int button, Object actionTypeStr) {
         InvTasks.clickSlotAsync(slotId, button, JsHelper.toEnum(actionTypeStr, SlotActionType.class));
     }
-    // todo ; interactionManager methods
+
     public static void sendAttackBlock(int x, int y, int z, Object direction) {
         sendAttackBlock(new BlockPos(x, y, z), direction);
     }

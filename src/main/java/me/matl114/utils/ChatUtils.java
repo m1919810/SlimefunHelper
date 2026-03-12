@@ -309,7 +309,6 @@ public class ChatUtils {
         return out.toString();
     }
 
-    // todo need test
     public static String orderedTextToLegacyString(OrderedText... text) {
         if (text == null) return "";
         StringBuilder out = new StringBuilder();

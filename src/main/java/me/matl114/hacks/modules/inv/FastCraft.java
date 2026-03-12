@@ -84,8 +84,7 @@ public class FastCraft extends BaseModule {
         Debug.chat("Toggle RecipeLock", lock);
     }
 
-    @Getter // todo: make it configurable, like, open a fucking menu and select
-    // todo: hard in higher version of mc
+    @Getter
     private NetworkRecipeId lastCrafted;
 
     public void placeLastCraftingRecipe(
@@ -181,7 +180,7 @@ public class FastCraft extends BaseModule {
                         .withTooltips(TooltipHandler.of(
                                 ChatUtils.parseTooltipsTranslation("widget.fast-craft.toggle-drop.tooltips", ""))))
                 .addToSub(recipeSubScreen);
-        // todo: fix coordinates here
+
         DrawableWidget itemDisplay = DisplayWidget.instance(150, access.getScreenY() + 56, 18, 18)
                 .setRenderHandler(new SlotElement(this::getDisplayItemStack)
                         .setSlotFrame(false)

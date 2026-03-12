@@ -344,7 +344,6 @@ public class ChatTools extends BaseModule {
                 access.addDrawableChildTo(cacheWidget);
                 access.addDrawableChildTo(int2CharInputField);
             }
-            // todo: add lock i
         }
     }
 

@@ -31,7 +31,6 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind> {
 
     @Override
     public AttrKeyValue<MultiKeyBind> _createKeyValue0(String key) {
-        // todo
         return AttrKeyValue.keyBind(key, this.get());
     }
 

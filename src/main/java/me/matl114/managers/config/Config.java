@@ -33,7 +33,6 @@ public class Config implements RefMap {
     private final File file;
     private Logger logger;
     private String header;
-    // fixme: add schema and node structure
     protected Map<String, Object> fileMap;
     protected MapRef ref;
     protected LinkedHashSet<String> buildOrder = new LinkedHashSet<>();
@@ -93,13 +92,9 @@ public class Config implements RefMap {
     @Setter
     @Getter
     private String configName;
-    // todo: rewrite system, add something like MemorySection like part of the fucking here
 
-    // todo: add custom serializable with custom configuring widget
     // todo: add custom hotkey manager with a custom config
     // todo: add custom bindings to custom hotkey manager , use hotkeyEvent to trigger toggle
-    // todo: add toggle hotkeys to FlagRef
-    // todo: turn some hotkeys function to FlagRef
     // todo: add CustomBindingsConfigurateScreen and CustomBindingsSelectScreen with a EDIT Button
     public static interface CustomSerializableConfig {}
 
@@ -138,6 +133,10 @@ public class Config implements RefMap {
         }
     }
     // todo : CustomRef, using JsonObject as base, use Codec to build upper object, add custom keyValue impl with custom
+
+    //// TODO: RegistryRef
+    //// TODO: RegistrySetRef
+    //// TODO: ListRef
     // impl
 
     private final boolean autoSave = true;
@@ -202,8 +201,6 @@ public class Config implements RefMap {
         }
         return re;
     }
-    // todo: remove all register method, only use builder
-    // todo: use LinkedHashSet to record builder's order, duplicate ignore, not in ignore
 
     public <T> Config validator(Predicate<T> validator, String... path) {
         Ref<T> ref = (Ref<T>) get(path);

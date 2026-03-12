@@ -29,7 +29,6 @@ public class ACPostTasks {
         postManager = new PostManager().register(moduleManager);
     }
 
-    // todo: check client tick end, ping and
     static {
         ExtraTasks.getModuleManager().registerFactories(ACPostTasks::initModules);
     }

@@ -65,7 +65,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public final FlagRef motionAdjust = builder(Configs.MOV_CONFIG, MOVE_ELYTRA_MOTION_ADJUST, FlagRef.TYPE)
             .defaultValue(true)
             .build();
-    // todo:
+
     public final FlagRef simpleControlE =
             flagBuilder(Configs.MOV_CONFIG, ELYTRA_FLIGHT_CONTROL).build();
 

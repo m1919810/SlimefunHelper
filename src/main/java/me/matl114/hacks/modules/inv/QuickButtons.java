@@ -67,7 +67,6 @@ public class QuickButtons extends BaseModule {
     }
 
     public void initButton(HandledScreen<?> handledScreen) {
-        // todo: make it a module
         int xv, yv;
         HandledScreenAccess access = HandledScreenAccess.of(handledScreen);
         if (handledScreen instanceof CreativeInventoryScreen handled) {

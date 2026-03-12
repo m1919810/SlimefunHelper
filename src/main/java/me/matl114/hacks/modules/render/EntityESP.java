@@ -225,8 +225,6 @@ public class EntityESP extends BaseModule {
                             access.markRenderTracked(EntityInternalAccess.RENDER_LEVEL_WHITELIST);
                         }
                     }
-                    // todo need optimize, we can add a flag or something
-
                 }
             }
         } finally {

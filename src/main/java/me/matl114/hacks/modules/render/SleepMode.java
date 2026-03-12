@@ -71,7 +71,7 @@ public class SleepMode extends BaseModule {
     public boolean isScreenSleeping() {
         return sleepingLevel != 0;
     }
-    // fixme sleeping cause auto reconnect not work, need fix
+
     public boolean wakeUpScreen() {
         if (setScreenSleeping(0)) {
             if (mc.player != null) Debug.chat(Text.literal("睡眠状态结束, 欢迎回来!").formatted(Formatting.GREEN));
@@ -305,7 +305,6 @@ public class SleepMode extends BaseModule {
 
         if (ensureSleepingScreen()) {
             if (currentRenderingSleeping != null) {
-                // todo: should refresh screen all the time?
                 shouldFreshSleepScreen = true;
                 if (shouldFreshSleepScreen) {
                     shouldFreshSleepScreen = false;
@@ -350,7 +349,7 @@ public class SleepMode extends BaseModule {
         }
         return false;
     }
-    // todo: key input doesn't work
+
     public void interceptScreenSetup(Event<Screen> event) {
         if (isScreenSleeping()) {
             event.cancel();
@@ -385,7 +384,7 @@ public class SleepMode extends BaseModule {
             }
         }
     }
-    // todo: can not drag
+
     public void interceptScreenMouseScroll(Event<Mouse> event) {
         if (isScreenSleeping()) {
             event.cancel();
@@ -438,8 +437,6 @@ public class SleepMode extends BaseModule {
             setScreen.cancel();
         }
     }
-
-    // fixme: hoverEvent and clickEvent does not work in SleepingChatScreen
 
     // TODO: add status renderer , inGameHud
 }

@@ -30,7 +30,4 @@ public class ModuleManager extends AbstractGuiManager<BaseModule> {
     public void loadModules() {
         registeringFunctions.forEach(consumer -> consumer.accept(this));
     }
-
-    // todo antikb
-
 }

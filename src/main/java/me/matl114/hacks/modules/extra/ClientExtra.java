@@ -26,12 +26,9 @@ public class ClientExtra extends BaseModule {
 
     public static final String[] TEST_NO_CRASH = {"other", "no-client-crash"};
     public static final String[] IGNORE_PROTOCOL_ERROR = {"other", "no-disconnect-on-network-error"};
-    // todo
-    @ApiStatus.Experimental
-    public static final String[] PORTAL_GUI = {"other", "keep-gui-open-on-portal"};
 
     @ApiStatus.Experimental
-    public static final String[] FAKE_SPRINT_TEST = {"test", "fake-sprint"};
+    public static final String[] PORTAL_GUI = {"other", "keep-gui-open-on-portal"};
 
     public final FlagRef noCrash = builder(Configs.TEST_CONFIG, Boolean.class)
             .path(TEST_NO_CRASH)

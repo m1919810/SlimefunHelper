@@ -15,7 +15,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class Configs {
-    // todo add schema for config
     public static void loadConfigs() {
         if (true) {
             MINE_CONFIG.registerGlobal();
@@ -186,12 +185,6 @@ public class Configs {
     public static final Config INV_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/inv.yml", "inv settings")
             .markForSave();
 
-    // public static final String[] MOVE_SPEED_NO_SLOW_DOWN = {"move-speed","no-slowdown"};
-
-    // todo: add move safety tp y limit , later
-
-    // todo test it in anticheat environment
-
     public static final Config MOV_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/mov.yml", "mov settings")
             .markForSave();
 
@@ -218,7 +211,7 @@ public class Configs {
 
     public static final String[] HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN =
             new String[] {"hotkey-settings", "only-works-if-no-screen"};
-    // todo: change to config mapping
+
     public static final Config HOTKEY_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/hotkeys.yml", "hotkey settings")
             .markForSave();
@@ -230,15 +223,6 @@ public class Configs {
                 .defaultValue(true)
                 .build();
     }
-    // TODO: add other-hotkeys
-    // TODO: add Shulker display and shulker storage display
-    // TODO: remove recipe display
-    // TODO: add entity inspect in info command
-    // TODO: add thread check or add runInMain in ApiMethod
-    // TODO: parser system
-    // TODO: item editor template
-    // TODO: !!travel add arguments
-    //
 
     public static final Config TOGGLE_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/toggles.yml", "toggle settings")

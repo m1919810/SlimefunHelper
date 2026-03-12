@@ -79,7 +79,7 @@ public class MineBot extends BaseModule {
             .path(MINE_BOT_MINE_MAX_DY)
             .defaultValue(6)
             .build();
-    // todo: test
+
     public final StringRef whiteListBlockRegex = builder(Configs.MINE_CONFIG, String.class)
             .path(MINE_BOT_WHITELIST)
             .defaultValue("^(cobblestone|stone|.*ore)$")

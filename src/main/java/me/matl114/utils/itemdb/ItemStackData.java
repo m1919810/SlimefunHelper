@@ -17,7 +17,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.NbtOps;
 
-// todo: check and use
 public interface ItemStackData {
     public JsonElement getAsJson();
 

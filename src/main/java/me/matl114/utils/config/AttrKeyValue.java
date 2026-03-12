@@ -134,7 +134,6 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
     }
 
     public static AttrKeyValue<?> ofConfigValue(String key, Ref<?> object) {
-        // todo need fix
 
         return object.createKeyValue(key);
         //        if(object instanceof AtomicBoolean bool){
@@ -587,11 +586,8 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
                 } else {
                     // no choice
                     return ExecutableWidget.instance(x + 1, y + 1, dx - 2, dy - 2)
-                            .setElementHandler(
-                                    // todo: add translatable here
-                                    new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
-                                            .withTooltips(
-                                                    TooltipHandler.of(List.of(Text.translatable(this.getKeyName())))));
+                            .setElementHandler(new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
+                                    .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName())))));
                 }
 
                 // .addToSub(this);
@@ -706,7 +702,4 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
             //            return widget;
         }
     }
-
-    // todo: 增加Custom,
-
 }
