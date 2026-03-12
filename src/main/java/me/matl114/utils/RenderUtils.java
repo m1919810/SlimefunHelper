@@ -44,15 +44,15 @@ public class RenderUtils {
     }
 
     @ApiMethod
-    public static Vec3d getCameraFeetPos() {
+    public static Vec3d getCameraEntityPos() {
         var d = mc.gameRenderer.getCamera();
         if (d == null) return Vec3d.ZERO;
         Entity entity = d.getFocusedEntity();
-        Vec3d pos = d.getCameraPos();
-        if (entity != null) {
-            pos.add(0, entity.getStandingEyeHeight(), 0);
+        if (entity == null) {
+            return d.getCameraPos();
+        } else {
+            return entity.getPos();
         }
-        return pos;
     }
 
     @ApiMethod

@@ -90,7 +90,7 @@ public class ChatTools extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getGameTick(), this::onTick);
+        registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(Listener.getPostInitializeScreen(), this::onChatScreenInitialize);
         registerListener(Listener.getPreSetScreen(), this::onCloseChatScreen);
     }

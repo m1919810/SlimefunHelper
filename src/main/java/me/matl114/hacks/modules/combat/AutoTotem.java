@@ -36,9 +36,9 @@ public class AutoTotem extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getGameTick(), this::onTick);
+        registerListener(Listener.getPostGameTick(), this::onTick);
     }
-    // todo: add PreGameTick and PostGameTick
+    // todo: add legal mode (swap hand)
     public void onTick(Event<ClientPlayerEntity> ev) {
         var player = ev.context();
         if (enable.get()) {

@@ -57,10 +57,16 @@ public class Tasks {
         gameTasks.forEach(i -> i.accept(player));
     }
 
+    public static void onPreTick(Event<Void> v) {
+        if (mc.player != null) {
+            Listener.getPreGameTick().broadcast(mc.player);
+        }
+    }
+
     public static void onPostTick(Event<Void> v) {
         if (mc.player != null) {
             Tasks.doGameTick(mc.player);
-            Listener.getGameTick().broadcast(mc.player);
+            Listener.getPostGameTick().broadcast(mc.player);
         }
         Tasks.doTick();
     }
@@ -114,5 +120,6 @@ public class Tasks {
         });
 
         Listener.getPostTick().registerHandler(Tasks::onPostTick);
+        Listener.getPreTick().registerHandler(Tasks::onPreTick);
     }
 }

@@ -435,6 +435,8 @@ public class SleepMode extends BaseModule {
     public void interceptSetScreen(Event<Screen> setScreen) {
         if (setScreen.context instanceof SleepOverlay) {
             setScreen.cancel();
+            //
+            mc.setScreen(null);
         }
     }
 

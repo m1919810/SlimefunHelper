@@ -60,7 +60,7 @@ public class AttackArua extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getGameTick(), this::onTick);
+        registerListener(Listener.getPreGameTick(), this::onTick);
     }
 
     private int interval;

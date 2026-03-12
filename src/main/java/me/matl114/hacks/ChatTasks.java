@@ -1009,7 +1009,7 @@ public class ChatTasks {
             Vec3d pos;
             switch (type) {
                 case "this" -> pos = var1.getPos();
-                case "camera" -> pos = RenderUtils.getCameraFeetPos();
+                case "camera" -> pos = RenderUtils.getCameraEntityPos();
                 case "cross" -> pos = mc.crosshairTarget.getPos();
                 case "player" -> {
                     String var = re.nextNonnull();
@@ -1045,7 +1045,7 @@ public class ChatTasks {
         }
 
         List<String> infoTypes =
-                List.of("death", "spawn", "nbt", "inventory", "ender", "plist", "team", "pentry", "waypoint");
+                List.of("death", "spawn", "nbt", "inventory", "ender", "plist", "team", "pentry", "waypoint", "server");
 
         {
             main.subBuilder(SubCommand.taskBuilder())
@@ -1273,6 +1273,14 @@ public class ChatTasks {
                     } else {
                         Debug.chat("该玩家没有PlayerEntry");
                     }
+                }
+                case "server" -> {
+                    Debug.chat("当前服务器:");
+                    String ip = CommonUtils.getServerName();
+                    Debug.chat(
+                            ChatUtils.getClickCopyTargetText(ip).formatted(Formatting.GREEN),
+                            "|",
+                            mc.world.getRegistryKey().getValue());
                 }
                 case "waypoint" -> {
                     Debug.chat("查询中");

@@ -255,8 +255,6 @@ public class Listener {
             return onSinglePacketListen(connection, packet, isS2C);
         }
     }
-    // todo: all be event
-    // todo:
 
     // basic events
     @Getter
@@ -278,10 +276,14 @@ public class Listener {
     @Getter
     @Broadcast
     private static final EventChannel<Void> postTick = new EventChannel<>();
-    // todo: add Post Tick, Pre Tick, so on
+
     @Getter
     @Broadcast
-    private static final EventChannel<ClientPlayerEntity> gameTick = new EventChannel<>();
+    private static final EventChannel<ClientPlayerEntity> preGameTick = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    private static final EventChannel<ClientPlayerEntity> postGameTick = new EventChannel<>();
 
     @Getter // arguments RenderTickCounter, tick , cancelable
     @Cancelable
@@ -367,7 +369,6 @@ public class Listener {
     @ExtraArgs({ClientConnection.class})
     private static final PacketEventChannel packetPostSendPoint = new PacketEventChannel();
 
-    // todo: make this modifiable
     @Getter // packet accept or send
     @Cancelable
     @Modifiable
@@ -413,7 +414,7 @@ public class Listener {
     @Modifiable
     // jump not because of toggle creative flight
     private static final EventChannel<Integer> playerNotFlyJumpPoint = new EventChannel<>();
-    // todo remove how, this
+
     @Getter
     @Modifiable
     private static final EventChannel<MovTasks.MovInfo> teleportConfirmResponsePoint = new EventChannel<>();
@@ -660,8 +661,6 @@ public class Listener {
         }
     }
 
-    // todo: turn to predicate use Task.getTick() as timer
-
     public static void sendPacketNoEvents(Packet<?> packet) {
         var re = MinecraftClient.getInstance().getNetworkHandler();
         if (re != null) {
@@ -669,7 +668,7 @@ public class Listener {
         }
     }
 
-    // todo: make a method to send packet without event
+    // make a method to send packet without event
     public static void sendPacketNoEvents(ClientConnection connection, Packet<?> packet) {
         connection.submit((con) -> {
             Channel channel = con.channel;

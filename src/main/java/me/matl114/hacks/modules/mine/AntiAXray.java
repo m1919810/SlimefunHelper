@@ -41,7 +41,7 @@ public class AntiAXray extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
-        registerListener(Listener.getGameTick(), this::onTick);
+        registerListener(Listener.getPreGameTick(), this::onTick);
     }
 
     public void onTick(Event<ClientPlayerEntity> player) {
