@@ -65,7 +65,6 @@ public class ConfigureListWidget
     protected int buttonDx;
     // <key> : <value>
     // button blank input
-    // todo: put widgets and other things in
     private ConfigureListWidget(
             Config config,
             int x,
@@ -148,7 +147,6 @@ public class ConfigureListWidget
         Map<String, Map<String, AttrKeyValue<?>>> originValueWithIndex = new LinkedHashMap<>();
 
         for (var path : config.getVisiblePaths()) {
-            // todo: can we generate the widget by Ref, not attrKeyValue
             if (!ChatUtils.hasTranslation(path)) {
                 Debug.info("Missing translation key for", path);
             }

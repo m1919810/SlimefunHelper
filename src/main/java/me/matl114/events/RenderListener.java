@@ -105,7 +105,7 @@ public class RenderListener {
         try {
             // This stack start with the position with RenderUtils.getCameraPose();
             Event<MatrixStack> renderEvent = new Event<>(stack, false, false, tickDelta);
-            // TODO: fix this with event
+
             renderLayerTasks.handleValue(renderEvent);
         } catch (ConcurrentModificationException | NullPointerException | CrashException e) {
             Debug.info("Error while handling Render Event:", e.getMessage());

@@ -72,7 +72,7 @@ public class MultiBlockHelper extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostPlayerUseItemAtBlock(), this::onBlockClick);
-        registerListener(Listener.getGameTick(), this::onTick);
+        registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getServerDisconnectPoint(), this::onExit);
         registerListener(Listener.getPostInitializeScreen(), this::onScreenInit);
     }

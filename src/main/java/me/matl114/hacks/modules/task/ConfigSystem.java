@@ -12,7 +12,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.collections.Point;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.text.Text;
@@ -31,7 +30,6 @@ public class ConfigSystem extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
-        registerListener(Listener.getResolutionChange(), this::onResolutionChange);
     }
 
     public void openConfigMenu() {
@@ -42,7 +40,12 @@ public class ConfigSystem extends BaseModule {
         MainTasks.openConfigScreen(config);
     }
 
-    private ContentDelegateWidget<ExecutableWidget> delegateWidget = new ContentDelegateWidget<>(0, 0, 100, 20);
+    private final ContentDelegateWidget<ExecutableWidget> delegateWidget = new ContentDelegateWidget<>(0, 5, 100, 20) {
+        @Override
+        public int getX() {
+            return mc.currentScreen instanceof MultiplayerScreen mp ? mp.width - 205 : super.getX();
+        }
+    };
 
     public void onScreenInitialize(Event<Screen> screenEvent) {
         if (screenEvent.context() instanceof MultiplayerScreen mp) {
@@ -51,19 +54,8 @@ public class ConfigSystem extends BaseModule {
                             TextProvider.of(Text.literal("SlimefunHelper")),
                             ButtonAction.run(() -> MainTasks.getConfigSystem().openConfigScreen(Configs.HTTP_CONFIG))));
             delegateWidget.setContentDelegate(executableWidget);
-            delegateWidget.addTo(mp);
-            delegateWidget.setX(mp.width - 205);
-            delegateWidget.setY(5);
             ScreenAccess.of(mp).removeChildFrom(delegateWidget);
-            ScreenAccess.of(mp).addDrawableChildTo(delegateWidget);
-        }
-    }
-
-    public void onResolutionChange(Event<Point> resolutionChange) {
-        if (mc.currentScreen instanceof MultiplayerScreen) {
-            int x = resolutionChange.context().x;
-            delegateWidget.setX(x - 205);
-            delegateWidget.setY(5);
+            delegateWidget.addTo(mp);
         }
     }
 }

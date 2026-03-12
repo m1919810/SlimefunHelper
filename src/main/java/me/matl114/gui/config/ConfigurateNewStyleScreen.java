@@ -70,9 +70,6 @@ public class ConfigurateNewStyleScreen extends IndexedScreen<Config, ConfigureLi
         this.filterWidget = new StringRef("");
     }
 
-    // TODO ：should we make first-level index
-    // TODO : add tooltips with translation
-
     //    @Override
     public void saveSelected() {
         if (subScreenDelegate != null) {

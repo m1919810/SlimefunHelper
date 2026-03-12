@@ -396,6 +396,8 @@
 	"model-config.enable-slimefun-cmd-override": "启用粘液物品CustomModelData覆写",
 	"model-config.enable-item-model-override": "启用物品模型覆写功能",
 	"model-config.enable-storage-display": "启用存储物品展示",
+	"model-config.enable-shulker-display": "启用潜影盒展示",
+	"model-config.enable-info-display": "启用物品信息展示",
 	"new-style-item.enable-enchant-book": "启用附魔书新材质",
 	"new-style-item.enable-new-style-item": "启用部分物品新材质",
 	"new-style-item.enable-new-style-nbt": "启用部分特殊物品新材质",

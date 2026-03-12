@@ -54,7 +54,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getGameTick(), this::onTick);
+        registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 

@@ -119,7 +119,6 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
             // add a Edit in gui setting
             AttrKeyValue.ListAttrKeyValue listKeyValueHolder = (AttrKeyValue.ListAttrKeyValue) this.keyValueHolder;
             this.interactPlace = new SubScreenWidget(dkey + dblank, 0, dvalue, dy)
-                    // todo: move list to front, increase size
                     .addDrawableChild(McWidgetHelpers.createTextFieldEditBox(
                             1,
                             1,
