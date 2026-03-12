@@ -34,6 +34,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
+import net.minecraft.item.ElytraItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -411,7 +412,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     }
                 }
                 if (idx != -1) {
-                    int selected = mc.player.getInventory().getSelectedSlot();
+                    int selected = mc.player.getInventory().selectedSlot;
                     PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(idx);
                     mc.interactionManager.sendSequencedPacket(
                             mc.world, s -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, s, yaw, pitch));
