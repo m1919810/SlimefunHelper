@@ -411,7 +411,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     }
                 }
                 if (idx != -1) {
-                    int selected = mc.player.getInventory().getSelectedSlot();
+                    int selected = mc.player.getInventory().selectedSlot;
                     PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(idx);
                     mc.interactionManager.sendSequencedPacket(
                             mc.world, s -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, s, yaw, pitch));
