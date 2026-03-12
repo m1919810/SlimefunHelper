@@ -26,7 +26,6 @@ public class EnumRef<T extends ConfigEnum> extends ObjectRef<T> {
         // value should be like enum:configEnumsthclaass_name:value
         String[] splite = value.split(":");
         Preconditions.checkArgument(splite.length == 3 && Objects.equals("enum", splite[0]));
-        // todo:
         this.enumType = splite[1];
         this.enumValue = splite[2];
         tryResolve();

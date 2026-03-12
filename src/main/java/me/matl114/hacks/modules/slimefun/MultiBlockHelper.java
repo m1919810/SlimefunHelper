@@ -91,7 +91,6 @@ public class MultiBlockHelper extends BaseModule {
     public void onTick(Event<ClientPlayerEntity> player) {
         if (!screens.isEmpty()) {
             long currentMs = System.currentTimeMillis();
-            // fixme: add configuration to delay 300MS
             if (currentMs > (lastAutoTick + (null == mc.currentScreen ? 2 : 1) * 300)) {
                 if (mc.player != null && mc.player.isSneaking()) {
                     Debug.chat(Text.literal("[自动多方块] 检测到长按下蹲,清除全部的执行中多方块"));
@@ -189,7 +188,6 @@ public class MultiBlockHelper extends BaseModule {
         if (!currentLookingAt && legal.get()) {
             // the 300ms limit or the legalMode
             if (!clickMany || lastInteractTimestamp + (5) < Tasks.getTick()) {
-                // todo: add legal mode selection, try interact to turn around
                 lastInteractTimestamp = Tasks.getTick();
                 Vec3d interactTarget = result.getBlockPos().toCenterPos();
                 boolean useDelayMove = legalMode.getValue() == Configs.LegalInteractMode.DELAY_MOVEMENT;

@@ -11,7 +11,6 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.ApiMethod;
-import me.matl114.utils.Debug;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.util.math.BlockPos;
@@ -20,12 +19,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class AntiAXray extends BaseModule {
-    // todo: left for test
-    public void onAntiXrayDemoTest(BlockPos testPos) {
-        Debug.chat("starting test on block ", testPos);
-        //        mc.getNetworkHandler().sendPacket(new );
-    }
-
     public AntiAXray() {
         bindFlag(enable);
     }
@@ -80,10 +73,8 @@ public class AntiAXray extends BaseModule {
         for (var posDelta : MineTasks.getMineExtra().getBlocksAround()) {
             BlockPos testPos = currentPlayer.add(posDelta);
             if (!MineTasks.distanceOutOfReach(testPos, mc.player.getEyePos())) {
-                // TODO 不要增加暴露判定
                 if (!simpleDetection.contains(testPos)) {
                     simpleDetection.add(testPos);
-                    // TODO: add packet number limitation here
                     mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
                         Vec3d shouldFacing = testPos.toCenterPos().subtract(mc.player.getEyePos());
                         Direction dir = Direction.getFacing(shouldFacing).getOpposite();
@@ -98,6 +89,4 @@ public class AntiAXray extends BaseModule {
             }
         }
     }
-
-    // todo add minearua
 }

@@ -21,12 +21,10 @@ import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.math.BlockPos;
 
 public class MainTasks {
     public static void init() {}
 
-    // todo find how to dupe with ITEM
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public static List<String> getSpecialTaskName() {
@@ -41,7 +39,6 @@ public class MainTasks {
                     int a = Integer.parseInt(args[0]);
                     int b = Integer.parseInt(args[1]);
                     int c = Integer.parseInt(args[2]);
-                    MineTasks.getAntiAXray().onAntiXrayDemoTest(new BlockPos(a, b, c));
                 }
                 case "writable_book_generate" -> {
                     generateWritableBookContent(args);
@@ -99,7 +96,6 @@ public class MainTasks {
                 },
                 1);
     }
-    // todo: delay tp
 
     public static void fillFakeSubChunkWithStone() {}
 
@@ -130,9 +126,11 @@ public class MainTasks {
     private static void initModule(ModuleManager m) {
         configSystem = new ConfigSystem().register(m);
     }
-
+    // TODO: add Shulker display and shulker storage display
+    // TODO: add entity inspect in info command
+    // TODO: add thread check or add runInMain in ApiMethod
+    //
     static {
-        // todo:
         moduleManager.registerFactories(MainTasks::initModule);
         HackModules.registerModuleGroup(moduleManager);
         MineTasks.init();

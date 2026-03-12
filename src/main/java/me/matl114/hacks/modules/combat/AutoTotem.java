@@ -20,7 +20,6 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 
 public class AutoTotem extends BaseModule {
-    // todo: move to combat
     private final Random inventorRandom = new Random();
     public static final String[] AUTO_TOTEM = {"totem", "auto-totem"};
     public static final String[] TOTEM_MODE = {"totem", "auto-totem-mode"};

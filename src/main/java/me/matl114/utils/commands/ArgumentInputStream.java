@@ -242,9 +242,6 @@ public class ArgumentInputStream {
         return next().selectResult(selections);
     }
 
-    // todo: complete getEnum;
-    // todo: complete setEnum
-
     @Nullable
     public List<String> getTabComplete(PlayerEntity sender) {
         List<InputArgument> argumentInputs = new ArrayList<>();

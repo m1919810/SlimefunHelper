@@ -97,8 +97,7 @@ public class SimpleCommandArgs {
             };
         }
     }
-    // todo: add Argument type,  consume more args
-    // todo: use StringReader
+
     public static class Argument implements TabProvider {
         @Getter
         private final String argsName;

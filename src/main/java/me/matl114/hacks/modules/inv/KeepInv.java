@@ -10,7 +10,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Text;
 
-// todo: move in the future, or not
 public class KeepInv extends BaseModule {
 
     public static final String[] KEEP_INV = {"button-toggle", "keep-inv"};

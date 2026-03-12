@@ -35,7 +35,6 @@ import net.minecraft.world.World;
 public class SlimefunTasks {
     public static void init() {}
 
-    // todo: 历史记录显示
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public static String generateId(ItemStack item) {
@@ -147,7 +146,6 @@ public class SlimefunTasks {
     // optimize vanilla type display
 
     // 加入了 switch功能 重写跳转方向
-    // todo: 把这个gui界面挪到别的utils里
     public static void openOrSwitch(Screen sf) {
         ScreenAccess access = ScreenAccess.of(sf);
         if (mc.currentScreen instanceof SlimefunEntryListScreen<?> sf2) {
@@ -184,7 +182,7 @@ public class SlimefunTasks {
     public static Stream<RecipeEntry> getAllSlimefunRecipeEntry() {
         return getRecipeDatabase().getId2Recipe().values().stream().map(RecipeEntry.class::cast);
     }
-    // todo: can not search from vanilla items
+
     public static List<RecipeEntry> getInventoryRelativeRecipes(Screen inventory, boolean hard) {
         if (!(inventory instanceof HandledScreen<?> handled)) return List.of();
         var handler = handled.getScreenHandler();

@@ -54,7 +54,6 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
         registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onJump);
     }
 
-    // todo add trigger condition
     private Runnable jumpTriggerStepHeight;
 
     private void onJump(Event<Integer> jumpEvent) {
@@ -143,7 +142,6 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
                             runTicks = -200;
                             movementManagerEvent.cancel();
                             //                        movementManagerEvent.context.playerStatus.restorePos();
-                            // fixme: optimize this check
                             movementManagerEvent.context.playerStatus.entity.setOnGround(true);
                             mc.getNetworkHandler()
                                     .sendPacket(VPacket.newOnGroundOnly(true, player.horizontalCollision));

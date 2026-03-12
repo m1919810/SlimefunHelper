@@ -88,7 +88,6 @@ public class Refs {
                                 .add(IntRef::fromString)
                                 .add(StringRef::new)
                                 .build()))
-                // TODO: add List
                 .add(new TypedReferenceBuilder<Object>(Object.class, List.of(ObjectRef.JustOnlyObjectRef::new)))
                 .build();
     }

@@ -86,7 +86,6 @@ public class SetBackLog extends BaseModule {
                     } catch (Throwable e) {
                         Debug.chat(ChatUtils.stringToText("&cInvalid format string: " + e.getMessage()));
                     }
-                    // fixme : list possible reasons like sprinting in hungry
                 }
             }
         }

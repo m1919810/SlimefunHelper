@@ -179,7 +179,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
     public WrapperSettingBuilder<MultiKeyBind> hotkey(Config config, String[] path, MultiKeyBind defaultValue) {
         return builder(config, MultiKeyBind.class).path(path).defaultValue(defaultValue);
     }
-    // todo: reconstruct
+
     public WrapperSettingBuilder<MultiKeyBind> toggleConfigHotkey(
             Config config, String[] path, MultiKeyBind defaultValue) {
         return builder(config, MultiKeyBind.class)

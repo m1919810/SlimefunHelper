@@ -103,7 +103,6 @@ public class ProjectileESP extends BaseModule {
                     MetaData metaData = access.getMetadata();
                     Integer integer = metaData.get(this, flagCalculateProjectile);
                     if (integer != null) {
-                        // todo: ?
                         if (integer >= 3) {
                             arrow.setVelocity(vec);
                             calArrowTrace(arrow);

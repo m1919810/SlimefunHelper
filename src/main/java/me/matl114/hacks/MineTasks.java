@@ -14,7 +14,6 @@ import net.minecraft.util.math.*;
 
 @ApiMethod
 public class MineTasks {
-    // todo: remove line
     public static void init() {}
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
