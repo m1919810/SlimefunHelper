@@ -201,7 +201,7 @@ public class Attack extends BaseModule {
         }
         mc.interactionManager.attackEntity(mc.player, target);
         mc.player.swingHand(Hand.MAIN_HAND);
-        // todo: use event to handle shield predict
+        // we use event to handle shield predict
         // handleShieldPredict(mc.player.getPitch(), mc.player.getYaw());
         if (criticSprint) {
             ClientPlayerAccess.of(mc.player).resyncSprint();
@@ -223,7 +223,7 @@ public class Attack extends BaseModule {
         final double attackRange = CombatTasks.getCombatExtra().getAttackRange();
         Vec3d vec3d = mc.player.getPos();
         // do not add mace or tp attack in legal mode
-        // todo: add hand swapping logic
+
         if (mc.crosshairTarget instanceof EntityHitResult entity && entity.getEntity() == target) {
             // already actioned in caller
             // may not actioned in caller, fix it
@@ -233,10 +233,9 @@ public class Attack extends BaseModule {
             // 提前转向 下个tick就有正确的velocity了
             // mace not enable in legal mode
             // use Item packet should trigger by a non-empty item
-            // todo: targeting need recal,
 
-            // todo: add movement prediction position targeting option
-            // todo: check if it can pass grimac in real situation
+            // add movement prediction position targeting option
+            // check if it can pass grimac in real situation
             boolean useTp = (canUseTp()
                     && target.getBoundingBox().squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(attackRange));
             boolean delayTurningAround =
@@ -295,7 +294,6 @@ public class Attack extends BaseModule {
 
                             @Override
                             public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                                // todo: set sprint false if critic
                                 ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
                                 // step back our position
                                 velocity = args.getVelocity();
@@ -370,7 +368,6 @@ public class Attack extends BaseModule {
                                     Debug.chat("Attack Task conflict with other movement tasks !!!");
                                     return false;
                                 }
-                                // fixme: check at matrix
                                 ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
                                 if (distancePassAttack) {
                                     ACPostTasks.addPostTransactionAction((ch) -> {
@@ -414,11 +411,6 @@ public class Attack extends BaseModule {
     }
 
     private boolean processIllegalAttack(Entity target) {
-        // todo LacrmirArua
-        // todo MaceMissLite
-        // todo: tpBot
-        // todo: AntiMiss how
-        // todo: Event that dispatch Attack Illegal
         var player = mc.player;
         if (player == null) return false;
         final boolean criticSprint = critic.get() && player.isSprinting();

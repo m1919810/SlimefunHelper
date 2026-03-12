@@ -268,8 +268,6 @@ public class MathUtils {
         }
     }
     // 指数加权移动平均
-    // copied from NumberVector
-    // todo: test if it works well
     public static class NVPredictor {
         private final Vec3d[] pointList;
         private final IntSupplier supplier;

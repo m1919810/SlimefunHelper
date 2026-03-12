@@ -29,8 +29,6 @@ import org.jetbrains.annotations.ApiStatus;
 public class ChatExtra extends BaseModule {
     public ChatExtra() {}
 
-    // todo: move all static Chat config to here
-
     public static final String[] IGNORE_INPUT_LIMIT = {"chat-helper", "ignore-chat-len-limit"};
 
     public static final String[] ESCAPE_TRIM = {"chat-helper", "escape-trim-chat"};

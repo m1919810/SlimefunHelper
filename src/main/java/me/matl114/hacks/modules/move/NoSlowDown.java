@@ -209,7 +209,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
                             @Override
                             public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                                // todo: set sprint false if critic
                                 ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
                                 // step back our position
                                 velocity = args.getVelocity();
@@ -318,15 +317,12 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-        // todo: what is this
         if (shouldNoSlowSneak()) {
 
             args.input.sneaking = mc.options.sneakKey.isPressed();
         }
     }
 
-    // todo: still some bug
-    // todo: mystery setback
     BlockPos cachedPos;
 
     @Override
@@ -339,7 +335,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             if (args.isSneaking()) {
                 // we tend to make this work
                 // add flag to remove calculation noSlow
-                // todo:use supporting plate
+                // use supporting plate here
                 if (cachedPos != null) {
                     BlockPos supportingPos = cachedPos;
                     Vec3d vec3d = args.getPos();
@@ -413,15 +409,12 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                 ClientPlayerAccess.of(mc.player).resyncSneak();
             }
 
-            // todo: why it can not pass edge simulation
-            // todo: add simulation
             // args.setOnGround(true);
             // only consider on ground to avoid jump
             //
             //            if(args.isOnGround()){
             //                if(lastPredictWasSneakEdge){
             //
-            //                    //todo: calculate by axis
             //                    // met edge
             //                    movementManagerEvent.context.playerStatus.restorePos();
             //                    PlayerInput input = args.input.playerInput;

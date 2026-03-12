@@ -41,7 +41,7 @@ public interface VItem {
     public boolean isShield(ItemStack stack);
 
     public ItemStack fromNbt(NbtCompound tag);
-    // todo: now we save DataVersion field
+    // now we save DataVersion field
     public NbtCompound toNbt(ItemStack tag);
 
     public CustomModelDataComponent createModelData(int cmd);

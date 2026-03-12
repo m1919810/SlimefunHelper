@@ -131,7 +131,4 @@ public class PacketDebugger extends BaseModule {
             }
         }
     }
-
-    // todo: move packet debug here
-
 }

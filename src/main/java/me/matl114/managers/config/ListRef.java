@@ -1,9 +1,5 @@
 package me.matl114.managers.config;
 
-// TODO: RegistryRef
-// TODO: RegistrySetRef
-// TODO: ListRef
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;

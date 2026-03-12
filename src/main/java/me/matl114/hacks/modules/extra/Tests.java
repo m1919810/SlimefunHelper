@@ -193,10 +193,10 @@ public class Tests extends BaseModule {
         stack.scale(0.025F, 0.025F, 1.0F);
         //        Quaternionf ROTATE_X = RotationAxis.POSITIVE_X.rotationDegrees(180);
         //        stack.multiply(ROTATE_X);
-        // todo: 可视范围是不是和法线有关
-        // todo: 默认是向坐标系的x + y + 渲染， 可视范围是z-
-        // todo: 翻转y轴后向 x + y - 渲染 可视范围z +
-        // todo: 如何调试法线
+        // 可视范围是不是和法线有关
+        // 默认是向坐标系的x + y + 渲染， 可视范围是z-
+        // 翻转y轴后向 x + y - 渲染 可视范围z +
+        // 如何调试法线
         stack.push();
         int x = Tasks.getSecond() % 20;
         int y = Tasks.getSecond() % 20;

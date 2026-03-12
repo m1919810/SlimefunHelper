@@ -49,8 +49,6 @@ public class ChatCombine extends BaseModule {
         ChatHud hud = mc.inGameHud.getChatHud();
         int amount = 0;
         if (hud != null) {
-            // fixme: shit, they may split lines in list
-            // fixme: shit, color and formats EVERYWHERE!
             var visibleHistory = ChatHudAccess.of(hud).getVisibleLines();
             ListIterator<ChatHudLine.Visible> lineIterator = visibleHistory.listIterator();
             List<OrderedText> textList = new ArrayList<>();

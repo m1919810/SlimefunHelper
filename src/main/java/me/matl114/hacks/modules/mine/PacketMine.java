@@ -56,7 +56,6 @@ public class PacketMine extends BaseModule {
             if (mc.interactionManager != null && mc.player != null) {
                 BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
                 // todo: add predicted speed
-                // todo: add pickaxe switch
                 if (pos != null) {
                     double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
                     if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {

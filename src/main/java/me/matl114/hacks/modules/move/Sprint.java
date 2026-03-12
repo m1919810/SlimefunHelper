@@ -22,7 +22,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public static final String[] MOVE_SPRINT_BYPASS_MODE = {"move-speed", "sprint", "bypass-mode"};
 
     public static LegalMovementManager.DelegateMovementModifier instance;
-    // todo; add speed modify to here
     // todo: 顶头跑 here
     public Sprint() {
         if (instance == null) {

@@ -63,7 +63,7 @@ public class MineArua extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getMineBlockAction(), this::onMineBlockAction);
-        // todo handle doAttackAction redirect
+        // todo handle doAttackAction redirect, fix bug
     }
 
     @Override

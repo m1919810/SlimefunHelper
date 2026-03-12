@@ -35,7 +35,7 @@ public class BeaconEnhance extends BaseModule {
     }
 
     public void onScreenInitialize(Event<Screen> e) {
-        // todo: rewrite it
+        // todo: rewrite it with DrawableWidget
         if (enable.get() && e.context() instanceof BeaconScreen beaconScreen) {
             HandledScreenAccess access = HandledScreenAccess.of(beaconScreen);
             int scx = access.getScreenX();

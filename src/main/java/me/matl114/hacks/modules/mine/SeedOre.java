@@ -358,7 +358,6 @@ public class SeedOre extends BaseModule {
     public void onBlockUpdate(Event<BlockUpdateS2CPacket> event) {
         // remove cache whenever
         // remove async
-        // todo: add check to
         if (!chunkSeedCache.isEmpty() || !fakeOres.isEmpty()) {
             var packet = event.context;
             long chunkKey = ChunkPos.toLong((packet).getPos());
@@ -522,7 +521,7 @@ public class SeedOre extends BaseModule {
         if (map0 != null && !map0.isEmpty()) {
             removeChunkFakeOres(chunkey, map0);
         }
-        // todo: remove obfuscated ores from server , add config
+
         Map<BlockPos, BlockState> newFakeOres = new ConcurrentHashMap<>();
         int minY = mc.world.getBottomY();
         for (var ore0 : ores.entrySet()) {

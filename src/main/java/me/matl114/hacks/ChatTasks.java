@@ -421,7 +421,6 @@ public class ChatTasks {
                     onResource0(val, datas);
                 }
                 case "plugins" -> {
-                    // todo: add tabing /version as a plan , then appending command namespace
                     Debug.chat(Text.literal("导出Command Namespace获取的数据:").formatted(Formatting.GREEN));
                     datas = ClientUtils.getServerCommands().stream()
                             .map(n -> {
@@ -954,7 +953,7 @@ public class ChatTasks {
         }
 
         public static RepeatTask travelTask;
-        // todo add elytra support
+
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("mark")
@@ -1107,7 +1106,6 @@ public class ChatTasks {
                     }
                 }
                 case "spawn" -> {
-                    // todo: test if it works
                     Debug.chat("当前世界的出生点:");
                     GlobalPos pos = GlobalPos.create(mc.world.getRegistryKey(), mc.world.getSpawnPos());
                     Debug.chat(
@@ -1221,7 +1219,6 @@ public class ChatTasks {
                     }
                 }
                 case "pentry" -> {
-                    // todo entry information
                     String user0 = Objects.equals(user, "#me") ? mc.player.getNameForScoreboard() : user;
                     PlayerListEntry entry =
                             MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(user0);
@@ -1248,7 +1245,6 @@ public class ChatTasks {
                         Debug.chat(
                                 Text.literal("DisplayName: ").formatted(Formatting.GRAY),
                                 entry.getDisplayName() == null ? Text.literal("null") : entry.getDisplayName());
-                        // todo need test
                         List<Text> texts = new ArrayList<>();
                         texts.add(Text.literal("Latency: " + entry.getLatency()));
                         texts.add(Text.literal("MessageVerifier: " + entry.getMessageVerifier()));
@@ -1405,7 +1401,6 @@ public class ChatTasks {
         }
     }
 
-    // todo: make it a event
     public static CompletableFuture<Suggestions> tabCompleteClientCommand(String command, int cursorAt) {
         if (command.startsWith("!!")) {
             return dispatchTabComplete(command.substring(2), cursorAt - 2, false);

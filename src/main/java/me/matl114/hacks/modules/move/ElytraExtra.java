@@ -152,16 +152,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         registerListener(Listener.getEntityRemoveListener(), this::onFireworkRemove);
     }
 
-    // TODO: fake elytra flight figure it out: NO USE, server player pose will not change
     // elytra unbreakable?
 
-    // TODO: Elytra Mode: velocity control, fake creative flight, rewrite this elytra unbreakable
-    // TODO: armor flight,
     private int fakeGlideTime = 0;
     private int fakeGlidePoseTime = 0;
-    // todo: check unbreakable flag
-    // todo: 鞘翅甲飞
-    // todo: 动量控制
+
     public boolean shouldElytraUnbreakable() {
         return enableUnbreakableElytra.get()
                 && mc.player != null
@@ -254,8 +249,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             mc.getNetworkHandler()
                                     .sendPacket(new ClientCommandC2SPacket(
                                             mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                            // todo: add configuration
-
                         }
                         // we delayed the packets here to ensure that rockets are usable
 
@@ -702,7 +695,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         return true;
     }
-    // todo: Elytra Control
+
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;

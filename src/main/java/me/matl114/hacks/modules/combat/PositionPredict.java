@@ -77,10 +77,8 @@ public class PositionPredict extends BaseModule {
             }
             return null;
         } else {
-            // fixme use player facing when considerShield
             boolean considerAntiShield = considerAntiShield(target);
             Vec3d deltaMovments;
-            // todo: how to combine shielding and predicting
             if (considerAntiShield) {
                 deltaMovments = target.getRotationVector().normalize().multiply(-0.2);
             } else if (target instanceof PlayerEntity playerEntity) {

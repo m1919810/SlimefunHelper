@@ -88,8 +88,7 @@ public class SlimefunHelper implements ModInitializer {
         BridgeMain.init();
         SlimefunHelperApi.init();
     }
-    // todo 接下来要做什么
-    // todo 已知的冲突:
+
     // 大饼: 实现指令系统，接入聊天框 !!开头
     // 大饼: 客户端实现/give指令劫持
     // 大饼: 发射器界面实现一键放入+合成(?)+交互合成按钮  有了
@@ -97,16 +96,8 @@ public class SlimefunHelper implements ModInitializer {
     // 大饼 Stats modify
     // todo 大饼 下单系统; 需要实现vanilla walk 模块，拉取baritone api
     // 大病: 新配置体系 有了
-    // todo 更多hacks
     // villager trade utils 有了
-    // todo slimefun textures to sprites
     // todo: generalize sf id to some nbt path -> id
     // todo: add JsonMapRef , store data as json string
-    // todo: add shulker display and shulker preview
-    //
 
-    // todo: js dev: tp+ litematica, tp + breakblock
-
-    // todo: breakSystem problem
-    // todo: sneak packets
 }

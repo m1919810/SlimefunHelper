@@ -276,7 +276,6 @@ public class StorageDisplay extends BaseModule {
                         return BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);
                     }
                 } else if (tag.contains(NETWORK_MOVER_ITEM_PATH)) {
-                    // todo: check correct
                     if (tag.get(NETWORK_MOVER_ITEM_PATH) instanceof NbtByteArray byteArray) {
                         byte[] byteStream = byteArray.getByteArray();
                         return BukkitItemStackUtils.DATATYPE_MOCKITEMSTACK.fromPrimitive(byteStream);

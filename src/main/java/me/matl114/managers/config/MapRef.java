@@ -68,7 +68,6 @@ public class MapRef extends Ref<Map<String, Ref<?>>> implements RefMap {
 
     @Override
     public void setValue(Map<String, Ref<?>> value) {
-        // todo: copy recursively
         if (validateUpdateValue(value)) {
             setValueRecursively(value);
             callUpdate();

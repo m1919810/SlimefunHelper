@@ -82,7 +82,6 @@ public class RaycastUtils {
                 return Optional.of(blockHitResult.getBlockPos());
             }
         }
-        // todo optimize
         Vec3d lookat = mc.player.getRotationVector().normalize().multiply(0.1);
         Vec3d cameraPose = mc.player.getCameraPosVec(1.0f);
         BlockPos.Mutable mutable = new BlockPos.Mutable(cameraPose.x, cameraPose.y, cameraPose.z);
@@ -109,7 +108,6 @@ public class RaycastUtils {
         BlockState state = mc.world.getBlockState(pos);
         if (state.isReplaceable()) {
             // zzz
-            // todo complete it later
             return null;
         } else {
             return null;
@@ -179,8 +177,6 @@ public class RaycastUtils {
                     new Vec3d(box.minX, box.minY, box.minZ), new Vec3d(box.minX, box.maxY, box.maxZ));
         };
     }
-
-    // todo: add EntityHitResult;
 
     public static HitResult createCrossHairHitResult(
             Entity camera, double blockInteractionRange, double entityInteractionRange, float tickDelta) {

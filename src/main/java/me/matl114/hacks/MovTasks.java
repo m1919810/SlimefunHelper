@@ -64,13 +64,7 @@ public class MovTasks {
         Vec3d vec3d = to.subtract(from);
         double len = vec3d.length();
         // tiny movements considered as a method to reset falldistance
-        // todo: marge this method to scheduleMove
-        //        if(len  < 1E-7){
-        //            if(updatePlayer){
-        //                mc.player.setPosition(to);
-        //            }
-        //            return;
-        //        }
+
         if (mc.player.hasVehicle()) {
             Entity vehicle = mc.player.getVehicle();
             double maxOnceLen = 10 - 1E-2;
@@ -1475,25 +1469,6 @@ public class MovTasks {
         public boolean checkEnvironmentCollision(Entity entity, Vec3d vec) {
             return MovTasks.checkEnvironmentCollision(entity, vec, this.ignoreChunkBorder);
         }
-
-        // todo: mechanism different , can not be cached!
-        //        public boolean checkEnvironmentCollision(Entity entity, Vec3d vec){
-        //            Box oldBox = entity.dimensions.getBoxAt(vec);
-        //            for (int i = 0, len = this.intoAABBs.size(); i < len; ++i) {
-        //                final Box box = this.intoAABBs.get(i);
-        //                if (!CollisionUtil.voxelShapeIntersect(box, oldBox)) {
-        //                    return true;
-        //                }
-        //            }
-        //
-        //            for (int i = 0, len = this.intoVoxels.size(); i < len; ++i) {
-        //                final VoxelShape voxel = this.intoVoxels.get(i);
-        //                if (!CollisionUtil.voxelShapeIntersectNoEmpty(voxel, oldBox)) {
-        //                    return true;
-        //                }
-        //            }
-        //            return false;
-        //        }
     }
 
     public static boolean validMoveTo(CollisionContext engin, Vec3d currentPos, Vec3d currentTry) {

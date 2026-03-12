@@ -223,7 +223,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
         @Override
         public void onSetback(Event<MovTasks.MovInfo> event) {
-            // todo: 何意味
             if (module.isActive()
                     && (event.context.oGroundOverride() == null
                             || noFallSetbackResponse != (boolean) event.context.oGroundOverride())) {
@@ -242,7 +241,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 if (forceNoFall || module.unsafeFallDistance()) {
                     if (!module.holdingMace) {
                         runningThisTick = true;
-                        // TODO LAZY MODE, only if we trigger not onground -> onground should we reset
+                        // LAZY MODE: only if we trigger not onground -> onground should we reset
                         counter = 0;
                         module.lastOnGroundHeight = args.getY();
 
@@ -303,7 +302,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
             if (forceNoFall) {
                 runningThisTick = true;
-                // TODO LAZY MODE, only if we trigger not onground -> onground should we reset
+                // LAZY MODE: only if we trigger not onground -> onground should we reset
                 counter = 0;
                 module.lastOnGroundHeight = args.getY();
 
@@ -321,7 +320,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 noFallSetbackResponse = false;
             }
         }
-        // todo: copy the nofall position check from NoFallBypassGrimLazy
 
         public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
             if (module.isActive()) {
@@ -344,9 +342,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                             entity.pos.getZ(),
                                             false,
                                             entity.horizontalCollision));
-                            // todo: 测试终止横向动量 减少grimac发包
-                            //                                    entity.entity.setPos(entity.pos.getX(),
-                            // entity.entity.getY() , entity.pos.getZ());
                             noFallSetbackResponse = true;
 
                             return;
@@ -425,7 +420,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     // resync lastOnGroundHeigth in this method
                     counter = 0;
                 } else if (args.isOnGround()) {
-                    // todo check if this is at risk
 
                     module.lastOnGroundHeight = module.lastHeight;
                 } else {
@@ -580,7 +574,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             boolean forceNoFall = ClientPlayerAccess.of(args).isForceNoFall();
             if (forceNoFall) {
                 runningThisTick = true;
-                // TODO LAZY MODE, only if we trigger not onground -> onground should we reset
+                // LAZY MODE: only if we trigger not onground -> onground should we reset
                 counter = 0;
                 module.lastOnGroundHeight = args.getY();
 
@@ -689,9 +683,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             //                            entity.entity.setVelocity(0.0, 0.0, 0.0);
                             noFallSetbackResponse = true;
 
-                            // todo: 测试终止横向动量 减少grimac发包
-                            //                                    entity.entity.setPos(entity.pos.getX(),
-                            // entity.entity.getY() , entity.pos.getZ());
                             // idk
                             return;
                         }
