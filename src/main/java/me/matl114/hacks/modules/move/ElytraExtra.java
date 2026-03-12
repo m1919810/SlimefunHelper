@@ -314,9 +314,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 if (canBeUsedAsFireworks(stack)) {
                     // 40-> offhand
                     delayQueue.add(new IndexEntry<>(
-                            packet.context().getHand() == Hand.MAIN_HAND
-                                    ? mc.player.getInventory().getSelectedSlot()
-                                    : 40,
+                            packet.context().getHand() == Hand.MAIN_HAND ? mc.player.getInventory().selectedSlot : 40,
                             packet.context()));
                     packet.cancel();
                 }
@@ -446,7 +444,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public void flushRockets() {
         flushing = true;
-        int selected = mc.player.getInventory().getSelectedSlot();
+        int selected = mc.player.getInventory().selectedSlot;
         try {
             while (!delayQueue.isEmpty()) {
                 var packetEntry = delayQueue.poll();
@@ -468,7 +466,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     // ArmorFly works
     // tested in 3c3u.uno, 20260311
-    // could not pass GrimAC in loyisa due to inventory packets disorders
+    // tested in mc.loyisa.cn 1.21.1 20260311
+    // could not pass GrimAC > 1.21.2 in loyisa due to inventory packets disorders and player input packet check
     int lastFlushRocketTick = 0;
 
     @Override
