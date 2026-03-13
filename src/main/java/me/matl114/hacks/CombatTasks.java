@@ -45,7 +45,8 @@ public class CombatTasks {
     public static boolean notSuitableForAttack(ItemStack item) {
         return item.isEmpty()
                 || (!ItemStackUtils.hasInPatch(item, DataComponentTypes.ATTRIBUTE_MODIFIERS)
-                        && (!VItem.getInstance().isWeapon(item)));
+                        && (!VItem.getInstance().isWeapon(item)))
+                || (VItem.getInstance().isNotAttackingTool(item));
     }
 
     @ApiMethod
