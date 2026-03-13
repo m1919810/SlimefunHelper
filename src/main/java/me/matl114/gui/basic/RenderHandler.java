@@ -7,6 +7,7 @@ import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
@@ -373,6 +374,19 @@ public interface RenderHandler {
             int endX,
             int endY,
             int color) {
+        drawScrollableText0(context, textRenderer, text.asOrderedText(), centerX, startX, startY, endX, endY, color);
+    }
+
+    public static void drawScrollableText0(
+            VDrawContext context,
+            TextRenderer textRenderer,
+            OrderedText text,
+            int centerX,
+            int startX,
+            int startY,
+            int endX,
+            int endY,
+            int color) {
         int i = textRenderer.getWidth(text);
         int var10000 = startY + endY;
         int j = (var10000 - 9) / 2 + 1;
@@ -385,11 +399,11 @@ public interface RenderHandler {
             double f = Math.sin(1.5707963267948966 * Math.cos(6.283185307179586 * d / e)) / 2.0 + 0.5;
             double g = MathHelper.lerp(f, 0.0, (double) l);
             context.enableScissor(startX, startY, endX, endY);
-            context.drawText(textRenderer, text.asOrderedText(), startX - (int) g, j, color, true);
+            context.drawText(textRenderer, text, startX - (int) g, j, color, true);
             context.disableScissor();
         } else {
             l = MathHelper.clamp(centerX, startX + i / 2, endX - i / 2);
-            context.drawCenteredTextWithShadow(textRenderer, text.asOrderedText(), l, j, color);
+            context.drawCenteredTextWithShadow(textRenderer, text, l, j, color);
         }
     }
 
@@ -397,6 +411,19 @@ public interface RenderHandler {
             VDrawContext context,
             TextRenderer textRenderer,
             Text text,
+            int startX,
+            int startY,
+            int endX,
+            int endY,
+            int color,
+            int alignment) {
+        drawScaledText0(context, textRenderer, text.asOrderedText(), startX, startY, endX, endY, color, alignment);
+    }
+
+    public static void drawScaledText0(
+            VDrawContext context,
+            TextRenderer textRenderer,
+            OrderedText text,
             int startX,
             int startY,
             int endX,
@@ -420,7 +447,7 @@ public interface RenderHandler {
                     l = MathHelper.clamp((startX + endX) / 2, startX + i / 2, endX - i / 2);
                     break;
             }
-            context.drawCenteredTextWithShadow(textRenderer, text.asOrderedText(), l, j, color);
+            context.drawCenteredTextWithShadow(textRenderer, text, l, j, color);
         } else {
             float scale = ((float) availableWidth) / (float) i;
             context.getMatrices().pushMatrix();
@@ -429,7 +456,7 @@ public interface RenderHandler {
             //
             context.drawCenteredTextWithShadow(
                     textRenderer,
-                    text.asOrderedText(),
+                    text,
                     (int) (((endX - startX) / 2) / scale),
                     (int) ((((endY - startY) / 2) / scale - 7f / 2)),
                     color);

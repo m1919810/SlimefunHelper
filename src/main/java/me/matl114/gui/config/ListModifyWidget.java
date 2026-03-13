@@ -3,6 +3,7 @@ package me.matl114.gui.config;
 import java.util.List;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -11,11 +12,17 @@ import net.minecraft.util.Identifier;
 
 public class ListModifyWidget extends ScrollableListWidget {
     ListEntryWidgetController controller;
+    boolean appendAdd = true;
+
+    public ListModifyWidget appendAddButton(boolean bl) {
+        this.appendAdd = bl;
+        return this;
+    }
 
     public ListModifyWidget(ListEntryWidgetController controller, int x, int y, int dx, int dy) {
         super(x, y, dx, dy);
         this.controller = controller;
-        refreshList();
+        this.controller.markDirty(true);
     }
 
     protected void refreshList() {
@@ -25,7 +32,18 @@ public class ListModifyWidget extends ScrollableListWidget {
             SubScreenWidget widget = wrapWidget(controller.getEntryWidget(i), i, 0, 0);
             addScrollingWidget(widget);
         }
-        addScrollingWidget(getListEndAdd(0, 0));
+        if (appendAdd) {
+            addScrollingWidget(getListEndAdd(0, 0));
+        }
+    }
+
+    @Override
+    public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
+        if (this.controller.dirty()) {
+            refreshList();
+            this.controller.markDirty(false);
+        }
+        super.render0(context, mouseX, mouseY, delta, disableSelect);
     }
 
     private static final Identifier SHIFT_UP_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/move_up");
@@ -50,34 +68,26 @@ public class ListModifyWidget extends ScrollableListWidget {
                 .addDrawableChild(wrap1)
                 .addDrawableChild(ExecutableWidget.instance(width + 1, 1, buttonSize - 2, buttonSize - 2)
                         .setElementHandler(IconElement.fixedGui(SHIFT_UP_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                                    if (this.controller.shiftUp(listIndex)) {
-                                        refreshList();
-                                    }
+                                    this.controller.shiftUp(listIndex);
                                 }))
                                 .setActive(listIndex != 0)
                                 .withTooltips(TooltipHandler.of(SHIFT_UP_TOOLTIPS))))
                 .addDrawableChild(ExecutableWidget.instance(width + buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
                         .setElementHandler(IconElement.fixedGui(SHIFT_DOWN_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                                    if (this.controller.shiftDown(listIndex)) {
-                                        refreshList();
-                                    }
+                                    this.controller.shiftDown(listIndex);
                                 }))
                                 .setActive(listIndex != controller.size() - 1)
                                 .withTooltips(TooltipHandler.of(SHIFT_DOWN_TOOLTIPS))))
                 .addDrawableChild(
                         ExecutableWidget.instance(width + 2 * buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
                                 .setElementHandler(IconElement.fixedGui(DEL_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                                            if (this.controller.del(listIndex)) {
-                                                refreshList();
-                                            }
+                                            this.controller.del(listIndex);
                                         }))
                                         .withTooltips(TooltipHandler.of(DEL_TOOLTIPS))))
                 .addDrawableChild(
                         ExecutableWidget.instance(width + 3 * buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
                                 .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                                            if (this.controller.insert(listIndex)) {
-                                                refreshList();
-                                            }
+                                            this.controller.insert(listIndex);
                                         }))
                                         .withTooltips(TooltipHandler.of(NEW_TOOLTIPS))));
     }
@@ -87,14 +97,12 @@ public class ListModifyWidget extends ScrollableListWidget {
         int width = controller.width();
         int buttonSize = Math.min(20, height);
         return ExecutableWidget.instance(
-                        startX + width / 2 - buttonSize / 2,
+                        startX + width / 2 - buttonSize / 2 + 2 * buttonSize,
                         startY + height * controller.size(),
                         buttonSize,
                         buttonSize)
                 .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                            if (this.controller.insert(-1)) {
-                                refreshList();
-                            }
+                            this.controller.insert(-1);
                         }))
                         .withTooltips(TooltipHandler.of(NEW_TOOLTIPS)));
     }

@@ -1,6 +1,7 @@
 package me.matl114.gui.basic;
 
 import me.matl114.versioned.api.VDrawContext;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
@@ -39,7 +40,7 @@ public class LabelElement extends RawTextElement {
             float delta,
             float alpha,
             boolean shouldHighlight) {
-        Text text1 = text.getLabel(element);
+        OrderedText text1 = text.getLabel(element);
         if (text1 != null) {
             context.drawTexturedQuad(
                     BACKGROUND_RESOURCE,

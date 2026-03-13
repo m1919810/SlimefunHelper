@@ -87,6 +87,7 @@ public abstract class Ref<T> {
     public final AttrKeyValue<T> createKeyValue(String key) {
         AttrKeyValue<T> keyValue = _createKeyValue0(key);
         keyValue.getValidators().addAll(validators);
+        keyValue.getListeners().add(this::setValue);
         return keyValue;
     }
 

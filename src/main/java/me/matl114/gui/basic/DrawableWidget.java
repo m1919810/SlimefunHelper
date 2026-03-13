@@ -26,8 +26,8 @@ public abstract class DrawableWidget
     }
 
     // do not read other's value, because of delegate
-    protected int x;
-    protected int y;
+    private int x;
+    private int y;
 
     protected int dx;
     protected int dy;
@@ -102,7 +102,7 @@ public abstract class DrawableWidget
     }
 
     public void setSelected(boolean s) {
-        this.subWidget = s;
+        this.selected = s;
     }
 
     public <T extends DrawableWidget> T setRenderHandler(RenderHandler renderHandler) {
@@ -144,7 +144,7 @@ public abstract class DrawableWidget
     public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
         context.getMatrices().pushMatrix();
-        context.getMatrices().translate(x, y);
+        context.getMatrices().translate(getX(), getY());
         // compat low version
         if (priority != 0) {
             context.getMatrices().translateZ(priority);

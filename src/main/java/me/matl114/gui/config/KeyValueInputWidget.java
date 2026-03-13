@@ -39,6 +39,20 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
         init();
     }
 
+    List<Text> cachedTooltips;
+
+    public KeyValueInputWidget<T> setTooltips(List<Text> tooltips) {
+        this.cachedTooltips = tooltips;
+        return this;
+    }
+
+    public List<Text> getTooltips() {
+        if (cachedTooltips == null) {
+            cachedTooltips = ChatUtils.parseTooltipsTranslation(this.keyValueHolder.getKeyName() + ".tooltips", "暂无介绍");
+        }
+        return cachedTooltips;
+    }
+
     DisplayWidget keyLabel;
     DrawableWidget interactPlace;
     private static final Identifier SEARCH_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/search");
@@ -59,8 +73,7 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
         String keyValue = translate.get(this.keyValueHolder.getKeyName(), this.keyValueHolder.getKeyName());
         ElementHandler button = new ButtonElement(TextProvider.of(Text.literal(keyValue)), ButtonAction.empty());
 
-        button = button.withTooltips(TooltipHandler.of(
-                ChatUtils.parseTooltipsTranslation(this.keyValueHolder.getKeyName() + ".tooltips", "暂无介绍")));
+        button = button.withTooltips(TooltipHandler.of(this::getTooltips));
         this.keyLabel = DisplayWidget.instance(1, 1, dkey - 1, dy - 1)
                 .setRenderHandler(
                         button

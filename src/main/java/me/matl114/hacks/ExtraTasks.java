@@ -38,6 +38,9 @@ public class ExtraTasks {
     @Getter
     public static EnderEyeLog enderEyeLog;
 
+    @Getter
+    public static ServerScanner serverScanner;
+
     private static void initModules(ModuleManager m) {
         clientExtra = new ClientExtra().register(m);
         ;
@@ -46,6 +49,8 @@ public class ExtraTasks {
         beaconEnhance = new BeaconEnhance().register(m);
 
         enderEyeLog = new EnderEyeLog().register(m);
+
+        serverScanner = new ServerScanner().register(m);
     }
 
     static {

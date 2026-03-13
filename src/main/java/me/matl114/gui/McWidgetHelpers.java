@@ -147,8 +147,8 @@ public class McWidgetHelpers {
                 // 设置cursor位置
                 TextFieldAccess.of(this.delegate)
                         .dragSelect(
-                                (int) ((mouseX - this.x - this.delegate.getX()) / this.textureScale),
-                                (int) ((mouseY - this.y - this.delegate.getY()) / this.textureScale),
+                                (int) ((mouseX - this.getX() - this.delegate.getX()) / this.textureScale),
+                                (int) ((mouseY - this.getY() - this.delegate.getY()) / this.textureScale),
                                 true);
             }
             return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
@@ -157,7 +157,7 @@ public class McWidgetHelpers {
         @Override
         public boolean startDrag(Screen screen, double mouseX, double mouseY) {
             if (this.delegate != null
-                    && TextFieldAccess.of(this.delegate).canStartDrag(mouseX - this.x, mouseY - this.y)) {
+                    && TextFieldAccess.of(this.delegate).canStartDrag(mouseX - this.getX(), mouseY - this.getY())) {
                 this.startDrag = true;
                 return true;
             }

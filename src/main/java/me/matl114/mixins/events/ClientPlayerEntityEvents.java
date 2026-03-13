@@ -2,11 +2,13 @@ package me.matl114.mixins.events;
 
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.BidirectionalIterator;
+import java.util.Objects;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.utils.collections.LinkNode;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.entity.ProgressWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -20,6 +22,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.PlayerInput;
+import net.minecraft.util.math.Vec2f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -81,10 +84,16 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             method = "tickMovement",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick()V", shift = At.Shift.AFTER))
     public void onPostInputTick(CallbackInfo ci) {
+        PlayerInput currentInput = this.input.playerInput;
         if (!Listener.getPlayerKeyboardInputTick().isEmpty()) {
             Listener.getPlayerKeyboardInputTick().handleValue(new Event<>(this.input, false, false));
         }
         getLegalMovementManager().postInputTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
+        // changed, update movementVector
+        if (!Objects.equals(currentInput, this.input.playerInput)) {
+            PlayerInputUtils.Input i0 = PlayerInputUtils.of(this.input);
+            this.input.movementVector = new Vec2f(i0.sidewaysSpeed(), i0.forwardSpeed()).normalize();
+        }
     }
 
     @Inject(

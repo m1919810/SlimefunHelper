@@ -3,6 +3,7 @@ package me.matl114.gui.basic;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.versioned.api.VDrawContext;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 
@@ -48,7 +49,7 @@ public class RawTextElement extends AbstractElement {
             float delta,
             float alpha,
             boolean shouldHighlight) {
-        Text text1 = text.getLabel(element);
+        OrderedText text1 = text.getLabel(element);
         if (text1 != null) {
             RenderHandler.drawScaledText0(
                     context,
@@ -61,9 +62,5 @@ public class RawTextElement extends AbstractElement {
                     color,
                     alignment);
         }
-    }
-
-    public boolean canBeSelected(DrawableWidget element) {
-        return false;
     }
 }
