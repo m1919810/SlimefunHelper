@@ -21,6 +21,7 @@ import me.matl114.events.channels.PacketEventChannel;
 import me.matl114.hacks.MovTasks;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.IInputManager;
+import me.matl114.utils.collections.FPoint;
 import me.matl114.utils.collections.Point;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
@@ -459,6 +460,11 @@ public class Listener {
     @Getter
     @Cancelable
     private static final EventChannel<PlayerEntity> playerTravelingTick = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    @Modifiable
+    private static final EventChannel<FPoint> playerChangeLook = new EventChannel<>();
 
     // entities
     @Getter

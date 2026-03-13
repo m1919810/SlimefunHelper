@@ -116,9 +116,9 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
             VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         // handling mouse Coord in render should be scaled? here
-        int translatedMouseX = (mouseX - this.x);
+        int translatedMouseX = (mouseX - this.getX());
 
-        int translatedMouseY = mouseY - this.y;
+        int translatedMouseY = mouseY - this.getY();
         if (this.textureScale != 1.0f) {
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
@@ -148,8 +148,8 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // this should not be scaled because, scale do not change bounding box
-        double translatedMouseX = mouseX - this.x;
-        double translatedMouseY = mouseY - this.y;
+        double translatedMouseX = mouseX - this.getX();
+        double translatedMouseY = mouseY - this.getY();
         if (this.textureScale != 1.0f) {
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
@@ -167,8 +167,8 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
 
-        double translatedMouseX = mouseX - this.x;
-        double translatedMouseY = mouseY - this.y;
+        double translatedMouseX = mouseX - this.getX();
+        double translatedMouseY = mouseY - this.getY();
         if (this.textureScale != 1.0f) {
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
@@ -187,13 +187,13 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
         return this.dragging != null
                 && this.dragging.isDragging()
                 && this.dragging.mouseDragged(
-                        (mouseX - this.x) / this.textureScale,
-                        (mouseY - this.y) / this.textureScale,
+                        (mouseX - this.getX()) / this.textureScale,
+                        (mouseY - this.getY()) / this.textureScale,
                         button,
                         deltaX / this.textureScale,
                         deltaY / this.textureScale);
-        //        double translatedMouseX = mouseX - this.x;
-        //        double translatedMouseY = mouseY - this.y;
+        //        double translatedMouseX = mouseX - this.getX();
+        //        double translatedMouseY = mouseY - this.getY();
         //        if(this.textureScale != 1.0f){
         //            translatedMouseX = (int) (translatedMouseX / this.textureScale);
         //            translatedMouseY = (int) (translatedMouseY / this.textureScale);
@@ -213,8 +213,8 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
 
     @Override
     public boolean startDrag(Screen screen, double mouseX, double mouseY) {
-        double translatedMouseX = mouseX - this.x;
-        double translatedMouseY = mouseY - this.y;
+        double translatedMouseX = mouseX - this.getX();
+        double translatedMouseY = mouseY - this.getY();
         if (this.textureScale != 1.0f) {
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
@@ -231,8 +231,8 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     @Override
     public void releaseDrag(Screen screen, double mouseX, double mouseY) {
         if (this.dragging != null) {
-            double translatedMouseX = mouseX - this.x;
-            double translatedMouseY = mouseY - this.y;
+            double translatedMouseX = mouseX - this.getX();
+            double translatedMouseY = mouseY - this.getY();
             if (this.textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / this.textureScale);
                 translatedMouseY = (int) (translatedMouseY / this.textureScale);
@@ -243,8 +243,8 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
 
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         // should not scrolled
-        double translatedMouseX = mouseX - this.x;
-        double translatedMouseY = mouseY - this.y;
+        double translatedMouseX = mouseX - this.getX();
+        double translatedMouseY = mouseY - this.getY();
         if (this.textureScale != 1.0f) {
             translatedMouseX = (int) (translatedMouseX / this.textureScale);
             translatedMouseY = (int) (translatedMouseY / this.textureScale);
@@ -288,7 +288,8 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
         for (var entry : this.childrenInteractOrder()) {
-            if (entry.isMouseOver((mouseX - this.x) / this.textureScale, (mouseY - this.y) / this.textureScale))
+            if (entry.isMouseOver(
+                    (mouseX - this.getX()) / this.textureScale, (mouseY - this.getY()) / this.textureScale))
                 return true;
         }
         return false;

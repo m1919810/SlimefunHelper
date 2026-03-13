@@ -181,7 +181,7 @@ public class EntityESP extends BaseModule {
         RenderUtils.startDrawVirtual(stack);
         try {
             for (Entity entity : mc.world.getEntities()) {
-                if (entity == mc.player) continue;
+                if (entity == mc.gameRenderer.getCamera().getFocusedEntity()) continue;
                 if (entity == null || entity.isRemoved()) {
                     continue;
                 } else {

@@ -2,12 +2,20 @@ package me.matl114.gui.basic;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import me.matl114.versioned.api.VDrawContext;
 
+@Accessors(chain = true)
 public class AbstractElement implements ElementHandler {
     List<RenderHandler> extraRender = null;
     List<RenderHandler> absoluteRender = null;
     List<InputHandler> mouseHandlers = null;
+
+    @Setter
+    @Getter
+    boolean showTooltips = true;
 
     public AbstractElement combineRender(RenderHandler handler) {
         if (extraRender == null) {
@@ -15,6 +23,11 @@ public class AbstractElement implements ElementHandler {
         }
         extraRender.add(handler);
         return this;
+    }
+
+    @Override
+    public final boolean canBeSelected(DrawableWidget element) {
+        return showTooltips;
     }
 
     public AbstractElement combineAbsoluteRender(RenderHandler handlerAbsolute) {

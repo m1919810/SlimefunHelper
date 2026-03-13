@@ -1,7 +1,7 @@
 package me.matl114.gui.basic;
 
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.text.OrderedText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
@@ -27,7 +27,7 @@ public class ButtonElement extends IconElement.SimpleIconElement {
             boolean shouldHighlight) {
         super.renderCentered0(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
         int i = 16777215;
-        Text a = provider.getLabel(element);
+        OrderedText a = provider.getLabel(element);
         if (a != null) {
             RenderHandler.drawScaledText0(
                     context,

@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.collections.FPoint;
 import me.matl114.utils.collections.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -15,6 +16,7 @@ import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.input.MouseInput;
+import net.minecraft.client.network.ClientPlayerEntity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -139,6 +141,20 @@ public abstract class MouseEvents {
                 Event<Mouse> event2 = new Event<>((Mouse) (Object) this, true, false, f, g, h, i);
                 Listener.getMouseDrag().handleValue(event2);
             }
+        }
+    }
+
+    @WrapOperation(
+            method = "updateMouse",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;changeLookDirection(DD)V"))
+    private void onMouseUpdateLook(ClientPlayerEntity instance, double x, double y, Operation<Void> original) {
+        Event<FPoint> event = new Event<>(new FPoint(x, y), true, true);
+        Listener.getPlayerChangeLook().handleValue(event);
+        if (!event.isCancelled()) {
+            original.call(instance, event.context().x, event.context().y);
         }
     }
 }

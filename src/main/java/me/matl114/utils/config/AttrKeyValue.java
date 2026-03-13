@@ -64,6 +64,9 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
     @Getter
     List<Predicate<T>> validators = new ArrayList<>();
 
+    @Getter
+    List<Consumer<T>> listeners = new ArrayList<>();
+
     private boolean passValidators(T value) {
         try {
             for (var validator : validators) {
@@ -80,9 +83,19 @@ public abstract class AttrKeyValue<T> implements PropertyTracker<Object, String>
     public boolean setOriginValue(T value) {
         if (passValidators(value)) {
             this.originValue = value;
+            callListeners(this.originValue);
             return true;
         }
         return false;
+    }
+
+    private void callListeners(T val) {
+        try {
+            for (var validator : listeners) {
+                validator.accept(val);
+            }
+        } catch (Throwable e) {
+        }
     }
 
     @Getter

@@ -77,3 +77,5 @@ accessible field net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPa
 accessible field net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket type Lnet/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler;
 accessible method net/minecraft/entity/LivingEntity getMovementSpeed (F)F
 accessible method net/minecraft/entity/LivingEntity applyClimbingSpeed (Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;
+
+accessible field net/minecraft/client/input/Input movementVector Lnet/minecraft/util/math/Vec2f;

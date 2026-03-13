@@ -77,14 +77,14 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
                 .setDraggingY(true);
 
         this.scoll = new DraggableExecutableWidget(
-                        ScrollableExpandWidget.this.x + ScrollableExpandWidget.this.dx,
-                        ScrollableExpandWidget.this.y,
+                        ScrollableExpandWidget.this.getX() + ScrollableExpandWidget.this.dx,
+                        ScrollableExpandWidget.this.getY(),
                         (int) ScrollElement.BUTTON_WIDTH,
                         ScrollableExpandWidget.this.dy)
                 .setElementHandler(this.scroll);
         this.scrollableBorder = new SubScreenWidget(
-                ScrollableExpandWidget.this.x,
-                ScrollableExpandWidget.this.y,
+                ScrollableExpandWidget.this.getX(),
+                ScrollableExpandWidget.this.getY(),
                 ScrollableExpandWidget.this.dx,
                 ScrollableExpandWidget.this.dy);
     }
@@ -118,7 +118,7 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
 
         context.enableScissor(this.getX(), this.getY(), this.getX() + this.getWidth(), this.getY() + this.getHeight());
         // apply current pose
-        context.getMatrices().translate(x, y - this.currentPose);
+        context.getMatrices().translate(getX(), getY() - this.currentPose);
         if (this.priority != 0) {
             context.getMatrices().translateZ(priority);
         }
@@ -137,8 +137,8 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         // handling mouse Coord in render should be scaled? here
         // add the current pose of the scroll
-        int translatedMouseX = (mouseX - this.x);
-        int translatedMouseY = mouseY - this.y + currentPose;
+        int translatedMouseX = (mouseX - this.getX());
+        int translatedMouseY = mouseY - this.getY() + currentPose;
         boolean selected = false;
         for (var ch : widgets) {
             // 只有接触了这个界面中的子组件需要渲染
@@ -168,7 +168,7 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
             this.selectedElement.setFocused(false);
         }
         this.selectedElement = subWidget;
-        if (super.isFocused()) {
+        if (this.selectedElement != null && super.isFocused()) {
             this.selectedElement.setFocused(true);
         }
         return (T) this;
@@ -191,8 +191,8 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
             return true;
         }
         if (isMouseOver(mouseX, mouseY)) {
-            double translatedMouseX = mouseX - this.x;
-            double translatedMouseY = mouseY - this.y + this.currentPose;
+            double translatedMouseX = mouseX - this.getX();
+            double translatedMouseY = mouseY - this.getY() + this.currentPose;
             for (var ch : widgets) {
                 if (ch.mouseClicked(translatedMouseX, translatedMouseY, button)) {
                     setSelected(ch);
@@ -213,8 +213,8 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
         }
         // force check, only if the mouse is on the template can the mouse interact with subwidgets
         if (isMouseOver(mouseX, mouseY)) {
-            double translatedMouseX = mouseX - this.x;
-            double translatedMouseY = mouseY - this.y + this.currentPose;
+            double translatedMouseX = mouseX - this.getX();
+            double translatedMouseY = mouseY - this.getY() + this.currentPose;
             for (var ch : widgets) {
                 if (ch.mouseReleased(translatedMouseX, translatedMouseY, button)) {
                     return true;
@@ -244,7 +244,7 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
                 return this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
             }
             return this.draggingElement.mouseDragged(
-                    mouseX - this.x, mouseY - this.y + this.currentPose, button, deltaX, deltaY);
+                    mouseX - this.getX(), mouseY - this.getY() + this.currentPose, button, deltaX, deltaY);
         }
         return false;
     }
@@ -323,7 +323,7 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
                 this.draggingElement.releaseDrag(screen, mouseX, mouseY);
                 return;
             }
-            this.draggingElement.releaseDrag(screen, mouseX - this.x, mouseY - this.y + this.currentPose);
+            this.draggingElement.releaseDrag(screen, mouseX - this.getX(), mouseY - this.getY() + this.currentPose);
             this.draggingElement = null;
         }
     }
@@ -334,8 +334,8 @@ public class ScrollableExpandWidget extends DrawableWidget implements SubSelecta
             return true;
         }
         if (isMouseOver(mouseX, mouseY)) {
-            double translatedMouseX = mouseX - this.x;
-            double translatedMouseY = mouseY - this.y + this.currentPose;
+            double translatedMouseX = mouseX - this.getX();
+            double translatedMouseY = mouseY - this.getY() + this.currentPose;
             for (var ch : widgets) {
                 if (ch.startDrag(screen, translatedMouseX, translatedMouseY)) {
                     draggingElement = ch;

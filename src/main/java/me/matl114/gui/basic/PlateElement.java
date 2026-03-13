@@ -24,6 +24,7 @@ public class PlateElement extends AbstractElement {
 
     public PlateElement(boolean catchInteract) {
         this.catchInteract = catchInteract;
+        showTooltips = false;
     }
 
     @Override
@@ -112,9 +113,5 @@ public class PlateElement extends AbstractElement {
     @Override
     public boolean onClick(ExecutableWidget element, double mouseX, double mouseY, int button) {
         return catchInteract;
-    }
-
-    public boolean canBeSelected(DrawableWidget element) {
-        return false;
     }
 }
