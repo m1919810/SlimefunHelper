@@ -45,6 +45,22 @@ public class ItemUtils_v1_21_11 implements VItem {
     }
 
     @Override
+    public boolean isNotAttackingTool(ItemStack stack) {
+        if (isTool(stack)) {
+            if (stack.contains(DataComponentTypes.WEAPON)) {
+                var weapon = stack.get(DataComponentTypes.WEAPON);
+                if (weapon.itemDamagePerAttack() > 1) {
+                    // only axe
+                    return !stack.getItem().toString().contains("_axe");
+                }
+                return false;
+            }
+            return true;
+        }
+        return true;
+    }
+
+    @Override
     public boolean isShield(ItemStack stack) {
         return stack.contains(DataComponentTypes.BLOCKS_ATTACKS);
     }
