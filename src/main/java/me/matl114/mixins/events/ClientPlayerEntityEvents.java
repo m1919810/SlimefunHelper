@@ -1,13 +1,16 @@
 package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.BidirectionalIterator;
+import java.util.Objects;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.utils.collections.LinkNode;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.entity.ProgressWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -36,6 +39,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntity implements ClientPlayerEntityAccess {
     @Shadow
     public Input input;
+
+    @Shadow
+    public abstract boolean shouldSlowDown();
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -73,11 +79,22 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Inject(
             method = "tickMovement",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick(ZF)V", shift = At.Shift.AFTER))
-    public void onPostInputTick(CallbackInfo ci) {
+    public void onPostInputTick(CallbackInfo ci, @Local(ordinal = 0) float f) {
+        PlayerInputUtils.Input currentInput = PlayerInputUtils.of(this.input);
         if (!Listener.getPlayerKeyboardInputTick().isEmpty()) {
             Listener.getPlayerKeyboardInputTick().handleValue(new Event<>(this.input, false, false));
         }
         getLegalMovementManager().postInputTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
+        // changed, update movementVector
+        PlayerInputUtils.Input newInput = PlayerInputUtils.of(this.input);
+        if (!Objects.equals(currentInput, newInput)) {
+            this.input.movementForward = newInput.forwardSpeed();
+            this.input.movementSideways = newInput.sidewaysSpeed();
+            if (this.shouldSlowDown()) {
+                this.input.movementForward *= f;
+                this.input.movementSideways *= f;
+            }
+        }
     }
 
     @Inject(

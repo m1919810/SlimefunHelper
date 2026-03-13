@@ -466,6 +466,9 @@ public class RenderTasks {
     @Getter
     public static CustomOverlay customOverlay;
 
+    @Getter
+    public static Freecam freecam;
+
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         entityESP = new EntityESP().register(m);
@@ -473,6 +476,7 @@ public class RenderTasks {
         projectileESP = new ProjectileESP().register(m);
         sleepMode = new SleepMode().register(m);
         customOverlay = new CustomOverlay().register(m);
+        freecam = new Freecam().register(m);
     }
 
     static {

@@ -4,9 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.input.Input;
 import net.minecraft.client.option.GameOptions;
 
 public class PlayerInputUtils {
+    public static Input of(net.minecraft.client.input.Input input) {
+        return new Input(input.playerInput);
+    }
 
     public static Input of(GameOptions options) {
         return new Input(

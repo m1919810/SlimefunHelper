@@ -131,13 +131,13 @@ public abstract class IconElement extends BoxElement {
                 context.drawTexturedQuad(
                         id, 0, element.getTextureWidth(), 0, element.getTextureHeight(), 0, 0, 1, 0, 1);
             }
-            Integer color = (highLightColor == null)
-                    ? (highlight ? Integer.valueOf(Colors.WHITE) : null)
-                    : highLightColor.provideTextColor(element, highlight);
-            if (color != null) {
-                RenderHandler.drawHighlightFrame(
-                        context, 0, 0, element.getTextureWidth(), element.getTextureHeight(), color);
-            }
+        }
+        Integer color = (highLightColor == null)
+                ? (highlight ? Integer.valueOf(Colors.WHITE) : null)
+                : highLightColor.provideTextColor(element, highlight);
+        if (color != null) {
+            RenderHandler.drawHighlightFrame(
+                    context, 0, 0, element.getTextureWidth(), element.getTextureHeight(), color);
         }
     }
 

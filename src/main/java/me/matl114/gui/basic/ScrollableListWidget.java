@@ -77,14 +77,14 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
                 .setDraggingY(true);
 
         this.scoll = new DraggableExecutableWidget(
-                        ScrollableListWidget.this.x + ScrollableListWidget.this.dx,
-                        ScrollableListWidget.this.y,
+                        ScrollableListWidget.this.getX() + ScrollableListWidget.this.dx,
+                        ScrollableListWidget.this.getY(),
                         (int) ScrollElement.BUTTON_WIDTH,
                         ScrollableListWidget.this.dy)
                 .setElementHandler(this.scroll);
         this.scrollableBorder = new SubScreenWidget(
-                ScrollableListWidget.this.x,
-                ScrollableListWidget.this.y,
+                ScrollableListWidget.this.getX(),
+                ScrollableListWidget.this.getY(),
                 ScrollableListWidget.this.dx,
                 ScrollableListWidget.this.dy);
     }
@@ -117,7 +117,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         // apply scissors, content outside the template will not be rendered
         context.enableScissor(getX(), getY(), getX() + getWidth(), getY() + getHeight());
         // apply current pose
-        context.getMatrices().translate(x, y - this.currentPose);
+        context.getMatrices().translate(getX(), getY() - this.currentPose);
         if (this.priority != 0) {
             context.getMatrices().translateZ(this.priority);
         }
@@ -136,8 +136,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         // handling mouse Coord in render should be scaled? here
         // add the current pose of the scroll
-        int translatedMouseX = (mouseX - this.x);
-        int translatedMouseY = mouseY - this.y + currentPose;
+        int translatedMouseX = (mouseX - this.getX());
+        int translatedMouseY = mouseY - this.getY() + currentPose;
         boolean selected = false;
         for (var ch : widgets) {
             // 只有接触了这个界面中的子组件需要渲染
@@ -167,7 +167,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
             this.selectedElement.setFocused(false);
         }
         this.selectedElement = subWidget;
-        if (super.isFocused()) {
+        if (this.selectedElement != null && super.isFocused()) {
             this.selectedElement.setFocused(true);
         }
         return (T) this;
@@ -190,8 +190,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
             return true;
         }
         if (isMouseOver(mouseX, mouseY)) {
-            double translatedMouseX = mouseX - this.x;
-            double translatedMouseY = mouseY - this.y + this.currentPose;
+            double translatedMouseX = mouseX - this.getX();
+            double translatedMouseY = mouseY - this.getY() + this.currentPose;
             for (var ch : widgets) {
                 if (ch.mouseClicked(translatedMouseX, translatedMouseY, button)) {
                     setSelected(ch);
@@ -212,8 +212,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         }
         // force check, only if the mouse is on the template can the mouse interact with subwidgets
         if (isMouseOver(mouseX, mouseY)) {
-            double translatedMouseX = mouseX - this.x;
-            double translatedMouseY = mouseY - this.y + this.currentPose;
+            double translatedMouseX = mouseX - this.getX();
+            double translatedMouseY = mouseY - this.getY() + this.currentPose;
             for (var ch : widgets) {
                 if (ch.mouseReleased(translatedMouseX, translatedMouseY, button)) {
                     return true;
@@ -228,7 +228,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 
         if (this.isMouseOver(mouseX, mouseY) || (this.scoll != null && this.scoll.isMouseOver(mouseX, mouseY))) {
-            double per = ((this.dy / 20.0d) * verticalAmount) / Math.min(100d, (this.maxHeight / 5.0d));
+            double per = (Math.max((this.dy / 20.0d), 9) * verticalAmount) / (this.maxHeight / 5.0d);
+            // ((this.dy / 20.0d) * verticalAmount) / Math.min(100d, (this.maxHeight / 5.0d));
             if (this.scroll != null) {
                 scroll.setPercentage(scroll.getPercentage() - per);
             }
@@ -243,7 +244,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
                 return this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
             }
             return this.draggingElement.mouseDragged(
-                    mouseX - this.x, mouseY - this.y + this.currentPose, button, deltaX, deltaY);
+                    mouseX - this.getX(), mouseY - this.getY() + this.currentPose, button, deltaX, deltaY);
         }
         return false;
     }
@@ -322,7 +323,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
                 this.draggingElement.releaseDrag(screen, mouseX, mouseY);
                 return;
             }
-            this.draggingElement.releaseDrag(screen, mouseX - this.x, mouseY - this.y + this.currentPose);
+            this.draggingElement.releaseDrag(screen, mouseX - this.getX(), mouseY - this.getY() + this.currentPose);
             this.draggingElement = null;
         }
     }
@@ -333,8 +334,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
             return true;
         }
         if (isMouseOver(mouseX, mouseY)) {
-            double translatedMouseX = mouseX - this.x;
-            double translatedMouseY = mouseY - this.y + this.currentPose;
+            double translatedMouseX = mouseX - this.getX();
+            double translatedMouseY = mouseY - this.getY() + this.currentPose;
             for (var ch : widgets) {
                 if (ch.startDrag(screen, translatedMouseX, translatedMouseY)) {
                     draggingElement = ch;

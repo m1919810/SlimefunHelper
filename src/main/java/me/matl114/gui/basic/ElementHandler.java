@@ -69,7 +69,7 @@ public interface ElementHandler extends InputHandler, RenderHandler {
             }
 
             public boolean canBeSelected(DrawableWidget element) {
-                return handlerPredicate.test(ob);
+                return handlerPredicate.test(ob) && ob.canBeSelected(element);
             }
         };
     }
