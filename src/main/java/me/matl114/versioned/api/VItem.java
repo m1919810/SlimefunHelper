@@ -38,6 +38,8 @@ public interface VItem {
 
     public boolean isTool(ItemStack stack);
 
+    public boolean isNotAttackingTool(ItemStack stack);
+
     public boolean isShield(ItemStack stack);
 
     public ItemStack fromNbt(NbtCompound tag);

@@ -50,6 +50,11 @@ public class ItemUtils_v1_21_1 implements VItem {
     }
 
     @Override
+    public boolean isNotAttackingTool(ItemStack stack) {
+        return !isWeapon(stack);
+    }
+
+    @Override
     public boolean isShield(ItemStack stack) {
         return stack.getItem() instanceof ShieldItem;
     }
