@@ -25,7 +25,6 @@ import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
