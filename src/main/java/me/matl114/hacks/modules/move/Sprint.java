@@ -147,9 +147,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
             if (fakeSprint.get() && !fakeSprintMode.get().hasAc()) {
                 fakeSprintThisTick = true;
                 player.setSprinting(false);
-                player.input.playerInput = PlayerInputUtils.of(player.input.playerInput)
-                        .sprint(false)
-                        .toPlayerInput();
+                PlayerInputUtils.of(player.input).sprint(false).applyInput(player.input);
             }
         }
     }

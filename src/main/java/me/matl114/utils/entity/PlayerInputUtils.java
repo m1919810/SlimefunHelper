@@ -72,5 +72,9 @@ public class PlayerInputUtils {
         public int upwardSpeed() {
             return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
         }
+
+        public void applyInput(net.minecraft.client.input.Input input) {
+            input.playerInput = toPlayerInput();
+        }
     }
 }
