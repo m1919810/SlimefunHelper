@@ -14,8 +14,8 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.collections.FPoint;
+import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
-import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
@@ -25,13 +25,19 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
-public class Freecam extends BaseModule {
+public class Freecam extends BaseModule implements LegalMovementManager.MovementModifier {
     public static final String[] FREECAM = {"freecam", "enable"};
     public static final String[] FREECAM_HOTKEY = {"freecam", "enable-hotkey"};
     public static final String[] CAMERA_SPEED = {"freecam", "speed"};
+    private static LegalMovementManager.DelegateMovementModifier instance;
 
     public Freecam() {
         bindFlag(enable);
+        if (instance == null) {
+            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
+        }
+        instance.setDelegate(this::cast);
     }
 
     public final FlagRef enable = flagBuilder(Configs.RENDER_CONFIG, FREECAM).build();
@@ -49,7 +55,6 @@ public class Freecam extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
-        registerListener(Listener.getPlayerKeyboardInputTick(), this::onPlayerInputTick);
         registerListener(Listener.getTeleportConfirmResponsePoint(), this::onPosResync);
         registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(
@@ -120,17 +125,6 @@ public class Freecam extends BaseModule {
         }
     }
 
-    public void onPlayerInputTick(Event<Input> event) {
-        if (camera == null) return;
-        var input = event.context();
-        PlayerInputUtils.Input i0 = PlayerInputUtils.of(input);
-        Vec3d movement = new Vec3d(i0.sidewaysSpeed(), i0.upwardSpeed(), i0.forwardSpeed());
-        Vec3d vec3d = EntityUtils.movementInputToVelocity(movement, (float) speed.get(), camera.getYaw());
-        camera.setVelocity(vec3d);
-        // reset player input,
-        input.playerInput = new PlayerInput(false, false, false, false, false, false, false);
-    }
-
     public void onStopInteractWithSelf(Event<PlayerInteractEntityC2SPacket> packet) {
         if (camera != null) {
             var p = packet.context();
@@ -149,6 +143,60 @@ public class Freecam extends BaseModule {
         if (camera == null) return;
         camera.changeLookDirection(event.context.x, event.context.y);
         event.cancel();
+    }
+
+    @Override
+    public boolean mayModify() {
+        return false;
+    }
+
+    @Override
+    public boolean mayModifyPos() {
+        return false;
+    }
+
+    @Override
+    public boolean mayModifyRotation() {
+        return false;
+    }
+
+    @Override
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
+
+    @Override
+    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
+        if (camera == null) return;
+        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+        var input = player.input;
+        PlayerInputUtils.Input i0 = PlayerInputUtils.of(input);
+        Vec3d movement = new Vec3d(i0.sidewaysSpeed(), i0.upwardSpeed(), i0.forwardSpeed());
+        Vec3d vec3d = EntityUtils.movementInputToVelocity(movement, (float) speed.get(), camera.getYaw());
+        camera.setVelocity(vec3d);
+        // reset player input,
+        input.playerInput = new PlayerInput(false, false, false, false, false, false, false);
+    }
+
+    @Override
+    public void applyBeforeInputPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+        // used for sending packets
+        if (camera != null && mc.getCameraEntity() == camera) {
+            mc.setCameraEntity(movementManagerEvent.context.playerStatus.entity);
+        }
+    }
+
+    @Override
+    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+        if (camera != null && mc.getCameraEntity() == camera) {
+            mc.setCameraEntity(movementManagerEvent.context.playerStatus.entity);
+        }
+    }
+
+    @Override
+    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        if (camera != null && mc.getCameraEntity() == movementManagerEvent.context.playerStatus.entity) {
+            mc.setCameraEntity(camera);
+        }
+        return true;
     }
 
     // todo: weird gameHud
