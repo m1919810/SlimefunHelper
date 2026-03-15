@@ -39,7 +39,6 @@ public class CameraEntity extends AbstractClientPlayerEntity {
     public void copyEquipments(PlayerInventory p) {
         // copy inventory before we set the delegate player
         getInventory().clone(p);
-        super.isSpectator();
     }
 
     @Override
@@ -69,7 +68,6 @@ public class CameraEntity extends AbstractClientPlayerEntity {
 
     @Override
     public void tick() {
-        this.player.setLoaded(true);
         if (this.player != null && this.player.isLoaded()) {
             if (!this.moveable) {
                 this.setPitch(this.player.getPitch());
