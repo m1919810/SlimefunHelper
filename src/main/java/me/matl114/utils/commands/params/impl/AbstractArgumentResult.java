@@ -1,17 +1,25 @@
-package me.matl114.matlib.utils.command.params.impl;
+package me.matl114.utils.commands.params.impl;
 
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.api.ArgumentType;
-import me.matl114.matlib.utils.command.params.api.InputArgument;
-import org.joml.Vector3d;
+import lombok.Getter;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.api.ArgumentType;
+import me.matl114.utils.commands.params.api.InputArgument;
 
 public abstract class AbstractArgumentResult<T> implements InputArgument<T> {
-    final public ArgumentType<T> type;
+    public final ArgumentType<T> type;
+
+    @Getter
     public final ArgumentReader reader;
+
+    @Getter
     int startIndex;
+
+    @Getter
     int endIndex;
+
     boolean isDefault;
     final T result;
+    public boolean parseSuccess = true;
     // the parsed range is from startIndex  to endIndex
     public AbstractArgumentResult(T result, ArgumentType<T> type, ArgumentReader reader, int startIndex) {
         this.type = type;
@@ -27,6 +35,10 @@ public abstract class AbstractArgumentResult<T> implements InputArgument<T> {
         return new ArgumentReader(reader).setCursor(startIndex);
     }
 
+    public ArgumentReader getStartReader() {
+        return new ArgumentReader(reader).setCursor(startIndex);
+    }
+
     @Override
     public ArgumentType<T> getType() {
         return type;
@@ -37,16 +49,22 @@ public abstract class AbstractArgumentResult<T> implements InputArgument<T> {
         return result;
     }
 
-    public String[] getParsedArgument(){
+    public String[] getParsedArgument() {
         return this.reader.getArgsInRange(this.startIndex, this.endIndex);
     }
 
-    public final String tabbingString(){
-        if(this.startIndex < this.endIndex){
+    public final String tabbingString() {
+        if (this.startIndex < this.endIndex) {
             return this.reader.getArgsAt(this.endIndex - 1);
-        }else{
+        } else if (this.startIndex == this.endIndex) {
+            return this.reader.getLength() > this.endIndex ? this.reader.getArgsAt(this.endIndex) : null;
+        } else {
             return null;
         }
     }
 
+    @Override
+    public boolean isParseSuccess() {
+        return parseSuccess;
+    }
 }

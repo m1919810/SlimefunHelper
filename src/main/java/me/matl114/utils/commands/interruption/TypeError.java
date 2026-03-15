@@ -1,16 +1,13 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.commands.interruption;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import me.matl114.matlib.common.lang.annotations.Note;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.SimpleCommandArgs;
-import me.matl114.matlib.utils.command.params.api.ArgumentType;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.api.ArgumentType;
+import me.matl114.utils.commands.params.api.CommandExecution;
 
 @Getter
 @AllArgsConstructor
-@Note("interrupt when input type not match")
 public class TypeError extends ArgumentException {
     ArgumentReader reader;
     String argument;
@@ -26,7 +23,7 @@ public class TypeError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(CommandExecution sender, InterruptionHandler command) {
         command.handleTypeError(sender, reader, argument, typeName, input);
     }
 

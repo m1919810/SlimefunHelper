@@ -1,12 +1,12 @@
-package me.matl114.matlib.utils.command.commandGroup;
+package me.matl114.utils.commands.commandGroup;
 
 import java.util.*;
 import java.util.stream.Stream;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.api.InputArgument;
-import me.matl114.matlib.utils.command.params.SimpleCommandArgs;
-import me.matl114.matlib.utils.command.params.api.TabResult;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.commands.params.api.CommandExecution;
+import me.matl114.utils.commands.params.api.InputArgument;
+import me.matl114.utils.commands.params.api.TabResult;
 
 public class TreeSubCommand extends SubCommand implements SubCommandDispatcher, SubCommand.SubCommandCaller {
     private SubCommand fallBackCommand = null;
@@ -15,18 +15,17 @@ public class TreeSubCommand extends SubCommand implements SubCommandDispatcher, 
 
     public TreeSubCommand(String name, String... helpContent) {
         super(name, null, helpContent);
-        this.template = new SimpleCommandArgs(
-            SimpleCommandArgs.argumentBuilder()
+        this.template = new SimpleCommandArgs(SimpleCommandArgs.argumentBuilder()
                 .name("dispatch_" + name)
                 .tabCompletor(this::onSubCommandSuggest)
-                .build()
-        );
+                .build());
         this.subCommands = new LinkedHashMap<String, SubCommand>();
     }
 
-    public Stream<String> onSubCommandSuggest(CommandSender commandSender, List<InputArgument<?>> argumentReader) {
+    public Stream<String> onSubCommandSuggest(
+            CommandExecution CommandExecution, List<InputArgument<?>> argumentReader) {
         return Stream.concat(
-                subCommands.keySet().stream(), fallbackTabSuggestor.completeOrEmpty(commandSender, argumentReader));
+                subCommands.keySet().stream(), fallbackTabSuggestor.completeOrEmpty(CommandExecution, argumentReader));
     }
 
     public Stream<String> getHelp(String prefix) {
@@ -59,7 +58,7 @@ public class TreeSubCommand extends SubCommand implements SubCommandDispatcher, 
         return this.fallBackCommand;
     }
 
-    public Stream<String> onCustomHelp(CommandSender sender, ArgumentReader arguments) {
+    public Stream<String> onCustomHelp(CommandExecution sender, ArgumentReader arguments) {
         return SubCommandDispatcher.super.onCustomHelp(sender, arguments);
     }
 }

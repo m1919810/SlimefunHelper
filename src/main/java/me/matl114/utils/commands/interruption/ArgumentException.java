@@ -1,12 +1,16 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.commands.interruption;
 
-import me.matl114.matlib.common.lang.exceptions.RuntimeAbort;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.params.api.CommandExecution;
 
-public abstract class ArgumentException extends RuntimeAbort {
+public abstract class ArgumentException extends RuntimeException {
     public ArgumentException() {
         super();
     }
 
-    public abstract void handleAbort(CommandSender sender, InterruptionHandler command);
+    public abstract void handleAbort(CommandExecution sender, InterruptionHandler command);
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
+    }
 }

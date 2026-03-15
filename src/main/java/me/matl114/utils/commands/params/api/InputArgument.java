@@ -1,39 +1,55 @@
-package me.matl114.matlib.utils.command.params.api;
+package me.matl114.utils.commands.params.api;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
-import me.matl114.matlib.utils.command.interruption.ArgumentException;
-import me.matl114.matlib.utils.command.interruption.TypeError;
-import me.matl114.matlib.utils.command.interruption.ValueAbsentError;
-import me.matl114.matlib.utils.command.interruption.ValueOutOfRangeError;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
+import me.matl114.utils.commands.interruption.*;
+import me.matl114.utils.commands.params.ArgumentReader;
 
 public interface InputArgument<W> {
-    public ArgumentReader getEndReader();
+    public int getStartIndex();
 
-    public W result();
-    //indicates the whole parsed input
+    public int getEndIndex();
+
+    public ArgumentReader getReader();
+
+    default ArgumentReader getEndReader() {
+        return new ArgumentReader(getReader()).setCursor(getEndIndex());
+    }
+
+    default ArgumentReader getStartReader() {
+        return new ArgumentReader(getReader()).setCursor(getStartIndex());
+    }
+
+    public W result() throws ArgumentException;
+    // indicates the whole parsed input
     public String resultAsString();
-    //indicates the exact block of input for tabbing
+    // indicates the exact block of input for tabbing
     public String tabbingString();
 
     public ArgumentType<W> getType();
 
-    default boolean isNull(){
+    default boolean isNull() {
         return null == result();
     }
 
+    public boolean isParseSuccess();
+
+    default void checkParseSuccess() throws ArgumentException {
+        if (!isParseSuccess()) {
+            throw new ValueParseError(getEndReader(), getType().getArgsName());
+        }
+    }
 
     default void checkResultPresent() throws ArgumentException {
-        if(isNull()){
+        checkParseSuccess();
+        if (isNull()) {
             throw new ValueAbsentError(getEndReader(), getType().getArgsName());
         }
     }
 
-    default int getInt() {
+    default int getInt() throws ArgumentException {
         checkResultPresent();
         String result = resultAsString();
         try {
@@ -43,7 +59,7 @@ public interface InputArgument<W> {
         }
     }
 
-    default boolean getBoolean() {
+    default boolean getBoolean() throws ArgumentException {
         checkResultPresent();
         String result = resultAsString();
         switch (result) {
@@ -52,11 +68,12 @@ public interface InputArgument<W> {
             case "false":
                 return false;
             default:
-                throw new TypeError(getEndReader(), getType().getArgsName(), TypeError.BaseArgumentType.BOOLEAN, result);
+                throw new TypeError(
+                        getEndReader(), getType().getArgsName(), TypeError.BaseArgumentType.BOOLEAN, result);
         }
     }
 
-    default float getFloat() {
+    default float getFloat() throws ArgumentException {
         checkResultPresent();
         String result = resultAsString();
         try {
@@ -66,7 +83,7 @@ public interface InputArgument<W> {
         }
     }
 
-    default double getDouble() {
+    default double getDouble() throws ArgumentException {
         checkResultPresent();
         String result = resultAsString();
         try {
@@ -84,7 +101,6 @@ public interface InputArgument<W> {
             return false;
         }
     }
-
 
     default boolean isBoolean() {
         try {
@@ -104,7 +120,6 @@ public interface InputArgument<W> {
         }
     }
 
-
     default boolean isDouble() {
         try {
             getDouble();
@@ -114,7 +129,7 @@ public interface InputArgument<W> {
         }
     }
 
-    default int clampInt(int low, int highEx) {
+    default int clampInt(int low, int highEx) throws ArgumentException {
         int val = getInt();
         if (val >= low && val < highEx) {
             return val;
@@ -123,7 +138,7 @@ public interface InputArgument<W> {
         }
     }
 
-    default float clampFloat(float low, float highEx) {
+    default float clampFloat(float low, float highEx) throws ArgumentException {
         float val = getFloat();
         if (val >= low && val < highEx) {
             return val;
@@ -132,22 +147,32 @@ public interface InputArgument<W> {
         }
     }
 
-    default double clampDouble(double low, double highEx) {
+    default double clampDouble(double low, double highEx) throws ArgumentException {
         double val = getDouble();
         if (val >= low && val < highEx) {
             return val;
         } else {
             throw new ValueOutOfRangeError(
-                getEndReader(),
-                getType().getArgsName(),
-                String.valueOf(low),
-                String.valueOf(highEx),
-                String.valueOf(val),
-                TypeError.BaseArgumentType.FLOAT);
+                    getEndReader(),
+                    getType().getArgsName(),
+                    String.valueOf(low),
+                    String.valueOf(highEx),
+                    String.valueOf(val),
+                    TypeError.BaseArgumentType.FLOAT);
         }
     }
 
-    default String nonnullResult() {
+    default W nonnullResult() throws ArgumentException {
+        checkResultPresent();
+        W result = result();
+        if (result == null) {
+            throw new ValueAbsentError(getEndReader(), getType().getArgsName());
+        } else {
+            return result;
+        }
+    }
+
+    default String nonnullResultAsString() throws ArgumentException {
         checkResultPresent();
         String result = resultAsString();
         if (result == null) {
@@ -157,8 +182,8 @@ public interface InputArgument<W> {
         }
     }
 
-    default  <T extends Enum<T>> T enumResult(Class<T> type) {
-        String value = nonnullResult();
+    default <T extends Enum<T>> T enumResult(Class<T> type) throws ArgumentException {
+        String value = nonnullResultAsString();
         T[] results = type.getEnumConstants();
         for (int i = 0; i < results.length; i++) {
             if (results[i].name().equalsIgnoreCase(value)) {
@@ -166,33 +191,32 @@ public interface InputArgument<W> {
             }
         }
         throw new ValueOutOfRangeError(
-            this.getEndReader(),
-            getType().getArgsName(),
-            Arrays.stream(type.getEnumConstants())
-                .map(Enum::name)
-                .map(s -> s.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toList()),
-            value,
-            TypeError.BaseArgumentType.ENUM);
+                this.getEndReader(),
+                getType().getArgsName(),
+                Arrays.stream(type.getEnumConstants())
+                        .map(Enum::name)
+                        .map(s -> s.toLowerCase(Locale.ROOT))
+                        .collect(Collectors.toList()),
+                value,
+                TypeError.BaseArgumentType.ENUM);
     }
 
-    default String selectResult(Collection<String> selections) {
-        String value = nonnullResult();
+    default String selectResult(Collection<String> selections) throws ArgumentException {
+        String value = nonnullResultAsString();
         for (var str : selections) {
             if (str.equalsIgnoreCase(value)) {
                 return str;
             }
         }
         throw new ValueOutOfRangeError(
-            this.getEndReader(), getType().getArgsName(), selections, value, TypeError.BaseArgumentType.ENUM);
+                this.getEndReader(), getType().getArgsName(), selections, value, TypeError.BaseArgumentType.ENUM);
     }
 
     default boolean isNonnull() {
         return result() != null;
     }
 
-
-    default <T extends Enum<T>> boolean isEnum(Class<T> type) {
+    default <T extends Enum<T>> boolean isEnum(Class<T> type) throws ArgumentException {
         try {
             enumResult(type);
             return true;
@@ -201,7 +225,7 @@ public interface InputArgument<W> {
         }
     }
 
-    default <T extends Enum<T>> boolean isSelect(Collection<String> selections) {
+    default <T extends Enum<T>> boolean isSelect(Collection<String> selections) throws ArgumentException {
         try {
             selectResult(selections);
             return true;

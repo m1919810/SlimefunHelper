@@ -1,12 +1,6 @@
-package me.matl114.matlib.utils.command.params.api;
+package me.matl114.utils.commands.params.api;
 
 import com.google.common.collect.Streams;
-import me.matl114.matlib.common.lang.annotations.DoNotCall;
-import me.matl114.matlib.common.lang.annotations.DoNotOverride;
-import me.matl114.matlib.utils.command.interruption.ArgumentException;
-import org.bukkit.command.CommandSender;
-
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -14,17 +8,18 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+import me.matl114.utils.commands.interruption.ArgumentException;
 
 public interface TabResult {
     public static TabResult EMPTY = (s, arg) -> Stream.empty();
 
     @Nonnull
-    @DoNotCall
-    public Stream<String> completeInternal(CommandSender sender, List<InputArgument<?>> args) throws ArgumentException;
+    public Stream<String> completeInternal(CommandExecution sender, List<InputArgument<?>> args)
+            throws ArgumentException;
 
     @Nonnull
-    @DoNotOverride
-    default Stream<String> completeOrEmpty(CommandSender sender, List<InputArgument<?>> args) {
+    default Stream<String> completeOrEmpty(CommandExecution sender, List<InputArgument<?>> args) {
         try {
             return completeInternal(sender, args);
         } catch (ArgumentException e) {
@@ -36,14 +31,14 @@ public interface TabResult {
         return (s, arg) -> Stream.concat(completeOrEmpty(s, arg), result.completeOrEmpty(s, arg));
     }
 
-    public static TabResult ofFunction(Function<CommandSender, List<String>> f) {
+    public static TabResult ofFunction(Function<CommandExecution, List<String>> f) {
         return (s, arg) -> {
             var list = f.apply(s);
             return list == null ? Stream.empty() : list.stream();
         };
     }
 
-    public static TabResult ofStreamFunction(Function<CommandSender, Stream<String>> f) {
+    public static TabResult ofStreamFunction(Function<CommandExecution, Stream<String>> f) {
         return (s, arg) -> {
             var list = f.apply(s);
             return list == null ? Stream.empty() : list;
@@ -64,7 +59,7 @@ public interface TabResult {
         };
     }
 
-    public static TabResult ofDispatcher(BiFunction<CommandSender, String, Stream<String>> f) {
+    public static TabResult ofDispatcher(BiFunction<CommandExecution, String, Stream<String>> f) {
         return (p, args) -> {
             if (args.size() < 2) return Stream.empty();
             var re = args.get(args.size() - 2);
@@ -73,7 +68,7 @@ public interface TabResult {
         };
     }
 
-    public static TabResult ofArgDispatcher(BiFunction<CommandSender, InputArgument<?>, Stream<String>> f) {
+    public static TabResult ofArgDispatcher(BiFunction<CommandExecution, InputArgument<?>, Stream<String>> f) {
         return (p, args) -> {
             if (args.size() < 2) return Stream.empty();
             var re = args.get(args.size() - 2);
@@ -95,7 +90,7 @@ public interface TabResult {
         };
     }
 
-    public static TabResult ofAll(List<TabResult> tabSupplier){
+    public static TabResult ofAll(List<TabResult> tabSupplier) {
         return (s, arg) -> {
             List<Stream<String>> result = new ArrayList<>(tabSupplier.size());
             for (var re : tabSupplier) {
@@ -105,4 +100,3 @@ public interface TabResult {
         };
     }
 }
-

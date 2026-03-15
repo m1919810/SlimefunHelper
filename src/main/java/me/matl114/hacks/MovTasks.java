@@ -8,10 +8,14 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
@@ -19,6 +23,18 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.move.*;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
+import me.matl114.utils.commands.CommandUtils;
+import me.matl114.utils.commands.interruption.LogicalError;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.commands.params.api.ArgumentType;
+import me.matl114.utils.commands.params.api.CommandExecution;
+import me.matl114.utils.commands.params.api.InputArgument;
+import me.matl114.utils.commands.params.api.TabResult;
+import me.matl114.utils.commands.params.impl.AbstractArgumentType;
+import me.matl114.utils.commands.params.impl.PosArgumentResult;
+import me.matl114.utils.commands.params.impl.PosArgumentType;
+import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
@@ -30,15 +46,22 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
+import org.apache.commons.lang3.function.Consumers;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.Nullable;
 
 // todo: add more Functional Method as API
 public class MovTasks {
@@ -1660,7 +1683,7 @@ public class MovTasks {
         getAutoResyncTp().setAutoResyncSchedule(Optional.empty());
     }
 
-    private static boolean fixPositionSetBackFallDamage(Event<PlayerPositionLookS2CPacket> packet) {
+    private static void fixPositionSetBackFallDamage(Event<PlayerPositionLookS2CPacket> packet) {
         if (packet.context() instanceof PlayerPositionLookS2CPacket setBackPackets) {
             // real setback , not a tp
             Vec3d target = setBackPackets
@@ -1678,7 +1701,6 @@ public class MovTasks {
                 }
             }
         }
-        return true;
     }
 
     public static final LegalMovementManager.ModifierPipeline PLAYER_PIPELINE_0 =
@@ -2207,5 +2229,457 @@ public class MovTasks {
 
         moduleManager.registerFactories(MovTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
+    }
+
+    public static Optional<Vec3d> getTpaCommandResult(
+            CommandExecution p, List<InputArgument<?>> args, ArgumentReader reader, Consumer<Text> errMsg) {
+        TpaCommandEvent event = new TpaPositionResolver(reader, p, args, errMsg);
+        EventContainer<TpaCommandEvent> container = new EventContainer<>(TpaCommandEvent.class, event);
+        Listener.getCustomListener().broadcast(container);
+        return container.getValue() instanceof TpaPositionResolver resolver && resolver.hasResolved()
+                ? resolver.resolve
+                : null;
+    }
+
+    public static List<String> getTpaCommandTabResult(CommandExecution p, List<InputArgument<?>> args) {
+        TpaCommandEvent event = new TpaTabCompletor(p, args);
+        EventContainer<TpaCommandEvent> container = new EventContainer<>(TpaCommandEvent.class, event);
+        Listener.getCustomListener().broadcast(container);
+        return container.getValue() instanceof TpaTabCompletor tabCompletor ? tabCompletor.tab : List.of();
+    }
+
+    @AllArgsConstructor
+    public static class TpaCommandEvent {
+        public EventMode mode;
+        public CommandExecution player;
+        public List<InputArgument<?>> inputs;
+
+        public static enum EventMode {
+            RESOLVE(TpaPositionResolver.class),
+            TAB(TpaTabCompletor.class);
+            public final Class<? extends TpaCommandEvent> clazz;
+
+            EventMode(Class<? extends TpaCommandEvent> clazz) {
+                this.clazz = clazz;
+            }
+        }
+    }
+
+    public static class TpaPositionResolver extends TpaCommandEvent {
+        public Optional<Vec3d> resolve = null;
+
+        public boolean hasResolved() {
+            return resolve != null;
+        }
+
+        public final Consumer<Text> errMsg;
+        public ArgumentReader arguments;
+
+        public TpaPositionResolver(
+                ArgumentReader arguments,
+                CommandExecution player,
+                List<InputArgument<?>> inputs,
+                Consumer<Text> errMsg) {
+            super(EventMode.RESOLVE, player, inputs);
+            this.arguments = arguments;
+            this.errMsg = errMsg;
+        }
+    }
+
+    public static class TpaTabCompletor extends TpaCommandEvent {
+        public List<String> tab = new ArrayList<>();
+
+        public TpaTabCompletor(CommandExecution player, List<InputArgument<?>> arguments) {
+            super(EventMode.TAB, player, arguments);
+        }
+    }
+
+    public static final TabResult specialTypeTabResult =
+            TabResult.ofStreamSupplier(MovTasks::commandSpecialPositionType);
+
+    public static final ArgumentType<String> specialTypeArgumentType = SimpleCommandArgs.argumentBuilder()
+            .name("special_type")
+            .tabCompletor(specialTypeTabResult)
+            .build();
+
+    public static void resolveSpecialType(Event<EventContainer<TpaCommandEvent>> tpaRequest) {
+        TpaCommandEvent event = tpaRequest.context.getValue();
+        switch (event.mode) {
+            case TAB -> {
+                var tabResult = specialTypeArgumentType.getTab(event.player, event.inputs);
+                if (tabResult != null) {
+                    tabResult.forEach(((TpaTabCompletor) event).tab::add);
+                }
+            }
+            case RESOLVE -> {
+                TpaPositionResolver eventResolver = (TpaPositionResolver) event;
+                if (eventResolver.hasResolved()) return;
+                ArgumentReader reader = eventResolver.arguments;
+                if (reader.hasNext()) {
+                    String type = reader.peek();
+                    if (type.startsWith("#")) {
+                        reader.step();
+                        String val = type.substring(1);
+                        if (specialPositionRegistry.containsKey(val)) {
+                            SpecialPositionResolver resolver = specialPositionRegistry.get(val);
+                            eventResolver.resolve = Optional.ofNullable(
+                                    resolver.resolvePosition(reader, event.player.getExecutor(), eventResolver.errMsg));
+                        } else {
+                            eventResolver.errMsg.accept(
+                                    Text.literal("不存在这样的特殊位置: " + type).formatted(Formatting.RED));
+                            eventResolver.resolve = Optional.empty();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static final TabResult playerName = TabResult.ofStreamSupplier(
+            () -> mc.world != null ? EntityUtils.getWorldPlayerNames(false) : Stream.empty());
+
+    public static final TabResult crossHairTarget = TabResult.ofStreamSupplier(() -> (mc.crosshairTarget != null
+                    && mc.crosshairTarget.getType() == HitResult.Type.ENTITY)
+            ? Stream.of(((EntityHitResult) (mc.crosshairTarget)).getEntity().getUuidAsString())
+            : Stream.empty());
+
+    public static final ArgumentType<String> entityTargetArgumentType = SimpleCommandArgs.argumentBuilder()
+            .name("target")
+            .tabCompletor(playerName)
+            .tabCompletor(crossHairTarget)
+            .build();
+
+    public static void resolveEntityTarget(Event<EventContainer<TpaCommandEvent>> tpaRequest) {
+        TpaCommandEvent event = tpaRequest.context.getValue();
+        switch (event.mode) {
+            case TAB -> {
+                var result = entityTargetArgumentType.getTab(event.player, event.inputs);
+                if (result != null) {
+                    result.forEach(((TpaTabCompletor) event).tab::add);
+                }
+            }
+            case RESOLVE -> {
+                TpaPositionResolver resolver = (TpaPositionResolver) event;
+                if (resolver.hasResolved()) return;
+                ArgumentReader reader = resolver.arguments;
+                if (reader.hasNext()) {
+                    String target = reader.peek();
+                    Entity entity = null;
+                    if (target.length() > 16) {
+                        try {
+                            UUID uid = UUID.fromString(target);
+                            entity = mc.world.getEntityLookup().get(uid);
+                        } catch (Throwable e) {
+                        }
+                    }
+                    if (entity == null) {
+                        entity = EntityUtils.getPlayerByName(target);
+                    }
+                    if (entity == null) {
+                        // can not parse
+                        return;
+                    }
+                    // consume
+                    reader.step();
+                    resolver.resolve = Optional.ofNullable(entity.getPos());
+                }
+            }
+        }
+    }
+
+    public static interface SpecialPositionResolver {
+        public Vec3d resolvePosition(ArgumentReader re, PlayerEntity var1, Consumer<Text> errMsg);
+    }
+
+    public static Map<String, SpecialPositionResolver> specialPositionRegistry = new LinkedHashMap<>();
+    public static Vec3d MARK = null;
+
+    static {
+        specialPositionRegistry.put("this", (re, var1, errMsg) -> var1.getPos());
+        specialPositionRegistry.put("near", (re, var1, errMsg) -> {
+            var player = mc.world.getPlayers().stream()
+                    .filter(m -> m != var1)
+                    .sorted(Comparator.comparingDouble(m -> m.getPos().squaredDistanceTo(var1.getPos())))
+                    .findFirst()
+                    .orElse(null);
+            if (player == null) {
+                errMsg.accept(Text.literal("附近没有其他玩家!").formatted(Formatting.RED));
+                return null;
+            } else {
+                errMsg.accept(Text.literal("找到附近的玩家: " + player.getName()).formatted(Formatting.GREEN));
+            }
+            return player.getPos();
+        });
+        specialPositionRegistry.put("mark", (re, var1, errMsg) -> {
+            if (MovTasks.MARK != null) {
+                Vec3d pos = Vec3d.ZERO.add(MovTasks.MARK);
+                errMsg.accept(Text.literal("使用记录坐标： ").append(ChatUtils.getDisplayedLocationDouble(pos)));
+                return pos;
+            } else {
+                errMsg.accept(Text.literal("暂未记录坐标!"));
+                return null;
+            }
+        });
+        specialPositionRegistry.put("back", (re, var1, errMsg) -> {
+            if (MovTasks.LAST_TP_FROM != null) {
+                errMsg.accept(
+                        Text.literal("使用上一个位置: ").append(ChatUtils.getDisplayedLocationDouble(MovTasks.LAST_TP_FROM)));
+                return MovTasks.LAST_TP_FROM;
+            }
+            errMsg.accept(Text.literal("找不到上一个位置"));
+            return null;
+        });
+        specialPositionRegistry.put("desync", (re, var1, errMsg) -> {
+            if (MovTasks.setBackLog.lastDesyncPos != null) {
+                errMsg.accept(Text.literal("使用上次客户端同步之前的位置")
+                        .append(ChatUtils.getDisplayedLocationDouble(MovTasks.setBackLog.lastDesyncPos)));
+                return MovTasks.setBackLog.lastDesyncPos;
+            }
+            errMsg.accept(Text.literal("找不到上一次的客户端同步记录"));
+            return null;
+        });
+        specialPositionRegistry.put("lasttp", (re, var1, errMsg) -> {
+            if (MovTasks.LAST_TP_REQUEST != null) {
+                errMsg.accept(Text.literal("使用上一个TP请求: ")
+                        .append(ChatUtils.getDisplayedLocationDouble(MovTasks.LAST_TP_REQUEST)));
+                return MovTasks.LAST_TP_REQUEST;
+            }
+            errMsg.accept(Text.literal("找不到上一个TP请求"));
+            return null;
+        });
+        specialPositionRegistry.put("death", (re, var1, errMsg) -> {
+            var b0 = var1.getLastDeathPos();
+            if (b0.isPresent()) {
+                if (Objects.equals(b0.get().dimension(), mc.world.getRegistryKey())) {
+                    return b0.get().pos().toBottomCenterPos();
+                } else {
+                    errMsg.accept(Text.literal("上次死亡位置不在该世界"));
+                }
+            } else {
+                errMsg.accept(Text.literal("暂未死亡历史记录"));
+            }
+            return null;
+        });
+        specialPositionRegistry.put("camera", (re, var1, errMsg) -> {
+            return RenderUtils.getCameraEntityPos();
+        });
+    }
+
+    public static Vec3d resolveCommandSpecialPositions(
+            String type, ArgumentReader reader, PlayerEntity var1, Consumer<Text> errMsg) {
+        if (type.startsWith("#")) {
+            String val = type.substring(1);
+            if (specialPositionRegistry.containsKey(val)) {
+                SpecialPositionResolver resolver = specialPositionRegistry.get(val);
+                return resolver.resolvePosition(reader, var1, errMsg);
+            } else {
+                errMsg.accept(Text.literal("不存在这样的特殊位置: " + type).formatted(Formatting.RED));
+            }
+        }
+        return null;
+    }
+
+    public static Stream<String> commandSpecialPositionType() {
+        return specialPositionRegistry.keySet().stream().map(s -> "#" + s);
+        // return List.of("#mark", "#near", "#this", "#back", "#death", "#desync", "#lasttp", "#warp");
+    }
+
+    static {
+        Listener.getCustomListener()
+                .<EventContainer<TpaCommandEvent>>getChannel(TpaCommandEvent.class)
+                .registerHandler(MovTasks::resolveSpecialType, 0);
+        // lastly resolve entity
+        Listener.getCustomListener()
+                .<EventContainer<TpaCommandEvent>>getChannel(TpaCommandEvent.class)
+                .registerHandler(MovTasks::resolveEntityTarget, 2147483646);
+    }
+
+    //    public static final TabResult XResult = TabResult.ofStreamFunction(
+    //        p -> Stream.of("%.2f %.2f %.2f".formatted(p.getExecutePos().x, p.getExecutePos().y, p.getExecutePos().z),
+    // "~ ~ ~", "^ ^ ^"));
+    //
+    //    public static List<TabResult> xResultList = new ArrayList<>();
+    //    static{
+    //        xResultList.add(XResult);
+    //    }
+    //    public static TabResult createXResult() {
+    //        return TabResult.ofAll(xResultList);
+    //    }
+    //
+    //
+    //    public static TabResult YResult = TabResult.ofStreamFunction(
+    //            p -> Stream.of("%.2f".formatted(p.getExecutePos().y), "~"))
+    //        .orElse(
+    //            s -> {
+    //                return !s.isEmpty()
+    //                    && !s.get(s.size() - 1).nonnullResult().startsWith("^");
+    //            },
+    //            TabResult.ofStreamSupplier(() -> Stream.of("^")));
+    //    public static List<TabResult> yResultList = new ArrayList<>();
+    //    static{
+    //        yResultList.add(YResult);
+    //    }
+    //    public static TabResult createYResult() {
+    //        return TabResult.ofAll(yResultList);
+    //    }
+    //    public static TabResult ZResult = TabResult.ofStreamFunction(
+    //            p -> Stream.of("%.2f".formatted(p.getExecutePos().z), "~"))
+    //        .orElse(
+    //            s -> {
+    //                return !s.isEmpty()
+    //                    && !s.get(s.size() - 1).nonnullResult().startsWith("^");
+    //            },
+    //            TabResult.ofStreamSupplier(() -> Stream.of("^")));
+    //    public static List<TabResult> zResultList = new ArrayList<>();
+    //    static{
+    //        zResultList.add(ZResult);
+    //    }
+    //
+    //    public static TabResult createZResult() {
+    //        return TabResult.ofAll(zResultList);
+    //    }
+
+    //    public static SimpleCommandArgs coordinateArguments = new SimpleCommandArgs(
+    //        SimpleCommandArgs.argumentBuilder()
+    //            .name("x")
+    //            .tabCompletor(createXResult())
+    //            .defaultValue("~")
+    //            .build(),
+    //        SimpleCommandArgs.argumentBuilder()
+    //            .name("y")
+    //            .tabCompletor(createYResult())
+    //            .defaultValue("~")
+    //            .build(),
+    //        SimpleCommandArgs.argumentBuilder()
+    //            .name("z")
+    //            .tabCompletor(createZResult())
+    //            .defaultValue("~")
+    //            .build()
+    //    );
+
+    private static Vec3d resolveCoord(Entity entity, InputArgument argx, InputArgument argy, InputArgument argz) {
+        Vec3d parsedCoord;
+        if (argx.nonnullResultAsString().startsWith("^")) {
+            // use polar coord
+            if (!(argy.nonnullResultAsString().startsWith("^")
+                    && argz.nonnullResultAsString().startsWith("^"))) {
+                throw new LogicalError("Illegal format of look coordinate");
+            }
+            String xcoord = argx.nonnullResultAsString();
+            String ycoord = argy.nonnullResultAsString();
+            String zcoord = argz.nonnullResultAsString();
+            double x = xcoord.length() == 1 ? 0 : CommandUtils.gdouble(xcoord.substring(1), argx.getType());
+            double y = ycoord.length() == 1 ? 0 : CommandUtils.gdouble(ycoord.substring(1), argy.getType());
+            double z = zcoord.length() == 1 ? 0 : CommandUtils.gdouble(zcoord.substring(1), argz.getType());
+            parsedCoord = EntityUtils.lookCoordToAbsolutePos(entity, x, y, z);
+        } else {
+            // use simple coord
+            Vec3d pos = entity.getPos();
+            double x = 0;
+            double y = 0;
+            double z = 0;
+            String xcoord = argx.nonnullResultAsString();
+            String ycoord = argy.nonnullResultAsString();
+            String zcoord = argz.nonnullResultAsString();
+            if (xcoord.startsWith("~")) {
+                x = pos.x;
+                xcoord = xcoord.substring(1);
+            }
+            if (!xcoord.isEmpty()) {
+                x += CommandUtils.gdouble(xcoord, argx.getType());
+            }
+            if (ycoord.startsWith("~")) {
+                y = pos.y;
+                ycoord = ycoord.substring(1);
+            }
+            if (!ycoord.isEmpty()) {
+                y += CommandUtils.gdouble(ycoord, argy.getType());
+            }
+            if (zcoord.startsWith("~")) {
+                z = pos.z;
+                zcoord = zcoord.substring(1);
+            }
+            if (!zcoord.isEmpty()) {
+                z += CommandUtils.gdouble(zcoord, argz.getType());
+            }
+
+            parsedCoord = new Vec3d(x, y, z);
+        }
+        return parsedCoord;
+    }
+
+    public static class TpaArgumentType extends AbstractArgumentType<ExecutePos> {
+
+        public TpaArgumentType(String argsName) {
+            super(argsName);
+        }
+
+        public Stream<String> getTab(CommandExecution sender, List<InputArgument<?>> args) {
+            return Stream.concat(super.getTab(sender, args), tabCompleteTpaResult(sender, args));
+        }
+
+        @Nullable
+        @Override
+        public InputArgument<ExecutePos> consume(
+                CommandExecution execution, List<InputArgument<?>> args, ArgumentReader reader) {
+            if (reader.hasNext()) {
+                int startIndex = reader.cursor();
+                Optional<Vec3d> parsePos = getTpaCommandResult(execution, args, reader, Consumers.nop());
+                if (parsePos != null) {
+                    // parsed success, maybe null
+                    // output.forEach(execution::sendMessage);
+                    return new PosArgumentResult(parsePos.map(ExecutePos::of), this, reader, startIndex);
+                } else {
+                    // parsed failure
+                    return new PosArgumentResult(null, this, reader, startIndex);
+                }
+            } else {
+                return new PosArgumentResult(null, this, reader, reader.cursor());
+            }
+        }
+
+        public Stream<String> tabCompleteTpaResult(CommandExecution sender, List<InputArgument<?>> args) {
+            if (args.isEmpty()) return Stream.empty();
+            return filterTab(getTpaCommandTabResult(sender, args).stream(), args);
+        }
+    }
+
+    public static class TpaAndPosArgumentType extends PosArgumentType {
+
+        public TpaAndPosArgumentType(String argsName) {
+            super(argsName);
+        }
+
+        @Override
+        public Stream<String> getTab(CommandExecution sender, List<InputArgument<?>> args) {
+            // first coord, then tpa result
+            return Stream.concat(super.getTab(sender, args), tabCompleteTpaResult(sender, args));
+        }
+
+        public Stream<String> tabCompleteTpaResult(CommandExecution sender, List<InputArgument<?>> args) {
+            if (args.isEmpty()) return Stream.empty();
+            return filterTab(getTpaCommandTabResult(sender, args).stream(), args);
+        }
+
+        @Override
+        public @Nullable InputArgument<ExecutePos> consume(
+                CommandExecution execution, List<InputArgument<?>> args, ArgumentReader reader) {
+            if (reader.hasNext()) {
+                int startIndex = reader.cursor();
+                Optional<Vec3d> parsePos = getTpaCommandResult(execution, args, reader, Consumers.nop());
+                if (parsePos != null) {
+                    // parsed success, maybe null
+                    //  output.forEach(execution::sendMessage);
+                    return new PosArgumentResult(parsePos.map(ExecutePos::of), this, reader, startIndex);
+                } else {
+                    // parsed failure
+                    // reset cursor
+                    reader.setCursor(startIndex);
+                    return super.consume(execution, args, reader);
+                }
+            } else {
+                return new PosArgumentResult(null, this, reader, reader.cursor());
+            }
+        }
     }
 }

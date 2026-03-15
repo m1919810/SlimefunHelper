@@ -1,4 +1,4 @@
-package me.matl114.matlib.utils.command.commandGroup;
+package me.matl114.utils.commands.commandGroup;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -9,13 +9,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
-import me.matl114.matlib.algorithms.dataStructures.struct.Pair;
-import me.matl114.matlib.common.functions.core.TriFunction;
-import me.matl114.matlib.utils.command.params.ArgumentInputStream;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.api.ArgumentType;
-import me.matl114.matlib.utils.command.params.SimpleCommandArgs;
-import me.matl114.matlib.utils.command.params.api.TabResult;
+import me.matl114.utils.commands.params.ArgumentInputStream;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.commands.params.api.ArgumentType;
+import me.matl114.utils.commands.params.api.CommandExecution;
+import me.matl114.utils.commands.params.api.TabResult;
+import org.apache.commons.lang3.function.TriFunction;
 
 /**
  * Represents a sub-command within a command group system.
@@ -99,8 +99,8 @@ public abstract class SubCommand implements CustomTabExecutor {
             return this;
         }
 
-        public Builder<T> args(SimpleCommandArgs args){
-            for (var arg : args.getArgs()){
+        public Builder<T> args(SimpleCommandArgs args) {
+            for (var arg : args.getArgs()) {
                 this.arg(arg);
             }
             return this;
@@ -146,7 +146,8 @@ public abstract class SubCommand implements CustomTabExecutor {
         return new Builder<>(factory);
     }
 
-    @Nullable @Override
+    @Nullable
+    @Override
     public String permissionRequired() {
         return permission;
     }
@@ -247,7 +248,7 @@ public abstract class SubCommand implements CustomTabExecutor {
             return this;
         }
 
-        public SubBuilder<R, W> args(SimpleCommandArgs args){
+        public SubBuilder<R, W> args(SimpleCommandArgs args) {
             super.args(args);
             return this;
         }
@@ -334,16 +335,8 @@ public abstract class SubCommand implements CustomTabExecutor {
      * @return A pair containing the parsed input stream and remaining arguments
      */
     @Nonnull
-    @Deprecated(forRemoval = true)
-    public Pair<ArgumentInputStream, String[]> parseInput(String[] args) {
-        ArgumentReader reader = new ArgumentReader(args);
-        var re = template.parseInputStream(reader);
-        return new Pair<>(re, reader.getRemainingArgs());
-    }
-
-    @Nonnull
-    public ArgumentInputStream parseInput(ArgumentReader args) {
-        return template.parseInputStream(args);
+    public ArgumentInputStream parseInput(CommandExecution execution, ArgumentReader args) {
+        return template.parseInputStream(execution, args);
     }
 
     @Override

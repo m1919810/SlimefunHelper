@@ -1,54 +1,72 @@
-package me.matl114.matlib.utils.command.params.impl;
-
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.api.ArgumentType;
-import me.matl114.matlib.utils.command.params.api.InputArgument;
-import me.matl114.matlib.utils.command.params.types.ExecutePos;
-import org.bukkit.command.CommandSender;
-import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3d;
-import org.joml.Vector3f;
+package me.matl114.utils.commands.params.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.api.ArgumentType;
+import me.matl114.utils.commands.params.api.CommandExecution;
+import me.matl114.utils.commands.params.api.InputArgument;
+import me.matl114.utils.commands.params.types.ExecutePos;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3d;
 
-public class PosArgumentType extends AbstractArgumentType<Optional<ExecutePos>> implements ArgumentType<Optional<ExecutePos>> {
+public class PosArgumentType extends AbstractArgumentType<ExecutePos> implements ArgumentType<ExecutePos> {
     public PosArgumentType(String argsName) {
         super(argsName);
     }
 
     @Nullable
     @Override
-    public InputArgument<Optional<ExecutePos>> consume(ArgumentReader reader) {
-        if(reader.hasNext()){
+    public InputArgument<ExecutePos> consume(
+            CommandExecution execution, List<InputArgument<?>> args, ArgumentReader reader) {
+        if (reader.hasNext()) {
             int startIndex = reader.cursor();
             String xStr = reader.next();
             ExecutePos pos = null;
-            if(reader.hasNext()){
+            if (reader.hasNext()) {
                 String yStr = reader.next();
-                if(reader.hasNext()){
+                if (reader.hasNext()) {
                     String zStr = reader.next();
-                    try{
+                    try {
                         pos = parse(xStr, yStr, zStr);
-                    }catch (Throwable e){
+                        return new PosArgumentResult(Optional.ofNullable(pos), this, reader, startIndex);
+                    } catch (Throwable e) {
                     }
                 }
             }
-            return new PosArgumentResult(Optional.ofNullable(pos), this, reader, startIndex);
-        }else{
-            return new PosArgumentResult(defaultValue, this, reader, reader.cursor());
+            // parse failure
+            reader.setCursor(startIndex);
+            return new PosArgumentResult(Optional.ofNullable(defaultValue), this, reader, startIndex);
+        } else {
+            return new PosArgumentResult(Optional.ofNullable(defaultValue), this, reader, reader.cursor());
+        }
+    }
+
+    public boolean isPartOfCoord(String str) {
+        if (str.startsWith("^") || str.startsWith("~")) {
+            str = str.substring(1);
+        }
+        if (str.startsWith("-")) {
+            str = str.substring(1);
+        }
+        try {
+            if (str.isEmpty()) return true;
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 
     @Override
-    public Stream<String> getTab(CommandSender sender, List<InputArgument<?>> args) {
-        return Stream.concat( super.getTab(sender, args), this.tabCompleteArguments(sender, args));
+    public Stream<String> getTab(CommandExecution sender, List<InputArgument<?>> args) {
+        return Stream.concat(super.getTab(sender, args), this.tabCompleteArguments(sender, args));
     }
 
-    private ExecutePos parse(String xStr, String yStr, String zStr) {
+    protected ExecutePos parse(String xStr, String yStr, String zStr) {
         // 检查是否采用视线坐标系（以 ^ 开头）
         if (xStr.startsWith("^")) {
             // 必须三个都以 ^ 开头
@@ -118,7 +136,7 @@ public class PosArgumentType extends AbstractArgumentType<Optional<ExecutePos>> 
     /**
      * 去掉前缀后解析 double，空字符串视为 0.0
      */
-    private double parseDoubleAfterPrefix(String s, String prefix) {
+    protected double parseDoubleAfterPrefix(String s, String prefix) {
         String num = s.substring(prefix.length());
         if (num.isEmpty()) {
             return 0.0;
@@ -126,72 +144,69 @@ public class PosArgumentType extends AbstractArgumentType<Optional<ExecutePos>> 
         return Double.parseDouble(num);
     }
 
-
-    public Stream<String> tabCompleteArguments(CommandSender sender, List<InputArgument<?>> args) {
+    public Stream<String> tabCompleteArguments(CommandExecution sender, List<InputArgument<?>> args) {
         InputArgument<?> lastArg = args.get(args.size() - 1);
-        if(lastArg instanceof PosArgumentResult posResult){
+        if (lastArg instanceof PosArgumentResult posResult) {
             String[] rangeArgs = posResult.getParsedArgument();
             int len = rangeArgs.length;
-            if(len == 0 || rangeArgs[0].isEmpty()){
+            if (len == 0 || rangeArgs[0].isEmpty()) {
                 return Stream.of(
-                    new ExecutePos.Fixed(ExecutePos.getExecutorPos(sender)),
-                    new ExecutePos.RelativeXYZ(7, new Vector3d(0,0,0)),
-                    new ExecutePos.RelativeRotateXYZ(new Vector3d(0,0,0))
-                ).map(ExecutePos::asString);
-            }else{
+                                new ExecutePos.Fixed(sender.getExecutePos()),
+                                new ExecutePos.RelativeXYZ(7, new Vector3d(0, 0, 0)),
+                                new ExecutePos.RelativeRotateXYZ(new Vector3d(0, 0, 0)))
+                        .map(ExecutePos::asString);
+            } else {
                 String firstArg = rangeArgs[0];
                 int leftArg = 3 - len;
 
-                if(firstArg.startsWith("^")){
+                if (firstArg.startsWith("^")) {
                     boolean show = true;
-                    for (var i = 1; i < len - 1; ++ i){
-                        show &= rangeArgs[i].startsWith("^");
+                    for (var i = 0; i < len - 1; ++i) {
+                        show &= rangeArgs[i].startsWith("^") && isPartOfCoord(rangeArgs[i]);
                     }
-                    show &= rangeArgs[len - 1].startsWith("^") || rangeArgs[len - 1].isEmpty();
-                    if(show){
+                    show &= (rangeArgs[len - 1].startsWith("^") && isPartOfCoord(rangeArgs[len - 1]))
+                            || rangeArgs[len - 1].isEmpty();
+                    if (show) {
                         String repeat = " ^".repeat(leftArg);
-                        repeat =  ((rangeArgs[len - 1].isEmpty()) ? "^" : rangeArgs[len - 1]) + repeat;
+                        repeat = ((rangeArgs[len - 1].isEmpty()) ? "^" : rangeArgs[len - 1]) + repeat;
                         return Stream.of(repeat);
-                    }else{
+                    } else {
                         return Stream.empty();
                     }
-                }else {
+                } else {
                     boolean show = true;
-                    for (var i = 1; i < len - 1; ++ i){
-                        show &= !rangeArgs[i].startsWith("^");
+                    for (var i = 0; i < len; ++i) {
+                        show &= !rangeArgs[i].startsWith("^") && isPartOfCoord(rangeArgs[i]);
                     }
-                    if(show){
-                        Vector3d exePos = ExecutePos.getExecutorPos(sender);
+                    if (show) {
+                        Vector3d exePos = sender.getExecutePos();
                         String exeX = "%.1f".formatted(exePos.x);
                         String exeY = "%.1f".formatted(exePos.y);
                         String exeZ = "%.1f".formatted(exePos.z);
                         String[] p1 = {exeX, exeY, exeZ};
                         String[] p2 = {"~", "~", "~"};
-                        if((rangeArgs[len - 1].isEmpty())){
+                        if ((rangeArgs[len - 1].isEmpty())) {
                             int includeLen = leftArg + 1;
-                            return Stream.of(p1, p2).map(s -> String.join(" ", Arrays.copyOfRange(s, 3 - includeLen, 3)));
-                        }else{
+                            return Stream.of(p1, p2)
+                                    .map(s -> String.join(" ", Arrays.copyOfRange(s, 3 - includeLen, 3)));
+                        } else {
 
-                            return Stream.of(p1, p2).map(s ->{
-                                    List<String> strs = new ArrayList<>();
-                                    strs.add(rangeArgs[len - 1]);
-                                    for(int i = 3 - leftArg;  i < 3 ; ++i){
-                                        strs.add(s[i]);
-                                    };
-                                    return String.join(" ", strs);
-                                });
+                            return Stream.of(p1, p2).map(s -> {
+                                List<String> strs = new ArrayList<>();
+                                strs.add(rangeArgs[len - 1]);
+                                for (int i = 3 - leftArg; i < 3; ++i) {
+                                    strs.add(s[i]);
+                                }
+                                ;
+                                return String.join(" ", strs);
+                            });
                         }
-                    }else{
+                    } else {
                         return Stream.empty();
                     }
-
                 }
             }
         }
         return Stream.empty();
     }
-
-
-
-
 }

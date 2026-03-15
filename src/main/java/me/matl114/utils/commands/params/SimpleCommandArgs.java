@@ -1,30 +1,23 @@
-package me.matl114.matlib.utils.command.params;
+package me.matl114.utils.commands.params;
 
-import com.google.common.collect.Streams;
 import it.unimi.dsi.fastutil.ints.IntList;
-
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import me.matl114.matlib.common.lang.annotations.DoNotCall;
-import me.matl114.matlib.common.lang.annotations.DoNotOverride;
-import me.matl114.matlib.utils.command.CommandUtils;
-import me.matl114.matlib.utils.command.interruption.ArgumentException;
-import me.matl114.matlib.utils.command.interruption.ValueParseError;
-import me.matl114.matlib.utils.command.params.api.ArgumentType;
-import me.matl114.matlib.utils.command.params.api.InputArgument;
-import me.matl114.matlib.utils.command.params.api.TabResult;
-import me.matl114.matlib.utils.command.params.impl.AbstractArgumentType;
-import me.matl114.matlib.utils.command.params.impl.StringArgumentResult;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.CommandUtils;
+import me.matl114.utils.commands.interruption.ValueParseError;
+import me.matl114.utils.commands.params.api.ArgumentType;
+import me.matl114.utils.commands.params.api.CommandExecution;
+import me.matl114.utils.commands.params.api.InputArgument;
+import me.matl114.utils.commands.params.api.TabResult;
+import me.matl114.utils.commands.params.impl.AbstractArgumentType;
+import me.matl114.utils.commands.params.impl.StringArgumentResult;
 
 public class SimpleCommandArgs {
     // todo: add Argument type,  consume more args
@@ -32,41 +25,39 @@ public class SimpleCommandArgs {
 
     public static class Argument extends AbstractArgumentType<String> implements ArgumentType<String> {
 
-
-
         public Argument(String argsName) {
             super(argsName);
         }
 
-
-
-
         @Override
-        public InputArgument<String> consume(ArgumentReader reader) {
-            if(reader.hasNext()){
+        public InputArgument<String> consume(
+                CommandExecution execution, List<InputArgument<?>> args, ArgumentReader reader) {
+            if (reader.hasNext()) {
 
                 String arg = reader.next();
                 return new StringArgumentResult(arg, this, reader, reader.cursor() - 1);
-            }else{
+            } else {
                 return new StringArgumentResult(this.defaultValue, this, reader, reader.cursor());
             }
         }
     }
 
-    public static ArgumentBuilder<Argument, String> argumentBuilder(){
+    public static ArgumentBuilder<Argument, String> argumentBuilder() {
         return new ArgumentBuilder<>(Argument::new);
     }
 
-    public static <T extends AbstractArgumentType<W>, W> ArgumentBuilder<T, W> argumentBuilder(Function<String, T> builder){
+    public static <T extends AbstractArgumentType<W>, W> ArgumentBuilder<T, W> argumentBuilder(
+            Function<String, T> builder) {
         return new ArgumentBuilder<>(builder);
     }
 
     @Accessors(fluent = true, chain = true)
     @Getter
     @Setter
-    public static class ArgumentBuilder<W  extends AbstractArgumentType<T>, T> {
+    public static class ArgumentBuilder<W extends AbstractArgumentType<T>, T> {
         public static final List<String> BOOL_TAB = List.of("true", "false");
         Function<String, W> factory;
+
         public ArgumentBuilder(Function<String, W> factory) {
             this.factory = factory;
         }
@@ -75,7 +66,7 @@ public class SimpleCommandArgs {
         T defaultValue;
         List<TabResult> tabCompletor = new ArrayList<>();
 
-        public ArgumentBuilder<W, T> defaultValue(T name){
+        public ArgumentBuilder<W, T> defaultObject(T name) {
             this.defaultValue = name;
             return this;
         }
@@ -95,7 +86,7 @@ public class SimpleCommandArgs {
             return this;
         }
 
-        public ArgumentBuilder<W, T> tabCompletor(Function<CommandSender, Stream<String>> list) {
+        public ArgumentBuilder<W, T> tabCompletor(Function<CommandExecution, Stream<String>> list) {
             tabCompletor.add(TabResult.ofStreamFunction(list));
             return this;
         }
@@ -166,7 +157,7 @@ public class SimpleCommandArgs {
             return this;
         }
 
-        public ArgumentBuilder<W, T> dispatchLast(BiFunction<CommandSender, String, Stream<String>> f) {
+        public ArgumentBuilder<W, T> dispatchLast(BiFunction<CommandExecution, String, Stream<String>> f) {
             tabCompletor(TabResult.ofDispatcher(f));
             return this;
         }
@@ -181,7 +172,7 @@ public class SimpleCommandArgs {
             return this;
         }
 
-        public ArgumentBuilder<W, T> dispatchLastArg(BiFunction<CommandSender, InputArgument<?>, Stream<String>> f) {
+        public ArgumentBuilder<W, T> dispatchLastArg(BiFunction<CommandExecution, InputArgument<?>, Stream<String>> f) {
             tabCompletor(TabResult.ofArgDispatcher(f));
             return this;
         }
@@ -206,22 +197,20 @@ public class SimpleCommandArgs {
         this.args = args;
     }
 
-
-    public ArgumentInputStream parseInputStream(ArgumentReader reader) {
+    public ArgumentInputStream parseInputStream(CommandExecution execution, ArgumentReader reader) {
         final List<InputArgument<?>> inputArguments = new ArrayList<>();
         List<ArgumentType<?>> argSet = Arrays.stream(args).collect(Collectors.toCollection(ArrayList::new));
-        for (var selected :  argSet){
-            if(!reader.hasNext()){
+        for (var selected : argSet) {
+            if (!reader.hasNext()) {
                 break;
             }
-            InputArgument<?> argument = selected.consume(reader);
-            if(argument != null){
+            InputArgument<?> argument = selected.consume(execution, inputArguments, reader);
+            if (argument != null) {
                 inputArguments.add(argument);
-            }else{
+            } else {
                 throw new ValueParseError(selected.getArgsName(), new ArgumentReader(reader));
             }
-
         }
-        return new ArgumentInputStream(reader, argSet, inputArguments);
+        return new ArgumentInputStream(execution, reader, argSet, inputArguments);
     }
 }
