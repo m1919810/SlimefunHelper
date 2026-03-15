@@ -314,9 +314,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
         if (shouldNoSlowSneak()) {
-            args.input.playerInput = PlayerInputUtils.of(args.input.playerInput)
+            PlayerInputUtils.of(args.input)
                     .sneak(mc.options.sneakKey.isPressed())
-                    .toPlayerInput();
+                    .applyInput(args.input);
         }
     }
 
@@ -400,8 +400,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             if (!lastPredictWasSneakEdge && args.isSneaking()) {
                 // in lower version,
                 // ClientPlayerAccess.of(args).setLastSneakFlag(args.isSneaking());
-                args.input.playerInput =
-                        PlayerInputUtils.of(args.input.playerInput).sneak(false).toPlayerInput();
+                PlayerInputUtils.of(args.input).sneak(false).applyInput(args.input);
             }
             if (lastPredictWasSneakEdge) {
                 ClientPlayerAccess.of(mc.player).resyncSneak();
