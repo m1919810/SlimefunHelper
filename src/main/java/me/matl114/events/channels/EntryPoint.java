@@ -32,14 +32,22 @@ public abstract class EntryPoint<W> {
     protected List<H<W>> handlers = new ArrayList<>();
 
     public void registerHandler(Predicate<W> val) {
-        registerHandler(val, 0);
+        registerHandlerInternal(val, 0);
     }
 
     public void registerHandler(Consumer<W> val) {
-        registerHandler(val, 0);
+        registerHandlerInternal(val, 0);
     }
 
-    public void registerHandler(Object val, int p) {
+    public void registerHandler(Consumer<W> val, int p) {
+        registerHandlerInternal(val, p);
+    }
+
+    public void registerHandler(Predicate<W> val, int p) {
+        registerHandlerInternal(val, p);
+    }
+
+    private void registerHandlerInternal(Object val, int p) {
         H newHandler = new H(p, val);
 
         int index = handlers.size() - 1;

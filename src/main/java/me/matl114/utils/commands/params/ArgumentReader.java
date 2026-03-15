@@ -1,10 +1,6 @@
-package me.matl114.matlib.utils.command.params;
-
-import me.matl114.matlib.common.lang.annotations.ConstArray;
-import me.matl114.matlib.common.lang.annotations.Internal;
+package me.matl114.utils.commands.params;
 
 public class ArgumentReader {
-    @ConstArray
     private final String[] args;
     int currentCursor;
 
@@ -18,9 +14,9 @@ public class ArgumentReader {
     }
 
     public ArgumentReader(ArgumentReader reader) {
-        //trusted array with no copy
-        this.args = reader.args;//new String[reader.args.length];
-        //System.arraycopy(reader.args, 0, this.args, 0, reader.args.length);
+        // trusted array with no copy
+        this.args = reader.args; // new String[reader.args.length];
+        // System.arraycopy(reader.args, 0, this.args, 0, reader.args.length);
         this.currentCursor = reader.currentCursor;
     }
 
@@ -90,12 +86,17 @@ public class ArgumentReader {
         return getArgsInRange(0, currentCursor);
     }
 
-    public String[] getArgsInRange(int startIndex, int endIndex){
+    public String[] getArgsInRange(int startIndex, int endIndex) {
         String[] args = new String[endIndex - startIndex];
         System.arraycopy(this.args, startIndex, args, 0, args.length);
         return args;
     }
-    public String getArgsAt(int index){
+
+    public String getArgsAt(int index) {
         return args[index];
+    }
+
+    public int getLength() {
+        return args.length;
     }
 }

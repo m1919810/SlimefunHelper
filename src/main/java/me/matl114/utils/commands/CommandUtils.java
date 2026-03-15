@@ -1,13 +1,12 @@
 package me.matl114.utils.commands;
 
 import com.google.common.base.Supplier;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
-import me.matl114.utils.interruptions.TypeError;
-import me.matl114.utils.interruptions.ValueOutOfRangeError;
+import me.matl114.utils.commands.interruption.TypeError;
+import me.matl114.utils.commands.interruption.ValueOutOfRangeError;
+import me.matl114.utils.commands.params.api.ArgumentType;
+import me.matl114.utils.commands.params.api.TabResult;
 import org.jetbrains.annotations.Nullable;
 
 public class CommandUtils {
@@ -43,54 +42,7 @@ public class CommandUtils {
         return Math.max(Math.min(max, value), min);
     }
 
-    public static Map<String, String> parseArguments(String[] args, SimpleCommandArgs.Argument[] requiredDefault) {
-        Map<String, String> arguments = new HashMap<>();
-        var iter = Arrays.stream(args).iterator();
-        var argIter = Arrays.stream(requiredDefault).iterator();
-        while (iter.hasNext()) {
-            String arg = iter.next();
-            if (arg.startsWith("-")) {
-                SimpleCommandArgs.Argument selected = null;
-                String trueName = arg.replaceFirst("^-+", "");
-                for (SimpleCommandArgs.Argument a : requiredDefault) {
-                    if (a.isAlias(trueName)) {
-                        trueName = a.getArgsName();
-                        break;
-                    }
-                }
-                if (arg.startsWith("--")) {
-                    // --args inputValue
-                    if (iter.hasNext()) {
-                        String arg2 = iter.next();
-
-                        arguments.put(trueName, arg2);
-                    } else {
-                        // ignored
-                    }
-                } else {
-                    // -f -v means boolean
-                    arguments.put(trueName, "true");
-                }
-            } else {
-                SimpleCommandArgs.Argument arg1 = null;
-                while (argIter.hasNext() && arguments.containsKey((arg1 = argIter.next()).getArgsName())) {
-                    // find next argument which is not already collected
-                }
-                if (arg1 != null) {
-                    arguments.put(arg1.getArgsName(), arg);
-                } else {
-                    // no more argument in list, but still --args -flag should be collected, so no break here
-                }
-            }
-        }
-        while (argIter.hasNext()) {
-            var re = argIter.next();
-            arguments.putIfAbsent(re.getArgsName(), re.getDefaultValue());
-        }
-        return arguments;
-    }
-
-    public static int gint(String val, @Nullable SimpleCommandArgs.Argument arg) {
+    public static int gint(String val, @Nullable ArgumentType<?> arg) {
         try {
             return Integer.parseInt(val);
         } catch (Throwable e) {
@@ -98,7 +50,7 @@ public class CommandUtils {
         }
     }
 
-    public static float gfloat(String val, @Nullable SimpleCommandArgs.Argument arg) {
+    public static float gfloat(String val, @Nullable ArgumentType<?> arg) {
         try {
             return Float.parseFloat(val);
         } catch (Throwable e) {
@@ -106,7 +58,7 @@ public class CommandUtils {
         }
     }
 
-    public static double gdouble(String val, @Nullable SimpleCommandArgs.Argument arg) {
+    public static double gdouble(String val, @Nullable ArgumentType<?> arg) {
         try {
             return Double.parseDouble(val);
         } catch (Throwable e) {
@@ -114,7 +66,7 @@ public class CommandUtils {
         }
     }
 
-    public static boolean gbool(String val, @Nullable SimpleCommandArgs.Argument arg) {
+    public static boolean gbool(String val, @Nullable ArgumentType<?> arg) {
         switch (val) {
             case "true":
                 return true;
@@ -240,5 +192,31 @@ public class CommandUtils {
      */
     public static Supplier<Stream<String>> floatStreamSupplier() {
         return FLOATS::stream;
+    }
+
+    public static TabResult createXResult() {
+        return TabResult.ofStreamFunction(p -> Stream.of("%.2f".formatted(p.getExecutePos().x), "~ ~ ~", "^ ^ ^"));
+    }
+
+    public static TabResult createYResult() {
+        return TabResult.ofStreamFunction(p -> Stream.of("%.2f".formatted(p.getExecutePos().y), "~ ~ ~", "^ ^ ^"))
+                .combine(TabResult.ofDispatcher((p, str) -> {
+                    if (str.startsWith("^")) {
+                        return Stream.of("^");
+                    } else {
+                        return Stream.of("~");
+                    }
+                }));
+    }
+
+    public static TabResult createZResult() {
+        return TabResult.ofStreamFunction(p -> Stream.of("%.2f".formatted(p.getExecutePos().z), "~ ~ ~", "^ ^ ^"))
+                .combine(TabResult.ofDispatcher((p, str) -> {
+                    if (str.startsWith("^")) {
+                        return Stream.of("^");
+                    } else {
+                        return Stream.of("~");
+                    }
+                }));
     }
 }

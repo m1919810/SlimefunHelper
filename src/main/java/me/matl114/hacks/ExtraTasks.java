@@ -41,6 +41,9 @@ public class ExtraTasks {
     @Getter
     public static ServerScanner serverScanner;
 
+    @Getter
+    public static Warps warps;
+
     private static void initModules(ModuleManager m) {
         clientExtra = new ClientExtra().register(m);
         ;
@@ -51,6 +54,7 @@ public class ExtraTasks {
         enderEyeLog = new EnderEyeLog().register(m);
 
         serverScanner = new ServerScanner().register(m);
+        warps = new Warps().register(m);
     }
 
     static {

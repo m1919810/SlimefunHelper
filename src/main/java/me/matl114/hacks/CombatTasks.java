@@ -220,6 +220,9 @@ public class CombatTasks {
 
     @Getter
     public static TotemLog totemLog;
+
+    @Getter
+    public static Spear spear;
     // todo antikb
 
     // todo
@@ -237,6 +240,7 @@ public class CombatTasks {
         autoTotem = new AutoTotem().register(m);
         totemLog = new TotemLog().register(m);
         bowTp = new BowTp().register(m);
+        spear = new Spear().register(m);
     }
 
     static {
