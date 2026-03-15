@@ -60,6 +60,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Vector3d;
 
 public class ChatTasks {
     public static void init() {}

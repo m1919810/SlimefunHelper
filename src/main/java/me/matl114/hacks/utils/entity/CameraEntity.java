@@ -2,18 +2,20 @@ package me.matl114.hacks.utils.entity;
 
 import java.util.UUID;
 import javax.annotation.Nonnull;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.world.GameMode;
-import org.jspecify.annotations.Nullable;
 
 public class CameraEntity extends AbstractClientPlayerEntity {
-    ClientPlayerEntity player;
+    PlayerEntity player;
     GameMode mode;
     boolean moveable;
+    PlayerListEntry entry;
 
     public CameraEntity(ClientWorld clientWorld, @Nonnull ClientPlayerEntity player, GameMode mode, boolean moveable) {
         super(clientWorld, player.getGameProfile());
@@ -37,16 +39,24 @@ public class CameraEntity extends AbstractClientPlayerEntity {
     public void copyEquipments(PlayerInventory p) {
         // copy inventory before we set the delegate player
         getInventory().clone(p);
+        super.isSpectator();
     }
 
     @Override
-    public @Nullable GameMode getGameMode() {
-        return mode;
+    public boolean isSpectator() {
+        return mode == GameMode.SPECTATOR;
+    }
+
+    @Override
+    public boolean isCreative() {
+        return mode == GameMode.CREATIVE;
     }
 
     @Override
     protected PlayerListEntry getPlayerListEntry() {
-        return this.player != null ? this.player.networkHandler.getPlayerListEntry(this.player.getUuid()) : null;
+        return this.player != null
+                ? MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.player.getUuid())
+                : null;
     }
 
     public float getPitch() {
@@ -59,7 +69,15 @@ public class CameraEntity extends AbstractClientPlayerEntity {
 
     @Override
     public void tick() {
-        if (this.player != null && this.player.networkHandler.isLoaded()) {
+        this.player.setLoaded(true);
+        if (this.player != null && this.player.isLoaded()) {
+            if (!this.moveable) {
+                this.setPitch(this.player.getPitch());
+                this.setYaw(this.player.getYaw());
+                this.setHeadYaw(this.player.getHeadYaw());
+                this.setBodyYaw(this.player.getBodyYaw());
+                this.setPosition(this.player.getPos());
+            }
             super.tick();
         }
     }
@@ -70,6 +88,10 @@ public class CameraEntity extends AbstractClientPlayerEntity {
     }
 
     public boolean isMainPlayer() {
+        return moveable;
+    }
+
+    public boolean canMoveVoluntarily() {
         return moveable;
     }
 }

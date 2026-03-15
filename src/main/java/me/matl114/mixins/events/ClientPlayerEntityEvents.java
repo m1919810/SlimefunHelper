@@ -92,7 +92,9 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         // changed, update movementVector
         if (!Objects.equals(currentInput, this.input.playerInput)) {
             PlayerInputUtils.Input i0 = PlayerInputUtils.of(this.input);
-            this.input.movementVector = new Vec2f(i0.sidewaysSpeed(), i0.forwardSpeed()).normalize();
+            Vec2f movementVector = new Vec2f(i0.sidewaysSpeed(), i0.forwardSpeed()).normalize();
+            this.input.movementForward = movementVector.y;
+            this.input.movementSideways = movementVector.x;
         }
     }
 
