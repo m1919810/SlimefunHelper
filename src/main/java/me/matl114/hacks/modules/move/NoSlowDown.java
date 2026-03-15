@@ -23,6 +23,7 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -318,8 +319,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
         if (shouldNoSlowSneak()) {
-
-            args.input.sneaking = mc.options.sneakKey.isPressed();
+            PlayerInputUtils.of(args.input)
+                    .sneak(mc.options.sneakKey.isPressed())
+                    .applyInput(args.input);
         }
     }
 
@@ -403,7 +405,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             if (!lastPredictWasSneakEdge && args.isSneaking()) {
                 // in lower version,
                 // ClientPlayerAccess.of(args).setLastSneakFlag(args.isSneaking());
-                args.input.sneaking = false;
+                PlayerInputUtils.of(args.input).sneak(false).applyInput(args.input);
             }
             if (lastPredictWasSneakEdge) {
                 ClientPlayerAccess.of(mc.player).resyncSneak();

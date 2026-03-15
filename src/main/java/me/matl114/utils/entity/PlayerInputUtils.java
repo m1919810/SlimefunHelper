@@ -9,7 +9,13 @@ import net.minecraft.client.option.GameOptions;
 
 public class PlayerInputUtils {
     public static Input of(net.minecraft.client.input.Input input) {
-        return new Input(input.playerInput);
+        return new Input(
+                input.pressingForward,
+                input.pressingBack,
+                input.pressingLeft,
+                input.pressingRight,
+                input.jumping,
+                input.sneaking);
     }
 
     public static Input of(GameOptions options) {
@@ -19,8 +25,7 @@ public class PlayerInputUtils {
                 options.leftKey.isPressed(),
                 options.rightKey.isPressed(),
                 options.jumpKey.isPressed(),
-                options.sneakKey.isPressed(),
-                options.sprintKey.isPressed());
+                options.sneakKey.isPressed());
     }
 
     @AllArgsConstructor
@@ -34,10 +39,9 @@ public class PlayerInputUtils {
         boolean right;
         boolean jump;
         boolean sneak;
-        boolean sprint;
 
         public Input(boolean forward, boolean backward, boolean left, boolean right) {
-            this(forward, backward, left, right, false, false, false);
+            this(forward, backward, left, right, false, false);
         }
 
         public int forwardSpeed() {
@@ -50,6 +54,15 @@ public class PlayerInputUtils {
 
         public int upwardSpeed() {
             return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
+        }
+
+        public void applyInput(net.minecraft.client.input.Input input) {
+            input.pressingForward = forward;
+            input.pressingBack = backward;
+            input.pressingLeft = left;
+            input.pressingRight = right;
+            input.sneaking = sneak;
+            input.jumping = jump;
         }
     }
 }
