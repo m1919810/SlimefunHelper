@@ -1,35 +1,28 @@
-package me.matl114.matlib.utils.command.params.types;
+package me.matl114.utils.commands.params.types;
 
-import org.bukkit.Location;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
+import me.matl114.utils.commands.params.api.CommandExecution;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.Vec3d;
 import org.joml.Vector2f;
 import org.joml.Vector3d;
-import org.joml.Vector3f;
 
 public interface ExecutePos {
-    public Vector3d getPosition(CommandSender executor);
+    public Vector3d getPosition(CommandExecution executor);
 
     public String asString();
-    
-    public static ExecutePos ofExecutor(CommandSender executor) {
-        return new Fixed(getExecutorPos(executor));
+
+    public static ExecutePos of(Vec3d vec3d) {
+        return new Fixed(new Vector3d(vec3d.x, vec3d.y, vec3d.z));
     }
 
-    public static Vector3d getExecutorPos(CommandSender executor){
-        Vector3d executorPos;
-        if(executor instanceof Player p) {
-            Location loc = p.getLocation();
-            executorPos = new Vector3d(loc.getX(), loc.getY(), loc.getZ());
-        }else{
-            executorPos = new Vector3d(0,0,0);
-        }
-        return executorPos;
+    public static ExecutePos ofExecutor(CommandExecution executor) {
+        return new Fixed(executor.getExecutePos());
     }
+
     public record Fixed(Vector3d vector3d) implements ExecutePos {
 
         @Override
-        public Vector3d getPosition(CommandSender executor) {
+        public Vector3d getPosition(CommandExecution executor) {
             return vector3d;
         }
 
@@ -42,22 +35,22 @@ public interface ExecutePos {
     public record RelativeXYZ(int flag, Vector3d vector3d) implements ExecutePos {
 
         @Override
-        public Vector3d getPosition(CommandSender executor) {
-            Vector3d executorPos = getExecutorPos(executor);
+        public Vector3d getPosition(CommandExecution executor) {
+            Vector3d executorPos = executor.getExecutePos();
             double x, y, z;
-            if((flag & 1) != 0){
+            if ((flag & 1) != 0) {
                 x = executorPos.x() + vector3d.x();
-            }else{
+            } else {
                 x = vector3d.x();
             }
-            if((flag & 2) != 0){
+            if ((flag & 2) != 0) {
                 y = executorPos.y() + vector3d.y();
-            }else {
+            } else {
                 y = vector3d.y();
             }
-            if((flag & 4) != 0){
+            if ((flag & 4) != 0) {
                 z = executorPos.z() + vector3d.z();
-            }else {
+            } else {
                 z = vector3d.z();
             }
             return new Vector3d(x, y, z);
@@ -66,37 +59,34 @@ public interface ExecutePos {
         @Override
         public String asString() {
             StringBuilder builder = new StringBuilder();
-            if((flag & 1) != 0){
+            if ((flag & 1) != 0) {
                 builder.append("~");
             }
-            if(vector3d.x() != 0)
-                builder.append("%.1f".formatted( vector3d.x()));
+            if (vector3d.x() != 0) builder.append("%.1f".formatted(vector3d.x()));
             builder.append(" ");
-            if((flag & 2) != 0){
+            if ((flag & 2) != 0) {
                 builder.append("~");
             }
-            if(vector3d.y() != 0)
-                builder.append("%.1f".formatted( vector3d.y()));
+            if (vector3d.y() != 0) builder.append("%.1f".formatted(vector3d.y()));
             builder.append(" ");
-            if((flag & 4) != 0){
+            if ((flag & 4) != 0) {
                 builder.append("~");
             }
-            if(vector3d.z() != 0)
-                builder.append("%.1f".formatted( vector3d.z()));
+            if (vector3d.z() != 0) builder.append("%.1f".formatted(vector3d.z()));
             return builder.toString();
         }
     }
 
     public record RelativeRotateXYZ(Vector3d vector3d) implements ExecutePos {
         @Override
-        public Vector3d getPosition(CommandSender executor) {
-            Vector3d executorPos = getExecutorPos(executor);
+        public Vector3d getPosition(CommandExecution executor) {
+            Vector3d executorPos = executor.getExecutePos();
             float pitch;
             float yaw;
-            if(executor instanceof Player p) {
+            if (executor.getExecutor() instanceof PlayerEntity p) {
                 pitch = p.getPitch();
                 yaw = p.getYaw();
-            }else{
+            } else {
                 pitch = 0;
                 yaw = 0;
             }
@@ -108,37 +98,32 @@ public interface ExecutePos {
         public String asString() {
             StringBuilder builder = new StringBuilder();
 
-                builder.append("^");
-            if(vector3d.x() != 0)
-                builder.append("%.1f".formatted( vector3d.x()));
-            builder.append(" ");
-                builder.append("^");
-            if(vector3d.y() != 0)
-                builder.append("%.1f".formatted( vector3d.y()));
+            builder.append("^");
+            if (vector3d.x() != 0) builder.append("%.1f".formatted(vector3d.x()));
             builder.append(" ");
             builder.append("^");
-            if(vector3d.z() != 0)
-                builder.append("%.1f".formatted( vector3d.z()));
+            if (vector3d.y() != 0) builder.append("%.1f".formatted(vector3d.y()));
+            builder.append(" ");
+            builder.append("^");
+            if (vector3d.z() != 0) builder.append("%.1f".formatted(vector3d.z()));
             return builder.toString();
         }
 
         public static Vector3d lookCoordTooPos(float pitch, float yaw, double x, double y, double z) {
             Vector2f vec2f = new Vector2f(pitch, yaw);
-            double f =  Math.cos((vec2f.y + 90.0F) * 0.017453292F);
-            double g =  Math.sin((vec2f.y + 90.0F) * 0.017453292F);
-            double h =  Math.cos(-vec2f.x * 0.017453292F);
-            double i =  Math.sin(-vec2f.x * 0.017453292F);
-            double j =  Math.cos((-vec2f.x + 90.0F) * 0.017453292F);
-            double k =  Math.sin((-vec2f.x + 90.0F) * 0.017453292F);
+            double f = Math.cos((vec2f.y + 90.0F) * 0.017453292F);
+            double g = Math.sin((vec2f.y + 90.0F) * 0.017453292F);
+            double h = Math.cos(-vec2f.x * 0.017453292F);
+            double i = Math.sin(-vec2f.x * 0.017453292F);
+            double j = Math.cos((-vec2f.x + 90.0F) * 0.017453292F);
+            double k = Math.sin((-vec2f.x + 90.0F) * 0.017453292F);
             Vector3d vec3d2 = new Vector3d((double) (f * h), (double) i, (double) (g * h));
             Vector3d vec3d3 = new Vector3d((double) (f * j), (double) k, (double) (g * j));
-            Vector3d vec3d4 = vec3d2.cross(vec3d3).mul(-1.0);
+            Vector3d vec3d4 = new Vector3d(vec3d2).cross(new Vector3d(vec3d3)).mul(-1.0);
             double d = vec3d2.x * z + vec3d3.x * y + vec3d4.x * x;
             double e = vec3d2.y * z + vec3d3.y * y + vec3d4.y * x;
             double l = vec3d2.z * z + vec3d3.z * y + vec3d4.z * x;
-            return new Vector3d( d,  e,  l);
+            return new Vector3d(d, e, l);
         }
     }
-    
-    
 }

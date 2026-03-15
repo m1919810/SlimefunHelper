@@ -32,4 +32,8 @@ public class EventChannelDispatcher<T> extends EventChannel<T> {
     public <W extends T> EventChannel<W> getChannel(Object val) {
         return (EventChannel<W>) ((Map) this.channels).computeIfAbsent(val, (v) -> new EventChannel<>());
     }
+
+    public boolean isEmpty() {
+        return super.isEmpty() && channels.isEmpty();
+    }
 }

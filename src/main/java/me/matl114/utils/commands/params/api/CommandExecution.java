@@ -1,101 +1,101 @@
-package me.matl114.matlib.utils.command.params.api;
-
-import me.matl114.matlib.utils.Debug;
-import me.matl114.matlib.utils.command.interruption.InvalidExecutorError;
-import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.joml.Vector3d;
+package me.matl114.utils.commands.params.api;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import me.matl114.utils.ChatUtils;
+import me.matl114.utils.Debug;
+import me.matl114.utils.commands.interruption.InvalidExecutorError;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.NotNull;
+import org.joml.Vector3d;
 
 public interface CommandExecution {
     @Nullable
-    public CommandSender getExecutor();
+    public PlayerEntity getExecutor();
 
     boolean hasPermission(String permission);
 
-    default boolean isPlayer(){
-        return getExecutor() instanceof Player;
+    default boolean isPlayer() {
+        return getExecutor() instanceof PlayerEntity;
     }
 
-    public static CommandExecution sender(@Nonnull CommandSender sender) {
+    public static CommandExecution sender(@Nonnull PlayerEntity sender) {
         return new Sender(sender);
     }
 
     public void sendMessage(@Nonnull String message);
 
-    public void sendMessage(Component message);
+    public void sendMessage(Text message);
 
     @Nonnull
     public Vector3d getExecutePos();
+
     @Nonnull
     public World getExecuteWorld();
 
     @Nonnull
-    default Player getExecutorPlayer(){
-        if(isPlayer()){
-            return (Player) getExecutor();
-        }else{
+    default PlayerEntity getExecutorPlayer() {
+        if (isPlayer()) {
+            return (PlayerEntity) getExecutor();
+        } else {
             throw new InvalidExecutorError(false);
         }
     }
 
-    public record Sender(CommandSender sender) implements CommandExecution {
+    public CommandExecution EMPTY = new Sender(null);
+
+    public record Sender(PlayerEntity sender) implements CommandExecution {
 
         @org.jetbrains.annotations.Nullable
         @Override
-        public CommandSender getExecutor() {
+        public PlayerEntity getExecutor() {
             return sender;
         }
 
         @Override
         public boolean hasPermission(String permission) {
-            return sender != null && sender.hasPermission(permission);
+            return true;
         }
 
         @Override
         public void sendMessage(@NotNull String message) {
-            if(sender != null){
-                sender.sendMessage(message);
+            if (sender != null) {
+                Debug.sendPlayer(ChatUtils.stringToText(message));
             }
         }
 
         @Override
-        public void sendMessage(Component message) {
-            if(sender != null){
-                sender.sendMessage(message);
+        public void sendMessage(Text message) {
+            if (sender != null) {
+                Debug.sendPlayer(message);
             }
         }
 
         @Override
         public Vector3d getExecutePos() {
-            if(sender instanceof Player p){
-                Location loc = p.getLocation();
-                return new Vector3d(loc.getX(), loc.getY(), loc.getZ());
-            }else {
-                return new Vector3d(0,0,0);
+            if (sender instanceof PlayerEntity p) {
+                return new Vector3d(p.getX(), p.getY(), p.getZ());
+            } else {
+                return new Vector3d(0, 0, 0);
             }
         }
 
         @Override
         public World getExecuteWorld() {
-            return sender instanceof Player player ? player.getLocation().getWorld() : Bukkit.getWorlds().stream().findFirst().orElseThrow();
+            return sender instanceof PlayerEntity player
+                    ? player.getEntityWorld()
+                    : MinecraftClient.getInstance().world;
         }
-
-
     }
 
     public record System(boolean sout) implements CommandExecution {
 
         @org.jetbrains.annotations.Nullable
         @Override
-        public CommandSender getExecutor() {
+        public PlayerEntity getExecutor() {
             return null;
         }
 
@@ -106,26 +106,26 @@ public interface CommandExecution {
 
         @Override
         public void sendMessage(@NotNull String message) {
-            if(sout){
-                Debug.logger(message);
+            if (sout) {
+                Debug.info(message);
             }
         }
 
         @Override
-        public void sendMessage(Component message) {
-            if(sout){
-                Debug.logger(message);
+        public void sendMessage(Text message) {
+            if (sout) {
+                Debug.info(message);
             }
         }
 
         @Override
         public Vector3d getExecutePos() {
-            return new Vector3d(0,0,0);
+            return new Vector3d(0, 0, 0);
         }
 
         @Override
         public World getExecuteWorld() {
-            return Bukkit.getWorlds().stream().findFirst().orElseThrow();
+            return MinecraftClient.getInstance().world;
         }
     }
 }

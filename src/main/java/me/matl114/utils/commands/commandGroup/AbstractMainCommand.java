@@ -1,25 +1,19 @@
-package me.matl114.matlib.utils.command.commandGroup;
+package me.matl114.utils.commands.commandGroup;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import lombok.Getter;
-import me.matl114.matlib.common.lang.annotations.Note;
-import me.matl114.matlib.utils.command.interruption.*;
-import me.matl114.matlib.utils.command.params.ArgumentInputStream;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.SimpleCommandArgs;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
+import me.matl114.utils.EntityUtils;
+import me.matl114.utils.commands.interruption.*;
+import me.matl114.utils.commands.params.ArgumentInputStream;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.commands.params.api.CommandExecution;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -44,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>To use this class, extend it and implement the abstract methods.
  * The root command should be defined as a field named "mainCommand" in the subclass.</p>
  */
-public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, InterruptionHandler {
+public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandler {
 
     /** Internal reference to the root command */
     private SubCommand root;
@@ -70,53 +64,18 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
     /** Logger for debug information */
     private Logger Debug;
 
-    /** The plugin that owns this command */
-    @Getter
-    private Plugin plugin;
-
     /**
      * Sends a message to the command sender with color code translation.
      *
      * @param sender The command sender to send the message to
      * @param message The message to send (supports & color codes)
      */
-    protected void sendMessage(CommandSender sender, String message) {
-        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+    protected void sendMessage(CommandExecution sender, String message) {
+        sender.sendMessage(message);
     }
 
-    /**
-     * Registers this command with the specified plugin.
-     * This method sets up the command executor and tab completer with Bukkit.
-     *
-     * @param <T> The type of this command (for method chaining)
-     * @param plugin The plugin to register this command with
-     * @return This command instance for method chaining
-     * @throws IllegalArgumentException if the command has already been registered
-     */
-    public <T extends AbstractMainCommand> T registerCommand(Plugin plugin) {
-        Preconditions.checkArgument(!registered, "Command have already been registered!");
-        this.plugin = plugin;
-        this.Debug = plugin.getLogger();
-        plugin.getServer().getPluginCommand(getMainName()).setExecutor(this);
-        plugin.getServer().getPluginCommand(getMainName()).setTabCompleter(this);
-        this.registered = true;
-        return (T) this;
-    }
-
-    /**
-     * Unregisters this command from the plugin.
-     * This method removes the command executor and tab completer from Bukkit.
-     *
-     * @param <T> The type of this command (for method chaining)
-     * @return This command instance for method chaining
-     * @throws IllegalArgumentException if the command hasn't been registered
-     */
-    public <T extends AbstractMainCommand> T unregisterCommand() {
-        Preconditions.checkArgument(registered, "Command functional havem't been unregistered!");
-        plugin.getServer().getPluginCommand(getMainName()).setExecutor(null);
-        plugin.getServer().getPluginCommand(getMainName()).setTabCompleter(null);
-        this.registered = false;
-        return (T) this;
+    protected void sendMessage(CommandExecution sender, Text message) {
+        sender.sendMessage(message);
     }
 
     /**
@@ -137,9 +96,9 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      * @param command The sub-command to register
      */
     public void registerSub(SubCommand command) {
-        if(this.root instanceof SubCommandDispatcher dispatcher){
+        if (this.root instanceof SubCommandDispatcher dispatcher) {
             dispatcher.registerSub(command);
-        }else{
+        } else {
             throw new UnsupportedOperationException("Can not register");
         }
     }
@@ -169,13 +128,14 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
         return getMainName();
     }
 
-    @org.jetbrains.annotations.Nullable @Override
+    @org.jetbrains.annotations.Nullable
+    @Override
     public String permissionRequired() {
         return getMainCommand().permissionRequired();
     }
 
-    public ArgumentInputStream parseInput(ArgumentReader reader) {
-        return (getMainCommand()).parseInput(reader);
+    public ArgumentInputStream parseInput(CommandExecution s, ArgumentReader reader) {
+        return (getMainCommand()).parseInput(s, reader);
     }
 
     /**
@@ -194,25 +154,23 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      * </ol>
      *
      * @param var1 The command sender
-     * @param var2 The command being executed
      * @param var3 The command alias
      * @param var4 The command arguments
      * @return true if the command was executed successfully, false otherwise
      */
-    public boolean onCommand(CommandSender var1, Command var2, String var3, String[] var4) {
+    public boolean onCommand(PlayerEntity var1, String var3, String[] var4) {
+        CommandExecution execution = CommandExecution.sender(var1);
         try {
             // return getMainCommand().onCustomCommand(var1, var2, new ArgumentReader(getMainName(), var4));
-            return onCustomCommand(var1, new ArgumentReader(getMainName(), var4).stepBack());
+            return onCustomCommand(execution, new ArgumentReader(getMainName(), var4).stepBack());
         } catch (ArgumentException ex) {
-            ex.handleAbort(var1, this);
+            ex.handleAbort(execution, this);
             return true;
         }
     }
 
-    @Note("the \"async\" means that it can be called either on root or off root")
-    public boolean onCommandAsync(
-            @NotNull CommandSender var1, @NotNull Command var2, @NotNull String var3, @NotNull String[] var4) {
-        return onCommand(var1, var2, var3, var4);
+    public boolean onCommandAsync(@NotNull PlayerEntity var1, @NotNull String var3, @NotNull String[] var4) {
+        return onCommand(var1, var3, var4);
     }
 
     private StringBuilder getArgumentPositionPrefix(ArgumentReader reader) {
@@ -229,7 +187,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      * @param input The invalid input that was provided
      */
     public void handleTypeError(
-            CommandSender sender,
+            CommandExecution sender,
             @Nullable ArgumentReader reader,
             @Nullable String argument,
             TypeError.BaseArgumentType type,
@@ -258,7 +216,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      * @param sender The command sender to send the error to
      * @param argument The argument name that is missing a value
      */
-    public void handleValueAbsent(CommandSender sender, @Nullable ArgumentReader reader, @Nonnull String argument) {
+    public void handleValueAbsent(CommandExecution sender, @Nullable ArgumentReader reader, @Nonnull String argument) {
         StringBuilder builder = getArgumentPositionPrefix(reader);
         if (reader != null) {
             builder.append("&c值缺失: 并未输入参数\"").append(argument).append("\"的值");
@@ -269,13 +227,14 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
         sendMessage(sender, builder.toString());
     }
 
-    public void handleValueParseFailure(CommandSender sender, @Nullable ArgumentReader reader, @Nonnull String argument) {
+    public void handleValueParseFailure(
+            CommandExecution sender, @Nullable ArgumentReader reader, @Nonnull String argument) {
         StringBuilder builder = getArgumentPositionPrefix(reader);
         if (reader != null) {
-            builder.append("&c值缺失: 并未输入参数\"").append(argument).append("\"的值");
+            builder.append("&c值缺失: 参数\"").append(argument).append("\"解析失败");
 
         } else {
-            builder.append("&c值缺失: 并未输入参数\"").append(argument).append("\"的值");
+            builder.append("&c值缺失: 参数\"").append(argument).append("\"解析失败");
         }
         sendMessage(sender, builder.toString());
     }
@@ -292,7 +251,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      */
     @Override
     public void handleValueOutOfRange(
-            CommandSender sender,
+            CommandExecution sender,
             @Nullable ArgumentReader reader,
             @Nullable String argument,
             TypeError.BaseArgumentType type,
@@ -317,7 +276,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      * @param shouldConsole Whether the command should be executed by console
      */
     @Override
-    public void handleExecutorInvalid(CommandSender sender, boolean shouldConsole) {
+    public void handleExecutorInvalid(CommandExecution sender, boolean shouldConsole) {
         if (shouldConsole) {
             sendMessage(sender, "&c错误! 该指令只能在控制台执行");
         } else {
@@ -326,7 +285,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
     }
 
     public void handlePermissionDenied(
-            CommandSender sender, String permission, @Nullable ArgumentReader commandNodeName) {
+            CommandExecution sender, String permission, @Nullable ArgumentReader commandNodeName) {
         if (commandNodeName == null) {
             noPermission(sender);
         } else {
@@ -335,7 +294,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
     }
 
     @Override
-    public void handleUnexpectedArgument(CommandSender sender, ArgumentReader reader) {
+    public void handleUnexpectedArgument(CommandExecution sender, ArgumentReader reader) {
         showHelpCommand(sender, reader);
     }
 
@@ -346,7 +305,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      * @param sender The command sender to send the error to
      * @param fullMessage The full error message
      */
-    public void handleLogicalError(CommandSender sender, String fullMessage) {
+    public void handleLogicalError(CommandExecution sender, String fullMessage) {
         sendMessage(sender, "&c执行该指令时出现逻辑错误: " + fullMessage);
     }
 
@@ -355,7 +314,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      *
      * @param var1 The command sender to send the message to
      */
-    protected void noPermission(CommandSender var1) {
+    protected void noPermission(CommandExecution var1) {
         sendMessage(var1, "&c你没有权限使用该指令!");
     }
 
@@ -364,8 +323,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
     }
 
     @Override
-    public boolean onCustomCommand(@NotNull CommandSender var1, ArgumentReader reader)
-            throws ArgumentException {
+    public boolean onCustomCommand(@NotNull CommandExecution var1, ArgumentReader reader) throws ArgumentException {
         // mainName as first
         if (hasPermission(var1)) {
             if (reader.hasNext()) {
@@ -383,15 +341,14 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
     }
 
     @Override
-    public List<String> onCustomTabComplete(
-            CommandSender sender, ArgumentReader arguments) {
+    public List<String> onCustomTabComplete(CommandExecution sender, ArgumentReader arguments) {
         if (hasPermission(sender) && arguments.hasNext() && getName().equalsIgnoreCase(arguments.next())) {
             return getMainCommand().onCustomTabComplete(sender, arguments);
         } else return List.of();
     }
 
     @Override
-    public Stream<String> onCustomHelp(CommandSender sender, ArgumentReader reader) {
+    public Stream<String> onCustomHelp(CommandExecution sender, ArgumentReader reader) {
         if (hasPermission(sender)) {
             if (reader.hasNext()) {
                 // mainName as first
@@ -415,7 +372,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      *
      * @param sender The command sender to show help to
      */
-    protected void showHelpCommand(CommandSender sender, ArgumentReader command) {
+    protected void showHelpCommand(CommandExecution sender, ArgumentReader command) {
         String already = command.getAlreadyReadArgStr();
         sender.sendMessage("/%s 全部指令".formatted(already));
         onCustomHelp(sender, new ArgumentReader(command.getAlreadyReadArgs()))
@@ -436,14 +393,14 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      * </ol>
      *
      * @param var1 The command sender requesting tab completion
-     * @param var2 The command being executed
      * @param var3 The command alias
      * @param var4 The command arguments
      * @return A list of tab completion suggestions
      */
-    public List<String> onTabComplete(CommandSender var1, Command var2, String var3, String[] var4) {
+    public List<String> onTabComplete(PlayerEntity var1, String var3, String[] var4) {
+        CommandExecution execution = CommandExecution.sender(var1);
         try {
-            return onCustomTabComplete(var1, new ArgumentReader(getName(), var4).stepBack());
+            return onCustomTabComplete(execution, new ArgumentReader(getName(), var4).stepBack());
         } catch (Throwable e) {
         }
         return List.of();
@@ -458,8 +415,8 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
      * @throws InvalidExecutorError if the sender is not a Player
      */
     @Nonnull
-    public Player player(CommandSender sender) {
-        if (sender instanceof Player player) {
+    public PlayerEntity player(CommandExecution sender) {
+        if (sender.getExecutor() instanceof PlayerEntity player) {
             return player;
         } else {
             throw new InvalidExecutorError(false);
@@ -470,7 +427,7 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
         throw new PermissionDenyError(permission, argument);
     }
 
-    public void checkPermission(CommandSender sender, String permission, ArgumentReader argument) {
+    public void checkPermission(CommandExecution sender, String permission, ArgumentReader argument) {
         if (sender.hasPermission(permission)) {
             return;
         } else {
@@ -506,14 +463,13 @@ public class AbstractMainCommand implements CustomTabExecutor, TabExecutor, Inte
         return () -> Stream.of("0.0", "1.0", "2.0", "3.0", "3.14159", "1.57079", "6.283185");
     }
 
-
     /**
      * Creates a supplier that provides online player names for tab completion.
      *
      * @return A supplier that returns a list of online player names
      */
     public static Supplier<Stream<String>> playerNameSupplier() {
-        return () -> Bukkit.getOnlinePlayers().stream().map(Player::getName);
+        return () -> EntityUtils.getWorldPlayerNames(true);
     }
 
     public static void checkArgument(boolean argument, String... msg) {

@@ -252,12 +252,16 @@ public class EntityUtils {
         return rotated.normalize().multiply(len);
     }
 
-    public static Vec3d lookCoordTooAbsolutePos(Entity source, double x, double y, double z) {
+    public static Vec3d lookCoordToAbsolutePos(Entity source, double x, double y, double z) {
         Vec2f vec2f = source.getRotationClient();
         Vec3d vec3d = source.getPos();
+
         float f = MathHelper.cos((vec2f.y + 90.0F) * 0.017453292F);
+
         float g = MathHelper.sin((vec2f.y + 90.0F) * 0.017453292F);
+
         float h = MathHelper.cos(-vec2f.x * 0.017453292F);
+
         float i = MathHelper.sin(-vec2f.x * 0.017453292F);
         float j = MathHelper.cos((-vec2f.x + 90.0F) * 0.017453292F);
         float k = MathHelper.sin((-vec2f.x + 90.0F) * 0.017453292F);
@@ -268,6 +272,27 @@ public class EntityUtils {
         double e = vec3d2.y * z + vec3d3.y * y + vec3d4.y * x;
         double l = vec3d2.z * z + vec3d3.z * y + vec3d4.z * x;
         return new Vec3d(vec3d.x + d, vec3d.y + e, vec3d.z + l);
+    }
+
+    public static Vec3d lookCoordToAbsolutePos(float pitch, float yaw, double x, double y, double z) {
+        Vec2f vec2f = new Vec2f(pitch, yaw);
+
+        float f = MathHelper.cos((vec2f.y + 90.0F) * 0.017453292F);
+
+        float g = MathHelper.sin((vec2f.y + 90.0F) * 0.017453292F);
+
+        float h = MathHelper.cos(-vec2f.x * 0.017453292F);
+
+        float i = MathHelper.sin(-vec2f.x * 0.017453292F);
+        float j = MathHelper.cos((-vec2f.x + 90.0F) * 0.017453292F);
+        float k = MathHelper.sin((-vec2f.x + 90.0F) * 0.017453292F);
+        Vec3d vec3d2 = new Vec3d((double) (f * h), (double) i, (double) (g * h));
+        Vec3d vec3d3 = new Vec3d((double) (f * j), (double) k, (double) (g * j));
+        Vec3d vec3d4 = vec3d2.crossProduct(vec3d3).multiply(-1.0);
+        double d = vec3d2.x * z + vec3d3.x * y + vec3d4.x * x;
+        double e = vec3d2.y * z + vec3d3.y * y + vec3d4.y * x;
+        double l = vec3d2.z * z + vec3d3.z * y + vec3d4.z * x;
+        return new Vec3d(d, e, l);
     }
 
     public static PlayerEntity getPlayerByName(String name) {

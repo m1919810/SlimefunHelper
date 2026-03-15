@@ -1,8 +1,8 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.commands.interruption;
 
 import java.util.Collection;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.api.CommandExecution;
 
 public class ValueOutOfRangeError extends ArgumentException {
     ArgumentReader reader;
@@ -55,7 +55,7 @@ public class ValueOutOfRangeError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(CommandExecution sender, InterruptionHandler command) {
         command.handleValueOutOfRange(sender, this.reader, this.name, this.type, this.range, this.value);
     }
 }

@@ -1,6 +1,6 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.commands.interruption;
 
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.params.api.CommandExecution;
 
 public class InvalidExecutorError extends ArgumentException {
     boolean s;
@@ -10,7 +10,7 @@ public class InvalidExecutorError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(CommandExecution sender, InterruptionHandler command) {
         command.handleExecutorInvalid(sender, s);
     }
 }

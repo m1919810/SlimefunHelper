@@ -1,22 +1,22 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.commands.interruption;
 
 import javax.annotation.Nullable;
-import lombok.AllArgsConstructor;
-import me.matl114.matlib.common.lang.annotations.Note;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.SimpleCommandArgs;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.api.CommandExecution;
 
-@Note("interrupt when no value present at this argument")
-@AllArgsConstructor
 public class ValueAbsentError extends ArgumentException {
-    @Nullable ArgumentReader reader;
+    public ValueAbsentError(ArgumentReader reader, String argument) {
+        this.reader = reader;
+        this.argument = argument;
+    }
+
+    @Nullable
+    ArgumentReader reader;
 
     String argument;
 
-
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(CommandExecution sender, InterruptionHandler command) {
         command.handleValueAbsent(sender, reader, argument);
     }
 }

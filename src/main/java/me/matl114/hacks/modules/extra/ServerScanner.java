@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.extra;
 
+import com.google.gson.*;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -24,6 +25,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.ListRef;
 import me.matl114.managers.config.StringRef;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.PropertyTracker;
@@ -145,8 +147,35 @@ public class ServerScanner extends BaseModule {
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(300, 10, 100, 20)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("Copy Server List")), ButtonAction.run(() -> {
-                            String list = this.scannedIps.toString();
-                            mc.keyboard.setClipboard(list);
+                            JsonArray jsonArray = new JsonArray();
+                            List<String> list = List.copyOf(this.scannedIps);
+                            for (var str : list) {
+                                JsonObject jsonObject = new JsonObject();
+                                jsonObject.addProperty("ip", str);
+                                ServerInfo info = this.cachedPingResult.get(str);
+                                if (info != null) {
+                                    JsonObject el = new JsonObject();
+                                    el.addProperty("version", ChatUtils.textToString(info.version));
+                                    el.addProperty("motd", ChatUtils.textToString(info.label));
+                                    el.addProperty(
+                                            "status", info.getStatus().name().toLowerCase(Locale.ROOT));
+                                    el.addProperty("player_count", ChatUtils.textToString(getPlayerListDisplay(info)));
+                                    List<Text> playerList = info.playerListSummary;
+                                    if (playerList != null && !playerList.isEmpty()) {
+                                        JsonArray jsonArray1 = new JsonArray();
+                                        for (var txt : playerList) {
+                                            jsonArray1.add(ChatUtils.textToString(txt));
+                                        }
+                                        el.add("player_list", jsonArray1);
+                                    }
+                                    jsonObject.add("meta", el);
+                                }
+                                jsonArray.add(jsonObject);
+                            }
+                            mc.keyboard.setClipboard(new GsonBuilder()
+                                    .disableHtmlEscaping()
+                                    .create()
+                                    .toJson(jsonArray));
                             logInfo("已拷贝IP列表");
                         }))));
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(0, 30, 80, 20)
@@ -363,12 +392,16 @@ public class ServerScanner extends BaseModule {
                     pingingInfo.setStatus(ServerInfo.Status.UNREACHABLE);
                     if (!filter) {
                         addScannResult(ip, pingingInfo);
+                    } else {
+                        addScannExceptionResult(ip, pingingInfo);
                     }
                 }
             } else {
                 pingingInfo.setStatus(ServerInfo.Status.UNREACHABLE);
                 if (!filter) {
                     addScannResult(ip, pingingInfo);
+                } else {
+                    addScannExceptionResult(ip, pingingInfo);
                 }
             }
         } catch (Throwable e) {
@@ -464,6 +497,25 @@ public class ServerScanner extends BaseModule {
                 }
                 saveServerList();
             }
+        });
+    }
+
+    public void addScannExceptionResult(String ip, ServerInfo info) {
+        info.setStatus(ServerInfo.Status.UNREACHABLE);
+        mc.execute(() -> {
+            cachedPingResult.put(ip, info);
+            if (listEntryController != null) {
+                for (var i = 0; i < scannedIps.size(); ++i) {
+                    if (Objects.equals(ip, scannedIps.get(i))) {
+                        if (listEntryController != null) {
+                            listEntryController.update(i);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            // do not add, only update
         });
     }
 

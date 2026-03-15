@@ -1,15 +1,14 @@
-package me.matl114.matlib.utils.command.commandGroup;
+package me.matl114.utils.commands.commandGroup;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import me.matl114.matlib.utils.command.params.SimpleCommandArgs;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.jetbrains.annotations.Nullable;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.commands.params.api.CommandExecution;
 
 @Setter
 @Getter
@@ -22,23 +21,28 @@ public class TaskSubCommand extends SubCommand {
     }
 
     @Override
-    public List<String> onCustomTabComplete(CommandSender sender, ArgumentReader arguments) {
-        var re = this.parseInput(arguments);
-        if (arguments.hasNext()) {
-            // already filled all the arguments so use executor to supply the extra args
-            return executor == null ? List.of() : executor.supplyTab(sender, re, arguments);
-        } else {
-            return re.getTabComplete(sender);
+    public List<String> onCustomTabComplete(CommandExecution sender, ArgumentReader arguments) {
+        List<String> collectLore = new ArrayList<>();
+        if (hasPermission(sender)) {
+            var re = this.parseInput(sender, arguments);
+            re.getTabComplete(sender).forEach(collectLore::add);
+            if (arguments.hasNext()) {
+                // already filled all the arguments so use executor to supply the extra args
+                if (executor != null) {
+                    collectLore.addAll(executor.supplyTab(sender, re, arguments));
+                }
+            }
         }
+        return collectLore;
     }
 
     @Override
-    public boolean onCustomCommand(CommandSender sender, ArgumentReader arguments) {
-        return executor != null && executor.execute(sender, parseInput(arguments), arguments);
+    public boolean onCustomCommand(CommandExecution sender, ArgumentReader arguments) {
+        return executor != null && executor.execute(sender, parseInput(sender, arguments), arguments);
     }
 
     @Override
-    public Stream<String> onCustomHelp(CommandSender sender, ArgumentReader arguments) {
+    public Stream<String> onCustomHelp(CommandExecution sender, ArgumentReader arguments) {
         if (hasPermission(sender)) {
             return getHelp(arguments.getAlreadyReadCmdStr());
         } else {

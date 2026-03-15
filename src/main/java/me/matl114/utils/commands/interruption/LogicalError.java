@@ -1,6 +1,6 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.commands.interruption;
 
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.params.api.CommandExecution;
 
 public class LogicalError extends ArgumentException {
     String message;
@@ -10,7 +10,7 @@ public class LogicalError extends ArgumentException {
     }
 
     @Override
-    public void handleAbort(CommandSender sender, InterruptionHandler command) {
+    public void handleAbort(CommandExecution sender, InterruptionHandler command) {
         command.handleLogicalError(sender, message);
     }
 }

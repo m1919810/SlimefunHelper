@@ -8,7 +8,12 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.mine.*;
 import me.matl114.managers.config.Config;
 import me.matl114.utils.*;
-import me.matl114.utils.commands.*;
+import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
+import me.matl114.utils.commands.commandGroup.CommandContext;
+import me.matl114.utils.commands.commandGroup.SubCommand;
+import me.matl114.utils.commands.commandGroup.TreeSubCommand;
+import me.matl114.utils.commands.params.ArgumentInputStream;
+import me.matl114.utils.commands.params.SimpleCommandArgs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.*;
 

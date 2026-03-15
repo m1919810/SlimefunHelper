@@ -1,35 +1,36 @@
-package me.matl114.matlib.utils.command.interruption;
+package me.matl114.utils.commands.interruption;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import me.matl114.matlib.utils.command.params.ArgumentReader;
-import org.bukkit.command.CommandSender;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.api.CommandExecution;
 
 public interface InterruptionHandler {
     public void handleTypeError(
-            CommandSender sender,
+            CommandExecution sender,
             @Nullable ArgumentReader reader,
             @Nullable String argument,
             TypeError.BaseArgumentType type,
             String input);
 
-    public void handleValueAbsent(CommandSender sender, @Nullable ArgumentReader reader, @Nonnull String argument);
+    public void handleValueAbsent(CommandExecution sender, @Nullable ArgumentReader reader, @Nonnull String argument);
 
-    public void handleValueParseFailure(CommandSender sender, @Nullable ArgumentReader reader, @Nonnull String argument);
+    public void handleValueParseFailure(
+            CommandExecution sender, @Nullable ArgumentReader reader, @Nonnull String argument);
 
     public void handleValueOutOfRange(
-            CommandSender sender,
+            CommandExecution sender,
             @Nullable ArgumentReader reader,
             @Nullable String argument,
             TypeError.BaseArgumentType type,
             String range,
             @Nonnull String input);
 
-    public void handleExecutorInvalid(CommandSender sender, boolean shouldConsole);
+    public void handleExecutorInvalid(CommandExecution sender, boolean shouldConsole);
 
-    public void handlePermissionDenied(CommandSender sender, String permission, ArgumentReader reader);
+    public void handlePermissionDenied(CommandExecution sender, String permission, ArgumentReader reader);
 
-    public void handleLogicalError(CommandSender sender, String fullMessage);
+    public void handleLogicalError(CommandExecution sender, String fullMessage);
 
-    public void handleUnexpectedArgument(CommandSender sender, ArgumentReader reader);
+    public void handleUnexpectedArgument(CommandExecution sender, ArgumentReader reader);
 }
