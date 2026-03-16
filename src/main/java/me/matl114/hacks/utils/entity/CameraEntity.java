@@ -69,7 +69,7 @@ public class CameraEntity extends AbstractClientPlayerEntity {
 
     @Override
     public void tick() {
-        if ((!(this.player instanceof ClientPlayerEntity clientPlayer) || clientPlayer.networkHandler.isLoaded())) {
+        if (this.player != null && this.player.getWorld().isPosLoaded(this.getBlockX(), this.getBlockZ())) {
             if (!this.moveable) {
                 this.setPitch(this.player.getPitch());
                 this.setYaw(this.player.getYaw());

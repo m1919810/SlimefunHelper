@@ -28,6 +28,8 @@ public class PlayerInputUtils {
                 options.sneakKey.isPressed());
     }
 
+    public static final Input EMPTY = new Input(false, false, false, false, false, false);
+
     @AllArgsConstructor
     @Accessors(fluent = true, chain = true)
     @Setter

@@ -2,7 +2,6 @@ package me.matl114;
 
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import me.matl114.bridge.BridgeMain;
@@ -70,11 +69,11 @@ public class SlimefunHelper implements ModInitializer {
                     Debug.info("check model plugin work");
                     ModConfig.reloadModConfig();
                     // we removed the itemModel auto register to ItemAssetsLoader
-                    return Set.of(); // RenderListener.getReloadingResources(resourceManager.getResourceManager());
+                    return RenderListener.getReloadingResources(resourceManager);
                 }),
                 (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {
                     // here we should auto register these to BasicItemModel s or SpecialItemModels
-                    //				pluginContext.addModels(data);
+                    pluginContext.addModels(data);
                 });
         // tasks and listeners
         TaskManagers.init();

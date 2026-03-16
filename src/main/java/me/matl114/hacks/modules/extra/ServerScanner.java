@@ -37,7 +37,6 @@ import net.minecraft.client.gui.screen.world.WorldIcon;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.*;
 import net.minecraft.client.texture.NativeImage;
-import net.minecraft.network.NetworkingBackend;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
@@ -248,7 +247,6 @@ public class ServerScanner extends BaseModule {
         }
         running.set(true);
         Random rand = new Random();
-        NetworkingBackend backend = NetworkingBackend.remote(mc.options.shouldUseNativeTransport());
         Set<String> scannCopy = new HashSet<>(scannedIps);
         CompletableFuture.runAsync(() -> {
             MultiplayerServerListPinger pinger = new MultiplayerServerListPinger();
@@ -276,7 +274,7 @@ public class ServerScanner extends BaseModule {
                 } while (scannCopy.contains(fullIp));
                 logInfo("扫描" + fullIp);
                 scannCopy.add(fullIp);
-                pingServer(pinger, backend, fullIp, filter);
+                pingServer(pinger, fullIp, filter);
                 try {
                     logInfo("间隔中...");
                     Thread.sleep(sleepMs);
@@ -318,7 +316,6 @@ public class ServerScanner extends BaseModule {
         }
         running.set(true);
         Random rand = new Random();
-        NetworkingBackend backend = NetworkingBackend.remote(mc.options.shouldUseNativeTransport());
         Set<String> scanCopy = Set.copyOf(scannedIps);
         CompletableFuture.runAsync(() -> {
             MultiplayerServerListPinger pinger = new MultiplayerServerListPinger();
@@ -347,7 +344,7 @@ public class ServerScanner extends BaseModule {
                             () -> {
                                 if (running.get()) {
                                     logInfo("扫描" + ip);
-                                    pingServer(pinger, backend, ip, filter);
+                                    pingServer(pinger, ip, filter);
                                 }
                             },
                             executor));
@@ -372,7 +369,7 @@ public class ServerScanner extends BaseModule {
         running.set(false);
     }
 
-    public void pingServer(MultiplayerServerListPinger pinger, NetworkingBackend backend, String ip, boolean filter) {
+    public void pingServer(MultiplayerServerListPinger pinger, String ip, boolean filter) {
         ServerInfo pingingInfo = new ServerInfo("SlimefunHelper scanner", ip, ServerInfo.ServerType.OTHER);
 
         try {
@@ -380,13 +377,9 @@ public class ServerScanner extends BaseModule {
             Optional<Address> optional = AllowedAddressResolver.DEFAULT.resolve(address);
             if (optional.isPresent()) {
                 try {
-                    pinger.add(
-                            pingingInfo,
-                            () -> {},
-                            () -> {
-                                pingingInfo.setStatus(ServerInfo.Status.SUCCESSFUL);
-                            },
-                            backend);
+                    pinger.add(pingingInfo, () -> {}, () -> {
+                        pingingInfo.setStatus(ServerInfo.Status.SUCCESSFUL);
+                    });
                     addScannResult(ip, pingingInfo);
                 } catch (Exception e) {
                     pingingInfo.setStatus(ServerInfo.Status.UNREACHABLE);
@@ -431,7 +424,6 @@ public class ServerScanner extends BaseModule {
         CompletableFuture.runAsync(() -> {
             logInfo("");
             MultiplayerServerListPinger pinger = new MultiplayerServerListPinger();
-            NetworkingBackend backend = NetworkingBackend.remote(mc.options.shouldUseNativeTransport());
             List<String> list = List.copyOf(refreshList);
             for (var lst : list) {
                 if (!running.get()) {
@@ -439,7 +431,7 @@ public class ServerScanner extends BaseModule {
                     return;
                 }
                 logInfo("刷新" + lst + "中");
-                pingServer(pinger, backend, lst, false);
+                pingServer(pinger, lst, false);
                 try {
                     Thread.sleep(delay);
                 } catch (Throwable e) {
@@ -453,8 +445,7 @@ public class ServerScanner extends BaseModule {
     public void refreshSingle(String ip) {
         CompletableFuture.runAsync(() -> {
             MultiplayerServerListPinger pinger = new MultiplayerServerListPinger();
-            NetworkingBackend backend = NetworkingBackend.remote(mc.options.shouldUseNativeTransport());
-            pingServer(pinger, backend, ip, false);
+            pingServer(pinger, ip, false);
         });
     }
 
@@ -697,9 +688,6 @@ public class ServerScanner extends BaseModule {
 
             @Override
             public @Nullable Identifier getTextureId(VDrawContext context, DrawableWidget element, boolean highlight) {
-                if (worldIcon.isClosed()) {
-                    worldIcon = getWorldIcon();
-                }
                 byte[] bs = this.info.getFavicon();
                 if (!Arrays.equals(bs, this.favicon)) {
                     if (uploadFavicon(bs)) {

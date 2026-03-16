@@ -120,7 +120,7 @@ public class Warps extends BaseModule {
                 }
                 return null;
             });
-            return ref.get();
+            return ref.getValue();
         }
     }
 

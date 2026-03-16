@@ -297,8 +297,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             for (var i = 0; i < 9; ++i) {
                 var item = mc.player.getInventory().getStack(i);
                 if (VItem.getInstance().canGlide(item)
-                        && mc.player.canEquip(item, EquipmentSlot.CHEST)
-                        && !item.willBreakNextUse()) {
+                        && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST
+                        && ElytraItem.isUsable(item)) {
                     return i + 36;
                 }
             }
