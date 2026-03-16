@@ -5,15 +5,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import lombok.Getter;
-import lombok.Setter;
-import me.matl114.utils.commands.params.ArgumentInputStream;
-import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.ArgumentType;
-import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.api.TabResult;
 import org.apache.commons.lang3.function.TriFunction;
 
@@ -29,7 +22,7 @@ import org.apache.commons.lang3.function.TriFunction;
  * <p>Each SubCommand has a name, help text, argument template, and optional executor.
  * The class implements TabExecutor to provide tab completion functionality.</p>
  */
-public abstract class SubCommand implements CustomTabExecutor {
+public interface SubCommand extends CustomTabExecutor {
     public static class Builder<T extends SubCommand> {
         List<ArgumentType<?>> argsMap = new ArrayList<>();
         String name;
@@ -137,19 +130,9 @@ public abstract class SubCommand implements CustomTabExecutor {
         return new Builder<>((a, b, c) -> new TreeSubCommand(a, c));
     }
 
-    public static Builder<DelegateSubCommand> delegateBuilder() {
-        return new Builder<>(DelegateSubCommand::new);
-    }
-
     public static <W extends SubCommand> Builder<W> factoryBuilder(
             TriFunction<String, SimpleCommandArgs, String[], W> factory) {
         return new Builder<>(factory);
-    }
-
-    @Nullable
-    @Override
-    public String permissionRequired() {
-        return permission;
     }
 
     /**
@@ -163,8 +146,6 @@ public abstract class SubCommand implements CustomTabExecutor {
          * @param command The sub-command to register
          */
         public void registerSub(SubCommand command);
-
-        public SubCommand getSubCommand(String name);
 
         public Collection<SubCommand> getSubCommands();
 
@@ -254,104 +235,10 @@ public abstract class SubCommand implements CustomTabExecutor {
         }
     }
 
-    /** Help text lines for this sub-command */
-    /** Should be like an array of string: <name> <argument> <argument> function, function, function**/
-    String[] help;
+    public void setPermission(String permission);
 
-    /** Argument template defining the expected parameters */
-    SimpleCommandArgs template;
-
-    /** Name of this sub-command */
-    @Getter
-    String name;
-
-    @Setter
-    String permission;
-
-    /** Whether this sub-command should be hidden from help displays */
-    boolean hide = false;
-
-    private SubCommand() {}
-
-    /**
-     * Creates a new SubCommand with the specified name, argument template, and help text.
-     *
-     * @param name The name of the sub-command
-     * @param argsTemplate The argument template defining expected parameters
-     * @param help Help text lines for this sub-command
-     */
-    public SubCommand(String name, SimpleCommandArgs argsTemplate, String... help) {
-        this.name = name;
-        this.template = argsTemplate;
-        this.help = help;
-    }
-
-    /**
-     * Creates a new SubCommand with the specified name, argument template, and help text.
-     *
-     * @param name The name of the sub-command
-     * @param argsTemplate The argument template defining expected parameters
-     * @param help Help text lines for this sub-command
-     */
-    public SubCommand(String name, SimpleCommandArgs argsTemplate, List<String> help) {
-        this(name, argsTemplate, help.toArray(String[]::new));
-    }
-
-    /**
-     * Hides this sub-command from help displays.
-     *
-     * @return This SubCommand instance for method chaining
-     */
-    public SubCommand hide() {
-        this.hide = true;
-        return this;
-    }
-
-    /**
-     * Checks if this sub-command is visible in help displays.
-     *
-     * @return true if the sub-command is visible, false if hidden
-     */
-    public boolean isVisiable() {
-        return !this.hide;
-    }
-
-    /**
-     * Registers this sub-command with the specified caller.
-     *
-     * @param caller The SubCommandCaller to register with
-     * @return This SubCommand instance for method chaining
-     */
-    public SubCommand register(SubCommandCaller caller) {
+    default SubCommand register(SubCommandCaller caller) {
         caller.registerSub(this);
         return this;
     }
-
-    /**
-     * Parses the input arguments according to the argument template.
-     * Returns a pair containing the parsed input stream and remaining arguments.
-     *
-     * @param args The arguments to parse
-     * @return A pair containing the parsed input stream and remaining arguments
-     */
-    @Nonnull
-    public ArgumentInputStream parseInput(CommandExecution execution, ArgumentReader args) {
-        return template.parseInputStream(execution, args);
-    }
-
-    @Override
-    public Stream<String> getHelp(String prefix) {
-        return Arrays.stream(help).map(s -> prefix + s);
-    }
-
-    //    /**
-    //     * Parses arguments and creates a CommandArgumentMap for easy access to argument values.
-    //     *
-    //     * @param args The arguments to parse
-    //     * @return A CommandArgumentMap containing the parsed arguments
-    //     */
-    //    public CommandArgumentMap parseArgument(String[] args) {
-    //        return new CommandArgumentMap(CommandUtils.parseArguments(args, this.template.getArgs()));
-    //    }
-
 }

@@ -153,11 +153,12 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             // mc.player.getAbilities().flying = isFly;
         } else {
             // sometimes the player hasn't enter the game, because this is accepted in async thread, so run main
+            // delay to avoid forever loop because
             Tasks.scheduleDelayed(
                     () -> {
                         onAbility(event);
                     },
-                    1);
+                    10);
         }
         event.cancel();
     }

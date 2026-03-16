@@ -2,7 +2,7 @@ package me.matl114.mixins.hack;
 
 import com.mojang.brigadier.suggestion.Suggestions;
 import java.util.concurrent.CompletableFuture;
-import me.matl114.hacks.ChatTasks;
+import me.matl114.commands.MainCommand;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.ChatInputSuggestor;
@@ -40,7 +40,7 @@ public abstract class ChatInputSuggestorMixin {
             cancellable = true)
     private void parseClientCommandsTabComplete(CallbackInfo ci) {
         CompletableFuture<Suggestions> suggestionCompletableFuture =
-                ChatTasks.tabCompleteClientCommand(textField.getText(), textField.getCursor());
+                MainCommand.tabCompleteClientCommand(textField.getText(), textField.getCursor());
         if (suggestionCompletableFuture != null) {
             this.pendingSuggestions = suggestionCompletableFuture;
             this.pendingSuggestions.thenRun(() -> {

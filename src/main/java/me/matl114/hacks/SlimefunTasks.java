@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.stream.Stream;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.commands.MainCommand;
 import me.matl114.gui.slimefun.SlimefunChoiceScreen;
 import me.matl114.gui.slimefun.SlimefunEntryListScreen;
 import me.matl114.hacks.api.ModuleGroup;
@@ -326,6 +327,10 @@ public class SlimefunTasks {
         public TreeSubCommand main = mainBuilder().name("sf").build();
 
         {
+            setMainName("sf");
+        }
+
+        {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("give")
                     .helper("<id> <amount:default 1> 获取粘液物品(以指令形式)")
@@ -408,7 +413,7 @@ public class SlimefunTasks {
     }
 
     static {
-        ChatTasks.registerSubCommands("sf", SlimefunCommands::new);
+        MainCommand.registerSubCommands("sf", SlimefunCommands::new);
     }
 
     @Getter

@@ -13,7 +13,7 @@ import me.matl114.utils.commands.params.api.CommandExecution;
 @Setter
 @Getter
 @Accessors(fluent = true, chain = true)
-public class TaskSubCommand extends SubCommand {
+public class TaskSubCommand extends SubCommandImpl {
     CommandContext executor;
 
     public TaskSubCommand(String name, SimpleCommandArgs argsTemplate, String... help) {

@@ -3,11 +3,10 @@ package me.matl114.hacks.modules.extra;
 import java.util.*;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-import lombok.Getter;
+import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
@@ -15,7 +14,6 @@ import me.matl114.managers.config.ListRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
@@ -124,14 +122,13 @@ public class Warps extends BaseModule {
         }
     }
 
-    public Warps() {
-        Command.instance = this;
-    }
+    public Warps() {}
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getCustomListener().getChannel(MovTasks.TpaCommandEvent.class), this::onTpaToWarp);
+        registerCommandBootstrap(this::warpCommandBootStrap);
     }
 
     public boolean isValidWarpName(String name) {
@@ -233,164 +230,128 @@ public class Warps extends BaseModule {
         }
     }
 
-    public static class Command {
-        @Getter
-        static Warps instance;
-
-        static {
-            ChatTasks.registerCommandBootstrap(Warps::warpCommandBootStrap);
-        }
-    }
-
-    public static void warpCommandBootStrap(ChatTasks.SlimefunHelperMainCommand mainCommand) {
-        TreeSubCommand main = (TreeSubCommand) mainCommand.getMainCommand();
-        new WrapCommandBootStrap(main, mainCommand).setUp();
-    }
-
-    public static class WrapCommandBootStrap {
-        TreeSubCommand main;
-        ChatTasks.SlimefunHelperMainCommand command;
-
-        public WrapCommandBootStrap(TreeSubCommand subCommand, ChatTasks.SlimefunHelperMainCommand command) {
-            this.main = subCommand;
-            this.command = command;
-        }
-
-        WarpBasicCommand warpCommand;
-
-        public void setUp() {
-            warpCommand = new WarpBasicCommand();
-            command.registerAsSubCommand("warp", warpCommand);
-            {
-                main.subBuilder(SubCommand.taskBuilder())
-                        .name("setwarp")
-                        .helper("设置传送点")
-                        .arg(SimpleCommandArgs.argumentBuilder()
-                                .name("warpname")
-                                .select("<输入自定义名称>")
-                                .build())
-                        .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaAndPosArgumentType::new)
-                                .name("warppos")
-                                .build())
-                        .post(e -> e.executor(this::onSet))
-                        .complete();
-            }
-            {
-                main.subBuilder(SubCommand.taskBuilder())
-                        .name("delwarp")
-                        .helper("移除传送点")
-                        .arg(SimpleCommandArgs.argumentBuilder()
-                                .name("warpname")
-                                .tabCompletor(TabResult.ofStreamSupplier(
-                                        () -> Command.getInstance().getCurrentWorldWarpName()))
-                                .build())
-                        .post(e -> e.executor(this::onRemove))
-                        .complete();
-            }
-        }
-
-        private boolean onSet(CommandExecution context, ArgumentInputStream re, ArgumentReader rest) {
-            String warpName = re.nextNonnull();
-            ExecutePos warpPos = re.nextArg();
-            Vector3d vector3d;
-            if (warpPos == null) {
-                vector3d = context.getExecutePos();
-            } else {
-                vector3d = warpPos.getPosition(context);
-            }
-            Vec3d vec3d = new Vec3d(vector3d.x, vector3d.y, vector3d.z);
-
-            if (mc.world != null
-                    && Command.getInstance().registerWarp(getCurrentWorldName().get(), warpName, vec3d)) {
-                context.sendMessage("&a注册传送点 " + warpName + " 成功");
-                context.sendMessage(
-                        Text.literal("位置: ").formatted(Formatting.GREEN).append(ChatUtils.getDisplayedLocation(vec3d)));
-            } else {
-                context.sendMessage("&c注册传送点失败!");
-            }
-
-            return true;
-        }
-
-        private boolean onRemove(CommandExecution context, ArgumentInputStream re, ArgumentReader rest) {
-            String warpName = re.nextNonnull();
-            if (mc.world != null
-                    && Command.getInstance()
-                            .unregisterWarp(getCurrentWorldName().get(), warpName)) {
-                context.sendMessage("&a移除传送点 " + warpName + " 成功");
-            } else {
-                context.sendMessage("&c移除传送点失败");
-            }
-            return true;
-        }
-    }
-
-    public static class WarpBasicCommand extends AbstractMainCommand {
-        TreeSubCommand main = mainBuilder().name("warp").build();
-
+    public void warpCommandBootStrap(MainCommand mainCommand) {
+        TreeSubCommand main = mainCommand.mainBuilder().name("warp_command").build();
         {
-            main.subBuilder(SubCommand.taskBuilder())
-                    .name("list")
-                    .helper("显示世界的坐标点")
-                    .arg(me.matl114.utils.commands.params.SimpleCommandArgs.argumentBuilder()
-                            .name("world")
-                            .tabSupplier(() -> mc.getNetworkHandler().getWorldKeys().stream()
-                                    .map(RegistryKey::getValue)
-                                    .map(Identifier::toString))
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onList)))
+            main.subBuilder(SubCommand.treeBuilder())
+                    .name("warp")
+                    .post(m -> m.subBuilder(SubCommand.taskBuilder())
+                            .name("list")
+                            .helper("显示世界的坐标点")
+                            .arg(me.matl114.utils.commands.params.SimpleCommandArgs.argumentBuilder()
+                                    .name("world")
+                                    .tabSupplier(() -> mc.getNetworkHandler().getWorldKeys().stream()
+                                            .map(RegistryKey::getValue)
+                                            .map(Identifier::toString))
+                                    .build())
+                            .post(e -> e.executor(CommandContext.run(this::onList)))
+                            .complete()
+                            .subBuilder(SubCommand.taskBuilder())
+                            .name("listall")
+                            .helper("显示服务器的坐标点")
+                            .arg(me.matl114.utils.commands.params.SimpleCommandArgs.argumentBuilder()
+                                    .name("server")
+                                    .tabSupplier(() -> parseVec3ds.keySet().stream())
+                                    .build())
+                            .post(e -> e.executor(CommandContext.run(this::onListAll)))
+                            .complete())
                     .complete();
         }
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                    .name("setwarp")
+                    .helper("设置传送点")
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("warpname")
+                            .select("<输入自定义名称>")
+                            .build())
+                    .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaAndPosArgumentType::new)
+                            .name("warppos")
+                            .build())
+                    .post(e -> e.executor(this::onSet))
+                    .complete();
+        }
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                    .name("delwarp")
+                    .helper("移除传送点")
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("warpname")
+                            .tabCompletor(TabResult.ofStreamSupplier(this::getCurrentWorldWarpName))
+                            .build())
+                    .post(e -> e.executor(this::onRemove))
+                    .complete();
+        }
+    }
 
-        private void onList(ArgumentInputStream re) {
-            String worldName = re.nextArgOrDefault(getCurrentWorldName()::get);
-            Debug.chat(Text.literal("==".repeat(10)).formatted(Formatting.GREEN));
-            Debug.chat(Text.literal("== 当前世界" + worldName + "传送点列表 ==").formatted(Formatting.GREEN));
-            var s = Command.getInstance().getWorldWarps(worldName);
-            int i = 0;
-            for (var entry : s.entrySet()) {
+    private boolean onSet(CommandExecution context, ArgumentInputStream re, ArgumentReader rest) {
+        String warpName = re.nextNonnull();
+        ExecutePos warpPos = re.nextArg();
+        Vector3d vector3d;
+        if (warpPos == null) {
+            vector3d = context.getExecutePos();
+        } else {
+            vector3d = warpPos.getPosition(context);
+        }
+        Vec3d vec3d = new Vec3d(vector3d.x, vector3d.y, vector3d.z);
+
+        if (mc.world != null && registerWarp(getCurrentWorldName().get(), warpName, vec3d)) {
+            context.sendMessage("&a注册传送点 " + warpName + " 成功");
+            context.sendMessage(
+                    Text.literal("位置: ").formatted(Formatting.GREEN).append(ChatUtils.getDisplayedLocation(vec3d)));
+        } else {
+            context.sendMessage("&c注册传送点失败!");
+        }
+
+        return true;
+    }
+
+    private boolean onRemove(CommandExecution context, ArgumentInputStream re, ArgumentReader rest) {
+        String warpName = re.nextNonnull();
+        if (mc.world != null && unregisterWarp(getCurrentWorldName().get(), warpName)) {
+            context.sendMessage("&a移除传送点 " + warpName + " 成功");
+        } else {
+            context.sendMessage("&c移除传送点失败");
+        }
+        return true;
+    }
+
+    private void onList(ArgumentInputStream re) {
+        String worldName = re.nextArgOrDefault(getCurrentWorldName()::get);
+        Debug.chat(Text.literal("==".repeat(10)).formatted(Formatting.GREEN));
+        Debug.chat(Text.literal("== 当前世界" + worldName + "传送点列表 ==").formatted(Formatting.GREEN));
+        var s = getWorldWarps(worldName);
+        int i = 0;
+        for (var entry : s.entrySet()) {
+            ++i;
+            Debug.chat(
+                    Text.literal(i + ":").formatted(Formatting.YELLOW),
+                    ChatUtils.stringToText(PREFIX_WARP + entry.getKey()),
+                    " ",
+                    ChatUtils.getDisplayedLocation(entry.getValue()));
+        }
+        Debug.chat();
+        Debug.chat(Text.literal("==".repeat(10)).formatted(Formatting.GREEN));
+    }
+
+    private void onListAll(ArgumentInputStream re) {
+        String serverName = re.nextArgOrDefault(CommonUtils::getServerName);
+        Debug.chat(Text.literal("==".repeat(10)).formatted(Formatting.GREEN));
+        Debug.chat(Text.literal("== 当前服务器" + serverName + "传送点列表 ==").formatted(Formatting.GREEN));
+        var s = getServerWarps(serverName);
+        int i = 0;
+        for (var entry : s.entrySet()) {
+            for (var entry2 : entry.getValue().entrySet()) {
                 ++i;
                 Debug.chat(
                         Text.literal(i + ":").formatted(Formatting.YELLOW),
-                        ChatUtils.stringToText(PREFIX_WARP + entry.getKey()),
+                        entry.getKey(),
+                        ChatUtils.stringToText(PREFIX_WARP + entry2.getKey()),
                         " ",
-                        ChatUtils.getDisplayedLocation(entry.getValue()));
+                        ChatUtils.getDisplayedLocation(entry2.getValue()));
             }
-            Debug.chat();
-            Debug.chat(Text.literal("==".repeat(10)).formatted(Formatting.GREEN));
         }
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
-                    .name("listall")
-                    .helper("显示服务器的坐标点")
-                    .arg(me.matl114.utils.commands.params.SimpleCommandArgs.argumentBuilder()
-                            .name("server")
-                            .tabSupplier(() -> Command.getInstance().parseVec3ds.keySet().stream())
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onListAll)))
-                    .complete();
-        }
-
-        private void onListAll(ArgumentInputStream re) {
-            String serverName = re.nextArgOrDefault(CommonUtils::getServerName);
-            Debug.chat(Text.literal("==".repeat(10)).formatted(Formatting.GREEN));
-            Debug.chat(Text.literal("== 当前服务器" + serverName + "传送点列表 ==").formatted(Formatting.GREEN));
-            var s = Command.getInstance().getServerWarps(serverName);
-            int i = 0;
-            for (var entry : s.entrySet()) {
-                for (var entry2 : entry.getValue().entrySet()) {
-                    ++i;
-                    Debug.chat(
-                            Text.literal(i + ":").formatted(Formatting.YELLOW),
-                            entry.getKey(),
-                            ChatUtils.stringToText(PREFIX_WARP + entry2.getKey()),
-                            " ",
-                            ChatUtils.getDisplayedLocation(entry2.getValue()));
-                }
-            }
-            Debug.chat();
-            Debug.chat(Text.literal("==".repeat(10)).formatted(Formatting.GREEN));
-        }
+        Debug.chat();
+        Debug.chat(Text.literal("==".repeat(10)).formatted(Formatting.GREEN));
     }
 }

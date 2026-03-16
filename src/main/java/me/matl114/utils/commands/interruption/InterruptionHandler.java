@@ -32,5 +32,5 @@ public interface InterruptionHandler {
 
     public void handleLogicalError(CommandExecution sender, String fullMessage);
 
-    public void handleUnexpectedArgument(CommandExecution sender, ArgumentReader reader);
+    public void handleDispatchFailure(CommandExecution sender, ArgumentReader reader);
 }

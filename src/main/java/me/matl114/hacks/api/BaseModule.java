@@ -3,9 +3,12 @@ package me.matl114.hacks.api;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.commands.MainCommand;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.hacks.utils.Named;
@@ -17,6 +20,7 @@ import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
+import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
 import net.minecraft.client.MinecraftClient;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 
@@ -48,6 +52,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
     protected static final String REASON_LISTENER = "event listener";
     protected static final String REASON_VALIDATOR = "config validator";
     protected static final String REASON_UPDATE_LISTENER = "config update listener";
+    protected static final String REASON_COMMAND = "command bootstrap";
     protected static final String REASON_CUSTOM = "custom wrapper";
 
     public static String[] makePath(String c) {
@@ -136,6 +141,18 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
         listener.registerHandler(new NamedPredicate<>(this, handler, REASON_LISTENER), p);
         registeredPoints.add(listener);
     }
+
+    public void registerCommandBootstrap(Consumer<MainCommand> handler) {
+        MainCommand.registerCommandBootstrap(new NamedBootstrap<>(this, handler, REASON_COMMAND));
+    }
+
+    public void registerCommand(Supplier<AbstractMainCommand> factory) {
+        registerCommandBootstrap(s -> s.registerAsCommand(factory.get()));
+    }
+
+    public void registerAsSubCommand(String name, Supplier<AbstractMainCommand> factory) {
+        registerCommandBootstrap(s -> s.registerAsSubCommand(name, factory.get()));
+    }
     // you should put listeners here
     @MustBeInvokedByOverriders
     public void registerAll() {}
@@ -154,6 +171,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
         registeredConfigRefs.clear();
         registeredHotkeys.forEach(s -> s.setInputHandler(SimpleHotKey.InputHandler.EMPTY));
         registeredHotkeys.clear();
+        MainCommand.unregisterCommandBootstrap(this::isOwner);
     }
 
     private final Set<WrapperConfigRef<?>> registeredConfigRefs = new LinkedHashSet<>();
@@ -340,5 +358,27 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
 
     public <T> T cast() {
         return (T) this;
+    }
+
+    @AllArgsConstructor
+    public static class NamedBootstrap<T> implements MainCommand.Bootstrap, Named<T> {
+        T name;
+        public Consumer<MainCommand> delegate;
+        public String registerReason;
+
+        @Override
+        public void onCommandReload(MainCommand command) {
+            delegate.accept(command);
+        }
+
+        @Override
+        public T getOwner() {
+            return name;
+        }
+
+        @Override
+        public String getRegisterReason() {
+            return registerReason;
+        }
     }
 }

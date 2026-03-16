@@ -1,15 +1,18 @@
 package me.matl114.managers.task;
 
-import lombok.AllArgsConstructor;
+import me.matl114.managers.Tasks;
 
-@AllArgsConstructor
 public abstract class TimedTask implements Task {
     abstract boolean runTask();
 
-    int delay;
+    public TimedTask(int delay) {
+        expireTicks = Tasks.getTick() + delay;
+    }
+
+    int expireTicks;
 
     public boolean execute() {
-        if (--delay <= 0) {
+        if (Tasks.getTick() >= expireTicks) {
             return runTask();
         }
         return false;

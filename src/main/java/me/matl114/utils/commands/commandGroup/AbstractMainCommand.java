@@ -2,7 +2,6 @@ package me.matl114.utils.commands.commandGroup;
 
 import com.google.common.base.Supplier;
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -38,12 +37,12 @@ import org.jetbrains.annotations.NotNull;
  * <p>To use this class, extend it and implement the abstract methods.
  * The root command should be defined as a field named "mainCommand" in the subclass.</p>
  */
-public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandler {
+public class AbstractMainCommand implements SubCommand, InterruptionHandler {
 
     /** Internal reference to the root command */
-    private SubCommand root;
+    private final ListSubCommand root = new ListSubCommand("");
 
-    protected SubCommand.Builder<TreeSubCommand> mainBuilder() {
+    public SubCommand.Builder<TreeSubCommand> mainBuilder() {
         return SubCommand.factoryBuilder((a, b, c) -> {
             var root = new TreeSubCommand(a, c);
             root.subBuilder(SubCommand.taskBuilder())
@@ -53,16 +52,10 @@ public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandl
                         return true;
                     })))
                     .complete();
-            this.root = root;
+            this.root.registerSub(root);
             return root;
         });
     }
-
-    /** Whether this command has been registered with the plugin */
-    private boolean registered = false;
-
-    /** Logger for debug information */
-    private Logger Debug;
 
     /**
      * Sends a message to the command sender with color code translation.
@@ -96,23 +89,11 @@ public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandl
      * @param command The sub-command to register
      */
     public void registerSub(SubCommand command) {
-        if (this.root instanceof SubCommandDispatcher dispatcher) {
+        if (this.root instanceof SubCommand.SubCommandCaller dispatcher) {
             dispatcher.registerSub(command);
         } else {
             throw new UnsupportedOperationException("Can not register");
         }
-    }
-
-    /**
-     * Gets the root command for this command group.
-     *
-     * @return The root command SubCommand instance
-     */
-    public SubCommand getMainCommand() {
-        if (root == null) {
-            throw new IllegalStateException("Access to root delegate before it is built");
-        }
-        return root;
     }
 
     /**
@@ -121,56 +102,29 @@ public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandl
      * @return The name of the root command
      */
     public String getMainName() {
-        return getMainCommand().getName();
+        return root.getName();
+    }
+
+    public void setMainName(String name) {
+        root.name = name;
     }
 
     public String getName() {
-        return getMainName();
+        return root.getName();
     }
 
     @org.jetbrains.annotations.Nullable
     @Override
     public String permissionRequired() {
-        return getMainCommand().permissionRequired();
+        return root.permissionRequired();
     }
 
-    public ArgumentInputStream parseInput(CommandExecution s, ArgumentReader reader) {
-        return (getMainCommand()).parseInput(s, reader);
+    public void setPermissionRequired(String required) {
+        root.setPermission(required);
     }
 
-    /**
-     * Handles command execution for the root command.
-     * This method routes commands to appropriate sub-commands based on the first argument.
-     *
-     * <p>The execution flow:</p>
-     * <ol>
-     *   <li>Check root command permission</li>
-     *   <li>Parse the first argument as sub-command name</li>
-     *   <li>Find and validate the sub-command</li>
-     *   <li>Check sub-command permission</li>
-     *   <li>Execute the sub-command with remaining arguments</li>
-     *   <li>Handle any ArgumentException errors</li>
-     *   <li>Show help if no valid sub-command is found</li>
-     * </ol>
-     *
-     * @param var1 The command sender
-     * @param var3 The command alias
-     * @param var4 The command arguments
-     * @return true if the command was executed successfully, false otherwise
-     */
-    public boolean onCommand(PlayerEntity var1, String var3, String[] var4) {
-        CommandExecution execution = CommandExecution.sender(var1);
-        try {
-            // return getMainCommand().onCustomCommand(var1, var2, new ArgumentReader(getMainName(), var4));
-            return onCustomCommand(execution, new ArgumentReader(getMainName(), var4).stepBack());
-        } catch (ArgumentException ex) {
-            ex.handleAbort(execution, this);
-            return true;
-        }
-    }
-
-    public boolean onCommandAsync(@NotNull PlayerEntity var1, @NotNull String var3, @NotNull String[] var4) {
-        return onCommand(var1, var3, var4);
+    public ArgumentInputStream parseInput(CommandExecution execution, ArgumentReader reader) {
+        return new ArgumentInputStream(execution, reader, List.of(), List.of());
     }
 
     private StringBuilder getArgumentPositionPrefix(ArgumentReader reader) {
@@ -294,7 +248,7 @@ public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandl
     }
 
     @Override
-    public void handleUnexpectedArgument(CommandExecution sender, ArgumentReader reader) {
+    public void handleDispatchFailure(CommandExecution sender, ArgumentReader reader) {
         showHelpCommand(sender, reader);
     }
 
@@ -319,51 +273,23 @@ public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandl
     }
 
     public Stream<String> getHelp(String prefix) {
-        return getMainCommand().getHelp(prefix + getName() + " ");
+        return root.getHelp(prefix);
     }
 
     @Override
     public boolean onCustomCommand(@NotNull CommandExecution var1, ArgumentReader reader) throws ArgumentException {
         // mainName as first
-        if (hasPermission(var1)) {
-            if (reader.hasNext()) {
-                if (getName().equalsIgnoreCase(reader.next())) {
-                    return getMainCommand().onCustomCommand(var1, reader);
-                } else {
-                    throw new ValueUnexpectedError(reader);
-                }
-            } else {
-                throw new ValueAbsentError(reader, "main_command");
-            }
-        } else {
-            throw new PermissionDenyError(permissionRequired(), reader);
-        }
+        return root.onCustomCommand(var1, reader);
     }
 
     @Override
     public List<String> onCustomTabComplete(CommandExecution sender, ArgumentReader arguments) {
-        if (hasPermission(sender) && arguments.hasNext() && getName().equalsIgnoreCase(arguments.next())) {
-            return getMainCommand().onCustomTabComplete(sender, arguments);
-        } else return List.of();
+        return root.onCustomTabComplete(sender, arguments);
     }
 
     @Override
     public Stream<String> onCustomHelp(CommandExecution sender, ArgumentReader reader) {
-        if (hasPermission(sender)) {
-            if (reader.hasNext()) {
-                // mainName as first
-                if (getName().equalsIgnoreCase(reader.next()) && hasPermission(sender)) {
-                    return getMainCommand().onCustomHelp(sender, reader);
-                } else {
-                    return Stream.empty();
-                }
-
-            } else {
-                return Stream.empty();
-            }
-        } else {
-            return Stream.empty();
-        }
+        return root.onCustomHelp(sender, reader);
     }
 
     /**
@@ -377,33 +303,6 @@ public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandl
         sender.sendMessage("/%s 全部指令".formatted(already));
         onCustomHelp(sender, new ArgumentReader(command.getAlreadyReadArgs()))
                 .forEach(s -> sendMessage(sender, "&a" + s));
-    }
-
-    /**
-     * Handles tab completion for the root command and its sub-commands.
-     * This method provides intelligent tab completion based on the current input.
-     *
-     * <p>The tab completion flow:</p>
-     * <ol>
-     *   <li>Check root command permission</li>
-     *   <li>Parse input to determine current context</li>
-     *   <li>If no sub-command is selected, show available sub-commands</li>
-     *   <li>If a sub-command is selected, delegate to that sub-command</li>
-     *   <li>Handle any exceptions gracefully</li>
-     * </ol>
-     *
-     * @param var1 The command sender requesting tab completion
-     * @param var3 The command alias
-     * @param var4 The command arguments
-     * @return A list of tab completion suggestions
-     */
-    public List<String> onTabComplete(PlayerEntity var1, String var3, String[] var4) {
-        CommandExecution execution = CommandExecution.sender(var1);
-        try {
-            return onCustomTabComplete(execution, new ArgumentReader(getName(), var4).stepBack());
-        } catch (Throwable e) {
-        }
-        return List.of();
     }
 
     /**
@@ -482,5 +381,34 @@ public class AbstractMainCommand implements CustomTabExecutor, InterruptionHandl
         if (object == null) {
             throw new LogicalError(String.join(" ", msg));
         }
+    }
+
+    @Override
+    public void setPermission(String permission) {
+        root.setPermission(permission);
+    }
+
+    public ListSubCommand getMainCommand() {
+        return root;
+    }
+
+    public boolean onCommand(PlayerEntity var1, String var3, String[] var4) {
+        CommandExecution execution = CommandExecution.sender(var1);
+        try {
+            // return getMainCommand().onCustomCommand(var1, var2, new ArgumentReader(getMainName(), var4));
+            return onCustomCommand(execution, new ArgumentReader(getMainName(), var4));
+        } catch (ArgumentException ex) {
+            ex.handleAbort(execution, this);
+            return true;
+        }
+    }
+
+    public List<String> onTabComplete(PlayerEntity var1, String var3, String[] var4) {
+        CommandExecution execution = CommandExecution.sender(var1);
+        try {
+            return onCustomTabComplete(execution, new ArgumentReader(getName(), var4));
+        } catch (Throwable e) {
+        }
+        return List.of();
     }
 }

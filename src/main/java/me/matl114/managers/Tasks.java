@@ -58,6 +58,13 @@ public class Tasks {
     }
 
     public static void onPreTick(Event<Void> v) {
+        // update tick Counter at pre tick
+        ++tickCounter;
+        if (tickCounter < 0) {
+            tickCounter = 0;
+        } else if (tickCounter % 20 == 0) {
+            ++secondCounter;
+        }
         if (mc.player != null) {
             Listener.getPreGameTick().broadcast(mc.player);
         }
@@ -89,15 +96,6 @@ public class Tasks {
     }
 
     static {
-        registerTickTask(() -> {
-            ++tickCounter;
-            if (tickCounter < 0) {
-                tickCounter = 0;
-            } else if (tickCounter % 20 == 0) {
-                ++secondCounter;
-            }
-        });
-
         registerTickTask(() -> {
             var iter = taskQueue.iterator();
             while (iter.hasNext()) {

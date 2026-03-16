@@ -13,4 +13,9 @@ public abstract class ArgumentException extends RuntimeException {
     public synchronized Throwable fillInStackTrace() {
         return this;
     }
+
+    // if return true , this exception is thrown when condition check not pass
+    public boolean isConditionError() {
+        return false;
+    }
 }
