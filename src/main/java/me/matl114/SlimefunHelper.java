@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import me.matl114.bridge.BridgeMain;
+import me.matl114.commands.MainCommand;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.gui.GuiMain;
@@ -80,6 +81,7 @@ public class SlimefunHelper implements ModInitializer {
         Tasks.init();
         Listener.init();
         RenderListener.init();
+        MainCommand.init();
         // gui system
         GuiMain.init();
         // hacks main

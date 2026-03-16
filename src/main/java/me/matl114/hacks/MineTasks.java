@@ -2,6 +2,7 @@ package me.matl114.hacks;
 
 import java.util.*;
 import lombok.Getter;
+import me.matl114.commands.MainCommand;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
@@ -64,6 +65,10 @@ public class MineTasks {
 
     public static class SeedCommand extends AbstractMainCommand {
         TreeSubCommand main = mainBuilder().name("mine").build();
+
+        {
+            setMainName("mine");
+        }
 
         {
             main.subBuilder(SubCommand.taskBuilder())
@@ -191,6 +196,6 @@ public class MineTasks {
     static {
         moduleGroup.registerFactories(MineTasks::initModules);
         HackModules.registerModuleGroup(moduleGroup);
-        ChatTasks.registerSubCommands("mine", SeedCommand::new);
+        MainCommand.registerSubCommands("mine", SeedCommand::new);
     }
 }

@@ -8,7 +8,7 @@ import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.api.InputArgument;
 import me.matl114.utils.commands.params.api.TabResult;
 
-public class TreeSubCommand extends SubCommand implements SubCommandDispatcher, SubCommand.SubCommandCaller {
+public class TreeSubCommand extends SubCommandImpl implements SubCommandDispatcher, SubCommand.SubCommandCaller {
     private SubCommand fallBackCommand = null;
     private TabResult fallbackTabSuggestor = TabResult.EMPTY;
     private final Map<String, SubCommand> subCommands;

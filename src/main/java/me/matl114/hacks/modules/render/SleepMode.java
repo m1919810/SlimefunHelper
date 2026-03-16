@@ -1,19 +1,28 @@
 package me.matl114.hacks.modules.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.stream.Stream;
 import com.mojang.blaze3d.systems.VertexSorter;
 import me.matl114.accessors.access.ChatScreenAccess;
+import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
+import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.ClientUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.collections.Point;
+import me.matl114.utils.commands.commandGroup.BridgeSubCommand;
+import me.matl114.utils.commands.commandGroup.CommandContext;
+import me.matl114.utils.commands.commandGroup.SubCommand;
+import me.matl114.utils.commands.params.ArgumentInputStream;
+import me.matl114.utils.commands.params.SimpleCommandArgs;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
@@ -59,6 +68,51 @@ public class SleepMode extends BaseModule {
         registerListener(Listener.getCharTyped(), this::interceptCharType);
         registerListener(Listener.getMouseMove(), this::interceptMouseMove);
         registerListener(Listener.getMouseDrag(), this::interceptMouseDragged);
+        registerListener(Listener.getPreSetScreen(), this::interceptSetScreen);
+        registerCommandBootstrap(this::onSleepCommandBootstrap);
+    }
+
+    public void onSleepCommandBootstrap(MainCommand mainCommand) {
+        mainCommand.registerSub(new BridgeSubCommand(
+                "sleep",
+                SubCommand.taskBuilder()
+                        .name("sleep")
+                        .helper("<level> <confirm> 进入睡眠状态")
+                        .arg(SimpleCommandArgs.argumentBuilder()
+                                .name("level")
+                                .intValue()
+                                .build())
+                        .arg(SimpleCommandArgs.argumentBuilder()
+                                .name("confirm")
+                                .dispatchLastArg((str) -> {
+                                    int val = str.getInt();
+                                    if (val > 0) {
+                                        return Stream.of("confirm");
+                                    } else {
+                                        return Stream.of("第一个参数请输入正整数");
+                                    }
+                                })
+                                .defaultValue("")
+                                .build())
+                        .arg(SimpleCommandArgs.argumentBuilder().name("display").build())
+                        .post(e -> e.executor(CommandContext.run(this::onSleep)))
+                        .build()));
+    }
+
+    public void onSleep(ArgumentInputStream re) {
+        int level = re.nextClampedInt(1, 3);
+        if (level != 1 && level != 2) {
+            Debug.chat("请输入范围内的数字: 1~2");
+            return;
+        }
+        String val = re.nextNonnull();
+        String val2 = re.nextArg();
+        if ("confirm".equals(val)) {
+            Tasks.scheduleDelayed(() -> RenderTasks.getSleepMode().setCustomScreenSleeping(level, val2), 1);
+        } else {
+            Debug.chat("使用sleep confirm 确认进入睡眠模式, 进入睡眠模式后可以按 "
+                    + RenderTasks.getSleepMode().getWakeupButton() + " 键离开");
+        }
     }
 
     public void onGameRender(Event<GameRenderer> rendererEvent) {

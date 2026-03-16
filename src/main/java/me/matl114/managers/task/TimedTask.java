@@ -6,7 +6,7 @@ public abstract class TimedTask implements Task {
     abstract boolean runTask();
 
     public TimedTask(int delay) {
-        this.expireTicks = Tasks.getTick() + delay;
+        expireTicks = Tasks.getTick() + delay;
     }
 
     int expireTicks;

@@ -13,4 +13,9 @@ public class PermissionDenyError extends ArgumentException {
     public void handleAbort(CommandExecution sender, InterruptionHandler command) {
         command.handlePermissionDenied(sender, permission, currentCommandInput);
     }
+
+    @Override
+    public boolean isConditionError() {
+        return true;
+    }
 }

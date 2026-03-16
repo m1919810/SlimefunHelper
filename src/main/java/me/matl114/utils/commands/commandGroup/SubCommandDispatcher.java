@@ -5,13 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import me.matl114.utils.commands.interruption.ArgumentException;
+import me.matl114.utils.commands.interruption.DispatchFailureError;
 import me.matl114.utils.commands.interruption.PermissionDenyError;
-import me.matl114.utils.commands.interruption.ValueUnexpectedError;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import org.jetbrains.annotations.NotNull;
 
 public interface SubCommandDispatcher extends CustomTabExecutor, SubCommand.SubCommandCaller {
+
+    public SubCommand getSubCommand(String name);
+
     default List<String> onCustomTabComplete(CommandExecution sender, ArgumentReader arguments) {
         List<String> collectLore = new ArrayList<>();
         if (hasPermission(sender)) {
@@ -64,7 +67,7 @@ public interface SubCommandDispatcher extends CustomTabExecutor, SubCommand.SubC
                 return onDefaultCommand(var1, reader);
             } else {
                 // 认为在dispatch的时候值缺失算空串
-                throw new ValueUnexpectedError(reader);
+                throw new DispatchFailureError(reader);
             }
             // not consume
         } else {
@@ -75,7 +78,7 @@ public interface SubCommandDispatcher extends CustomTabExecutor, SubCommand.SubC
     default boolean onDefaultCommand(@NotNull CommandExecution var1, ArgumentReader reader) throws ArgumentException {
         var defaultCmd = getFallbackCommand();
         if (defaultCmd == null) {
-            throw new ValueUnexpectedError(reader);
+            throw new DispatchFailureError(reader);
         } else {
             return defaultCmd.onCustomCommand(var1, reader);
         }
