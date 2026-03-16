@@ -98,7 +98,7 @@ public class StorageDisplay extends BaseModule {
             }
         }
     }
-
+    // TODO: add shulker storage display
     public void onContainerVanilla(Event<ItemStack> event) {
         if (event.context() != null) {
             return;

@@ -4,12 +4,10 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
-import java.util.List;
 import java.util.Objects;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
-import me.matl114.utils.collections.LazyList;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -18,7 +16,6 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
@@ -30,7 +27,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
@@ -210,17 +206,6 @@ public abstract class ClientPlayNetworkHandlerEvents {
 
             ci.cancel();
         }
-    }
-    // todo: remove this
-    @ModifyArg(
-            method = "onEntityTrackerUpdate",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/entity/data/DataTracker;writeUpdatedEntries(Ljava/util/List;)V"))
-    private List<DataTracker.SerializedEntry<?>> makeModifiableListForTrackerUpdateEvents(
-            List<DataTracker.SerializedEntry<?>> entries) {
-        return new LazyList<>(entries);
     }
 
     @Inject(

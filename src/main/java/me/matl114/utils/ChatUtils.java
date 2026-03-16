@@ -10,15 +10,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import me.matl114.utils.chat.SimpleOrderedTextVisitor;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;
 import net.minecraft.util.math.Vec3d;
+import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ChatUtils {
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
+
     public static boolean isHighSurrogate(char c) {
         return c >= 0xD800 && c <= 0xDBFF;
     }
@@ -189,6 +193,184 @@ public class ChatUtils {
     }
 
     @ApiMethod
+    public static List<Text> multiLineTextFromLegacyString(String value, int widthLimit) {
+        if (value == null) {
+            return List.of();
+        }
+        List<Text> texts = new ArrayList<>();
+        MutableFloat width = new MutableFloat(0.0);
+        MutableText base = Text.empty();
+        // Object currentStyle = ChatEnum.STYLE_EMPTY;
+        Style currentStyle = EMPTY;
+        Matcher matcher = FORMAT_PATTERN.matcher(value);
+        String match = null;
+        StringBuilder hexColor = null;
+        int currentIndex = 0;
+        boolean hasReset = false;
+        boolean needsAdd = false;
+        find_any:
+        while (matcher.find()) {
+            int groupId = 0;
+            while ((match = matcher.group(++groupId)) == null) {}
+            int index = matcher.start(groupId);
+            if (index > currentIndex) {
+                String additionString = value.substring(currentIndex, index);
+                needsAdd = false;
+                while (true) {
+                    int idx = cutStringWithWidth(additionString, currentStyle, widthLimit, width);
+                    if (idx == additionString.length()) {
+                        Text addition = Text.literal(additionString).setStyle(currentStyle);
+                        base.append(addition);
+                        break;
+                    } else {
+                        if (idx != 0) {
+                            Text addition = Text.literal(additionString.substring(0, idx))
+                                    .setStyle(currentStyle);
+                            base.append(addition);
+                        }
+                        texts.add(base);
+                        // switch line
+                        width.setValue(0.0F);
+                        base = Text.empty();
+                        additionString = additionString.substring(idx);
+                    }
+                }
+                currentIndex = index;
+            }
+            switch (groupId) {
+                case 1:
+                    char c = match.toLowerCase(java.util.Locale.ENGLISH).charAt(1);
+                    if (c == 'x') {
+                        hexColor = new StringBuilder("#");
+                    } else if (hexColor != null) {
+                        hexColor.append(c);
+                        if (hexColor.length() == 7) {
+                            currentStyle = RESET.withColor(TextColor.parse(hexColor.toString())
+                                    .result()
+                                    .get());
+                            hexColor = null;
+                        }
+                    } else {
+                        Formatting format = formatMap.get(c);
+                        if (format.isModifier() && format != Formatting.RESET) {
+                            switch (format) {
+                                case BOLD:
+                                    currentStyle = currentStyle.withBold(Boolean.TRUE);
+                                    break;
+                                case ITALIC:
+                                    currentStyle = currentStyle.withItalic(Boolean.TRUE);
+                                    break;
+                                case STRIKETHROUGH:
+                                    currentStyle = currentStyle.withStrikethrough(Boolean.TRUE);
+                                    break;
+                                case UNDERLINE:
+                                    currentStyle = currentStyle.withUnderline(Boolean.TRUE);
+                                    break;
+                                case OBFUSCATED:
+                                    currentStyle = currentStyle.withObfuscated(Boolean.TRUE);
+                                    break;
+                                default:
+                                    throw new AssertionError("Unexpected message format");
+                            }
+                        } else { // Color resets formatting
+                            // Paper start - Improve Legacy Component serialization size
+                            Style previous = currentStyle;
+                            currentStyle = (!hasReset ? RESET : EMPTY).withColor(format);
+                            hasReset = true;
+                            if (previous.isBold()) {
+                                currentStyle = currentStyle.withBold(false);
+                            }
+                            if (previous.isItalic()) {
+                                currentStyle = currentStyle.withItalic(false);
+                            }
+                            if (previous.isObfuscated()) {
+                                currentStyle = currentStyle.withObfuscated(false);
+                            }
+                            if (previous.isStrikethrough()) {
+                                currentStyle = currentStyle.withStrikethrough(false);
+                            }
+                            if (previous.isUnderlined()) {
+                                currentStyle = currentStyle.withUnderline(false);
+                            }
+                            // Paper end - Improve Legacy Component serialization size
+                        }
+                    }
+                    needsAdd = true;
+                    break;
+                case 2:
+                    if (needsAdd) {
+                        String additionString = value.substring(currentIndex, index);
+                        while (true) {
+                            int idx = cutStringWithWidth(additionString, currentStyle, widthLimit, width);
+                            if (idx == additionString.length()) {
+                                Text addition = Text.literal(additionString).setStyle(currentStyle);
+                                base.append(addition);
+                                break;
+                            } else {
+                                if (idx != 0) {
+                                    Text addition = Text.literal(additionString.substring(0, idx))
+                                            .setStyle(currentStyle);
+                                    base.append(addition);
+                                }
+                                texts.add(base);
+                                // switch line
+                                width.setValue(0.0F);
+                                base = Text.empty();
+                                additionString = additionString.substring(idx);
+                            }
+                        }
+                    }
+                    // switch line
+                    texts.add(base);
+                    width.setValue(0.0F);
+                    needsAdd = false;
+                    base = Text.empty();
+            }
+            currentIndex = matcher.end(groupId);
+        }
+        int len = value.length();
+        if (currentIndex < value.length() || needsAdd) {
+            String additionString = value.substring(currentIndex, len);
+            while (true) {
+                int idx = cutStringWithWidth(additionString, currentStyle, widthLimit, width);
+                if (idx == additionString.length()) {
+                    Text addition = Text.literal(additionString).setStyle(currentStyle);
+                    base.append(addition);
+                    break;
+                } else {
+                    if (idx != 0) {
+                        Text addition =
+                                Text.literal(additionString.substring(0, idx)).setStyle(currentStyle);
+                        base.append(addition);
+                    }
+                    texts.add(base);
+                    // switch line
+                    width.setValue(0.0F);
+                    base = Text.empty();
+                    additionString = additionString.substring(idx);
+                }
+            }
+            texts.add(base);
+        }
+        return texts;
+    }
+
+    public static int cutStringWithWidth(String string, Style style, int limit, MutableFloat widthCounter) {
+        int len = string.length();
+
+        for (var i = 0; i < len; ++i) {
+            int codepoint = string.codePointAt(i);
+            OrderedText text = OrderedText.styled(codepoint, style);
+            float wid = mc.textRenderer.getTextHandler().getWidth(text);
+            if (widthCounter.getValue() + wid > limit) {
+                return i;
+            }
+            widthCounter.add(wid);
+        }
+        return len;
+    }
+
+    @ApiMethod
     public static Stream<Text> textStream(Text comp) {
         return com.google.common.collect.Streams.concat(
                 new Stream[] {Stream.of(comp), comp.getSiblings().stream().flatMap(ChatUtils::textStream)});
@@ -321,25 +503,23 @@ public class ChatUtils {
                     currentStyle.setValue(style);
                     Style modi = style;
                     TextColor color = modi.getColor();
-                    if (
-                    // c.getContent() != PlainTextContent.EMPTY ||
-                    color != null) {
-                        if (color != null) {
-                            Formatting format = colorToFormat.get(color);
-                            if (format != null) {
-                                out.append(format);
-                            } else {
-                                out.append('§').append("x");
-                                for (char magic : color.getName().substring(1).toCharArray()) {
-                                    out.append('§').append(magic);
-                                }
+
+                    if (color != null) {
+                        Formatting format = colorToFormat.get(color);
+                        if (format != null) {
+                            out.append(format);
+                        } else {
+                            out.append('§').append("x");
+                            for (char magic : color.getName().substring(1).toCharArray()) {
+                                out.append('§').append(magic);
                             }
-                            hadFormat.set(true); // = true;
-                        } else if (hadFormat.get()) {
-                            out.append("§r");
-                            hadFormat.set(false); // = false;
                         }
+                        hadFormat.set(true); // = true;
+                    } else if (hadFormat.get()) {
+                        out.append("§r");
+                        hadFormat.set(false); // = false;
                     }
+
                     if (modi.isBold()) {
                         out.append(Formatting.BOLD);
                         hadFormat.set(true); // = true;

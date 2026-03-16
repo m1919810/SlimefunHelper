@@ -126,9 +126,8 @@ public class MainTasks {
     private static void initModule(ModuleManager m) {
         configSystem = new ConfigSystem().register(m);
     }
-    // TODO: add Shulker display and shulker storage display
+
     // TODO: add entity inspect in info command
-    // TODO: add thread check or add runInMain in ApiMethod
     //
     static {
         moduleManager.registerFactories(MainTasks::initModule);

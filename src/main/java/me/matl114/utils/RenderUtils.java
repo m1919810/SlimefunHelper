@@ -8,7 +8,6 @@ import me.matl114.utils.render.Quad;
 import me.matl114.utils.world.RegionPos;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
@@ -19,6 +18,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
+import org.joml.Vector3fc;
 import org.lwjgl.opengl.GL11;
 
 public class RenderUtils {
@@ -66,17 +66,16 @@ public class RenderUtils {
     }
 
     @ApiMethod
-    public static Vec3d getClientLookVec(float partialTicks) {
-        if (mc.player == null) return Vec3d.ZERO;
-        return mc.player.getRotationVec(partialTicks);
+    public static Vec3d getCameraLookVec(float partialTicks) {
+        Camera camera = mc.gameRenderer.getCamera();
+        Vector3fc vector3f = camera.getHorizontalPlane();
+        return new Vec3d(vector3f.x(), vector3f.y(), vector3f.z());
     }
 
     @ApiMethod
     public static Vec3d getTracerOrigin(float partialTicks) {
-        Vec3d start = getClientLookVec(partialTicks).multiply(10);
-        if (mc.options.getPerspective() == Perspective.THIRD_PERSON_FRONT) start = start.negate();
-
-        return start;
+        // if (mc.options.getPerspective() == Perspective.THIRD_PERSON_FRONT) start = start.negate();
+        return getCameraLookVec(partialTicks).multiply(10);
     }
 
     public static RegionPos getCameraRegion() {

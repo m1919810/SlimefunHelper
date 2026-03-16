@@ -74,7 +74,7 @@ public class InvTasks {
         }
         return nowScreen;
     }
-    // todo should be bind with quick drop , shift q button1
+
     @ApiMethod
     public static boolean dropAllCursorStack() {
         ClientPlayerEntity player = mc.player;
@@ -937,7 +937,7 @@ public class InvTasks {
     @Getter
     private static final LimitedSpeedExecutor clickExecutor = new LimitedSpeedExecutor(SPEED);
 
-    // todo: track tileEntity screen,
+    // track tileEntity screen,
     private static BlockHitResult lastInteract = null;
     private static int lastInteractTimestamp = -1;
 
@@ -1019,6 +1019,9 @@ public class InvTasks {
     public static SaveItem saveItem;
 
     @Getter
+    public static NbtTooltips nbtTooltips;
+
+    @Getter
     //
     public static final ItemCache customItemDatabase = new ItemCache("sfhelper-configs/recipes/item-database.json");
 
@@ -1039,6 +1042,7 @@ public class InvTasks {
         pickItem = new PickItem().register(m);
         quickButtons = new QuickButtons().register(m);
         saveItem = new SaveItem().register(m);
+        nbtTooltips = new NbtTooltips().register(m);
     }
 
     static {

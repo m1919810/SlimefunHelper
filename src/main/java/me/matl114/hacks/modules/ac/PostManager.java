@@ -56,7 +56,7 @@ public class PostManager extends BaseModule {
     // this client tick end
     // supressed pong send
     //
-    // todo: shit, it doesn't work
+    // shit, it doesn't work
     // private boolean hasHandledPongPacket = false;
     private Deque<CommonPongC2SPacket> delayedPingPackets = new ArrayDeque<>(33);
 

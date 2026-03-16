@@ -20,9 +20,6 @@ import me.matl114.utils.commands.params.impl.AbstractArgumentType;
 import me.matl114.utils.commands.params.impl.StringArgumentResult;
 
 public class SimpleCommandArgs {
-    // todo: add Argument type,  consume more args
-    // todo: use StringReader
-
     public static class Argument extends AbstractArgumentType<String> implements ArgumentType<String> {
 
         public Argument(String argsName) {

@@ -202,7 +202,6 @@ public abstract class MinecraftClientEvents {
                             target = "Lnet/minecraft/client/MinecraftClient;handleInputEvents()V",
                             shift = At.Shift.BEFORE))
     public void onPreInputEvent(CallbackInfo ci) {
-        // todo: cancelable
         Event<Void> re = new Event<>(null, true, false);
         Listener.getPreHandleInputEvents().handleValue(re);
         if (re.isCancelled()) {

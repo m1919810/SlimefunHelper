@@ -50,7 +50,7 @@ public class MainCommand extends AbstractMainCommand {
             main.registerAsCommand(commandSupplier.get());
         });
     }
-    // todo: make it removable
+
     public static void registerCommandBootstrap(Bootstrap bootStrap) {
         COMMAND_BOOTSTRAPS.add(bootStrap);
         if (REGISTERED_COMMANDS != null) {
