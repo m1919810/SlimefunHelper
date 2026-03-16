@@ -330,6 +330,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     BlockPos cachedPos;
+    Vec3d cachedVelocity;
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
@@ -344,6 +345,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                 // use supporting plate here
                 if (cachedPos != null) {
                     BlockPos supportingPos = cachedPos;
+                    Vec3d velocity = args.getVelocity();
                     Vec3d vec3d = args.getPos();
                     Vec3d vec3dSupportingBlock = vec3d.subtract(0, 0.500001F, 0);
                     BlockPos underBlock = BlockPos.ofFloored(vec3dSupportingBlock);
@@ -354,14 +356,27 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                         double zmin = supportingPos.getZ() - delta;
                         double xmax = supportingPos.getX() + 1 + delta;
                         double zmax = supportingPos.getZ() + 1 + delta;
-                        if (!(vec3d.x > xmin && vec3d.x < xmax) || !(vec3d.z > zmin && vec3d.z < zmax)) {
-                            // todo: add velocity direction
+                        boolean xrange = (vec3d.x > xmin && vec3d.x < xmax);
+                        boolean zrange = vec3d.z > zmin && vec3d.z < zmax;
+                        if (!xrange || !zrange) {
+                            Vec3d supportingPosCenter = supportingPos.toCenterPos();
+                            boolean directionX = vec3d.x < supportingPosCenter.x;
+                            boolean directionZ = vec3d.z < supportingPosCenter.z;
 
-                            this.lastPredictWasSneakEdge = true;
+                            if (((!xrange) && directionX == (velocity.x < 0))
+                                    || (!zrange) && directionZ == (velocity.z < 0)
+                                    || (!xrange && !zrange)) {
+                                this.lastPredictWasSneakEdge = true;
+                            }
                         }
                     }
                 }
                 cachedPos = args.getVelocityAffectingPos();
+                //                PlayerInputUtils.Input input = PlayerInputUtils.of(args.input);
+                //                Vec3d movementInput = new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(),
+                // input.forwardSpeed());
+                //                cachedVelocity = EntityUtils.movementInputToVelocity(movementInput, 1.0F,
+                // args.getYaw());
 
                 //                if (false) {
                 //                    PlayerInputUtils.Input pinput = PlayerInputUtils.of(args.input.playerInput);

@@ -292,8 +292,8 @@ public class SlimefunHelperApi {
                     }
 
                     // 创建对应的实例字段
-                    // todo: 只有当不存在getter时才创建getter
-                    // todo: 只有当field为final的时候才创建field
+                    // 只有当不存在getter时才创建getter
+                    // 只有当field为final的时候才创建field
                     String fieldDesc = Type.getDescriptor(field.getType());
                     if (Modifier.isFinal(modifiers)) {
                         targetFields.add(field);

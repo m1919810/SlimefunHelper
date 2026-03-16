@@ -292,7 +292,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public int findElytra() {
         // only backpack can operate
         if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
-            // todo: check hotbar first
+            // check hotbar first
             for (var i = 0; i < 9; ++i) {
                 var item = mc.player.getInventory().getStack(i);
                 if (VItem.getInstance().canGlide(item)
@@ -679,6 +679,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 use = true;
             }
             if (use) {
+                // reset the tick even if is from vanilla operation
+                timer.fire(level);
                 ACPostTasks.addPostTransactionAction((s) -> {
                     sendCustomUseFireworkPacket(pitch, yaw);
                 });

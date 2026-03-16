@@ -60,7 +60,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     }
 
     public boolean enableSprintDirectionalThisTick = false;
-    // todo add pitchyaw pipeline-- do it later
     // check if we can speedup using moveFoward+sideway
     // no use: sidewaywalk no faster than foward, but jump-sprint much faster
 

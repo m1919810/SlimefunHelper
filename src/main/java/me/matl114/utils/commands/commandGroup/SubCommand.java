@@ -158,7 +158,6 @@ public interface SubCommand extends CustomTabExecutor {
             setFallbackCommand(fallbackCommand, TabResult.ofStreamSupplier(fallbackTabSuggestor));
             return (T) this;
         }
-        // todo: add help interface
 
         default <R extends SubCommandCaller, W extends SubCommand> SubBuilder<R, W> subBuilder(Builder<W> builder) {
             return new SubBuilder<>((R) this, builder);
