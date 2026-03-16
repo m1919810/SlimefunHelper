@@ -166,7 +166,7 @@ public class SlimefunModels extends BaseModule {
                     if (!i.getPath().endsWith(".json")) return;
                     String realPath = i.getPath().replaceFirst("^models/", "").replaceAll(".json$", "");
                     Identifier fullPathId = new Identifier(realNamespace, realPath);
-                    Debug.info("load custom slimefun item model:", fullPathId);
+                    // Debug.info("load custom slimefun item model:", fullPathId);
                     String[] splits = realPath.split("/");
                     customItemModels.put(
                             splits[splits.length - 1].toUpperCase(Locale.ROOT),
@@ -196,7 +196,7 @@ public class SlimefunModels extends BaseModule {
                         boolean testResult = predicate.test(shouldModelId.toString());
                         if (OUR_NAMESPACE.equals(namespace) || testResult) {
                             // custom item
-                            Debug.info("load custom slimefun item model:", shouldModelId);
+                            // Debug.info("load custom slimefun item model:", shouldModelId);
                             if (testResult) {
                                 customItemModels.put(splits[splits.length - 1].toUpperCase(Locale.ROOT), fullPathId);
                             }
