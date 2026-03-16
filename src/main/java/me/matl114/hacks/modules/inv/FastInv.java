@@ -69,7 +69,6 @@ public class FastInv extends BaseModule {
             if (enable.get() && enableShift.get()) {
                 InvTasks.quickMoveSlotItem(handled, slot);
             } else if (enableLeftOne.get()) {
-                // FIXME: problem, clicking stacked, removing one
                 if (slot != null) {
                     // Debug.info("debug at ",slot.getIndex());
                     int index = handler.slots.indexOf(slot);

@@ -220,6 +220,10 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
         return builder(config, Boolean.class).path(path).defaultValue(false).hideConfig();
     }
 
+    public IHotKey getHotkey(String... path) {
+        return SimpleInputManager.getInstance().getHotkey(String.join(".", path));
+    }
+
     public <T extends Ref<?>> T registerConfig(T ref) {
         registerConfigWrapper(new WrapperConfigRef(ref));
         return ref;

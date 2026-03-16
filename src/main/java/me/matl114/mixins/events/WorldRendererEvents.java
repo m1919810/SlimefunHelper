@@ -35,8 +35,6 @@ public abstract class WorldRendererEvents {
             CallbackInfo ci) {
         MatrixStack matrixStack = new MatrixStack();
         matrixStack.multiplyPositionMatrix(positionMatrix);
-        // fixme: Event
-
         RenderListener.renderWorldTasks(matrixStack, tickCounter.getTickProgress(false));
     }
 }

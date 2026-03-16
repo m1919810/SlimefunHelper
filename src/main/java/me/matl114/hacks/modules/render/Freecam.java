@@ -197,7 +197,4 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         }
         return true;
     }
-
-    // todo: weird gameHud
-
 }

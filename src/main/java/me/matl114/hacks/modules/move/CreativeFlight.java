@@ -12,6 +12,7 @@ import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
@@ -31,6 +32,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public static final String[] FLIGHT = {"move-safety", "flight", "flight-enable"};
     public static final String[] TOGGLE_FLIGHT = {"move-safety", "flight", "flight-enable-hotkey"};
     public static final String[] MOVE_FLIGHT_ANTIKICK = {"move-safety", "flight", "antikick"};
+    public static final String[] MOVE_FLIGHT_ANTIKICK_PERIOD = {"move-safety", "flight", "antikick-period"};
     public static final String[] MOVE_FLIGHT_SAFETY_1 = {"move-safety", "flight", "fake-1"};
     public static final String[] MOVE_SPEED_OVERRIDE_FLY = {"move-speed", "fly-speed-override"};
     public static final String[] MOVE_SPEED_FLY_VAL_CREATIVE = {"move-speed", "fly-speed-creative"};
@@ -62,6 +64,10 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public final FlagRef doAntiKick = builder(Configs.MOV_CONFIG, Boolean.class)
             .path(MOVE_FLIGHT_ANTIKICK)
             .defaultValue(true)
+            .build();
+
+    public final IntRef antiKickPeriod = builder(Configs.MOV_CONFIG, MOVE_FLIGHT_ANTIKICK_PERIOD, IntRef.TYPE)
+            .defaultValue(60)
             .build();
     public final FlagRef overrideFlySpeed = builder(Configs.MOV_CONFIG, Boolean.class)
             .path(MOVE_SPEED_OVERRIDE_FLY)
@@ -265,7 +271,6 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     }
 
     // server constant
-    private static final int antiKickPeriod = 60;
     private static final double antiKickOffset = 0.032D;
     // antikick module
     private int antiKickCount = 0;
@@ -273,14 +278,14 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     private boolean escapeMotionReset = false;
     private double preservedLastMotion = 0.0D;
     private boolean waitingForServerResponse;
-
+    // todo: rewrite
     public void antiKick(ClientPlayerEntity player) {
         if (MovTasks.seenAsFloating()) {
             antiKickCount++;
         } else {
             antiKickCount = 0;
         }
-        if (antiKickCount > antiKickPeriod) {
+        if (antiKickCount > antiKickPeriod.get()) {
             antiKickCount = 0;
             escapeMotionReset = false;
             preservedLastMotion = player.getVelocity().y;

@@ -224,7 +224,6 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     public ClientAccess clone() {
         try {
             ClientAccess clone = (ClientMixin) super.clone();
-            // TODO: copy mutable state here, so the clone can't change the internals of the original
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
