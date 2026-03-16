@@ -81,7 +81,18 @@ public class GenericScreen extends Screen {
 
     @Override
     public final boolean mouseClicked(double mouseX, double mouseY, int button) {
-        boolean val = super.mouseClicked(mouseX, mouseY, button);
+        boolean val = false;
+        for (Element element : this.children()) {
+            if (element.mouseClicked(mouseX, mouseY, button)) {
+                this.setFocused(element);
+                if (button == 0) {
+                    this.setDragging(true);
+                }
+
+                val = true;
+                break;
+            }
+        }
         if (button == 0) {
             for (var iter : this.children()) {
                 if (iter instanceof Draggable drag && drag.startDrag(this, mouseX, mouseY)) {

@@ -1,20 +1,17 @@
 package me.matl114.hacks;
 
 import com.mojang.authlib.GameProfile;
-import com.mojang.brigadier.context.StringRange;
-import com.mojang.brigadier.suggestion.Suggestion;
-import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.tree.CommandNode;
-import java.awt.*;
+import com.mojang.datafixers.util.Either;
+import io.netty.buffer.ByteBuf;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import lombok.Getter;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -29,38 +26,35 @@ import me.matl114.hacks.modules.combat.BowEnhance;
 import me.matl114.hacks.modules.combat.ProjectileEnhance;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.managers.task.RepeatTask;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.CommandUtils;
 import me.matl114.utils.commands.commandGroup.*;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
-import me.matl114.utils.commands.params.api.CommandExecution;
-import me.matl114.utils.commands.params.impl.DispatchArgumentType;
-import me.matl114.utils.commands.params.impl.PosArgumentType;
-import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.tasks.LimitedSpeedExecutor;
 import me.matl114.versioned.api.VEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.EnderChestInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.visitor.NbtTextFormatter;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Uuids;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Vector3d;
+import net.minecraft.world.waypoint.TrackedWaypoint;
+import net.minecraft.world.waypoint.Waypoint;
 
 public class ChatTasks {
     public static void init() {}
@@ -130,22 +124,13 @@ public class ChatTasks {
         Tasks.registerGameTask(player -> {
             chatExecutor.reset();
         });
-        Listener.getChatSend().registerHandler(ChatTasks::parseClientCommand);
     }
 
     // ====================================== client commands ========================================
-    private static SlimefunHelperMainCommand REGISTERED_COMMANDS;
-    private static final List<Consumer<SlimefunHelperMainCommand>> COMMAND_BOOTSTRAPS = new ArrayList<>();
 
-    public static void reloadAllCommand() {
-        REGISTERED_COMMANDS = new SlimefunHelperMainCommand();
-        Debug.chat("SfHelper Command Successfully reloaded");
-    }
-
-    public static class SlimefunHelperMainCommand extends AbstractMainCommand {
+    public static class SlimefunHelperCommand extends AbstractMainCommand {
         TreeSubCommand main = mainBuilder().name("").build();
 
-        // SubCommand mainCommand = genMainCommand("");
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("reload")
@@ -154,14 +139,14 @@ public class ChatTasks {
                             .name("what")
                             .select(List.of("command", "module"), "command")
                             .build())
-                    .post(e -> e.executor(CommandContext.run(SlimefunHelperMainCommand.this::onReload)))
+                    .post(e -> e.executor(CommandContext.run(SlimefunHelperCommand.this::onReload)))
                     .complete();
         }
 
         public boolean onReload(ArgumentInputStream args) {
             var re = args.nextNonnullString();
             switch (re) {
-                case "command" -> Tasks.scheduleDelayed(ChatTasks::reloadAllCommand, 1);
+                case "command" -> Tasks.scheduleDelayed(MainCommand::reloadCommand, 1);
                     // case "vanilla" -> Tasks.scheduleDelayed(ChatTasks::reloadVanillaClientCommand, 1);
                 case "module" -> {
                     CompletableFuture.runAsync(() -> mc.execute(HackModules::reloadModuleGroups));
@@ -474,47 +459,6 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
-                    .name("sleep")
-                    .helper("<level> <confirm> 进入睡眠状态")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("level")
-                            .intValue()
-                            .build())
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("confirm")
-                            .dispatchLastArg((str) -> {
-                                int val = str.getInt();
-                                if (val > 0) {
-                                    return Stream.of("confirm");
-                                } else {
-                                    return Stream.of("第一个参数请输入正整数");
-                                }
-                            })
-                            .defaultValue("")
-                            .build())
-                    .arg(SimpleCommandArgs.argumentBuilder().name("display").build())
-                    .post(e -> e.executor(CommandContext.run(this::onSleep)))
-                    .complete();
-        }
-
-        public void onSleep(ArgumentInputStream re) {
-            int level = re.nextClampedInt(1, 3);
-            if (level != 1 && level != 2) {
-                Debug.chat("请输入范围内的数字: 1~2");
-                return;
-            }
-            String val = re.nextNonnull();
-            String val2 = re.nextArg();
-            if ("confirm".equals(val)) {
-                Tasks.scheduleDelayed(() -> RenderTasks.getSleepMode().setCustomScreenSleeping(level, val2), 1);
-            } else {
-                Debug.chat("使用sleep confirm 确认进入睡眠模式, 进入睡眠模式后可以按 "
-                        + RenderTasks.getSleepMode().getWakeupButton() + " 键离开");
-            }
-        }
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
                     .name("debug-render")
                     .helper("<task> <state> 调试渲染功能")
                     .arg(SimpleCommandArgs.argumentBuilder()
@@ -547,276 +491,6 @@ public class ChatTasks {
                 case "debug-tick" -> CommandUtils.numbers().stream();
                 default -> Stream.empty();
             };
-        }
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
-                    .name("tp")
-                    .helper("<x> <y> <z> [-far] 执行模拟tp行为")
-                    .arg(SimpleCommandArgs.argumentBuilder(PosArgumentType::new)
-                            .name("position")
-                            .build())
-                    .post(e -> e.executor(this::onTp))
-                    .complete();
-        }
-
-        public boolean onTp(CommandExecution p, ArgumentInputStream re, ArgumentReader reader) {
-            ExecutePos executePos = re.nextArg();
-            if (executePos != null) {
-                Vector3d vector3d = executePos.getPosition(p);
-                onTpa(new Vec3d(vector3d.x, vector3d.y, vector3d.z));
-            } else {
-                sendMessage(p, "输入了无效坐标!");
-            }
-            return true;
-        }
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
-                    .name("tpa")
-                    .helper("<target> 传送到特殊目标位置")
-                    .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaArgumentType::new)
-                            .name("tpa_target")
-                            .build())
-                    .post(e -> e.executor(this::onTpa))
-                    .complete();
-        }
-
-        public boolean onTpa(CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
-            ExecutePos pos = streamArgs.nextArg();
-            if (pos != null) {
-                Vector3d vector3d = pos.getPosition(var1);
-                onTpa(new Vec3d(vector3d.x, vector3d.y, vector3d.z));
-            } else {
-                sendMessage(var1, "输入了无效目标位置!");
-            }
-            return true;
-        }
-
-        public void onTpa(Vec3d pos) {
-            MovTasks.executeTp(pos, 320, true, true);
-        }
-
-        {
-            main.subBuilder(SubCommand.treeBuilder())
-                    .name("travel")
-                    .post(s -> s.subBuilder(SubCommand.taskBuilder())
-                            .name("to")
-                            .helper("<coord> 自动传送旅行")
-                            .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaAndPosArgumentType::new)
-                                    .name("target")
-                                    .build())
-                            .post(e -> e.executor(this::onTravelTo))
-                            .complete()
-                            .subBuilder(SubCommand.taskBuilder())
-                            .name("cancel")
-                            .helper("中断传送旅行")
-                            .post(e -> e.executor(CommandContext.run(this::onTravelCancel)))
-                            .complete())
-                    .complete();
-        }
-
-        public boolean onTravelTo(CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
-            ExecutePos pos = streamArgs.nextArg();
-            if (pos != null) {
-                Vector3d vector3d = pos.getPosition(var1);
-                onTravel(var1.getExecutor(), new Vec3d(vector3d.x, vector3d.y, vector3d.z));
-            }
-            return true;
-        }
-
-        public void onTravel(PlayerEntity var1, Vec3d parsedCoord) {
-            if (travelTask == null) {
-                if (parsedCoord == null) return;
-                travelTask = new RepeatTask(20, 2) {
-                    Vec3d pos0 = parsedCoord;
-                    final ClientPlayerEntity currentPlayer = mc.player;
-                    final long startingTime = System.currentTimeMillis();
-                    final Vec3d startPos = mc.player.getPos();
-
-                    public void cancel() {
-                        super.cancel();
-                        MovTasks.doingTp = false;
-                    }
-
-                    private boolean finish() {
-                        if (travelTask != this
-                                || mc.player != currentPlayer
-                                || mc.player.getPos().subtract(pos0).horizontalLengthSquared() < 900) {
-                            Debug.chat("当前travel task已完成或者终止");
-                            long usedSec = (System.currentTimeMillis() - startingTime) / 1000L;
-                            Debug.info("using time", usedSec);
-                            if (mc.player != null) {
-                                double len = mc.player.getPos().distanceTo(startPos);
-                                Debug.chat("时间开销:", usedSec, "s, 运行距离: ", len, ", 平均速度: ", len / usedSec, "m/s");
-                                // send signal to reset distance
-                                mc.player.setOnGround(false);
-
-                                ClientPlayerAccess.of(mc.player)
-                                        .setForceNoFall(true); // .fallDistance = MovTasks.FORCE_RESET_DISTANCE;
-                            }
-
-                            travelTask = null;
-                            cancel();
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-
-                    private boolean move(Vec3d delta) {
-
-                        if (delta.length() == 0) {
-                            MovTasks.moveToWithPackets(mc.player.getPos(), null);
-                            return false;
-                        } else {
-                            MovTasks.moveToWithPackets(mc.player.getPos().add(delta), Boolean.TRUE);
-                            return finish();
-                        }
-                    }
-
-                    int tickCNT = 0;
-                    long lastTick;
-                    //                                Vec3d vec3d = Vec3d.ZERO;
-                    @Override
-                    public boolean runTask() {
-                        if (mc.player == null) return false;
-                        MovTasks.doingTp = false;
-                        mc.player.setOnGround(false);
-                        tickCNT += 1;
-                        //                                    Debug.info("distance ", vec3d, mc.player.getPos());
-                        if (mc.player.getY() < mc.world.getBottomY() + mc.world.getHeight() + 64) {
-                            MovTasks.farawayMove(new Vec3d(0, 128, 0), true);
-                        } else {
-                            // fixme error in boat, desync boat position
-                            Vec3d towards = pos0.subtract(mc.player.getPos());
-
-                            Vec3d towardsHorizontal = new Vec3d(towards.x, 0, towards.z).normalize();
-                            //                                            if(move(Vec3d.ZERO)){
-                            //                                                return true;
-                            //                                            }
-                            if (move(towardsHorizontal.multiply(9.9).add(0, -0.3, 0))) {
-                                return true;
-                            }
-                            if (move(towardsHorizontal.multiply(9.9).add(0, -0.3, 0))) {
-                                return true;
-                            }
-                            if (tickCNT % 3 == 0) {
-                                if (move(towardsHorizontal.multiply(9.9).add(0, -0.3, 0))) {
-                                    return true;
-                                }
-                            }
-                        }
-                        MovTasks.doingTp = true;
-                        //                                    this.vec3d = mc.player.getPos();
-                        return false;
-                    }
-                };
-                Tasks.scheduleTask(travelTask);
-            } else {
-                Debug.chat("上一个travel task仍旧在执行,使用travel cancel取消");
-            }
-        }
-
-        public void onTravelCancel() {
-            if (travelTask != null) {
-                travelTask.cancel();
-                travelTask = null;
-            }
-        }
-
-        public static RepeatTask travelTask;
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
-                    .name("mark")
-                    .helper("<type> [extra] 标注一个位置为临时缓存位置")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("type")
-                            .select(List.of("player", "camera", "this", "pos", "target", "cross", "clear"), "camera")
-                            .build())
-                    .arg(new DispatchArgumentType<Object>("extra")
-                            .registerArgumentDispatcher(
-                                    0,
-                                    "pos",
-                                    SimpleCommandArgs.argumentBuilder(PosArgumentType::new)
-                                            .name("dispatch_pos")
-                                            .build())
-                            .registerArgumentDispatcher(
-                                    0,
-                                    "target",
-                                    SimpleCommandArgs.argumentBuilder(MovTasks.TpaArgumentType::new)
-                                            .name("dispatch_tpa")
-                                            .build())
-                            .registerArgumentDispatcher(
-                                    0,
-                                    "player",
-                                    SimpleCommandArgs.argumentBuilder()
-                                            .name("dispatch_player")
-                                            .tabSupplier(() -> EntityUtils.getWorldPlayerNames(false))
-                                            .build())
-                            .registerDispatcher(
-                                    (p, args) -> true,
-                                    SimpleCommandArgs.argumentBuilder()
-                                            .name("dispatch_default")
-                                            .build()))
-                    .post(e -> e.executor(this::onMark))
-                    .complete();
-        }
-
-        public boolean onMark(CommandExecution var1, ArgumentInputStream re, ArgumentReader reader) {
-            String type = re.nextNonnull();
-            Vec3d pos;
-            PlayerEntity sender = var1.getExecutorPlayer();
-            switch (type) {
-                case "this" -> pos = sender.getPos();
-                case "camera" -> pos = RenderUtils.getCameraEntityPos();
-                case "cross" -> pos = mc.crosshairTarget.getPos();
-                case "player" -> {
-                    String var = re.nextNonnull();
-                    Entity player = EntityUtils.getPlayerByName(var);
-                    if (player != null) {
-                        pos = player.getPos();
-                    } else {
-                        sendMessage(var1, Text.literal("找不到实体或者玩家: " + var).formatted(Formatting.RED));
-                        return true;
-                    }
-                }
-                case "pos" -> {
-                    ExecutePos executePos = re.nextArg();
-                    if (executePos != null) {
-                        var vcd3 = executePos.getPosition(var1);
-                        pos = new Vec3d(vcd3.x, vcd3.y, vcd3.z);
-                    } else {
-                        sendMessage(var1, Text.literal("无效的坐标").formatted(Formatting.RED));
-                        return true;
-                    }
-                }
-                case "target" -> {
-                    ExecutePos executePos = re.nextArg();
-                    if (executePos != null) {
-                        var vcd3 = executePos.getPosition(var1);
-                        pos = new Vec3d(vcd3.x, vcd3.y, vcd3.z);
-                    } else {
-                        sendMessage(var1, Text.literal("无效的特殊位置").formatted(Formatting.RED));
-                        return true;
-                    }
-                }
-                case "clear" -> {
-                    MovTasks.MARK = null;
-                    return true;
-                }
-                default -> {
-                    sendMessage(var1, Text.literal("不存在的mark类型: " + type).formatted(Formatting.RED));
-                    return true;
-                }
-            }
-            MovTasks.MARK = pos;
-            Debug.chat("标记成功: ", ChatUtils.getDisplayedLocationDouble(pos));
-            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-                            new RenderTasks.BoxObject(sender.dimensions.getBoxAt(MovTasks.MARK), Color.GREEN))
-                    .setAutoStop(() -> MovTasks.MARK != pos));
-            return true;
         }
 
         List<String> infoTypes =
@@ -852,12 +526,22 @@ public class ChatTasks {
         public Stream<String> getPlayerListNames() {
             return mc.getNetworkHandler().getPlayerList().stream()
                     .map(PlayerListEntry::getProfile)
-                    .map(GameProfile::getName);
+                    .map(GameProfile::name);
         }
 
         public Stream<String> getWaypointNames() {
 
-            return Stream.empty();
+            return Stream.concat(
+                    getPlayerListNames(),
+                    getWaypoints()
+                            .map(TrackedWaypoint::getSource)
+                            .map(s -> s.map(UUID::toString, Function.identity())));
+        }
+
+        public Stream<TrackedWaypoint> getWaypoints() {
+            List<TrackedWaypoint> waypoints = new ArrayList<>();
+            mc.getNetworkHandler().getWaypointHandler().forEachWaypoint(mc.player, waypoints::add);
+            return waypoints.stream();
         }
 
         public void onInfo(ArgumentInputStream re) {
@@ -890,7 +574,7 @@ public class ChatTasks {
                 }
                 case "spawn" -> {
                     Debug.chat("当前世界的出生点:");
-                    GlobalPos pos = GlobalPos.create(mc.world.getRegistryKey(), mc.world.getSpawnPos());
+                    GlobalPos pos = mc.world.getSpawnPoint().globalPos();
                     Debug.chat(
                             "World Spawn Point [World:",
                             pos.dimension().getValue(),
@@ -950,10 +634,10 @@ public class ChatTasks {
                 case "plist" -> {
                     Debug.chat(Text.literal("当前可视的玩家列表").formatted(Formatting.GREEN));
                     mc.getNetworkHandler().getPlayerList().stream()
-                            .sorted(Comparator.comparing(e -> e.getProfile().getName()))
+                            .sorted(Comparator.comparing(e -> e.getProfile().name()))
                             .map(entry -> {
                                 var val = Text.literal("%-16s (Display: "
-                                                .formatted(entry.getProfile().getName()))
+                                                .formatted(entry.getProfile().name()))
                                         .append(
                                                 entry.getDisplayName() == null
                                                         ? Text.literal("null")
@@ -1009,19 +693,18 @@ public class ChatTasks {
                         Debug.chat("查询到PlayerEntry");
                         Debug.chat(
                                 Text.literal("名字: ").formatted(Formatting.GRAY),
-                                entry.getProfile().getName());
+                                entry.getProfile().name());
                         Debug.chat(
                                 Text.literal("UUID: ").formatted(Formatting.GRAY),
                                 ChatUtils.getClickCopyTargetText(
-                                                entry.getProfile().getId().toString())
+                                                entry.getProfile().id().toString())
                                         .formatted(Formatting.GREEN));
                         Debug.chat(
                                 Text.literal("Property: ").formatted(Formatting.GRAY),
                                 ChatUtils.getHoverShowText(
                                         "[点击查看具体数据]",
-                                        List.of(Text.literal(entry.getProfile()
-                                                .getProperties()
-                                                .toString()))));
+                                        List.of(Text.literal(
+                                                entry.getProfile().properties().toString()))));
                         Debug.chat(
                                 Text.literal("GameMode: ").formatted(Formatting.GRAY),
                                 entry.getGameMode().name());
@@ -1049,7 +732,56 @@ public class ChatTasks {
                             mc.world.getRegistryKey().getValue());
                 }
                 case "waypoint" -> {
-                    Debug.chat("当前版本并不支持waypoint查询");
+                    Debug.chat("查询中");
+                    PlayerListEntry entry;
+                    final String lookup;
+                    if ((entry = mc.getNetworkHandler().getPlayerListEntry(user)) != null) {
+                        lookup = entry.getProfile().id().toString();
+                    } else {
+                        lookup = user;
+                    }
+                    getWaypoints()
+                            .filter(s ->
+                                    lookup.equalsIgnoreCase(s.getSource().map(UUID::toString, Function.identity())))
+                            .forEach(s -> {
+                                Debug.chat("Information about waypoint:", user);
+                                ByteBuf buf = NetworkUtils.createBytebuf();
+                                s.writeBuf(buf);
+                                PacketByteBuf byteBuf = new PacketByteBuf(buf);
+                                Either<UUID, String> either =
+                                        byteBuf.readEither(Uuids.PACKET_CODEC, PacketByteBuf::readString);
+                                Waypoint.Config config = (Waypoint.Config) Waypoint.Config.PACKET_CODEC.decode(byteBuf);
+                                Debug.chat("config: ");
+                                var configNbt = Waypoint.Config.CODEC
+                                        .encodeStart(NbtOps.INSTANCE, config)
+                                        .getOrThrow();
+                                Debug.chat(new NbtTextFormatter("").apply(configNbt));
+                                int varInt = byteBuf.readVarInt();
+                                Debug.chat("type: "
+                                        + switch (varInt) {
+                                            case 0 -> "Empty";
+                                            case 1 -> "Pos";
+                                            case 2 -> "Chunk";
+                                            case 3 -> "Direction";
+                                            default -> "Unknown";
+                                        });
+                                switch (varInt) {
+                                    case 1 -> {
+                                        Debug.chat(
+                                                "Pos :",
+                                                byteBuf.readVarInt(),
+                                                byteBuf.readVarInt(),
+                                                byteBuf.readVarInt());
+                                    }
+                                    case 2 -> {
+                                        Debug.chat("Chunk :", byteBuf.readVarInt(), byteBuf.readVarInt());
+                                    }
+                                    case 3 -> {
+                                        Debug.chat("Azimuth :", byteBuf.readFloat());
+                                    }
+                                }
+                                buf.release();
+                            });
                 }
             }
         }
@@ -1162,118 +894,10 @@ public class ChatTasks {
 
         // todo more command
         // todo add facing/ targeting command
-        {
-            if (COMMAND_BOOTSTRAPS != null) {
-                COMMAND_BOOTSTRAPS.forEach(s -> s.accept(this));
-            }
-        }
 
-        public void registerAsSubCommand(String dispatchName, AbstractMainCommand main) {
-            this.registerSub(new DelegateSubCommand(dispatchName, main.getMainCommand()));
-        }
-
-        public AbstractMainCommand reload() {
-            return new SlimefunHelperMainCommand();
-        }
-    }
-
-    // our client commands
-    public static void parseClientCommand(Event<String> commandEvent) {
-        String command = commandEvent.context();
-        if (command.startsWith("!!")) {
-            dispatchClientCommand(command.substring(2));
-            commandEvent.cancel();
-            return;
-        } else if (command.startsWith("/!!")) {
-            dispatchClientCommand(command.substring(3));
-            commandEvent.cancel();
-            return;
-        }
-    }
-
-    public static CompletableFuture<Suggestions> tabCompleteClientCommand(String command, int cursorAt) {
-        if (command.startsWith("!!")) {
-            return dispatchTabComplete(command.substring(2), cursorAt - 2, false);
-        } else if (command.startsWith("/!!")) {
-            return dispatchTabComplete(command.substring(3), cursorAt - 3, true);
-        }
-        return null;
-    }
-    //    public static ParseResults<CommandSource> addParseToVanillaCommands(ParseResults<CommandSource> originResult,
-    // StringReader reader){
-    //
-    //        if(command.startsWith("/")){
-    //            CompletableFuture<Suggestions> sugg = parseVanillaComandsTab(command.substring(1), cursorAt - 1);
-    //            if(sugg != null)return sugg;
-    //        }
-    //    }
-
-    public static CompletableFuture<Suggestions> dispatchTabComplete(String command, int cursorAt, boolean withPrefix) {
-        if (cursorAt < 0) {
-            // handle !!
-            return null;
-        }
-        String trueCommand = command.substring(0, cursorAt);
-        int lastBlank = -1;
-        int prefixLen = 2 + (withPrefix ? 1 : 0);
-        StringRange tabCompleteRange;
-        List<String> args = new ArrayList<>();
-        while (true) {
-            int nextBlank = trueCommand.indexOf(" ", lastBlank + 1);
-            if (nextBlank == -1) {
-                args.add(trueCommand.substring(lastBlank + 1));
-                tabCompleteRange = new StringRange(prefixLen + lastBlank + 1, prefixLen + trueCommand.length());
-                break;
-            }
-            args.add(trueCommand.substring(lastBlank + 1, nextBlank));
-            lastBlank = nextBlank;
-        }
-        List<String> tabList = callTabCompletion(args.toArray(String[]::new));
-        List<Suggestion> suggestionList =
-                tabList.stream().map(i -> new Suggestion(tabCompleteRange, i)).toList();
-        Suggestions suggestions = new Suggestions(tabCompleteRange, suggestionList);
-        return CompletableFuture.completedFuture(suggestions);
-    }
-
-    public static List<String> callTabCompletion(String[] command) {
-        if (mc.player != null) {
-            List<String> val = REGISTERED_COMMANDS.onTabComplete(mc.player, "", command);
-            if (val != null && !val.isEmpty()) {
-                return val;
-            }
-        }
-        return List.of();
-    }
-
-    public static void dispatchClientCommand(String command) {
-        if (mc.player != null) {
-            String[] args = command.split(" ");
-            if (args.length == 0) return;
-            try {
-                if (REGISTERED_COMMANDS.onCommand(mc.player, "", args)) {
-                    return;
-                }
-            } catch (Throwable e) {
-                Debug.chat("Unexpected Error occurred :", e.getMessage());
-                Debug.info(e);
-            }
-        }
-    }
-
-    public static void registerSubCommands(String name, Supplier<AbstractMainCommand> commandSupplier) {
-        registerCommandBootstrap((main) -> {
-            main.registerAsSubCommand(name, commandSupplier.get());
-        });
-    }
-
-    public static void registerCommandBootstrap(Consumer<SlimefunHelperMainCommand> bootStrap) {
-        COMMAND_BOOTSTRAPS.add(bootStrap);
-        if (REGISTERED_COMMANDS != null) {
-            bootStrap.accept(REGISTERED_COMMANDS);
-        }
     }
 
     static {
-        REGISTERED_COMMANDS = new SlimefunHelperMainCommand();
+        MainCommand.registerCommands(SlimefunHelperCommand::new);
     }
 }

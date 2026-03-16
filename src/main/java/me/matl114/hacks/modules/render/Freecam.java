@@ -19,7 +19,6 @@ import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
@@ -173,7 +172,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         Vec3d vec3d = EntityUtils.movementInputToVelocity(movement, (float) speed.get(), camera.getYaw());
         camera.setVelocity(vec3d);
         // reset player input,
-        input.playerInput = new PlayerInput(false, false, false, false, false, false, false);
+        PlayerInputUtils.EMPTY.applyInput(input);
     }
 
     @Override

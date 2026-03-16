@@ -2171,6 +2171,9 @@ public class MovTasks {
     @Getter
     public static MovTest movTest;
 
+    @Getter
+    public static TpaCommand tpaCommand;
+
     private static void initModules(ModuleManager m) {
         // move
         movExtra = new MovExtra().register(m);
@@ -2187,6 +2190,7 @@ public class MovTasks {
         elytraExtra = new ElytraExtra().register(m);
         elytraFlight = new ElytraFlight().register(m);
         movTest = new MovTest().register(m);
+        tpaCommand = new TpaCommand().register(m);
     }
 
     static {

@@ -13,4 +13,9 @@ public class InvalidExecutorError extends ArgumentException {
     public void handleAbort(CommandExecution sender, InterruptionHandler command) {
         command.handleExecutorInvalid(sender, s);
     }
+
+    @Override
+    public boolean isConditionError() {
+        return true;
+    }
 }

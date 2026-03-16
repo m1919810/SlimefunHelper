@@ -1,6 +1,5 @@
 package me.matl114.gui.slimefun;
 
-import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
