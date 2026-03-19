@@ -202,6 +202,11 @@ public class MovTasks {
     }
 
     @ApiMethod
+    public static MovingContext createMovContext(Vec3d vec3d) {
+        return MovingContext.create(vec3d);
+    }
+
+    @ApiMethod
     public static MovingContext createPlayerMovContext() {
         return MovingContext.create(mc.player.getPos());
     }
@@ -356,7 +361,7 @@ public class MovTasks {
         double deltaY = rootEntity.getY() - mc.player.getY();
         double minY = context.from.getValue().y;
         double maxY = minY;
-        boolean currentOnGround = mc.player.isOnGround();
+        boolean currentOnGround = !considerNoFall && mc.player.isOnGround();
         Vec2f currentPitchYaw = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         // calculate current tokens if it is the first move of the tick
         if (context.currentTokenInTick.get() == 0) {
@@ -465,17 +470,18 @@ public class MovTasks {
                         //
                         packets.get(i + emptyMoveCnt).failure();
                         if (considerNoFall && i > 0) {
-                            if (Math.abs(maxY - minY)
-                                    > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1) {
+                            //                            if (Math.abs(maxY - minY)
+                            //                                    >
+                            // mc.player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) - 1) {
 
-                                //                                mc.player.fallDistance = MovTasks.
-                                // FORCE_RESET_DISTANCE;
-                                // in case that resync packet cause OnGround falldamage
-                                packets.get(i - 1 + emptyMoveCnt).addPost(() -> {
-                                    ClientPlayerAccess.of(mc.player).setForceNoFall(true);
-                                    mc.player.setOnGround(false);
-                                });
-                            }
+                            //                                mc.player.fallDistance = MovTasks.
+                            // FORCE_RESET_DISTANCE;
+                            // in case that resync packet cause OnGround falldamage
+                            packets.get(i - 1 + emptyMoveCnt).addPost(() -> {
+                                ClientPlayerAccess.of(mc.player).setForceNoFall(true);
+                                mc.player.setOnGround(false);
+                            });
+                            // }
                         }
                         // return here because of MovingContext currentPosition
                         return packets;
@@ -532,13 +538,13 @@ public class MovTasks {
             }
         }
         if (considerNoFall) {
-            if (Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1) {
-                packets.get(packets.size() - 1).add(() -> {
-                    ClientPlayerAccess.of(mc.player).setForceNoFall(true); // = MovTasks. FORCE_RESET_DISTANCE;
-                    // in case that resync packet cause OnGround falldamage
-                    mc.player.setOnGround(false);
-                });
-            }
+            // if (Math.abs(maxY - minY) > mc.player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) - 1) {
+            packets.get(packets.size() - 1).add(() -> {
+                ClientPlayerAccess.of(mc.player).setForceNoFall(true); // = MovTasks. FORCE_RESET_DISTANCE;
+                // in case that resync packet cause OnGround falldamage
+                mc.player.setOnGround(false);
+            });
+            // }
         }
         return packets;
     }
@@ -558,7 +564,7 @@ public class MovTasks {
         final List<Box> collisionsBB = new java.util.ArrayList<>();
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
         CollisionUtil.getCollisions(
-                mc.player.getWorld(),
+                mc.world,
                 mc.player,
                 involved,
                 collisionsVoxel,
@@ -592,7 +598,8 @@ public class MovTasks {
         if (upOrDown) {
             // up sort minY from small to big
             double levelY = originY + min;
-            double playerBoxHeight = mc.player.dimensions.height();
+            // give 1E-7 more space
+            double playerBoxHeight = mc.player.dimensions.height() + 2E-7;
             // double lastStableY;
             for (var re : allBoxes) {
                 // 高度差上已经有碰撞了
@@ -613,7 +620,7 @@ public class MovTasks {
             return levelY - originY;
         } else {
             double levelY = originY - min;
-            double playerBoxHeight = mc.player.dimensions.height();
+            double playerBoxHeight = mc.player.dimensions.height() + 2E-7;
             // 由大到小排
             for (var re : allBoxes) {
                 // 高度差上已经有碰撞了
@@ -716,6 +723,11 @@ public class MovTasks {
     @ApiMethod
     public static List<Vec3d> generateTpSequence(
             Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment) {
+        return ENGIN.generateTpSequence(current, target, command, farawayTp, considerEnvironment);
+    }
+
+    private static List<Vec3d> generateTpSequenceInternal(
+            Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment) {
         boolean collideAtTarget = checkEnvironmentCollision(mc.player, target, true);
         if (collideAtTarget) {
             if (command) {
@@ -754,7 +766,7 @@ public class MovTasks {
 
         double currentY = current.y;
         double targetY = target.y;
-        World world = mc.player.getWorld();
+        World world = mc.world;
         double horizontalY;
 
         if (len <= farawayTp) {
@@ -895,15 +907,20 @@ public class MovTasks {
         List<Vec3d> vc3d0 = generateTpSequence(current, target, command, farawayThreshold, true);
         if (vc3d0.size() == 2) {
             boolean downward = movement0.y < -4;
-            Vec3d target0 = vc3d0.get(1).add(0, 9E-8, 0);
+            Vec3d target0 = vc3d0.get(1);
             MovInfo mainMove = new MovInfo(target0, downward ? Boolean.FALSE : null, true, null);
             List<MovInfo> movements =
                     // downward ? List.of(mainMove, MovInfo.create(target0.add(0, 9E-8,0))):
                     List.of(mainMove);
             // direct tp should also consider about setBack falldistance, passing considerNoFall arguments to do that
             scheduleFarawayMoveInternal(movements, true, context, considerNoFall);
+            if (considerNoFall) {
+                ClientPlayerAccess.of(mc.player).setForceNoFall(true);
+            }
         } else if (vc3d0.size() == 4) {
-            Debug.chat("执行TP序列");
+            if (command) {
+                Debug.chat("执行TP序列");
+            }
             Vec3d vec3d1 = vc3d0.get(0);
             Vec3d vec3d2 = vc3d0.get(1);
             Vec3d vec3d3 = vc3d0.get(2);
@@ -916,7 +933,7 @@ public class MovTasks {
             if (fastMode) {
                 List<MovInfo> movingPositions = new ArrayList<>();
                 movingPositions.add(MovInfo.createNotOnGround(vec3d2));
-                if (downWard) movingPositions.add(MovInfo.create(vec3d2.add(0, 9E-8, 0)));
+                if (downWard) movingPositions.add(MovInfo.create(vec3d2));
                 movingPositions.add(MovInfo.create(
                         vec3d3
                         //  .add(0, downWard ? 9E-8: 0,0)
@@ -924,7 +941,7 @@ public class MovTasks {
                 movingPositions.add(MovInfo.createNotOnGround(vec3d4));
                 //                if(downWard0)
                 //                    movingPositions.add();
-                if (downWard0) movingPositions.add(MovInfo.create(vec3d4.add(0, 9E-8, 0)));
+                if (downWard0) movingPositions.add(MovInfo.create(vec3d4));
                 scheduleFarawayMoveInternal(movingPositions, true, context, considerNoFall);
             } else {
                 context.from.setValue(vec3d1);
@@ -1442,6 +1459,11 @@ public class MovTasks {
         default boolean checkEnvironmentCollision(Entity entity, Vec3d vec) {
             return MovTasks.checkEnvironmentCollision(entity, vec, true);
         }
+
+        default List<Vec3d> generateTpSequence(
+                Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment) {
+            return MovTasks.generateTpSequenceInternal(current, target, command, farawayTp, considerEnvironment);
+        }
     }
 
     public static class CollisionCache implements CollisionContext {
@@ -1491,6 +1513,12 @@ public class MovTasks {
 
         public boolean checkEnvironmentCollision(Entity entity, Vec3d vec) {
             return MovTasks.checkEnvironmentCollision(entity, vec, this.ignoreChunkBorder);
+        }
+
+        @Override
+        public List<Vec3d> generateTpSequence(
+                Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment) {
+            return CollisionContext.super.generateTpSequence(current, target, command, farawayTp, considerEnvironment);
         }
     }
 

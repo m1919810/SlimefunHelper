@@ -173,6 +173,8 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         camera.setVelocity(vec3d);
         // reset player input,
         PlayerInputUtils.EMPTY.applyInput(input);
+        // apply sneak
+        player.setSneaking(i0.sneak());
     }
 
     @Override

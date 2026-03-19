@@ -11,7 +11,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
@@ -77,10 +76,6 @@ public class Tests extends BaseModule {
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_4))
             .build();
 
-    private final KeyBindRef testKeyBind = hotkey(Configs.HOTKEY_CONFIG, TEST_HOTKEY)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T))
-            .registerHotkey(HotKeyUtils.wrapAsHandler(this::doTest))
-            .build();
     private boolean swapState = false;
     private CompletableFuture<Void> future = null;
     private boolean running = false;

@@ -90,8 +90,11 @@ public class SlimefunGuide extends BaseModule {
     }
 
     private static final Text TITLE_ALL_ITEM = Text.literal("全部记录物品");
-    public static final List<Text> TOOLTIPS_ITEM_RULE =
-            List.of(Text.literal("左键查看当前物品合成表"), Text.literal("右键查看包含当前物品的合成表"), Text.literal("Shift点击的时候会同时显示原版物品配方"));
+    public static final List<Text> TOOLTIPS_ITEM_RULE = List.of(
+            Text.literal("左键查看当前物品合成表"),
+            Text.literal("右键查看包含当前物品的合成表"),
+            Text.literal("Shift右键的时候会同时显示原版物品配方"),
+            Text.literal("中键的时候会尝试获取物品"));
     private static final Text TITLE_ALL_TYPE = Text.literal("全部记录配方类型");
     private static final Text TITLE_ALL_VANILLA = Text.literal("全部原版配方");
     private static final Text TITLE_ALL_SAVED = Text.literal("全部保存物品");
@@ -107,14 +110,20 @@ public class SlimefunGuide extends BaseModule {
                                 .toList(),
                         (entry) -> new ExecutableWidget(0, 0, 16, 16)
                                 .setElementHandler(
-                                        SlotElement.instance(entry.output().copyWithCount(1))
-                                                .withInputHandler(InputHandler.isLeft(t -> {
-                                                    if (t) {
-                                                        openRecipeEntryMenu(entry);
-                                                    } else {
-                                                        onClickItemStack(entry.output(), false);
-                                                    }
-                                                }))),
+                                        SlotElement.instance(entry.output().copyWithCount(1), (item, button) -> {
+                                            if (button == 0) {
+                                                openRecipeEntryMenu((RecipeEntry) entry);
+                                                return true;
+                                            } else if (button == 1) {
+                                                onClickItemStack(item, ScreenUtils.hasShiftDown());
+                                                return true;
+                                            } else if (button == 2) {
+                                                tryGetItemStack(item);
+                                                return true;
+                                            } else {
+                                                return false;
+                                            }
+                                        })),
                         RecipeDatabase.SlimefunRecipeEntry::output)
                 .setSearchFilter((BiPredicate) RECIPE_FILTER));
     }
@@ -128,29 +137,16 @@ public class SlimefunGuide extends BaseModule {
                                 .map(SlimefunTasks::byId)
                                 .toList(),
                         (entry) -> new ExecutableWidget(0, 0, 16, 16)
-                                .setElementHandler(SlotElement.instance(entry.copyWithCount(1))
-                                        .withInputHandler(InputHandler.isLeft(t -> {
-                                            if (t) {
-                                                if (ScreenUtils.hasShiftDown()) {
-                                                    InvTasks.copyGiveCommand(entry.copy());
-                                                } else {
-                                                    if (mc.player != null
-                                                            && mc.interactionManager
-                                                                    .getCurrentGameMode()
-                                                                    .isCreative()) {
-                                                        InvTasks.creativeAddItem(entry.copy(), 64);
-                                                    } else {
-                                                        Debug.chat(Text.literal("当前并不处于创造模式,无法获取保存物品!")
-                                                                .formatted(Formatting.YELLOW));
-                                                    }
-                                                }
-                                            } else {
-                                                SlimefunTasks.openOrSwitch(SlimefunEntryListScreen.mapToWidget(
-                                                        List.of(entry),
-                                                        (item) -> new SavedItemWidget(0, 0, item, null)));
-                                                // ItemEditTasks.openEditScreen(entry, (it)->{});
-                                            }
-                                        }))),
+                                .setElementHandler(SlotElement.instance(entry.copyWithCount(1), ((item, button) -> {
+                                    if (button == 0) {
+                                        tryGetItemStack(item);
+                                        return true;
+                                    } else if (button == 1) {
+                                        SlimefunTasks.openOrSwitch(SlimefunEntryListScreen.mapToWidget(
+                                                List.of(entry), (iv) -> new SavedItemWidget(0, 0, iv, null)));
+                                        return true;
+                                    } else return false;
+                                }))),
                         Function.identity())
                 .setSearchFilter(ITEM_FILTER));
     }
@@ -180,14 +176,20 @@ public class SlimefunGuide extends BaseModule {
                         () -> RecipeTasks.getAllRecipe().values().stream().toList(),
                         (rp) -> new ExecutableWidget(0, 0, 16, 16)
                                 .setElementHandler(
-                                        SlotElement.instance(rp.output().copyWithCount(1))
-                                                .withInputHandler(InputHandler.isLeft((r) -> {
-                                                    if (r) {
-                                                        openRecipeEntryMenu((RecipeEntry) rp);
-                                                    } else {
-                                                        onClickItemStack(rp.output(), false);
-                                                    }
-                                                }))),
+                                        SlotElement.instance(rp.output().copyWithCount(1), (item, button) -> {
+                                            if (button == 0) {
+                                                openRecipeEntryMenu((RecipeEntry) rp);
+                                                return true;
+                                            } else if (button == 1) {
+                                                onClickItemStack(rp.output(), ScreenUtils.hasShiftDown());
+                                                return true;
+                                            } else if (button == 2) {
+                                                tryGetItemStack(rp.output());
+                                                return true;
+                                            } else {
+                                                return false;
+                                            }
+                                        })),
                         RecipeTasks.RecipeRecord::output)
                 .setSearchFilter((BiPredicate<String, RecipeTasks.RecipeRecord>) (BiPredicate) RECIPE_FILTER));
     }
@@ -214,6 +216,20 @@ public class SlimefunGuide extends BaseModule {
         }
         if (myEntry.isEmpty()) return;
         SlimefunTasks.openOrSwitch(SlimefunEntryListScreen.recipeEntry(myEntry));
+    }
+
+    public void tryGetItemStack(ItemStack item) {
+        if (ScreenUtils.hasShiftDown()) {
+            Debug.chat(Text.literal("拷贝了物品的Give指令到剪切板").formatted(Formatting.YELLOW));
+            InvTasks.copyGiveCommand(item.copy());
+        } else {
+            if (mc.player != null && mc.interactionManager.getCurrentGameMode().isCreative()) {
+                InvTasks.creativeAddItem(item.copy(), 64);
+            } else {
+                Debug.chat(Text.literal("当前并不处于创造模式,无法获取保存物品!").formatted(Formatting.YELLOW));
+                Debug.chat(Text.literal("请使用Shift点击来获取物品的Give指令!").formatted(Formatting.YELLOW));
+            }
+        }
     }
 
     public void onClickItemStack(ItemStack item, boolean isLeft) {

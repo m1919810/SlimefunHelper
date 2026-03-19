@@ -26,6 +26,8 @@ public class AutoResyncTp extends BaseModule {
 
     public static final String[] MOVE_AUTO_RESYNC_EXPIRE = {"move-safety", "auto-resync-expire-tick"};
 
+    public static final String[] MOVE_AUTO_RESYNC_RECURSIVE = {"move-safety", "auto-resync-recursively"};
+
     public final FlagRef logAutoResync = builder(Configs.MOV_CONFIG, Boolean.class)
             .path(MOVE_LOG_AUTO_RESYNC)
             .defaultValue(true)
@@ -35,6 +37,9 @@ public class AutoResyncTp extends BaseModule {
             .defaultValue(10)
             .validator(Configs.INT_POSITIVE)
             .build();
+
+    public final FlagRef recursive =
+            flagBuilder(Configs.MOV_CONFIG, MOVE_AUTO_RESYNC_RECURSIVE).build();
 
     public void setAutoResyncSchedule(Optional<Vec3d> pos) {
         this.setAutoResyncSchedule(pos, expireTick.get());
@@ -60,6 +65,7 @@ public class AutoResyncTp extends BaseModule {
             Vec3d resyncPos = getPosition(packet1);
             double sqdistance = resyncPos.squaredDistanceTo(mc.player.getPos());
             double sqdistance2 = resyncPos.squaredDistanceTo(resyncToPos);
+            boolean currentOnGround = mc.player.isOnGround();
             if (sqdistance > 1E-4
                     && sqdistance < MathUtils.s2(128)
                     && sqdistance2 > 1E-4
@@ -70,13 +76,21 @@ public class AutoResyncTp extends BaseModule {
                 }
                 mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.getTeleportId()));
                 mc.player.setPosition(resyncPos);
+                mc.player.setOnGround(false);
                 //                    mc.getNetworkHandler().sendPacket(new
                 // PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(),
                 // false));
-                MovTasks.executeTp(resyncToPos, 200, false, true);
+                if (currentOnGround) {
+                    resyncToPos = resyncToPos.add(0, 1e-6, 0);
+                }
+                MovTasks.scheduleTpInternal(MovTasks.createPlayerMovContext(), resyncToPos, 200, false, true, true);
                 ticksTilExpire = -1;
                 pos = null;
                 event.cancel();
+                if (recursive.get()) {
+                    mc.player.setPosition(resyncToPos);
+                    setAutoResyncSchedule(Optional.empty());
+                }
             }
         }
     }

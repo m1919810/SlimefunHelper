@@ -8,6 +8,7 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RaycastUtils;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -183,5 +184,42 @@ public class PacketHelper {
 
     public static void syncSelectedHotbar(int x) {
         PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(x);
+    }
+
+    public static void sendClientCommand(Object cmd) {
+        ClientCommandC2SPacket.Mode mode = JsHelper.toEnum(cmd, ClientCommandC2SPacket.Mode.class);
+        mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, mode));
+    }
+
+    public static void sendMoveOnGround(boolean onGround, boolean horizontalCollision) {
+        mc.getNetworkHandler().sendPacket(VPacket.newOnGroundOnly(onGround, horizontalCollision));
+    }
+
+    public static void sendMovePositionAndOnGround(
+            double x, double y, double z, boolean isOnGround, boolean collision) {
+        mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y, z, isOnGround, collision));
+    }
+
+    public static void sendMoveLookAndOnGround(float yaw, float pitch, boolean isOnGround, boolean collision) {
+        mc.getNetworkHandler().sendPacket(VPacket.newLookAndOnGround(yaw, pitch, isOnGround, collision));
+    }
+
+    public static void sendMoveVehicle(Entity entity) {
+        mc.getNetworkHandler().sendPacket(VPacket.newVehicleMove(JsHelper.unwrap(entity, Entity.class)));
+    }
+
+    public static void sendMoveFull(
+            double x, double y, double z, float yaw, float pitch, boolean isOnGround, boolean collision) {
+        mc.getNetworkHandler().sendPacket(VPacket.newFull(x, y, z, yaw, pitch, isOnGround, collision));
+    }
+
+    public static void sendPlayerAction(Object action) {
+        PlayerActionC2SPacket.Action actionPacket = JsHelper.toEnum(action, PlayerActionC2SPacket.Action.class);
+        switch (actionPacket) {
+            case STAB, SWAP_ITEM_WITH_OFFHAND, DROP_ITEM, DROP_ALL_ITEMS, RELEASE_USE_ITEM -> {}
+
+            default -> throw new IllegalStateException("Unexpected value: " + actionPacket);
+        }
+        mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(actionPacket, BlockPos.ORIGIN, Direction.DOWN));
     }
 }

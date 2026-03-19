@@ -9,7 +9,10 @@ import me.matl114.gui.presets.choices.QuestionScreen;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
+import me.matl114.managers.input.HotKeyUtils;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -30,6 +33,8 @@ public class ClientExtra extends BaseModule {
     @ApiStatus.Experimental
     public static final String[] PORTAL_GUI = {"other", "keep-gui-open-on-portal"};
 
+    public static final String[] SCREEN_CURSOR_LOCK_SWITCH = {"other", "cursor-switch-hotkey"};
+
     public final FlagRef noCrash = builder(Configs.TEST_CONFIG, Boolean.class)
             .path(TEST_NO_CRASH)
             .defaultValue(false)
@@ -46,6 +51,11 @@ public class ClientExtra extends BaseModule {
     public final StringRef clientBrandName = builder(Configs.TEST_CONFIG, CLIENT_BRAND_NAME, StringRef.TYPE)
             .defaultValue("")
             .hideConfig()
+            .build();
+
+    public final KeyBindRef cursorSwitchKey = hotkey(Configs.TEST_CONFIG, SCREEN_CURSOR_LOCK_SWITCH)
+            .defaultValue(new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.asHandler(this::onCursorLockSwitch))
             .build();
 
     @Override
@@ -99,6 +109,16 @@ public class ClientExtra extends BaseModule {
         } else {
             // 严重问题
             mc.disconnect(screen);
+        }
+    }
+
+    public void onCursorLockSwitch() {
+        if (mc.mouse != null) {
+            if (mc.mouse.isCursorLocked()) {
+                mc.mouse.unlockCursor();
+            } else {
+                mc.mouse.lockCursor();
+            }
         }
     }
 }
