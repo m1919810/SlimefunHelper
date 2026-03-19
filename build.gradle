@@ -183,6 +183,8 @@ tasks.named("runClient", JavaExec) {
 //}
 
 
+build.dependsOn spotlessApply
+
 // configure the maven publication
 publishing {
 	publications {

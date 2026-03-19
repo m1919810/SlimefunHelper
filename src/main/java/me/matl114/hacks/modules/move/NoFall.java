@@ -19,6 +19,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.MaceItem;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec3d;
@@ -79,6 +80,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         delegateMap.put(NofallBypassMode.LAZY_MODE, new NoFallLazy(this));
         delegateMap.put(NofallBypassMode.BYPASS_GRIM, new NoFallBypassGrim(this));
         delegateMap.put(NofallBypassMode.LAZY_BYPASS_GRIM, new NoFallLazyBypassGrim(this));
+        delegateMap.put(NofallBypassMode.TEST, new NoFallTest(this));
     }
 
     private void initArguments() {
@@ -105,6 +107,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVcUpdate);
         registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerInit);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMovePacketSend);
     }
 
     public void onPlayerInit(Event<ClientPlayerEntity> player) {
@@ -116,6 +119,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         if (getDelegate() instanceof NoFallLazyBypassGrim grimLazy) {}
     }
 
+    public void onPlayerMovePacketSend(Event<PlayerMoveC2SPacket> movePacket) {
+        var packet = movePacket.context();
+        if (packet.changesPosition()) {
+            lastServerY = packet.getY(0.0D);
+        }
+    }
+
     protected <T extends NoFallDelegate> T getDelegate() {
         return (T) delegateMap.get(noFallModel.get());
     }
@@ -124,6 +134,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     double lastHeight;
     // current tick status
     boolean holdingMace = false;
+    double lastServerY = 0.0D;
 
     private static final int ENTITY_STAGE_INITIALIZING = 0;
     private static final int ENTITY_STAGE_ALIVE = 1;
@@ -186,6 +197,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
     }
 
+    @Override
+    public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
+        if (entityStage == ENTITY_STAGE_ALIVE) {
+            runningDelegate.applyBeforeTravelTick(movementManagerEvent, moveEvent);
+        }
+    }
+
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (entityStage == ENTITY_STAGE_ALIVE) {
             runningDelegate.applyBeforeMovementPacketModify(movementManagerEvent);
@@ -244,13 +262,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                         runningThisTick = true;
                         // LAZY MODE: only if we trigger not onground -> onground should we reset
                         counter = 0;
-                        module.lastOnGroundHeight = args.getY();
+                        module.lastOnGroundHeight = module.lastServerY;
 
                         args.setPosition(args.getPos().add(0, +1E-8, 0));
                         mc.getNetworkHandler()
                                 .sendPacket(VPacket.newPositionAndOnGround(
                                         args.getX(),
-                                        args.getY(),
+                                        module.lastServerY,
                                         args.getZ(),
                                         !forceNoFall && args.isOnGround(),
                                         args.horizontalCollision));
@@ -281,6 +299,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
     }
 
+    public static final double DELTA_Y = 9E-8;
+
     public static class NoFallLazy extends NoFallDelegate {
         int noFallCnt = -1;
         boolean afterSetbackFlag = false;
@@ -305,12 +325,15 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 runningThisTick = true;
                 // LAZY MODE: only if we trigger not onground -> onground should we reset
                 counter = 0;
-                module.lastOnGroundHeight = args.getY();
+                module.lastOnGroundHeight = module.lastServerY;
 
-                args.setPosition(args.getPos().add(0, +1E-8, 0));
                 mc.getNetworkHandler()
                         .sendPacket(VPacket.newPositionAndOnGround(
-                                args.getX(), args.getY(), args.getZ(), false, args.horizontalCollision));
+                                args.getX(),
+                                module.lastServerY + DELTA_Y,
+                                args.getZ(),
+                                false,
+                                args.horizontalCollision));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
             } else if (module.isActive()) {
@@ -339,7 +362,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             mc.getNetworkHandler()
                                     .sendPacket(VPacket.newPositionAndOnGround(
                                             entity.pos.getX(),
-                                            entity.pos.getY() + 1E-8,
+                                            entity.pos.getY() + DELTA_Y,
                                             entity.pos.getZ(),
                                             false,
                                             entity.horizontalCollision));
@@ -577,12 +600,15 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 runningThisTick = true;
                 // LAZY MODE: only if we trigger not onground -> onground should we reset
                 counter = 0;
-                module.lastOnGroundHeight = args.getY();
+                module.lastOnGroundHeight = module.lastServerY;
 
-                args.setPosition(args.getPos().add(0, +1E-8, 0));
                 mc.getNetworkHandler()
                         .sendPacket(VPacket.newPositionAndOnGround(
-                                args.getX(), args.getY(), args.getZ(), false, args.horizontalCollision));
+                                args.getX(),
+                                module.lastServerY + DELTA_Y,
+                                args.getZ(),
+                                false,
+                                args.horizontalCollision));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
             } else if (module.isActive()) {
@@ -691,7 +717,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             mc.getNetworkHandler()
                                     .sendPacket(VPacket.newPositionAndOnGround(
                                             entity.pos.getX(),
-                                            entity.pos.getY() + 1E-8,
+                                            entity.pos.getY() + DELTA_Y,
                                             entity.pos.getZ(),
                                             false,
                                             entity.horizontalCollision));
@@ -725,12 +751,57 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
     }
 
+    public static class NoFallTest extends NoFallDelegate {
+
+        public NoFallTest(NoFall module) {
+            super(module);
+        }
+
+        @Override
+        public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
+
+        int fallTicks = 0;
+        boolean isSpoofing;
+
+        @Override
+        public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
+            ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+            if (!player.isOnGround()) {
+                if (player.fallDistance > module.safeDistance) {
+                    this.fallTicks++;
+                }
+            }
+            if (!player.isOnGround() && this.fallTicks > 0) {
+                if (!this.isSpoofing) {
+                    // moveEvent.context(moveEvent.context().add(0,0.1,0));
+                    player.setVelocity(player.getVelocity().add(0, 0.1, 0));
+                    this.isSpoofing = true;
+                }
+            }
+        }
+
+        @Override
+        public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+            if (this.isSpoofing) {
+                movementManagerEvent.context.playerStatus.entity.setOnGround(true);
+                this.fallTicks = 0;
+                this.isSpoofing = false;
+            }
+        }
+
+        @Override
+        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            return true;
+        }
+    }
+
     public static enum NofallBypassMode implements ConfigEnum {
         NO_BYPASS,
         LAZY_MODE,
         BYPASS_GRIM,
         @ApiStatus.Experimental
-        LAZY_BYPASS_GRIM;
+        LAZY_BYPASS_GRIM,
+        TEST;
 
         @Override
         public Text getDisplay() {

@@ -9,6 +9,7 @@ import me.matl114.utils.EntityUtils;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.PlayerInput;
+import net.minecraft.util.math.Vec3d;
 
 public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity> {
     final List<MovementModifier> hacks = new ArrayList<>();
@@ -72,24 +73,24 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         }
     }
 
-    public boolean preTravelTick(ClientPlayerEntity args) {
+    public boolean preTravelTick(ClientPlayerEntity args, Event<Vec3d> movementInput) {
         if (this.playerStatus == null) {
             return true;
         }
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, true, false);
         for (var hack : this.currentTickEnableHacks) {
-            hack.applyBeforeTravelTick(movementManagerEvent);
+            hack.applyBeforeTravelTick(movementManagerEvent, movementInput);
         }
         return !movementManagerEvent.isCancelled();
     }
 
-    public void postTravelTick(ClientPlayerEntity args) {
+    public void postTravelTick(ClientPlayerEntity args, Event<Vec3d> movementInput) {
         if (this.playerStatus == null) {
             return;
         }
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         for (var hack : this.currentTickEnableHacks) {
-            hack.applyAfterTravelTick(movementManagerEvent);
+            hack.applyAfterTravelTick(movementManagerEvent, movementInput);
         }
     }
 
@@ -219,14 +220,16 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         }
 
         default boolean conflictCheck(LegalMovementManager movementManager) {
-            if (mayModifyPos()
-                    && movementManager.currentTickEnableHacks.stream().anyMatch(MovementModifier::mayModifyPos)) {
-                return false;
-            }
-            if (mayModifyRotation()
-                    && movementManager.currentTickEnableHacks.stream().anyMatch(MovementModifier::mayModifyRotation)) {
-                return false;
-            }
+            //            if (mayModifyPos()
+            //                    &&
+            // movementManager.currentTickEnableHacks.stream().anyMatch(MovementModifier::mayModifyPos)) {
+            //                return false;
+            //            }
+            //            if (mayModifyRotation()
+            //                    &&
+            // movementManager.currentTickEnableHacks.stream().anyMatch(MovementModifier::mayModifyRotation)) {
+            //                return false;
+            //            }
             return true;
         }
 
@@ -248,9 +251,9 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
 
         default void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {}
 
-        default void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent) {}
+        default void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {}
 
-        default void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent) {}
+        default void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {}
 
         default void applyBeforeInputPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
 
@@ -327,12 +330,12 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
             delegate.get().applyAfterInputTick(movementManagerEvent);
         }
 
-        public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent) {
-            delegate.get().applyBeforeTravelTick(movementManagerEvent);
+        public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
+            delegate.get().applyBeforeTravelTick(movementManagerEvent, moveEvent);
         }
 
-        public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent) {
-            delegate.get().applyAfterTravelTick(movementManagerEvent);
+        public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
+            delegate.get().applyAfterTravelTick(movementManagerEvent, moveEvent);
         }
 
         @Override
@@ -437,15 +440,15 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
             }
         }
 
-        public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent) {
+        public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
             for (var re : pipeline) {
-                re.applyBeforeTravelTick(movementManagerEvent);
+                re.applyBeforeTravelTick(movementManagerEvent, moveEvent);
             }
         }
 
-        public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent) {
+        public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
             for (var re : pipeline) {
-                re.applyAfterTravelTick(movementManagerEvent);
+                re.applyAfterTravelTick(movementManagerEvent, moveEvent);
             }
         }
 

@@ -1,0 +1,25 @@
+package me.matl114.mixins.access;
+
+import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
+import org.spongepowered.asm.mixin.gen.Accessor;
+
+@Mixin(PlayerMoveC2SPacket.class)
+public abstract class PlayerMoveC2SPacketMixin implements PlayerMoveC2SPacketAccess {
+    @Override
+    @Mutable
+    @Accessor("onGround")
+    public abstract void setOnGround(boolean onGround);
+
+    @Override
+    @Mutable
+    @Accessor("pitch")
+    public abstract void setPitch(float pitch);
+
+    @Override
+    @Mutable
+    @Accessor("yaw")
+    public abstract void setYaw(float yaw);
+}
