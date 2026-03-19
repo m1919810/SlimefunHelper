@@ -11,10 +11,12 @@ import me.matl114.accessors.access.ItemStackAccess;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ACPostTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -152,6 +154,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         registerListener(Listener.getEntityTrackDataUpdate(), this::onFireworkOwner);
         registerListener(Listener.getEntityRemoveListener(), this::onFireworkRemove);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
     }
 
     // elytra unbreakable?
@@ -618,18 +621,24 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public void onFireworkRemove(Event<Entity> entityRemoveEvent) {
         if (entityRemoveEvent.context() instanceof FireworkRocketEntity fire && fire == lastFireworkRocket) {
-            lastFireworkThresholdTime = FireworkRocketEntityAccess.of(fire).getLiveTicks();
-            lastFireworkIsDeadSignal = true;
+            onRemoveFirework(lastFireworkRocket);
         }
     }
 
     public void onWorldSwitch(Event<World> event) {
         if (lastFireworkRocket != null && lastFireworkRocket.isAlive()) {
-            lastFireworkIsDeadSignal = true;
-            lastFireworkThresholdTime =
-                    FireworkRocketEntityAccess.of(lastFireworkRocket).getLiveTicks();
+            onRemoveFirework(lastFireworkRocket);
         }
         lastFireworkRocket = null;
+    }
+
+    private void onRemoveFirework(FireworkRocketEntity rocket) {
+        lastFireworkThresholdTime = FireworkRocketEntityAccess.of(rocket).getLiveTicks();
+        lastFireworkIsDeadSignal = true;
+        if (autoRocket.get()) {
+            // mark next time must be auto, pass timer check
+            timerVanilla.markOff();
+        }
     }
 
     public boolean canFireworkControlMotion() {
@@ -728,7 +737,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     @Override
-    public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent) {
+    public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
         if (movementManagerEvent.isCancelled()) {
             return;
         }
@@ -754,22 +763,41 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public static class FireworkTimer {
         int lastTimeFire = 0;
         IntRef fireTicks;
+        boolean lastTimeWasAuto = false;
 
         public FireworkTimer(IntRef fireTicks) {
             this.fireTicks = fireTicks;
         }
 
         public boolean tryFire(int level) {
+            if (lastTimeWasAuto) {
+                return true;
+            }
             if (lastTimeFire + fireTicks.get() * level < Tasks.getTick()) {
-                lastTimeFire = Tasks.getTick();
                 return true;
             } else {
                 return false;
             }
         }
 
+        public void markOff() {
+            lastTimeWasAuto = true;
+        }
+
         public void fire(int level) {
+            lastTimeWasAuto = false;
             lastTimeFire = Tasks.getTick();
+        }
+    }
+
+    public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
+        switch (presetEvent.context.getValue()) {
+            case HACKING, VANILLA, AC_COMMON, AC_VULCAN, AC_GRIM -> {
+                armorMode.set(Configs.AutoInvMode.LAZY);
+            }
+            case AC_MATRIX -> {
+                armorMode.set(Configs.AutoInvMode.TICK);
+            }
         }
     }
 }

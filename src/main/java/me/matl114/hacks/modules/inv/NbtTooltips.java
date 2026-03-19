@@ -16,6 +16,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.nbt.visitor.NbtTextFormatter;
 import net.minecraft.text.Text;
 
@@ -56,7 +57,7 @@ public class NbtTooltips extends BaseModule {
     public void onTooltipsAppend(Event<List<Text>> renderEvent) {
         if (enable.get() && ScreenUtils.hasKeyPressed(hotkey.getTriggeredKey())) {
             ItemStack stack = renderEvent.getArgs(0);
-            getTooltipLines(stack).forEach(line -> renderEvent.context.add(line));
+            renderEvent.context.addAll(getTooltipLines(stack));
         }
     }
 
@@ -69,7 +70,8 @@ public class NbtTooltips extends BaseModule {
 
     public NbtCompound getSimplifiedNbt(ItemStack stack) {
         NbtCompound nbtCompound = VItem.getInstance().toNbt(stack);
-        nbtCompound.remove("DataVersion");
+        nbtCompound = (NbtCompound) nbtCompound.get("components");
+        nbtCompound = nbtCompound == null ? new NbtCompound() : nbtCompound;
         nbtCompound = replaceMcKey(nbtCompound);
         return nbtCompound;
     }
@@ -79,8 +81,7 @@ public class NbtTooltips extends BaseModule {
             NbtCompound nbtCompound = new NbtCompound();
             for (String key : cpd.getKeys()) {
                 NbtElement element = cpd.get(key);
-                String transferKey = key.startsWith("minecraft:") ? "mc:" + key.substring("minecraft:".length()) : key;
-                nbtCompound.put(transferKey, replaceMcKey(element));
+                nbtCompound.put(replaceMcStr(key), replaceMcKey(element));
             }
             return (T) nbtCompound;
         } else if (nbt instanceof NbtList nbtList) {
@@ -89,6 +90,13 @@ public class NbtTooltips extends BaseModule {
                 list.add(replaceMcKey(element));
             }
             return (T) list;
+        } else if (nbt instanceof NbtString nbtString) {
+            String str = nbtString.value();
+            return (T) NbtString.of(replaceMcStr(str));
         } else return nbt;
+    }
+
+    private String replaceMcStr(String key) {
+        return key.startsWith("minecraft:") ? "mc:" + key.substring("minecraft:".length()) : key;
     }
 }

@@ -80,6 +80,7 @@
 	},
 	"mixins": [
 		"access.FireworkRocketEntityMixin",
+		"access.PlayerMoveC2SPacketMixin",
 		"events.EntityTypeEvents",
 		"events.PlayerEntityEvents",
 		"fix.EnchantmentLevelFixMixin",

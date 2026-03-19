@@ -27,13 +27,13 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 
 public class TargetSelector extends BaseModule {
-    public static final String[] ATTACK_WHITELISTED = {"att-bot", "whitelist"};
-    public static final String[] ATTACK_PLAYER_FRIENDLIST = {"att-bot", "friends"};
-    public static final String[] ATTACK_NAMED = {"att-bot", "att-named"};
-    public static final String[] ATTACK_TEAMMATE = {"att-bot", "att-teammate"};
-    public static final String[] ATTACK_HOSTILE = {"att-bot", "att-hostile"};
-    public static final String[] COMBAT_OPPOSITE_ATTACK_MULTIPLY = {"att-bot", "opposite-attack-multiply"};
-    public static final String[] COMBAT_PLAYER_ATTACK_MULTIPLY = {"att-bot", "player-attack-multiply"};
+    public static final String[] ATTACK_WHITELISTED = {"attack", "whitelist"};
+    public static final String[] ATTACK_PLAYER_FRIENDLIST = {"attack", "friends"};
+    public static final String[] ATTACK_NAMED = {"attack", "att-named"};
+    public static final String[] ATTACK_TEAMMATE = {"attack", "att-teammate"};
+    public static final String[] ATTACK_HOSTILE = {"attack", "att-hostile"};
+    public static final String[] COMBAT_OPPOSITE_ATTACK_MULTIPLY = {"attack", "opposite-attack-multiply"};
+    public static final String[] COMBAT_PLAYER_ATTACK_MULTIPLY = {"attack", "player-attack-multiply"};
 
     public TargetSelector() {}
 
@@ -78,6 +78,18 @@ public class TargetSelector extends BaseModule {
                     Configs.COMBAT_CONFIG, COMBAT_PLAYER_ATTACK_MULTIPLY, DoubleRef.TYPE)
             .defaultValue(0.0D)
             .build();
+
+    {
+        if (Configs.COMBAT_CONFIG.get("att-bot", "whitelist") instanceof StringRef stringRef
+                && stringRef.get() != null) {
+            whiteListTypes.set(stringRef.get());
+            Configs.COMBAT_CONFIG.setValueNoNew(null, "att-bot", "whitelist");
+        }
+        if (Configs.COMBAT_CONFIG.get("att-bot", "friends") instanceof StringRef stringRef && stringRef.get() != null) {
+            friendNameRegex.set(stringRef.get());
+            Configs.COMBAT_CONFIG.setValueNoNew(null, "att-bot", "friends");
+        }
+    }
 
     public boolean canAttack(Entity target) {
         if (mc.player == null) return false;

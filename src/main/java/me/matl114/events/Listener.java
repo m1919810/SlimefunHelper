@@ -40,7 +40,6 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -459,7 +458,7 @@ public class Listener {
 
     @Getter
     @Cancelable
-    private static final EventChannel<PlayerEntity> playerTravelingTick = new EventChannel<>();
+    private static final EventChannel<Vec3d> playerTravelingTick = new EventChannel<>();
 
     @Getter
     @Cancelable

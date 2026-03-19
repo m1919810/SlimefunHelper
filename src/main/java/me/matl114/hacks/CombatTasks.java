@@ -229,6 +229,9 @@ public class CombatTasks {
     // todo: tpBot
     // todo: Miss
     // todo: AntiMiss how
+    //
+
+    // todo: crystal
     private static void initModules(ModuleManager m) {
         combatExtra = new CombatExtra().register(m);
         targetSelector = new TargetSelector().register(m);

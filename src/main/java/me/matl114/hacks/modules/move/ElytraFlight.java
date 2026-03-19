@@ -2,8 +2,11 @@ package me.matl114.hacks.modules.move;
 
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
+import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
@@ -86,6 +89,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
     }
 
     @Override
@@ -226,5 +230,16 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         }
         controllingTick = false;
         return true;
+    }
+
+    public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
+        switch (presetEvent.context.getValue()) {
+            case HACKING, VANILLA, AC_COMMON, AC_VULCAN -> {
+                motionMode.set(ElytraExtra.MotionMode.VOID);
+            }
+            case AC_GRIM, AC_MATRIX -> {
+                motionMode.set(ElytraExtra.MotionMode.FIRE_WORKS);
+            }
+        }
     }
 }

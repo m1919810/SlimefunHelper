@@ -155,9 +155,28 @@ public class ChatExtra extends BaseModule {
         return sent;
     }
 
+    private static final String[] LOGIN_COMMAND_REGEX = {"chat-screen-tools", "login-command-pattern"};
+
     private static final String[] PASSWORD_ENCRYPT = {"chat-screen-tools", "password-encrypt"};
+    private static final String[] PASSWORD_ENCRYPT_LENGTH = {"chat-screen-tools", "password-encrypt-length"};
+    private static final String[] PASSWORD_ENCRYPT_SALT = {"chat-screen-tools", "password-encrypt-salt"};
+    private Pattern pattern;
+    private final StringRef regexLogin = builder(Configs.CHAT_CONFIG, LOGIN_COMMAND_REGEX, StringRef.TYPE)
+            .defaultValue("^(/login|/l|/reg|/register|/changepass|/changepassword) (.+)$")
+            .validator(Configs.REGEX_VALIDATOR)
+            .updateListener(s -> pattern = Pattern.compile(s))
+            .build();
+
     public final FlagRef encryptPass =
             flagBuilder(Configs.CHAT_CONFIG, PASSWORD_ENCRYPT).build();
+
+    public final IntRef encryptLength = builder(Configs.CHAT_CONFIG, PASSWORD_ENCRYPT_LENGTH, IntRef.TYPE)
+            .defaultValue(20)
+            .build();
+
+    public final StringRef encryptSalt = builder(Configs.CHAT_CONFIG, PASSWORD_ENCRYPT_SALT, StringRef.TYPE)
+            .defaultValue("")
+            .build();
 
     // add chat screen extra things
     public void onChatScreenInitialized(Event<Screen> screenEvent) {
@@ -207,14 +226,12 @@ public class ChatExtra extends BaseModule {
         return false;
     }
 
-    private static final Pattern regexLogin =
-            Pattern.compile("^(/login|/l|/reg|/register|/changepass|/changepassword) (.+)$");
     private TextFieldWidget sampleWidget;
 
     public boolean onChatObfRender(TextFieldWidget widget, DrawContext context, int x, int y, float partialTicks) {
         String text = widget.getText();
-        var matcher = regexLogin.matcher(text);
-        if (matcher.find()) {
+        var matcher = pattern.matcher(text);
+        if (matcher.find() && matcher.groupCount() > 0) {
             String result = matcher.group(1) + " <password-hidden>";
             if (sampleWidget == null) {
                 sampleWidget = new TextFieldWidget(mc.textRenderer, 0, 0, 0, 0, Text.empty());
@@ -239,7 +256,7 @@ public class ChatExtra extends BaseModule {
 
     public void onChatPasswordEncrypt(Event<String> commandChat) {
         if (mc.player != null && encryptPass.get() && !ScreenUtils.hasCtrlDown()) {
-            if (regexLogin.asMatchPredicate().test(commandChat.context())) {
+            if (Pattern.matches(regexLogin.get(), commandChat.context())) {
                 String command = commandChat.context();
                 String playerName = mc.player.getNameForScoreboard();
                 String[] splits = command.split(" ");
@@ -257,18 +274,19 @@ public class ChatExtra extends BaseModule {
     }
 
     private String encryptWithPlayerName(String str, String playerName) {
-        String concatStr = playerName + ":" + str;
+        String concatStr = playerName + ":" + encryptSalt.get() + str;
         byte[] bytes =
                 Hashing.sha256().hashString(concatStr, StandardCharsets.UTF_8).asBytes();
         BigInteger integer = new BigInteger(1, bytes);
         String hashResult = integer.toString(36);
         StringBuilder builder = new StringBuilder();
-        if (hashResult.length() > 20) {
-            builder.append(hashResult, 0, 20);
+        int length = encryptLength.get();
+        if (hashResult.length() > length) {
+            builder.append(hashResult, 0, length);
         } else {
             int size = hashResult.length();
             builder.append(hashResult);
-            while (size < 8) {
+            while (size < length / 2 - 2) {
                 size = 2 * size + 1;
                 builder.append("@").append(hashResult);
             }
