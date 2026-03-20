@@ -13,6 +13,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
+import me.matl114.utils.MathUtils;
 import me.matl114.utils.collections.FPoint;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
@@ -115,12 +116,9 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         MovTasks.MovInfo info = resync.context();
         Vec3d vec3d = info.vec3d();
         Vec2f vec2f = info.rotationOverride();
-        if (vec3d != null) {
+        // may be a tp
+        if (vec3d != null && camera.getPos().squaredDistanceTo(vec3d) > MathUtils.s2(100)) {
             camera.setPosition(vec3d);
-        }
-        if (vec2f != null) {
-            camera.setPitch(vec2f.x);
-            camera.setYaw(vec2f.y);
         }
     }
 
@@ -172,7 +170,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         Vec3d vec3d = EntityUtils.movementInputToVelocity(movement, (float) speed.get(), camera.getYaw());
         camera.setVelocity(vec3d);
         // reset player input,
-        PlayerInputUtils.EMPTY.applyInput(input);
+        PlayerInputUtils.EMPTY.withSneak(i0.sneak()).applyInput(input);
         // apply sneak
         player.setSneaking(i0.sneak());
     }

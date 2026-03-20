@@ -365,7 +365,7 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
                 if (searchTpPos.squaredDistanceTo(currentPlayerPos) > MathUtils.s2(maxDistance)) {
                     break;
                 }
-                if (!context.checkEnvironmentCollision(mc.player, searchTpPos)
+                if (!context.checkEnvironmentCollision(mc.player, searchTpPos, true)
                         && (result = isValidTpLocation(context, currentPlayerPos, searchTpPos, maxDistance)) != null) {
                     return result;
                 }

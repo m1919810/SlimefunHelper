@@ -17,6 +17,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
+import net.minecraft.util.Hand;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.profiler.Profiler;
@@ -129,18 +130,61 @@ public abstract class MinecraftClientEvents {
         }
     }
 
-    // deprecated ItemUseEvent
-    //    @Inject(method = "doItemUse", at = @At(value = "INVOKE", target =
+    //     //deprecated ItemUseEvent
+    //        @Inject(method = "doItemUse", at = @At(value = "INVOKE", target =
+    //
     // "Lnet/minecraft/client/network/ClientPlayerEntity;getStackInHand(Lnet/minecraft/util/Hand;)Lnet/minecraft/item/ItemStack;", shift = At.Shift.BEFORE), cancellable = true)
-    //    private void doItemUseEvent(CallbackInfo ci, @Local Hand hand){
-    //        if(!Listener.getTriggerRightClick().isEmpty()){
-    //            Event<Hand> useWithHandEvent = new Event<>(hand, true, false);
-    //            Listener.getTriggerRightClick().handleValue(useWithHandEvent);
-    //            if(useWithHandEvent.isCancelled()){
-    //                ci.cancel();
+    //        private void doItemUseEvent(CallbackInfo ci, @Local Hand hand){
+    //            if(!Listener.getTriggerRightClick().isEmpty()){
+    //                Event<Hand> useWithHandEvent = new Event<>(hand, true, false);
+    //                Listener.getTriggerRightClick().handleValue(useWithHandEvent);
+    //                if(useWithHandEvent.isCancelled()){
+    //                    ci.cancel();
+    //                }
     //            }
     //        }
-    //    }
+    @Inject(method = "doItemUse", at = @At("HEAD"))
+    private void onItemUseTargetStore(CallbackInfo ci) {
+
+        cacheHitResult = crosshairTarget;
+    }
+
+    @Inject(
+            method = "doItemUse",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayerEntity;getStackInHand(Lnet/minecraft/util/Hand;)Lnet/minecraft/item/ItemStack;"),
+            cancellable = true)
+    private void onItemUseEvent(CallbackInfo ci, @Local LocalRef<Hand> hand) {
+        crosshairTarget = cacheHitResult;
+        Hand currentHand = hand.get();
+        while (true) {
+            Event<HitResult> hitResultEvent = new Event<>(crosshairTarget, true, true, currentHand);
+            Listener.getItemUseAction().handleValue(hitResultEvent);
+            if (hitResultEvent.isCancelled() || hitResultEvent.context == null) {
+                int nextHand = currentHand.ordinal() + 1;
+                Hand[] hands = Hand.values();
+                if (nextHand < hands.length) {
+                    currentHand = hands[nextHand];
+                } else {
+                    ci.cancel();
+                    return;
+                }
+            } else {
+                crosshairTarget = hitResultEvent.context;
+                break;
+            }
+        }
+        hand.set(currentHand);
+    }
+
+    @Inject(method = "doItemUse", at = @At("RETURN"))
+    private void onItemUseTargetRestore(CallbackInfo ci) {
+        crosshairTarget = cacheHitResult;
+    }
+
     @Inject(
             method = "doItemUse",
             at =

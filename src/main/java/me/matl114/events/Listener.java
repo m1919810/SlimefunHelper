@@ -529,6 +529,12 @@ public class Listener {
     @Modifiable
     private static final EventChannel<HitResult> attackAction = new EventChannel<>();
 
+    @Getter
+    @Cancelable
+    @Modifiable
+    @ExtraArgs(value = {Hand.class})
+    private static final EventChannel<HitResult> itemUseAction = new EventChannel<>();
+
     // client behaviours with the computer
     @Getter // the window size change
     @Broadcast

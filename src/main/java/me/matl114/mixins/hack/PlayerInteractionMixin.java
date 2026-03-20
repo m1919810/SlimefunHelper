@@ -125,6 +125,24 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         return (Tasks.getTick() - failBreakStartTick) * speed;
     }
 
+    @Unique
+    @Override
+    public boolean setStartFailBreakPos(BlockPos pos) {
+        if (pos != null) {
+            if (currentFailBreakPos == null) {
+                currentFailBreakPos = pos;
+                currentBreakingPos = pos;
+                failBreakStartTick = lastStartMineBreakingProgressResetTick;
+                return true;
+            }
+        } else {
+            currentFailBreakPos = null;
+            return true;
+        }
+
+        return false;
+    }
+
     @Shadow
     private GameMode gameMode;
 
@@ -525,8 +543,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             MinecraftClient.getInstance().player.getWorld(),
                             currentBreakingPos);
                     if (speed > 0) {
-                        currentFailBreakPos = currentBreakingPos;
-                        failBreakStartTick = lastStartMineBreakingProgressResetTick;
+                        setStartFailBreakPos(currentBreakingPos);
                         onPostStopMiningFastBreak(currentBreakingPos, speed, currentBreakingProgress);
                         return true;
                     }

@@ -21,6 +21,8 @@ public interface PlayerInteractionAccess {
 
     public BlockPos getCurrentFailBreakPos();
 
+    public boolean setStartFailBreakPos(BlockPos pos);
+
     public float getFailBreakMiningProgress();
 
     public float getCurrentMiningProgress(boolean shouldPredict);

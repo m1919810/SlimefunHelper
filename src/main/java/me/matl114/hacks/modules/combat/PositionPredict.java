@@ -71,7 +71,7 @@ public class PositionPredict extends BaseModule {
                             case WEST -> vec3.withAxis(Direction.Axis.X, boundingBox.minX - 0.5);
                         };
 
-                if (!MovTasks.ENGIN.checkEnvironmentCollision(mc.player, testPos)) {
+                if (!MovTasks.ENGIN.checkEnvironmentCollision(mc.player, testPos, true)) {
                     return testPos;
                 }
             }
