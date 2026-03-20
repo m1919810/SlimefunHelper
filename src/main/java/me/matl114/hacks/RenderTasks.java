@@ -34,6 +34,7 @@ public class RenderTasks {
     public static boolean DEBUG_RENDER_COLLISION_RENDERING = false;
     public static boolean DEBUG_RENDER_BOWAIM = false;
     public static boolean DEBUG_RENDER_SPEAR = false;
+    public static boolean DEBUG_RENDER_INTERACTION = false;
 
     public static void debugBoxMov(Box box, Vec3d move) {
         if (DEBUG_RENDER_COLLISION_RENDERING && DEBUG_RENDER_COLLISION) {

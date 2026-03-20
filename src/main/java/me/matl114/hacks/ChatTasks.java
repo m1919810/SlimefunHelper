@@ -463,7 +463,8 @@ public class ChatTasks {
                     .helper("<task> <state> 调试渲染功能")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("task")
-                            .select(List.of("collision", "combat", "bow-aim", "standing", "spear", "debug-tick"))
+                            .select(List.of(
+                                    "collision", "combat", "bow-aim", "standing", "spear", "interaction", "debug-tick"))
                             .build())
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("state")
@@ -481,6 +482,7 @@ public class ChatTasks {
                 case "combat" -> RenderTasks.DEBUG_RENDER_COMBAT = re.nextBoolean();
                 case "bow-aim" -> RenderTasks.DEBUG_RENDER_BOWAIM = re.nextBoolean();
                 case "spear" -> RenderTasks.DEBUG_RENDER_SPEAR = re.nextBoolean();
+                case "interaction" -> RenderTasks.DEBUG_RENDER_INTERACTION = re.nextBoolean();
                 case "debug-tick" -> RenderTasks.DEBUG_TICK = re.nextClampedInt(0, Integer.MAX_VALUE);
                 default -> Debug.chat("没有调试项:", task);
             }

@@ -3,6 +3,7 @@ package me.matl114.utils.entity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.With;
 import lombok.experimental.Accessors;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.option.GameOptions;
@@ -34,6 +35,7 @@ public class PlayerInputUtils {
     @Accessors(fluent = true, chain = true)
     @Setter
     @Getter
+    @With
     public static class Input {
         boolean forward;
         boolean backward;

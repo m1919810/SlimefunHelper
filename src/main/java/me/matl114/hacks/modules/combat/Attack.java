@@ -666,7 +666,7 @@ public class Attack extends BaseModule {
         Vec3d current = player.getPos();
         // feat : teleporting position should met the need of antishield
         Vec3d targetPos = positionPredict.getExactAttackPosition(target);
-
+        // todo: add Environment check and fallback plans like positions around
         if (targetPos != null) {
             // common atttack?
             if (RenderTasks.DEBUG_RENDER_COMBAT)

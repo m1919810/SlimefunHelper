@@ -642,16 +642,35 @@ public class MovTasks {
     }
 
     @ApiMethod
-    private static boolean checkEnvironmentCollision(Entity entity, Vec3d pos, boolean ignoreChunkBorder) {
+    private static boolean checkEnvironmentCollision(
+            Entity entity, Vec3d pos, boolean checkLiquid, boolean ignoreChunkBorder) {
         // should also consider entity collision, shit shulker
         // set position for bounding box update!
         final List<Box> collisionsBB = new java.util.ArrayList<>();
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
         Box oldBox = entity.getBoundingBox();
+        Box newBox = entity.dimensions.getBoxAt(pos);
+        BiFunction<BlockState, BlockPos, Box> currentFromToPredicateFilter = checkLiquid
+                ? (blockstate, blockpos) -> {
+                    if (blockstate != null) {
+                        Block block = blockstate.getBlock();
+                        // I DO NOT WANT BY TP SEQUENCE ENTER ANY OF THESE FIRE BLOCKS BECAUSE IT MAY LIT ME UP!
+                        if (block == Blocks.LAVA || block == Blocks.SOUL_FIRE || block == Blocks.FIRE) {
+                            // filter lava blocks, we should be careful
+                            Box lavaBlockBox = Box.enclosing(blockpos, blockpos);
+                            if (CollisionUtil.voxelShapeIntersectHorizontal(lavaBlockBox, newBox)
+                                    || CollisionUtil.voxelShapeIntersectHorizontal(lavaBlockBox, oldBox)) {
+                                return lavaBlockBox;
+                            }
+                        }
+                    }
+                    return null;
+                }
+                : null;
         CollisionUtil.getCollisions(
                 entity.getEntityWorld(),
                 entity,
-                entity.dimensions.getBoxAt(pos),
+                newBox,
                 collisionsVoxel,
                 collisionsBB,
                 // may cancel unloaded chunks?
@@ -661,7 +680,7 @@ public class MovTasks {
                         : (COLLISION_FLAG_COLLIDE_WITH_UNLOADED_CHUNKS | CollisionUtil.COLLISION_FLAG_CHECK_BORDER),
                 null,
                 null,
-                null);
+                currentFromToPredicateFilter);
 
         for (int i = 0, len = collisionsBB.size(); i < len; ++i) {
             final Box box = collisionsBB.get(i);
@@ -728,7 +747,7 @@ public class MovTasks {
 
     private static List<Vec3d> generateTpSequenceInternal(
             Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment) {
-        boolean collideAtTarget = checkEnvironmentCollision(mc.player, target, true);
+        boolean collideAtTarget = checkEnvironmentCollision(mc.player, target, false, true);
         if (collideAtTarget) {
             if (command) {
                 Debug.chat("目标位置存在方块碰撞冲突, 无法执行tp");
@@ -1417,7 +1436,7 @@ public class MovTasks {
         if (validMovementAsServer(expectedBack, backTry)) {
             // distance available
             // check collision for safety
-            if (to.squaredMagnitude(testPos) < avRS && !engin.checkEnvironmentCollision(mc.player, testPos)) {
+            if (to.squaredMagnitude(testPos) < avRS && !engin.checkEnvironmentCollision(mc.player, testPos, false)) {
                 vec.add(testPos);
                 //  Debug.chat("add finish pos", RenderTasks.getDisplayedLocationDouble(testPos), "move",
                 // RenderTasks.getDisplayedLocationDouble(testMov));
@@ -1431,7 +1450,7 @@ public class MovTasks {
                 // fixme use expected Pos as target
                 // fixme no need to check expected pos because of movement mech
                 // check collision for safety
-                if (!engin.checkEnvironmentCollision(mc.player, nextPos)) {
+                if (!engin.checkEnvironmentCollision(mc.player, nextPos, false)) {
                     vec.add(nextPos);
                     return 1;
                 }
@@ -1446,8 +1465,8 @@ public class MovTasks {
     public static final CollisionContext ENGIN = new CollisionContext() {};
     public static final CollisionContext ENGIN_LOADED = new CollisionContext() {
         @Override
-        public boolean checkEnvironmentCollision(Entity entity, Vec3d vec) {
-            return MovTasks.checkEnvironmentCollision(entity, vec, false);
+        public boolean checkEnvironmentCollision(Entity entity, Vec3d vec, boolean checkLiquid) {
+            return MovTasks.checkEnvironmentCollision(entity, vec, checkLiquid, false);
         }
     };
 
@@ -1456,8 +1475,8 @@ public class MovTasks {
             return MovTasks.simulateMovement(entity, currentPos, currentTry, true);
         }
 
-        default boolean checkEnvironmentCollision(Entity entity, Vec3d vec) {
-            return MovTasks.checkEnvironmentCollision(entity, vec, true);
+        default boolean checkEnvironmentCollision(Entity entity, Vec3d vec, boolean checkLiquid) {
+            return MovTasks.checkEnvironmentCollision(entity, vec, checkLiquid, true);
         }
 
         default List<Vec3d> generateTpSequence(
@@ -1511,8 +1530,8 @@ public class MovTasks {
             return simu;
         }
 
-        public boolean checkEnvironmentCollision(Entity entity, Vec3d vec) {
-            return MovTasks.checkEnvironmentCollision(entity, vec, this.ignoreChunkBorder);
+        public boolean checkEnvironmentCollision(Entity entity, Vec3d vec, boolean checkLiquid) {
+            return MovTasks.checkEnvironmentCollision(entity, vec, checkLiquid, this.ignoreChunkBorder);
         }
 
         @Override
@@ -1524,7 +1543,7 @@ public class MovTasks {
 
     public static boolean validMoveTo(CollisionContext engin, Vec3d currentPos, Vec3d currentTry) {
         // fixme: currentPos may not be a suitable place for player to stay
-        if (engin.checkEnvironmentCollision(mc.player, currentPos)) {
+        if (engin.checkEnvironmentCollision(mc.player, currentPos, false)) {
             return false;
         }
         Vec3d testMov = engin.simulateMovement(mc.player, currentPos, currentTry);
@@ -1532,7 +1551,7 @@ public class MovTasks {
         if (validMovementAsServer(currentTry, testMov)) {
             Vec3d currentForward = currentPos.add(currentTry);
             // check collision for safety
-            if (!engin.checkEnvironmentCollision(mc.player, currentForward)) {
+            if (!engin.checkEnvironmentCollision(mc.player, currentForward, false)) {
                 return true;
             }
         }
@@ -1541,7 +1560,7 @@ public class MovTasks {
 
     public static boolean validMoveToAndBack(CollisionContext engin, Vec3d currentPos, Vec3d currentTry) {
         // fixme: currentPos may not be a suitable place for player to stay
-        if (engin.checkEnvironmentCollision(mc.player, currentPos)) {
+        if (engin.checkEnvironmentCollision(mc.player, currentPos, false)) {
             return false;
         }
         Vec3d testMov = engin.simulateMovement(mc.player, currentPos, currentTry);
@@ -1550,7 +1569,7 @@ public class MovTasks {
             // use expected position as server success position
             Vec3d currentForward = currentPos.add(currentTry);
             // check collision for safety
-            if (!engin.checkEnvironmentCollision(mc.player, currentForward)) {
+            if (!engin.checkEnvironmentCollision(mc.player, currentForward, false)) {
                 Vec3d backMov = Vec3d.ZERO.subtract(currentTry);
                 Vec3d testBackMov = engin.simulateMovement(mc.player, currentForward, backMov);
                 if (validMovementAsServer(backMov, testBackMov)) {
