@@ -78,10 +78,12 @@ public class RenderUtils {
         return getCameraLookVec(partialTicks).multiply(10);
     }
 
+    @ApiMethod
     public static RegionPos getCameraRegion() {
         return RegionPos.of(getCameraBlockPos());
     }
 
+    @ApiMethod
     public static void applyRegionalRenderOffset(MatrixStack matrixStack, RegionPos region) {
         Vec3d offset = region.toVec3d().subtract(getCameraPos());
         matrixStack.translate(offset.x, offset.y, offset.z);

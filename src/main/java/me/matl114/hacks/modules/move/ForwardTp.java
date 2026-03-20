@@ -136,7 +136,7 @@ public class ForwardTp extends BaseModule {
                 value = MovTasks.validMovementAsServer(totalMovement, sim);
             }
 
-            boolean pass = value && !engin.checkEnvironmentCollision(executor, curPose);
+            boolean pass = value && !engin.checkEnvironmentCollision(executor, curPose, true);
 
             if (pass) {
                 lastAvailablePos = curPose;
@@ -189,7 +189,7 @@ public class ForwardTp extends BaseModule {
             // stepHeight, onGround);
             value = MovTasks.validMovementAsServer(totalMovement, sim);
 
-            boolean pass = value && !engin.checkEnvironmentCollision(executor, curPose);
+            boolean pass = value && !engin.checkEnvironmentCollision(executor, curPose, true);
 
             if (pass) {
                 lastAvailablePos = curPose;

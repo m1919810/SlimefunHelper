@@ -4,10 +4,7 @@ import lombok.Getter;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.hacks.modules.interact.AutoAttack;
-import me.matl114.hacks.modules.interact.AutoInteract;
-import me.matl114.hacks.modules.interact.InteractExtra;
-import me.matl114.hacks.modules.interact.Scaffold;
+import me.matl114.hacks.modules.interact.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -44,10 +41,18 @@ public class InteractionTasks {
     @Getter
     public static Scaffold scaffold;
 
+    @Getter
+    public static TpInteract tpInteract;
+
+    @Getter
+    public static Airplace airplace;
+
     private static void initModules(ModuleManager m) {
         interactExtra = new InteractExtra().register(m);
 
         scaffold = new Scaffold().register(m);
+        tpInteract = new TpInteract().register(m);
+        airplace = new Airplace().register(m);
     }
 
     static {
