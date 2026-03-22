@@ -213,11 +213,17 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             if (!player.getAbilities().allowFlying) {
                 player.getAbilities().allowFlying = true;
             }
-            if (doAntiKick.get()) {
-                antiKick(player);
-            }
         } else {
             player.getAbilities().allowFlying = serverSideCanFly;
+        }
+
+        dispatchAntiKick(player);
+    }
+
+    public void dispatchAntiKick(ClientPlayerEntity player) {
+        boolean fakeGilde = MovTasks.getElytraExtra().shouldExcuteAntiKick();
+        if ((fakeGilde || (isActive() && doAntiKick.get()))) {
+            antiKick(player, fakeGilde);
         }
     }
 
@@ -279,8 +285,8 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     private double preservedLastMotion = 0.0D;
     private boolean waitingForServerResponse;
     // todo: rewrite
-    public void antiKick(ClientPlayerEntity player) {
-        if (MovTasks.seenAsFloating()) {
+    public void antiKick(ClientPlayerEntity player, boolean fakeGliding) {
+        if (MovTasks.seenAsFloating(fakeGliding)) {
             antiKickCount++;
         } else {
             antiKickCount = 0;
@@ -315,6 +321,41 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
 
         //        }
 
+    }
+
+    public Vec3d processAntiKickMotion(Vec3d controlMotion, boolean fakeGlide) {
+        if (MovTasks.seenAsFloating(fakeGlide)) {
+            antiKickCount++;
+        } else {
+            antiKickCount = 0;
+        }
+        if (antiKickCount > MovTasks.getCreativeFlight().antiKickPeriod.get()) {
+            antiKickCount = 0;
+            escapeMotionReset = false;
+            preservedLastMotion = controlMotion.y;
+            // randomly fall down twice
+            waitingForServerResponse = true; // Tasks.getTickRandom()%3 == 0;
+            antiKickOffset0 = antiKickOffset - 0.008;
+            return new Vec3d(controlMotion.x, -antiKickOffset, controlMotion.z);
+        }
+        if (!escapeMotionReset) {
+            if (waitingForServerResponse) {
+                antiKickOffset0 += antiKickOffset - 0.008;
+                // there is no fucking packet for response
+                waitingForServerResponse = false;
+                return new Vec3d(controlMotion.x, -antiKickOffset, controlMotion.z);
+                // continue fall down til server respond
+            } else {
+                antiKickOffset0 = 0D;
+                preservedLastMotion = 0.0D;
+                // set end
+                escapeMotionReset = true;
+                return new Vec3d(controlMotion.x, antiKickOffset0 + preservedLastMotion - 0.0, controlMotion.z);
+            }
+        }
+        return controlMotion;
+
+        //        }
     }
 
     public void onInterceptFlyInput(Event<PlayerInputC2SPacket> inputPacketEvent) {

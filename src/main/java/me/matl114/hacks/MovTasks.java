@@ -1483,6 +1483,7 @@ public class MovTasks {
                 Vec3d current, Vec3d target, boolean command, double farawayTp, boolean considerEnvironment) {
             return MovTasks.generateTpSequenceInternal(current, target, command, farawayTp, considerEnvironment);
         }
+        // todo: add raycast methods
     }
 
     public static class CollisionCache implements CollisionContext {
@@ -1638,13 +1639,13 @@ public class MovTasks {
         // Paper end - stop using streams, this is already a known fixed problem in Entity#move
     }
 
-    public static boolean seenAsFloating() {
+    public static boolean seenAsFloating(boolean fakeGilding) {
         // add serverPacket result, if toggle flight at server, stop seen as floating, no need to antiKick
         return !creativeFlight.serverSideCanFly
                 && mc.player.getVelocity().y >= -0.03125D
                 && mc.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR
                 && !mc.player.hasStatusEffect(StatusEffects.LEVITATION)
-                && !mc.player.isFallFlying()
+                && (fakeGilding || !mc.player.isFallFlying())
                 && !mc.player.isUsingRiptide()
                 && !mc.player.isSleeping()
                 && !mc.player.isRiding()
