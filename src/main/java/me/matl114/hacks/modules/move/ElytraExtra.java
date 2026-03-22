@@ -63,6 +63,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public static final String[] MOVE_ELYTRA_ARMOR_FLY_HOTKEY = {"elytra", "armor-fly", "enable-hotkey"};
     public static final String[] MOVE_ELYTRA_ARMOR_ARMOR_MODE = {"elytra", "armor-fly", "armor-mode"};
 
+    public static final String[] MOVE_ELYTRA_ARMOR_FLY_NO_KICK = {"elytra", "armor-fly", "antikick"};
+
     public static final String[] ELYTRA_FIREWORKS_TICKS = {
         "elytra", "custom-fireworks", "firework-delay-multiply-vanilla"
     };
@@ -110,6 +112,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final EnumRef<Configs.AutoInvMode> armorMode = builder(
                     Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_ARMOR_MODE, Configs.AutoInvMode.class)
             .defaultValue(Configs.AutoInvMode.LAZY)
+            .build();
+
+    public final FlagRef antiKick = builder(Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY_NO_KICK, Boolean.class)
+            .defaultValue(true)
             .build();
 
     public final StringRef customFireworks = builder(Configs.MOV_CONFIG, ELYTRA_CUSTOM_FIREWORKS, StringRef.TYPE)
@@ -562,6 +568,20 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     int lastFlushRocketTick = 0;
 
     public void onPlayerVelocity(Event<Vec3d> fireworkEvent) {}
+
+    public boolean shouldExcuteAntiKick() {
+        if (armorFly.get() && mc.player != null && mc.player.isFallFlying()) {
+            switch (armorMode.get()) {
+                case LAZY -> {
+                    return !VItem.getInstance().canGlide(mc.player.getEquippedStack(EquipmentSlot.CHEST));
+                }
+                case TICK -> {
+                    return false;
+                }
+            }
+        }
+        return false;
+    }
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {

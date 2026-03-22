@@ -88,7 +88,7 @@ public class BowEnhance extends BaseModule {
             .build();
 
     public FlagRef enhanceTp = flagBuilder(Configs.COMBAT_CONFIG, TP_EXACT).build();
-
+    // todo: use onGround Packets to reduce low version problems
     public FlagRef lowVersion = flagBuilder(Configs.COMBAT_CONFIG, LOW_VERSION).build();
 
     public FlagRef renderTarget =

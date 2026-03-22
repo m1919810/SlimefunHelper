@@ -1,23 +1,24 @@
 package me.matl114.hacks.modules.combat;
 
 import com.mojang.datafixers.util.Pair;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.doubles.DoubleList;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
+import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.*;
@@ -30,6 +31,7 @@ import net.minecraft.component.type.KineticWeaponComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
@@ -39,14 +41,15 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 
-public class Spear extends BaseModule implements LegalMovementManager.MovementModifier {
+public class SpearAttack extends BaseModule implements LegalMovementManager.MovementModifier {
     public static final String[] SPEAR_ATTACK_HOTKEY = new String[] {"spear-module", "spear-attack-hotkey"};
     public static final String[] SPEAR_DISTANCE = new String[] {"spear-module", "spear-motion-simulation"};
     public static final String[] SPEAR_MAX_TP = new String[] {"spear-module", "spear-max-tp"};
+    public static final String[] SPEAR_BACK_TP_DELAY_TICK = new String[] {"spear-module", "spear-server-tick-delay"};
     public static final String[] SPEAR_RENDER = new String[] {"spear-module", "render-target"};
     private static LegalMovementManager.DelegateMovementModifier INSTANCE;
 
-    public Spear() {
+    public SpearAttack() {
         if (INSTANCE == null) {
             INSTANCE = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_POS.addMovementModifierFactory(() -> INSTANCE);
@@ -75,10 +78,16 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
     public final FlagRef spearRender =
             flagBuilder(Configs.COMBAT_CONFIG, SPEAR_RENDER).build();
 
+    public final IntRef delay = builder(Configs.COMBAT_CONFIG, SPEAR_BACK_TP_DELAY_TICK, IntRef.TYPE)
+            .defaultValue(2)
+            .validator(Configs.INT_POSITIVE)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getRenderLayerTasks(), this::renderPlayerSpearTarget);
+        registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEnd);
     }
     //
     public boolean onSpearAction() {
@@ -144,7 +153,8 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
 
         var re = findValidTpPosition(
                 playerPos, tpDirection, horizontalLine, spearMaxTp.get(), spearDistance.get(), distance);
-        if (re != null) {
+        // ensure the back tp is a direct tp
+        if (re != null && re.getSecond().size() == 2) {
             var to = re.getFirst();
             var from = re.getSecond();
             List<MovTasks.MovInfo> toList = new ArrayList<>();
@@ -162,46 +172,25 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
                         RenderTasks.DEBUG_TICK, new RenderTasks.LineToTargetObject(targetTpPos, Color.MAGENTA)));
             }
             toList.add(new MovTasks.MovInfo(targetTpPos, false, false, py));
+            Vec3d backpos = re.getSecond().get(1);
+            toList.add(new MovTasks.MovInfo(backpos, false, false, py));
             // DO NOT CONSIDER NOFALL, it may send extra packets
             MovTasks.scheduleMoveSequence(MovTasks.createPlayerMovContext(), toList, false, true);
             // DO NOT SEND PACKET HERE
             ClientPlayerAccess.of(mc.player).setForceNoFall(false);
-            List<MovTasks.MovInfo> fromList = new ArrayList<>();
-            for (var i = 0; i < from.size() - 1; i++) {
-                fromList.add(new MovTasks.MovInfo(from.get(i), false, false, null));
-            }
-            fromList.add(new MovTasks.MovInfo(from.get(from.size() - 1), false, true, py));
-            // Debug.chat("move");
-            Debug.chat(Text.literal("[Spear] simulate range %.2f"
+
+            Debug.chat(Text.literal("[Spear] simulate delay %.2f"
                             .formatted(playerPos.subtract(targetTpPos).dotProduct(direction)))
                     .formatted(Formatting.GREEN));
             // Debug.info("target", targetTpPos);
-            currentWaitBackTick = 4;
+            currentWaitBackTick = delay.get() + 1;
             mc.player.setPitch(playerPy.x);
             mc.player.setYaw(playerPy.y);
-            MovTasks.setupAutoResync(targetTpPos);
-            Tasks.scheduleDelayed(
-                    () -> {
-                        if (mc.player == null) return;
-                        currentWaitBackTick = 1;
-                        Vec3d currentPlayerPos = mc.player.getPos();
-                        Vec2f currentPlayerPy = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
-                        mc.player.setPosition(targetTpPos);
-                        // Debug.chat("move back");
-                        MovTasks.scheduleMoveSequence(MovTasks.createMovContext(targetTpPos), fromList, false, true);
-                        currentPlayerPos = playerPos.subtract(currentPlayerPos).lengthSquared() < 100.0D
-                                ? currentPlayerPos
-                                : playerPos;
-                        mc.player.setPosition(currentPlayerPos);
-                        MovTasks.setupAutoResync();
-                        mc.player.setPitch(currentPlayerPy.x);
-                        mc.player.setYaw(currentPlayerPy.y);
-                        ClientPlayerAccess.of(mc.player).setForceNoFall(true);
-                    },
-                    2);
+            MovTasks.setupAutoResync();
             return true;
+            // todo: check if we can do 1tick move
         } else {
-            Debug.chat("[Spear] Can not reach target");
+            Debug.chat("[Spear] Too far to reach target");
             currentWaitBackTick = 0;
             return true;
         }
@@ -209,11 +198,17 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
 
     public Pair<List<Vec3d>, List<Vec3d>> isValidTpLocation(
             MovTasks.CollisionContext context, Vec3d playerLocation, Vec3d tpLocation, double maxDistance) {
+        Vec3d currentSimulateMovement = playerLocation.subtract(tpLocation);
+        List<Vec3d> back;
+        if (MovTasks.validMoveTo(context, tpLocation, currentSimulateMovement)) {
+            back = List.of(tpLocation, playerLocation);
+        } else return null;
         var listTo = context.generateTpSequence(playerLocation, tpLocation, false, 320, true);
         if (listTo.isEmpty()) return null;
-        var listBack = context.generateTpSequence(tpLocation, playerLocation, false, 320, true);
-        if (listBack.isEmpty()) return null;
-        return Pair.of(listTo, listBack);
+        // back movement should be one
+
+        //        var listBack = context.generateTpSequence(tpLocation, playerLocation, false, 320, true);
+        return Pair.of(listTo, back);
     }
 
     public void onSpearAttackRender(Event<MatrixStack> event) {
@@ -233,7 +228,9 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
             }
         }
     }
-
+    // > 1 : no TickEnd, no move
+    // == 1 : make noFall for next tick, can TickEnd, can not start next Spear
+    // == 0 can move, can Start next Spear
     int currentWaitBackTick = 0;
 
     private void renderPlayerSpearTarget(Event<MatrixStack> event) {
@@ -282,7 +279,6 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
                 .stretch(endPoint.subtract(startPoint))
                 .expand(1.0);
         stack.push();
-        Vec3d eyeToCamera = startEye.subtract(RenderUtils.getCameraPos());
         RenderUtils.drawOutlinedBox(stack, box.getMinPos(), box.getMaxPos(), Color.MAGENTA);
         RenderUtils.drawLineVirtual(stack, startPoint, endPoint, Color.MAGENTA);
         float max = Math.max(0, hitboxMargin);
@@ -339,11 +335,12 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
         return true;
     }
 
-    IntList searchOrder = new IntArrayList();
+    DoubleList searchOrder = new DoubleArrayList();
 
     {
         searchOrder.add(0);
-        for (var i = 1; i < 30; ++i) {
+
+        for (var i = 1; i < 10; ++i) {
             searchOrder.add(i);
             searchOrder.add(-i);
         }
@@ -357,7 +354,13 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
             double distance,
             double minDistance) {
         MovTasks.CollisionContext context = MovTasks.ENGIN;
+        //            new MovTasks.CollisionCache(
+        //            mc.player,
+        //            currentPlayerPos.add(- maxDistance , -maxDistance, -maxDistance),
+        //            currentPlayerPos.add(maxDistance, maxDistance, maxDistance),
+        //            true);
         Pair<List<Vec3d>, List<Vec3d>> result = null;
+
         for (double search = distance; search > minDistance; search -= 2.0D) {
             for (var i : searchOrder) {
                 Vec3d searchTpPos =
@@ -391,9 +394,16 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (currentWaitBackTick > 0) {
             currentWaitBackTick -= 1;
-            movementManagerEvent.cancel();
-            // movementManagerEvent.context.playerStatus.restorePos();
-            movementManagerEvent.context.playerStatus.entity.setOnGround(false);
+            if (currentWaitBackTick > 0) {
+                movementManagerEvent.cancel();
+                // movementManagerEvent.context.playerStatus.restorePos();
+                movementManagerEvent.context.playerStatus.entity.setOnGround(false);
+            }
+
+            if (currentWaitBackTick == 1) {
+                // Debug.chat("Delay finish");
+                ClientPlayerAccess.of(mc.player).setForceNoFall(true);
+            }
         }
     }
 
@@ -404,6 +414,15 @@ public class Spear extends BaseModule implements LegalMovementManager.MovementMo
             movementManagerEvent.cancel();
             // movementManagerEvent.context.playerStatus.restorePos();
             movementManagerEvent.context.playerStatus.entity.setOnGround(false);
+            if (currentWaitBackTick == 0) {
+                ClientPlayerAccess.of(mc.player).setForceNoFall(true);
+            }
+        }
+    }
+
+    public void onClientTickEnd(Event<ClientTickEndC2SPacket> tickEndPacket) {
+        if (currentWaitBackTick > 1) {
+            tickEndPacket.cancel();
         }
     }
 

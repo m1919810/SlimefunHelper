@@ -109,8 +109,8 @@ public interface ListEntryWidgetController {
             public boolean insert(int index) {
                 if (index >= 0 && index < size()) {
                     W newValue = newData.get();
-                    originData.add(index, newValue);
-                    cachedWidget.add(index, widgetFactory.apply(newValue));
+                    originData.add(index + 1, newValue);
+                    cachedWidget.add(index + 1, widgetFactory.apply(newValue));
                 } else {
                     W newValue = newData.get();
                     originData.add(newValue);
