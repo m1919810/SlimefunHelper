@@ -135,12 +135,13 @@ public class ServerScanner extends BaseModule {
         subScreenWidget.addDrawableChild(textField);
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(180, 10, 20, 20)
                 .setElementHandler(new ButtonElement(
-                        TextProvider.of(Text.literal("+").formatted(Formatting.BOLD)), ButtonAction.run(() -> {
-                            if (!currentInputAdd.isEmpty()) {
-                                refreshSingle(currentInputAdd);
-                                logInfo("已添加 " + currentInputAdd);
-                            }
-                        }))));
+                                TextProvider.of(Text.literal("+").formatted(Formatting.BOLD)), ButtonAction.run(() -> {
+                                    if (!currentInputAdd.isEmpty()) {
+                                        refreshSingle(currentInputAdd);
+                                        logInfo("已添加 " + currentInputAdd);
+                                    }
+                                }))
+                        .withTooltips(TooltipHandler.of(List.of(Text.literal("Add Server"))))));
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(200, 10, 100, 20)
                 .setElementHandler(new ButtonElement(
                         TextProvider.of(Text.literal("Refresh All")), ButtonAction.run(this::refreshServerList))));
@@ -186,12 +187,13 @@ public class ServerScanner extends BaseModule {
         subScreenWidget.addDrawableChild(textField2);
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(180, 30, 20, 20)
                 .setElementHandler(new ButtonElement(
-                        TextProvider.of(Text.literal("-").formatted(Formatting.BOLD)), ButtonAction.run(() -> {
-                            if (!currentInputRemove.isEmpty()) {
-                                removeAll(currentInputRemove);
-                                logInfo("已移除 " + currentInputRemove);
-                            }
-                        }))));
+                                TextProvider.of(Text.literal("-").formatted(Formatting.BOLD)), ButtonAction.run(() -> {
+                                    if (!currentInputRemove.isEmpty()) {
+                                        removeAll(currentInputRemove);
+                                        logInfo("已移除 " + currentInputRemove);
+                                    }
+                                }))
+                        .withTooltips(TooltipHandler.of(List.of(Text.literal("Remove Server"))))));
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(200, 30, 100, 20)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("Refresh Shown")), ButtonAction.run(() -> {
@@ -608,8 +610,14 @@ public class ServerScanner extends BaseModule {
                             }
                         }))));
 
-        subScreenWidget.addDrawableChild(DisplayWidget.instance(45, 0, 100, 9)
-                .setRenderHandler(RawTextElement.instance(Text.literal(ip)).setAlignment(-1)));
+        subScreenWidget.addDrawableChild(ExecutableWidget.instance(45, 0, 100, 9)
+                .setElementHandler(RawTextElement.instance(Text.literal(ip))
+                        .setAlignment(-1)
+                        .withInputHandler(new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.run(() -> {
+                            mc.keyboard.setClipboard(ip);
+                            logInfo("成功拷贝ip");
+                        })))
+                        .withTooltips(TooltipHandler.of(List.of(Text.literal("Click to copy ip"))))));
         ServerInfo info = cachedPingResult.get(ip);
 
         if (info != null) {

@@ -2210,4 +2210,16 @@ public final class CollisionUtil {
     public static boolean collisionDebugRender() {
         return RenderTasks.DEBUG_RENDER_COLLISION && RenderTasks.DEBUG_RENDER_COLLISION_RENDERING;
     }
+
+    public static List<Box> getIntersectBox(Box box, List<Box> boxList) {
+        List<Box> arrayList = new ArrayList<>();
+        for (var b : boxList) {
+            if (voxelShapeIntersect(box, b)) {
+                arrayList.add(b);
+            }
+        }
+        return arrayList;
+    }
+
+    // todo line and given box collide method
 }
