@@ -1,7 +1,9 @@
 package me.matl114.hacks.modules;
 
 import me.matl114.hacks.api.ModuleGroup;
+import me.matl114.utils.ApiMethod;
 
+@ApiMethod
 public class HackModules {
 
     public static final ModuleMain main = new ModuleMain();

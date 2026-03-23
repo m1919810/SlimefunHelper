@@ -188,7 +188,8 @@ public class CombatTasks {
     // 道具锁人 使用弓箭相同的配置
 
     // todo: 自动搭路
-
+    @ApiMethod
+    @Getter
     public static final ModuleGroup moduleManager = new ModuleGroup("Combat");
 
     @Getter
