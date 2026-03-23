@@ -58,15 +58,20 @@ dependencies {
 	//mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	mappings files("mapping/yarn-1.21.11+build-special-v5.local-v2.jar")
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	// bridge
 	compileOnly sourceSets.stubs.output
-	api 'com.github.houbb:pinyin:0.4.0'
-	api 'io.netty:netty-handler-proxy:4.1.97.Final'
-	api 'org.yaml:snakeyaml:1.30'
-	compileOnly 'org.projectlombok:lombok:1.18.30'   // 最新的 Lombok 版本
+
+	// api
+	api 'com.github.houbb:pinyin:0.4.0'  // 拼音
+	api 'io.netty:netty-handler-proxy:4.1.97.Final' // proxy
+	api 'org.yaml:snakeyaml:1.30' // yml
+
+	// annotations
+	compileOnly 'org.projectlombok:lombok:1.18.30'
 	compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-	annotationProcessor 'org.projectlombok:lombok:1.18.30'  // 注解处理器
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
 
 }

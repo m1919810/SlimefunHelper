@@ -5,6 +5,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.interact.*;
+import me.matl114.utils.ApiMethod;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -26,6 +27,7 @@ public class InteractionTasks {
         }
     }
 
+    @ApiMethod
     @Getter
     public static final ModuleGroup moduleManager = new ModuleGroup("Interaction");
 

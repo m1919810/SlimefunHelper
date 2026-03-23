@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import me.matl114.hacks.*;
+import me.matl114.hacks.modules.HackModules;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import org.objectweb.asm.*;
@@ -161,7 +162,9 @@ public class SlimefunHelperApi {
                     ScreenHelper.class,
                     MovTasks.class,
                     Tasks.class,
+                    HackModules.class,
                     CombatTasks.class,
+                    InteractionTasks.class,
                     MineTasks.class,
                     InvTasks.class,
                     JsHelper.class,

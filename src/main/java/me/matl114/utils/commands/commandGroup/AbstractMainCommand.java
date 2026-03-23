@@ -42,16 +42,22 @@ public class AbstractMainCommand implements SubCommand, InterruptionHandler {
     /** Internal reference to the root command */
     private final ListSubCommand root = new ListSubCommand("");
 
+    {
+        // this should be the first help command to be dispatched
+        this.root.registerSub(new BridgeSubCommand(
+                "help",
+                SubCommand.taskBuilder()
+                        .name("help")
+                        .post(s -> s.executor(((var1, streamArgs, argsReader) -> {
+                            showHelpCommand(var1, new ArgumentReader(getName(), argsReader.getRemainingArgs()));
+                            return true;
+                        })))
+                        .build()));
+    }
+
     public SubCommand.Builder<TreeSubCommand> mainBuilder() {
         return SubCommand.factoryBuilder((a, b, c) -> {
             var root = new TreeSubCommand(a, c);
-            root.subBuilder(SubCommand.taskBuilder())
-                    .name("help")
-                    .post(s -> s.executor(((var1, streamArgs, argsReader) -> {
-                        showHelpCommand(var1, new ArgumentReader(getName(), argsReader.getRemainingArgs()));
-                        return true;
-                    })))
-                    .complete();
             this.root.registerSub(root);
             return root;
         });
