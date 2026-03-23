@@ -42,6 +42,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 
 public class SpearAttack extends BaseModule implements LegalMovementManager.MovementModifier {
+    public static final String[] SPEAR_ATTACK_ENABLE = new String[] {"spear-module", "spear-attack-enable"};
     public static final String[] SPEAR_ATTACK_HOTKEY = new String[] {"spear-module", "spear-attack-hotkey"};
     public static final String[] SPEAR_DISTANCE = new String[] {"spear-module", "spear-motion-simulation"};
     public static final String[] SPEAR_MAX_TP = new String[] {"spear-module", "spear-max-tp"};
@@ -55,12 +56,17 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             MovTasks.PLAYER_PIPELINE_POS.addMovementModifierFactory(() -> INSTANCE);
         }
         INSTANCE.setDelegate(this::cast);
+        bindFlag(enable);
     }
 
     @Override
     public int priority() {
         return -1000;
     }
+
+    public final FlagRef enable = builder(Configs.COMBAT_CONFIG, SPEAR_ATTACK_ENABLE, Boolean.class)
+            .defaultValue(true)
+            .build();
 
     public final KeyBindRef keyBind = hotkey(Configs.COMBAT_CONFIG, SPEAR_ATTACK_HOTKEY)
             .defaultValue(new MultiKeyBind(KeyCode.MOUSE_BUTTON_1))
@@ -91,7 +97,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     }
     //
     public boolean onSpearAction() {
-        if (canSpearAttack()) {
+        if (enable.get() && canSpearAttack()) {
             if (currentWaitBackTick > 0) {
                 return true;
             }
@@ -234,6 +240,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     int currentWaitBackTick = 0;
 
     private void renderPlayerSpearTarget(Event<MatrixStack> event) {
+        if (!enable.get()) return;
         if (RenderTasks.DEBUG_RENDER_SPEAR) {
             onSpearAttackRender(event);
         }
@@ -247,7 +254,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
                     Entity spearEntity = CombatTasks.getTargetSelector()
                             .searchAttackEntity(
                                     spearDistance.get() + attackRange.getEffectiveMaxRange(mc.player),
-                                    true,
+                                    false,
                                     this::isSpearable);
                     if (spearEntity != null) {
                         float dist = spearEntity.distanceTo(mc.player);
@@ -401,23 +408,20 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             }
 
             if (currentWaitBackTick == 1) {
-                // Debug.chat("Delay finish");
+                if (RenderTasks.DEBUG_RENDER_SPEAR) {
+                    Debug.chat("Delay finish");
+                }
                 ClientPlayerAccess.of(mc.player).setForceNoFall(true);
+                // trigger pitch yaw resync and pos resync
+                ClientPlayerAccess.of(mc.player).resyncPos();
+                ClientPlayerAccess.of(mc.player).resyncRot();
             }
         }
     }
 
     @Override
     public void applyBeforeInputPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        if (currentWaitBackTick > 0) {
-            currentWaitBackTick -= 1;
-            movementManagerEvent.cancel();
-            // movementManagerEvent.context.playerStatus.restorePos();
-            movementManagerEvent.context.playerStatus.entity.setOnGround(false);
-            if (currentWaitBackTick == 0) {
-                ClientPlayerAccess.of(mc.player).setForceNoFall(true);
-            }
-        }
+        this.applyBeforeMovementPacketModify(movementManagerEvent);
     }
 
     public void onClientTickEnd(Event<ClientTickEndC2SPacket> tickEndPacket) {
