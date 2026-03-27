@@ -1,6 +1,9 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.CombatTasks;
@@ -15,6 +18,7 @@ import net.minecraft.client.gui.screen.ingame.*;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.Window;
 import net.minecraft.util.hit.HitResult;
@@ -129,25 +133,52 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         }
     }
 
+    boolean lastUse = false;
+
+    @WrapOperation(
+            method = "handleInputEvents",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/KeyBinding;isPressed()Z", ordinal = 2))
+    public boolean onHoldUse(KeyBinding instance, Operation<Boolean> original) {
+        boolean pressed = original.call(instance);
+        if (InteractionTasks.getInteractExtra().holdUse.get()) {
+            // hold use logic
+            boolean lastUseFlag = lastUse;
+            lastUse = pressed;
+            if (player.isUsingItem()) {
+                if (lastUseFlag == pressed) {
+                    return true;
+                }
+                // if toggle off in the first few ticks , it is seen as original
+                if (player.getItemUseTime()
+                        < InteractionTasks.getInteractExtra().holdUseStartTick.get()) {
+                    return pressed;
+                }
+
+                return lastUseFlag;
+            }
+        }
+        return pressed;
+    }
+
     // for attack when using shield
-    @Redirect(
+    @WrapOperation(
             method = "handleInputEvents",
             at =
                     @At(
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",
                             ordinal = 0))
-    public boolean onAllowingPlayerAttackWhenUseItem(ClientPlayerEntity player) {
-        boolean flag = player.isUsingItem();
+    public boolean onAllowingPlayerAttackWhenUseItem(ClientPlayerEntity instance, Operation<Boolean> original) {
+        boolean flag = original.call(instance);
         if (flag && CombatTasks.getCombatExtra().shieldAttack.get()) {
             // do attack logic
             boolean bl3 = false;
             // still do attack first
-            while (instance.options.attackKey.wasPressed()) {
+            while (options.attackKey.wasPressed()) {
                 bl3 |= this.doAttack();
             }
             // escape pickItemKey
-            while (instance.options.pickItemKey.wasPressed()) {
+            while (options.pickItemKey.wasPressed()) {
                 this.doItemPick();
             }
         }

@@ -1,10 +1,8 @@
 package me.matl114.utils;
 
+import com.google.common.base.Preconditions;
 import com.mojang.datafixers.util.Pair;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 import me.matl114.utils.world.AlignedFace;
 import net.minecraft.block.Block;
@@ -18,6 +16,7 @@ import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
 
 @ApiMethod
 public class RaycastUtils {
@@ -239,6 +238,103 @@ public class RaycastUtils {
             return BlockHitResult.createMissed(vec3d2, direction, BlockPos.ofFloored(vec3d2));
         } else {
             return hitResult;
+        }
+    }
+
+    public static Iterator<BlockPos> createRaycastBlockPosIterator(World world, Vec3d start, Vec3d end) {
+
+        // 起点与终点重合时，只返回起点所在方块
+        if (start.equals(end)) {
+            List<BlockPos> blocks = new ArrayList<>();
+            blocks.add(BlockPos.ofFloored(start));
+            return blocks.iterator();
+        }
+
+        double d = end.x; //  MathHelper.lerp(-1.0E-7, end.x, start.x);
+        double e = end.y; //  MathHelper.lerp(-1.0E-7, end.y, start.y);
+        double f = end.z; //  MathHelper.lerp(-1.0E-7, end.z, start.z);
+        // t= -1e-7 to contain the position behind
+        // remove behind
+        double g = start.x; // MathHelper.lerp(-1.0E-7, start.x, end.x);
+        double h = start.y; // MathHelper.lerp(-1.0E-7, start.y, end.y);
+        double i = start.z; // MathHelper.lerp(-1.0E-7, start.z, end.z);
+
+        // check pos = start + t * (end - start)
+
+        // origin
+        BlockPos pos = BlockPos.ofFloored(g, h, i);
+
+        // direction
+        double m = d - g;
+        double n = e - h;
+        double o = f - i;
+        int p = MathHelper.sign(m);
+        int q = MathHelper.sign(n);
+        int r = MathHelper.sign(o);
+
+        // t + 这么多， 则在该轴上前进1单位
+        // 1/d * d = 1;
+        double s = p == 0 ? Double.MAX_VALUE : (double) p / m;
+        double t = q == 0 ? Double.MAX_VALUE : (double) q / n;
+        double u = r == 0 ? Double.MAX_VALUE : (double) r / o;
+
+        return new Iterator<BlockPos>() {
+            int j = pos.getX();
+            int k = pos.getY();
+            int l = pos.getZ();
+
+            // 到达下一个整数边界所需要的值, 我们需要比较三者较小的,同时在更新的时候同步更新这些, 当三者均达到1的时候说明不再有方块
+            double v = s * (p > 0 ? 1.0 - MathHelper.fractionalPart(g) : MathHelper.fractionalPart(g));
+            double w = t * (q > 0 ? 1.0 - MathHelper.fractionalPart(h) : MathHelper.fractionalPart(h));
+            double x = u * (r > 0 ? 1.0 - MathHelper.fractionalPart(i) : MathHelper.fractionalPart(i));
+
+            BlockPos next = pos;
+
+            @Override
+            public boolean hasNext() {
+                if (next != null) {
+                    return true;
+                } else {
+                    if (v <= 1.0 || w <= 1.0 || x <= 1.0) {
+                        if (v < w) {
+                            if (v < x) {
+                                j += p;
+                                v += s;
+                            } else {
+                                l += r;
+                                x += u;
+                            }
+                        } else if (w < x) {
+                            k += q;
+                            w += t;
+                        } else {
+                            l += r;
+                            x += u;
+                        }
+                        next = (new BlockPos(j, k, l));
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public BlockPos next() {
+                BlockPos nextPos = next;
+                Preconditions.checkNotNull(nextPos);
+                next = null;
+                return nextPos;
+            }
+        };
+    }
+
+    public static double getFirstIntersection(double start, double dir, double step) {
+        if (dir > 0) {
+            return (Math.floor(start) + 1 - start) * step;
+        } else if (dir < 0) {
+            return (start - Math.floor(start)) * step;
+        } else {
+            return Double.POSITIVE_INFINITY;
         }
     }
 }

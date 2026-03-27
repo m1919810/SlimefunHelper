@@ -34,6 +34,7 @@ public class TargetSelector extends BaseModule {
     public static final String[] ATTACK_HOSTILE = {"attack", "att-hostile"};
     public static final String[] COMBAT_OPPOSITE_ATTACK_MULTIPLY = {"attack", "opposite-attack-multiply"};
     public static final String[] COMBAT_PLAYER_ATTACK_MULTIPLY = {"attack", "player-attack-multiply"};
+    public static final String[] FAKE_PLAYER_DETECT = {"attack", "fake-player-and-npc-detect"};
 
     public TargetSelector() {}
 
@@ -69,15 +70,16 @@ public class TargetSelector extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public final DoubleRef multiplyBackward = builder(
-                    Configs.COMBAT_CONFIG, COMBAT_OPPOSITE_ATTACK_MULTIPLY, DoubleRef.TYPE)
-            .defaultValue(114514.0D)
-            .build();
+    public final FlagRef multiplyBackward =
+            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_OPPOSITE_ATTACK_MULTIPLY).build();
 
     public final DoubleRef multiplyPlayer = builder(
                     Configs.COMBAT_CONFIG, COMBAT_PLAYER_ATTACK_MULTIPLY, DoubleRef.TYPE)
             .defaultValue(0.0D)
             .build();
+
+    public final FlagRef fakePlayerDetect =
+            flagBuilder(Configs.COMBAT_CONFIG, FAKE_PLAYER_DETECT).build();
 
     {
         if (Configs.COMBAT_CONFIG.get("att-bot", "whitelist") instanceof StringRef stringRef
@@ -267,14 +269,8 @@ public class TargetSelector extends BaseModule {
         // fixed: if player is targeting a faraway entity, then it should be privileged
         // fixed: should not target entity at back of me, because some anticheat place fake players to test killarua;
         // use weighted value
-        Vec3d vec3d = mc.player.getEyePos();
-        Vec3d eye = mc.player.getRotationVector().normalize();
         targets.sort(Comparator.comparingDouble(e -> {
-            var pos = e.getPos().subtract(vec3d).normalize(); // .dotProduct(eye))
-            return (-withMultiply(
-                    e,
-                    (pos.x * eye.x + pos.z * eye.z)
-                            / (e.getPos().subtract(vec3d).horizontalLength() + 1E-10)));
+            return getEntityWeight(e, mc.player);
         }));
         if (!targets.isEmpty()) {
             return targets.get(0);
@@ -320,11 +316,32 @@ public class TargetSelector extends BaseModule {
         return targets.get(0);
     }
 
-    private double withMultiply(Entity e, double v) {
-        return Math.abs(v)
-                - ((v < 0.0) ? multiplyBackward.get() : 0.0D)
-                + (e instanceof PlayerEntity ? multiplyPlayer.get() : 0.0D);
+    private double getEntityWeight(Entity e, PlayerEntity player) {
+        Vec3d vec3d = player.getEyePos();
+        Vec3d eye = player.getRotationVector().normalize();
+        var pos = e.getPos().subtract(vec3d).normalize(); // .dotProduct(eye))
+        double horizontalMultiply = (pos.x * eye.x + pos.z * eye.z);
+        if (multiplyBackward.get()) {
+            if (horizontalMultiply >= 0) {
+                return -((horizontalMultiply / ((e.getPos().subtract(vec3d).horizontalLength() + 1E-10)))
+                        + (e instanceof PlayerEntity ? multiplyPlayer.get() : 0.0D));
+            } else {
+                // rotate
+                double horizontalNormalize = horizontalMultiply / (pos.length() * eye.length() + 1E-10);
+                return -(horizontalNormalize + (e instanceof PlayerEntity ? multiplyPlayer.get() : 0.0D));
+            }
+        } else {
+            return -(Math.abs(
+                            (horizontalMultiply) / ((e.getPos().subtract(vec3d).horizontalLength() + 1E-10)))
+                    + (e instanceof PlayerEntity ? multiplyPlayer.get() : 0.0D));
+        }
     }
+
+    //    private double withMultiply(Entity e, double v) {
+    //        return Math.abs(v)
+    //                - ((v < 0.0) ? multiplyBackward.get() : 0.0D)
+    //                + (e instanceof PlayerEntity ? multiplyPlayer.get() : 0.0D);
+    //    }
 
     private static boolean canPlayerDirectlySee(Entity entity) {
         // 横向距离小于300

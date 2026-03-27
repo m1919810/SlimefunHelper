@@ -55,4 +55,10 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
         }
         return metaData;
     }
+
+    @Unique
+    @Override
+    public boolean isMetaEmpty() {
+        return metaData == null;
+    }
 }

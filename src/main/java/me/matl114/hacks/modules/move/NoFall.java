@@ -348,10 +348,14 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if (module.isActive()) {
                 var entity = movementManagerEvent.context.playerStatus;
                 // check Y after fall
-                if (afterSetbackFlag || (entity.entity.getY() <= module.lastOnGroundHeight - module.safeDistance)) {
+                boolean yOutOfRange = (entity.entity.getY() <= module.lastOnGroundHeight - module.safeDistance);
+                if (afterSetbackFlag || yOutOfRange) {
                     if (!runningThisTick) {
+                        if (!yOutOfRange) {
+                            // reset if it is caused by last onGround
+                            afterSetbackFlag = false;
+                        }
                         // apply only once
-
                         if (!entity.onGround && entity.entity.isOnGround()) {
                             afterSetbackFlag = false;
                             runningThisTick = true;
