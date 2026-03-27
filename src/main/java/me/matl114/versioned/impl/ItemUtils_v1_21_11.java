@@ -19,6 +19,7 @@ import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextCodecs;
 import net.minecraft.util.JsonHelper;
@@ -31,7 +32,23 @@ public class ItemUtils_v1_21_11 implements VItem {
 
     @Override
     public boolean isSpear(ItemStack stack) {
-        return stack.contains(DataComponentTypes.KINETIC_WEAPON);
+        if (stack.contains(DataComponentTypes.KINETIC_WEAPON)) {
+            return true;
+        } else {
+            // 1.21.11 Netherite Spear
+            Item item = stack.getItem();
+            if (item.getRegistryEntry().isIn(ItemTags.SWORDS)) {
+                Text name = stack.getCustomName();
+                if (name != null) {
+                    String str = name.getString();
+                    if (str.contains("1.21.11") && str.contains("Spear")) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
     }
 
     @Override
@@ -51,7 +68,8 @@ public class ItemUtils_v1_21_11 implements VItem {
                 var weapon = stack.get(DataComponentTypes.WEAPON);
                 if (weapon.itemDamagePerAttack() > 1) {
                     // only axe
-                    return !stack.getItem().toString().contains("_axe");
+                    return !stack.getItem().getRegistryEntry().isIn(ItemTags.AXES);
+                    // return !stack.getItem().toString().contains("_axe");
                 }
                 return false;
             }

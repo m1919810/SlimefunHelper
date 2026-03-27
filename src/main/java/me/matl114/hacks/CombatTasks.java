@@ -223,6 +223,9 @@ public class CombatTasks {
     public static TotemLog totemLog;
 
     @Getter
+    public static SpearEnhance spearEnhance;
+
+    @Getter
     public static SpearAttack spearAttack;
     // todo: 带矛冲锋
 
@@ -246,6 +249,7 @@ public class CombatTasks {
         autoTotem = new AutoTotem().register(m);
         totemLog = new TotemLog().register(m);
         bowTp = new BowTp().register(m);
+        spearEnhance = new SpearEnhance().register(m);
         spearAttack = new SpearAttack().register(m);
     }
 

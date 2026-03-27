@@ -30,4 +30,11 @@ public class ModuleManager extends AbstractGuiManager<BaseModule> {
     public void loadModules() {
         registeringFunctions.forEach(consumer -> consumer.accept(this));
     }
+
+    public BaseModule getModule(String name) {
+        return registered.stream()
+                .filter(s -> name.equalsIgnoreCase(s.name))
+                .findFirst()
+                .orElse(null);
+    }
 }

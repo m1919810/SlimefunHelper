@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.move;
 
+import java.util.Locale;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
@@ -10,30 +11,32 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
-import me.matl114.managers.config.DoubleRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 
 public class CreativeFlight extends BaseModule implements LegalMovementManager.MovementModifier {
     private static LegalMovementManager.DelegateMovementModifier instance;
     public static final String[] FLIGHT = {"move-safety", "flight", "flight-enable"};
     public static final String[] TOGGLE_FLIGHT = {"move-safety", "flight", "flight-enable-hotkey"};
+    public static final String[] FLIGHT_MODE = {"move-safety", "flight", "flight-mode"};
+    public static final String[] FLIGHT_MODE_SWITCH = {"move-safety", "flight", "flight-mode-switch-hotkey"};
     public static final String[] MOVE_FLIGHT_ANTIKICK = {"move-safety", "flight", "antikick"};
     public static final String[] MOVE_FLIGHT_ANTIKICK_PERIOD = {"move-safety", "flight", "antikick-period"};
-    public static final String[] MOVE_FLIGHT_SAFETY_1 = {"move-safety", "flight", "fake-1"};
+    // public static final String[] MOVE_FLIGHT_SAFETY_1 = {"move-safety", "flight", "fake-1"};
     public static final String[] MOVE_SPEED_OVERRIDE_FLY = {"move-speed", "fly-speed-override"};
     public static final String[] MOVE_SPEED_FLY_VAL_CREATIVE = {"move-speed", "fly-speed-creative"};
     public static final String[] MOVE_SPEED_FLY_VAL = {"move-speed", "fly-speed"};
@@ -59,6 +62,14 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
                     TOGGLE_FLIGHT,
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_F),
                     FLIGHT)
+            .build();
+
+    public final EnumRef<FlightMode> flightMode = builder(Configs.MOV_CONFIG, FLIGHT_MODE, FlightMode.class)
+            .defaultValue(FlightMode.CREATIVE)
+            .build();
+
+    public final KeyBindRef switchMode = hotkey(Configs.MOV_CONFIG, FLIGHT_MODE_SWITCH, new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleMode))
             .build();
 
     public final FlagRef doAntiKick = builder(Configs.MOV_CONFIG, Boolean.class)
@@ -196,6 +207,15 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         }
     }
 
+    public void toggleMode() {
+        FlightMode mode = flightMode.get();
+        int ordinal = mode.ordinal() + 1;
+        FlightMode[] flightModes = FlightMode.values();
+        FlightMode newMode = flightModes[ordinal % flightModes.length];
+        flightMode.set(newMode);
+        Debug.chat("toggle flight mode to", newMode.getDisplay());
+    }
+
     @Override
     public boolean mayModifyPos() {
         return false;
@@ -216,13 +236,57 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         } else {
             player.getAbilities().allowFlying = serverSideCanFly;
         }
+        boolean handled =
+                switch (flightMode.get()) {
+                    case CREATIVE -> {
+                        dispatchAntiKick(player);
+                        yield true;
+                    }
+                    case MOTION -> {
+                        if (isActive()) {
+                            PlayerInputUtils.Input input = PlayerInputUtils.of(mc.options);
+                            Vec3d movementInput =
+                                    new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
+                            Vec3d velocity = EntityUtils.movementInputToVelocity(
+                                    movementInput, (float) (5 * getOverridingFlySpeed()), player.getYaw());
+                            player.setVelocity(velocity);
+                            velocity = dispatchAntiKickMotion(velocity);
+                            player.setVelocity(velocity);
+                            yield true;
+                        }
+                        yield false;
+                    }
+                    case JETPACK -> {
+                        if (isActive()) {
+                            PlayerInputUtils.Input input = PlayerInputUtils.of(mc.options);
+                            if (input.jump()) {
+                                Vec3d vec3d = new Vec3d(0, 1, 0);
+                                vec3d = dispatchAntiKickMotion(vec3d);
+                                if (vec3d.y > 0.8) {
+                                    player.jump();
+                                } else {
+                                    Vec3d playerVec = player.getVelocity();
+                                    player.setVelocity(playerVec.x, vec3d.y, playerVec.z);
+                                }
+                                yield true;
+                            }
+                        }
+                        yield false;
+                    }
+                };
+        if (!handled && isActive() && mc.player.getAbilities().flying) {
+            dispatchAntiKick(player);
+        }
+    }
 
-        dispatchAntiKick(player);
+    @Override
+    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
+        LegalMovementManager.MovementModifier.super.applyAfterInputTick(movementManagerEvent);
     }
 
     public void dispatchAntiKick(ClientPlayerEntity player) {
         boolean fakeGilde = MovTasks.getElytraExtra().shouldExcuteAntiKick();
-        if ((fakeGilde || (isActive() && doAntiKick.get()))) {
+        if (((isActive() && doAntiKick.get()))) {
             antiKick(player, fakeGilde);
         }
     }
@@ -293,7 +357,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         }
         if (antiKickCount > antiKickPeriod.get()) {
             antiKickCount = 0;
-            escapeMotionReset = false;
+            escapeMotionReset = !shouldResetMotion();
             preservedLastMotion = player.getVelocity().y;
             setMotionY(-antiKickOffset);
             // randomly fall down twice
@@ -323,6 +387,51 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
 
     }
 
+    public Vec3d dispatchAntiKickMotion(Vec3d controlMotion) {
+        boolean fakeGilde = MovTasks.getElytraExtra().shouldExcuteAntiKick();
+        if ((fakeGilde || (isActive() && doAntiKick.get()))) {
+            return processAntiKickMotion(controlMotion, fakeGilde);
+        }
+        return controlMotion;
+    }
+
+    double lastFloatingPosition = 0.0D;
+    int floatingCount = 0;
+
+    public boolean shouldResetMotion() {
+        double floatingPosition = mc.player.getY();
+        if (floatingCount == 0) {
+            floatingCount = 1;
+            lastFloatingPosition = floatingPosition;
+            return false;
+        }
+        if (Math.abs(floatingPosition - lastFloatingPosition) > antiKickOffset * 3) {
+            // try reset
+            double oldFloatingPosition = lastFloatingPosition;
+            lastFloatingPosition = floatingPosition;
+            floatingCount = 1;
+            if (oldFloatingPosition < lastFloatingPosition) {
+                // up fly must
+                return true;
+            } else {
+                // optimize downfly rest
+                if (MovTasks.ENGIN.checkEnvironmentCollision(
+                        mc.player, mc.player.getPos().add(0, -3 * antiKickOffset, 0), false)) {
+                    return true;
+                }
+                return false;
+            }
+        } else {
+            // optimize afk
+            lastFloatingPosition = floatingPosition;
+            floatingCount += 1;
+            if (floatingCount > 10) {
+                return true;
+            }
+            return false;
+        }
+    }
+
     public Vec3d processAntiKickMotion(Vec3d controlMotion, boolean fakeGlide) {
         if (MovTasks.seenAsFloating(fakeGlide)) {
             antiKickCount++;
@@ -331,7 +440,8 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         }
         if (antiKickCount > MovTasks.getCreativeFlight().antiKickPeriod.get()) {
             antiKickCount = 0;
-            escapeMotionReset = false;
+            // calculate whether need escapeMotionReset
+            escapeMotionReset = !shouldResetMotion();
             preservedLastMotion = controlMotion.y;
             // randomly fall down twice
             waitingForServerResponse = true; // Tasks.getTickRandom()%3 == 0;
@@ -405,6 +515,17 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             default -> {
                 onGroundWhenMine.set(false);
             }
+        }
+    }
+
+    public enum FlightMode implements ConfigEnum {
+        CREATIVE,
+        MOTION,
+        JETPACK;
+
+        @Override
+        public Text getDisplay() {
+            return Text.translatable("configenum.flight-mode." + this.name().toLowerCase(Locale.ROOT));
         }
     }
 }

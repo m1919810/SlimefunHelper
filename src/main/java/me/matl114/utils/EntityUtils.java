@@ -273,7 +273,7 @@ public class EntityUtils {
         return new Vec3d(vec3d.x + d, vec3d.y + e, vec3d.z + l);
     }
 
-    public static Vec3d lookCoordToAbsolutePos(float pitch, float yaw, double x, double y, double z) {
+    public static Vec3d lookCoordToPos(float pitch, float yaw, double x, double y, double z) {
         Vec2f vec2f = new Vec2f(pitch, yaw);
 
         float f = MathHelper.cos((vec2f.y + 90.0F) * 0.017453292F);

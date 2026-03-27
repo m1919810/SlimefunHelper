@@ -156,8 +156,9 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
     }
 
     public ProfileComponent createGameProfile() {
-        PropertyMap map = new PropertyMap(LinkedHashMultimap.create());
-        map.putAll(this.properties);
+        Multimap<String, Property> properties = LinkedHashMultimap.create();
+        properties.putAll(this.properties);
+        PropertyMap map = new PropertyMap(properties);
         return ProfileComponent.ofStatic(new GameProfile(uniqueId, name == null ? "" : name, map));
     }
 

@@ -51,6 +51,14 @@ public class PacketHelper {
         InvTasks.clickSlotAsync(slotId, button, JsHelper.toEnum(actionTypeStr, SlotActionType.class));
     }
 
+    public static int getLastServerScreenSyncId() {
+        return InvTasks.LAST_SYNC_ID;
+    }
+
+    public static void sendCloseInventory(int syncId) {
+        mc.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(syncId));
+    }
+
     public static void sendAttackBlock(int x, int y, int z, Object direction) {
         sendAttackBlock(new BlockPos(x, y, z), direction);
     }

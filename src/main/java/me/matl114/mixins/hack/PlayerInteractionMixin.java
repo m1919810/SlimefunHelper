@@ -166,14 +166,15 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Unique
     public void sendStartBreakPacket(BlockPos pos, Direction direction) {
         this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
+            // every start break change the server side start break time
+            currentBreakingProgress = 0.0F;
             BlockState state = client.world.getBlockState(pos);
             if (!state.isAir()
                     && state.calcBlockBreakingDelta(this.client.player, this.client.player.getEntityWorld(), pos)
                             >= 1.0F) {
-                // insta break
+                // insta break do not change current breaking pos
             } else {
                 currentBreakingPos = pos;
-                currentBreakingProgress = 0.0F;
             }
             return new PlayerActionC2SPacket(
                     PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, direction, sequence);

@@ -139,6 +139,22 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 }
                 case ROTATION -> {
                     // todo
+                    boolean packetMotion = true;
+                    Vec3d velocity = EntityUtils.lookCoordToPos(
+                            player.getPitch(), player.getYaw(), input.sidewaysSpeed(), 0, input.forwardSpeed());
+                    Vec3d vertical = new Vec3d(0, input.upwardSpeed(), 0);
+                    velocity = velocity.add(vertical);
+                    if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
+                        packetMotion = false;
+                        shouldCheckRocket = true;
+                        if (MovTasks.getElytraExtra().canFireworkControlMotion() && motionAdjust.get()) {
+                            packetMotion = true;
+                        }
+                    }
+                    if (packetMotion) {
+                        shouldControl = true;
+                        controlMotion = velocity;
+                    }
                 }
                 case SIMPLE -> {
                     if (simpleControlM.get()) {
@@ -188,10 +204,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 Vec3d wayVector = controlMotion.normalize();
                 Vec3d realVector = wayVector.multiply(motionAmount);
                 boolean fakeGlideNoFall = MovTasks.getElytraExtra().shouldExcuteAntiKick();
+                mc.player.setVelocity(realVector);
                 if (fakeGlideNoFall) {
                     realVector = MovTasks.getCreativeFlight().processAntiKickMotion(realVector, true);
+                    mc.player.setVelocity(realVector);
                 }
-                mc.player.setVelocity(realVector);
                 controllingTick = true;
                 if (Math.abs(realVector.y) <= 1e-7) {
                     modifyNoGravity = player.hasNoGravity();
@@ -221,6 +238,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+
         if (enable.get()
                 && noFallLand.get()
                 && controllingTick

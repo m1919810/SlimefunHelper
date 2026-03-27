@@ -58,7 +58,7 @@ public class ScreenUtils {
         return null;
     }
 
-    public CompletableFuture<HandledScreen<?>> getOpenScreenFuture() {
+    public static CompletableFuture<HandledScreen<?>> getOpenScreenFuture() {
         int currentSyncId = mc.player.currentScreenHandler.syncId;
         CompletableFuture<HandledScreen<?>> cf = new CompletableFuture<>();
         Listener.addPostPacketCatcher(new PacketCatcherImpl<>(OpenScreenS2CPacket.class, (packetEvent) -> {

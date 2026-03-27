@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.TileInventoryScreen;
+import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.SlotElement;
 import me.matl114.hacks.api.ModuleGroup;
@@ -40,6 +41,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
@@ -962,6 +964,12 @@ public class InvTasks {
         return RaycastUtils.rayTraceSpecificBlock((b) -> b == Blocks.DISPENSER || b == Blocks.DROPPER)
                 .orElse(null);
     }
+    // track screen syncId
+    public static int LAST_SYNC_ID = 0;
+
+    public static void onOpenScreen(Event<OpenScreenS2CPacket> packet) {
+        LAST_SYNC_ID = packet.context.getSyncId();
+    }
 
     public static void openEditorForPlayer() {
         if (mc.player != null) {
@@ -1050,6 +1058,7 @@ public class InvTasks {
             clickExecutor.reset();
         });
         Listener.registerSinglePacketListener(PlayerInteractBlockC2SPacket.class, InvTasks::listenInteractBlockPacket);
+        Listener.getPacketPoint().getChannel(OpenScreenS2CPacket.class).registerHandler(InvTasks::onOpenScreen);
         moduleManager.registerFactories(InvTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
     }

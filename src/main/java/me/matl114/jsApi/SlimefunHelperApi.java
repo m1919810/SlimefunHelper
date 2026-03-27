@@ -178,6 +178,7 @@ public class SlimefunHelperApi {
                     RaycastUtils.class,
                     ClientUtils.class,
                     ScreenUtils.class,
+                    NetworkUtils.class,
                     ItemStackUtils.class);
 
             for (Class<?> clazz : apiClasses) {

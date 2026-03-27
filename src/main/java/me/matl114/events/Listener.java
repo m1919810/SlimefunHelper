@@ -55,6 +55,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.BlockEntityTickInvoker;
 import org.jetbrains.annotations.ApiStatus;
 import org.spongepowered.asm.mixin.Unique;
 
@@ -420,11 +421,6 @@ public class Listener {
     private static final EventChannel<MovTasks.MovInfo> teleportConfirmResponsePoint = new EventChannel<>();
 
     @Getter
-    @Modifiable
-    @Cancelable
-    private static final EventChannel<Vec3d> teleportConfirmVelocityUpdatePoint = new EventChannel<>();
-
-    @Getter
     @Cancelable
     @Modifiable
     private static final EventChannel<Integer> useItemCooldownReset = new EventChannel<>();
@@ -481,8 +477,16 @@ public class Listener {
     private static final EventChannel<Vec3d> entityClientVelocityUpdate = new EventChannel<>();
 
     @Getter
+    @Cancelable
+    private static final EventChannel<Entity> entityPreTickListener = new EventChannel<>();
+
+    @Getter
     @Broadcast
-    private static final EventChannel<Entity> entityTickListener = new EventChannel<>();
+    private static final EventChannel<Entity> entityMidTickListener = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    private static final EventChannel<Entity> entityPostTickListener = new EventChannel<>();
 
     @Getter
     @Broadcast
@@ -501,6 +505,12 @@ public class Listener {
     @Broadcast
     @ExtraArgs(value = {Entity.RemovalReason.class})
     private static final EventChannel<Entity> entityRemoveListener = new EventChannel<>();
+
+    // world events
+
+    @Getter
+    @Cancelable
+    private static final EventChannel<BlockEntityTickInvoker> blockEntityTickListener = new EventChannel<>();
 
     // client interactions and attacks
     @Getter // handle player uses and attacks

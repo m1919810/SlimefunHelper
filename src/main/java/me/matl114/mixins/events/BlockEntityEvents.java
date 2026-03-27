@@ -21,4 +21,10 @@ public abstract class BlockEntityEvents implements BlockEntityAccess {
         }
         return metaData;
     }
+
+    @Unique
+    @Override
+    public boolean isMetaEmpty() {
+        return metaData == null;
+    }
 }

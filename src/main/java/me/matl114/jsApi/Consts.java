@@ -31,7 +31,7 @@ public interface Consts {
     Class<?> HitResult = net.minecraft.util.hit.HitResult.class;
     Class<?> BlockHitResult = net.minecraft.util.hit.BlockHitResult.class;
     Class<?> EntityHitResult = net.minecraft.util.hit.EntityHitResult.class;
-
+    Class<?> Hand = net.minecraft.util.Hand.class;
     Class<?> PacketByteBuf = net.minecraft.network.PacketByteBuf.class;
     Class<?> NbtElement = net.minecraft.nbt.NbtElement.class;
     Class<?> NbtCompound = net.minecraft.nbt.NbtElement.class;
