@@ -24,6 +24,7 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
@@ -121,6 +122,7 @@ public class ChatTools extends BaseModule {
     private static final List<Text> TOOLTIPS_INT_TO_CHAR = List.of(Text.literal("可以将旁边的小输入框中的数字和字符进行ascii转换"));
     private static final List<Text> TOOLTIPS_ENCRYPT =
             List.of(Text.literal("点击切换是否进行密码加密"), Text.literal("按住ctrl发送,或者在指令参数前加\"plain:\"可以禁用加密"));
+    private static final List<Text> TOOLTIPS_FORMAT = List.of(Text.literal("点卷切换是否进行聊天格式化"));
     private static final List<Text> TOOLTIPS_SPECIAL_CHARS =
             List.of(Text.literal("点击展开/关闭特殊字符快捷键"), Text.literal("可以在配置界面中配置特殊字符列表"));
 
@@ -222,11 +224,20 @@ public class ChatTools extends BaseModule {
                                 (el) -> ChatTasks.getChatExtra().encryptPass.get() && !ScreenUtils.hasCtrlDown())
                         .withTooltips(TooltipHandler.of(TOOLTIPS_ENCRYPT)))
                 .addToSub(basicSubScreenWidget);
+        ExecutableWidget.instance(20, 24, 20, 20)
+                .setElementHandler(new ButtonElement(
+                                TextProvider.of(Text.literal("F").formatted(Formatting.BOLD)),
+                                ButtonAction.run(ChatTasks.getChatExtra().enableFormat::toggle))
+                        .setActivePredicate(
+                                (el) -> ChatTasks.getChatExtra().enableFormat.get())
+                        .withTooltips(TooltipHandler.of(TOOLTIPS_FORMAT)))
+                .addToSub(basicSubScreenWidget);
+
         ContentDelegateWidget<TextFieldWidget> helperWidget = McWidgetHelpers.createTextFieldEditBox(
-                20, 24, 50, 20, PropertyTracker.event(s -> int2CharFieldContent = s), int2CharFieldContent);
+                40, 24, 40, 20, PropertyTracker.event(s -> int2CharFieldContent = s), int2CharFieldContent);
         int2CharInputField = helperWidget.getDelegate();
 
-        ExecutableWidget.instance(70, 24, 50, 20)
+        ExecutableWidget.instance(80, 24, 40, 20)
                 .setElementHandler(new ButtonElement(
                                 TextProvider.of(Text.literal("int<->char")),
                                 ButtonAction.run(() -> tranlateInt2char(int2CharInputField)))
@@ -237,8 +248,9 @@ public class ChatTools extends BaseModule {
 
         ExecutableWidget.instance(225, 0, 22, 20)
                 .setElementHandler(new ButtonElement(
-                        (el) -> enableSpecialChars.get() ? ENABLE_STATE : DISABLE_STATE,
-                        ButtonAction.run(enableSpecialChars::toggle)))
+                                (el) -> enableSpecialChars.get() ? ENABLE_STATE : DISABLE_STATE,
+                                ButtonAction.run(enableSpecialChars::toggle))
+                        .withTooltips(TooltipHandler.of(TOOLTIPS_SPECIAL_CHARS)))
                 .addToSub(basicSubScreenWidget);
         this.delegateSpecialCharWidget = widgetQuickChars;
         this.basicSubScreenWidget = basicSubScreenWidget;
@@ -338,7 +350,7 @@ public class ChatTools extends BaseModule {
             var access = ScreenAccess.of(chat0);
             cacheWidget.setX(chat0.width - 250);
             cacheWidget.setY(chat0.height - 56);
-            int2CharInputField.setX(chat0.width - 230);
+            int2CharInputField.setX(chat0.width - 210);
             int2CharInputField.setY(chat0.height - 104 + 24);
             if (enableChatScreenTools.get()) {
                 access.addDrawableChildTo(cacheWidget);

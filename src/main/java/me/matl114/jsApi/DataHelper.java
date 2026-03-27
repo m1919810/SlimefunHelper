@@ -15,7 +15,7 @@ public class DataHelper {
     }
 
     public static Object createPos3d(double x, double y, double z) {
-        return new Vec3d(x, y, z);
+        return JsMacrosBridge.getInstance().wrap(new Vec3d(x, y, z));
     }
 
     public static Vec3d createVec(Object pos3d) {

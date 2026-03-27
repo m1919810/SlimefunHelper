@@ -1,7 +1,5 @@
 package me.matl114.mixins.events;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.util.Objects;
@@ -140,26 +138,6 @@ public abstract class ClientPlayNetworkHandlerEvents {
             Listener.getWorldSwitchPoint().broadcast(this.world);
         }
         Listener.getThisPlayerSpawnPoint().broadcast(MinecraftClient.getInstance().player);
-    }
-
-    @WrapOperation(
-            method = "setPosition",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/entity/Entity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V"))
-    private static void onTeleportConfirmVelocityUpdate(Entity instance, Vec3d vec3d, Operation<Void> original) {
-        // disable velocity resync
-        // fixme: turn this into Event
-        if (!Listener.getTeleportConfirmVelocityUpdatePoint().isEmpty()) {
-            Event<Vec3d> vcUpdate = new Event<>(vec3d, true, true);
-            Listener.getTeleportConfirmVelocityUpdatePoint().handleValue(vcUpdate);
-            if (vcUpdate.isCancelled()) {
-                return;
-            }
-            vec3d = vcUpdate.context();
-        }
-        original.call(instance, vec3d);
     }
 
     @Shadow

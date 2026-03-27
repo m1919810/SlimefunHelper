@@ -1348,6 +1348,16 @@ public class MovTasks {
         return result;
     }
 
+    public static boolean hasHorizontalCollision(Entity entity, Vec3d move) {
+        if (entity.hasPassengers()) {
+            return false;
+        } else {
+            Vec3d movement = simulateMovement(entity, entity.getPos(), move, true);
+            return !MathHelper.approximatelyEquals(movement.x, move.x)
+                    || !MathHelper.approximatelyEquals(movement.z, move.z);
+        }
+    }
+
     public static boolean validMovementAsServer(Vec3d expect, Vec3d sim) {
         return mc.interactionManager.getCurrentGameMode().isCreative()
                 || MathUtils.s2(expect.x - sim.x) + MathUtils.s2(expect.z - sim.z) < 0.0625D;
@@ -1723,12 +1733,12 @@ public class MovTasks {
 
     @ApiMethod
     public static void setupAutoResync(Vec3d pos) {
-        getAutoResyncTp().setAutoResyncSchedule(Optional.of(pos));
+        getAutoResync().setAutoResyncSchedule(Optional.of(pos));
     }
 
     @ApiMethod
     public static void setupAutoResync() {
-        getAutoResyncTp().setAutoResyncSchedule(Optional.empty());
+        getAutoResync().setAutoResyncSchedule(Optional.empty());
     }
 
     private static void fixPositionSetBackFallDamage(Event<PlayerPositionLookS2CPacket> packet) {
@@ -2196,7 +2206,7 @@ public class MovTasks {
     public static SetBackLog setBackLog;
 
     @Getter
-    public static AutoResyncTp autoResyncTp;
+    public static AutoResync autoResync;
 
     @Getter
     public static CreativeFlight creativeFlight;
@@ -2230,7 +2240,7 @@ public class MovTasks {
         noFall = new NoFall().register(m);
 
         setBackLog = new SetBackLog().register(m);
-        autoResyncTp = new AutoResyncTp().register(m);
+        autoResync = new AutoResync().register(m);
         creativeFlight = new CreativeFlight().register(m);
         sprint = new Sprint().register(m);
         moveTimer = new MoveTimer().register(m);

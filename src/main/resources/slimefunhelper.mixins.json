@@ -15,6 +15,7 @@
 		"access.MoonriseVoxelShapeMixin",
 		"events.AtlasLoaderEvents",
 		"events.BlockEntityEvents",
+		"events.BlockEntityRenderManagerEvents",
 		"events.ChatHudEvents",
 		"events.ChatScreenEvents",
 		"events.ClientConnectionEvents",
@@ -23,7 +24,6 @@
 		"events.ClientPlayNetworkHandlerEvents",
 		"events.ClientWorldEvents",
 		"events.DataTrackerEvents",
-		"events.DrawContextEvents",
 		"events.EntityEvents",
 		"events.GameRendererEvents",
 		"events.HandledScreenEvents",
@@ -37,15 +37,22 @@
 		"events.MinecraftClientEvents",
 		"events.MouseEvents",
 		"events.NetworkThreadUtilsEvents",
+		"events.RecipeBookScreenEvents",
 		"events.ScreenEvents",
+		"events.WorldEvents",
+		"events.WorldRendererEvents",
 		"fix.AbstractElementButtonFixMixin",
+		"fix.EntityRenderStateFixMixin",
 		"fix.LoginHelloPacketNameFixMixin",
 		"fix.PacketByteBufFixMixin",
 		"fix.ParentElementButtonFixMixin",
 		"fix.ParticleCountLimitMixin",
-		"fix.ScreenHandlerFixMixin",
+		"fix.ParticleTickFix",
+		"fix.SignBlockEntityRendererFixMixin",
 		"fix.StringHelperFixMixin",
-		"hack.BackGroundRenderMixin",
+		"fix.WorldRendererFixMixin",
+		"hack.AtmosphereFogModifierMixin",
+		"hack.BlindnessEffectFogModifierMixin",
 		"hack.ChatHudMixin",
 		"hack.ChatInputSuggestorMixin",
 		"hack.ChatScreenMixin",
@@ -54,8 +61,10 @@
 		"hack.ClientMixin",
 		"hack.ClientPacketListenerMixin",
 		"hack.ClientPlayerMixin",
+		"hack.DarknessEffectFogModifierMixin",
 		"hack.DispenserCraftScreenMixin",
 		"hack.EntityMixin",
+		"hack.FogRendererMixin",
 		"hack.GameRenderMixin",
 		"hack.InGameHudMixin",
 		"hack.ItemStackMixin",
@@ -73,7 +82,7 @@
 		"render.ScreenMixin",
 		"render.ScrollableWidgetMixin",
 		"render.TextFieldWidgetMixin",
-		"versioned.MatrixStackMixin"
+		"versioned.DrawContextMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
@@ -84,6 +93,7 @@
 		"events.EntityTypeEvents",
 		"events.PlayerEntityEvents",
 		"fix.EnchantmentLevelFixMixin",
-		"fix.HeightContextNullFix"
+		"fix.HeightContextNullFix",
+		"fix.ScreenHandlerFixMixin"
 	]
 }

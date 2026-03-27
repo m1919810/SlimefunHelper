@@ -25,12 +25,9 @@ import me.matl114.utils.*;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttackRangeComponent;
-import net.minecraft.component.type.KineticWeaponComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -56,6 +53,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             MovTasks.PLAYER_PIPELINE_POS.addMovementModifierFactory(() -> INSTANCE);
         }
         INSTANCE.setDelegate(this::cast);
+        BaseModule.makePath("111");
         bindFlag(enable);
     }
 
@@ -107,19 +105,9 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         }
         return false;
     }
-
+    // todo: find out which flag determines the spear status
     public boolean canSpearAttack() {
-        if (mc.player.isUsingItem()
-                && VItem.getInstance().isSpear(mc.player.getActiveItem())
-                && mc.player.getItemUseTime() >= 8) {
-            ItemStack stack = mc.player.getActiveItem();
-            KineticWeaponComponent component = stack.get(DataComponentTypes.KINETIC_WEAPON);
-            if (component != null && mc.player.getItemUseTime() < component.delayTicks()) {
-                return false;
-            }
-            return true;
-        }
-        return false;
+        return CombatTasks.getSpearEnhance().canSpearKineticAttack();
     }
 
     public boolean spearAttack() {
@@ -401,6 +389,9 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (currentWaitBackTick > 0) {
             currentWaitBackTick -= 1;
+            if (currentWaitBackTick > delay.get()) {
+                currentWaitBackTick = delay.get();
+            }
             if (currentWaitBackTick > 0) {
                 movementManagerEvent.cancel();
                 // movementManagerEvent.context.playerStatus.restorePos();

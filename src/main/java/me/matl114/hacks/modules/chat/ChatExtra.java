@@ -4,6 +4,8 @@ import com.google.common.hash.Hashing;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.Random;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.events.Event;
@@ -110,6 +112,7 @@ public class ChatExtra extends BaseModule {
         registerListener(Listener.getPostInitializeScreen(), this::onChatScreenInitialized);
         registerListener(Listener.getPostCloseScreen(), this::onChatScreenClose);
         registerListener(Listener.getChatSend(), this::onChatPasswordEncrypt, -999);
+        registerListener(Listener.getChatSend(), this::onStringReplace, Integer.MAX_VALUE - 2);
     }
 
     @Override
@@ -292,5 +295,60 @@ public class ChatExtra extends BaseModule {
             }
         }
         return builder.toString();
+    }
+
+    public static final String[] AUTO_PREFIX_SUFFIX = {"chat-helper", "enable-chat-message-format"};
+
+    public static final String[] AUTO_FORMAT = {"chat-helper", "chat-message-format-str"};
+
+    public static final String[] AUTO_FORMAT_ESCAPE = {"chat-helper", "chat-message-escape-format"};
+
+    public final FlagRef enableFormat =
+            flagBuilder(Configs.CHAT_CONFIG, AUTO_PREFIX_SUFFIX).build();
+
+    public final StringRef formatStr = builder(Configs.CHAT_CONFIG, AUTO_FORMAT, String.class)
+            .defaultValue("%s喵 | SlimefunHelper client | {random6}")
+            .build();
+
+    public final StringRef commandEscapePattern = builder(Configs.CHAT_CONFIG, AUTO_FORMAT_ESCAPE, String.class)
+            .defaultValue("^[/#!.](.*)$")
+            .build();
+    private final Pattern randomPattern = Pattern.compile("\\{random(\\d+)\\}");
+
+    private final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private final Random rand = new Random();
+
+    private String generateRandomString(int length) {
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(CHARS.charAt(rand.nextInt(CHARS.length())));
+        }
+        return sb.toString();
+    }
+
+    public String generateFormatString(String string) {
+        String template = formatStr.get();
+        Matcher m = randomPattern.matcher(template);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+            int length = Integer.parseInt(m.group(1));
+            String randomStr = generateRandomString(length);
+            m.appendReplacement(sb, Matcher.quoteReplacement(randomStr));
+        }
+        m.appendTail(sb);
+        String processedTemplate = sb.toString();
+
+        return String.format(processedTemplate, string);
+    }
+
+    public void onStringReplace(Event<String> chatEvent) {
+        if (chatEvent.isCancelled()) return;
+        if (enableFormat.get()) {
+            String originString = chatEvent.context();
+            // remove our commands
+            if (!Pattern.matches(commandEscapePattern.get(), originString)) {
+                chatEvent.context(generateFormatString(originString));
+            }
+        }
     }
 }

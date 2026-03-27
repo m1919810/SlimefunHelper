@@ -8,11 +8,14 @@ import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.annotations.Modifiable;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.utils.Debug;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.screen.slot.Slot;
@@ -163,4 +166,16 @@ public class RenderListener {
             value = {ItemStack.class, boolean.class, boolean.class},
             names = {"itemStack", "advance", "creative"})
     private static final EventChannel<List<Text>> tooltipShow = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    private static final EventChannel<Entity> entityRenderListener = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    private static final EventChannel<BlockEntity> blockEntityRenderListener = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    private static final EventChannel<Particle> particleRenderListener = new EventChannel<>();
 }

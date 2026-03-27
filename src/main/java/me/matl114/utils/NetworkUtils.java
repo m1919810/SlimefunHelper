@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.MinecraftClient;
 
+@ApiMethod
 public class NetworkUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 

@@ -56,6 +56,12 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
     }
 
     @Unique
+    @Override
+    public boolean isMetaEmpty() {
+        return metaData == null;
+    }
+
+    @Unique
     public void addTickWrapper(ProgressWrapper<T> wrapper) {
         headNode.insertAfter(wrapper);
     }
@@ -111,7 +117,7 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
     @Inject(method = "tick", at = @At("HEAD"))
     public void onEntityTickUpdate(CallbackInfo ci) {
         Entity entity = (Entity) (Object) (this);
-        Listener.getEntityTickListener().broadcast(entity);
+        Listener.getEntityMidTickListener().broadcast(entity);
     }
 
     @Inject(method = "onDataTrackerUpdate", at = @At("HEAD"))

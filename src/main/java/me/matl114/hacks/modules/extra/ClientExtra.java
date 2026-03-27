@@ -100,6 +100,7 @@ public class ClientExtra extends BaseModule {
             Debug.info("  Packet :", packet);
             Debug.info("Exception StackTrace:");
             Debug.info(exception);
+            event.cancel();
         }
     }
 
