@@ -23,7 +23,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
-            MovTasks.PLAYER_PIPELINE_POS.addMovementModifierFactory(() -> instance);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
         bindFlag(enable);
@@ -69,7 +69,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 
     @Override
     public int priority() {
-        return 0;
+        return PRIORITY_COMMON;
     }
 
     public void triggerJump() {

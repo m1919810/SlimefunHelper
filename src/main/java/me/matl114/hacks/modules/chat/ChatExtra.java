@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.gui.basic.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -22,6 +21,7 @@ import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.AnvilScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.StringHelper;
@@ -112,7 +112,7 @@ public class ChatExtra extends BaseModule {
         registerListener(Listener.getPostInitializeScreen(), this::onChatScreenInitialized);
         registerListener(Listener.getPostCloseScreen(), this::onChatScreenClose);
         registerListener(Listener.getChatSend(), this::onChatPasswordEncrypt, -999);
-        registerListener(Listener.getChatSend(), this::onStringReplace, Integer.MAX_VALUE - 2);
+        registerListener(Listener.getChatSend(), this::onStringReplace, Integer.MAX_VALUE - 10);
     }
 
     @Override
@@ -183,11 +183,17 @@ public class ChatExtra extends BaseModule {
 
     // add chat screen extra things
     public void onChatScreenInitialized(Event<Screen> screenEvent) {
-        if (screenEvent.context() instanceof ChatScreen chat) {
-            ChatScreenAccess access = ChatScreenAccess.of(chat);
-            if (noChathudInputLimit.get()) {
+        if (noChathudInputLimit.get()) {
+            if (screenEvent.context() instanceof ChatScreen chat) {
+                ChatScreenAccess access = ChatScreenAccess.of(chat);
+
                 var chatField = access.getInputWidget();
                 chatField.setMaxLength(32768);
+
+            } else if (screenEvent.context() instanceof AnvilScreen anvilScreen) {
+                if (anvilScreen.getFocused() instanceof TextFieldWidget widget) {
+                    widget.setMaxLength(32768);
+                }
             }
         }
     }
@@ -310,7 +316,7 @@ public class ChatExtra extends BaseModule {
             .defaultValue("%s喵 | SlimefunHelper client | {random6}")
             .build();
 
-    public final StringRef commandEscapePattern = builder(Configs.CHAT_CONFIG, AUTO_FORMAT_ESCAPE, String.class)
+    public final StringRef commandEscapeFormatPattern = builder(Configs.CHAT_CONFIG, AUTO_FORMAT_ESCAPE, String.class)
             .defaultValue("^[/#!.](.*)$")
             .build();
     private final Pattern randomPattern = Pattern.compile("\\{random(\\d+)\\}");
@@ -346,7 +352,7 @@ public class ChatExtra extends BaseModule {
         if (enableFormat.get()) {
             String originString = chatEvent.context();
             // remove our commands
-            if (!Pattern.matches(commandEscapePattern.get(), originString)) {
+            if (!Pattern.matches(commandEscapeFormatPattern.get(), originString)) {
                 chatEvent.context(generateFormatString(originString));
             }
         }

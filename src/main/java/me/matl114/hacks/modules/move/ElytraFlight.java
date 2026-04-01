@@ -80,7 +80,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public ElytraFlight() {
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_ROT.addMovementModifierFactory(() -> instance);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
         bindFlag(enable);
@@ -248,6 +248,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             player.setPosition(player.getX(), movementManagerEvent.context.playerStatus.pos.y + 9E-8, player.getZ());
             ClientPlayerAccess.of(player).resyncPos();
             player.setOnGround(false);
+            MovTasks.getNoFall().setLastOnGroundHeight(movementManagerEvent.context.playerStatus.pos.y + 9E-8);
             nextTickIsOnGroundTick = true;
         } else {
             nextTickIsOnGroundTick = false;

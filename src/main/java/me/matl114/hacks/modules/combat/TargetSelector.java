@@ -214,7 +214,8 @@ public class TargetSelector extends BaseModule {
 
     public boolean isTargetInRange(Entity e, double nearby) {
         if (mc.player == null) return false;
-        return e.getBoundingBox().squaredMagnitude(mc.player.getEyePos()) < MathUtils.s2(nearby);
+        double sq = e.getBoundingBox().squaredMagnitude(mc.player.getEyePos());
+        return sq < MathUtils.s2(nearby + mc.player.getVelocity().length() * (mc.player.isFallFlying() ? 2 : 1));
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect) {

@@ -50,7 +50,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     public SpearAttack() {
         if (INSTANCE == null) {
             INSTANCE = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_POS.addMovementModifierFactory(() -> INSTANCE);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> INSTANCE);
         }
         INSTANCE.setDelegate(this::cast);
         BaseModule.makePath("111");
@@ -59,7 +59,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
 
     @Override
     public int priority() {
-        return -1000;
+        return PRIORITY_LOW;
     }
 
     public final FlagRef enable = builder(Configs.COMBAT_CONFIG, SPEAR_ATTACK_ENABLE, Boolean.class)

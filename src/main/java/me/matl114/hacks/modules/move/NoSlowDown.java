@@ -200,7 +200,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
                             @Override
                             public int priority() {
-                                return -10000000;
+                                return PRIORITY_LOW;
                             }
 
                             @Override
@@ -256,7 +256,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     public boolean shouldFakeSneak() {
-        return enableFakeSneak.get() || sneakStatus;
+        return (enableFakeSneak.get() || sneakStatus) && mc.player.isOnGround();
     }
 
     public void onInputPacketSend(Event<PlayerInputC2SPacket> inputPacket) {

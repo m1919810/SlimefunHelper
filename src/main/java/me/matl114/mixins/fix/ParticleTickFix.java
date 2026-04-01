@@ -19,8 +19,8 @@ public abstract class ParticleTickFix {
     @Final
     protected ClientWorld world;
 
-    @Inject(method = "tick", at = @At("HEAD"))
-    private void tick(CallbackInfo ci) {
+    @Inject(method = "move(DDD)V", at = @At("HEAD"))
+    private void onMove(CallbackInfo ci) {
         if (world.isClient()
                 && RenderTasks.getRenderOptimize().enableParticleTickOpt.get()) {
             collidesWithWorld = false;

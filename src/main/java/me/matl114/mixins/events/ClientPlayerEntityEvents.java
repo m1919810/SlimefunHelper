@@ -138,7 +138,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     @Unique
-    private void onPlayerInputPackets() {
+    public void onPlayerInputPackets() {
         if (!this.lastPlayerInput.equals(this.input.playerInput)) {
             this.networkHandler.sendPacket(new PlayerInputC2SPacket(this.input.playerInput));
             this.lastPlayerInput = this.input.playerInput;

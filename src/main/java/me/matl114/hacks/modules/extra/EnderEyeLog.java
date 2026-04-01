@@ -67,7 +67,7 @@ public class EnderEyeLog extends BaseModule {
                 Vec3d velocity = endPos.subtract(startPos);
                 velocity = velocity.normalize();
                 int startX = (int) startPos.getX();
-
+                Debug.chat("Start Calculating EyeOfEnder...");
                 if (velocity.x == 0) {
                     if (velocity.z > 0) {
                         Debug.chat("[EnderEye] Pointing at Z+");

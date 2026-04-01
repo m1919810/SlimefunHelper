@@ -356,7 +356,7 @@ public class BowEnhance extends BaseModule {
                 .addMovementModifier(new LegalMovementManager.MovementModifier() {
                     @Override
                     public int priority() {
-                        return -10000000;
+                        return PRIORITY_LOW;
                     }
 
                     @Override

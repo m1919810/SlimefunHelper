@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.chat;
 
+import io.github.reserveword.imblocker.common.gui.FocusableObject;
 import java.util.List;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.accessors.gui.ScreenAccess;
@@ -8,13 +9,19 @@ import me.matl114.events.Listener;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.ChatTasks;
+import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hooks.IMBlockerHooks;
 import me.matl114.managers.Configs;
+import me.matl114.managers.ScheduleService;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
+import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
+import me.matl114.managers.input.HotKeyUtils;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.PropertyTracker;
@@ -29,6 +36,7 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 public class ChatTools extends BaseModule {
+    public static final String[] REMOVE_COMMAND_HOTKEY = {"chat-screen-tools", "remove-command-prefix-hotkey"};
     public static final String[] ENABLE_CHATSCREEN_TOOLS = {"chat-screen-tools", "enable-tools"};
 
     public static final String[] ENABLE_CHATSCREEN_QUICK_CHARS = {"chat-screen-tools", "enable-quick-chars"};
@@ -46,6 +54,10 @@ public class ChatTools extends BaseModule {
     public ChatTools() {
         bindFlag(enableChatScreenTools);
     }
+
+    public final KeyBindRef removeCmdKey = hotkey(Configs.CHAT_CONFIG, REMOVE_COMMAND_HOTKEY, new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.asHandler(this::onRemoveCommandPrefix))
+            .build();
 
     public final FlagRef enableChatScreenTools = flagBuilder(Configs.CHAT_CONFIG, ENABLE_CHATSCREEN_TOOLS)
             .updateListener(this::toggleBasicToolScreen)
@@ -94,6 +106,16 @@ public class ChatTools extends BaseModule {
         registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(Listener.getPostInitializeScreen(), this::onChatScreenInitialize);
         registerListener(Listener.getPreSetScreen(), this::onCloseChatScreen);
+        registerListener(Listener.getPostInitializeScreen(), this::fixIMBlockerStateError);
+    }
+
+    public void onRemoveCommandPrefix() {
+        if (mc.currentScreen instanceof ChatScreen chatScreen) {
+            if (chatScreen.getFocused() instanceof TextFieldWidget widget
+                    && widget.getText().startsWith("/")) {
+                widget.setText(widget.getText().substring(1));
+            }
+        }
     }
 
     public int counter = 0;
@@ -121,7 +143,7 @@ public class ChatTools extends BaseModule {
             List.of(Text.literal("点击将当前正在输入的输入框中"), Text.literal("输入的字符转为unicode字符"));
     private static final List<Text> TOOLTIPS_INT_TO_CHAR = List.of(Text.literal("可以将旁边的小输入框中的数字和字符进行ascii转换"));
     private static final List<Text> TOOLTIPS_ENCRYPT =
-            List.of(Text.literal("点击切换是否进行密码加密"), Text.literal("按住ctrl发送,或者在指令参数前加\"plain:\"可以禁用加密"));
+            List.of(Text.literal("左击切换是否进行消息加密"), Text.literal("右击以打开配置文件"), Text.literal("按住ctrl发送可以禁用加密"));
     private static final List<Text> TOOLTIPS_FORMAT = List.of(Text.literal("点卷切换是否进行聊天格式化"));
     private static final List<Text> TOOLTIPS_SPECIAL_CHARS =
             List.of(Text.literal("点击展开/关闭特殊字符快捷键"), Text.literal("可以在配置界面中配置特殊字符列表"));
@@ -220,8 +242,14 @@ public class ChatTools extends BaseModule {
                 .setElementHandler(IconElement.statedGuiPredicate(
                                 LOCK_ENABLE_SPRITE,
                                 LOCK_DISABLE_SPRITE,
-                                ButtonAction.run(ChatTasks.getChatExtra().encryptPass::toggle),
-                                (el) -> ChatTasks.getChatExtra().encryptPass.get() && !ScreenUtils.hasCtrlDown())
+                                ButtonAction.isLeft((i) -> {
+                                    if (i) {
+                                        ChatTasks.getPlayerChat().encrypt.toggle();
+                                    } else {
+                                        MainTasks.openConfigScreen(Configs.CHAT_CONFIG);
+                                    }
+                                }),
+                                (el) -> ChatTasks.getPlayerChat().shouldEncryptSendMessage())
                         .withTooltips(TooltipHandler.of(TOOLTIPS_ENCRYPT)))
                 .addToSub(basicSubScreenWidget);
         ExecutableWidget.instance(20, 24, 20, 20)
@@ -370,6 +398,20 @@ public class ChatTools extends BaseModule {
             ChatScreenAccess access = ChatScreenAccess.of((ChatScreen) mc.currentScreen);
             access.resetMessageHistoryIndex();
             event.cancel();
+        }
+    }
+
+    public void fixIMBlockerStateError(Event<Screen> event) {
+        if (event.context instanceof ChatScreen chat
+                && IMBlockerHooks.getInstance().isEnabled()
+                && chat.getFocused() instanceof FocusableObject focusableObject) {
+            ScheduleService.launchAsyncDelayedTask(
+                    () -> {
+                        if (chat.getFocused() == focusableObject) {
+                            focusableObject.updateEnglishState();
+                        }
+                    },
+                    100L);
         }
     }
 }
