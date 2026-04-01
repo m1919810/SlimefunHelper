@@ -28,14 +28,14 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
-            MovTasks.PLAYER_PIPELINE_ROT.addMovementModifierFactory(() -> instance);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
     }
 
     public final FlagRef autoSprintLegal =
             flagBuilder(Configs.MOV_CONFIG, MOVE_AUTO_TOGGLE_SPRINT).build();
-
+    // todo: attack entity cause fake sprint, keep the state, do not send any other packets, try later
     public final FlagRef fakeSprint =
             flagBuilder(Configs.MOV_CONFIG, FAKE_SPRINT).build();
 
@@ -80,7 +80,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public void onTick(Event<ClientPlayerEntity> event) {
         if (autoSprintLegal.get() && mc.currentScreen == null) {
             if (!mc.options.sprintKey.isPressed()) {
-                Debug.chat("[Legal Sprint] toggle sprint on (ctrl)");
+                Debug.chat("[Sprint] toggle sprint on");
                 mc.options.sprintKey.setPressed(true);
             }
         }
@@ -91,7 +91,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     @Override
     public int priority() {
         // the least important shit
-        return 10000000;
+        return PRIORITY_HIGHEST;
     }
 
     @Override
@@ -143,10 +143,27 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
         }
         if (player.isSprinting()) {
-            if (fakeSprint.get() && !fakeSprintMode.get().hasAc()) {
-                fakeSprintThisTick = true;
-                player.setSprinting(false);
-                PlayerInputUtils.of(player.input).sprint(false).applyInput(player.input);
+            if (fakeSprint.get()) {
+                if (!fakeSprintMode.get().hasAc()) {
+                    fakeSprintThisTick = true;
+                    player.setSprinting(false);
+                    PlayerInputUtils.of(player.input).sprint(false).applyInput(player.input);
+                } else {
+                    // NO PLAN YET
+                    //                    if (player.isSprinting()) {
+                    //                        ClientPlayerAccess.of(player).onPlayerInputPackets();
+                    //                        fakeSprintThisTick = true;
+                    //                        player.setSprinting(false);
+                    //                        //                        mc.getNetworkHandler().sendPacket(new
+                    // ClientCommandC2SPacket(player,
+                    //                        // ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                    //                        //                        mc.getNetworkHandler().sendPacket(new
+                    // ClientCommandC2SPacket(player,
+                    //                        // ClientCommandC2SPacket.Mode.START_SPRINTING));
+                    //                        PlayerInputUtils.of(player.input).sprint(false).applyInput(player.input);
+                    //                        ClientPlayerAccess.of(player).resyncSprint();
+                    //                    }
+                }
             }
         }
     }
@@ -175,6 +192,14 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
             }
             default -> {
                 directionalSprintMode.set(Configs.BypassMode.BYPASS_GRIM);
+            }
+        }
+        switch (preset) {
+            case AC_GRIM -> {
+                fakeSprintMode.set(Configs.BypassMode.BYPASS_GRIM);
+            }
+            default -> {
+                fakeSprintMode.set(Configs.BypassMode.NO_BYPASS);
             }
         }
     }

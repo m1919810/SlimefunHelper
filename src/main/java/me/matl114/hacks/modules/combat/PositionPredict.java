@@ -9,6 +9,8 @@ import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
+import me.matl114.utils.entity.EntityMovementStatus;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
@@ -123,6 +125,17 @@ public class PositionPredict extends BaseModule {
                 && target instanceof LivingEntity livingEntity
                 && livingEntity.isUsingItem()
                 && livingEntity.getActiveItem().getItem() instanceof ShieldItem;
+    }
+
+    public Vec3d predictPlayerMove(PlayerInputUtils.Input input) {
+        EntityMovementStatus<Entity> entityMovementStatus = new EntityMovementStatus<>(mc.player);
+        if (mc.player.isFallFlying()) {
+            return mc.player.getVelocity();
+        } else if (mc.player.isInFluid()) {
+            return mc.player.getVelocity();
+        } else {
+            return entityMovementStatus.calculateLastMoveVelocity(input.forwardSpeed(), input.sidewaysSpeed());
+        }
     }
 
     public enum PredictMode implements ConfigEnum {

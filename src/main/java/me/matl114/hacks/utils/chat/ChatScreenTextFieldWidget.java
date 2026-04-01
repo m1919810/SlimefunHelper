@@ -1,5 +1,7 @@
 package me.matl114.hacks.utils.chat;
 
+import io.github.reserveword.imblocker.common.gui.FocusableObject;
+import io.github.reserveword.imblocker.common.gui.MinecraftTextFieldWidget;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.hacks.ChatTasks;
 import net.minecraft.client.MinecraftClient;
@@ -9,7 +11,7 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
-public class ChatScreenTextFieldWidget extends TextFieldWidget {
+public class ChatScreenTextFieldWidget extends TextFieldWidget implements FocusableObject, MinecraftTextFieldWidget {
     ChatScreen chatScreen;
 
     public ChatScreenTextFieldWidget(ChatScreen chatScreen) {
@@ -36,5 +38,10 @@ public class ChatScreenTextFieldWidget extends TextFieldWidget {
         } else {
             super.renderWidget(context, mouseX, mouseY, deltaTicks);
         }
+    }
+
+    public String getText() {
+        // Debug.info(isTrulyFocused());
+        return super.getText();
     }
 }

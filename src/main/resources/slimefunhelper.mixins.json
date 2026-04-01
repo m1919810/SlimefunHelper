@@ -4,6 +4,7 @@
 	"package": "me.matl114.mixins",
 	"compatibilityLevel": "JAVA_17",
 	"client": [
+		"access.ChunkMixin",
 		"access.ExplosiveProjectileMixin",
 		"access.HandledScreenMixin",
 		"access.KeyBindingMixin",

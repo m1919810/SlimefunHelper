@@ -11,6 +11,8 @@ public interface ClientPlayerEntityAccess extends LivingEntityAccess<ClientPlaye
 
     public void addMovementPacketWrapper(ProgressWrapper<ClientPlayerEntity> wrapper);
 
+    public void onPlayerInputPackets();
+
     @Nonnull
     public static ClientPlayerEntityAccess of(@Nonnull ClientPlayerEntity player) {
         return (ClientPlayerEntityAccess) player;

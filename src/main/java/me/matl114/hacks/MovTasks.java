@@ -1779,18 +1779,18 @@ public class MovTasks {
                 }
             };
     // This pipeline will modify rot not pos
-    public static final LegalMovementManager.ModifierPipeline PLAYER_PIPELINE_ROT =
-            new LegalMovementManager.ModifierPipeline(1_000_000) {
-                @Override
-                public int priority() {
-                    return 1_000_000;
-                }
-
-                @Override
-                public boolean mayModifyPos() {
-                    return false;
-                }
-            };
+    //    public static final LegalMovementManager.ModifierPipeline PLAYER_PIPELINE_ROT =
+    //            new LegalMovementManager.ModifierPipeline(1_000_000) {
+    //                @Override
+    //                public int priority() {
+    //                    return 1_000_000;
+    //                }
+    //
+    //                @Override
+    //                public boolean mayModifyPos() {
+    //                    return false;
+    //                }
+    //            };
     // This pipeline will modify pos not rot
     public static final LegalMovementManager.ModifierPipeline PLAYER_PIPELINE_POS =
             new LegalMovementManager.ModifierPipeline(1_000) {
@@ -2181,10 +2181,10 @@ public class MovTasks {
         var legalMovement = ClientPlayerAccess.of(player).getLegalMovementManager();
         PLAYER_PIPELINE_0.resetForNewPlayer(player);
         legalMovement.addMovementModifier(PLAYER_PIPELINE_0);
-        PLAYER_PIPELINE_ROT.resetForNewPlayer(player);
-        legalMovement.addMovementModifier(PLAYER_PIPELINE_ROT);
-        PLAYER_PIPELINE_POS.resetForNewPlayer(player);
-        legalMovement.addMovementModifier(PLAYER_PIPELINE_POS);
+        //        PLAYER_PIPELINE_ROT.resetForNewPlayer(player);
+        //        legalMovement.addMovementModifier(PLAYER_PIPELINE_ROT);
+        //        PLAYER_PIPELINE_POS.resetForNewPlayer(player);
+        //        legalMovement.addMovementModifier(PLAYER_PIPELINE_POS);
     }
 
     @Getter

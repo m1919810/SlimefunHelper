@@ -21,6 +21,7 @@ import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 @SuppressWarnings("all")
 public class AutoResync extends BaseModule {
@@ -83,11 +84,24 @@ public class AutoResync extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetBack);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+    }
+
+    int worldSwitchTick = 0;
+
+    public void onWorldSwitch(Event<World> event) {
+        worldSwitchTick = Tasks.getTick();
     }
 
     public void onSetBack(Event<PlayerPositionLookS2CPacket> event) {
         if (event.isCancelled()) return;
         if (mc.player == null) return;
+        // just switch world for no more than 10 second, it is a game join, do not apply any resync
+        if (worldSwitchTick + 100 > Tasks.getTick()) return;
+        if (mc.player.getPos().equals(Vec3d.ZERO)) {
+            // ignoring first spawn packets
+            return;
+        }
         boolean currentOnGround = mc.player.isOnGround();
         if (ticksTilExpire > Tasks.getTick() && pos != null) {
             // auto resync

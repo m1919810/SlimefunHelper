@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import me.matl114.events.Event;
 import me.matl114.utils.EntityUtils;
-import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec3d;
 
 public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity> {
@@ -155,54 +153,21 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
             ClientPlayerEntity player = playerStatus.entity;
             float originYaw = playerStatus.yaw;
             // rotated
-            float diff = EntityUtils.getSafeYawDiff(originYaw, player.getYaw());
-            Input input = player.input;
-            int forwardSpeed;
-            int sidewaySpeed;
-            boolean w, a, s, d;
-            int movementForward = (input.playerInput.forward() ? 1 : 0) + (input.playerInput.backward() ? -1 : 0);
-            int movementSideways = (input.playerInput.left() ? 1 : 0) + (input.playerInput.right() ? -1 : 0);
-            if (diff < 22.5 && diff >= -22.5) {
-                // do nothing
-                return;
-            } else if (diff < 67.5 && diff >= 22.5) {
-                // turn to
-                forwardSpeed = (movementForward - movementSideways);
-                sidewaySpeed = (movementForward + movementSideways);
-            } else if (diff >= 67.5 && diff < 90.0F + 22.5F) {
-                forwardSpeed = -movementSideways;
-                sidewaySpeed = movementForward;
-            } else if (diff >= 90.0F + 22.5F && diff < 90.0F + 67.5F) {
-                forwardSpeed = (-movementForward - movementSideways);
-                sidewaySpeed = (movementForward - movementSideways);
-            } else if (diff >= 90.0F + 67.5F || diff < -90.0F - 67.5F) {
-                forwardSpeed = -movementForward;
-                sidewaySpeed = -movementSideways;
-            } else if (diff >= -90.0F - 67.5F && diff < -90.0F - 22.5F) {
-                forwardSpeed = (-movementForward + movementSideways);
-                sidewaySpeed = (-movementForward - movementSideways);
-            } else if (diff >= -90.0F - 22.5F && diff < -90.0F + 22.5F) {
-                forwardSpeed = movementSideways;
-                sidewaySpeed = -movementForward;
-            } else if (diff >= -90.0F + 22.5F && diff < -22.5F) {
-                forwardSpeed = (movementForward + movementSideways);
-                sidewaySpeed = (-movementForward + movementSideways);
-            } else {
-                return;
-            }
-            // sync values
-            input.playerInput = new PlayerInput(
-                    forwardSpeed > 0,
-                    forwardSpeed < 0,
-                    sidewaySpeed > 0,
-                    sidewaySpeed < 0,
-                    input.playerInput.jump(),
-                    input.playerInput.sneak(),
-                    input.playerInput.sprint());
+            PlayerInputUtils.Input input = PlayerInputUtils.tryCorrectMovementInput(
+                    PlayerInputUtils.of(player.input), originYaw, player.getYaw());
+            input.applyInput(player.input);
         }
     }
 
     public static interface MovementModifier extends Comparable<MovementModifier> {
+        // tasks, attacks
+        public static int PRIORITY_LOW = -100000;
+        // movement hacks
+        public static int PRIORITY_COMMON = 0;
+        public static int PRIORITY_HIGH = 100000;
+        public static int PRIORITY_HIGHEST = 10000000;
+        public static int PRIORITY_MONITOR = Integer.MAX_VALUE - 1;
+
         default int priority() {
             return 0;
         }

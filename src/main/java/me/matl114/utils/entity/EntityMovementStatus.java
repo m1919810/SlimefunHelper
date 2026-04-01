@@ -71,7 +71,7 @@ public class EntityMovementStatus<T extends Entity> {
         this.entity.setPosition(pos);
     }
 
-    public Vec3d calculateLastMoveVelocity(int forward, int sideward, boolean jump) {
+    public Vec3d calculateLastMoveVelocity(int forward, int sideward) {
         if (this.entity instanceof LivingEntity livingEntity) {
             Vec2f vec2f = new Vec2f(sideward, forward).normalize();
             vec2f = applyMovementFactors(vec2f);

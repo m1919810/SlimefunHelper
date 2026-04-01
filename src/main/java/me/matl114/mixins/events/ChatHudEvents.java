@@ -32,7 +32,7 @@ public abstract class ChatHudEvents {
             CallbackInfo ci,
             @Local(argsOnly = true) LocalRef<Text> textLocalRef) {
         if (!Listener.getMessageAddToHud().isEmpty()) {
-            Event<Text> addMessageEvent = new Event<>(message, true, true);
+            Event<Text> addMessageEvent = new Event<>(message, true, true, signatureData, indicator);
             Listener.getMessageAddToHud().handleValue(addMessageEvent);
             if (addMessageEvent.isCancelled()) {
                 ci.cancel();

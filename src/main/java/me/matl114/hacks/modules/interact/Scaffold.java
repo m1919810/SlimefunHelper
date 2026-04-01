@@ -118,7 +118,7 @@ public class Scaffold extends BaseModule {
                 .addMovementModifier(new LegalMovementManager.MovementModifier() {
                     @Override
                     public int priority() {
-                        return -10_000_000;
+                        return PRIORITY_LOW;
                     }
 
                     @Override
