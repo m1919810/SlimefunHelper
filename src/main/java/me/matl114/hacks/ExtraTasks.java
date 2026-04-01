@@ -39,6 +39,9 @@ public class ExtraTasks {
     public static EnderEyeLog enderEyeLog;
 
     @Getter
+    public static GuiFix guiFix;
+
+    @Getter
     public static ServerScanner serverScanner;
 
     @Getter
@@ -52,6 +55,7 @@ public class ExtraTasks {
         beaconEnhance = new BeaconEnhance().register(m);
 
         enderEyeLog = new EnderEyeLog().register(m);
+        guiFix = new GuiFix().register(m);
 
         serverScanner = new ServerScanner().register(m);
         warps = new Warps().register(m);

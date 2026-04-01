@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.move;
 
 import java.util.EnumMap;
 import java.util.Locale;
+import lombok.Setter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
@@ -12,13 +13,14 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.utils.Debug;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.MaceItem;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
@@ -32,7 +34,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
-            MovTasks.PLAYER_PIPELINE_POS.addMovementModifierFactory(() -> instance);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
     }
@@ -40,6 +42,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     public static final String[] MOVE_NOFALL = {"move-safety", "no-fall", "toggle"};
     public static final String[] MOVE_NOFALL_MODE = {"move-safety", "no-fall", "bypass-mode"};
     public static final String[] MOVE_NOFALL_SAFE_DISTANCE = {"move-safety", "no-fall", "safe-distance-modify"};
+
+    public static final String[] MOVE_NOFALL_WHEN_FLY = {"move-safety", "no-fall", "disable-when-allow-flying"};
 
     public final FlagRef noFall = builder(Configs.MOV_CONFIG, Boolean.class)
             .path(MOVE_NOFALL)
@@ -56,9 +60,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             .defaultValue(0)
             .build();
 
+    public final FlagRef disableFlyNoFall = builder(Configs.MOV_CONFIG, MOVE_NOFALL_WHEN_FLY, Boolean.class)
+            .defaultValue(true)
+            .build();
+
     @Override
     public int priority() {
-        return 1;
+        return PRIORITY_MONITOR;
     }
 
     @Override
@@ -79,7 +87,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         delegateMap.put(NofallBypassMode.LAZY_MODE, new NoFallLazy(this));
         delegateMap.put(NofallBypassMode.BYPASS_GRIM, new NoFallBypassGrim(this));
         delegateMap.put(NofallBypassMode.LAZY_BYPASS_GRIM, new NoFallLazyBypassGrim(this));
-        delegateMap.put(NofallBypassMode.TEST, new NoFallTest(this));
+        delegateMap.put(NofallBypassMode.LAZY_GRIM_PLUS, new NoFallGrimLazyPlus(this));
     }
 
     private void initArguments() {
@@ -129,7 +137,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         return (T) delegateMap.get(noFallModel.get());
     }
     // global status
+    @Setter
     double lastOnGroundHeight = Integer.MIN_VALUE;
+
     double lastHeight;
     // current tick status
     boolean holdingMace = false;
@@ -161,7 +171,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
         // filter creative playerGaming
 
-        if (args.getAbilities().invulnerable) {
+        if (args.getAbilities().invulnerable
+                || (disableFlyNoFall.get() && MovTasks.getCreativeFlight().serverSideCanFly)) {
             entityStage = ENTITY_STAGE_INVULNERABLE;
             return;
         }
@@ -735,48 +746,297 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             return true;
         }
     }
+    // tested on 1.21.11 loyisa server 3.29
+    // 屎山代码能别动就别动了依旧俺寻思他能跑他就能跑
+    /*
+                      _ooOoo_
+                     o8888888o
+                     88" . "88
+                     (| -_- |)
+                     O\ = /O
+                  ____/`---'\____
+                .' \\| |// `
+               / \\||| : |||// \
+              / _||||| -:- |||||- \
+              | | \\\ - /// | |
+              | \_| ''\---/'' | |
+              \ .-\__ `-` ___/-. /
+            ___`. .' /--.--\ `. . __
+         ."" '< `.___\_<|>_/___.' >'""
+        | | : `- \`.;`\ _ /`;.`/ - ` : | |
+        \ \ `-. \_ __\ /__ _/ .-` / /
+    ======`-.____`-.___\_____/___.-`____.-'======
+                      `=---='
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               佛祖保佑 永无BUG
 
-    public static class NoFallTest extends NoFallDelegate {
+              至今我们仍旧不知道在屎山里面发生了什么
+    */
+    public static class NoFallGrimLazyPlus extends NoFallDelegate {
 
-        public NoFallTest(NoFall module) {
+        int lastResyncTime = -1;
+        int lastNoFall = -1;
+        boolean afterSetbackFlag;
+        Vec3d lastNoFallPos = null;
+        Boolean shouldApplyOnGroundReverseNextTick;
+        int duplicateCount = 0;
+        // left for usage
+        boolean flag1;
+        boolean flag2;
+        int cnt1;
+        int cnt2;
+        Vec3d lastSetBackPos;
+        int duplicateSetback = 0;
+        private static final int latency = 3;
+
+        public NoFallGrimLazyPlus(NoFall module) {
             super(module);
+            this.afterSetbackFlag = true;
+            this.duplicateCount = 0;
         }
 
         @Override
-        public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
+        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+            afterSetbackFlag = true;
+            lastResyncTime = Tasks.getTick();
+            Vec3d vc3d = setBack.context.vec3d();
+            // our movements are 1E-8, mc movements 1E-7
+            boolean thisduplicateSetback = lastSetBackPos != null && lastSetBackPos.squaredDistanceTo(vc3d) < 1E-12;
+            if (thisduplicateSetback) {
+                duplicateSetback += 1;
+                if (duplicateSetback > 3) {
+                    duplicateSetback = 0;
+                    duplicateCount = 100;
+                }
+            } else {
+                duplicateSetback = 0;
+            }
+            lastSetBackPos = vc3d;
+            if (step == Step.WAIT_FOR_RESYNC) {
+                step = Step.HANDLE_RESYNC;
+            }
+            super.onSetback(setBack);
+        }
 
-        int fallTicks = 0;
-        boolean isSpoofing;
+        Step step = Step.COMMON;
 
         @Override
-        public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
-            ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-            if (!player.isOnGround()) {
-                if (player.fallDistance > module.safeDistance) {
-                    this.fallTicks++;
-                }
+        public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+            ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+            boolean forceNoFall = ClientPlayerAccess.of(args).isForceNoFall();
+            if (forceNoFall) {
+                runningThisTick = true;
+                // LAZY MODE: only if we trigger not onground -> onground should we reset
+                counter = 0;
+                module.lastOnGroundHeight = module.lastServerY;
+
+                mc.getNetworkHandler()
+                        .sendPacket(VPacket.newPositionAndOnGround(
+                                args.getX(),
+                                module.lastServerY + DELTA_Y,
+                                args.getZ(),
+                                false,
+                                args.horizontalCollision));
+                noFallSetbackResponse = true;
+                ClientPlayerAccess.of(args).setForceNoFall(false);
+            } else if (module.isActive()) {
+                counter += 1;
             }
-            if (!player.isOnGround() && this.fallTicks > 0) {
-                if (!this.isSpoofing) {
-                    // moveEvent.context(moveEvent.context().add(0,0.1,0));
-                    player.setVelocity(player.getVelocity().add(0, 0.1, 0));
-                    this.isSpoofing = true;
-                }
+            // ?
+            if (counter > 100) {
+                noFallSetbackResponse = false;
             }
         }
 
+        boolean thisStepInNoInputStep = false;
+
         @Override
+        public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
+            if (module.isActive() && step == Step.REAPPLY_MOVEMENT
+                    || step == Step.WAIT_FOR_RESYNC
+                    || step == Step.HANDLE_RESYNC) {
+                // do not make velocity input
+                // Debug.info("check input");
+                ClientPlayerEntity entity = movementManagerEvent.context.playerStatus.entity;
+                var input = PlayerInputUtils.of(entity.input);
+                if (step == Step.REAPPLY_MOVEMENT) {
+                    input = input.forward(thisStepInNoInputStep)
+                            .backward(false)
+                            .left(false)
+                            .right(false)
+                            .jump(false);
+                } else if (step == Step.WAIT_FOR_RESYNC) {
+                    input = input.forward(thisStepInNoInputStep)
+                            .backward(false)
+                            .left(false)
+                            .right(false)
+                            .jump(true);
+                } else {
+                    input = input.forward(false)
+                            .backward(false)
+                            .left(false)
+                            .right(false)
+                            .jump(true);
+                }
+
+                input.applyInput(entity.input);
+            }
+        }
+
         public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-            if (this.isSpoofing) {
-                movementManagerEvent.context.playerStatus.entity.setOnGround(true);
-                this.fallTicks = 0;
-                this.isSpoofing = false;
+
+            if (module.isActive()) {
+                var entity = movementManagerEvent.context.playerStatus;
+                // check Y after fall
+                if (step == Step.REAPPLY_MOVEMENT) {
+                    movementManagerEvent.context.playerStatus.restorePos();
+                    ClientPlayerAccess.of(entity.entity).resyncPos();
+                    step = Step.WAIT_FOR_RESYNC;
+                } else {
+                    //                    if (lastNoFallPos != null) {
+                    //                        // near
+                    //                        if (Math.abs(lastNoFallPos.y - entity.entity.getY()) < 1e-2
+                    //                            && entity.entity.getPos().squaredDistanceTo(lastNoFallPos) < 1
+                    //                            && lastNoFall + latency >= Tasks.getTick()) {
+                    //                            step = Step.HANDLE_RESYNC;
+                    //                        }
+                    //                    }
+                    boolean shouldCheck;
+                    if (step == Step.WAIT_FOR_RESYNC) {
+                        shouldCheck = true;
+                        if (lastNoFall + latency <= Tasks.getTick()) {
+                            step = Step.COMMON;
+                        }
+                    } else if (step == Step.HANDLE_RESYNC) {
+                        // must check?
+                        shouldCheck = true;
+                        if (lastNoFall + latency <= Tasks.getTick()) {
+                            step = Step.COMMON;
+                        }
+                    } else {
+                        // If there is a recent nofall without duplicate , then it must be the first nofall, check it
+                        // carefully
+                        shouldCheck = (lastNoFall + latency >= Tasks.getTick())
+                                || afterSetbackFlag
+                                || (entity.entity.getY() <= module.lastOnGroundHeight - module.safeDistance);
+                    }
+                    boolean shouldCheckHard = step == Step.HANDLE_RESYNC || (lastNoFall + latency >= Tasks.getTick());
+                    if (!shouldCheckHard) {
+                        duplicateCount = 0;
+                    }
+                    // Debug.info("should check : " + shouldCheck);
+                    if (shouldCheck) {
+                        if (!runningThisTick) {
+                            // apply only once
+                            //                        if(Tasks.getTick() > lastResyncTime + 5 && Tasks.getTick() >
+                            // lastNoFall + 5){
+                            //                            // if not a  ac resync,
+                            //                            // just do not check to avoid byd packet flood
+                            //                            afterSetbackFlag = false;
+                            //                        }
+                            // check
+                            if (!shouldCheckHard) {
+                                afterSetbackFlag = false;
+                            }
+                            if (!entity.onGround && entity.entity.isOnGround()) {
+                                if (step == Step.HANDLE_RESYNC) {
+                                    duplicateCount += 1;
+                                } else {
+                                    duplicateCount = 1;
+                                }
+                                if (duplicateCount > 20) {
+                                    // maybe it is stucked, we just refresh this
+                                    lastNoFall = -1;
+                                    lastNoFallPos = null;
+                                    duplicateCount = 0;
+                                    // Debug.info("cancel noFall because it duplicates");
+                                    step = Step.COMMON;
+                                    return;
+                                }
+                                afterSetbackFlag = false;
+                                runningThisTick = true;
+                                lastNoFall = Tasks.getTick();
+                                counter = 0;
+                                // use history y //todo try use nofall pos as this
+                                lastNoFallPos = entity.entity.getPos();
+                                // todo figure out why sync flood happens
+                                // todo: try send it eariler
+
+                                // Debug.info("update 4");
+                                module.lastOnGroundHeight = entity.pos.getY();
+                                //                            if(duplicateCount == 1){
+                                //                                mc.getNetworkHandler()
+                                //                                    .sendPacket(VPacket.newPositionAndOnGround(
+                                //                                        entity.pos.getX(),
+                                //                                        entity.pos.getY() + 100,
+                                //                                        entity.pos.getZ(),
+                                //                                        false,
+                                //                                        entity.horizontalCollision));
+                                //                                mc.getNetworkHandler().sendPacket(new
+                                // ClientTickEndC2SPacket());
+                                //                            }
+                                // todo: shit, can we just abort current movements and up
+                                storedPacketMove = VPacket.newPositionAndOnGround(
+                                        entity.pos.getX(),
+                                        entity.pos.getY() + DELTA_Y,
+                                        entity.pos.getZ(),
+                                        false,
+                                        entity.horizontalCollision);
+                                // Debug.chat("Apply");
+                                movementManagerEvent.cancel();
+                                var input = PlayerInputUtils.of(entity.entity.input);
+
+                                if (step == Step.COMMON) {
+                                    thisStepInNoInputStep =
+                                            !input.forward() && !input.backward() && !input.left() && !input.right();
+                                    // step in movement
+                                    if (thisStepInNoInputStep) {
+                                        input.forward(true).applyInput(entity.entity.input);
+                                    }
+                                    step = Step.REAPPLY_MOVEMENT;
+                                }
+                                // mc.getNetworkHandler().sendPacket(new ClientTickEndC2SPacket());
+
+                                //                            entity.entity.setPos(entity.pos.getX(),
+                                // entity.entity.getY(),
+                                // entity.pos.getZ());
+                                //                            entity.entity.setVelocity(0.0, 0.0, 0.0);
+                                noFallSetbackResponse = true;
+
+                                // idk
+                                return;
+                            }
+                        }
+                    }
+                }
             }
         }
+
+        Packet<?> storedPacketMove = null;
 
         @Override
         public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            if (storedPacketMove != null) {
+                mc.getNetworkHandler().sendPacket(storedPacketMove);
+            }
+            storedPacketMove = null;
+            if (shouldApplyOnGroundReverseNextTick != null) {
+                if (!runningThisTick) {
+                    movementManagerEvent.context.playerStatus.entity.setOnGround(shouldApplyOnGroundReverseNextTick);
+                }
+                shouldApplyOnGroundReverseNextTick = null;
+            }
+            if (runningThisTick) {
+                // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
+            }
             return true;
+        }
+
+        public static enum Step {
+            COMMON,
+            REAPPLY_MOVEMENT,
+            WAIT_FOR_RESYNC,
+            HANDLE_RESYNC;
         }
     }
 
@@ -786,6 +1046,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         BYPASS_GRIM,
         @ApiStatus.Experimental
         LAZY_BYPASS_GRIM,
+        LAZY_GRIM_PLUS,
         TEST;
 
         @Override
@@ -800,10 +1061,10 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         switch (modulePreset) {
             case AC_GRIM -> {
                 if (noFallModel.get() != NofallBypassMode.LAZY_BYPASS_GRIM) {
-                    noFallModel.set(NofallBypassMode.BYPASS_GRIM);
-                    if (noFall.get()) {
-                        Debug.chat("正在切换到GrimNoFall模式, 该功能可能在最新版本失效, 若失效请手动切换LazyGrim模式");
-                    }
+                    noFallModel.set(NofallBypassMode.LAZY_GRIM_PLUS);
+                    //                    if (noFall.get()) {
+                    //                        Debug.chat("正在切换到GrimNoFall模式, 该功能可能在最新版本失效, 若失效请手动切换LazyGrim模式");
+                    //                    }
                 }
             }
             default -> {

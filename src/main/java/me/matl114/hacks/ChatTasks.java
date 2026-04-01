@@ -78,6 +78,9 @@ public class ChatTasks {
     @Getter
     public static InGuiChatBox inGuiChatBox;
 
+    @Getter
+    public static PlayerChat playerChat;
+
     private static void initModules(ModuleManager m) {
         chatExtra = new ChatExtra().register(m);
 
@@ -87,6 +90,8 @@ public class ChatTasks {
 
         chatCombine = new ChatCombine().register(m);
         inGuiChatBox = new InGuiChatBox().register(m);
+
+        playerChat = new PlayerChat().register(m);
     }
 
     static {

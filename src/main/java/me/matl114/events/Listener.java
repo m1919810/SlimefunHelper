@@ -27,6 +27,7 @@ import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.hud.ChatHudLine;
+import net.minecraft.client.gui.hud.MessageIndicator;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
@@ -44,6 +45,7 @@ import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
+import net.minecraft.network.message.MessageSignatureData;
 import net.minecraft.network.packet.*;
 import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
 import net.minecraft.recipe.RecipeEntry;
@@ -309,6 +311,7 @@ public class Listener {
     @Getter // cancelable, modifiable
     @Cancelable
     @Modifiable
+    @ExtraArgs({MessageSignatureData.class, MessageIndicator.class})
     private static final EventChannel<Text> messageAddToHud = new EventChannel<>();
 
     @Getter // cancelable, modifiable

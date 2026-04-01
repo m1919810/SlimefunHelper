@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.accessors.access.ChunkAccess;
 import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -37,10 +38,7 @@ import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.registry.Registries;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.BlockEntityTickInvoker;
 import org.apache.commons.lang3.function.BooleanConsumer;
 
@@ -126,7 +124,7 @@ public class RenderOptimize extends BaseModule {
 
     public final StringRef cullingTypes = builder(Configs.RENDER_CONFIG, CULLING_ENTITY_TYPES, StringRef.TYPE)
             .defaultValue("^(item.*)$")
-            .updateListener(s -> cullingTypeSet = RegistryUtils.parseWhiteList(Registries.ENTITY_TYPE, s))
+            .updateListener(s -> EntityUtils.parseEntityWhiteList(s, cullingTypeSet))
             .validator(Configs.REGEX_VALIDATOR)
             .build();
 
@@ -143,7 +141,7 @@ public class RenderOptimize extends BaseModule {
             .build();
 
     public final DoubleRef cullingRadius = builder(Configs.RENDER_CONFIG, OPTIMIZE_CULL_RADIUS, DoubleRef.TYPE)
-            .defaultValue(100.0D)
+            .defaultValue(64.0D)
             .build();
 
     public final FlagRef cullingUseRaycast =
@@ -160,7 +158,7 @@ public class RenderOptimize extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onBlockEntityCullingTick);
 
         registerListener(RenderListener.getEntityRenderListener(), this::onEntityRender);
-        registerListener(RenderListener.getBlockEntityRenderListener(), this::onEntityRender);
+        registerListener(RenderListener.getBlockEntityRenderListener(), this::onBlockEntityRender);
     }
 
     ExecutorService parallelRaycastExecutor;
@@ -273,9 +271,9 @@ public class RenderOptimize extends BaseModule {
         }
     }
 
-    public void onEntityRender(Event<?> event) {
+    public void onEntityRender(Event<Entity> event) {
         if (event.isCancelled() || !cullingEnable.get()) return;
-        Object entity = event.context();
+        Entity entity = event.context();
         if (entity instanceof MetadataHolder holder
                 && !holder.isMetaEmpty()
                 && holder.getMetadata().get(this, KEY_RENDER_CONTROL) instanceof RenderController controller
@@ -356,55 +354,90 @@ public class RenderOptimize extends BaseModule {
         }
     }
 
+    public void canChunkBeSeen(int chunkX, int chunkZ, Vec3d cameraPos, Vec3d cameraLook) {}
+
     public void onBlockEntityCullingTick(Event<ClientPlayerEntity> event) {
 
         if (mc.world != null) {
+            double maxDistance = cullingRadius.get();
+            int maxChunkDistance = (int) ((cullingRadius.get() + 1) / 16 + 1);
+            Vec3d pos = RenderUtils.getCameraPos();
+            BlockPos cameraBlock = BlockPos.ofFloored(pos);
+            int chunkX = cameraBlock.getX() >> 4;
+            int chunkZ = cameraBlock.getZ() >> 4;
             for (var chunk : CommonUtils.chunks(false)) {
-                for (var blockPos : chunk.getBlockEntityPositions()) {
-                    BlockEntity blockEntity = chunk.getBlockEntity(blockPos);
-                    if (blockEntity instanceof MetadataHolder holder) {
-                        MetaData metaData;
-                        RenderController controller;
-                        Vec3d pos = RenderUtils.getCameraPos();
-                        BlockEntityType<?> types = blockEntity.getType();
-                        if (cullingEnable.get()) {
-                            if (cullingTypeSet2.contains(types)) {
-                                metaData = holder.getMetadata();
-                                controller = metaData.getOrPut(this, KEY_RENDER_CONTROL, RenderController::new);
+                ChunkPos cpos = chunk.getPos();
+                if (Math.abs(cpos.x - chunkX) <= maxChunkDistance && Math.abs(cpos.z - chunkZ) <= maxChunkDistance) {
+                    for (var entry : ChunkAccess.of(chunk).blockEntities()) {
+                        BlockPos blockPos = entry.getKey();
+                        Box box = Box.from(Vec3d.of(blockPos));
+                        if (box.squaredMagnitude(pos) <= MathUtils.s2(maxDistance)) {
+                            BlockEntity blockEntity = entry.getValue();
+                            if (blockEntity instanceof MetadataHolder holder) {
+                                MetaData metaData;
+                                RenderController controller;
+                                BlockEntityType<?> types = blockEntity.getType();
+                                if (cullingEnable.get()) {
+                                    if (cullingTypeSet2.contains(types)) {
+                                        metaData = holder.getMetadata();
+                                        controller = metaData.getOrPut(this, KEY_RENDER_CONTROL, RenderController::new);
 
-                                // do not hide nearby entity
-                                Box box = Box.from(Vec3d.of(blockPos));
-                                if (box.squaredMagnitude(pos) < 16) {
-                                    controller.hideAll = false;
-                                } else if (box.squaredMagnitude(pos) > MathUtils.s2(cullingRadius.get())) {
-                                    controller.hideAll = true;
-                                } else {
-                                    Vec3d playerTo = pos.subtract(blockPos.toCenterPos());
-                                    Vec3d playerLook = RenderUtils.getCameraLookVec(0.0F);
-                                    if (playerLook.dotProduct(playerTo) > 0) {
-                                        controller.hideAll = true;
-                                    } else {
-                                        if (cullingUseRaycast.get()) {
-                                            delayScheduleRaycast(box, controller, (val) -> {
-                                                controller.hideAll = val;
-                                            });
-                                        } else {
+                                        // do not hide nearby entity
+                                        if (box.squaredMagnitude(pos) < 16) {
                                             controller.hideAll = false;
+                                        } else {
+                                            Vec3d playerTo = pos.subtract(blockPos.toCenterPos());
+                                            Vec3d playerLook = RenderUtils.getCameraLookVec(0.0F);
+                                            if (playerLook.dotProduct(playerTo) > 0) {
+                                                controller.hideAll = true;
+                                            } else {
+                                                if (cullingUseRaycast.get()) {
+                                                    delayScheduleRaycast(box, controller, (val) -> {
+                                                        controller.hideAll = val;
+                                                    });
+                                                } else {
+                                                    controller.hideAll = false;
+                                                }
+                                            }
                                         }
-                                    }
-                                }
-                            } else {
-                                if (!holder.isMetaEmpty()) {
-                                    metaData = holder.getMetadata();
-                                    controller = metaData.get(this, KEY_RENDER_CONTROL);
-                                    if (controller != null) {
-                                        controller.hideAll = false;
+                                    } else {
+                                        if (!holder.isMetaEmpty()) {
+                                            metaData = holder.getMetadata();
+                                            controller = metaData.get(this, KEY_RENDER_CONTROL);
+                                            if (controller != null) {
+                                                controller.hideAll = false;
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    public void onBlockEntityRender(Event<BlockEntity> event) {
+        if (event.isCancelled() || !cullingEnable.get()) return;
+        BlockEntity entity = event.context();
+        BlockEntityType<?> type = entity.getType();
+        if (cullingTypeSet2.contains(type)) {
+            Box box = Box.from(Vec3d.of(entity.getPos()));
+            double sq = box.squaredMagnitude(RenderUtils.getCameraPos());
+            // use distance first
+            if (sq < 16) {
+                return;
+            } else if (sq > MathUtils.s2(cullingRadius.get())) {
+                event.cancel();
+                return;
+                // then calculate
+                // may contains old data, but will refresh next tick
+            } else if (entity instanceof MetadataHolder holder
+                    && !holder.isMetaEmpty()
+                    && holder.getMetadata().get(this, KEY_RENDER_CONTROL) instanceof RenderController controller
+                    && controller.hideAll) {
+                event.cancel();
             }
         }
     }

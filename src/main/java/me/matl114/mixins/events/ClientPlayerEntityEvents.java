@@ -139,6 +139,10 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         }
     }
 
+    @Unique
+    public void onPlayerInputPackets() {
+    }
+
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))
     public void postwrapperPlayerMovementSentTick(CallbackInfo ci) {
         onPostPlayerMovementTick((ClientPlayerEntity) (Object) this);

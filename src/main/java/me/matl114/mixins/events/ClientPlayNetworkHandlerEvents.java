@@ -44,6 +44,10 @@ public abstract class ClientPlayNetworkHandlerEvents {
 
     @Inject(method = "sendChatCommand", at = @At("HEAD"), cancellable = true)
     private void onChat0(String command, CallbackInfo ci, @Local(argsOnly = true) LocalRef<String> commandRef) {
+        if (escapeSendEvent) {
+            escapeSendEvent = false;
+            return;
+        }
         String chatContent = "/" + command;
         Event<String> value = new Event<>(chatContent, true, true);
         Listener.getChatSend().handleValue(value);
@@ -85,7 +89,16 @@ public abstract class ClientPlayNetworkHandlerEvents {
             ci.cancel();
             return;
         }
-        contentRef.set(value.context());
+        String valueChange = value.context();
+        if (!Objects.equals(content, valueChange)) {
+            if (!valueChange.startsWith("/")) {
+                contentRef.set(valueChange);
+            } else {
+                ci.cancel();
+                escapeSendEvent = true;
+                sendChatCommand(valueChange.substring(1));
+            }
+        }
     }
 
     @Shadow
@@ -145,6 +158,9 @@ public abstract class ClientPlayNetworkHandlerEvents {
 
     @Shadow
     public abstract void sendChatMessage(String content);
+
+    @Shadow
+    public abstract void sendChatCommand(String command);
 
     @Inject(
             method = "onPlayerPositionLook",

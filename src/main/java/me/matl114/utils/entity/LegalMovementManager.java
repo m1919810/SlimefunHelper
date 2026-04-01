@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.function.Supplier;
 import me.matl114.events.Event;
 import me.matl114.utils.EntityUtils;
-import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
@@ -198,6 +197,14 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
     }
 
     public static interface MovementModifier extends Comparable<MovementModifier> {
+        // tasks, attacks
+        public static int PRIORITY_LOW = -100000;
+        // movement hacks
+        public static int PRIORITY_COMMON = 0;
+        public static int PRIORITY_HIGH = 100000;
+        public static int PRIORITY_HIGHEST = 10000000;
+        public static int PRIORITY_MONITOR = Integer.MAX_VALUE - 1;
+
         default int priority() {
             return 0;
         }

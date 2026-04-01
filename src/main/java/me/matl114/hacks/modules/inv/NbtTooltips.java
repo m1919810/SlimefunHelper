@@ -64,8 +64,7 @@ public class NbtTooltips extends BaseModule {
     public List<Text> getTooltipLines(ItemStack stack) {
         NbtCompound nbtCompound = getSimplifiedNbt(stack);
         Text text = new NbtTextFormatter(" ".repeat(formatedWidth.get())).apply(nbtCompound);
-        String string = ChatUtils.textToLegacyString(text);
-        return ChatUtils.multiLineTextFromLegacyString(string, width.get());
+        return ChatUtils.splitToMultiLineText(text, width.get());
     }
 
     public NbtCompound getSimplifiedNbt(ItemStack stack) {

@@ -6,6 +6,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -13,6 +14,7 @@ import me.matl114.events.RenderListener;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -23,6 +25,8 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
@@ -223,8 +227,12 @@ public class Attack extends BaseModule {
         final double attackRange = CombatTasks.getCombatExtra().getAttackRange();
         Vec3d vec3d = mc.player.getPos();
         // do not add mace or tp attack in legal mode
-
-        if (mc.crosshairTarget instanceof EntityHitResult entity && entity.getEntity() == target) {
+        ElytraExtra elytraExtra = MovTasks.getElytraExtra();
+        boolean useMaceAttack = elytraExtra.maceFix.get()
+                && mc.player.isFallFlying()
+                && mc.player.getMainHandStack().getItem() instanceof MaceItem mace
+                && elytraExtra.shouldUseDelayMovementAttackMaceFix();
+        if (!useMaceAttack && mc.crosshairTarget instanceof EntityHitResult entity && entity.getEntity() == target) {
             // already actioned in caller
             // may not actioned in caller, fix it
             attackWithCritic(player, target, criticSprint);
@@ -279,29 +287,62 @@ public class Attack extends BaseModule {
             boolean useDelay = delayTurningAround;
             if (useDelay) {
                 // TODO: fix this bug: can not pass matrix ac when on ground , check numbers and positions,
+                int swapElytraSlot = -1;
+                int delayTick;
+                boolean armorFly = elytraExtra.thisFallFlyingIsArmorFly != -1;
+                if (useMaceAttack) {
+                    // do here
+                    if (armorFly) {
+                        // disable next restart
+                        elytraExtra.disableNextArmorFlyLazyElytraTransaction = 10;
+                        delayTick = 1;
+                    } else {
+                        // common elytra fly not supported yet
+                        swapElytraSlot = elytraExtra.findEmptyPlaceForElytra();
+                        if (swapElytraSlot != -1) {
+                            elytraExtra.switchSlotToArmor(swapElytraSlot);
+                            delayTick = 2;
+                        } else {
+                            delayTick = 0;
+                        }
+                    }
+                } else {
+                    delayTick = 0;
+                }
+                final int elytraSlot = swapElytraSlot;
                 ClientPlayerAccess.of(mc.player)
                         .getLegalMovementManager()
                         .addMovementModifier(new LegalMovementManager.MovementModifier() {
                             Vec3d posDelta = Vec3d.ZERO;
                             Vec3d posDelta2 = Vec3d.ZERO;
                             Vec3d velocity;
+                            Vec3d lookVec;
                             boolean distancePassAttack = true;
+                            boolean runThisTick = true;
 
                             @Override
                             public int priority() {
-                                return -10000000;
+                                return PRIORITY_LOW;
                             }
 
                             @Override
                             public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+                                runThisTick = true;
                                 ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+                                if (useMaceAttack && args.isFallFlying()) {
+                                    runThisTick = false;
+                                    return;
+                                }
                                 // step back our position
                                 velocity = args.getVelocity();
-
+                                Vec3d predictedEyePos = mc.player.getEyePos();
+                                if (useMaceAttack || args.isFallFlying()) {
+                                    // fix targeting in big velocity
+                                    predictedEyePos = predictedEyePos.add(mc.player.getVelocity());
+                                }
                                 Vec3d vec3d = args.getPos();
-
                                 if (tpRange.get() > 1E-7
-                                        && target.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
+                                        && target.getBoundingBox().squaredMagnitude(predictedEyePos)
                                                 > MathUtils.s2(attackRange)) {
                                     // need tp attack
                                     // how?
@@ -323,7 +364,7 @@ public class Attack extends BaseModule {
                                         args.setPosition(vec3d1.add(0, 9E-8, 0));
                                     }
                                     // backoff
-                                    if (target.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
+                                    if (target.getBoundingBox().squaredMagnitude(predictedEyePos)
                                             > MathUtils.s2(attackRange)) {
                                         // Debug.chat("Distance to large , disable atack");
                                         distancePassAttack = false;
@@ -336,7 +377,7 @@ public class Attack extends BaseModule {
                                 if (distancePassAttack) {
                                     Vec3d eyePos = target.getEyePos();
                                     Vec3d targetPos = target.getPos();
-                                    double percentage = attackOffsetRand.nextDouble(0.75d, 0.95d);
+                                    double percentage = attackOffsetRand.nextDouble(0.8d, 1.00d);
                                     Vec3d attackOffsetted = targetPos.add(
                                             eyePos.subtract(targetPos).multiply(percentage));
                                     attackOffsetted.add(
@@ -344,10 +385,15 @@ public class Attack extends BaseModule {
                                             attackOffsetRand.nextDouble(-0.05d, 0.05d),
                                             attackOffsetRand.nextDouble(-0.05d, 0.05d));
                                     Vec3d cacheDirection = attackOffsetted
-                                            .subtract(args.getEyePos())
+                                            .subtract(predictedEyePos)
                                             .normalize();
-
                                     EntityUtils.setEntityRotationSafe(args, cacheDirection);
+                                    if (RenderTasks.DEBUG_RENDER_COMBAT) {
+                                        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+                                                RenderTasks.DEBUG_TICK,
+                                                new RenderTasks.LineObject(predictedEyePos, cacheDirection)));
+                                    }
+                                    lookVec = cacheDirection;
                                     if (canUseMaceTp()
                                             && mc.player.getActiveItem().getItem() instanceof MaceItem) {
                                         Debug.chat(
@@ -361,15 +407,39 @@ public class Attack extends BaseModule {
                             }
 
                             @Override
+                            public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
+                                if (!runThisTick) return;
+                                if (lookVec != null) {
+                                    // rewrite input to fit lookVec
+                                    ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+                                    PlayerInputUtils.Input input = PlayerInputUtils.of(args.input);
+                                    PlayerInputUtils.Input input1 = PlayerInputUtils.tryCorrectMovementInput(
+                                            input, movementManagerEvent.context.playerStatus.yaw, args.getYaw());
+                                    // cancel sprint
+                                    if (!input1.forward() || critic.get()) {
+                                        input1.sprint(false);
+                                        player.setSprinting(false);
+                                    }
+
+                                    //  Debug.chat("Try correct", input1);
+                                    input1.applyInput(args.input);
+                                }
+                            }
+
+                            @Override
                             public boolean postModify(
                                     Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                                if (!enabledThisTick) {
-                                    // rare,,, maybe
-                                    Debug.chat("Attack Task conflict with other movement tasks !!!");
-                                    return false;
+                                if (!runThisTick) {
+                                    return true;
                                 }
                                 ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
                                 if (distancePassAttack) {
+                                    if (RenderTasks.DEBUG_RENDER_COMBAT) {
+                                        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+                                                RenderTasks.DEBUG_TICK,
+                                                new RenderTasks.LineObject(args.getEyePos(), args.getRotationVector())
+                                                        .color(Color.MAGENTA)));
+                                    }
                                     ACPostTasks.addPostTransactionAction((ch) -> {
                                         attackWithCritic(player, target, criticSprint);
                                     });
@@ -393,6 +463,34 @@ public class Attack extends BaseModule {
                                     ACPostTasks.addPostTransactionAction((ch) -> {
                                         args.swingHand(Hand.MAIN_HAND);
                                     });
+                                }
+                                if (useMaceAttack) {
+                                    if (armorFly) {
+                                        elytraExtra.disableNextArmorFlyLazyElytraTransaction = 0;
+                                        ACPostTasks.addPostTransactionAction((ch) -> {
+                                            if (elytraExtra.onSwitchItemFallFlying()) {
+                                                mc.getNetworkHandler()
+                                                        .sendPacket(new ClientCommandC2SPacket(
+                                                                mc.player,
+                                                                ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                                                elytraExtra.switchSlotToArmor(elytraExtra.thisFallFlyingIsArmorFly);
+                                                elytraExtra.thisTickSwitchingIndex = -1;
+                                                EntityInternalAccess.of(mc.player)
+                                                        .setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
+                                            }
+                                        });
+                                    } else {
+                                        if (elytraSlot != -1) {
+                                            ACPostTasks.addPostTransactionAction((ch) -> {
+                                                elytraExtra.switchSlotToArmor(elytraSlot);
+                                                if (!mc.player.isFallFlying())
+                                                    ch.sendPacket(new ClientCommandC2SPacket(
+                                                            mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                                                //
+                                                // EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
+                                            });
+                                        }
+                                    }
                                 }
                                 // return do not kept
                                 return false;
