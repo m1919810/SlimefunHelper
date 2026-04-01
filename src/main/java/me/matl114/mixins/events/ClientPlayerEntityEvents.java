@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.BidirectionalIterator;
 import java.util.Objects;
@@ -35,6 +37,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientPlayerEntity.class)
 public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntity implements ClientPlayerEntityAccess {
     @Shadow
+    private PlayerInput lastPlayerInput;
+
+    @Unique
+    private boolean resyncLastInput = false;
+
+    @Shadow
+    private double lastXClient;
+
+    @Shadow
+    private double lastZClient;
+
+    @Shadow
+    private double lastYClient;
+
+    @Shadow
+    private float lastPitchClient;
+
+    @Shadow
+    private float lastYawClient;
+
+    @Shadow
     public Input input;
 
     @Shadow
@@ -46,6 +69,12 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Shadow
     protected abstract void sendSneakingPacket();
+
+    @Shadow
+    private boolean lastSprinting;
+
+    @Shadow
+    private boolean lastOnGround;
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -63,6 +92,44 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Unique
     public LegalMovementManager getLegalMovementManager() {
         return this.movementManager;
+    }
+
+    @Override
+    @Unique
+    public void setLastSprintFlag(boolean lastSprint) {
+        this.lastSprinting = lastSprint;
+    }
+
+    public void setLastSneakFlag(boolean lastSprint) {
+        this.lastPlayerInput = new PlayerInput(
+                this.lastPlayerInput.forward(),
+                this.lastPlayerInput.backward(),
+                this.lastPlayerInput.left(),
+                this.lastPlayerInput.right(),
+                this.lastPlayerInput.jump(),
+                lastSprint,
+                this.lastPlayerInput.sprint());
+    }
+
+    @Unique
+    @Override
+    public void setLastOnGroundFlag(boolean lastOnGround) {
+        this.lastOnGround = lastOnGround;
+    }
+
+    public void resyncPos() {
+        this.lastXClient = 0;
+        this.lastZClient = 0;
+        this.lastYClient = 0;
+    }
+
+    public void resyncRot() {
+        this.lastPitchClient = 0;
+        this.lastYawClient = 0;
+    }
+
+    public void resyncInput() {
+        this.resyncLastInput = true;
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -140,6 +207,17 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                 onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
             }
         }
+    }
+
+    @WrapOperation(
+            method = "tick",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/PlayerInput;equals(Ljava/lang/Object;)Z"))
+    private boolean onPlayerInputPackets(PlayerInput instance, Object object, Operation<Boolean> original) {
+        if (resyncLastInput) {
+            resyncLastInput = false;
+            return false;
+        }
+        return original.call(instance, object);
     }
 
     @Unique

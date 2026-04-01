@@ -33,6 +33,9 @@ public class ExtraTasks {
     public static PacketDebugger packetDebugger;
 
     @Getter
+    public static BadPacketsFix badPacketsFix;
+
+    @Getter
     public static BeaconEnhance beaconEnhance;
 
     @Getter
@@ -52,6 +55,7 @@ public class ExtraTasks {
         ;
         tests = new Tests().register(m);
         packetDebugger = new PacketDebugger().register(m);
+        badPacketsFix = new BadPacketsFix().register(m);
         beaconEnhance = new BeaconEnhance().register(m);
 
         enderEyeLog = new EnderEyeLog().register(m);

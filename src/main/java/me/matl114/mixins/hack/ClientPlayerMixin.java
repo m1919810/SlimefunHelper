@@ -76,12 +76,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Accessor("lastYaw")
     public abstract float getLastYaw();
 
-    @Shadow
-    private boolean lastOnGround;
-
-    @Shadow
-    private int ticksSinceLastPositionPacketSent;
-
     @Unique
     private boolean forceNoFall;
 

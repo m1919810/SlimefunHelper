@@ -3,8 +3,10 @@ package me.matl114.utils.entity;
 import lombok.*;
 import lombok.experimental.Accessors;
 import me.matl114.utils.EntityUtils;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.util.PlayerInput;
 
 public class PlayerInputUtils {
@@ -25,6 +27,10 @@ public class PlayerInputUtils {
                 options.jumpKey.isPressed(),
                 options.sneakKey.isPressed(),
                 options.sprintKey.isPressed());
+    }
+
+    public static Input of(PlayerInputC2SPacket packet) {
+        return of(packet.input());
     }
 
     public static Input tryCorrectMovementInput(Input input, float originalYaw, float currentYaw) {
@@ -81,7 +87,7 @@ public class PlayerInputUtils {
     @Getter
     @With
     @ToString
-    public static class Input {
+    public static class Input implements Cloneable {
         boolean forward;
         boolean backward;
         boolean left;
@@ -110,6 +116,14 @@ public class PlayerInputUtils {
                     this.forward, this.backward, this.left, this.right, this.jump, this.sneak, this.sprint);
         }
 
+        public PlayerInputC2SPacket toPlayerInputPacket() {
+            return new PlayerInputC2SPacket(toPlayerInput());
+        }
+
+        public void sendPlayerInputPacket() {
+            MinecraftClient.getInstance().getNetworkHandler().sendPacket(toPlayerInputPacket());
+        }
+
         public int forwardSpeed() {
             return this.forward == this.backward ? 0 : (this.forward ? 1 : -1);
         }
@@ -124,6 +138,21 @@ public class PlayerInputUtils {
 
         public void applyInput(net.minecraft.client.input.Input input) {
             input.playerInput = toPlayerInput();
+        }
+
+        public boolean hasMovement() {
+            return forward || backward || left || right || jump;
+        }
+
+        @Override
+        public Input clone() {
+            try {
+                Input clone = (Input) super.clone();
+                // TODO: copy mutable state here, so the clone can't change the internals of the original
+                return clone;
+            } catch (CloneNotSupportedException e) {
+                throw new AssertionError();
+            }
         }
     }
 }
