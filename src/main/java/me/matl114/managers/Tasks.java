@@ -65,15 +65,11 @@ public class Tasks {
         } else if (tickCounter % 20 == 0) {
             ++secondCounter;
         }
-        if (mc.player != null) {
-            Listener.getPreGameTick().broadcast(mc.player);
-        }
     }
 
     public static void onPostTick(Event<Void> v) {
         if (mc.player != null) {
             Tasks.doGameTick(mc.player);
-            Listener.getPostGameTick().broadcast(mc.player);
         }
         Tasks.doTick();
     }

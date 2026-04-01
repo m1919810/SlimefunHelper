@@ -1,23 +1,38 @@
 package me.matl114.hacks.modules.move;
 
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.events.EntityAccess;
+import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
+import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
+import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDataFlag;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.Vec3d;
 
 public class MovExtra extends BaseModule {
     public static final String[] MOVE_COMPATE_HIGHER_VERSION = {"move-safety", "disable-stepheight-feature"};
 
+    public static final String[] ELYTRA_CONSIDER_FUCKING_GRIMAC_1_21_2_INPUT = {
+        "move-safety", "grimac-1-21-2-input-features"
+    };
+
     public static final String[] FLIGTH_HOTKEY = {"move-safety", "flight", "toggle-flying"};
 
     public MovExtra() {}
+
+    public final FlagRef fuckGrimAC = flagBuilder(Configs.MOV_CONFIG, ELYTRA_CONSIDER_FUCKING_GRIMAC_1_21_2_INPUT)
+            .build();
 
     public final FlagRef noStepHeightFeature =
             flagBuilder(Configs.MOV_CONFIG, MOVE_COMPATE_HIGHER_VERSION).build();
@@ -30,6 +45,7 @@ public class MovExtra extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
     }
 
     public void onFlightToggle() {
@@ -50,6 +66,34 @@ public class MovExtra extends BaseModule {
             } else {
                 Debug.chat("You are not allowed to fly");
             }
+        }
+    }
+
+    public void sendPacketsForInventoryAction() {
+        if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
+            ClientPlayerEntity player = mc.player;
+            if (player.isSprinting()) {
+                ClientPlayerAccess.of(player).resyncSprint();
+                mc.getNetworkHandler()
+                        .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+            }
+            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+            input.right(false)
+                    .left(false)
+                    .forward(false)
+                    .backward(false)
+                    .jump(false)
+                    .sprint(false)
+                    .sendPlayerInputPacket();
+            ClientPlayerAccess.of(player).resyncInput();
+        }
+    }
+
+    public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
+        switch (presetEvent.context.getValue()) {
+                // check 1.21.2+
+            case AC_GRIM -> fuckGrimAC.set(SupportVersion.CURRENT.isHigherOrEqualTo(21, 2));
+            default -> fuckGrimAC.set(false);
         }
     }
 }

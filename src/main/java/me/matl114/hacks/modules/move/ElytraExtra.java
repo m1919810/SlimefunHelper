@@ -64,6 +64,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public static final String[] ELYTRA_MACE_FIX_MODE = {"elytra", "elytra-tweaks", "mace-hit-fix-mode"};
 
+    public static final String[] ELYTRA_AUTO_SWITCH = {"elytra", "elytra-tweaks", "auto-switch"};
+
     public static final String[] MOVE_UNBREAKABLE_ELYTRA = {"elytra", "unbreakable-elytra", "enable"};
 
     public static final String[] MOVE_ELYTRA_CHECK_PREIOD = {"elytra", "unbreakable-elytra", "period"};
@@ -101,6 +103,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         instance.setDelegate(this::cast);
     }
 
+    public final FlagRef fuckGrimAC = MovTasks.getMovExtra().fuckGrimAC;
+
     public final FlagRef noKinetic =
             flagBuilder(Configs.MOV_CONFIG, ELYTRA_NO_KINETIC).build();
 
@@ -116,6 +120,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     Configs.MOV_CONFIG, ELYTRA_MACE_FIX_MODE, Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
+
+    public final FlagRef autoSwitch =
+            flagBuilder(Configs.MOV_CONFIG, ELYTRA_AUTO_SWITCH).build();
 
     public final FlagRef enableUnbreakableElytra =
             flagBuilder(Configs.MOV_CONFIG, MOVE_UNBREAKABLE_ELYTRA).build();
@@ -242,6 +249,15 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void handleEntityDataUpdate(Event<DataTracker.SerializedEntry<?>> serializedEntryMutableObject) {
         if (serializedEntryMutableObject.isCancelled()) return;
         // only when elytra unbreakable do
+        if (waitUntilNextElytraState
+                && serializedEntryMutableObject.extraArgs().length > 0
+                && serializedEntryMutableObject.extraArgs()[0] instanceof ClientPlayerEntity player
+                && player == mc.player) {
+            var val = serializedEntryMutableObject.context();
+            if (val.id() == VDataFlag.ID_FLAGS) {
+                waitUntilNextElytraState = false;
+            }
+        }
         if (serializedEntryMutableObject.extraArgs().length > 0
                 && serializedEntryMutableObject.extraArgs()[0] instanceof ClientPlayerEntity player
                 && player == mc.player
@@ -291,12 +307,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             --disableNextArmorFlyLazyElytraTransaction;
                             return;
                         }
-                        if (onSwitchItemFallFlying()) {
+                        if (onSwitchItemArmorFallFlying()) {
                             serializedEntryMutableObject.context(new DataTracker.SerializedEntry(
                                     val.id(), val.handler(), (byte) (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX))));
                             mc.getNetworkHandler()
                                     .sendPacket(new ClientCommandC2SPacket(
                                             mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                            thisTickHasStartFallFly = true;
                         }
                         // we delayed the packets here to ensure that rockets are usable
 
@@ -305,6 +322,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         if (armorMode.get() == Configs.AutoInvMode.LAZY && this.thisTickSwitchingIndex != -1) {
                             switchSlotToArmor(this.thisTickSwitchingIndex);
                             this.thisTickSwitchingIndex = -1;
+                        }
+                        if (fuckGrimAC.get()) {
+                            var input = PlayerInputUtils.of(mc.player.input).jump(true);
+
+                            input.sendPlayerInputPacket();
+                            input.applyInput(mc.player.input);
                         }
                     }
                 } else if (val.id() == VDataFlag.ID_POSE) {
@@ -576,6 +599,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public void switchSlotToArmor(int idx) {
+        MovTasks.getMovExtra().sendPacketsForInventoryAction();
         int armorSlot = 6;
         int targetSlot = idx; // InvTasks.getScreenSlotByInventoryIndex(idx);
         ScreenHandler handler = mc.player.currentScreenHandler;
@@ -610,18 +634,27 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         this.thisFallFlyingIsArmorFly = -1;
 
         // reset armor fly status
-        if (!booleanEvent.context() && armorFly.get()) {
-            if (canContinueGliding()) {
-                // check equipments
-                if (onSwitchItemFallFlying()) {
-                    booleanEvent.context(Boolean.TRUE);
-                    shouldFlushRocketsThisTick = true;
+        if (!booleanEvent.context()) {
+            if (armorFly.get()) {
+                if (canContinueGliding()) {
+                    // check equipments
+                    if (onSwitchItemArmorFallFlying()) {
+                        booleanEvent.context(Boolean.TRUE);
+                        shouldFlushRocketsThisTick = true;
+                    }
+                }
+            } else if (autoSwitch.get()) {
+                // auto switch if not armorFly;
+                if (canContinueGliding()) {
+                    if (onAutoSwitchItemFallFlying(true)) {
+                        booleanEvent.context(Boolean.TRUE);
+                    }
                 }
             }
         }
     }
 
-    public boolean onSwitchItemFallFlying() {
+    public boolean onSwitchItemArmorFallFlying() {
         ItemStack stack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
         if (!VItem.getInstance().canGlide(stack)) {
             // switch one
@@ -632,6 +665,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 thisTickSwitchingIndex = elytraIndex;
                 thisFallFlyingIsArmorFly = thisTickSwitchingIndex;
                 lastFlushRocketTick = 0;
+                thisTickHasStartFallFly = true;
                 // mc.player.input.playerInput =
                 // PlayerInputUtils.of(mc.player.input.playerInput).sprint(false).sneak(false).jump(true).forward(false).backward(false).right(false).left(false).toPlayerInput();
                 return true;
@@ -643,8 +677,31 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
+    public boolean onAutoSwitchItemFallFlying(boolean stopSprint) {
+        ItemStack stack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+        if (!VItem.getInstance().canGlide(stack)) {
+            // switch one
+            int elytraIndex = findElytra();
+            if (elytraIndex != -1) {
+                // ARMOR FLIGHT
+                thisFallFlyingIsAutoSwitch = elytraIndex;
+                switchSlotToArmor(elytraIndex);
+                thisTickHasStartFallFly = true;
+                return true;
+            }
+            return false;
+        } else {
+            thisFallFlyingIsAutoSwitch = -1;
+            return true;
+        }
+    }
+
     public int thisTickSwitchingIndex = -1;
     public int thisFallFlyingIsArmorFly = -1;
+    public int thisFallFlyingIsAutoSwitch = -1;
+    public boolean waitUntilNextElytraState = false;
+
+    boolean thisTickHasStartFallFly = false;
 
     @Override
     public void preTick(Event<LegalMovementManager> movementManagerEvent) {}
@@ -743,7 +800,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         } else {
             thisFallFlyingIsArmorFly = -1;
         }
-
+        if (thisFallFlyingIsAutoSwitch != -1 && !waitUntilNextElytraState) {
+            if (!player.isFallFlying()) {
+                switchSlotToArmor(thisFallFlyingIsAutoSwitch);
+                thisFallFlyingIsAutoSwitch = -1;
+            }
+        }
         // simple control
 
     }
@@ -1020,7 +1082,18 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (true && player.isFallFlying()) {
             player.horizontalCollision = false;
+            if (fuckGrimAC.get()) {
+                var input = PlayerInputUtils.of(player.input);
+                input.forward(false).backward(false).left(false).right(false);
+                if (thisTickHasStartFallFly) {
+                    input.jump(true);
+                } else {
+                    input.jump(true);
+                }
+                input.applyInput(player.input);
+            }
         }
+        thisTickHasStartFallFly = false;
     }
 
     public static enum MotionMode implements ConfigEnum {

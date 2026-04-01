@@ -3,18 +3,19 @@ package me.matl114.utils.entity;
 import lombok.*;
 import lombok.experimental.Accessors;
 import me.matl114.utils.EntityUtils;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
+import net.minecraft.util.PlayerInput;
 
 public class PlayerInputUtils {
     public static Input of(net.minecraft.client.input.Input input) {
-        return new Input(
-                input.pressingForward,
-                input.pressingBack,
-                input.pressingLeft,
-                input.pressingRight,
-                input.jumping,
-                input.sneaking);
+        return new Input(input.playerInput);
+    }
+
+    public static Input of(PlayerInput input) {
+        return new Input(input);
     }
 
     public static Input of(GameOptions options) {
@@ -24,7 +25,12 @@ public class PlayerInputUtils {
                 options.leftKey.isPressed(),
                 options.rightKey.isPressed(),
                 options.jumpKey.isPressed(),
-                options.sneakKey.isPressed());
+                options.sneakKey.isPressed(),
+                options.sprintKey.isPressed());
+    }
+
+    public static Input of(PlayerInputC2SPacket packet) {
+        return of(packet.input());
     }
 
     public static Input tryCorrectMovementInput(Input input, float originalYaw, float currentYaw) {
@@ -81,16 +87,41 @@ public class PlayerInputUtils {
     @Getter
     @With
     @ToString
-    public static class Input {
+    public static class Input implements Cloneable {
         boolean forward;
         boolean backward;
         boolean left;
         boolean right;
         boolean jump;
         boolean sneak;
+        boolean sprint;
+
+        public Input(PlayerInput input) {
+            this(
+                    input.forward(),
+                    input.backward(),
+                    input.left(),
+                    input.right(),
+                    input.jump(),
+                    input.sneak(),
+                    input.sprint());
+        }
 
         public Input(boolean forward, boolean backward, boolean left, boolean right) {
-            this(forward, backward, left, right, false, false);
+            this(forward, backward, left, right, false, false, false);
+        }
+
+        public PlayerInput toPlayerInput() {
+            return new PlayerInput(
+                    this.forward, this.backward, this.left, this.right, this.jump, this.sneak, this.sprint);
+        }
+
+        public PlayerInputC2SPacket toPlayerInputPacket() {
+            return new PlayerInputC2SPacket(toPlayerInput());
+        }
+
+        public void sendPlayerInputPacket() {
+            MinecraftClient.getInstance().getNetworkHandler().sendPacket(toPlayerInputPacket());
         }
 
         public int forwardSpeed() {
@@ -106,12 +137,22 @@ public class PlayerInputUtils {
         }
 
         public void applyInput(net.minecraft.client.input.Input input) {
-            input.pressingForward = forward;
-            input.pressingBack = backward;
-            input.pressingLeft = left;
-            input.pressingRight = right;
-            input.sneaking = sneak;
-            input.jumping = jump;
+            input.playerInput = toPlayerInput();
+        }
+
+        public boolean hasMovement() {
+            return forward || backward || left || right || jump;
+        }
+
+        @Override
+        public Input clone() {
+            try {
+                Input clone = (Input) super.clone();
+                // TODO: copy mutable state here, so the clone can't change the internals of the original
+                return clone;
+            } catch (CloneNotSupportedException e) {
+                throw new AssertionError();
+            }
         }
     }
 }

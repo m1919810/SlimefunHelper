@@ -14,6 +14,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
@@ -49,6 +50,10 @@ public abstract class MinecraftClientEvents {
 
     @Shadow
     public abstract Window getWindow();
+
+    @Shadow
+    @org.jspecify.annotations.Nullable
+    public ClientPlayerEntity player;
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     public void onPreSetScreen(Screen screen, CallbackInfo ci, @Local(argsOnly = true) LocalRef<Screen> screenRef) {
@@ -277,13 +282,28 @@ public abstract class MinecraftClientEvents {
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/util/profiler/Profiler;push(Ljava/lang/String;)V",
-                            shift = At.Shift.BEFORE,
-                            ordinal = 1),
-            cancellable = true)
+                            target =
+                                    "Lnet/minecraft/client/tutorial/TutorialManager;tick(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/util/hit/HitResult;)V",
+                            shift = At.Shift.AFTER))
     public void onPreTick(CallbackInfo ci) {
-        if (!Listener.getPreTick().fireEvent(null)) {
-            ci.cancel();
+        Listener.getPreTick().broadcast(null);
+        if (player != null) {
+            Listener.getPreGameTick().broadcast(player);
+        }
+    }
+
+    @Inject(
+            method = "tick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/MinecraftClient;getNetworkHandler()Lnet/minecraft/client/network/ClientPlayNetworkHandler;",
+                            shift = At.Shift.BEFORE))
+    private void onPostGameTick(CallbackInfo ci, @Local Profiler profiler) {
+        if (player != null) {
+            profiler.swap("post-game-tick");
+            Listener.getPostGameTick().broadcast(player);
         }
     }
 
