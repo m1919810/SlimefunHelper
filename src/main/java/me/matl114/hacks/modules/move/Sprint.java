@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.move;
 
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -102,21 +103,24 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     }
 
     @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
+
+    @Override
+    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         //                if(player.getVelocity().horizontalLength() > 0.05)
         //                Debug.info("check vc", player.getVelocity().horizontalLength());
 
         // Debug.info(player.input.movementForward);
-        if (directionalSprint.get()
-                && (player.input.playerInput.backward() && !player.input.playerInput.forward())
-                && !(player.isTouchingWater() && !player.isSubmergedInWater())
-                && !(player.horizontalCollision && !player.collidedSoftly)) {
-            // give the ticket
-            enableSprintDirectionalThisTick = true;
-
-            // }
-
+        if (directionalSprint.get()) {
+            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+            if (input.backward()
+                    && !input.forward()
+                    && !(player.isTouchingWater() && !player.isSubmergedInWater())
+                    && !(player.horizontalCollision && !player.collidedSoftly)) {
+                enableSprintDirectionalThisTick = true;
+                if (player.isSprinting() && directionalSprintMode.getValue() == Configs.BypassMode.BYPASS_GRIM) {}
+            }
         }
     }
 
@@ -128,8 +132,10 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         if (directionalSprint.get()
                 && (player.input.playerInput.backward() && !player.input.playerInput.forward())
                 && player.isSprinting()) {
-
+            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
             if (directionalSprintMode.getValue() == Configs.BypassMode.BYPASS_GRIM) {
+                // do not use mixin, modify the input
+                // enableSprintDirectionalThisTick = false;
                 workRotationThisTick = true;
                 //                            float yaw = EntityUtils.rotationToYaw(walkingWay);
                 //                        Debug.info(walkingWay);
@@ -137,6 +143,15 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                 // turn around to bypass ,movingAround
 
                 EntityUtils.setEntityYawSafe(player, player.getYaw() + 180);
+                // rotate the input
+                //                    var input = PlayerInputUtils.of(player.input);
+                // reverse input
+                input.clone()
+                        .right(input.left())
+                        .left(input.right())
+                        .forward(input.backward())
+                        .backward(input.forward())
+                        .applyInput(player.input);
             }
 
             // }
@@ -173,8 +188,10 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         enableSprintDirectionalThisTick = false;
         if (enabledThisTick) {
             if (workRotationThisTick) {
-
+                workRotationThisTick = false;
                 movementManagerEvent.context.playerStatus.restoreRotation();
+                ClientPlayerAccess.of(movementManagerEvent.context.playerStatus.entity)
+                        .resyncRot();
             }
         }
         if (fakeSprintThisTick) {

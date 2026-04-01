@@ -878,24 +878,26 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // Debug.info("check input");
                 ClientPlayerEntity entity = movementManagerEvent.context.playerStatus.entity;
                 var input = PlayerInputUtils.of(entity.input);
-                if (step == Step.REAPPLY_MOVEMENT) {
-                    input = input.forward(thisStepInNoInputStep)
-                            .backward(false)
-                            .left(false)
-                            .right(false)
-                            .jump(false);
-                } else if (step == Step.WAIT_FOR_RESYNC) {
-                    input = input.forward(thisStepInNoInputStep)
-                            .backward(false)
-                            .left(false)
-                            .right(false)
-                            .jump(true);
-                } else {
-                    input = input.forward(false)
-                            .backward(false)
-                            .left(false)
-                            .right(false)
-                            .jump(true);
+                if (!entity.isFallFlying()) {
+                    if (step == Step.REAPPLY_MOVEMENT) {
+                        input = input.forward(thisStepInNoInputStep)
+                                .backward(false)
+                                .left(false)
+                                .right(false)
+                                .jump(false);
+                    } else if (step == Step.WAIT_FOR_RESYNC) {
+                        input = input.forward(thisStepInNoInputStep)
+                                .backward(false)
+                                .left(false)
+                                .right(false)
+                                .jump(true);
+                    } else {
+                        input = input.forward(false)
+                                .backward(false)
+                                .left(false)
+                                .right(false)
+                                .jump(true);
+                    }
                 }
 
                 input.applyInput(entity.input);
@@ -1009,7 +1011,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                     thisStepInNoInputStep =
                                             !input.forward() && !input.backward() && !input.left() && !input.right();
                                     // step in movement
-                                    if (thisStepInNoInputStep) {
+                                    // do not modify fallflying
+                                    if (thisStepInNoInputStep && !entity.entity.isFallFlying()) {
                                         input.forward(true).applyInput(entity.entity.input);
                                     }
                                     step = Step.REAPPLY_MOVEMENT;

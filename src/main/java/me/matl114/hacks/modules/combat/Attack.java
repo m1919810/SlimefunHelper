@@ -319,6 +319,7 @@ public class Attack extends BaseModule {
                             Vec3d lookVec;
                             boolean distancePassAttack = true;
                             boolean runThisTick = true;
+                            int max = 10;
 
                             @Override
                             public int priority() {
@@ -330,6 +331,7 @@ public class Attack extends BaseModule {
                                 runThisTick = true;
                                 ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
                                 if (useMaceAttack && args.isFallFlying()) {
+                                    max--;
                                     runThisTick = false;
                                     return;
                                 }
@@ -430,7 +432,7 @@ public class Attack extends BaseModule {
                             public boolean postModify(
                                     Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
                                 if (!runThisTick) {
-                                    return true;
+                                    return max >= 0;
                                 }
                                 ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
                                 if (distancePassAttack) {
@@ -468,7 +470,7 @@ public class Attack extends BaseModule {
                                     if (armorFly) {
                                         elytraExtra.disableNextArmorFlyLazyElytraTransaction = 0;
                                         ACPostTasks.addPostTransactionAction((ch) -> {
-                                            if (elytraExtra.onSwitchItemFallFlying()) {
+                                            if (elytraExtra.onSwitchItemArmorFallFlying()) {
                                                 mc.getNetworkHandler()
                                                         .sendPacket(new ClientCommandC2SPacket(
                                                                 mc.player,

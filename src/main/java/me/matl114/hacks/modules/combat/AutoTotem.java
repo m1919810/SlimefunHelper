@@ -6,9 +6,12 @@ import java.util.List;
 import java.util.Random;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
@@ -36,7 +39,8 @@ public class AutoTotem extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPreGameTick(), this::onTick);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
     // todo: add legal mode (swap hand)
     public void onTick(Event<ClientPlayerEntity> ev) {
@@ -44,16 +48,19 @@ public class AutoTotem extends BaseModule {
         if (enable.get()) {
             ScreenHandler handled = ClientPlayerAccess.of(player).getServerScreenHandler();
             int offHandSlot = handled != player.playerScreenHandler ? -1 : 40;
-            if (mode.get() == Configs.AutoInvMode.LAZY) {
-                if (player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
+            if (player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
 
-                    List<Slot> slots = handled.slots;
-                    for (var i = 0; i < slots.size(); ++i) {
-                        if (slots.get(i).inventory instanceof PlayerInventory
-                                && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
-                            InvTasks.clickSlotAsync(i, 40, SlotActionType.SWAP);
-                            return;
-                        }
+                List<Slot> slots = handled.slots;
+                for (var i = 0; i < slots.size(); ++i) {
+                    if (slots.get(i).inventory instanceof PlayerInventory
+                            && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
+                        MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                        InvTasks.clickSlotAsync(i, 40, SlotActionType.SWAP);
+                        //                        ACPostTasks.addPostTransactionAction(ch -> {
+                        //
+                        //                        });
+
+                        return;
                     }
                 }
             } else if (mode.get() == Configs.AutoInvMode.TICK) {
@@ -68,9 +75,17 @@ public class AutoTotem extends BaseModule {
                 }
                 if (!totemList.isEmpty()) {
                     int random = totemList.getInt(inventorRandom.nextInt(totemList.size()));
+                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(random, 40, SlotActionType.SWAP);
                 }
             }
+        }
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        switch (event.context.getValue()) {
+            case AC_GRIM, AC_MATRIX -> mode.set(Configs.AutoInvMode.LAZY);
+            default -> mode.set(Configs.AutoInvMode.TICK);
         }
     }
 }

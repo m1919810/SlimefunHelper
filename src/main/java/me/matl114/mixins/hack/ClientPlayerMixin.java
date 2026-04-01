@@ -33,7 +33,6 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Hand;
-import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -71,12 +70,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Accessor("lastYawClient")
     public abstract float getLastYaw();
-
-    @Shadow
-    private boolean lastOnGround;
-
-    @Shadow
-    private int ticksSinceLastPositionPacketSent;
 
     @Unique
     private boolean forceNoFall;
@@ -122,24 +115,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Shadow
     public abstract void swingHand(Hand hand);
-
-    @Shadow
-    private PlayerInput lastPlayerInput;
-
-    @Shadow
-    private double lastXClient;
-
-    @Shadow
-    private double lastZClient;
-
-    @Shadow
-    private double lastYClient;
-
-    @Shadow
-    private float lastPitchClient;
-
-    @Shadow
-    private float lastYawClient;
 
     @Getter
     @Unique
@@ -270,40 +245,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     //        }
     //        return super.getEntityInteractionRange();
     //    }
-
-    @Override
-    @Unique
-    public void setLastSprintFlag(boolean lastSprint) {
-        this.lastSprinting = lastSprint;
-    }
-
-    public void setLastSneakFlag(boolean lastSprint) {
-        this.lastPlayerInput = new PlayerInput(
-                this.lastPlayerInput.forward(),
-                this.lastPlayerInput.backward(),
-                this.lastPlayerInput.left(),
-                this.lastPlayerInput.right(),
-                this.lastPlayerInput.jump(),
-                lastSprint,
-                this.lastPlayerInput.sprint());
-    }
-
-    @Unique
-    @Override
-    public void setLastOnGroundFlag(boolean lastOnGround) {
-        this.lastOnGround = lastOnGround;
-    }
-
-    public void resyncPos() {
-        this.lastXClient = 0;
-        this.lastZClient = 0;
-        this.lastYClient = 0;
-    }
-
-    public void resyncRot() {
-        this.lastPitchClient = 0;
-        this.lastYawClient = 0;
-    }
 
     //    @Unique
     //    public void syncLocationPackets(){

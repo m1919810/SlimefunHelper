@@ -6,7 +6,6 @@ import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.screen.ScreenHandler;
 
 public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
@@ -19,27 +18,6 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
 
     public void clearKeepedInventory(boolean closeInv);
 
-    default void resyncSprint() {
-        setLastSprintFlag(!((Entity) this).isSprinting());
-    }
-
-    public void setLastSprintFlag(boolean lastSprint);
-
-    default void resyncSneak() {
-        setLastSneakFlag(!((ClientPlayerEntity) this).input.playerInput.sneak());
-    }
-
-    public void setLastSneakFlag(boolean lastSprint);
-
-    default void resyncOnGround() {
-        setLastOnGroundFlag(!((Entity) this).isOnGround());
-    }
-
-    public void setLastOnGroundFlag(boolean lastOnGround);
-
-    public void resyncPos();
-
-    public void resyncRot();
     //    public void resyncPos();
     //    public void resyncRot();
     //    public void syncLocationPackets();

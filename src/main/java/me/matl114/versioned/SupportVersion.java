@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public class SupportVersion {
+    public static final SupportVersion CURRENT = create();
     int major;
     int minor;
 

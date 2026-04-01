@@ -273,7 +273,7 @@ public class Listener {
     private static final EventChannel<Void> serverDisconnectPoint = new EventChannel<>();
 
     @Getter // cancelable
-    @Cancelable
+    @Broadcast
     private static final EventChannel<Void> preTick = new EventChannel<>();
 
     @Getter
