@@ -1377,11 +1377,12 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             module.lastOnGroundHeight = entity.pos.getY();
                             // ClientTickEndC2SPacket());
                             Vec3d lastPosPos = movementManagerEvent.context.playerStatus.pos;
-//                            storedPacketMove = VPacket.newPositionAndOnGround(
-//                                mc.player.getX(), lastPosPos.y + 9E-8, mc.player.getZ(),
-//                                //mc.player.getYaw()+ 180, mc.player.getPitch(),
-//                                false, entity.horizontalCollision
-//                            );
+                            //try use simple nofall to bypass other ac
+                            storedPacketMove = VPacket.newPositionAndOnGround(
+                                lastPosPos.x ,module.lastServerY + 9E-8, lastPosPos.z,
+                                //mc.player.getYaw()+ 180, mc.player.getPitch(),
+                                false, entity.horizontalCollision
+                            );
                                 storedPacketMove =    VPacket.newOnGroundOnly(
                                     true,
                                     entity.horizontalCollision);
