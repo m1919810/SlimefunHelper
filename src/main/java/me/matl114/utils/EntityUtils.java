@@ -156,6 +156,10 @@ public class EntityUtils {
         entity.setYaw((float) Math.toDegrees(Math.atan2(-vec.x, vec.z)));
     }
 
+    public static void setEntityYawSafe(Entity entity, Vec2f vec2f) {
+        setEntityYawSafe(entity, (float) Math.toDegrees(Math.atan2(-vec2f.x, vec2f.y)));
+    }
+
     public static void setEntityRotationSafe(Entity entity, Vec3d vec) {
         vec = vec.normalize();
         setEntityPitchSafe(entity, (float) Math.toDegrees(Math.asin(-vec.y)));

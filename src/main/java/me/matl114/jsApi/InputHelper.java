@@ -1,5 +1,7 @@
 package me.matl114.jsApi;
 
+import me.matl114.managers.input.KeyCode;
+import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.Keyboard;
@@ -97,5 +99,45 @@ public class InputHelper {
                 }
             }
         });
+    }
+
+    public int getKeyCode(String keyName) {
+        return KeyCode.getKeyCodeFromName("KEY_" + keyName.toUpperCase());
+    }
+
+    public int getMouseButtonCode(String mouseButtonName) {
+        return KeyCode.getKeyCodeFromName("MOUSE_BUTTON_" + mouseButtonName.toUpperCase());
+    }
+
+    public int getCode(String name) {
+        return KeyCode.getKeyCodeFromName(name);
+    }
+
+    public String getKeyName(int keyCode) {
+        return KeyCode.getNameForKey(keyCode);
+    }
+
+    public static boolean hasShiftDown() {
+        return SimpleInputManager.getInstance().isKeyPressed(340)
+                || SimpleInputManager.getInstance().isKeyPressed(344);
+    }
+
+    public static boolean hasCtrlDown() {
+        return SimpleInputManager.getInstance().isKeyPressed(341)
+                || SimpleInputManager.getInstance().isKeyPressed(345);
+    }
+
+    public static boolean hasAltDown() {
+        return SimpleInputManager.getInstance().isKeyPressed(342)
+                || SimpleInputManager.getInstance().isKeyPressed(346);
+    }
+
+    public static boolean hasEnterDown() {
+        return SimpleInputManager.getInstance().isKeyPressed(257)
+                || SimpleInputManager.getInstance().isKeyPressed(355);
+    }
+
+    public static boolean hasKeyPressed(int keyCode) {
+        return SimpleInputManager.getInstance().isKeyPressed(keyCode);
     }
 }

@@ -1,10 +1,12 @@
 package me.matl114.hacks.modules.render;
 
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.entity.CameraEntity;
+import me.matl114.hacks.utils.move.ElytraVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -61,6 +63,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onStopInteractWithSelf);
         registerListener(Listener.getPlayerChangeLook(), this::onPlayerChangeLook);
+        registerListener(Listener.getCustomListener().getChannel(ElytraVelocity.class), this::onElytraControl);
     }
 
     CameraEntity camera;
@@ -70,6 +73,11 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     public void onEnableModule() {
         super.onEnableModule();
         initializeCamera();
+    }
+
+    @Override
+    public int priority() {
+        return PRIORITY_LOW;
     }
 
     @Override
@@ -142,6 +150,13 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         event.cancel();
     }
 
+    public void onElytraControl(Event<EventContainer<ElytraVelocity>> event) {
+        if (true || camera == null) return;
+        // fuck, this module directly reed mc.options,
+        ElytraVelocity velocity = event.context().value;
+        velocity.x(0).y(0).z(0);
+    }
+
     @Override
     public boolean mayModify() {
         return false;
@@ -157,22 +172,39 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         return false;
     }
 
-    @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
+    PlayerInputUtils.Input cachedInput;
 
     @Override
-    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+
+        //    }
+        //
+        //    @Override
+        //    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         if (camera == null) return;
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        var input = player.input;
-        PlayerInputUtils.Input i0 = PlayerInputUtils.of(input);
+        PlayerInputUtils.Input i0 = PlayerInputUtils.of(mc.options);
+        cachedInput = i0;
         Vec3d movement = new Vec3d(i0.sidewaysSpeed(), i0.upwardSpeed(), i0.forwardSpeed());
         Vec3d vec3d = EntityUtils.movementInputToVelocity(movement, (float) speed.get(), camera.getYaw());
         camera.setVelocity(vec3d);
-        // reset player input,
-        PlayerInputUtils.EMPTY.withSneak(i0.sneak()).applyInput(input);
+        // reset player input, keep sneak for interacting
         // apply sneak
+        PlayerInputUtils.EMPTY.applyInput(mc.options);
         player.setSneaking(i0.sneak());
+    }
+
+    @Override
+    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
+        if (cachedInput != null) {
+            cachedInput.applyInput(mc.options);
+            // apply sneak and sprint to player
+            PlayerInputUtils.EMPTY
+                    .withSneak(cachedInput.sneak())
+                    .sprint(cachedInput.sprint())
+                    .applyInput(mc.player.input);
+            cachedInput = null;
+        }
     }
 
     @Override

@@ -480,15 +480,12 @@ public class ChatUtils {
     public static String textToPlainString(Text component) {
         if (component == null) return "";
         StringBuilder out = new StringBuilder();
-
-        Iterator<Text> textIterator = textStream(component).iterator();
-        while (textIterator.hasNext()) {
-            Text c = textIterator.next();
-            c.getContent().visit((x) -> {
-                out.append(x);
-                return Optional.empty();
-            });
-        }
+        component.visit(
+                ((style, asString) -> {
+                    out.append(asString);
+                    return Optional.empty();
+                }),
+                Style.EMPTY);
         return out.toString();
     }
 

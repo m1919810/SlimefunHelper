@@ -48,10 +48,7 @@ public class SleepMode extends BaseModule {
 
     public final KeyBindRef keyBindRef = hotkey(Configs.RENDER_CONFIG, END_SLEEP_KEY)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_F11))
-            .registerHotkey(SimpleHotKey.InputHandler.EMPTY)
             .build();
-
-    public final IHotKey hotkey = SimpleInputManager.getInstance().getHotkey(String.join(".", END_SLEEP_KEY));
 
     @Override
     public void registerAll() {
@@ -412,7 +409,7 @@ public class SleepMode extends BaseModule {
     public void interceptScreenKeyboardAction(Event<Keyboard> event) {
         if (isScreenSleeping()) {
             event.cancel();
-            if (((Integer) event.getArgs(0)).intValue() == hotkey.getTriggeredKey()) {
+            if (((Integer) event.getArgs(0)).intValue() == keyBindRef.get().getLastKey()) {
                 wakeUpScreen();
                 return;
             }

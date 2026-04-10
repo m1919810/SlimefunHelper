@@ -79,3 +79,5 @@ accessible method net/minecraft/entity/LivingEntity getMovementSpeed (F)F
 accessible method net/minecraft/entity/LivingEntity applyClimbingSpeed (Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;
 
 accessible field net/minecraft/client/input/Input movementVector Lnet/minecraft/util/math/Vec2f;
+
+accessible field net/minecraft/block/entity/BlockEntityType blocks Ljava/util/Set;

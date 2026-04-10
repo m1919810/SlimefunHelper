@@ -364,6 +364,15 @@ public class SlimefunHelperApi {
             constructor.visitMaxs(0, 0);
             constructor.visitEnd();
 
+            // 添加 getDelegate 方法
+            String delegateMethodName = "getDelegate";
+            String delegateReturnDesc = "()Ljava/lang/String;";
+            MethodVisitor delegateMv = cw.visitMethod(ACC_PUBLIC, delegateMethodName, delegateReturnDesc, null, null);
+            delegateMv.visitCode();
+            delegateMv.visitLdcInsn(utilityClass.getName());
+            delegateMv.visitInsn(ARETURN);
+            delegateMv.visitMaxs(0, 0);
+            delegateMv.visitEnd();
             // 完成类定义
             cw.visitEnd();
 

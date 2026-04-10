@@ -1,5 +1,6 @@
 package me.matl114.versioned.impl;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -8,8 +9,12 @@ import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.ScreenRect;
+import net.minecraft.client.gui.render.state.SimpleGuiElementRenderState;
 import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.texture.TextureSetup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.text.OrderedText;
@@ -18,6 +23,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ColorHelper;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix3x2f;
+import org.joml.Matrix3x2fc;
 import org.joml.Vector4f;
 
 public class DrawContext_v1_21_11 implements VDrawContext {
@@ -120,6 +127,88 @@ public class DrawContext_v1_21_11 implements VDrawContext {
     @Override
     public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth) {
         this.drawContext.fillGradient(x1, y1, x2, y2, getShaderRGB(color1), getShaderRGB(color2));
+    }
+
+    @Override
+    public void fillGuiGradient(
+            int x1, int y1, int x2, int y2, int color1, int color2, int color3, int color4, int depth) {
+        this.drawContext.state.addSimpleElement(new ColoredQuad2DGuiElementRenderState(
+                RenderPipelines.GUI,
+                TextureSetup.empty(),
+                new Matrix3x2f(this.drawContext.getMatrices()),
+                x1,
+                y1,
+                x2,
+                y2,
+                color1,
+                color2,
+                color3,
+                color4,
+                this.drawContext.scissorStack.peekLast()));
+    }
+
+    public static record ColoredQuad2DGuiElementRenderState(
+            RenderPipeline pipeline,
+            TextureSetup textureSetup,
+            Matrix3x2fc pose,
+            int x0,
+            int y0,
+            int x1,
+            int y1,
+            int col1,
+            int col2,
+            int col3,
+            int col4,
+            @org.jspecify.annotations.Nullable ScreenRect scissorArea,
+            @org.jspecify.annotations.Nullable ScreenRect bounds)
+            implements SimpleGuiElementRenderState {
+        public ColoredQuad2DGuiElementRenderState(
+                RenderPipeline pipeline,
+                TextureSetup textureSetup,
+                Matrix3x2fc pose,
+                int x0,
+                int y0,
+                int x1,
+                int y1,
+                int col1,
+                int col2,
+                int col3,
+                int col4,
+                @org.jspecify.annotations.Nullable ScreenRect scissorArea) {
+            this(
+                    pipeline,
+                    textureSetup,
+                    pose,
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    col1,
+                    col2,
+                    col3,
+                    col4,
+                    scissorArea,
+                    createBounds(x0, y0, x1, y1, pose, scissorArea));
+        }
+
+        @Override
+        public void setupVertices(VertexConsumer vertices) {
+            vertices.vertex(this.pose(), (float) this.x0(), (float) this.y0()).color(this.col1());
+            vertices.vertex(this.pose(), (float) this.x0(), (float) this.y1()).color(this.col2());
+            vertices.vertex(this.pose(), (float) this.x1(), (float) this.y1()).color(this.col3());
+            vertices.vertex(this.pose(), (float) this.x1(), (float) this.y0()).color(this.col4());
+        }
+
+        private static @org.jspecify.annotations.Nullable ScreenRect createBounds(
+                int x0,
+                int y0,
+                int x1,
+                int y1,
+                Matrix3x2fc pose,
+                @org.jspecify.annotations.Nullable ScreenRect scissorArea) {
+            ScreenRect screenRect = (new ScreenRect(x0, y0, x1 - x0, y1 - y0)).transformEachVertex(pose);
+            return scissorArea != null ? scissorArea.intersection(screenRect) : screenRect;
+        }
     }
 
     @Override

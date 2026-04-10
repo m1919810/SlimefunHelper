@@ -11,13 +11,16 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.utils.*;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -157,6 +160,17 @@ public class TargetSelector extends BaseModule {
                         return false;
                     }
                 }
+                ItemStack chestPlate = pl.getEquippedStack(EquipmentSlot.CHEST);
+                if (chestPlate.contains(DataComponentTypes.DYED_COLOR)) {
+                    ItemStack ourPlate = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+                    if (ourPlate.contains(DataComponentTypes.DYED_COLOR)) {
+                        if (Objects.equals(
+                                chestPlate.get(DataComponentTypes.DYED_COLOR),
+                                ourPlate.get(DataComponentTypes.DYED_COLOR))) {
+                            return false;
+                        }
+                    }
+                }
                 // more, consider colors of chestplates
                 return true;
             }
@@ -214,8 +228,18 @@ public class TargetSelector extends BaseModule {
 
     public boolean isTargetInRange(Entity e, double nearby) {
         if (mc.player == null) return false;
-        double sq = e.getBoundingBox().squaredMagnitude(mc.player.getEyePos());
-        return sq < MathUtils.s2(nearby + mc.player.getVelocity().length() * (mc.player.isFallFlying() ? 2 : 1));
+        Vec3d predictionPos = mc.player
+                .getEyePos()
+                .add(mc.player
+                        .getVelocity()
+                        .multiply(
+                                mc.player.isFallFlying()
+                                        ? CombatTasks.getCombatExtra()
+                                                .fallFlyVcMultiply
+                                                .get()
+                                        : 1));
+        double sq = e.getBoundingBox().squaredMagnitude(predictionPos);
+        return sq < MathUtils.s2(nearby);
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect) {

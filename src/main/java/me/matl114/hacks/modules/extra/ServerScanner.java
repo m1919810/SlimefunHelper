@@ -27,7 +27,6 @@ import me.matl114.managers.config.ListRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.PropertyTracker;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -95,22 +94,20 @@ public class ServerScanner extends BaseModule {
 
     public DrawableWidget createInputWidget() {
         SubScreenWidget subScreenWidget = new SubScreenWidget(0, 0, 400, 40);
+        subScreenWidget.addDrawableChild(new KeyValueInputWidget<>(0, 0, 200, 20, 30, ipField.createKeyValue("IP")));
         subScreenWidget.addDrawableChild(
-                new KeyValueInputWidget<>(0, 0, 200, 20, 30, AttrKeyValue.ofConfigValue("IP", ipField)));
+                new KeyValueInputWidget<>(0, 20, 80, 20, 30, portRange1.createKeyValue("PortA")));
         subScreenWidget.addDrawableChild(
-                new KeyValueInputWidget<>(0, 20, 80, 20, 30, AttrKeyValue.ofConfigValue("PortA", portRange1)));
+                new KeyValueInputWidget<>(80, 20, 80, 20, 30, portRange2.createKeyValue("PortB")));
         subScreenWidget.addDrawableChild(
-                new KeyValueInputWidget<>(80, 20, 80, 20, 30, AttrKeyValue.ofConfigValue("PortB", portRange2)));
+                new KeyValueInputWidget<>(160, 20, 80, 20, 30, requestDelay.createKeyValue("DelayMS")));
         subScreenWidget.addDrawableChild(
-                new KeyValueInputWidget<>(160, 20, 80, 20, 30, AttrKeyValue.ofConfigValue("DelayMS", requestDelay)));
+                new KeyValueInputWidget<>(240, 20, 80, 20, 30, limitSample.createKeyValue("Limit")));
         subScreenWidget.addDrawableChild(
-                new KeyValueInputWidget<>(240, 20, 80, 20, 30, AttrKeyValue.ofConfigValue("Limit", limitSample)));
-        subScreenWidget.addDrawableChild(
-                new KeyValueInputWidget<>(320, 20, 40, 20, 20, AttrKeyValue.ofConfigValue("R", randomRequest))
+                new KeyValueInputWidget<>(320, 20, 40, 20, 20, randomRequest.createKeyValue("R"))
                         .setTooltips(List.of(Text.literal("Random"))));
-        subScreenWidget.addDrawableChild(
-                new KeyValueInputWidget<>(360, 20, 40, 20, 20, AttrKeyValue.ofConfigValue("F", filter))
-                        .setTooltips(List.of(Text.literal("Filter"))));
+        subScreenWidget.addDrawableChild(new KeyValueInputWidget<>(360, 20, 40, 20, 20, filter.createKeyValue("F"))
+                .setTooltips(List.of(Text.literal("Filter"))));
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(200, 0, 40, 20)
                 .setElementHandler(new ButtonElement(
                         TextProvider.of(Text.literal("Scan")), ButtonAction.run(this::startScanTask))));

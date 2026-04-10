@@ -52,6 +52,32 @@ public class MultiKeyBind {
         return String.join(",", keys);
     }
 
+    public boolean isAllPressed() {
+        if (keyCodes.length == 0) {
+            return false;
+        }
+        for (int i = 0; i < keyCodes.length; i++) {
+            if (!SimpleInputManager.getInstance().isKeyPressed(keyCodes[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isLastKeyPressed() {
+        if (keyCodes.length == 0) {
+            return false;
+        }
+        return SimpleInputManager.getInstance().isKeyPressed(keyCodes[keyCodes.length - 1]);
+    }
+
+    public int getLastKey() {
+        if (keyCodes.length == 0) {
+            return KeyCode.KEY_NONE;
+        }
+        return keyCodes[keyCodes.length - 1];
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;

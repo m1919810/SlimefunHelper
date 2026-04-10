@@ -63,6 +63,10 @@ public interface VPacket {
         return getInstance().createFull(x, y, z, yaw, pitch, isOnGround, collision);
     }
 
+    public static boolean getCollisionFlag(PlayerMoveC2SPacket packet) {
+        return packet.horizontalCollision();
+    }
+
     /**
      * 实例方法 - 创建 OnGroundOnly 数据包
      */

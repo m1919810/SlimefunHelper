@@ -20,7 +20,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
-@Mixin(ChunkSection.class)
+// compat idiot lithium
+@Mixin(value = ChunkSection.class, priority = 3000)
 public abstract class MoonriseChunkBlockCountingMixin implements MoonriseChunkBlockCountingAccess {
     @Shadow
     public abstract void calculateCounts();
@@ -32,7 +33,7 @@ public abstract class MoonriseChunkBlockCountingMixin implements MoonriseChunkBl
         return specialCollidingBlocks;
     }
 
-    @Inject(method = "<init>(Lnet/minecraft/world/chunk/PalettesFactory;)V", at = @At("RETURN"))
+    @Inject(method = "<init>(Lnet/minecraft/world/chunk/PalettesFactory;)V", at = @At("TAIL"))
     private void calculateBlockCount(PalettesFactory palettesFactory, CallbackInfo ci) {
         this.calculateCounts();
     }

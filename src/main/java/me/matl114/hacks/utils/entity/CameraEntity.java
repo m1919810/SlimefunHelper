@@ -70,6 +70,7 @@ public class CameraEntity extends AbstractClientPlayerEntity {
     @Override
     public void tick() {
         if ((!(this.player instanceof ClientPlayerEntity clientPlayer) || clientPlayer.networkHandler.isLoaded())) {
+            this.setHealth(this.player.getHealth());
             if (!this.moveable) {
                 this.setPitch(this.player.getPitch());
                 this.setYaw(this.player.getYaw());

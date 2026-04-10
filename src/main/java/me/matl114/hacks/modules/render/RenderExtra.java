@@ -4,17 +4,18 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.*;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.StringRef;
+import me.matl114.managers.config.NBTRef;
+import me.matl114.managers.config.NBTType;
 import me.matl114.utils.Debug;
-import me.matl114.utils.RegistryUtils;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -23,6 +24,7 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket;
 import net.minecraft.network.packet.s2c.common.ResourcePackSendS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.*;
@@ -40,12 +42,6 @@ public class RenderExtra extends BaseModule {
     public static final String[] RENDER_REARRANGE_GAME_MENU = {"render", "optimize-game-menu"};
 
     public RenderExtra() {}
-
-    public Set<RegistryEntry<StatusEffect>> blackListedEffect = new HashSet<>();
-
-    private void parseEffects(String regex) {
-        blackListedEffect = RegistryUtils.parseEntryWhiteList(Registries.STATUS_EFFECT, regex);
-    }
 
     public final FlagRef enableRejectResourcePack =
             flagBuilder(Configs.RENDER_CONFIG, RESOURCE_IGNORE_SERVER).build();
@@ -65,10 +61,11 @@ public class RenderExtra extends BaseModule {
     public final FlagRef noEffectForce =
             flagBuilder(Configs.RENDER_CONFIG, RENDER_NO_EFFECT_FORCE).build();
 
-    public final StringRef noEffectTypes = builder(Configs.RENDER_CONFIG, RENDER_NO_EFFECT_TYPES, String.class)
-            .defaultValue("^(blindness|darkness|nausea)$")
-            .validator(Configs.REGEX_VALIDATOR)
-            .updateListener(this::parseEffects)
+    public final NBTRef<RegistryRegex<StatusEffect>> noEffectTypes = builder(
+                    Configs.RENDER_CONFIG,
+                    RENDER_NO_EFFECT_TYPES,
+                    NBTType.<RegistryRegex<StatusEffect>>parameter(RegistryRegex.class))
+            .defaultValue(new RegistryRegex<>(new Regex("^(blindness|darkness|nausea)$"), Registries.STATUS_EFFECT))
             .build();
 
     public final FlagRef noWurstHud =
@@ -87,6 +84,7 @@ public class RenderExtra extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(ResourcePackSendS2CPacket.class), this::onResourceRequest);
         registerListener(Listener.getPostInitializeScreen(), this::onGameMenuScreenRelocateWurstButton);
+        registerListener(Listener.getPacketPoint().getChannel(EntityStatusEffectS2CPacket.class), this::doCancelEffect);
     }
 
     public void onResourceRequest(Event<ResourcePackSendS2CPacket> resourceEvent) {
@@ -163,6 +161,15 @@ public class RenderExtra extends BaseModule {
                         entry.setY(lastLineY + 24 * extraButtons);
                     }
                 }
+            }
+        }
+    }
+
+    public void doCancelEffect(Event<EntityStatusEffectS2CPacket> packet) {
+        if (mc.player != null && packet.context.getEntityId() == mc.player.getId()) {
+            RegistryEntry<StatusEffect> reg = packet.context.getEffectId();
+            if (noEffectForce.get() && noEffectTypes.get().test(reg)) {
+                packet.cancel();
             }
         }
     }

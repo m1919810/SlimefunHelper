@@ -7,7 +7,7 @@ import java.util.Map;
 import me.matl114.api.Displayable;
 import net.minecraft.util.StringIdentifiable;
 
-public interface ConfigEnum extends StringIdentifiable, Displayable {
+public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegisterType {
     public static Map<String, Map<String, ConfigEnum>> registeredConfigs = new HashMap<>();
 
     static void register(Class<? extends Enum> configEnum) {
@@ -38,5 +38,11 @@ public interface ConfigEnum extends StringIdentifiable, Displayable {
 
     default Map<String, ConfigEnum> getMap() {
         return registeredConfigs.get(this.getConfigEnumType());
+    }
+
+    static void onLoad(Class<?> clazz) {
+        if (ConfigEnum.class.isAssignableFrom(clazz) && Enum.class.isAssignableFrom(clazz)) {
+            ConfigEnum.ensureRegistered((Class<? extends Enum>) clazz);
+        }
     }
 }

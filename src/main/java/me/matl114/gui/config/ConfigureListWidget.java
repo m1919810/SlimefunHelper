@@ -151,7 +151,7 @@ public class ConfigureListWidget
                 Debug.info("Missing translation key for", path);
             }
             String[] cut = Config.cutToPath(path);
-            AttrKeyValue<?> keyValue = AttrKeyValue.ofConfigValue(path, config.get(cut));
+            AttrKeyValue<?> keyValue = config.get(cut).createKeyValue(path); // AttrKeyValue.ofConfigValue(path, );
             // assert not empty
             String index = cut[0];
             originValueWithIndex

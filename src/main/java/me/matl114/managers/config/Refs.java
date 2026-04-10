@@ -79,11 +79,13 @@ public class Refs {
                 .add(new TypedReferenceBuilder<>(ConfigEnum.class, List.of(EnumRef::new)))
                 .add(new TypedReferenceBuilder<>(MultiKeyBind.class, List.of(KeyBindRef::new)))
                 .add(new TypedReferenceBuilder<>(List.class, List.of(ListRef::new)))
+                .add(new TypedReferenceBuilder<>(NBTParsable.class, List.of(NBTRef::new)))
                 .add(new TypedReferenceBuilder<>(
                         String.class,
                         ImmutableList.<Function<String, Ref<?>>>builder()
                                 .add(EnumRef::fromString)
                                 .add(KeyBindRef::fromString)
+                                .add(NBTRef::fromString)
                                 .add(FlagRef::fromString)
                                 .add(IntRef::fromString)
                                 .add(StringRef::new)

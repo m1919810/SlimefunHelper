@@ -2,13 +2,13 @@ package me.matl114.hacks.modules.combat;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 import me.matl114.accessors.access.ItemStackAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -76,9 +76,8 @@ public class ProjectileEnhance extends BaseModule {
 
     public FlagRef enhanceTp = flagBuilder(Configs.COMBAT_CONFIG, TP_EXACT).build();
 
-    public StringRef useItemId = builder(Configs.COMBAT_CONFIG, USE_ITEM_ID, StringRef.TYPE)
-            .defaultValue("^(LOGITECH_LASER_GUN)$")
-            .validator(Configs.REGEX_VALIDATOR)
+    public NBTRef<Regex> useItemId = builder(Configs.COMBAT_CONFIG, USE_ITEM_ID, Regex.class)
+            .defaultValue(new Regex("^(LOGITECH_LASER_GUN)$"))
             .build();
 
     public FlagRef tridentDupe =
@@ -122,17 +121,14 @@ public class ProjectileEnhance extends BaseModule {
     }
 
     private boolean passUseItemIdCheck(ItemStack stack) {
-        String regex = useItemId.get();
-        if (regex == null || regex.isEmpty()) {
-            return false;
-        }
+
         String id = Registries.ITEM.getId(stack.getItem()).getPath();
-        if (Pattern.matches(regex, id)) {
+        if (useItemId.get().test(id)) {
             return true;
         }
         String sfid = ItemStackUtils.getSfId(stack);
 
-        return sfid != null && Pattern.matches(regex, sfid);
+        return sfid != null && useItemId.get().test(sfid);
     }
     // todo: test crossbow, may wrong
     public void onPlayerInteractItem(Event<PlayerInteractItemC2SPacket> packetMutableObject) {

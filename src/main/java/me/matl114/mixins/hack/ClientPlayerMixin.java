@@ -179,7 +179,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         RenderExtra extra = RenderTasks.getRenderExtra();
         if (extra.noEffect.get()
                 && extra.noEffectForce.get()
-                && (extra.blackListedEffect.contains(effect.getEffectType()))) {
+                && (extra.noEffectTypes.get().test(effect.getEffectType()))) {
             return false;
         }
 

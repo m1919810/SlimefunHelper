@@ -75,7 +75,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
                 .thenComparingInt(IndexEntry::index));
     }
 
-    protected void clearChildren() {
+    public void clearChildren() {
         childrenRender.clear();
         childrenInteract.clear();
     }
@@ -93,11 +93,11 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
         // no need to resort!
     }
 
-    protected Iterable<DrawableWidget> childrenRenderOrder() {
+    public Iterable<DrawableWidget> childrenRenderOrder() {
         return () -> new UnmodifiableListMappingIterator<>(childrenRender, IndexEntry::val);
     }
 
-    protected Iterable<DrawableWidget> childrenInteractOrder() {
+    public Iterable<DrawableWidget> childrenInteractOrder() {
         return () -> new UnmodifiableListMappingIterator<>(childrenInteract, IndexEntry::val);
     }
 

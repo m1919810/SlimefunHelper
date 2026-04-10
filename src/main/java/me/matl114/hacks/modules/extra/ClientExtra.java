@@ -13,13 +13,24 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.api.VEntity;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.BlockEntityTickInvoker;
 import org.jetbrains.annotations.ApiStatus;
 
 public class ClientExtra extends BaseModule {
@@ -28,6 +39,11 @@ public class ClientExtra extends BaseModule {
     public static final String[] CLIENT_BRAND_NAME = {"other", "client-brand-name"};
 
     public static final String[] TEST_NO_CRASH = {"other", "no-client-crash"};
+
+    public static final String[] NO_ENTITY_CRASH = {"other", "no-entity-crash"};
+
+    public static final String[] NO_BLOCK_ENTITY_CRASH = {"other", "no-block-entity-crash"};
+
     public static final String[] IGNORE_PROTOCOL_ERROR = {"other", "no-disconnect-on-network-error"};
 
     @ApiStatus.Experimental
@@ -39,6 +55,12 @@ public class ClientExtra extends BaseModule {
             .path(TEST_NO_CRASH)
             .defaultValue(false)
             .build();
+
+    public final FlagRef noEntityCrash =
+            flagBuilder(Configs.TEST_CONFIG, NO_ENTITY_CRASH).build();
+
+    public final FlagRef noBlockEntityCrash =
+            flagBuilder(Configs.TEST_CONFIG, NO_BLOCK_ENTITY_CRASH).build();
 
     public final FlagRef noNtwException = builder(Configs.TEST_CONFIG, Boolean.class)
             .path(IGNORE_PROTOCOL_ERROR)
@@ -62,7 +84,14 @@ public class ClientExtra extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getClientMainExit(), this::onCrash);
-        registerListener(Listener.getPacketListenerException(), this::onNetworkException);
+        registerListener(
+                Listener.getExceptionListener().getChannel(Listener.ExceptionType.NETWORK), this::onNetworkException);
+        registerListener(
+                Listener.getExceptionListener().getChannel(Listener.ExceptionType.ENTITY_TICK),
+                this::onEntityException);
+        registerListener(
+                Listener.getExceptionListener().getChannel(Listener.ExceptionType.BLOCK_ENTITY_TICK),
+                this::onBlockEntityException);
     }
 
     private final Text questionCrash =
@@ -84,16 +113,20 @@ public class ClientExtra extends BaseModule {
         }
     }
 
-    public void onNetworkException(Event<Packet<?>> event) {
+    public void onNetworkException(Event<Listener.WrapperException> event) {
         if (noNtwException.get()) {
-            Packet<?> packet = event.context();
-            PacketListener listener = event.getArgs(0);
-            Exception exception = event.getArgs(1);
+            Listener.WrapperException we = event.context();
+            Packet<?> packet = event.getArgs(0);
+            PacketListener listener = event.getArgs(1);
+            Throwable exception = we.exception();
             if (mc.player != null) {
                 Debug.chat(Text.literal("Error while handling a network packet: ")
                         .formatted(Formatting.RED)
                         .append(Text.literal(packet.getClass().getSimpleName())));
-                Debug.chat(Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
+                Debug.chat(
+                        exception.getClass().getSimpleName(),
+                        ":",
+                        Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
             }
             Debug.info("Packet Exception INFO :");
             Debug.info("  PacketListener : ", listener);
@@ -102,6 +135,90 @@ public class ClientExtra extends BaseModule {
             Debug.info(exception);
             event.cancel();
         }
+    }
+
+    public void onEntityException(Event<Listener.WrapperException> event) {
+        if (noEntityCrash.get()) {
+            Listener.WrapperException we = event.context();
+            Entity entity = event.getArgs(0);
+            event.cancel();
+            if (!entity.isRemoved()) {
+                // try fix common issues:
+                Throwable exception = we.exception();
+                Debug.chat(
+                        "Error while ticking entity:",
+                        entity.getDisplayName(),
+                        entity instanceof PlayerEntity player
+                                ? "(%s)".formatted(player.getNameForScoreboard())
+                                : "(%s)".formatted(Registries.ENTITY_TYPE.getId(entity.getType())));
+                Debug.chat(
+                        exception.getClass().getSimpleName(),
+                        ":",
+                        Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
+                // try fix common issues
+                if (!validVec3d(entity.getPos())) {
+                    Debug.chat("Invalid Position detected!");
+                    entity.setPosition(Vec3d.ZERO);
+                }
+                if (!validVec3d(entity.getVelocity())) {
+                    Debug.chat("Invalid Velocity detected!");
+                    entity.setVelocity(Vec3d.ZERO);
+                }
+                if (!Double.isFinite(entity.getPitch()) || !Double.isFinite(entity.getYaw())) {
+                    Debug.chat("Invalid Rotation detected!");
+                    entity.setPitch(0);
+                    entity.setYaw(0);
+                }
+                Debug.info("Entity Exception INFO :");
+                Debug.info("  Entity : ", entity);
+                try {
+                    Debug.info("  EntityNBT : ", VEntity.saveEntityNbt(entity));
+                } catch (Throwable e) {
+                }
+                Debug.info("Exception StackTrace:");
+                Debug.info(exception);
+            }
+        }
+    }
+
+    public void onBlockEntityException(Event<Listener.WrapperException> event) {
+        if (noBlockEntityCrash.get()) {
+            Listener.WrapperException we = event.context();
+            BlockEntityTickInvoker entity = event.getArgs(0);
+            World world = event.getArgs(1);
+            event.cancel();
+            if (!entity.isRemoved()) {
+                Throwable exception = we.exception();
+                Debug.chat(
+                        "Error while ticking blockEntity at world:",
+                        ChatUtils.getDisplayedLocation(Vec3d.of(entity.getPos())),
+                        "World:",
+                        world.getRegistryKey().getValue());
+                Debug.chat(
+                        exception.getClass().getSimpleName(),
+                        ":",
+                        Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
+                Debug.info("BlockEntity Exception INFO :");
+                Debug.info("  World : ", world.getRegistryKey().getValue());
+                Debug.info("  BlockEntityPos : ", entity);
+                try {
+                    BlockEntity be = world.getBlockEntity(entity.getPos());
+                    Debug.info(" BlockEntity : ", be == null ? null : be.getType());
+                    if (be != null) {
+                        Debug.info(" BlockEntityNBT : ", be.createNbt(ItemStackUtils.registry()));
+                    }
+                    BlockState state = world.getBlockState(entity.getPos());
+                    Debug.info(" BlockState : ", state);
+                } catch (Throwable e) {
+                }
+                Debug.info("Exception StackTrace:");
+                Debug.info(exception);
+            }
+        }
+    }
+
+    public boolean validVec3d(Vec3d vec3d) {
+        return Double.isFinite(vec3d.x) && Double.isFinite(vec3d.y) && Double.isFinite(vec3d.z);
     }
 
     protected void checkClientData(Screen screen) {

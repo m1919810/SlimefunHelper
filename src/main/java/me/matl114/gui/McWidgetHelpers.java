@@ -1,11 +1,14 @@
 package me.matl114.gui;
 
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ContentDelegateWidget;
+import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.screen.Screen;
@@ -69,6 +72,12 @@ public class McWidgetHelpers {
         textFieldWidget.setChangedListener((str) -> valueTracker.valueChange((T) textFieldWidget, str));
         TextFieldAccess.of(textFieldWidget).setBorderColorProvider(boxColorProvider);
         return new ContentDelegateWidget<TextFieldWidget>(x, y, 0, 0).setContentDelegate(textFieldWidget);
+    }
+
+    public static <T> ContentDelegateWidget<TextFieldWidget> createAttrValueEditBox(
+            AttrKeyValue<T> attrKeyValue, int x, int y, int dx, int dy) {
+        return new TextContentDelegateWidget<>(
+                x, y, new AttrKeyValueTextFieldWidget<>(attrKeyValue, mc.textRenderer, 0, 0, dx, dy));
     }
 
     private static final ColorProvider TEXT_DEFAULT = (el, fo) -> fo ? -1 : -6250336;
@@ -177,6 +186,51 @@ public class McWidgetHelpers {
         public void releaseDrag(Screen screen, double mouseX, double mouseY) {
             this.startDrag = false;
             //
+        }
+    }
+
+    public static class AttrKeyValueTextFieldWidget<T> extends TextFieldWidget {
+        AttrKeyValue<T> attrKeyValue;
+        String lastStoredAttrKeyValue;
+
+        public AttrKeyValueTextFieldWidget(
+                AttrKeyValue<T> attrKeyValue, TextRenderer textRenderer, int x, int y, int width, int height) {
+            super(textRenderer, x, y, width, height, Text.empty());
+            setMaxLength(32768);
+            setText(attrKeyValue.getValue());
+            this.attrKeyValue = attrKeyValue;
+            setChangedListener(this::syncChanges);
+            TextFieldAccess.of(this)
+                    .setBorderColorProvider(getWrongRedTextBoxColorProvider(this.attrKeyValue::isValidate));
+        }
+
+        public void syncChanges(String valueUpdate) {
+            if (Objects.equals(lastStoredAttrKeyValue, attrKeyValue.getValue())) {
+                this.attrKeyValue.valueChange(this, valueUpdate);
+                lastStoredAttrKeyValue = attrKeyValue.getValue();
+            } else {
+                // internal change, update from internal
+                lastStoredAttrKeyValue = attrKeyValue.getValue();
+                setText(lastStoredAttrKeyValue);
+            }
+        }
+
+        private void checkAttrKeyValueUpdate() {
+            if (!Objects.equals(lastStoredAttrKeyValue, attrKeyValue.getValue())) {
+                lastStoredAttrKeyValue = attrKeyValue.getValue();
+                setText(lastStoredAttrKeyValue);
+            }
+        }
+
+        public String getText() {
+            checkAttrKeyValueUpdate();
+            return super.getText();
+        }
+
+        @Override
+        public void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+            checkAttrKeyValueUpdate();
+            super.renderWidget(context, mouseX, mouseY, deltaTicks);
         }
     }
 }

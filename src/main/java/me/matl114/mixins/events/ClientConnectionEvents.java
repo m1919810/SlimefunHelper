@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.netty.channel.ChannelFutureListener;
@@ -8,6 +10,7 @@ import io.netty.channel.ChannelPipeline;
 import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.handler.PacketSizeLogger;
@@ -72,32 +75,20 @@ public class ClientConnectionEvents {
         Listener.getPacketPostSendPoint().broadcast(packet);
     }
 
-    @Inject(
+    @WrapOperation(
             method = "handlePacket",
             at =
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V",
-                            shift = At.Shift.BEFORE))
-    private static <T extends PacketListener> void applyListenerToPacket(
-            Packet<T> packet, PacketListener listener, CallbackInfo ci) {
-        if (Listener.prepacketListenerApplyPoint(packet, listener)) {
-            ci.cancel();
+                                    "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V"))
+    private static void applyPacketMainThread(Packet instance, PacketListener t, Operation<Void> original) {
+        if (!MinecraftClient.getInstance().isOnThread() && !Listener.isAsyncImportantPacket(instance)) {
+            original.call(instance, t);
+            return;
+        } else {
+            Listener.callPacketHandleEvent(instance, t, original::call);
         }
-    }
-
-    @Inject(
-            method = "handlePacket",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V",
-                            shift = At.Shift.AFTER))
-    private static <T extends PacketListener> void applyListenerToPacketPost(
-            Packet<T> packet, PacketListener listener, CallbackInfo ci) {
-        Listener.postPacketListenerApplyPoint(packet, listener);
     }
 
     @Inject(method = "addHandlers", at = @At("HEAD"))
@@ -107,6 +98,6 @@ public class ClientConnectionEvents {
             boolean local,
             PacketSizeLogger packetSizeLogger,
             CallbackInfo ci) {
-        Listener.getConnectionChannelInitialize().broadcast(pipeline, side);
+        Listener.getConnectionChannelInitialize().broadcast(pipeline, side, local);
     }
 }

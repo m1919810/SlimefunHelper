@@ -30,15 +30,20 @@ import javax.crypto.spec.SecretKeySpec;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.With;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.PairLikeFactory;
 import net.minecraft.client.gui.hud.MessageIndicator;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.component.type.ProfileComponent;
@@ -58,6 +63,8 @@ public class PlayerChat extends BaseModule {
     public static final String[] GAME_MESSAGE_PATTERN_AS_PLAYER_MESSAGE = new String[] {
         "player-chat", "game-message-as-player-message",
     };
+    public static final String[] DETECT_PLAYER_NAMES_IN_MESSAGE =
+            new String[] {"player-chat", "detect-all-message-with-player-names"};
     public static final String[] APPEND_CHAT_HEAD = new String[] {"player-chat", "append-chat-head"};
     public static final String[] APPEND_TIME_STAMP = new String[] {"player-chat", "append-time-stamp"};
 
@@ -81,10 +88,14 @@ public class PlayerChat extends BaseModule {
                     "^.*\\[([^\\]\\[\\s]+)\\]\\s*[:➟→»》]\\s*(.*)$",
                     "^.*\\[[^\\]\\[]+\\].* ([^\\]\\[\\s]+)\\s*[:➟→»》]\\s*(.*)$",
                     "^.*<([^><\\s]+)>\\s*[:➟→»》]\\s*(.*)$",
-                    "^.*《([^》《\\s]+)》\\s*[:➟→»》]\\s*(.*)$"))
+                    "^.*《([^》《\\s]+)》\\s*[:➟→»》]\\s*(.*)$",
+                    "^.*«([^»«\\s]+)»\\s+(.*)$"))
             .listValidator(Configs.REGEX_VALIDATOR)
             .updateListener(s -> compile = s.stream().map(Pattern::compile).toList())
             .build();
+
+    public final FlagRef detectPlayerName =
+            flagBuilder(Configs.CHAT_CONFIG, DETECT_PLAYER_NAMES_IN_MESSAGE).build();
 
     public final FlagRef timeStamp =
             flagBuilder(Configs.CHAT_CONFIG, APPEND_TIME_STAMP).build();
@@ -105,22 +116,11 @@ public class PlayerChat extends BaseModule {
             .updateListener(s -> dirty = true)
             .build();
 
-    public final StringRef key = builder(Configs.CHAT_CONFIG, ENCRYPT_KEY, StringRef.TYPE)
-            .defaultValue("")
+    public final NBTRef<EncryptionKey> key = builder(Configs.CHAT_CONFIG, ENCRYPT_KEY, EncryptionKey.class)
+            .defaultValue(EncryptionKey.EMPTY)
             .updateListener(s -> dirty = true)
             .build();
 
-    public final StringRef passPhrase = builder(Configs.CHAT_CONFIG, ENCRYPT_PASS_PHRASE, StringRef.TYPE)
-            .defaultValue("")
-            .updateListener(s -> {
-                if (!s.isEmpty()) {
-                    try {
-                        key.set(generateSecretKey(s));
-                    } catch (Throwable e) {
-                    }
-                }
-            })
-            .build();
     public final StringRef prefixEncrypt = builder(Configs.CHAT_CONFIG, ENCRYPT_PREFIX, StringRef.TYPE)
             .defaultValue("")
             .validator(s -> s.isEmpty() || s.endsWith(" "))
@@ -138,12 +138,8 @@ public class PlayerChat extends BaseModule {
             })
             .build();
 
-    Pattern cmdPattern;
-
-    public final StringRef commandPattern = builder(Configs.CHAT_CONFIG, ENCRYPT_COMMAND_MESSAGE, StringRef.TYPE)
-            .defaultValue("^/(minecraft:)?(msg|say|me) ([^\\s]+) (.*)$")
-            .validator(Configs.REGEX_VALIDATOR)
-            .updateListener(s -> cmdPattern = Pattern.compile(s))
+    public final NBTRef<Regex> commandPattern = builder(Configs.CHAT_CONFIG, ENCRYPT_COMMAND_MESSAGE, Regex.class)
+            .defaultValue(new Regex("^/(minecraft:)?(msg|say|me) ([^\\s]+) (.*)$"))
             .build();
 
     @Override
@@ -151,10 +147,10 @@ public class PlayerChat extends BaseModule {
         super.registerAll();
         registerListener(Listener.getMessageAddToHud(), this::onChatAdd);
         registerListener(
-                Listener.getPacketPoint().getChannel(ChatMessageS2CPacket.class),
+                Listener.getPacketPreHandlePoint().getChannel(ChatMessageS2CPacket.class),
                 (Consumer<Event<ChatMessageS2CPacket>>) this::<ChatMessageS2CPacket>onPacketIn);
         registerListener(
-                Listener.getPacketPoint().getChannel(GameMessageS2CPacket.class),
+                Listener.getPacketPreHandlePoint().getChannel(GameMessageS2CPacket.class),
                 (Consumer<Event<GameMessageS2CPacket>>) this::<GameMessageS2CPacket>onPacketIn);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(ChatMessageS2CPacket.class),
@@ -211,13 +207,42 @@ public class PlayerChat extends BaseModule {
                 Matcher matcher = matcher(text);
                 if (matcher != null && matcher.groupCount() >= 2) {
                     handleParsedChatMessage(
-                            chatAdd,
-                            text,
-                            matcher.group(matcher.groupCount() - 1),
-                            matcher.group(matcher.groupCount()),
-                            indicator == systemIndicator());
+                            chatAdd, text, matcher.group(matcher.groupCount() - 1), indicator == systemIndicator());
                 } else {
-                    handleParsedChatMessage(chatAdd, text, null, null, indicator == systemIndicator());
+                    String caughtName = null;
+                    if (lastAcceptUUID != null) {
+                        PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(lastAcceptUUID);
+                        if (entry != null) {
+                            caughtName = entry.getProfile().name();
+                        }
+                    }
+                    // do not use
+                    if (caughtName == null && detectPlayerName.get()) {
+                        String findingMsg = text;
+                        for (var playerListEntry : mc.getNetworkHandler().getPlayerList()) {
+                            String playerName = playerListEntry.getProfile().name();
+                            int index = findingMsg.indexOf(playerName);
+                            if (index != -1) {
+
+                                findingMsg = findingMsg.substring(0, index);
+                                caughtName = playerName;
+                            }
+                            Text displayName = playerListEntry.getDisplayName();
+                            if (displayName != null) {
+                                String displayName2 =
+                                        ChatUtils.textToPlainString(displayName); // playerListEntry.getDisplayName();
+                                int idx = findingMsg.indexOf(displayName2);
+                                if (idx != -1) {
+                                    findingMsg = findingMsg.substring(0, idx);
+                                    caughtName = playerListEntry.getProfile().name();
+                                }
+                            }
+                            if (findingMsg.isEmpty()) {
+                                break;
+                            }
+                        }
+                    }
+                    handleParsedChatMessage(chatAdd, text, caughtName, indicator == systemIndicator());
                 }
             } finally {
                 safeFlag = false;
@@ -230,23 +255,19 @@ public class PlayerChat extends BaseModule {
     }
 
     public void handleParsedChatMessage(
-            Event<Text> event,
-            String message,
-            @Nullable String capturedName,
-            @Nullable String capturedMessage,
-            boolean isSystem) {
+            Event<Text> event, String message, @Nullable String capturedName, boolean isSystem) {
         // Debug.chat("Find chat message:", capturedName, "Msg:" , capturedMessage, isSystem);
+        Text text = event.context();
         MutableInt keepIndex = new MutableInt(message.length());
         MutableBoolean mutableBoolean = new MutableBoolean(false);
         // handle
         List<Consumer<ChatUtils.TextBuilder>> appendToFirst = new ArrayList<>();
-        appendToFirst.add(handleChatHead(event, capturedName, mutableBoolean));
+        appendToFirst.add(handleChatHead(capturedName, mutableBoolean));
         appendToFirst.add(handleTimeStampAdd(mutableBoolean, capturedName));
         List<Consumer<ChatUtils.TextBuilder>> appendToLast = new ArrayList<>();
         appendToLast.add(handleDecryptMessage(message, keepIndex));
         if (mutableBoolean.booleanValue() || keepIndex.intValue() < message.length()) {
             // remake this
-            Text originalText = event.context();
             MutableInt counter = new MutableInt(0);
             ChatUtils.TextBuilder newBuilder = ChatUtils.builder();
             for (var re : appendToFirst) {
@@ -255,13 +276,14 @@ public class PlayerChat extends BaseModule {
                 }
             }
             newBuilder.withStyle(Style.EMPTY);
-            originalText.visit(
+            text.visit(
                     ((style, asString) -> {
                         int len = asString.length();
                         if (counter.intValue() + len > keepIndex.intValue()) {
                             int cut = keepIndex.intValue() - counter.intValue();
                             String cutStr = asString.substring(0, cut);
                             newBuilder.accept(style, cutStr);
+                            counter.add(cutStr.length());
                             return StringVisitable.TERMINATE_VISIT;
                         } else {
                             newBuilder.accept(style, asString);
@@ -278,9 +300,8 @@ public class PlayerChat extends BaseModule {
             event.context(newBuilder.end().build());
         }
     }
-
-    public Consumer<ChatUtils.TextBuilder> handleChatHead(
-            Event<Text> event, String playerName, MutableBoolean mutableBoolean) {
+    public Pattern pattern = Pattern.compile("^(?!_)(?![0-9]+$)[a-zA-Z0-9_]{3,16}$");
+    public Consumer<ChatUtils.TextBuilder> handleChatHead(String playerName, MutableBoolean mutableBoolean) {
         if (!playerHead.get()) return null;
         PlayerListEntry entry;
         if (lastAcceptUUID != null) {
@@ -300,7 +321,8 @@ public class PlayerChat extends BaseModule {
                         .withStyle(Style.EMPTY);
             };
         }
-        if (playerName != null) {
+        if (playerName != null  && pattern.matcher(playerName).matches()) {
+
             ObjectTextContent content =
                     new ObjectTextContent(new PlayerTextObjectContents(ProfileComponent.ofDynamic(playerName), false));
             mutableBoolean.setTrue();
@@ -314,7 +336,7 @@ public class PlayerChat extends BaseModule {
     }
 
     public Consumer<ChatUtils.TextBuilder> handleTimeStampAdd(MutableBoolean shouldModify, String capturedName) {
-        if (timeStamp.get() && (capturedName != null || lastAcceptUUID != null)) {
+        if (timeStamp.get() && ((capturedName != null && pattern.matcher(capturedName).matches()) || lastAcceptUUID != null)) {
             shouldModify.setValue(true);
             SimpleDateFormat sdf = new SimpleDateFormat("[HH:mm:ss]");
             String time = sdf.format(new Date());
@@ -334,11 +356,14 @@ public class PlayerChat extends BaseModule {
         } while (currentIndex >= 0
                 && (message.charAt(currentIndex) == ' ' || charSet.contains(message.charAt(currentIndex))));
         // can not find any useful message
-        if (currentIndex <= 2) return null;
+        if (currentIndex <= 2) {
+            keepIndex.setValue(lastIndex);
+            return null;
+        }
 
         keepIndex.increment();
         final int decryptStart = keepIndex.intValue();
-        String mutableString = message.substring(0, keepIndex.intValue());
+        String mutableString = message.substring(0, decryptStart);
         int idx = mutableString.lastIndexOf(' ');
         String messagePart = mutableString.substring(idx + 1);
         keepIndex.setValue(idx + 1);
@@ -371,18 +396,19 @@ public class PlayerChat extends BaseModule {
     Encryptor cache = null;
 
     public String getSecretKey() {
-        String val = key.get();
+        EncryptionKey keyInstance = key.get();
+        String val = keyInstance.key();
         if (val.isEmpty()) {
             // generate by phrase
-            String phrase = passPhrase.get();
+            String phrase = keyInstance.phase();
             if (!phrase.isEmpty()) {
                 try {
-                    key.set(generateSecretKey(phrase));
+                    key.set(keyInstance.withKey(generateSecretKey(phrase)));
                 } catch (Throwable e) {
                 }
             }
         }
-        return key.get();
+        return key.get().key();
     }
 
     public String generateSecretKey(String phrase) {
@@ -431,18 +457,18 @@ public class PlayerChat extends BaseModule {
     public void onChatEncrypt(Event<String> event) {
         if (event.isCancelled()) return;
         if (shouldEncryptSendMessage()) {
-            if (cmdPattern != null) {
-                Matcher matcher = cmdPattern.matcher(event.context());
-                if (matcher.matches() && matcher.groupCount() > 0) {
-                    int gpcnt = matcher.groupCount();
-                    String replacement = matcher.group(gpcnt);
-                    String encrypt = tryEncrypt(replacement, getEncryptor(), 32000);
-                    StringBuilder builder = new StringBuilder(event.context());
-                    builder.replace(matcher.start(gpcnt), matcher.end(gpcnt), encrypt);
-                    event.context(builder.toString());
-                    return;
-                }
+
+            Matcher matcher = this.commandPattern.get().pattern().matcher(event.context());
+            if (matcher.matches() && matcher.groupCount() > 0) {
+                int gpcnt = matcher.groupCount();
+                String replacement = matcher.group(gpcnt);
+                String encrypt = tryEncrypt(replacement, getEncryptor(), 32000);
+                StringBuilder builder = new StringBuilder(event.context());
+                builder.replace(matcher.start(gpcnt), matcher.end(gpcnt), encrypt);
+                event.context(builder.toString());
+                return;
             }
+
             String str = event.context();
             if (!Pattern.matches(
                     ChatTasks.getChatExtra().commandEscapeFormatPattern.get(), str)) {
@@ -682,6 +708,40 @@ public class PlayerChat extends BaseModule {
                     | InvalidAlgorithmParameterException ex) {
                 throw new RuntimeException(ex);
             }
+        }
+    }
+
+    @With
+    public record EncryptionKey(String phase, String key) implements NBTParsable<EncryptionKey> {
+        public static EncryptionKey of(String phase, String key) {
+            if (phase != null
+                    && !phase.isEmpty()
+                    && (key == null || key.isEmpty())
+                    && ChatTasks.getPlayerChat() != null) {
+                PlayerChat chat = ChatTasks.getPlayerChat();
+                try {
+                    key = chat.generateSecretKey(phase);
+                } catch (Throwable e) {
+                }
+            }
+            return new EncryptionKey(phase, key);
+        }
+
+        public static final NBTType<EncryptionKey> TYPE = NBTTypes.createPairLike(
+                EncryptionKey.class,
+                NBTTypes.STRING_TYPE,
+                "phase",
+                NBTTypes.STRING_TYPE,
+                "key",
+                PairLikeFactory.of(EncryptionKey::of, EncryptionKey::phase, EncryptionKey::key),
+                AttrKeyValue.CustomWidgetFactory.cutSizeXLeft(0.3),
+                AttrKeyValue.CustomWidgetFactory.cutSizeXRight(0.3));
+
+        public static final EncryptionKey EMPTY = TYPE.empty();
+
+        @Override
+        public NBTType<EncryptionKey> type() {
+            return TYPE;
         }
     }
 }

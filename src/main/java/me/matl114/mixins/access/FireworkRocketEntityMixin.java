@@ -2,6 +2,8 @@ package me.matl114.mixins.access;
 
 import java.util.OptionalInt;
 import me.matl114.accessors.access.FireworkRocketEntityAccess;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.TrackedData;
@@ -12,6 +14,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
+@Environment(EnvType.CLIENT)
 @Mixin(FireworkRocketEntity.class)
 public abstract class FireworkRocketEntityMixin extends Entity implements FireworkRocketEntityAccess {
     @Shadow

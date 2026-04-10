@@ -15,18 +15,22 @@ public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
     protected static final int WIDTH = 240;
 
     public RegistryChooseScreen(Registry<T> registry, Consumer<T> callback) {
+        this(registry, callback, "");
+    }
+
+    public RegistryChooseScreen(Registry<T> registry, Consumer<T> callback, String filterInput) {
         super(Text.empty());
         this.registry = registry;
         this.callback = callback;
         setTitleLabel(Text.literal("从注册表中选择注册项").formatted(Formatting.AQUA));
         // reset user input, so it is more convenient for user to select a registry value,
-        FilterService.currentUserInput = "";
+        FilterService.currentUserInput = filterInput;
         this.selectSubScreen =
                 ListRegistrySelectWidget.registry(this.registry, 0, CONTENT_START_Y + 20, WIDTH, 240, 20);
     }
 
-    ListRegistrySelectWidget<T> selectSubScreen;
-    ContentDelegateWidget<ListRegistrySelectWidget<T>> delegate;
+    protected ListRegistrySelectWidget<T> selectSubScreen;
+    protected ContentDelegateWidget<ListRegistrySelectWidget<T>> delegate;
 
     @Override
     protected boolean canConfirm(ElementHandler elementHandler) {
@@ -35,18 +39,19 @@ public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
 
     @Override
     public void close() {
-        super.close();
         // reset input,
         FilterService.currentUserInput = "";
+        super.close();
     }
 
     @Override
     protected void onConfirmButton() {
-        this.close();
         T val = selectSubScreen.getSelectedRegistry();
-        if (val != null && callback != null) {
+        if (callback != null) {
             callback.accept(val);
         }
+        // move to here
+        this.close();
     }
 
     @Override

@@ -12,5 +12,9 @@ public interface IInputManager {
 
     InputState getKeyState(int key);
 
+    InputState getKeyStateOrCreate(int key);
+
+    boolean isKeyPressed(int key);
+
     MinecraftClient getClient();
 }

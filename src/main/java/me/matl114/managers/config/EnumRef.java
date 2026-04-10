@@ -2,36 +2,46 @@ package me.matl114.managers.config;
 
 import com.google.common.base.Preconditions;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
 
-public class EnumRef<T extends ConfigEnum> extends ObjectRef<T> {
-    public final String enumType;
-    public String enumValue;
-    public boolean resolved;
+public class EnumRef<T extends ConfigEnum> extends LazilyRegisterTypeRef<T, String> {
 
     public EnumRef(ConfigEnum enumR) {
-        super((T) enumR);
-        ConfigEnum.ensureRegistered(enumR.cast().getClass());
-
-        this.enumType = enumR.getConfigEnumType();
-        this.enumValue = enumR.cast().name();
-        this.resolved = true;
+        super(enumR.getConfigEnumType(), (T) enumR);
     }
 
     public EnumRef(String value) {
-        super(null);
-        // value should be like enum:configEnumsthclaass_name:value
-        String[] splite = value.split(":");
-        Preconditions.checkArgument(splite.length == 3 && Objects.equals("enum", splite[0]));
-        this.enumType = splite[1];
-        this.enumValue = splite[2];
-        tryResolve();
+        super(value);
     }
 
-    private void tryResolve() {
+    @Override
+    protected void tryRegisterType(T value) {
+        ConfigEnum.ensureRegistered(value.cast().getClass());
+    }
+
+    @Override
+    protected String toLazy(T val) {
+        return val.cast().name();
+    }
+
+    @Override
+    protected String fromStringToLazy(String string) {
+        return string;
+    }
+
+    @Override
+    protected String fromLazyToString(String val) {
+        return val;
+    }
+
+    @Override
+    protected String prefix() {
+        return "enum";
+    }
+
+    protected void tryResolve() {
         if (this.resolved) return;
         var re = ConfigEnum.registeredConfigs.get(enumType);
         if (re == null) {
@@ -57,12 +67,6 @@ public class EnumRef<T extends ConfigEnum> extends ObjectRef<T> {
     }
 
     @Override
-    public void set(T val) {
-        super.set(val);
-        enumValue = this.get().cast().name();
-    }
-
-    @Override
     protected T validateAndCast(Object val) {
         if (!resolved) {
             setEnumType((Class<? extends Enum>) val.getClass());
@@ -84,54 +88,17 @@ public class EnumRef<T extends ConfigEnum> extends ObjectRef<T> {
         return null;
     }
 
-    public Object getAsPrimitive() {
-        return "enum:" + enumType + ":" + enumValue;
-    }
-
-    @Override
-    public <W> boolean isSameTypeWith(Ref<W> ref) {
-        return ref instanceof EnumRef what && Objects.equals(what.enumType, enumType);
-    }
-
-    @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if (otherRef instanceof EnumRef<?> what && Objects.equals(what.enumType, this.enumType)) {
-            if (!this.resolved) {
-                tryResolve();
-            }
-            if (this.resolved) {
-                ((EnumRef<T>) otherRef).set(this.get());
-            } else {
-                ((EnumRef<T>) otherRef).enumValue = this.enumValue;
-            }
-
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public T get() {
-        if (resolved) {
-            return super.get();
-        } else {
-            tryResolve();
-            T val = super.get();
-            if (val != null) {
-                return val;
-            } else {
-                throw new IllegalStateException("Access to a config enum instance before it is registered");
-            }
-        }
-    }
-
     @Override
     public AttrKeyValue<T> _createKeyValue0(String key) {
+        if (!resolved) {
+            tryResolve();
+        }
         if (resolved) {
             return (AttrKeyValue<T>)
                     AttrKeyValue.enumMap(key, this.getValue(), this.getValue().getMap());
         } else {
-            return AttrKeyValue.enumMap(key, null, Map.of());
+            throw new IllegalStateException("Access to a config enum instance before it is registered");
+            // return AttrKeyValue.enumMap(key, null, Map.of());
         }
     }
 }

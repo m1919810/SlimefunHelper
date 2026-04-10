@@ -49,7 +49,7 @@ public abstract class SplashOverlayMixin {
                     1,
                     0,
                     1,
-                    ColorUtils.withAlpha(-1, alpha));
+                    ColorUtils.withAlphaInt(-1, alpha));
         }
     }
 
@@ -57,7 +57,6 @@ public abstract class SplashOverlayMixin {
             method = "renderProgressBar",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/ColorHelper;getArgb(IIII)I"))
     private int onOverrideProgressbar(int original, @Local(ordinal = 5) int j) {
-        return ColorUtils.orWithAlpha(
-                RenderTasks.getCustomOverlay().colorProgressbar.get(), j);
+        return RenderTasks.getCustomOverlay().colorProgressbar.get().withAlpha(j);
     }
 }

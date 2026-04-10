@@ -3,6 +3,7 @@ package me.matl114.managers.config;
 import com.google.common.base.Preconditions;
 import com.mojang.serialization.Lifecycle;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
@@ -20,6 +21,7 @@ import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
+import me.matl114.utils.ReflectUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.SimpleRegistry;
@@ -56,6 +58,10 @@ public class Config implements RefMap {
             this.registryKey = registryKey;
             REGISTRY.add(this.registryKey, this, RegistryEntryInfo.DEFAULT);
         }
+    }
+
+    public String getTranslationKey() {
+        return "config.index." + this.registryKey.getValue().getPath();
     }
 
     public static void reloadAll() {
@@ -400,8 +406,18 @@ public class Config implements RefMap {
     }
 
     public static void registerClassSupport(Class<?> clazz) {
-        if (ConfigEnum.class.isAssignableFrom(clazz) && Enum.class.isAssignableFrom(clazz)) {
-            ConfigEnum.ensureRegistered((Class<? extends Enum>) clazz);
+        if (AutoRegisterType.class.isAssignableFrom(clazz)) {
+            if (!AutoRegisterType.registered.contains(clazz)) {
+                try {
+                    Method method = ReflectUtils.getMethodsRecursively(clazz, "onLoad", Class.class)
+                            .getFirst();
+                    method.invoke(null, clazz);
+                    AutoRegisterType.registered.add((Class<? extends AutoRegisterType>) clazz);
+                } catch (Throwable e) {
+                    throw new RuntimeException(
+                            "Target class which implement AutoRegisterType does not implement public static void onLoad(Class) method");
+                }
+            }
         }
     }
 

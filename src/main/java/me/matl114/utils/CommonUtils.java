@@ -7,6 +7,8 @@ import me.matl114.utils.world.ChunkIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.DimensionOptions;
 import net.minecraft.world.dimension.DimensionType;
@@ -103,5 +105,9 @@ public class CommonUtils {
 
     public static List<String> filterString(List<String> str, String str2) {
         return str.stream().filter(s -> s.contains(str2)).toList();
+    }
+
+    public static ChunkPos toChunk(BlockPos blockPos) {
+        return new ChunkPos(blockPos.getX() >> 4, blockPos.getZ() >> 4);
     }
 }

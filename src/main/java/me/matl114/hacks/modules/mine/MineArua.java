@@ -5,16 +5,15 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.config.StringRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.RegistryUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
@@ -37,12 +36,6 @@ public class MineArua extends BaseModule {
     public static final String[] MINEARUA_HOTKEY = {"mine-arua", "mine-arua-hotkey"};
     private BlockPos cachePosition;
     private int lastRefreshTick;
-    public Set<Block> whiteList = new HashSet<>();
-
-    public void parseWhiteList(String str) {
-        whiteList = RegistryUtils.parseWhiteList(Registries.BLOCK, str);
-    }
-
     public FlagRef enable = flagBuilder(Configs.MINE_CONFIG, MINEARUA).build();
 
     public KeyBindRef keyBind = toggleHotkey(
@@ -52,11 +45,11 @@ public class MineArua extends BaseModule {
                     MINEARUA)
             .build();
 
-    public StringRef whiteListRegex = builder(Configs.MINE_CONFIG, String.class)
-            .path(MINEARUA_WHILELIST)
-            .defaultValue("^(.*bed)$")
-            .validator(Configs.REGEX_VALIDATOR)
-            .updateListener(this::parseWhiteList)
+    public NBTRef<RegistryRegex<Block>> whiteListRegex = builder(
+                    Configs.MINE_CONFIG,
+                    MINEARUA_WHILELIST,
+                    NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
+            .defaultValue(new RegistryRegex<>(new Regex("^(.*bed)$"), Registries.BLOCK))
             .build();
 
     @Override
@@ -102,7 +95,7 @@ public class MineArua extends BaseModule {
         BlockState state = world.getBlockState(pos);
         if (state != null && !state.isAir() && !state.isLiquid()) {
             Block block = state.getBlock();
-            if (block.getHardness() >= 0.0F && whiteList.contains(block)) {
+            if (block.getHardness() >= 0.0F && whiteListRegex.get().test(block)) {
                 return true;
             }
         }

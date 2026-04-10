@@ -10,8 +10,10 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.StringRef;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.math.Vec3d;
@@ -114,6 +116,9 @@ public class PacketDebugger extends BaseModule {
                             moveC2SPacket.getYaw(0.0F),
                             ", onGround:",
                             moveC2SPacket.isOnGround());
+                } else if (type instanceof PlayerInputC2SPacket playerInputC2SPacket) {
+                    PlayerInputUtils.Input input = PlayerInputUtils.of(playerInputC2SPacket);
+                    ExtraTasks.debug("Send", type.getPacketId().id(), input);
                 } else {
                     ExtraTasks.debug("Send", type.getPacketId().id());
                 }
