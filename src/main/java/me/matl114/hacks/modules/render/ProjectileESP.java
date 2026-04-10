@@ -19,13 +19,12 @@ import me.matl114.utils.containers.MetaData;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.CrossbowUser;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.AbstractSkeletonEntity;
 import net.minecraft.entity.mob.WitherSkeletonEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
-import net.minecraft.entity.projectile.TridentEntity;
+import net.minecraft.entity.projectile.*;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.Items;
 import net.minecraft.item.RangedWeaponItem;
@@ -71,22 +70,35 @@ public class ProjectileESP extends BaseModule {
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVelocityFireball);
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVelocityArrow);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(Listener.getServerEntitySpawnListener(), this::onEntitySpawn);
     }
 
     private static final String flagCalculateProjectile = "slimefunhelper:calculate_projectile";
+
+    public void onEntitySpawn(Event<Entity> event) {
+        if (enable.get()
+                && calculateFireball.get()
+                && event.context() instanceof ExplosiveProjectileEntity projectile) {
+            onVelocityFireballCal(projectile, projectile.getVelocity());
+        }
+    }
 
     public void onVelocityFireball(Event<Vec3d> fireballEvent) {
         if (enable.get() && calculateFireball.get()) {
             Entity entity = fireballEvent.getArgs(0);
             if (entity instanceof ExplosiveProjectileEntity fireball) {
                 Vec3d vec = fireballEvent.context();
-                if (vec.lengthSquared() > 1e-10) {
-                    EntityAccess<ExplosiveProjectileEntity> access = EntityAccess.of(fireball);
-                    if (access.getMetadata().get(this, flagCalculateProjectile) == null) {
-                        access.getMetadata().put(this, flagCalculateProjectile, Boolean.TRUE);
-                        calLineTrace(fireball.getPos(), vec);
-                    }
-                }
+                onVelocityFireballCal(fireball, vec);
+            }
+        }
+    }
+
+    public void onVelocityFireballCal(ExplosiveProjectileEntity fireball, Vec3d vec) {
+        if (vec.lengthSquared() > 1e-10) {
+            EntityAccess<ExplosiveProjectileEntity> access = EntityAccess.of(fireball);
+            if (access.getMetadata().get(this, flagCalculateProjectile) == null) {
+                access.getMetadata().put(this, flagCalculateProjectile, Boolean.TRUE);
+                calLineTrace(fireball.getPos(), vec, fireball.getType());
             }
         }
     }
@@ -116,7 +128,7 @@ public class ProjectileESP extends BaseModule {
         }
     }
 
-    public static void calLineTrace(Vec3d fireballPosition, Vec3d power) {
+    public static void calLineTrace(Vec3d fireballPosition, Vec3d power, EntityType<?> type) {
         // (x - x0)/px = (y - y0)/py = (z - z0)/pz
         if (mc.player != null) {
             // 给行进方向norm
@@ -135,7 +147,8 @@ public class ProjectileESP extends BaseModule {
                 Vector2d playerLookat = EntityUtils.getEntityLookXZ(mc.player);
                 boolean front = planeVec.dot(playerLookat) > 0;
                 Debug.chat(
-                        "Fireball trace update:",
+                        type.getName(),
+                        "trace:",
                         Text.literal("%.2f".formatted(minDist)).formatted(Formatting.RED),
                         (front ? Text.literal("in front of") : Text.literal("at back of")).formatted(Formatting.GREEN),
                         "you");

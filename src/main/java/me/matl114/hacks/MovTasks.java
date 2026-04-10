@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.With;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
@@ -157,6 +158,7 @@ public class MovTasks {
         }
     }
 
+    @With
     public static record MovInfo(Vec3d vec3d, Boolean oGroundOverride, boolean updatePlayer, Vec2f rotationOverride) {
         public static MovInfo create(Vec3d to) {
             return new MovInfo(to, null, true, null);
