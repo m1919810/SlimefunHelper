@@ -486,8 +486,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     mc.player.setOnGround(true);
                     // TODO 1.21.2+ may need this, check code then
                     mc.options.jumpKey.setPressed(true);
-                    //                        Vec3d vc = mc.player.getVelocity();
-                    //                        mc.player.setVelocity(vc.x, 0.1, vc.z);
+
                 } else {
                     // should not send onGround
                     // do not send pos
@@ -775,7 +774,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                             entity.horizontalCollision));
                             //                            entity.entity.setPos(entity.pos.getX(), entity.entity.getY(),
                             // entity.pos.getZ());
-                            //                            entity.entity.setVelocity(0.0, 0.0, 0.0);
+
                             noFallSetbackResponse = true;
 
                             // idk
@@ -1075,8 +1074,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
                                 //                            entity.entity.setPos(entity.pos.getX(),
                                 // entity.entity.getY(),
-                                // entity.pos.getZ());
-                                //                            entity.entity.setVelocity(0.0, 0.0, 0.0);
+
                                 noFallSetbackResponse = true;
 
                                 // idk
@@ -1212,12 +1210,10 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             input.jump(true).forward(false).backward(false).left(false).right(false).sprint(false);
 
                             var co = applyInputWay(entity);
-//                            mc.player.setVelocity(mc.player.getVelocity().withAxis(Direction.Axis.Y,0));
+
                             if(!co.hasAnyCollision()){
-                                input.forward(true);
-                            }else if(false) {
-                                mc.player.setVelocity(0, mc.player.getVelocity().y, 0);
                                 input.forward(false);
+                            }else if(false) {
                             }else {
                                 input.forward(true);
                                 if(playerInput.hasWASDMovement()){
@@ -1260,16 +1256,14 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             forThisTickInput = input;
                             applyJumpThisTick = true;
                         }else{
-//                            //Debug.chat("Apply Input");
-//                            if(lastCacheInput != null){
-                                //mc.player.setVelocity(0,0, 0);
-                                forThisTickInput =  lastCacheInput.clone();
-                                if(Tasks.getTick() < lastRotTick + latency){
-                                    mc.player.setYaw(modifyYaw);
-                                    modifyRot = true;
-                                    movementManagerEvent.context.pushImportantRotation(false, true);
-                                }
-                                applyJumpThisTick = true;
+
+                            forThisTickInput =  lastCacheInput.clone();
+                            if(Tasks.getTick() < lastRotTick + latency){
+                                mc.player.setYaw(modifyYaw);
+                                modifyRot = true;
+                                movementManagerEvent.context.pushImportantRotation(false, true);
+                            }
+                            applyJumpThisTick = true;
 //                            }
 
                         }
@@ -1296,12 +1290,12 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
         @Override
         public void onPlayerVelocity(Event<Vec3d>  playerVec) {
-            if(lastFixTick + 10 > Tasks.getTick()){
-                Vec3d vc3d = playerVec.context();
-                if(vc3d.y < 0){
-                    playerVec.context(new Vec3d(vc3d.x, 0.0D, vc3d.z));
-                }
-            }
+//            if(lastFixTick + 10 > Tasks.getTick()){
+//                Vec3d vc3d = playerVec.context();
+//                if(vc3d.y < 0){
+//                    playerVec.context(new Vec3d(vc3d.x, 0.0D, vc3d.z));
+//                }
+//            }
         }
 
         @Override
@@ -1379,18 +1373,18 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
                             // todo: try send it eariler
 
-                           Debug.chat("BadPackets");
+                           //Debug.chat("BadPackets");
                             module.lastOnGroundHeight = entity.pos.getY();
                             // ClientTickEndC2SPacket());
                             Vec3d lastPosPos = movementManagerEvent.context.playerStatus.pos;
-                            storedPacketMove = VPacket.newPositionAndOnGround(
-                                mc.player.getX(), lastPosPos.y + 9E-8, mc.player.getZ(),
-                                //mc.player.getYaw()+ 180, mc.player.getPitch(),
-                                false, entity.horizontalCollision
-                            );
-//                                storedPacketMove =    VPacket.newOnGroundOnly(
-//                                    true,
-//                                    entity.horizontalCollision);
+//                            storedPacketMove = VPacket.newPositionAndOnGround(
+//                                mc.player.getX(), lastPosPos.y + 9E-8, mc.player.getZ(),
+//                                //mc.player.getYaw()+ 180, mc.player.getPitch(),
+//                                false, entity.horizontalCollision
+//                            );
+                                storedPacketMove =    VPacket.newOnGroundOnly(
+                                    true,
+                                    entity.horizontalCollision);
 
                             movementManagerEvent.cancel();
                             lastStartWaitPos = mc.player.getPos();
@@ -1401,7 +1395,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             mc.player.setOnGround(true);
                             lastCacheInput = PlayerInputUtils.of(mc.player.input);
                             lastCacheInput
-                                .forward(true).backward(false).left(false).right(false)
+                                .forward(false).backward(false).left(false).right(false)
                                 .jump(false);//.applyInput(mc.player.input);
                         }
 
@@ -1426,7 +1420,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             }
             if(modifyRot){
                 modifyRot = false;
-               // movementManagerEvent.context.playerStatus.restoreRotation();
+               movementManagerEvent.context.playerStatus.restoreRotation();
             }
             return true;
         }
