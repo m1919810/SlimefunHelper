@@ -63,6 +63,22 @@ public class DataHelper {
         return vec3d.z;
     }
 
+    public static double length(Object vec3d) {
+        return createVec(vec3d).length();
+    }
+
+    public static double lengthSquared(Object vec3d) {
+        return createVec(vec3d).lengthSquared();
+    }
+
+    public static double horizontalDistance(Object vec3d) {
+        return createVec(vec3d).horizontalLength();
+    }
+
+    public static double horizontalDistanceSquared(Object vec3d) {
+        return createVec(vec3d).horizontalLengthSquared();
+    }
+
     public static BlockPos vecToBlockPos(Vec3d vec3d) {
         return BlockPos.ofFloored(vec3d);
     }

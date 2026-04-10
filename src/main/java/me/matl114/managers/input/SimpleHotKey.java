@@ -85,7 +85,7 @@ public class SimpleHotKey implements IHotKey {
                 boolean allpressed = true;
 
                 for (int keyNeeded : this.getRelatedKeyCode()) {
-                    allpressed &= manager.getKeyState(keyNeeded).isPressed();
+                    allpressed &= manager.isKeyPressed(keyNeeded); // getKeyState(keyNeeded).isPressed();
                 }
                 if (allpressed) {
                     Event<IHotKey> hotKeyEvent = new Event<>(this, true, false, manager);

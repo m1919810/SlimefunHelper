@@ -8,7 +8,7 @@ import me.matl114.utils.config.AttrKeyValue;
 
 public abstract class Ref<T> {
 
-    private Config configReference;
+    protected Config configReference;
 
     public void setConfigReference(Config ref) {
         if (ref != configReference) {
@@ -86,8 +86,8 @@ public abstract class Ref<T> {
 
     public final AttrKeyValue<T> createKeyValue(String key) {
         AttrKeyValue<T> keyValue = _createKeyValue0(key);
-        keyValue.getValidators().addAll(validators);
-        keyValue.getListeners().add(this::setValue);
+        validators.forEach(keyValue::addValidator);
+        keyValue.addListener(this::setValue);
         return keyValue;
     }
 

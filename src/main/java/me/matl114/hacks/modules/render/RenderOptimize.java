@@ -1,8 +1,6 @@
 package me.matl114.hacks.modules.render;
 
 import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.concurrent.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,12 +12,11 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
-import me.matl114.managers.config.DoubleRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.config.StringRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.containers.MetaData;
@@ -79,12 +76,6 @@ public class RenderOptimize extends BaseModule {
 
     public RenderOptimize() {}
 
-    public Set<EntityType<?>> cullingTypeSet = new LinkedHashSet<>();
-
-    public Set<BlockEntityType<?>> cullingTypeSet2 = new LinkedHashSet<>();
-
-    public Set<ParticleType<?>> cullingTypeSet3 = new LinkedHashSet<>();
-
     public final FlagRef enableItemTickOpt =
             flagBuilder(Configs.RENDER_CONFIG, OPTIMIZE_ITEM_TICK).build();
 
@@ -122,22 +113,26 @@ public class RenderOptimize extends BaseModule {
                     Configs.RENDER_CONFIG, CULLING_ENABLE_HOTKEY, new MultiKeyBind(), CULLING_ENABLE)
             .build();
 
-    public final StringRef cullingTypes = builder(Configs.RENDER_CONFIG, CULLING_ENTITY_TYPES, StringRef.TYPE)
-            .defaultValue("^(item.*)$")
-            .updateListener(s -> EntityUtils.parseEntityWhiteList(s, cullingTypeSet))
-            .validator(Configs.REGEX_VALIDATOR)
+    public final NBTRef<RegistryRegex<EntityType<?>>> cullingTypes = builder(
+                    Configs.RENDER_CONFIG,
+                    CULLING_ENTITY_TYPES,
+                    NBTType.<RegistryRegex<EntityType<?>>>parameter(RegistryRegex.class))
+            .defaultValue(new RegistryRegex<>(new Regex("^(item.*)$"), Registries.ENTITY_TYPE))
             .build();
 
-    public final StringRef cullingTypes2 = builder(Configs.RENDER_CONFIG, CULLING_BLOCK_ENTITY_TYPES, StringRef.TYPE)
-            .defaultValue("^((.*sign)|barrel|skull|(.*chest)|enchanting_table)$")
-            .updateListener(s -> cullingTypeSet2 = RegistryUtils.parseWhiteList(Registries.BLOCK_ENTITY_TYPE, s))
-            .validator(Configs.REGEX_VALIDATOR)
+    public final NBTRef<RegistryRegex<BlockEntityType<?>>> cullingTypes2 = builder(
+                    Configs.RENDER_CONFIG,
+                    CULLING_BLOCK_ENTITY_TYPES,
+                    NBTType.<RegistryRegex<BlockEntityType<?>>>parameter(RegistryRegex.class))
+            .defaultValue(new RegistryRegex<>(
+                    new Regex("^((.*sign)|barrel|skull|(.*chest)|enchanting_table)$"), Registries.BLOCK_ENTITY_TYPE))
             .build();
 
-    public final StringRef cullingTypes3 = builder(Configs.RENDER_CONFIG, CULLING_PARTICLE_TYPES, StringRef.TYPE)
-            .defaultValue("^(.*)$")
-            .updateListener(s -> cullingTypeSet3 = RegistryUtils.parseWhiteList(Registries.PARTICLE_TYPE, s))
-            .validator(Configs.REGEX_VALIDATOR)
+    public final NBTRef<RegistryRegex<ParticleType<?>>> cullingTypes3 = builder(
+                    Configs.RENDER_CONFIG,
+                    CULLING_PARTICLE_TYPES,
+                    NBTType.<RegistryRegex<ParticleType<?>>>parameter(RegistryRegex.class))
+            .defaultValue(new RegistryRegex<>(new Regex("^(.*)$"), Registries.PARTICLE_TYPE))
             .build();
 
     public final DoubleRef cullingRadius = builder(Configs.RENDER_CONFIG, OPTIMIZE_CULL_RADIUS, DoubleRef.TYPE)
@@ -206,7 +201,7 @@ public class RenderOptimize extends BaseModule {
             Vec3d pos = RenderUtils.getCameraPos();
             EntityType<?> types = entity.getType();
             if (cullingEnable.get()) {
-                if (cullingTypeSet.contains(types)) {
+                if (this.cullingTypes.get().test(types)) {
                     metaData = holder.getMetadata();
                     controller = metaData.getOrPut(this, KEY_RENDER_CONTROL, RenderController::new);
 
@@ -378,7 +373,7 @@ public class RenderOptimize extends BaseModule {
                                 RenderController controller;
                                 BlockEntityType<?> types = blockEntity.getType();
                                 if (cullingEnable.get()) {
-                                    if (cullingTypeSet2.contains(types)) {
+                                    if (cullingTypes2.get().test(types)) {
                                         metaData = holder.getMetadata();
                                         controller = metaData.getOrPut(this, KEY_RENDER_CONTROL, RenderController::new);
 
@@ -422,7 +417,7 @@ public class RenderOptimize extends BaseModule {
         if (event.isCancelled() || !cullingEnable.get()) return;
         BlockEntity entity = event.context();
         BlockEntityType<?> type = entity.getType();
-        if (cullingTypeSet2.contains(type)) {
+        if (cullingTypes2.get().test(type)) {
             Box box = Box.from(Vec3d.of(entity.getPos()));
             double sq = box.squaredMagnitude(RenderUtils.getCameraPos());
             // use distance first

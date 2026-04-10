@@ -100,6 +100,11 @@ public class Tests extends BaseModule {
 
     private int counter = 0;
 
+    @Override
+    public void registerAll() {
+        super.registerAll();
+    }
+
     //    private void sendItemSwapPacketInternal(){
     ////        slimefunTick++;
     ////        if(slimefunTick<5){
@@ -399,4 +404,23 @@ public class Tests extends BaseModule {
             }
         }
     }
+
+    //    public void doObfEffect(Event<EntityStatusEffectS2CPacket> packet){
+    //        if(mc.player != null && flag4.get() && packet.context.getEntityId() == mc.player.getId()){
+    //            RegistryEntry<StatusEffect> reg = packet.context.getEffectId();
+    //            if(packet.context.getAmplifier() > 1){
+    //                packet.context(new EntityStatusEffectS2CPacket(
+    //                    mc.player.getId(),
+    //
+    //                    new StatusEffectInstance(
+    //                        StatusEffects.JUMP_BOOST,
+    //                        packet.context.getDuration(),
+    //                        packet.context.getAmplifier()
+    //                    ),
+    //                    packet.context.keepFading()
+    //                ));
+    //            }
+    //
+    //        }
+    //    }
 }

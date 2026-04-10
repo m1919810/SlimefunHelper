@@ -8,12 +8,14 @@ import java.util.Deque;
 import java.util.List;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -74,6 +76,7 @@ public class BowTp extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onBowAction, -999);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 
     public void onBowAction(Event<PlayerActionC2SPacket> packetEvent) {
@@ -282,5 +285,21 @@ public class BowTp extends BaseModule {
 
     private boolean canTp() {
         return tpDistance.get() > 0.0D;
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context().getValue();
+        switch (preset) {
+            case HACKING, VANILLA -> {
+                if(tpDistance.get() < 0.0D) {
+                    tpDistance.set(-tpDistance.get());
+                }
+            }
+            default -> {
+                if(tpDistance.get() > 0.0D) {
+                    tpDistance.set(-tpDistance.get());
+                }
+            }
+        }
     }
 }

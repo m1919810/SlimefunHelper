@@ -6,6 +6,7 @@
 	"client": [
 		"access.ChunkMixin",
 		"access.ExplosiveProjectileMixin",
+		"access.FireworkRocketEntityMixin",
 		"access.HandledScreenMixin",
 		"access.KeyBindingMixin",
 		"access.MoonriseArrayVoxelShapeMixin",
@@ -14,6 +15,10 @@
 		"access.MoonriseCubeVoxelShapeMixin",
 		"access.MoonriseSliceShapeMixin",
 		"access.MoonriseVoxelShapeMixin",
+		"access.PlayerInteractBlockC2SPacketMixin",
+		"access.PlayerInteractEntityC2SPacketMixin",
+		"access.PlayerInteractItemC2SPacketMixin",
+		"access.PlayerMoveC2SPacketMixin",
 		"events.AtlasLoaderEvents",
 		"events.BlockEntityEvents",
 		"events.BlockEntityRenderManagerEvents",
@@ -26,6 +31,7 @@
 		"events.ClientWorldEvents",
 		"events.DataTrackerEvents",
 		"events.EntityEvents",
+		"events.EntityTypeEvents",
 		"events.GameRendererEvents",
 		"events.HandledScreenEvents",
 		"events.ItemAssetsLoaderEvents",
@@ -38,6 +44,7 @@
 		"events.MinecraftClientEvents",
 		"events.MouseEvents",
 		"events.NetworkThreadUtilsEvents",
+		"events.PlayerEntityEvents",
 		"events.RecipeBookScreenEvents",
 		"events.ScreenEvents",
 		"events.WorldEvents",
@@ -89,10 +96,6 @@
 		"defaultRequire": 1
 	},
 	"mixins": [
-		"access.FireworkRocketEntityMixin",
-		"access.PlayerMoveC2SPacketMixin",
-		"events.EntityTypeEvents",
-		"events.PlayerEntityEvents",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
 		"fix.ScreenHandlerFixMixin"

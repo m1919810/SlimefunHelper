@@ -4,7 +4,6 @@ import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.accessors.gui.ScreenAccess;
@@ -13,10 +12,11 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.gui.invcache.InventorySelectScreen;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.config.StringRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
@@ -56,9 +56,8 @@ public class ChestHistory extends BaseModule {
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::openInventoryCacheScreen))
             .build();
 
-    public final StringRef ignoreList = builder(Configs.INV_CONFIG, INV_CACHE_IGNORE, StringRef.TYPE)
-            .defaultValue("^(Slimefun 指南.*|菜单)$")
-            .validator(Configs.REGEX_VALIDATOR)
+    public final NBTRef<Regex> ignoreList = builder(Configs.INV_CONFIG, INV_CACHE_IGNORE, Regex.class)
+            .defaultValue(new Regex("^(Slimefun 指南.*|菜单)$"))
             .build();
 
     public final FlagRef enableTitle = flagBuilder(Configs.INV_CONFIG, INV_CACHE_SHOW_TITLE)
@@ -87,7 +86,7 @@ public class ChestHistory extends BaseModule {
         if (title != null) {
             title = title.replaceAll("§.", "");
             // ignore certain screen
-            if (Pattern.matches(ignoreList.get(), title)) {
+            if (ignoreList.get().test(title)) {
                 return;
             }
         }

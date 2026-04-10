@@ -181,6 +181,8 @@ public interface InputHandler {
     public static enum Type {
         MOUSE_CLICK,
         MOUSE_RELEASE,
-        MOUSE_DRAG;
+        MOUSE_START_DRAG,
+        MOUSE_DRAG,
+        MOUSE_RELEASE_DRAG;
     }
 }

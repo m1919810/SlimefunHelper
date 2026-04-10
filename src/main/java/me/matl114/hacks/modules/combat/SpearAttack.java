@@ -9,12 +9,14 @@ import java.util.List;
 import java.util.Optional;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
@@ -92,6 +94,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         super.registerAll();
         registerListener(RenderListener.getRenderLayerTasks(), this::renderPlayerSpearTarget);
         registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEnd);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
     //
     public boolean onSpearAction() {
@@ -111,6 +114,10 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean spearAttack() {
+        if(spearDistance.get() < 0){
+            currentWaitBackTick = 0;
+            return false;
+        }
         AttackRangeComponent attackRange = mc.player.getAttackRange();
         Entity target = CombatTasks.getTargetSelector()
                 .searchAttackEntity(
@@ -424,5 +431,21 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
         return true;
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context().getValue();
+        switch (preset) {
+            case HACKING, VANILLA -> {
+                if(spearDistance.get() < 0.0D) {
+                    spearDistance.set(-spearDistance.get());
+                }
+            }
+            default -> {
+                if(spearDistance.get() > 0.0D) {
+                    spearDistance.set(-spearDistance.get());
+                }
+            }
+        }
     }
 }

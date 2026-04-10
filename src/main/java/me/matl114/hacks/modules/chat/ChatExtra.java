@@ -11,9 +11,11 @@ import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
@@ -163,11 +165,8 @@ public class ChatExtra extends BaseModule {
     private static final String[] PASSWORD_ENCRYPT = {"chat-screen-tools", "password-encrypt"};
     private static final String[] PASSWORD_ENCRYPT_LENGTH = {"chat-screen-tools", "password-encrypt-length"};
     private static final String[] PASSWORD_ENCRYPT_SALT = {"chat-screen-tools", "password-encrypt-salt"};
-    private Pattern pattern;
-    private final StringRef regexLogin = builder(Configs.CHAT_CONFIG, LOGIN_COMMAND_REGEX, StringRef.TYPE)
-            .defaultValue("^(/login|/l|/reg|/register|/changepass|/changepassword) (.+)$")
-            .validator(Configs.REGEX_VALIDATOR)
-            .updateListener(s -> pattern = Pattern.compile(s))
+    private final NBTRef<Regex> regexLogin = builder(Configs.CHAT_CONFIG, LOGIN_COMMAND_REGEX, Regex.class)
+            .defaultValue(new Regex("^(/login|/l|/reg|/register|/changepass|/changepassword) (.+)$"))
             .build();
 
     public final FlagRef encryptPass =
@@ -239,7 +238,7 @@ public class ChatExtra extends BaseModule {
 
     public boolean onChatObfRender(TextFieldWidget widget, DrawContext context, int x, int y, float partialTicks) {
         String text = widget.getText();
-        var matcher = pattern.matcher(text);
+        var matcher = regexLogin.get().pattern().matcher(text);
         if (matcher.find() && matcher.groupCount() > 0) {
             String result = matcher.group(1) + " <password-hidden>";
             if (sampleWidget == null) {
@@ -265,8 +264,8 @@ public class ChatExtra extends BaseModule {
 
     public void onChatPasswordEncrypt(Event<String> commandChat) {
         if (mc.player != null && encryptPass.get() && !ScreenUtils.hasCtrlDown()) {
-            if (Pattern.matches(regexLogin.get(), commandChat.context())) {
-                String command = commandChat.context();
+            String command = commandChat.context();
+            if (regexLogin.get().test(command)) {
                 String playerName = mc.player.getNameForScoreboard();
                 String[] splits = command.split(" ");
                 for (var i = 1; i < splits.length; i++) {

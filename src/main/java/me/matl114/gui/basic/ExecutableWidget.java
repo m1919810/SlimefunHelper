@@ -2,6 +2,7 @@ package me.matl114.gui.basic;
 
 import java.util.function.UnaryOperator;
 import lombok.Getter;
+import net.minecraft.client.gui.screen.Screen;
 
 public class ExecutableWidget extends DrawableWidget {
     @Getter
@@ -45,6 +46,30 @@ public class ExecutableWidget extends DrawableWidget {
             return handler.onAction(this, mouseX, mouseY, button, InputHandler.Type.MOUSE_RELEASE);
         }
         return false;
+    }
+
+    boolean dragging = false;
+
+    @Override
+    public boolean startDrag(Screen screen, double mouseX, double mouseY) {
+        if (handler != null && handler.onAction(this, mouseX, mouseY, 0, InputHandler.Type.MOUSE_START_DRAG)) {
+            dragging = true;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void releaseDrag(Screen screen, double mouseX, double mouseY) {
+        dragging = false;
+        if (handler != null) {
+            handler.onAction(this, mouseX, mouseY, 0, InputHandler.Type.MOUSE_RELEASE_DRAG);
+        }
+    }
+
+    @Override
+    public boolean isDragging() {
+        return dragging;
     }
 
     @Override

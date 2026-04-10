@@ -19,4 +19,10 @@ public interface VDataFlag {
     int ID_FIREWORK_ITEM = 8;
     int ID_FIREWORK_SHOOTER_ID = 9;
     int ID_FIREWORK_SHOT_AT_ANGLE = 10;
+    // ItemEntity
+    int ID_ITEM_ITEMSTACK = 8;
+    // Decoration
+    int ID_WALL_DECORATION_FACING = 8;
+    int ID_ITEM_FRAME_ITEMSTACK = 9;
+    int ID_ITEM_FRAME_ROTATION = 10;
 }

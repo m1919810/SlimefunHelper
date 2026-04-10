@@ -1,11 +1,11 @@
 package me.matl114.hacks.modules.move;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -28,6 +28,8 @@ import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -72,8 +74,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerInputC2SPacket.class), this::onInputPacketSend);
-        registerListener(Listener.getEntityTrackDataUpdate(), this::onServerSyncSneak);
+        registerListener(Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onServerSyncSneak);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onInteractSend);
     }
@@ -147,6 +148,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     boolean sneakStatus = false;
 
     public void onSneakStatus() {
+        if (mc.player == null) return;
         if (sneakStatus) {
             sneakStatus = false;
             mc.getNetworkHandler()
@@ -185,6 +187,10 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
             if (canBypass || !fakeStatusBypass.get().hasAc()) {
                 int id = entity == null ? mc.player.getId() - 1 : entity.getId();
+                PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
+                // to trigger plugin events
+                input.sneak(true).sendPlayerInputPacket();
+                input.sneak(false).sendPlayerInputPacket();
                 mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
                     return new PlayerInteractEntityC2SPacket(
                             id,
@@ -225,6 +231,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                                 Vec3d cacheDirection = attackOffsetted
                                         .subtract(args.getEyePos())
                                         .normalize();
+                                movementManagerEvent.context.pushImportantRotation(true, true);
                                 EntityUtils.setEntityRotationSafe(args, cacheDirection);
                                 // restore velocity after collide
                                 args.setVelocity(velocity);
@@ -237,7 +244,12 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                                     // rare,,, maybe
                                     return false;
                                 }
+                                PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
+
                                 ACPostTasks.addPostTransactionAction(han -> {
+                                    // to trigger plugin events
+                                    input.sneak(true).sendPlayerInputPacket();
+                                    input.sneak(false).sendPlayerInputPacket();
                                     mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
                                     mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
                                         return new PlayerInteractEntityC2SPacket(
@@ -264,34 +276,19 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                 && (!lastPredictWasSneakEdge || !fakeSneakBypass.get().hasAc());
     }
 
-    public boolean shouldFakeSneak() {
-        return (enableFakeSneak.get() || sneakStatus) && mc.player.isOnGround();
+    public boolean shouldFakeSneakStatus() {
+        return (sneakStatus || (enableFakeSneak.get() && checkSneakSpeed())) && mc.player.isOnGround();
     }
 
-    public void onInputPacketSend(Event<PlayerInputC2SPacket> inputPacket) {
-        if (shouldFakeSneak() && !mc.player.isRiding()) {
-            //            if(inputPacket.context().input().sneak()){
-            //                PlayerInput input = inputPacket.context().input();
-            //                boolean forward = input.forward();
-            //                boolean backward = input.backward();
-            //                boolean left = input.left();
-            //                boolean right = input.right();
-            ////                forward = false;
-            ////                backward = false;
-            //                // reset these flags for
-            //                inputPacket.context(new PlayerInputC2SPacket(new PlayerInput(forward, backward, left,
-            // right, input.jump(), false, input.sprint())));
-            //            }
-        }
+    private boolean checkSneakSpeed() {
+        return mc.player.getAttributeValue(EntityAttributes.SNEAKING_SPEED) < 0.9F;
     }
 
     public void onInteractSend(Event<PlayerInteractEntityC2SPacket> interactPacket) {
-        if (shouldFakeSneak()) {
+        if (sneakStatus) {
             PlayerInteractEntityC2SPacket packet = interactPacket.context();
-            if (sneakStatus) {
-                if (!packet.isPlayerSneaking()) {
-                    interactPacket.context(new PlayerInteractEntityC2SPacket(packet.entityId, true, packet.type));
-                }
+            if (!packet.isPlayerSneaking()) {
+                PlayerInteractEntityC2SPacketAccess.of(packet).setPlayerSneaking(true);
             }
             //            else{
             //                if(packet.isPlayerSneaking()){
@@ -335,7 +332,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-        if (shouldFakeSneak()) {
+        if (shouldFakeSneakStatus()) {
             // totally shit, the sneak flag is override with playerInput,
             // fuck ojng
             // we move it to InputTick
@@ -416,7 +413,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-        if (shouldFakeSneak()) {
+        if (shouldFakeSneakStatus()) {
             // do not sync sneak status
             //            if(lastPredictWasSneakEdge){
             //

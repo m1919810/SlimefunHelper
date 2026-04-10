@@ -1,57 +1,46 @@
 package me.matl114.hacks.modules.render;
 
 import java.awt.*;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.List;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.config.StringRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
-import me.matl114.utils.RenderUtils;
+import me.matl114.utils.*;
+import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class EntityESP extends BaseModule {
-    public static final String[] DETECT_ENTITY = {"detect-entity", "detect-entity"};
-    public static final String[] DETECT_ENTITY_TOGGLE = {"detect-entity", "detect-entity-hotkey"};
-    public static final String[] DETECT_SPAWN_WHITELIST = {"detect-entity", "spawn-whitelist"};
-    public static final String[] LOG_ON_SCREEN = {"detect-entity", "log-to-chat"};
-    public static final String[] RAYTRACE_ENTITY = {"detect-entity", "ray-trace-entity"};
-    public static final String[] ENTITY_HITBOX = {"detect-entity", "render-trace-hit-box"};
-    public static final String[] ENTITY_GLOW = {"detect-entity", "entity-glow-effect"};
+    public static final String[] DETECT_ENTITY = {"detect-entity", "entity-esp", "enable"};
+    public static final String[] DETECT_ENTITY_TOGGLE = {"detect-entity", "entity-esp", "hotkey"};
+    public static final String[] DETECT_SPAWN_WHITELIST = {"detect-entity", "entity-esp", "whitelist"};
+    public static final String[] RENDER_COLOR = {"detect-entity", "entity-esp", "color"};
+    public static final String[] LOG_ON_SCREEN = {"detect-entity", "entity-esp", "log-to-chat"};
+    public static final String[] ENTITY_TRACE = {"detect-entity", "entity-esp", "tracing-option"};
+    public static final String[] ENTITY_GLOW = {"detect-entity", "entity-esp", "glow-effect"};
 
     public EntityESP() {}
-
-    Set<EntityType<?>> types = new HashSet<>();
-
-    public void updateWhiteList(String value) {
-        Set<EntityType<?>> set = new HashSet<>();
-        EntityUtils.parseEntityWhiteList(value.replace(',', '|'), set);
-        types = set;
-    }
 
     public final FlagRef enable =
             flagBuilder(Configs.RENDER_CONFIG, DETECT_ENTITY).build();
@@ -63,11 +52,23 @@ public class EntityESP extends BaseModule {
                     DETECT_ENTITY)
             .build();
 
-    public final StringRef whiteList = builder(Configs.RENDER_CONFIG, StringRef.TYPE)
+    public final NBTRef<RegistryRegex<EntityType<?>>> whiteList = builder(
+                    Configs.RENDER_CONFIG, RegistryRegex.<EntityType<?>>parameter())
             .path(DETECT_SPAWN_WHITELIST)
-            .defaultValue("player,wither")
-            .validator(s -> Configs.REGEX_VALIDATOR.test(s.replace(',', '|')))
-            .updateListener(this::updateWhiteList)
+            .defaultValue(new RegistryRegex<>(new Regex("player,wither"), Registries.ENTITY_TYPE))
+            .build();
+
+    public final NBTRef<EntryPrimitiveMap<EntityType<?>, TextColor>> renderColor = builder(
+                    Configs.RENDER_CONFIG,
+                    RENDER_COLOR,
+                    NBTType.<EntryPrimitiveMap<EntityType<?>, TextColor>>parameter(EntryPrimitiveMap.class))
+            .defaultValue(new EntryPrimitiveMap<>(
+                    Registries.ENTITY_TYPE,
+                    NBTTypes.COLOR_TYPE,
+                    Map.of(
+                            EntityType.PLAYER, Objects.requireNonNull(TextColor.fromFormatting(Formatting.YELLOW)),
+                            EntityType.ARMOR_STAND, Objects.requireNonNull(TextColor.fromFormatting(Formatting.GREEN))),
+                    TextColor.fromFormatting(Formatting.RED)))
             .build();
 
     public final FlagRef logEntity = builder(Configs.RENDER_CONFIG, FlagRef.TYPE)
@@ -75,12 +76,9 @@ public class EntityESP extends BaseModule {
             .defaultValue(false)
             .build();
 
-    public final FlagRef lineTrace =
-            flagBuilder(Configs.RENDER_CONFIG, RAYTRACE_ENTITY).build();
-
-    public final FlagRef boxTrace =
-            flagBuilder(Configs.RENDER_CONFIG, ENTITY_HITBOX).build();
-
+    public final NBTRef<TracingOption> traceOption = builder(Configs.RENDER_CONFIG, ENTITY_TRACE, TracingOption.class)
+            .defaultValue(new TracingOption(true, false))
+            .build();
     public final FlagRef glowEntity =
             flagBuilder(Configs.RENDER_CONFIG, ENTITY_GLOW).build();
 
@@ -92,13 +90,14 @@ public class EntityESP extends BaseModule {
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(EntitiesDestroyS2CPacket.class), this::onEntityRemove);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(Listener.getPostGameTick(), this::onTick);
     }
 
     public void onEntitySpawn(Event<EntitySpawnS2CPacket> packetEvent) {
         // Debug.info("check entity", packet.getEntityType());
         var packet = packetEvent.context();
         if (enable.get()) {
-            if (types.contains(packet.getEntityType())) {
+            if (whiteList.get().test(packet.getEntityType())) {
                 EntityType<?> type = packet.getEntityType();
                 if (logEntity.get()) {
                     if (type == EntityType.PLAYER) {
@@ -147,7 +146,7 @@ public class EntityESP extends BaseModule {
                 for (int i : packet.getEntityIds()) {
                     Entity entity = mc.world.getEntityById(i);
                     if (entity == null) continue;
-                    if (types.contains(entity.getType())) {
+                    if (whiteList.get().test(entity.getType())) {
                         removing.add(entity);
                     }
                 }
@@ -169,67 +168,82 @@ public class EntityESP extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> stackE) {
-        if (mc.world == null || mc.player == null) return;
-        var stack = stackE.context;
+    List<Entity> entities = new ArrayList<>();
+
+    public void onTick(Event<ClientPlayerEntity> event) {
+        entities = new ArrayList<>();
         boolean enable = this.enable.get();
 
-        float tickDelta = (float) stackE.getArgs(0);
-        var whitelist = types;
-        boolean doLineTrace = lineTrace.get();
-        boolean doBoxTrace = boxTrace.get();
+        var whitelist = whiteList.get().getFilterValue();
 
-        RenderUtils.startDrawVirtual(stack);
-        try {
-            for (Entity entity : mc.world.getEntities()) {
-                if (entity == mc.gameRenderer.getCamera().getFocusedEntity()) continue;
-                if (entity == null || entity.isRemoved()) {
-                    continue;
-                } else {
-                    EntityInternalAccess<?> access = EntityInternalAccess.of(entity);
-                    int renderLevel = access.renderTrackedLevel();
-                    if (!glowEntity.get()) {
+        for (Entity entity : mc.world.getEntities()) {
+            if (entity == mc.gameRenderer.getCamera().getFocusedEntity()) continue;
+            if (entity == null || entity.isRemoved()) {
+                continue;
+            } else {
+                EntityInternalAccess<?> access = EntityInternalAccess.of(entity);
+                int renderLevel = access.renderTrackedLevel();
+                if (!glowEntity.get()) {
+                    access.setGlow0(false);
+                }
+                if (renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST) {
+                    if (!whitelist.contains(entity.getType())) {
                         access.setGlow0(false);
+                        access.markRenderTracked(EntityInternalAccess.RENDER_LEVEL_DISABLE);
+                        continue;
                     }
-                    if (renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST) {
-                        if (!whitelist.contains(entity.getType())) {
-                            access.setGlow0(false);
-                            access.markRenderTracked(EntityInternalAccess.RENDER_LEVEL_DISABLE);
-                            continue;
-                        }
-                    }
-                    if ((renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST && enable)
-                            || renderLevel == EntityInternalAccess.RENDER_LEVEL_FORCE) {
-                        if (glowEntity.get()) {
-                            if (!entity.isGlowing()) {
-                                access.setGlow0(true);
-                            }
-                        }
-
-                        Box box = RenderUtils.getLerpedBox(entity, tickDelta); //  entity.getBoundingBox();
-                        if (doLineTrace) {
-                            Vec3d center = box.getCenter();
-                            Vec3d cursorPos = RenderUtils.getTracerOrigin(1.0f);
-                            RenderUtils.drawLineVirtualCameraCoord(
-                                    stack,
-                                    cursorPos,
-                                    center.subtract(RenderUtils.getCameraPos()),
-                                    getShaderColorByEntityType(entity));
-                        }
-                        if (doBoxTrace) {
-                            RenderUtils.drawOutlinedBox(
-                                    stack, box.getMinPos(), box.getMaxPos(), getShaderColorByEntityType(entity));
+                }
+                if ((renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST && enable)
+                        || renderLevel == EntityInternalAccess.RENDER_LEVEL_FORCE) {
+                    if (glowEntity.get()) {
+                        if (!entity.isGlowing()) {
+                            access.setGlow0(true);
                         }
                     }
-                    if (renderLevel == EntityInternalAccess.RENDER_LEVEL_DISABLE) {
-                        if (whitelist.contains(entity.getType())) {
-                            access.markRenderTracked(EntityInternalAccess.RENDER_LEVEL_WHITELIST);
-                        }
+                    entities.add(entity);
+                }
+                if (renderLevel == EntityInternalAccess.RENDER_LEVEL_DISABLE) {
+                    if (whitelist.contains(entity.getType())) {
+                        access.markRenderTracked(EntityInternalAccess.RENDER_LEVEL_WHITELIST);
                     }
                 }
             }
-        } finally {
-            RenderUtils.stopDrawVirtual(stack);
+        }
+    }
+
+    public void onRender(Event<MatrixStack> stackE) {
+        if (checkNull()) return;
+
+        if (enable.get()) {
+            var stack = stackE.context;
+            float tickDelta = stackE.getArgs(0);
+            boolean doLineTrace = traceOption.get().line(); // .get();
+            boolean doBoxTrace = traceOption.get().box();
+            RenderUtils.startDrawVirtual(stack);
+            try {
+                Vec3d traceOrigin = RenderUtils.getTracerOrigin(tickDelta);
+                Vec3d camera = RenderUtils.getCameraPos();
+                VRender.getInstance().createLinesLayer((op, vp) -> {
+                    List<Entity> entities = this.entities;
+                    for (var entity : entities) {
+                        //  entity.getBoundingBox();
+                        Color color = getShaderColorByEntityType(entity);
+                        if (color != null) {
+                            Box box =
+                                    RenderUtils.getLerpedBox(entity, tickDelta).offset(camera.negate());
+                            if (doLineTrace) {
+                                Vec3d center = box.getCenter();
+                                op.drawLine(stack, vp, traceOrigin, center, color.getRGB());
+                            }
+                            if (doBoxTrace) {
+                                op.drawOutlinedBox(stack, vp, box.getMinPos(), box.getMaxPos(), color.getRGB());
+                            }
+                        }
+                    }
+                });
+            } finally {
+                RenderUtils.stopDrawVirtual(stack);
+            }
         }
     }
 
@@ -241,16 +255,20 @@ public class EntityESP extends BaseModule {
         return -1.0f;
     }
 
-    private static Color getShaderColorByEntityType(Entity entity) {
-        if (entity instanceof PlayerEntity entity1) {
-            return Color.YELLOW;
-        }
-        if (!(entity instanceof LivingEntity)) {
-            return Color.RED;
-        }
-        return switch (entity.getType().getSpawnGroup()) {
-            case WATER_CREATURE, CREATURE, AXOLOTLS, AMBIENT, WATER_AMBIENT, UNDERGROUND_WATER_CREATURE -> Color.GREEN;
-            default -> Color.RED;
-        };
+    private Color getShaderColorByEntityType(Entity entity) {
+        EntityType<?> type = entity.getType();
+        TextColor color = renderColor.get().getOrDefault(type);
+        return color != null ? new Color(color.getRgb()) : null;
+        //        if (entity instanceof PlayerEntity entity1) {
+        //            return Color.YELLOW;
+        //        }
+        //        if (!(entity instanceof LivingEntity)) {
+        //            return Color.RED;
+        //        }
+        //        return switch (entity.getType().getSpawnGroup()) {
+        //            case WATER_CREATURE, CREATURE, AXOLOTLS, AMBIENT, WATER_AMBIENT, UNDERGROUND_WATER_CREATURE ->
+        // Color.GREEN;
+        //            default -> Color.RED;
+        //        };
     }
 }

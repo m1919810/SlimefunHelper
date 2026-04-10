@@ -1,6 +1,7 @@
 package me.matl114.mixins.events;
 
-import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
@@ -19,15 +20,25 @@ public abstract class WorldEvents {
     @Final
     private boolean isClient;
 
-    @WrapWithCondition(
+    @WrapOperation(
             method = "tickBlockEntities",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockEntityTickInvoker;tick()V"))
-    public boolean shouldTickBlockEntities(BlockEntityTickInvoker instance) {
+    public void shouldTickBlockEntities(BlockEntityTickInvoker instance, Operation<Void> original) {
         if (isClient) {
             Event<BlockEntityTickInvoker> event = new Event<>(instance, true, false);
             Listener.getBlockEntityTickListener().handleValue(event);
-            return !event.isCancelled();
+            if (!event.isCancelled()) {
+                try {
+                    original.call(instance);
+                } catch (Throwable e) {
+                    if (Listener.handleException(e, Listener.ExceptionType.BLOCK_ENTITY_TICK, instance, this)) {
+                        throw e;
+                    }
+                } finally {
+                }
+            }
+        } else {
+            original.call(instance);
         }
-        return true;
     }
 }

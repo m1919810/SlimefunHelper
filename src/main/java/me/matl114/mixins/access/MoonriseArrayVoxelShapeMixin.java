@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
-@Mixin(ArrayVoxelShape.class)
+@Mixin(value = ArrayVoxelShape.class, priority = 2000)
 public abstract class MoonriseArrayVoxelShapeMixin extends VoxelShape {
     protected MoonriseArrayVoxelShapeMixin(VoxelSet voxels) {
         super(voxels);

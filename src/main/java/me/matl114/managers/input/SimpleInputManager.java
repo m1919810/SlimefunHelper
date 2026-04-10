@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.managers.InputState;
@@ -50,10 +51,20 @@ public class SimpleInputManager implements IInputManager {
         return mc;
     }
 
-    protected HashMap<Integer, InputState> PRESSED_KEYS = new HashMap<>();
+    protected Map<Integer, InputState> PRESSED_KEYS = new ConcurrentHashMap<>();
 
-    public synchronized InputState getKeyState(int t) {
+    public InputState getKeyState(int t) {
+        return PRESSED_KEYS.get(t);
+    }
+
+    public InputState getKeyStateOrCreate(int t) {
         return PRESSED_KEYS.computeIfAbsent(t, (s) -> new InputState());
+    }
+
+    @Override
+    public boolean isKeyPressed(int key) {
+        var state = PRESSED_KEYS.get(key);
+        return state != null && state.isPressed();
     }
 
     public boolean ignoreKeyCode(int keyCode) {
@@ -63,7 +74,7 @@ public class SimpleInputManager implements IInputManager {
     public boolean onKeyInputPre(int keyCode, int scanCode, int modifiers, int action) {
         if (keyCode != -1) {
             boolean pressed = action != GLFW.GLFW_RELEASE;
-            InputState state = getKeyState(keyCode);
+            InputState state = getKeyStateOrCreate(keyCode);
             if (pressed) {
 
                 if (!state.isPressed()) {

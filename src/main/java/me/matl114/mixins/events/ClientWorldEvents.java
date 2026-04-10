@@ -9,6 +9,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.crash.CrashException;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -23,9 +24,20 @@ public abstract class ClientWorldEvents {
             return;
         } else {
             EntityAccess.of(instance).beforeTick();
-            original.call(instance);
-            EntityAccess.of(instance).afterTick();
-            Listener.getEntityPostTickListener().handleValue(entityEvent);
+            try {
+                original.call(instance);
+            } catch (Throwable e) {
+                if (e instanceof CrashException crashException
+                        && crashException.getCause() instanceof OutOfMemoryError) {
+                    throw e;
+                }
+                if (Listener.handleException(e, Listener.ExceptionType.ENTITY_TICK, instance)) {
+                    throw e;
+                }
+            } finally {
+                EntityAccess.of(instance).afterTick();
+                Listener.getEntityPostTickListener().handleValue(entityEvent);
+            }
         }
     }
 }

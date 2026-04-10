@@ -133,6 +133,7 @@ public class Scaffold extends BaseModule {
                                 .toCenterPos()
                                 .subtract(mc.player.getEyePos())
                                 .normalize());
+                        movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityYawSafe(player, rotation.y);
                         EntityUtils.setEntityPitchSafe(player, rotation.x);
                     }

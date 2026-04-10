@@ -136,7 +136,7 @@ public class SlimefunTasks {
                     .fromNbt(
                             (NbtCompound)
                                     VNbt.getInstance()
-                                            .readNbt(
+                                            .readNbtNoRegistry(
                                                     "{Count:1b,id:\"minecraft:enchanted_book\",tag:{CustomModelData:2200001,PublicBukkitValues:{\"slimefun:slimefun_guide_mode\":\"SURVIVAL_MODE\"},display:{Lore:['{\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"浏览物品\"}],\"text\":\"\"}','{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"yellow\",\"text\":\"Shift + 右键 \"},{\"italic\":false,\"color\":\"dark_gray\",\"text\":\"⇨ \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"打开 设置 / 关于\"}],\"text\":\"\"}'],Name:'{\"extra\":[{\"bold\":false,\"italic\":false,\"underlined\":false,\"strikethrough\":false,\"obfuscated\":false,\"color\":\"green\",\"text\":\"Slimefun 指南 \"},{\"italic\":false,\"color\":\"gray\",\"text\":\"(箱子界面)\"}],\"text\":\"\"}'}}}"));
         } catch (Throwable e) {
             Debug.info("Icon deserialize failure");

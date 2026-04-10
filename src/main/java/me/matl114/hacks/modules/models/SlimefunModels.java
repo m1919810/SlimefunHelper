@@ -59,7 +59,6 @@ public class SlimefunModels extends BaseModule {
 
     public void onResourceReload(Event<ResourceManager> resourceManager) {
         customModelDatas.clear();
-        modelCache.clear();
         loadCustomModelDatas();
     }
 
@@ -145,6 +144,8 @@ public class SlimefunModels extends BaseModule {
     }
 
     public Collection<Identifier> walkThroughResourcePacks(ResourceManager resourceManager, boolean allLoad) {
+        customItemModels.clear();
+        modelCache.clear();
         Collection<Identifier> id = new LinkedHashSet<>();
         List<ResourcePack> packs = resourceManager.streamResourcePacks().toList();
         List<String> modelPathPattern = autoModelPattern.get();

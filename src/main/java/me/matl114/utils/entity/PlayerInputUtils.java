@@ -4,7 +4,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import me.matl114.utils.EntityUtils;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.input.Input;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.util.PlayerInput;
@@ -86,7 +85,6 @@ public class PlayerInputUtils {
     @Setter
     @Getter
     @With
-    @ToString
     public static class Input implements Cloneable {
         boolean forward;
         boolean backward;
@@ -140,8 +138,22 @@ public class PlayerInputUtils {
             input.playerInput = toPlayerInput();
         }
 
+        public void applyInput(GameOptions options) {
+            options.forwardKey.setPressed(forward);
+            options.backKey.setPressed(backward);
+            options.leftKey.setPressed(left);
+            options.rightKey.setPressed(right);
+            options.jumpKey.setPressed(jump);
+            options.sneakKey.setPressed(sneak);
+            options.sprintKey.setPressed(sprint);
+        }
+
         public boolean hasMovement() {
             return forward || backward || left || right || jump;
+        }
+
+        public boolean hasWASDMovement(){
+            return (forward != backward) || (left != right);
         }
 
         @Override
@@ -153,6 +165,19 @@ public class PlayerInputUtils {
             } catch (CloneNotSupportedException e) {
                 throw new AssertionError();
             }
+        }
+
+        @Override
+        public String toString() {
+            return "Input{" +
+                "forward=" + forward +
+                ", backward=" + backward +
+                ", left=" + left +
+                ", right=" + right +
+                ", jump=" + jump +
+                ", sneak=" + sneak +
+                ", sprint=" + sprint +
+                '}';
         }
     }
 }

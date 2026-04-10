@@ -60,7 +60,7 @@ public class ConnectionProxy extends BaseModule {
 
     public void onPipelineInitialize(Event<ChannelPipeline> chEvent) {
         var ch = chEvent.context();
-        if (isActive()) {
+        if (isActive() && !chEvent.<Boolean>getArgs(1)) {
             int port = this.port.get();
             if (port > 0) {
                 String username = this.userName.getValue();

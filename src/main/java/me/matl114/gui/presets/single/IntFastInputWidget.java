@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.basic.*;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.kv.AttrKeyValues;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -46,7 +47,7 @@ public class IntFastInputWidget extends SubScreenWidget {
             int dx,
             int dy,
             int dx0) {
-        if (keyValue instanceof AttrKeyValue.ClampedIntAttrKeyValue clamped && clamped.getMin() <= 1) {
+        if (keyValue instanceof AttrKeyValues.ClampedIntAttrKeyValue clamped && clamped.getMin() <= 1) {
             return new ClampedIntFastInputWidget(keyValue, callback, clamped.getMax(), x, y, dx, dy, dx0);
         }
         return new IntFastInputWidget(keyValue, callback, x, y, dx, dy, dx0);
@@ -87,7 +88,7 @@ public class IntFastInputWidget extends SubScreenWidget {
     protected void addValue(int val) {
         Integer int0 = keyValue.getOriginValue();
         int val0 = int0 == null ? val : int0 + val;
-        if (keyValue instanceof AttrKeyValue.ClampedIntAttrKeyValue clamp) {
+        if (keyValue instanceof AttrKeyValues.ClampedIntAttrKeyValue clamp) {
             val0 = clamp.clampInput(val0);
         }
         if (inputField.getDelegate() != null) {
@@ -144,7 +145,8 @@ public class IntFastInputWidget extends SubScreenWidget {
                 .setRenderHandler(RawTextElement.instance(Text.literal(keyValue.getKeyName()))
                         .setAlignment(-1))
                 .addToSub(this);
-        inputField = keyValue.generateTextField(4, 12, inputTextDx - 8, dy - 16).addToSub(this);
+        inputField =
+                keyValue.generateValueWidget(4, 12, inputTextDx - 8, dy - 16).addToSub(this);
     }
 
     protected void initConfirmButton() {

@@ -5,8 +5,10 @@ import me.matl114.events.RenderListener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,7 +17,11 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(HandledScreen.class)
 @Environment(EnvType.CLIENT)
-public abstract class HandledScreenEvents {
+public abstract class HandledScreenEvents extends Screen {
+
+    protected HandledScreenEvents(Text title) {
+        super(title);
+    }
 
     @Inject(
             method = "render",
@@ -38,5 +44,19 @@ public abstract class HandledScreenEvents {
             locals = LocalCapture.CAPTURE_FAILHARD)
     public void onRenderSlot(DrawContext context, CallbackInfo ci, Iterator var2, Slot slot) {
         RenderListener.renderSlotInScreen(context, (HandledScreen<?>) (Object) this, slot);
+    }
+
+    // fix mouse scroll dispatch
+    @Inject(method = "mouseScrolled", at = @At("RETURN"), cancellable = true)
+    public void onMouseScrolled(
+            double mouseX,
+            double mouseY,
+            double horizontalAmount,
+            double verticalAmount,
+            CallbackInfoReturnable<Boolean> cir) {
+        if (cir.getReturnValueZ()) {
+            return;
+        }
+        cir.setReturnValue(super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount));
     }
 }

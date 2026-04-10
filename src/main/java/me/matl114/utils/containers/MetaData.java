@@ -9,7 +9,7 @@ public class MetaData {
     Map<Object, Map<String, Object>> referenceMap = new WeakHashMap<>();
 
     public <W> void put(W val, String key, Object value) {
-        referenceMap.computeIfAbsent(val, (s) -> new ConcurrentHashMap<>()).put(key, value);
+        referenceMap.computeIfAbsent(val, (s) -> new ConcurrentHashMap<>()).compute(key, (k, v) -> value);
     }
 
     public <W, T> T get(W val, String key) {

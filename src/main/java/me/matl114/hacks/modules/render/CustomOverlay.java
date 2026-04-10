@@ -1,9 +1,11 @@
 package me.matl114.hacks.modules.render;
 
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.StringRef;
 
 public class CustomOverlay extends BaseModule {
@@ -32,7 +34,7 @@ public class CustomOverlay extends BaseModule {
             .defaultValue(-1)
             .build();
 
-    public IntRef colorProgressbar = builder(Configs.RENDER_CONFIG, PROGRESS_BAR, IntRef.TYPE)
-            .defaultValue(16777215)
+    public NBTRef<WrapColor> colorProgressbar = builder(Configs.RENDER_CONFIG, PROGRESS_BAR, WrapColor.class)
+            .defaultValue(WrapColor.WHITE)
             .build();
 }

@@ -4,18 +4,25 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.util.Colors;
 
+@Getter
+@Setter
+@Accessors(fluent = true, chain = true)
 public class ListMultiSelectWidget<W> extends ScrollableListWidget {
     Map<W, AttrKeyValue<Boolean>> list;
     int entryHeight;
     List<Map.Entry<W, AttrKeyValue<Boolean>>> filterList;
     BiFunction<W, AttrKeyValue<Boolean>, RenderHandler> renderFactory;
     Predicate<W> filter;
+    boolean modifiable = true;
 
     public Set<W> buildSelected() {
         return list.entrySet().stream()
@@ -68,10 +75,12 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
                     }
                 });
         InputHandler mouseHandler = InputHandler.run(() -> {
-            if (attrKeyValue.getOriginValue() == Boolean.TRUE) {
-                attrKeyValue.valueChange(null, "false");
-            } else {
-                attrKeyValue.valueChange(null, "true");
+            if (modifiable) {
+                if (attrKeyValue.getOriginValue() == Boolean.TRUE) {
+                    attrKeyValue.valueChange(null, "false");
+                } else {
+                    attrKeyValue.valueChange(null, "true");
+                }
             }
             // do not resort when value change
             // because player may do it accidentally

@@ -67,4 +67,17 @@ public interface CommandContext {
             } else return false;
         };
     }
+
+    public static CommandContext execute(BiConsumer<CommandExecution, ArgumentInputStream> var) {
+        return ((var1, streamArgs, argsReader) -> {
+            var.accept(var1, streamArgs);
+            return true;
+        });
+    }
+
+    public static CommandContext execute(BiPredicate<CommandExecution, ArgumentInputStream> var) {
+        return (var1, streamArgs, argsReader) -> {
+            return var.test(var1, streamArgs);
+        };
+    }
 }

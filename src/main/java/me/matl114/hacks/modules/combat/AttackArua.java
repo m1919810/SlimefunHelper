@@ -83,10 +83,12 @@ public class AttackArua extends BaseModule {
                         // ready for attack
                         // force attack
                         // 十分之七的概率当前攻击， 以此制作概率性的攻击时延
-                        if (timeRandom.nextInt(10) > 6) {
-                            interval = 0;
-                            attack.tryAttack(true);
-                        }
+                        interval = 0;
+                        attack.tryAttack(true);
+                        // 移除随机数,史
+                        //                        if (timeRandom.nextInt(10) > 6) {
+                        //
+                        //                        }
                     }
                 } else {
                     // attack! attack! attack!
