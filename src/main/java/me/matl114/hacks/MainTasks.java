@@ -16,7 +16,6 @@ import me.matl114.managers.config.Config;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
 import net.minecraft.util.crash.CrashException;
@@ -101,12 +100,9 @@ public class MainTasks {
 
     @ApiMethod
     public static void openConfigNewStyleScreen() {
-        ClientPlayerEntity player = MinecraftClient.getInstance().player;
-        if (player != null) {
-            ScreenAccess.of(new ConfigurateNewStyleScreen(
-                            Config.getConfigs().stream().toList()))
-                    .openFromCurrent();
-        }
+        ScreenAccess.of(new ConfigurateNewStyleScreen(
+                        Config.getConfigs().stream().toList()))
+                .openFromCurrent();
     }
 
     @ApiMethod

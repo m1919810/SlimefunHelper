@@ -8,18 +8,18 @@ import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.config.ListModifyWidget;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.kv.ListAttrKeyValue;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-public class ListModifyScreen<T> extends ConfirmingBigScreen {
-    AttrKeyValue.ListAttrKeyValue<T> listAttrKeyValue;
+public class StringListModifyScreen<T> extends ConfirmingBigScreen {
+    ListAttrKeyValue<T> listAttrKeyValue;
     List<AttrKeyValue<T>> list;
-    Consumer<AttrKeyValue.ListAttrKeyValue<T>> consumer;
+    Consumer<ListAttrKeyValue<T>> consumer;
     ListEntryWidgetController controller;
     private static final int WIDTH = 240;
 
-    public ListModifyScreen(
-            AttrKeyValue.ListAttrKeyValue<T> list, Consumer<AttrKeyValue.ListAttrKeyValue<T>> consumer) {
+    public StringListModifyScreen(ListAttrKeyValue<T> list, Consumer<ListAttrKeyValue<T>> consumer) {
         super(Text.empty());
         setTitleLabel(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
         this.listAttrKeyValue = list;
@@ -74,7 +74,7 @@ public class ListModifyScreen<T> extends ConfirmingBigScreen {
                         this.x + (this.backgroundWidth - listWidth) / 2,
                         CONTENT_START_Y,
                         listWidth,
-                        content_end_y)
+                        content_end_y - CONTENT_START_Y)
                 .addTo(this);
     }
 }

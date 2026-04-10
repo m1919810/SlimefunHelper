@@ -3,10 +3,16 @@ package me.matl114.gui.presets.lists;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
 import net.minecraft.util.Colors;
 
+@Getter
+@Setter
+@Accessors(fluent = true, chain = true)
 public class ListSelectWidget<W> extends ScrollableListWidget {
     protected W selected;
     List<W> list;
@@ -14,10 +20,7 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
     List<W> filterList;
     Function<W, RenderHandler> renderFactory;
     Predicate<W> filter;
-
-    public W getSelectedEntry() {
-        return selected;
-    }
+    boolean modifiable = true;
 
     public ListSelectWidget(
             List<W> lst,
@@ -34,6 +37,14 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
         this.filter = filter;
         this.renderFactory = renderFactory;
         init();
+    }
+
+    public ListSelectWidget<W> filter(Predicate<W> fil) {
+        if (this.filter != fil) {
+            this.filter = fil;
+            updateFilterList();
+        }
+        return this;
     }
 
     protected void refreshList() {
@@ -60,7 +71,9 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
                     }
                 });
         InputHandler mouseHandler = InputHandler.run(() -> {
-            this.selected = triplet;
+            if (modifiable) {
+                this.selected = triplet;
+            }
         });
         shitWidget.setMouseHandler(mouseHandler).setRenderHandler(renderHandler);
         return shitWidget;
@@ -71,16 +84,17 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
     //            updateFilterList();
     //        }
     //    }
-    protected void updateFilterList() {
-        if (FilterService.currentUserInput == null || FilterService.currentUserInput.isEmpty()) {
-            if (filterList != list) {
-                filterList = list;
-                refreshList();
-            }
-        } else {
-            filterList = list.stream().filter(filter).toList();
-            refreshList();
-        }
+    public void updateFilterList() {
+        filterList = list.stream().filter(filter).toList();
+        refreshList();
+        //        if (FilterService.currentUserInput == null || FilterService.currentUserInput.isEmpty()) {
+        //            if (filterList != list) {
+        //                filterList = list;
+        //                refreshList();
+        //            }
+        //        } else {
+        //
+        //        }
     }
 
     protected void init() {

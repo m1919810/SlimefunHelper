@@ -8,6 +8,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.move.ElytraVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -87,6 +88,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     }
 
     @Override
+    public int priority() {
+        return PRIORITY_COMMON;
+    }
+
+    @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
@@ -109,8 +115,12 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         return false;
     }
 
-    @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+        //
+        //    }
+        //
+        //    @Override
+        //    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (player.isFallFlying() && enable.get()) {
             Vec3d controlMotion = new Vec3d(0, 0, 0);
@@ -203,6 +213,10 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             if (shouldControl) {
                 Vec3d wayVector = controlMotion.normalize();
                 Vec3d realVector = wayVector.multiply(motionAmount);
+                // add custom elytra event for bot to control elytra
+                ElytraVelocity velocity = new ElytraVelocity(realVector);
+                Listener.getCustomListener().broadcast(new EventContainer<>(ElytraVelocity.class, velocity));
+                realVector = velocity.toVelocity();
                 boolean fakeGlideNoFall = MovTasks.getElytraExtra().shouldExcuteAntiKick();
                 mc.player.setVelocity(realVector);
                 if (fakeGlideNoFall) {
@@ -216,7 +230,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 }
                 if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
                     // fliter zero control
-                    if (realVector.lengthSquared() > 0) {
+                    if (realVector.lengthSquared() > 1e-6 && !movementManagerEvent.context.hasImportantRotation()) {
+                        movementManagerEvent.context.pushImportantRotation(true, true);
                         Vec2f py = EntityUtils.rotationToPitchYaw(wayVector);
                         modifyPitchYawThisTick = true;
                         EntityUtils.setEntityPitchSafe(mc.player, py.x);
@@ -271,11 +286,20 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
         switch (presetEvent.context.getValue()) {
-            case HACKING, VANILLA, AC_COMMON, AC_VULCAN -> {
+            case HACKING, VANILLA, AC_COMMON -> {
                 motionMode.set(ElytraExtra.MotionMode.VOID);
+            }
+            case AC_VULCAN->{
+                motionMode.set(ElytraExtra.MotionMode.VOID);
+                if(packetMotion.get() > 2.5F){
+                    packetMotion.set(2.5F);
+                }
             }
             case AC_GRIM, AC_MATRIX -> {
                 motionMode.set(ElytraExtra.MotionMode.FIRE_WORKS);
+                if(packetMotion.get() > 1.7F){
+                    packetMotion.set(1.7F);
+                }
             }
         }
     }

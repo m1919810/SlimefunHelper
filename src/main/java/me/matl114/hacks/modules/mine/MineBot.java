@@ -11,6 +11,8 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.KeyCode;
@@ -54,12 +56,7 @@ public class MineBot extends BaseModule {
     public static final String[] MINEBOT = {"mine-bot", "mine-bot"};
     public static final String[] MINEBOT_HOTKEYS = {"mine-bot", "mine-bot-hotkey"};
     // should initialize before the config
-    public Set<Block> whiteListed = new HashSet<>();
     private final Random rand = new Random();
-
-    public void parseBlockRegex(String regex) {
-        whiteListed = RegistryUtils.parseWhiteList(Registries.BLOCK, regex);
-    }
 
     public final FlagRef enable = flagBuilder(Configs.MINE_CONFIG, MINEBOT).build();
 
@@ -80,11 +77,11 @@ public class MineBot extends BaseModule {
             .defaultValue(6)
             .build();
 
-    public final StringRef whiteListBlockRegex = builder(Configs.MINE_CONFIG, String.class)
-            .path(MINE_BOT_WHITELIST)
-            .defaultValue("^(cobblestone|stone|.*ore)$")
-            .validator(Configs.REGEX_VALIDATOR)
-            .updateListener(this::parseBlockRegex)
+    public final NBTRef<RegistryRegex<Block>> whiteListBlockRegex = builder(
+                    Configs.MINE_CONFIG,
+                    MINE_BOT_WHITELIST,
+                    NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
+            .defaultValue(new RegistryRegex<>(new Regex("^(cobblestone|stone|.*ore)$"), Registries.BLOCK))
             .build();
 
     public final EnumRef<MineBotMode> mineBotMode = builder(Configs.MINE_CONFIG, MineBotMode.class)
@@ -128,7 +125,7 @@ public class MineBot extends BaseModule {
     private boolean isMineable(BlockState state) {
         if (state != null && !state.isAir() && !state.isLiquid()) {
             Block block = state.getBlock();
-            if (block.getHardness() >= 0.0F && whiteListed.contains(block)) {
+            if (block.getHardness() >= 0.0F && whiteListBlockRegex.get().test(block)) {
                 return true;
             }
         }

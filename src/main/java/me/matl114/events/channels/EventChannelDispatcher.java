@@ -6,11 +6,17 @@ import java.util.function.Function;
 import me.matl114.events.Event;
 
 public class EventChannelDispatcher<T> extends EventChannel<T> {
-    public Function<T, ?> dispatcher;
+    public Function<Event<T>, ?> dispatcher;
 
     public Map<?, EventChannel<? extends T>> channels;
 
     public EventChannelDispatcher(Function<T, ?> dispatcher) {
+        this.dispatcher = (event) -> dispatcher.apply(event.context());
+        // avoid async events error
+        this.channels = new ConcurrentHashMap<>();
+    }
+
+    public EventChannelDispatcher(Function<Event<T>, ?> dispatcher, boolean second) {
         this.dispatcher = dispatcher;
         // avoid async events error
         this.channels = new ConcurrentHashMap<>();
@@ -19,7 +25,7 @@ public class EventChannelDispatcher<T> extends EventChannel<T> {
     @Override
     public boolean handleValue(Event<T> express) {
         boolean val = super.handleValue(express);
-        Object typeDispatch = dispatcher.apply(express.context());
+        Object typeDispatch = dispatcher.apply(express);
         var channel = channels.get(typeDispatch);
         if (channel != null) {
             if (!channel.isEmpty()) {

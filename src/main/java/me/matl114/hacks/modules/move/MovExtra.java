@@ -49,6 +49,7 @@ public class MovExtra extends BaseModule {
     }
 
     public void onFlightToggle() {
+        if (mc.player == null) return;
         if (mc.player.isFallFlying()) {
             // stop fallflying
             mc.getNetworkHandler()

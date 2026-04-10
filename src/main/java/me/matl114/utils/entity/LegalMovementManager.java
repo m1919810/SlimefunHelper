@@ -1,8 +1,7 @@
 package me.matl114.utils.entity;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import com.mojang.datafixers.util.Pair;
+import java.util.*;
 import java.util.function.Supplier;
 import me.matl114.events.Event;
 import me.matl114.utils.EntityUtils;
@@ -14,6 +13,36 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
     List<MovementModifier> currentTickEnableHacks = new ArrayList<>();
     public EntityMovementStatus<ClientPlayerEntity> playerStatus;
     public EntityMovementStatus<ClientPlayerEntity> playerPostHackStatus;
+    public Deque<Pair<Float, Float>> importantRotationStatePreserve;
+
+    public boolean hasImportantRotation() {
+        return importantRotationStatePreserve != null && !importantRotationStatePreserve.isEmpty();
+    }
+
+    public void pushImportantRotation(boolean hasPitch, boolean hasYaw) {
+        if (!hasPitch && !hasYaw) {
+            return;
+        }
+        if (importantRotationStatePreserve == null) {
+            importantRotationStatePreserve = new ArrayDeque<>();
+        }
+        importantRotationStatePreserve.addLast(Pair.of(
+                hasPitch ? playerStatus.entity.getPitch() : null, hasYaw ? playerStatus.entity.getYaw() : null));
+    }
+    // this should not be called
+    protected void popImportantRotation(boolean apply) {
+        if (importantRotationStatePreserve != null) {
+            var entry = importantRotationStatePreserve.removeLast();
+            if (apply && entry != null) {
+                if (entry.getFirst() != null) {
+                    EntityUtils.setEntityPitchSafe(playerStatus.entity, entry.getFirst());
+                }
+                if (entry.getSecond() != null) {
+                    EntityUtils.setEntityYawSafe(playerStatus.entity, entry.getSecond());
+                }
+            }
+        }
+    }
 
     public void addMovementModifier(MovementModifier movementModifier) {
         int p = movementModifier.priority();
@@ -50,6 +79,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
     public void preProgress(ClientPlayerEntity args) {
         this.playerStatus = new EntityMovementStatus<>(args);
         this.currentTickEnableHacks = new ArrayList<>();
+        this.importantRotationStatePreserve = null;
         // start new tick, removing contents and replace with new
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         for (var hack : hacks) {

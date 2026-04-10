@@ -14,7 +14,7 @@ public class GenericScreen extends Screen {
     protected int x;
     protected int y;
     protected Text titleLabel;
-
+    protected float currentShrink = 1.0F;
     public GenericScreen setTitleLabel(Text text) {
         this.titleLabel = text;
         return this;

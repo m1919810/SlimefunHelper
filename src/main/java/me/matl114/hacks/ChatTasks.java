@@ -1,13 +1,12 @@
 package me.matl114.hacks;
 
-import com.mojang.authlib.GameProfile;
+import com.google.common.base.Predicates;
 import com.mojang.brigadier.tree.CommandNode;
-import com.mojang.datafixers.util.Either;
-import io.netty.buffer.ByteBuf;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
@@ -41,20 +40,16 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.EnderChestInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.visitor.NbtTextFormatter;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Uuids;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.waypoint.TrackedWaypoint;
-import net.minecraft.world.waypoint.Waypoint;
 
 public class ChatTasks {
     public static void init() {}
@@ -525,31 +520,10 @@ public class ChatTasks {
         public Stream<String> onInfoTab(String string) {
             return switch (string) {
                 case "nbt", "inventory", "ender" -> EntityUtils.getWorldPlayerNames(true);
-                case "pentry", "team" -> getPlayerListNames();
-                case "waypoint" -> getWaypointNames();
+                case "pentry", "team" -> WorldUtils.getPlayerListNames();
+                case "waypoint" -> WorldUtils.getWaypointNames();
                 default -> Stream.empty();
             };
-        }
-
-        public Stream<String> getPlayerListNames() {
-            return mc.getNetworkHandler().getPlayerList().stream()
-                    .map(PlayerListEntry::getProfile)
-                    .map(GameProfile::name);
-        }
-
-        public Stream<String> getWaypointNames() {
-
-            return Stream.concat(
-                    getPlayerListNames(),
-                    getWaypoints()
-                            .map(TrackedWaypoint::getSource)
-                            .map(s -> s.map(UUID::toString, Function.identity())));
-        }
-
-        public Stream<TrackedWaypoint> getWaypoints() {
-            List<TrackedWaypoint> waypoints = new ArrayList<>();
-            mc.getNetworkHandler().getWaypointHandler().forEachWaypoint(mc.player, waypoints::add);
-            return waypoints.stream();
         }
 
         public void onInfo(ArgumentInputStream re) {
@@ -742,54 +716,46 @@ public class ChatTasks {
                 case "waypoint" -> {
                     Debug.chat("查询中");
                     PlayerListEntry entry;
-                    final String lookup;
+                    Predicate<WorldUtils.Waypoint> filter;
                     if ((entry = mc.getNetworkHandler().getPlayerListEntry(user)) != null) {
+                        final String lookup;
                         lookup = entry.getProfile().id().toString();
+                        filter = s -> lookup.equalsIgnoreCase(s.getSource().map(UUID::toString, Function.identity()));
                     } else {
-                        lookup = user;
+                        filter = Predicates.alwaysTrue();
                     }
-                    getWaypoints()
-                            .filter(s ->
-                                    lookup.equalsIgnoreCase(s.getSource().map(UUID::toString, Function.identity())))
-                            .forEach(s -> {
-                                Debug.chat("Information about waypoint:", user);
-                                ByteBuf buf = NetworkUtils.createBytebuf();
-                                s.writeBuf(buf);
-                                PacketByteBuf byteBuf = new PacketByteBuf(buf);
-                                Either<UUID, String> either =
-                                        byteBuf.readEither(Uuids.PACKET_CODEC, PacketByteBuf::readString);
-                                Waypoint.Config config = (Waypoint.Config) Waypoint.Config.PACKET_CODEC.decode(byteBuf);
-                                Debug.chat("config: ");
-                                var configNbt = Waypoint.Config.CODEC
-                                        .encodeStart(NbtOps.INSTANCE, config)
-                                        .getOrThrow();
-                                Debug.chat(new NbtTextFormatter("").apply(configNbt));
-                                int varInt = byteBuf.readVarInt();
-                                Debug.chat("type: "
-                                        + switch (varInt) {
-                                            case 0 -> "Empty";
-                                            case 1 -> "Pos";
-                                            case 2 -> "Chunk";
-                                            case 3 -> "Direction";
-                                            default -> "Unknown";
-                                        });
-                                switch (varInt) {
-                                    case 1 -> {
-                                        Debug.chat(
-                                                "Pos :",
-                                                byteBuf.readVarInt(),
-                                                byteBuf.readVarInt(),
-                                                byteBuf.readVarInt());
-                                    }
-                                    case 2 -> {
-                                        Debug.chat("Chunk :", byteBuf.readVarInt(), byteBuf.readVarInt());
-                                    }
-                                    case 3 -> {
-                                        Debug.chat("Azimuth :", byteBuf.readFloat());
-                                    }
-                                }
-                                buf.release();
-                            });
+                    WorldUtils.getWaypoints().filter(filter).forEach(s -> {
+                        Debug.chat(
+                                "Information about waypoint:", s.getSource().map(UUID::toString, Function.identity()));
+                        Optional<PlayerListEntry> optionalEntry = s.getSource()
+                                .map(
+                                        t -> Optional.ofNullable(
+                                                mc.getNetworkHandler().getPlayerListEntry(t)),
+                                        t -> Optional.ofNullable(
+                                                mc.getNetworkHandler().getPlayerListEntry(t)));
+                        optionalEntry.ifPresent(playerListEntry -> Debug.chat("Potential Owner: "
+                                + playerListEntry.getProfile().name()));
+
+                        Debug.chat("config: ");
+
+                        Debug.chat(new NbtTextFormatter("").apply(s.getConfig()));
+
+                        Debug.chat("type: " + s.getData().getTypeName());
+                        switch (s.getData().getTypeName()) {
+                            case "Pos" -> {
+                                Vec3d vec3d = ((WorldUtils.WaypointData.Pos) s.getData()).pos();
+                                Debug.chat("Pos :", vec3d.x, vec3d.y, vec3d.z);
+                            }
+                            case "Chunk" -> {
+                                ChunkPos vec3d = ((WorldUtils.WaypointData.Chunk) s.getData()).pos();
+                                Debug.chat("Chunk :", vec3d.x, vec3d.z);
+                            }
+                            case "Direction" -> {
+                                float dr = ((WorldUtils.WaypointData.Direction) s.getData()).azimuth();
+                                Debug.chat("Azimuth :", dr);
+                            }
+                        }
+                    });
                 }
             }
         }

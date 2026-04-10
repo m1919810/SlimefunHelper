@@ -7,6 +7,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
@@ -25,6 +26,7 @@ public class CombatExtra extends BaseModule {
     public static final String[] ATTACK_RANGE = {"attack", "att-range"};
     public static final String[] COMBAT_SHIELDING = {"attack", "shielding-attack"};
     public static final String[] COMBAT_AUTOSHIELD = {"attack", "no-grim-shield-setback"};
+    public static final String[] COMBAT_MACE_FALLFLYING_TICKS = {"attack", "att-ticks-predict-fallflying"};
 
     public final DoubleRef range = builder(Configs.COMBAT_CONFIG, ATTACK_RANGE, DoubleRef.TYPE)
             .defaultValue(0.0D)
@@ -42,6 +44,11 @@ public class CombatExtra extends BaseModule {
 
     public final FlagRef noCooldown =
             flagBuilder(Configs.COMBAT_CONFIG, COMBAT_INTERVEL).build();
+
+    public final IntRef fallFlyVcMultiply = builder(Configs.COMBAT_CONFIG, COMBAT_MACE_FALLFLYING_TICKS, IntRef.TYPE)
+            .defaultValue(2)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public double getAttackRange() {
         double d = range.get();

@@ -82,46 +82,54 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
     @Override
     @Unique
     public final double moonrise$offsetX() {
+        checkInitialize();
         return this.offsetX;
     }
 
     @Override
     @Unique
     public final double moonrise$offsetY() {
+        checkInitialize();
         return this.offsetY;
     }
 
     @Override
     @Unique
     public final double moonrise$offsetZ() {
+        checkInitialize();
         return this.offsetZ;
     }
 
     @Override
     @Unique
     public final Box moonrise$getSingleAABBRepresentation() {
+        checkInitialize();
         return this.singleAABBRepresentation;
     }
 
     @Override
     @Unique
     public final double[] moonrise$rootCoordinatesX() {
+        checkInitialize();
         return this.rootCoordinatesX;
     }
 
     @Override
     @Unique
     public final double[] moonrise$rootCoordinatesY() {
+        checkInitialize();
         return this.rootCoordinatesY;
     }
 
     @Override
     @Unique
     public final double[] moonrise$rootCoordinatesZ() {
+        checkInitialize();
         return this.rootCoordinatesZ;
     }
 
     public CachedShapeData moonrise$getCachedVoxelData() {
+        checkInitialize();
         return this.cachedShapeData;
     }
 
@@ -212,7 +220,16 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
                 hasSingleAABB);
     }
 
+    public boolean initialized = false;
+
+    public void checkInitialize() {
+        if (!initialized) {
+            moonrise$initCache();
+        }
+    }
+
     public final void moonrise$initCache() {
+        initialized = true;
         this.cachedShapeData = moonrise$getOrCreateCachedShapeData(this.voxels);
         this.isEmpty = this.cachedShapeData.isEmpty();
 
@@ -329,6 +346,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
 
     @Override
     public final boolean moonrise$isFullBlock() {
+        checkInitialize();
         final Boolean ret = this.isFullBlock;
 
         if (ret != null) {
@@ -543,6 +561,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public boolean isEmpty() {
+        checkInitialize();
         return this.isEmpty; // Paper - optimise collisions
     }
     /**
@@ -551,6 +570,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public double getMin(Direction.Axis axis) {
+        checkInitialize();
         // Paper start - optimise collisions
         return CollisionUtil.calculateAxisMin(this, axis);
         // Paper end - optimise collisions
@@ -562,6 +582,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public double getMax(Direction.Axis axis) {
+        checkInitialize();
         // Paper start - optimise collisions
         return CollisionUtil.calculateAxisMax(this, axis);
         // Paper end - optimise collisions
@@ -572,6 +593,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public Box getBoundingBox() {
+        checkInitialize();
         // Paper start - optimise collisions
         if (this.isEmpty) {
             throw new UnsupportedOperationException("No bounds for empty shape.");
@@ -617,6 +639,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public VoxelShape offset(double x, double y, double z) {
+        checkInitialize();
         // Paper start - optimise collisions
         if (this.isEmpty) {
             return VoxelShapes.empty();
@@ -642,6 +665,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public VoxelShape simplify() {
+        checkInitialize();
         // Paper start - optimise collisions
         if (this.isEmpty) {
             return VoxelShapes.empty();
@@ -709,6 +733,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public List<Box> getBoundingBoxes() {
+        checkInitialize();
         // Paper start - optimise collisions
         CachedToAABBs cachedToAABBs = this.cachedToAABBs;
         if (cachedToAABBs != null) {
@@ -734,6 +759,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public BlockHitResult raycast(final Vec3d from, final Vec3d to, final BlockPos offset) {
+        checkInitialize();
         if (this.isEmpty) {
             return null;
         }
@@ -782,6 +808,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public Optional<Vec3d> getClosestPointTo(Vec3d point) {
+        checkInitialize();
         if (this.isEmpty) {
             return Optional.empty();
         }
@@ -813,6 +840,7 @@ public abstract class MoonriseVoxelShapeMixin implements MoonriseVoxelShapeAcces
      */
     @Overwrite
     public double calculateMaxDistance(final Direction.Axis axis, final Box source, final double source_move) {
+        checkInitialize();
         if (this.isEmpty) {
             return source_move;
         }

@@ -1,5 +1,6 @@
 package me.matl114.events;
 
+import com.google.common.collect.ImmutableSet;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -8,6 +9,8 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -43,16 +46,22 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
+import net.minecraft.network.OffThreadException;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.message.MessageSignatureData;
 import net.minecraft.network.packet.*;
+import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
+import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
+import net.minecraft.network.packet.s2c.config.FeaturesS2CPacket;
+import net.minecraft.network.packet.s2c.config.ResetChatS2CPacket;
 import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
+import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
@@ -392,10 +401,10 @@ public class Listener {
     @Dispatch(by = "type")
     private static final PacketEventChannel packetPostHandlePoint = new PacketEventChannel();
 
-    @Getter // network exception
-    @Cancelable
-    @ExtraArgs({PacketListener.class, Exception.class})
-    private static final EventChannel<Packet<?>> packetListenerException = new EventChannel<>();
+    //    @Getter // network exception
+    //    @Cancelable
+    //    @ExtraArgs({PacketListener.class, Exception.class})
+    //    private static final EventChannel<Packet<?>> packetListenerException = new EventChannel<>();
 
     // client player behaviours
     @Getter
@@ -406,8 +415,10 @@ public class Listener {
     @Cancelable
     @Modifiable
     @ApiStatus.Experimental
+    @Dispatch(by = "Entity.getType")
     @ExtraArgs({Entity.class})
-    private static final EventChannel<DataTracker.SerializedEntry<?>> entityTrackDataUpdate = new EventChannel<>();
+    private static final EventChannelDispatcher<DataTracker.SerializedEntry<?>> entityTrackDataUpdate =
+            new EventChannelDispatcher<>(e -> e.<Entity>getArgs(0).getType(), true);
 
     @Getter
     @Broadcast
@@ -600,6 +611,13 @@ public class Listener {
     @ExtraArgs({IInputManager.class})
     private static final EventChannel<IHotKey> hotKeyTriggeredListener = new EventChannel<>();
 
+    // exceptions
+    @Getter
+    @Cancelable
+    @Dispatch(by = "WrapperException.type")
+    private static final EventChannelDispatcher<WrapperException> exceptionListener =
+            new EventChannelDispatcher<>(WrapperException::type);
+
     // custom event channel, where you can place all sort of things here
     @Getter
     @Cancelable(optional = true)
@@ -612,8 +630,45 @@ public class Listener {
 
     @Getter
     @Broadcast
-    @ExtraArgs({NetworkSide.class})
+    @ExtraArgs({NetworkSide.class, Boolean.class})
     private static final EventChannel<ChannelPipeline> connectionChannelInitialize = new EventChannel<>();
+
+    private static final Set<Class<?>> asyncPackets = ImmutableSet.<Class<?>>builder()
+            .add(CustomPayloadS2CPacket.class)
+            .add(StartChunkSendS2CPacket.class)
+            .add(ChunkSentS2CPacket.class)
+            .add(PingResultS2CPacket.class)
+            .add(DisconnectS2CPacket.class)
+            .add(ResetChatS2CPacket.class)
+            .add(FeaturesS2CPacket.class)
+            .build();
+
+    public static boolean isAsyncImportantPacket(Packet<?> packet) {
+        return asyncPackets.contains(packet.getClass());
+    }
+
+    public static void callPacketHandleEvent(
+            Packet<?> instance, PacketListener t, BiConsumer<Packet<?>, PacketListener> callback) {
+        if (!Listener.prepacketListenerApplyPoint(instance, t)) {
+            try {
+                callback.accept(instance, t);
+            } catch (OffThreadException e) {
+                // off thread, maybe a mistake
+            } catch (RejectedExecutionException | ClassCastException e) {
+                throw e;
+            } catch (Throwable e) {
+                if (e instanceof CrashException crashException
+                        && crashException.getCause() instanceof OutOfMemoryError) {
+                    throw e;
+                }
+                if (handleException(e, ExceptionType.NETWORK, instance, t)) {
+                    throw e;
+                }
+            } finally {
+                Listener.postPacketListenerApplyPoint(instance, t);
+            }
+        }
+    }
 
     public static boolean prepacketListenerApplyPoint(Packet<?> packet, PacketListener listener) {
         // most handle are on Thread, some are not
@@ -732,5 +787,25 @@ public class Listener {
                 .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
         Listener.getPacketPostSendPoint()
                 .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
+    }
+
+    public static boolean handleException(Throwable e, ExceptionType type, Object... objects) {
+        Event<WrapperException> event = new Event<>(new WrapperException(type, e), true, false, objects);
+        getExceptionListener().handleValue(event);
+        if (event.isCancelled()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public static record WrapperException(ExceptionType type, Throwable exception) {}
+
+    public static enum ExceptionType {
+        NETWORK,
+        CLIENT_CRASH,
+        ENTITY_TICK,
+        BLOCK_ENTITY_TICK,
+        UNKNOWN;
     }
 }

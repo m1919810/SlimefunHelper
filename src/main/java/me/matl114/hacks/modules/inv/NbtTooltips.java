@@ -10,7 +10,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.ScreenUtils;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -34,10 +33,8 @@ public class NbtTooltips extends BaseModule {
 
     public final KeyBindRef keyBind = hotkey(Configs.INV_CONFIG, NBT_TOOLTIPS_SHOW_HOTKEY)
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_ALT))
-            .registerHotkey(SimpleHotKey.InputHandler.EMPTY)
             .build();
 
-    public final IHotKey hotkey = getHotkey(NBT_TOOLTIPS_SHOW_HOTKEY);
     public final IntRef width = builder(Configs.INV_CONFIG, NBT_TOOLTIPS_WIDTH, IntRef.TYPE)
             .defaultValue(360)
             .validator(Configs.INT_NONNEGATIVE)
@@ -55,7 +52,7 @@ public class NbtTooltips extends BaseModule {
     }
 
     public void onTooltipsAppend(Event<List<Text>> renderEvent) {
-        if (enable.get() && ScreenUtils.hasKeyPressed(hotkey.getTriggeredKey())) {
+        if (enable.get() && keyBind.get().isAllPressed()) {
             ItemStack stack = renderEvent.getArgs(0);
             renderEvent.context.addAll(getTooltipLines(stack));
         }

@@ -28,6 +28,7 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.kv.NbtAttrKeyValue;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
@@ -266,7 +267,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             init();
         }
 
-        AttrKeyValue.NbtAttrKeyValue<ItemStack> itemAttrValue;
+        NbtAttrKeyValue<ItemStack> itemAttrValue;
         ItemStack lastResult;
         ExecutableWidget formatButton;
         EditBoxWidget widget;
@@ -289,7 +290,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             // transform item to json
             this.lastResult = ItemEditScreen.this.itemStack.copy();
             NbtElement compound = VItem.getInstance().toNbt(this.lastResult);
-            this.itemAttrValue = new AttrKeyValue.NbtAttrKeyValue<>("", compound, this::validateItemStack);
+            this.itemAttrValue = new NbtAttrKeyValue<>("", compound, this::validateItemStack);
             if (!itemAttrValue.validateAndUpdate()) {
                 error();
             }
@@ -850,7 +851,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
         protected class ItemComponentModifySubSubScreen extends ItemAttrSubSubScreen {
             protected static class ItemComponentModifyConfirmScreen<T> extends ConfirmingBigScreen {
-                AttrKeyValue.NbtAttrKeyValue<Optional<T>> element;
+                NbtAttrKeyValue<Optional<T>> element;
                 boolean removal;
                 final ComponentType<T> type;
                 final Consumer<NbtElement> callback;
@@ -860,7 +861,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     super(Text.empty());
                     this.type = type;
                     this.removal = currentValue == null;
-                    this.element = new AttrKeyValue.NbtAttrKeyValue<Optional<T>>("", currentValue, (nbt) -> {
+                    this.element = new NbtAttrKeyValue<Optional<T>>("", currentValue, (nbt) -> {
                                 if (nbt == null) return Optional.empty();
                                 return Optional.of(this.type
                                         .getCodec()

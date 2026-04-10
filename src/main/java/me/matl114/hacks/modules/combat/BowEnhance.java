@@ -379,6 +379,7 @@ public class BowEnhance extends BaseModule {
                             Debug.chat("[Bow Aim] Arrow failed to reach the target");
                             return;
                         }
+                        movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityPitchSafe(player, pitchYaw.x);
                         EntityUtils.setEntityYawSafe(player, pitchYaw.y);
                     }

@@ -1037,7 +1037,7 @@ public class MovTasks {
     }
 
     private static void configureTpMaskPlayer(Event<ClientPlayerEntity> plaayer) {
-
+        doingTp = false;
         // remove tick Movement packets when doing tp
         ClientPlayerAccess.of(plaayer.context)
                 .getLegalMovementManager()
@@ -1741,26 +1741,6 @@ public class MovTasks {
         getAutoResync().setAutoResyncSchedule(Optional.empty());
     }
 
-    private static void fixPositionSetBackFallDamage(Event<PlayerPositionLookS2CPacket> packet) {
-        if (packet.context() instanceof PlayerPositionLookS2CPacket setBackPackets) {
-            // real setback , not a tp
-            Vec3d target = new Vec3d(setBackPackets.getX(), setBackPackets.getY(), setBackPackets.getZ());
-            // len < 200, may be the set back of a single movement
-            double lenSqr = mc.player.getPos().squaredDistanceTo(target);
-            // len > 3, not be setback packets of anticheat
-            if (lenSqr < 60000 && lenSqr > 10) {
-                double deltaY = target.y - mc.player.getY();
-                if (deltaY < 0
-                        && Math.abs(deltaY)
-                                > mc.player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE)) {
-                    // fix setback packets cause fallDistance
-                    mc.player.setOnGround(false);
-                    ClientPlayerAccess.of(mc.player).setForceNoFall(true);
-                }
-            }
-        }
-    }
-
     public static final LegalMovementManager.ModifierPipeline PLAYER_PIPELINE_0 =
             new LegalMovementManager.ModifierPipeline(0) {
                 @Override
@@ -2232,6 +2212,12 @@ public class MovTasks {
     @Getter
     public static TpaCommand tpaCommand;
 
+    @Getter
+    public static TargetCommand targetCommand;
+
+    @Getter
+    public static TravellingControl travellingControl;
+
     private static void initModules(ModuleManager m) {
         // move
         movExtra = new MovExtra().register(m);
@@ -2249,6 +2235,8 @@ public class MovTasks {
         elytraFlight = new ElytraFlight().register(m);
         movTest = new MovTest().register(m);
         tpaCommand = new TpaCommand().register(m);
+        targetCommand = new TargetCommand().register(m);
+        travellingControl = new TravellingControl().register(m);
     }
 
     static {
@@ -2285,9 +2273,6 @@ public class MovTasks {
         // MovTasks::listenPositionResync);
         Listener.registerSinglePacketListener(PlayerMoveC2SPacket.class, MovTasks::doIntercepteMovingPacketsWhileTp);
         Listener.getClientPlayerSendMovementPoint().registerHandler(MovTasks::doStopPlayerSendMovementPackets);
-        Listener.getPacketPreHandlePoint()
-                .getChannel(PlayerPositionLookS2CPacket.class)
-                .registerHandler(MovTasks::fixPositionSetBackFallDamage);
 
         moduleManager.registerFactories(MovTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);

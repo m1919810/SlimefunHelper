@@ -389,6 +389,7 @@ public class Attack extends BaseModule {
                                     Vec3d cacheDirection = attackOffsetted
                                             .subtract(predictedEyePos)
                                             .normalize();
+                                    movementManagerEvent.context.pushImportantRotation(true, true);
                                     EntityUtils.setEntityRotationSafe(args, cacheDirection);
                                     if (RenderTasks.DEBUG_RENDER_COMBAT) {
                                         RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(

@@ -457,6 +457,15 @@ public class RenderTasks {
     public static EntityESP entityESP;
 
     @Getter
+    public static ItemESP itemESP;
+
+    @Getter
+    public static ChestESP chestESP;
+
+    @Getter
+    public static WorldScanner worldScanner;
+
+    @Getter
     public static PlayerLog playerLog;
 
     @Getter
@@ -477,6 +486,9 @@ public class RenderTasks {
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         entityESP = new EntityESP().register(m);
+        chestESP = new ChestESP().register(m);
+        itemESP = new ItemESP().register(m);
+        worldScanner = new WorldScanner().register(m);
         playerLog = new PlayerLog().register(m);
         projectileESP = new ProjectileESP().register(m);
         sleepMode = new SleepMode().register(m);

@@ -14,6 +14,7 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.kv.EnumAttrKeyValue;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -82,20 +83,17 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
         }
     }
 
-    private static final AttrKeyValue.EnumAttrKeyValue<NbtFilterRule> nbtFilter = AttrKeyValue.enumMap(
-                    "NBT过滤规则",
-                    NbtFilterRule.ANY,
-                    Arrays.stream(NbtFilterRule.values())
-                            .collect(
-                                    Collectors
-                                            .<NbtFilterRule, String, NbtFilterRule,
-                                                    LinkedHashMap<String, NbtFilterRule>>
-                                                    toMap(
-                                                            i -> i.detail,
-                                                            Function.identity(),
-                                                            (existing, replacement) -> existing,
-                                                            LinkedHashMap::new)))
-            .setIdentifier(NbtFilterRule.class);
+    private static final EnumAttrKeyValue<NbtFilterRule> nbtFilter = AttrKeyValue.enumMap(
+            "NBT过滤规则",
+            NbtFilterRule.ANY,
+            Arrays.stream(NbtFilterRule.values())
+                    .collect(
+                            Collectors
+                                    .<NbtFilterRule, String, NbtFilterRule, LinkedHashMap<String, NbtFilterRule>>toMap(
+                                            i -> i.detail,
+                                            Function.identity(),
+                                            (existing, replacement) -> existing,
+                                            LinkedHashMap::new)));
 
     private static class ItemFilterRule {
         boolean blacklist = true;
@@ -200,7 +198,6 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
         DisplayWidget.instance(this.x + this.backgroundWidth - 3, this.y + 64, 26, 26)
                 .setRenderHandler(PlateElement.instance())
                 .addTo(this);
-        nbtFilter.setIdentifier(NbtFilterRule.class);
         nbtFilter
                 .generateSwitchingButton(this.x + this.backgroundWidth + 1, this.y + 68, 18, 18, (attr) -> {
                     if (ScreenUtils.hasShiftDown()) {

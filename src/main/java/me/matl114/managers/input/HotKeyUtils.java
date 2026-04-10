@@ -17,6 +17,8 @@ public class HotKeyUtils {
         }
         if (hotkeyNoScreen.get()) {
             return false;
+        } else {
+
         }
         return !(mc.currentScreen instanceof ConfigurateNewStyleScreen);
     }

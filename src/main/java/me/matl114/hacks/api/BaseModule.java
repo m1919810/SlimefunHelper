@@ -86,6 +86,10 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
             }
         }
     }
+
+    public boolean checkNull() {
+        return mc.player == null || mc.world == null;
+    }
     // module enable and disable
     // note that it might be called outside the game, so you have check basic vars
     @MustBeInvokedByOverriders

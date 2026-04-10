@@ -1,24 +1,11 @@
 package me.matl114.gui.config;
 
 import java.util.List;
-import java.util.Objects;
-import me.matl114.accessors.gui.ScreenAccess;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.presets.choices.RegistryChooseScreen;
-import me.matl114.gui.presets.lists.ListModifyScreen;
-import me.matl114.gui.presets.single.KeyBindConfigurateWidget;
-import me.matl114.managers.input.IHotKey;
-import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
-import org.apache.commons.lang3.function.Consumers;
 
 public class KeyValueInputWidget<T> extends SubScreenWidget {
     AttrKeyValue<T> keyValueHolder;
@@ -55,16 +42,6 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
 
     DisplayWidget keyLabel;
     DrawableWidget interactPlace;
-    private static final Identifier SEARCH_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/search");
-    private static final Identifier LIST_TAG_SPRITE = new Identifier("slimefunhelper", "gui/list_tag");
-    private static final List<Text> SEARCH_TOOLTIPS = List.of(Text.literal("从注册标中选择"), Text.literal("选择后点击确认"));
-
-    private void openRegistrySearch(Registry<T> registry, TextFieldWidget widget) {
-
-        ScreenAccess.of(new RegistryChooseScreen<>(
-                        registry, (var) -> widget.setText(registry.getId(var).toString())))
-                .openFromCurrent();
-    }
 
     protected void valueChange() {}
 
@@ -80,87 +57,8 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
                         // LabelElement.instance(Text.literal(this.keyValueHolder.getKeyName()))
                         )
                 .addToSub(this);
-        Class<?> id = this.keyValueHolder.identifier();
-        if (id == Boolean.class) {
-            AttrKeyValue<Boolean> bol = (AttrKeyValue<Boolean>) this.keyValueHolder;
-            // use button
-            this.interactPlace = ExecutableWidget.instance(dkey + 1 + dblank, 1, dy - 2, dy - 2)
-                    .setElementHandler(IconElement.statedGuiPredicate(
-                            ButtonElement.BUTTON,
-                            ButtonElement.BUTTON_INACTIVE,
-                            ButtonAction.run(() -> bol.valueChange(this, String.valueOf(!bol.getOriginValue()))),
-                            (bl) -> bol.validateValue()))
-                    .addToSub(this);
-        } else if (id == Registry.class) {
-            Registry<T> thisRegistry =
-                    Objects.requireNonNull(((AttrKeyValue.RegistryAttrKeyValue<T>) this.keyValueHolder).getRegistry());
-            ContentDelegateWidget<TextFieldWidget> interactPlace = McWidgetHelpers.createTextFieldEditBox(
-                            dkey + 1 + dblank,
-                            1,
-                            dvalue - 2 - dy,
-                            dy - 2,
-                            this.keyValueHolder,
-                            this.keyValueHolder.getValue(),
-                            McWidgetHelpers.getWrongRedTextBoxColorProvider(this.keyValueHolder::isValidate))
-                    .addToSub(this);
-            this.interactPlace = interactPlace;
-            TextFieldWidget widget = interactPlace.getDelegate();
-            ExecutableWidget.instance(dx - dy + 1, 1, dy - 1, dy - 1)
-                    .setElementHandler(IconElement.fixedGui(
-                                    SEARCH_TEXTURE_SPRITE,
-                                    ButtonAction.run(() -> this.openRegistrySearch(thisRegistry, widget)))
-                            .withTooltips(TooltipHandler.of(SEARCH_TOOLTIPS)))
-                    .addToSub(this);
-
-        } else if (Enum.class.isAssignableFrom(id)) {
-            ((AttrKeyValue.EnumAttrKeyValue) this.keyValueHolder)
-                    .generateSwitchingButton(this.dkey + this.dblank, 0, this.dvalue, this.dy, Consumers.nop())
-                    .addToSub(this);
-        } else if (id == MultiKeyBind.class) {
-            IHotKey hotkey = SimpleInputManager.getInstance().getHotkey(keyValueHolder.getKeyName());
-
-            MultiKeyBind defaultHotkeys = (hotkey != null) ? hotkey.getDefaultKeyCodes() : new MultiKeyBind();
-            new KeyBindConfigurateWidget(
-                            this.dkey + this.dblank + 1,
-                            1,
-                            this.dvalue - 2,
-                            this.dy - 2,
-                            (AttrKeyValue<MultiKeyBind>) this.keyValueHolder,
-                            defaultHotkeys)
-                    .addToSub(this);
-        } else if (id == List.class) {
-            // add a Edit in gui setting
-            AttrKeyValue.ListAttrKeyValue listKeyValueHolder = (AttrKeyValue.ListAttrKeyValue) this.keyValueHolder;
-            this.interactPlace = new SubScreenWidget(dkey + dblank, 0, dvalue, dy)
-                    .addDrawableChild(McWidgetHelpers.createTextFieldEditBox(
-                            1,
-                            1,
-                            dvalue - 2 - dy,
-                            dy - 2,
-                            this.keyValueHolder,
-                            this.keyValueHolder.getValue(),
-                            McWidgetHelpers.getWrongRedTextBoxColorProvider(this.keyValueHolder::isValidate)))
-                    .addDrawableChild(ExecutableWidget.instance(dvalue - dy + 1, 1, dy - 2, dy - 2)
-                            .setElementHandler(IconElement.fixedGui(LIST_TAG_SPRITE, ButtonAction.run(() -> {
-                                        ScreenAccess.of(new ListModifyScreen(listKeyValueHolder, listAttrKeyValue -> {
-                                                    listKeyValueHolder.setOriginValue(
-                                                            ((AttrKeyValue.ListAttrKeyValue) listAttrKeyValue)
-                                                                    .getOriginValue());
-                                                }))
-                                                .openFromCurrent();
-                                    }))
-                                    .withTooltips(TooltipHandler.of(List.of(Text.literal("点击打开 列表编辑界面"))))))
-                    .addToSub(this);
-        } else {
-            this.interactPlace = McWidgetHelpers.createTextFieldEditBox(
-                            dkey + 1 + dblank,
-                            1,
-                            dvalue - 2,
-                            dy - 2,
-                            this.keyValueHolder,
-                            this.keyValueHolder.getValue(),
-                            McWidgetHelpers.getWrongRedTextBoxColorProvider(this.keyValueHolder::isValidate))
-                    .addToSub(this);
-        }
+        this.interactPlace = this.keyValueHolder
+                .generateValueWidget(dkey + 1 + dblank, 1, dvalue - 2, dy - 2)
+                .addToSub(this);
     }
 }

@@ -26,12 +26,14 @@ import me.matl114.events.Listener;
 import me.matl114.events.catchers.TimedPacketCatcherImpl;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigLoader;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
@@ -87,9 +89,8 @@ public class RecipeDatabase extends BaseModule {
             .validator(Configs.REGEX_VALIDATOR)
             .build();
 
-    public final StringRef slimefunBookTitle = builder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_RECIPE_TITLE, StringRef.TYPE)
-            .defaultValue("^(Slimefun 指南.*)$")
-            .validator(Configs.REGEX_VALIDATOR)
+    public final NBTRef<Regex> slimefunBookTitle = builder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_RECIPE_TITLE, Regex.class)
+            .defaultValue(new Regex("^(Slimefun 指南.*)$"))
             .build();
 
     @Override
@@ -268,7 +269,7 @@ public class RecipeDatabase extends BaseModule {
             String title = screen.getTitle().getString();
             if (title != null) {
                 title = title.replaceAll("§.", "");
-                if (Pattern.matches(slimefunBookTitle.get(), title)) {
+                if (slimefunBookTitle.get().test(title)) {
                     Listener.addPostPacketCatcher(
                             new TimedPacketCatcherImpl<>(InventoryS2CPacket.class, 20, (packetEvent) -> {
                                 var packet = packetEvent.context();

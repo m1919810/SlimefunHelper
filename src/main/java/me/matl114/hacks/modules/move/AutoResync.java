@@ -20,6 +20,7 @@ import net.minecraft.entity.EntityPosition;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -128,16 +129,20 @@ public class AutoResync extends BaseModule {
                 return;
             }
         }
-        if (autoResyncRot.get()) {
+        if (autoResyncPos.get()) {
             Vec3d resyncToPos = mc.player.getPos();
-            PlayerPositionLookS2CPacket packet1 = event.context;
-            Vec3d resyncPos = getPosition(packet1);
-            double sqDistance = resyncToPos.squaredDistanceTo(resyncPos);
-            if (autoResyncPosDistance.get() > 0 && sqDistance < MathUtils.s2(autoResyncPosDistance.get())) {
-                mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.teleportId()));
-                executeResyncTo(resyncPos, resyncToPos, currentOnGround);
-                event.cancel();
-                return;
+            BlockPos blockPos = BlockPos.ofFloored(resyncToPos);
+            // do not resync in unloaded chunks
+            if (mc.world.getChunkManager().isChunkLoaded(blockPos.getX() >> 4, blockPos.getZ() >> 4)) {
+                PlayerPositionLookS2CPacket packet1 = event.context;
+                Vec3d resyncPos = getPosition(packet1);
+                double sqDistance = resyncToPos.squaredDistanceTo(resyncPos);
+                if (autoResyncPosDistance.get() > 0 && sqDistance < MathUtils.s2(autoResyncPosDistance.get())) {
+                    mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.teleportId()));
+                    executeResyncTo(resyncPos, resyncToPos, currentOnGround);
+                    event.cancel();
+                    return;
+                }
             }
         }
         // remove rot

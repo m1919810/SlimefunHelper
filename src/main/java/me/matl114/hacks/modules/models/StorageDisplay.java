@@ -53,16 +53,16 @@ public class StorageDisplay extends BaseModule {
     public final FlagRef shulkerDisplay =
             flagBuilder(Configs.MODEL_CONFIG, ENABLE_SHULKER_DISPLAY).build();
 
-    private static final Map<EntityType<?>, ItemStack> spawnEggNewStyleItem = new HashMap<>() {
-        {
-            for (EntityType<?> types : Registries.ENTITY_TYPE) {
-                Item optionalEgg = EntityUtils.entityToSpawnEgg(types);
-                if (optionalEgg != null && optionalEgg != Items.AIR) {
-                    put(types, NewStyleModel.ofNewVersion(new ItemStack(optionalEgg)));
-                }
+    private static final Map<EntityType<?>, ItemStack> spawnEggNewStyleItem = new HashMap<>();
+
+    static {
+        for (EntityType<?> types : Registries.ENTITY_TYPE) {
+            Item optionalEgg = EntityUtils.entityToSpawnEgg(types);
+            if (optionalEgg != null && optionalEgg != Items.AIR) {
+                spawnEggNewStyleItem.put(types, NewStyleModel.ofNewVersion(new ItemStack(optionalEgg)));
             }
         }
-    };
+    }
 
     public static ItemStack getRenderingEntityContent(EntityType<?> typed) {
         return spawnEggNewStyleItem.containsKey(typed)

@@ -2,18 +2,14 @@ package me.matl114.hacks.modules.move;
 
 import java.awt.*;
 import java.util.List;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
-import me.matl114.managers.Tasks;
-import me.matl114.managers.task.RepeatTask;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RenderUtils;
-import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
@@ -23,7 +19,6 @@ import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.impl.DispatchArgumentType;
 import me.matl114.utils.commands.params.impl.PosArgumentType;
 import me.matl114.utils.commands.params.types.ExecutePos;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
@@ -98,24 +93,6 @@ public class TpaCommand extends BaseModule {
                     .post(e -> e.executor(this::onTpa))
                     .complete();
         }
-        {
-            main.subBuilder(SubCommand.treeBuilder())
-                    .name("travel")
-                    .post(s -> s.subBuilder(SubCommand.taskBuilder())
-                            .name("to")
-                            .helper("<coord> 自动传送旅行")
-                            .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaAndPosArgumentType::new)
-                                    .name("target")
-                                    .build())
-                            .post(e -> e.executor(this::onTravelTo))
-                            .complete()
-                            .subBuilder(SubCommand.taskBuilder())
-                            .name("cancel")
-                            .helper("中断传送旅行")
-                            .post(e -> e.executor(CommandContext.run(this::onTravelCancel)))
-                            .complete())
-                    .complete();
-        }
     }
 
     public boolean onTp(CommandExecution p, ArgumentInputStream re, ArgumentReader reader) {
@@ -143,117 +120,6 @@ public class TpaCommand extends BaseModule {
     public void onTpa(Vec3d pos) {
         MovTasks.executeTp(pos, 320, true, true);
     }
-
-    public boolean onTravelTo(CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
-        ExecutePos pos = streamArgs.nextArg();
-        if (pos != null) {
-            Vector3d vector3d = pos.getPosition(var1);
-            onTravel(var1.getExecutor(), new Vec3d(vector3d.x, vector3d.y, vector3d.z));
-        }
-        return true;
-    }
-
-    public void onTravel(PlayerEntity var1, Vec3d parsedCoord) {
-        if (travelTask == null) {
-            if (parsedCoord == null) return;
-            travelTask = new RepeatTask(20, 2) {
-                Vec3d pos0 = parsedCoord;
-                final ClientPlayerEntity currentPlayer = mc.player;
-                final long startingTime = System.currentTimeMillis();
-                final Vec3d startPos = mc.player.getPos();
-
-                public void cancel() {
-                    super.cancel();
-                    MovTasks.doingTp = false;
-                }
-
-                private boolean finish() {
-                    if (travelTask != this
-                            || mc.player != currentPlayer
-                            || mc.player.getPos().subtract(pos0).horizontalLengthSquared() < 900) {
-                        Debug.chat("当前travel task已完成或者终止");
-                        long usedSec = (System.currentTimeMillis() - startingTime) / 1000L;
-                        Debug.info("using time", usedSec);
-                        if (mc.player != null) {
-                            double len = mc.player.getPos().distanceTo(startPos);
-                            Debug.chat("时间开销:", usedSec, "s, 运行距离: ", len, ", 平均速度: ", len / usedSec, "m/s");
-                            // send signal to reset distance
-                            mc.player.setOnGround(false);
-
-                            ClientPlayerAccess.of(mc.player)
-                                    .setForceNoFall(true); // .fallDistance = MovTasks.FORCE_RESET_DISTANCE;
-                        }
-
-                        travelTask = null;
-                        cancel();
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-
-                private boolean move(Vec3d delta) {
-
-                    if (delta.length() == 0) {
-                        MovTasks.moveToWithPackets(mc.player.getPos(), null);
-                        return false;
-                    } else {
-                        MovTasks.moveToWithPackets(mc.player.getPos().add(delta), Boolean.TRUE);
-                        return finish();
-                    }
-                }
-
-                int tickCNT = 0;
-                long lastTick;
-                //                                Vec3d vec3d = Vec3d.ZERO;
-                @Override
-                public boolean runTask() {
-                    if (mc.player == null) return false;
-                    MovTasks.doingTp = false;
-                    mc.player.setOnGround(false);
-                    tickCNT += 1;
-                    //                                    Debug.info("distance ", vec3d, mc.player.getPos());
-                    if (mc.player.getY() < mc.world.getBottomY() + mc.world.getHeight() + 64) {
-                        MovTasks.farawayMove(new Vec3d(0, 128, 0), true);
-                    } else {
-                        // fixme error in boat, desync boat position
-                        Vec3d towards = pos0.subtract(mc.player.getPos());
-
-                        Vec3d towardsHorizontal = new Vec3d(towards.x, 0, towards.z).normalize();
-                        //                                            if(move(Vec3d.ZERO)){
-                        //                                                return true;
-                        //                                            }
-                        if (move(towardsHorizontal.multiply(9.9).add(0, -0.3, 0))) {
-                            return true;
-                        }
-                        if (move(towardsHorizontal.multiply(9.9).add(0, -0.3, 0))) {
-                            return true;
-                        }
-                        if (tickCNT % 3 == 0) {
-                            if (move(towardsHorizontal.multiply(9.9).add(0, -0.3, 0))) {
-                                return true;
-                            }
-                        }
-                    }
-                    MovTasks.doingTp = true;
-                    //                                    this.vec3d = mc.player.getPos();
-                    return false;
-                }
-            };
-            Tasks.scheduleTask(travelTask);
-        } else {
-            Debug.chat("上一个travel task仍旧在执行,使用travel cancel取消");
-        }
-    }
-
-    public void onTravelCancel() {
-        if (travelTask != null) {
-            travelTask.cancel();
-            travelTask = null;
-        }
-    }
-
-    public static RepeatTask travelTask;
 
     public boolean onMark(CommandExecution var1, ArgumentInputStream re, ArgumentReader reader) {
         String type = re.nextNonnull();

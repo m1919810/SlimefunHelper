@@ -195,6 +195,9 @@ public interface VDrawContext {
 
     public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth);
 
+    public void fillGuiGradient(
+            int x1, int y1, int x2, int y2, int color1, int color2, int color3, int color4, int depth);
+
     default void fill(int x1, int y1, int x2, int y2, int color) {
         this.fill(x1, y1, x2, y2, 0, color);
     }

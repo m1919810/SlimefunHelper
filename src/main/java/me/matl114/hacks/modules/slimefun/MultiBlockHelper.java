@@ -249,6 +249,7 @@ public class MultiBlockHelper extends BaseModule {
                         ClientPlayerEntity args = movementManagerEvent.context().playerStatus.entity;
                         //                        float pitch = args.getPitch();
                         //                        float yaw = args.getYaw();
+                        movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityPitchSafe(args, pitchYaw.x);
                         EntityUtils.setEntityYawSafe(args, pitchYaw.y);
                     }
