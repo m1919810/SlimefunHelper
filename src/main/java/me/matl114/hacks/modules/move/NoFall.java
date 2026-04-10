@@ -15,7 +15,6 @@ import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.entity.LegalMovementManager;
@@ -157,7 +156,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
     }
 
-    public void onPlayerJump(Event<Integer> jumpEvent){
+    public void onPlayerJump(Event<Integer> jumpEvent) {
         getDelegate().onJump(jumpEvent);
     }
 
@@ -292,12 +291,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             noFallSetbackResponse = false;
         }
 
-        public void onJump(Event<Integer> jumpCooldown){
-        }
+        public void onJump(Event<Integer> jumpCooldown) {}
 
-        public void onPlayerVelocity(Event<Vec3d> vec3d){
-
-        }
+        public void onPlayerVelocity(Event<Vec3d> vec3d) {}
     }
 
     public static class NoFallNoBypass extends NoFallDelegate {
@@ -933,45 +929,41 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 ClientPlayerEntity entity = movementManagerEvent.context.playerStatus.entity;
                 var input = PlayerInputUtils.of(entity.input);
                 boolean shouldJump = true;
-                boolean shouldPress = true;//thisStepInNoInputStep;
+                boolean shouldPress = true; // thisStepInNoInputStep;
                 if (step == Step.REAPPLY_MOVEMENT) {
-                    if(shouldPress){
+                    if (shouldPress) {
                         input = input.forward(thisStepInNoInputStep)
-                            .backward(false)
-                            .left(false)
-                            .right(false);
-
+                                .backward(false)
+                                .left(false)
+                                .right(false);
                     }
-                    if(shouldJump){
+                    if (shouldJump) {
                         input = input.jump(false);
                     }
                 } else if (step == Step.WAIT_FOR_RESYNC) {
-                    if(shouldPress){
+                    if (shouldPress) {
                         input = input.forward(thisStepInNoInputStep)
-                            .backward(false)
-                            .left(false)
-                            .right(false);
+                                .backward(false)
+                                .left(false)
+                                .right(false);
                     }
-                    if(shouldJump){
+                    if (shouldJump) {
                         input = input.jump(true);
                     }
                 } else {
-                    if(shouldPress){
-                        input = input.forward(false)
-                            .backward(false)
-                            .left(false)
-                            .right(false);
+                    if (shouldPress) {
+                        input = input.forward(false).backward(false).left(false).right(false);
                     }
-                    if(shouldJump){
+                    if (shouldJump) {
                         input = input.jump(true);
                     }
                 }
                 if (!entity.isFallFlying()) {
                     input.applyInput(entity.input);
                 }
-//                else {
-//                    input.sendPlayerInputPacket();
-//                }
+                //                else {
+                //                    input.sendPlayerInputPacket();
+                //                }
 
             }
         }
@@ -1084,9 +1076,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                             !input.forward() && !input.backward() && !input.left() && !input.right();
                                     // step in movement
                                     // do not modify fallflying
-//                                    if (thisStepInNoInputStep) {
-//                                        input.forward(true);
-//                                    }
+                                    //                                    if (thisStepInNoInputStep) {
+                                    //                                        input.forward(true);
+                                    //                                    }
                                     input.jump(false).applyInput(entity.entity.input);
                                     step = Step.REAPPLY_MOVEMENT;
                                 }
@@ -1135,13 +1127,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     }
 
     // works on fucking loyisa motherfucker 4.9
-    public static class NoFallFuckGrimLazyPlusV2 extends NoFallDelegate{
+    public static class NoFallFuckGrimLazyPlusV2 extends NoFallDelegate {
         int lastStartWaitResyncTick = 0;
         Vec3d lastStartWaitPos = null;
         boolean afterSetbackFlag;
         Vec3d lastStartWaitAcceptPos;
         int lastStartWaitAcceptTick = 0;
-        PlayerInputUtils.Input lastCacheInput ;
+        PlayerInputUtils.Input lastCacheInput;
         // left for usage
         boolean flag1;
         boolean flag2;
@@ -1149,6 +1141,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         int cnt2;
         private static final int latency = 5;
         Step step = Step.COMMON;
+
         public NoFallFuckGrimLazyPlusV2(NoFall module) {
             super(module);
             this.afterSetbackFlag = true;
@@ -1158,22 +1151,26 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         public void onSetback(Event<MovTasks.MovInfo> setBack) {
             afterSetbackFlag = true;
             Vec3d nowV3d = setBack.context.vec3d();
-            if(lastStartWaitPos != null && lastStartWaitPos.squaredDistanceTo(nowV3d) < 1 && Tasks.getTick() < lastStartWaitResyncTick + latency){
+            if (lastStartWaitPos != null
+                    && lastStartWaitPos.squaredDistanceTo(nowV3d) < 1
+                    && Tasks.getTick() < lastStartWaitResyncTick + latency) {
                 // accept
                 lastStartWaitPos = null;
                 lastStartWaitAcceptPos = nowV3d;
                 lastStartWaitAcceptTick = Tasks.getTick();
                 step = Step.WAIT_FOR_RESYNC;
             }
-//            if(lastRotTick + 2 >= Tasks.getTick()){
-//                var ctx = setBack.context();
-//                setBack.context(new MovTasks.MovInfo(ctx.vec3d(), ctx.oGroundOverride(), ctx.updatePlayer(), new Vec2f(ctx.rotationOverride().x, modifyYaw)));
-//            }
-//            else {
-//                // die
-//            }
+            //            if(lastRotTick + 2 >= Tasks.getTick()){
+            //                var ctx = setBack.context();
+            //                setBack.context(new MovTasks.MovInfo(ctx.vec3d(), ctx.oGroundOverride(),
+            // ctx.updatePlayer(), new Vec2f(ctx.rotationOverride().x, modifyYaw)));
+            //            }
+            //            else {
+            //                // die
+            //            }
             super.onSetback(setBack);
         }
+
         int dupResync = 0;
 
         @Override
@@ -1187,12 +1184,12 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 module.lastOnGroundHeight = module.lastServerY;
 
                 mc.getNetworkHandler()
-                    .sendPacket(VPacket.newPositionAndOnGround(
-                        args.getX(),
-                        module.lastServerY + DELTA_Y,
-                        args.getZ(),
-                        false,
-                        args.horizontalCollision));
+                        .sendPacket(VPacket.newPositionAndOnGround(
+                                args.getX(),
+                                module.lastServerY + DELTA_Y,
+                                args.getZ(),
+                                false,
+                                args.horizontalCollision));
                 noFallSetbackResponse = true;
                 ClientPlayerAccess.of(args).setForceNoFall(false);
             } else if (module.isActive()) {
@@ -1203,7 +1200,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 noFallSetbackResponse = false;
             }
 
-
             if (module.isActive()) {
                 // do not make velocity input
                 // Debug.info("check input");
@@ -1211,96 +1207,99 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 var input = PlayerInputUtils.of(mc.options);
                 var playerInput = input.clone();
                 boolean resyncCnt = false;
-                if(step == Step.WAIT_FOR_RESYNC){
+                if (step == Step.WAIT_FOR_RESYNC) {
                     //
-                    //Debug.chat("Wait Resync op");
+                    // Debug.chat("Wait Resync op");
                     // calculate which way is ok,
-                    if(lastStartWaitResyncTick + latency * 2 >= Tasks.getTick() ){
-                        if(lastStartWaitAcceptPos != null && Tasks.getTick() <= lastStartWaitAcceptTick + 1){
+                    if (lastStartWaitResyncTick + latency * 2 >= Tasks.getTick()) {
+                        if (lastStartWaitAcceptPos != null && Tasks.getTick() <= lastStartWaitAcceptTick + 1) {
                             resyncCnt = true;
                             step = Step.APPLY_JUMP;
-                            //Debug.chat("Apply jump " + lastStartWaitAcceptPos);
+                            // Debug.chat("Apply jump " + lastStartWaitAcceptPos);
                             mc.player.setPosition(lastStartWaitAcceptPos);
                             lastStartWaitPos = lastStartWaitAcceptPos;
                             lastStartWaitResyncTick = Tasks.getTick();
                             lastStartWaitAcceptPos = null;
                             mc.player.setOnGround(true);
-                            //make some horizontal movement to avoid duplicate resync
-                            input =  input.clone();
-                            input.jump(true).forward(false).backward(false).left(false).right(false).sprint(false);
+                            // make some horizontal movement to avoid duplicate resync
+                            input = input.clone();
+                            input.jump(true)
+                                    .forward(false)
+                                    .backward(false)
+                                    .left(false)
+                                    .right(false)
+                                    .sprint(false);
 
                             var co = applyInputWay(entity);
 
-                            if(!co.hasAnyCollision()){
+                            if (!co.hasAnyCollision()) {
                                 input.forward(false);
-                            }else if(false) {
-                            }else {
+                            } else if (false) {
+                            } else {
                                 input.forward(true);
-                                if(playerInput.hasWASDMovement()){
-                                    if(playerInput.forward()){
+                                if (playerInput.hasWASDMovement()) {
+                                    if (playerInput.forward()) {
                                         modifyRot = true;
                                         EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
-                                    }else if(playerInput.backward()){
+                                    } else if (playerInput.backward()) {
 
-                                    }else if(playerInput.left()){
+                                    } else if (playerInput.left()) {
                                         modifyRot = true;
                                         EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 90);
-                                    }else if(playerInput.right()){
+                                    } else if (playerInput.right()) {
                                         modifyRot = true;
                                         EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() - 90);
                                     }
-                                }else {
-                                    if(!co.forward()){
+                                } else {
+                                    if (!co.forward()) {
 
-                                    } else if(!co.backward()){
+                                    } else if (!co.backward()) {
                                         modifyRot = true;
                                         EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
-                                    }else if(!co.left()){
+                                    } else if (!co.left()) {
                                         modifyRot = true;
                                         EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() - 90);
-                                    }else if(!co.right()){
+                                    } else if (!co.right()) {
                                         modifyRot = true;
                                         EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 90);
                                     }
                                 }
-
                             }
                             lastCacheInput = input.clone();
-                            if(modifyRot){
+                            if (modifyRot) {
                                 movementManagerEvent.context.pushImportantRotation(false, true);
                                 modifyYaw = mc.player.getYaw();
                                 lastRotTick = Tasks.getTick();
                             }
-                           // Debug.chat((mc.player.getYaw() - 180) % 360 + 180);
+                            // Debug.chat((mc.player.getYaw() - 180) % 360 + 180);
 
                             forThisTickInput = input;
                             applyJumpThisTick = true;
-                        }else{
+                        } else {
 
-                            forThisTickInput =  lastCacheInput.clone();
-                            if(Tasks.getTick() < lastRotTick + latency){
+                            forThisTickInput = lastCacheInput.clone();
+                            if (Tasks.getTick() < lastRotTick + latency) {
                                 mc.player.setYaw(modifyYaw);
                                 modifyRot = true;
                                 movementManagerEvent.context.pushImportantRotation(false, true);
                             }
                             applyJumpThisTick = true;
-//                            }
+                            //                            }
 
                         }
-                    }else {
-                        //Debug.chat("Timeout");
+                    } else {
+                        // Debug.chat("Timeout");
                         step = Step.COMMON;
                     }
 
-                }else if(step == Step.APPLY_JUMP){
+                } else if (step == Step.APPLY_JUMP) {
 
                     step = Step.COMMON;
                 }
                 dupResync = Math.max(0, dupResync + (resyncCnt ? 2 : -1));
-
             }
-
         }
+
         int lastRotTick = 0;
         float modifyYaw = 0.0F;
         boolean modifyRot = false;
@@ -1309,61 +1308,60 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         int lastFixTick = 0;
 
         @Override
-        public void onPlayerVelocity(Event<Vec3d>  playerVec) {
-//            if(lastFixTick + 10 > Tasks.getTick()){
-//                Vec3d vc3d = playerVec.context();
-//                if(vc3d.y < 0){
-//                    playerVec.context(new Vec3d(vc3d.x, 0.0D, vc3d.z));
-//                }
-//            }
+        public void onPlayerVelocity(Event<Vec3d> playerVec) {
+            //            if(lastFixTick + 10 > Tasks.getTick()){
+            //                Vec3d vc3d = playerVec.context();
+            //                if(vc3d.y < 0){
+            //                    playerVec.context(new Vec3d(vc3d.x, 0.0D, vc3d.z));
+            //                }
+            //            }
         }
 
         @Override
         public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-            if(applyJumpThisTick && forThisTickInput != null){
-//                if(dupResync >= 4){
-//                    dupResync = 0;
-//                    Debug.chat("Fix tick");
-//                    if(Tasks.getTick() %2 == 1){
-//                        forThisTickInput.backward(true).forward(false);
-//                    }else {
-//                        forThisTickInput.forward(true).backward(false);
-//                    }
-////                    Debug.chat("Fix tick");
-////                    dupResync = 0;
-////                    lastFixTick = Tasks.getTick();
-////                    var entity = movementManagerEvent.context.playerStatus;
-////
-////                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(
-////                        entity.pos.getX(),
-////                        entity.pos.getY() + DELTA_Y,   // 将 Y 坐标抬高
-////                        entity.pos.getZ(),
-////                        false,                         // onGround = false
-////                        entity.horizontalCollision
-////                    ));
-//                }
-//                if(lastFixTick + 3 > Tasks.getTick()){
-//                    forThisTickInput = forThisTickInput.jump(false).forward(false).backward(false).left(false).right(false);
-//                }
+            if (applyJumpThisTick && forThisTickInput != null) {
+                //                if(dupResync >= 4){
+                //                    dupResync = 0;
+                //                    Debug.chat("Fix tick");
+                //                    if(Tasks.getTick() %2 == 1){
+                //                        forThisTickInput.backward(true).forward(false);
+                //                    }else {
+                //                        forThisTickInput.forward(true).backward(false);
+                //                    }
+                ////                    Debug.chat("Fix tick");
+                ////                    dupResync = 0;
+                ////                    lastFixTick = Tasks.getTick();
+                ////                    var entity = movementManagerEvent.context.playerStatus;
+                ////
+                ////                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(
+                ////                        entity.pos.getX(),
+                ////                        entity.pos.getY() + DELTA_Y,   // 将 Y 坐标抬高
+                ////                        entity.pos.getZ(),
+                ////                        false,                         // onGround = false
+                ////                        entity.horizontalCollision
+                ////                    ));
+                //                }
+                //                if(lastFixTick + 3 > Tasks.getTick()){
+                //                    forThisTickInput =
+                // forThisTickInput.jump(false).forward(false).backward(false).left(false).right(false);
+                //                }
                 forThisTickInput.applyInput(movementManagerEvent.context.playerStatus.entity.input);
             }
             forThisTickInput = null;
         }
 
-
-
         @Override
         public void onJump(Event<Integer> jumpCooldown) {
-            if(applyJumpThisTick){
+            if (applyJumpThisTick) {
                 jumpCooldown.context(0);
             }
         }
 
         public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-            if(lastFixTick == Tasks.getTick()){
+            if (lastFixTick == Tasks.getTick()) {
                 movementManagerEvent.cancel();
             }
-            if(applyJumpThisTick){
+            if (applyJumpThisTick) {
                 applyJumpThisTick = false;
             }
 
@@ -1382,10 +1380,10 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     //                            step = Step.HANDLE_RESYNC;
                     //                        }
                     //                    }
-                    if(step == Step.COMMON || step == null){
-                        boolean shouldCheck = (entity.entity.getY() <= module.lastOnGroundHeight - module.safeDistance) && Tasks.getTick() > lastStartWaitResyncTick + latency;
+                    if (step == Step.COMMON || step == null) {
+                        boolean shouldCheck = (entity.entity.getY() <= module.lastOnGroundHeight - module.safeDistance)
+                                && Tasks.getTick() > lastStartWaitResyncTick + latency;
                         if ((shouldCheck && !entity.onGround && entity.entity.isOnGround())) {
-
 
                             afterSetbackFlag = false;
 
@@ -1393,35 +1391,39 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
                             // todo: try send it eariler
 
-                           //Debug.chat("BadPackets");
+                            // Debug.chat("BadPackets");
                             module.lastOnGroundHeight = entity.pos.getY();
                             // ClientTickEndC2SPacket());
                             Vec3d lastPosPos = movementManagerEvent.context.playerStatus.pos;
-                            //try use simple nofall to bypass other ac
+                            // try use simple nofall to bypass other ac
                             storedPacketMove = VPacket.newPositionAndOnGround(
-                                lastPosPos.x ,module.lastServerY + 9E-8, lastPosPos.z,
-                                //mc.player.getYaw()+ 180, mc.player.getPitch(),
-                                false, entity.horizontalCollision
-                            );
-                                storedPacketMove =    VPacket.newOnGroundOnly(
-                                    true,
+                                    lastPosPos.x,
+                                    module.lastServerY + 9E-8,
+                                    lastPosPos.z,
+                                    // mc.player.getYaw()+ 180, mc.player.getPitch(),
+                                    false,
                                     entity.horizontalCollision);
+                            storedPacketMove = VPacket.newOnGroundOnly(true, entity.horizontalCollision);
 
                             movementManagerEvent.cancel();
                             lastStartWaitPos = mc.player.getPos();
                             lastStartWaitResyncTick = Tasks.getTick();
-                            mc.player.setPosition(movementManagerEvent.context.playerStatus.pos.withAxis(Direction.Axis.Y, mc.player.getY()));
+                            mc.player.setPosition(movementManagerEvent.context.playerStatus.pos.withAxis(
+                                    Direction.Axis.Y, mc.player.getY()));
                             step = Step.WAIT_FOR_RESYNC;
                             noFallSetbackResponse = true;
                             mc.player.setOnGround(true);
                             lastCacheInput = PlayerInputUtils.of(mc.player.input);
                             lastCacheInput
-                                .forward(false).backward(false).left(false).right(false)
-                                .jump(false);//.applyInput(mc.player.input);
+                                    .forward(false)
+                                    .backward(false)
+                                    .left(false)
+                                    .right(false)
+                                    .jump(false); // .applyInput(mc.player.input);
                         }
 
-                    }else if(step == Step.WAIT_FOR_RESYNC){
-                       // movementManagerEvent.cancel();
+                    } else if (step == Step.WAIT_FOR_RESYNC) {
+                        // movementManagerEvent.cancel();
                     }
                 }
             }
@@ -1439,9 +1441,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if (runningThisTick) {
                 // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
             }
-            if(modifyRot){
+            if (modifyRot) {
                 modifyRot = false;
-               movementManagerEvent.context.playerStatus.restoreRotation();
+                movementManagerEvent.context.playerStatus.restoreRotation();
             }
             return true;
         }
@@ -1450,17 +1452,17 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             COMMON,
             WAIT_FOR_RESYNC,
             APPLY_JUMP,
-            RESYNC_FLOOD
-            ;
+            RESYNC_FLOOD;
         }
     }
 
-    public static record HorizontalCollision(boolean forward, boolean backward, boolean left, boolean right){
-        boolean hasAnyCollision(){
+    public static record HorizontalCollision(boolean forward, boolean backward, boolean left, boolean right) {
+        boolean hasAnyCollision() {
             return forward || backward || left || right;
         }
     }
-    public static HorizontalCollision applyInputWay(ClientPlayerEntity player){
+
+    public static HorizontalCollision applyInputWay(ClientPlayerEntity player) {
         double testDistance = 2e-1;
 
         // 根据玩家朝向计算四个方向的单位向量
@@ -1475,8 +1477,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         boolean rightCollide = MovTasks.hasHorizontalCollision(player, right);
 
         return new HorizontalCollision(forwardCollide, backwardCollide, leftCollide, rightCollide);
-
     }
+
     public static enum NofallBypassMode implements ConfigEnum {
         NO_BYPASS,
         LAZY_MODE,
