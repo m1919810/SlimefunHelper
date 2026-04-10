@@ -309,8 +309,8 @@ public class TpInteract extends BaseModule {
         });
     }
 
-    public void onModulePreset(Event<EventContainer<ModulePreset>> event){
-        switch (event.context().getValue()){
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        switch (event.context().getValue()) {
             case HACKING, VANILLA -> enable.set(true);
             default -> enable.set(false);
         }

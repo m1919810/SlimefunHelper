@@ -291,12 +291,12 @@ public class BowTp extends BaseModule {
         ModulePreset preset = event.context().getValue();
         switch (preset) {
             case HACKING, VANILLA -> {
-                if(tpDistance.get() < 0.0D) {
+                if (tpDistance.get() < 0.0D) {
                     tpDistance.set(-tpDistance.get());
                 }
             }
             default -> {
-                if(tpDistance.get() > 0.0D) {
+                if (tpDistance.get() > 0.0D) {
                     tpDistance.set(-tpDistance.get());
                 }
             }

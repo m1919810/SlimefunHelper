@@ -289,15 +289,15 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             case HACKING, VANILLA, AC_COMMON -> {
                 motionMode.set(ElytraExtra.MotionMode.VOID);
             }
-            case AC_VULCAN->{
+            case AC_VULCAN -> {
                 motionMode.set(ElytraExtra.MotionMode.VOID);
-                if(packetMotion.get() > 2.5F){
+                if (packetMotion.get() > 2.5F) {
                     packetMotion.set(2.5F);
                 }
             }
             case AC_GRIM, AC_MATRIX -> {
                 motionMode.set(ElytraExtra.MotionMode.FIRE_WORKS);
-                if(packetMotion.get() > 1.7F){
+                if (packetMotion.get() > 1.7F) {
                     packetMotion.set(1.7F);
                 }
             }
