@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.util.Objects;
@@ -25,7 +27,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
@@ -224,10 +225,14 @@ public abstract class ClientPlayNetworkHandlerEvents {
         Listener.getOtherPlayerExitPoint().broadcast(playerListEntry);
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "onEntityVelocityUpdate",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocityClient(DDD)V"))
-    private void onEntityVelocityUpdate(Entity instance, double x, double y, double z) {
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/entity/Entity;setVelocityClient(Lnet/minecraft/util/math/Vec3d;)V"))
+    private void onEntityVelocityUpdate(Entity instance, Vec3d clientVelocity, Operation<Void> original) {
         if (!Listener.getEntityClientVelocityUpdate().isEmpty()) {
             Vec3d vec3d = new Vec3d(x, y, z);
             Event<Vec3d> vcUpdate = new Event<>(vec3d, true, true, instance);
@@ -236,10 +241,29 @@ public abstract class ClientPlayNetworkHandlerEvents {
                 return;
             } else {
                 Vec3d vec3d1 = vcUpdate.context();
-                instance.setVelocityClient(vec3d1.getX(), vec3d1.getY(), vec3d1.getZ());
+                original.call(instance, vec3d1);
             }
         } else {
-            instance.setVelocityClient(x, y, z);
+            original.call(instance, clientVelocity);
+        }
+    }
+
+    @Inject(
+            method = "onEntitySpawn",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/world/ClientWorld;addEntity(Lnet/minecraft/entity/Entity;)V",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void onEntitySpawn(EntitySpawnS2CPacket packet, CallbackInfo ci, @Local Entity playerEntity) {
+        if (!Listener.getServerEntitySpawnListener().isEmpty()) {
+            Event<Entity> entityAdd = new Event<>(playerEntity, true, false);
+            Listener.getServerEntitySpawnListener().handleValue(entityAdd);
+            if (entityAdd.isCancelled()) {
+                ci.cancel();
+            }
         }
     }
 }

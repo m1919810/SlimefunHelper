@@ -197,7 +197,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getEntityClientVelocityUpdate(), this::onElytraKB);
+        registerListener(Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onElytraKB);
         registerListener(Listener.getPlayerFallFlyingTick(), this::runElytraUnbreakable);
         registerListener(
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::handleEntityDataUpdate);
@@ -205,7 +205,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetBack);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onUseFireworks);
-        registerListener(Listener.getEntityClientVelocityUpdate(), this::onPlayerVelocity);
+        registerListener(
+                Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onPlayerVelocity);
         registerListener(
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.FIREWORK_ROCKET), this::onFireworkOwner);
         registerListener(Listener.getEntityRemoveListener(), this::onFireworkRemove);

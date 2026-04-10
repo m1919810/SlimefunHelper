@@ -5,12 +5,9 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
-import me.matl114.managers.Tasks;
 import me.matl114.utils.entity.LegalMovementManager;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
@@ -33,7 +30,7 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onJump);
+        // registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onJump);
         registerListener(Listener.getTeleportConfirmResponsePoint(), this::onSetback);
     }
 
@@ -48,184 +45,137 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
         return false;
     }
 
-    public Step step;
-    private static final int latency = 5;
+    @Override
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+        ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+
+        if (enable()) {
+
+        } else {
+            step = null;
+        }
+    }
 
     public void onSetback(Event<MovTasks.MovInfo> setBack) {
-        if (enable()) {
-            Vec3d nowV3d = setBack.context().vec3d();
-            if (lastStartWaitPos != null
-                    && lastStartWaitPos.squaredDistanceTo(nowV3d) < 3
-                    && Tasks.getTick() < lastStartWaitResyncTick + latency) {
-                // accept
-                lastStartWaitPos = null;
-                lastStartWaitAcceptPos = nowV3d;
-                lastStartWaitAcceptTick = Tasks.getTick();
-                step = Step.WAIT_RESYNC;
-            }
-        }
+        //            if(Tasks.getTick() < lastOnGround + 5){
+        //                MovTasks.MovInfo set = setBack.context();
+        //                setBack.context(set.withOGroundOverride(Boolean.TRUE));
+        //                Debug.chat("OnGround");
+        //                lastOnGround = 0;
+        //            }
     }
-
-    int lastStartWaitResyncTick = 0;
-    Vec3d lastStartWaitPos = null;
-    boolean afterSetbackFlag;
-    Vec3d lastStartWaitAcceptPos;
-    int lastStartWaitAcceptTick = 0;
-    PlayerInputUtils.Input lastCacheInput;
-
-    @Override
-    public boolean mayModifyPos() {
-        return false;
-    }
-
-    //    List<BlockState> blocks;
-    //    BlockPos lastPosCenter;
-    @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
-
-    //    boolean thisTickJump = false;
-    public void onJump(Event<Integer> event) {
-        lastJump = Tasks.getTick();
-        if (applyJumpThisTick) {
-            event.context(0);
-        }
-    }
-
-    public static enum Step {
-        COMMON,
-        WAIT_RESYNC,
-        APPLY_JUMP;
-    }
-    //
-    //    @Override
-    //    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-    //        if(thisTickJump){
-    //            thisTickJump = false;
-    //            movementManagerEvent.cancel();
-    //        }
-    //    }
-
-    boolean applyJumpThisTick = false;
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-
-        // do not make velocity input
-        // Debug.info("check input");
-        ClientPlayerEntity entity = movementManagerEvent.context.playerStatus.entity;
-        var input = PlayerInputUtils.of(entity.input);
-        if (step == Step.WAIT_RESYNC) {
-            //
-            // Debug.chat("Wait Resync op");
-            // calculate which way is ok,
-            if (lastStartWaitResyncTick + latency * 2 >= Tasks.getTick()) {
-                if (lastStartWaitAcceptPos != null && Tasks.getTick() <= lastStartWaitAcceptTick + 2) {
-                    step = Step.APPLY_JUMP;
-                    // Debug.chat("Apply jump " + lastStartWaitAcceptPos);
-                    lastStartWaitPos = lastStartWaitAcceptPos;
-                    lastStartWaitResyncTick = Tasks.getTick();
-                    lastStartWaitAcceptPos = null;
-                    mc.player.setOnGround(true);
-                    // make some horizontal movement to avoid duplicate resync
-                    input.clone()
-                            .jump(true)
-                            .left(false)
-                            .right(false)
-                            .forward(true)
-                            .backward(false)
-                            .applyInput(entity.input);
-                    applyJumpThisTick = true;
-                } else {
-                    // Debug.chat("Apply Input");
-
-                    if (lastCacheInput != null) {
-                        lastCacheInput
-                                .clone()
-                                .forward(true)
-                                .jump(true)
-                                .sprint(input.sprint())
-                                .applyInput(entity.input);
-                        applyJumpThisTick = true;
-                    }
-                }
-            } else {
-                // Debug.chat("Timeout");
-                step = Step.COMMON;
-            }
-
-        } else if (step == Step.APPLY_JUMP) {
-
-            step = Step.COMMON;
+        if (step == Step.WALK) {
+            //            PlayerInputUtils.of(mc.player.input)
+            //                .forward(true)
+            //                .jump(true)
+            //                .applyInput(mc.player.input);
+            //            mc.player.setOnGround(true);
         }
     }
 
-    public int lastJump;
+    Step step;
+    int lastOnGround;
+    Vec3d storePos;
+    boolean runOnGroundThisTick;
+    int sleep = 0;
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-
-        if (applyJumpThisTick) {
-            applyJumpThisTick = false;
-        }
         if (enable()) {
+
             var entity = movementManagerEvent.context.playerStatus;
-            // check Y after fall
-            if (step == Step.APPLY_JUMP) {
-                // common movement
-                step = Step.COMMON;
-            } else {
-                //                    if (lastNoFallPos != null) {
-                //                        // near
-                //                        if (Math.abs(lastNoFallPos.y - entity.entity.getY()) < 1e-2
-                //                            && entity.entity.getPos().squaredDistanceTo(lastNoFallPos) < 1
-                //                            && lastNoFall + latency >= Tasks.getTick()) {
-                //                            step = Step.HANDLE_RESYNC;
-                //                        }
-                //                    }
-                if (step == Step.COMMON || step == null) {
-                    boolean shouldCheck = lastJump + 6 == Tasks.getTick();
-                    if (shouldCheck) {
-                        if (true) {
+            ClientPlayerEntity player = entity.entity;
+            if (step == Step.SLEEP && sleep++ > 20) {
+                step = null;
+                sleep = 0;
+                player.setOnGround(true);
+                step = Step.ON_GROUND_1;
+            }
+            if (step == null) {
+                if (!player.isOnGround()) {
+                    step = Step.ON_GROUND_1;
+                }
+            }
+            if (step != null) {
+                if (step == Step.SLEEP) {
+                    movementManagerEvent.context.playerStatus.restorePos();
+                    movementManagerEvent.cancel();
+                    Listener.sendPacketNoEvents(VPacket.newFull(
+                            mc.player.getX(),
+                            mc.player.getY() + 9e-8,
+                            mc.player.getZ(),
+                            mc.player.getYaw(),
+                            mc.player.getPitch(),
+                            true,
+                            mc.player.horizontalCollision));
+                    player.setOnGround(true);
+                } else if (step == Step.ON_GROUND_1) {
+                    // mc.player.setPosition(storePos.x, yLevel, storePos.z);
+                    storePos = mc.player.getPos();
+                    movementManagerEvent.context.playerStatus.restorePos();
+                    movementManagerEvent.cancel();
+                    player.setOnGround(true);
 
-                            afterSetbackFlag = false;
+                    Listener.sendPacketNoEvents(VPacket.newFull(
+                            mc.player.getX(),
+                            mc.player.getY() + 9e-8,
+                            mc.player.getZ(),
+                            mc.player.getYaw(),
+                            mc.player.getPitch(),
+                            true,
+                            mc.player.horizontalCollision));
+                    step = Step.ON_GROUND_2;
+                } else if (step == Step.ON_GROUND_2) {
+                    storePos = mc.player.getPos();
+                    movementManagerEvent.context.playerStatus.restorePos();
+                    movementManagerEvent.cancel();
+                    player.setOnGround(true);
 
-                            // ClientTickEndC2SPacket());
-                            Vec3d lastPosPos = movementManagerEvent.context.playerStatus.pos;
-                            //                            storedPacketMove =
-                            //                                VPacket.newPositionAndOnGround(
-                            //                                lastPosPos.x, lastPosPos.y + 9E-8, lastPosPos.z, false,
-                            // entity.horizontalCollision
-                            //                            );
-                            storedPacketMove = VPacket.newOnGroundOnly(true, entity.horizontalCollision);
-
-                            movementManagerEvent.cancel();
-                            lastStartWaitPos = mc.player.getPos();
-                            lastStartWaitResyncTick = Tasks.getTick();
-                            mc.player.setPosition(movementManagerEvent.context.playerStatus.pos.withAxis(
-                                    Direction.Axis.Y, mc.player.getY()));
-                            step = Step.WAIT_RESYNC;
-                            mc.player.setOnGround(true);
-                            lastCacheInput = PlayerInputUtils.of(mc.player.input);
-                            // idk
-                            return;
-                        }
-                    }
-                } else if (step == Step.WAIT_RESYNC) {
-                    // movementManagerEvent.cancel();
+                    Listener.sendPacketNoEvents(VPacket.newFull(
+                            mc.player.getX(),
+                            mc.player.getY() + 9e-8,
+                            mc.player.getZ(),
+                            mc.player.getYaw(),
+                            mc.player.getPitch(),
+                            true,
+                            mc.player.horizontalCollision));
+                    step = Step.WALK;
+                } else if (step == Step.WALK) {
+                    player.setOnGround(true);
+                    movementManagerEvent.cancel();
+                    mc.player.setPosition(
+                            mc.player.getX(), movementManagerEvent.context.playerStatus.pos.y, mc.player.getZ());
+                    Listener.sendPacketNoEvents(VPacket.newFull(
+                            mc.player.getX(),
+                            mc.player.getY() + 9e-8,
+                            mc.player.getZ(),
+                            mc.player.getYaw(),
+                            mc.player.getPitch(),
+                            true,
+                            mc.player.horizontalCollision));
+                    step = Step.SLEEP;
                 }
             }
         }
     }
 
-    Packet<?> storedPacketMove = null;
-
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        if (storedPacketMove != null) {
+        if (runOnGroundThisTick) {
+            mc.player.setPosition(storePos.x, mc.player.getY(), storePos.z);
             mc.player.setOnGround(true);
-            mc.getNetworkHandler().sendPacket(storedPacketMove);
+            mc.player.setVelocity(mc.player.getVelocity().withAxis(Direction.Axis.Y, 0));
         }
-        storedPacketMove = null;
         return true;
+    }
+
+    public static enum Step {
+        ON_GROUND_1,
+        ON_GROUND_2,
+        SLEEP,
+        WALK;
     }
 }
