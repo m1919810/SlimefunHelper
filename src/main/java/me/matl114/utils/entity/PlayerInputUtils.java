@@ -152,7 +152,7 @@ public class PlayerInputUtils {
             return forward || backward || left || right || jump;
         }
 
-        public boolean hasWASDMovement(){
+        public boolean hasWASDMovement() {
             return (forward != backward) || (left != right);
         }
 
@@ -169,15 +169,14 @@ public class PlayerInputUtils {
 
         @Override
         public String toString() {
-            return "Input{" +
-                "forward=" + forward +
-                ", backward=" + backward +
-                ", left=" + left +
-                ", right=" + right +
-                ", jump=" + jump +
-                ", sneak=" + sneak +
-                ", sprint=" + sprint +
-                '}';
+            return "Input{" + "forward="
+                    + forward + ", backward="
+                    + backward + ", left="
+                    + left + ", right="
+                    + right + ", jump="
+                    + jump + ", sneak="
+                    + sneak + ", sprint="
+                    + sprint + '}';
         }
     }
 }

@@ -114,7 +114,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean spearAttack() {
-        if(spearDistance.get() < 0){
+        if (spearDistance.get() < 0) {
             currentWaitBackTick = 0;
             return false;
         }
@@ -437,12 +437,12 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         ModulePreset preset = event.context().getValue();
         switch (preset) {
             case HACKING, VANILLA -> {
-                if(spearDistance.get() < 0.0D) {
+                if (spearDistance.get() < 0.0D) {
                     spearDistance.set(-spearDistance.get());
                 }
             }
             default -> {
-                if(spearDistance.get() > 0.0D) {
+                if (spearDistance.get() > 0.0D) {
                     spearDistance.set(-spearDistance.get());
                 }
             }

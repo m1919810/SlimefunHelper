@@ -300,7 +300,9 @@ public class PlayerChat extends BaseModule {
             event.context(newBuilder.end().build());
         }
     }
+
     public Pattern pattern = Pattern.compile("^(?!_)(?![0-9]+$)[a-zA-Z0-9_]{3,16}$");
+
     public Consumer<ChatUtils.TextBuilder> handleChatHead(String playerName, MutableBoolean mutableBoolean) {
         if (!playerHead.get()) return null;
         PlayerListEntry entry;
@@ -321,7 +323,7 @@ public class PlayerChat extends BaseModule {
                         .withStyle(Style.EMPTY);
             };
         }
-        if (playerName != null  && pattern.matcher(playerName).matches()) {
+        if (playerName != null && pattern.matcher(playerName).matches()) {
 
             ObjectTextContent content =
                     new ObjectTextContent(new PlayerTextObjectContents(ProfileComponent.ofDynamic(playerName), false));
@@ -336,7 +338,8 @@ public class PlayerChat extends BaseModule {
     }
 
     public Consumer<ChatUtils.TextBuilder> handleTimeStampAdd(MutableBoolean shouldModify, String capturedName) {
-        if (timeStamp.get() && ((capturedName != null && pattern.matcher(capturedName).matches()) || lastAcceptUUID != null)) {
+        if (timeStamp.get()
+                && ((capturedName != null && pattern.matcher(capturedName).matches()) || lastAcceptUUID != null)) {
             shouldModify.setValue(true);
             SimpleDateFormat sdf = new SimpleDateFormat("[HH:mm:ss]");
             String time = sdf.format(new Date());
