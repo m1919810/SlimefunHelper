@@ -239,14 +239,20 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (this.draggingElement != null && this.draggingElement.isDragging()) {
-            if (this.draggingElement == this.scoll) {
-                return this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        if (this.draggingElement != null) {
+            if (this.draggingElement.isDragging()) {
+                if (this.draggingElement == this.scoll) {
+                    return this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+                }
+                return this.draggingElement.mouseDragged(
+                        mouseX - this.getX(), mouseY - this.getY() + this.currentPose, button, deltaX, deltaY);
+            } else {
+                return false;
             }
-            return this.draggingElement.mouseDragged(
-                    mouseX - this.getX(), mouseY - this.getY() + this.currentPose, button, deltaX, deltaY);
+
+        } else {
+            return scrollableBorder.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         }
-        return false;
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
@@ -314,17 +320,20 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     // delegate scoll 's drag
 
     public boolean isDragging() {
-        return this.draggingElement != null && this.draggingElement.isDragging();
+        return this.draggingElement != null ? this.draggingElement.isDragging() : scrollableBorder.isDragging();
     }
 
     public void releaseDrag(Screen screen, double mouseX, double mouseY) {
         if (this.draggingElement != null) {
             if (this.draggingElement == this.scoll) {
                 this.draggingElement.releaseDrag(screen, mouseX, mouseY);
+                this.draggingElement = null;
                 return;
             }
             this.draggingElement.releaseDrag(screen, mouseX - this.getX(), mouseY - this.getY() + this.currentPose);
             this.draggingElement = null;
+        } else {
+            scrollableBorder.releaseDrag(screen, mouseX, mouseY);
         }
     }
 
@@ -343,6 +352,6 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
                 }
             }
         }
-        return false;
+        return scrollableBorder.startDrag(screen, mouseX, mouseY);
     }
 }

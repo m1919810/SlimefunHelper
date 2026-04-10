@@ -31,6 +31,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
+import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
@@ -96,6 +97,9 @@ public class WorldScanner extends BaseModule {
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
         registerListener(Listener.getServerDisconnectPoint(), this::onGameExit);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(ChunkDeltaUpdateS2CPacket.class),
+                this::onChunkDeltaUpdate);
     }
 
     public void onEnableModule() {
@@ -269,7 +273,7 @@ public class WorldScanner extends BaseModule {
             BlockUpdateS2CPacket blockUpdateS2CPacket = updateS2CPacketEvent.context();
             BlockPos blockPos = blockUpdateS2CPacket.getPos();
             ChunkPos chunkPos = CommonUtils.toChunk(blockPos);
-            scheduleChunkTask(chunkPos, () -> onSingleBlockValueChange(blockPos), false);
+            scheduleChunkTask(chunkPos, () -> onSingleBlockValueChange(blockPos.toImmutable()), false);
         }
     }
 
@@ -285,6 +289,24 @@ public class WorldScanner extends BaseModule {
                 cancelPendingChunkTask(chunkPos);
                 scheduleChunkTask(chunkPos, () -> onChunkReScann(chunkPos, regex), true);
             }
+        }
+    }
+
+    public void onChunkDeltaUpdate(Event<ChunkDeltaUpdateS2CPacket> chunkDeltaUpdateS2CPacketEvent) {
+        if (checkNull()) return;
+        if (enable.get()) {
+            ChunkDeltaUpdateS2CPacket packet = chunkDeltaUpdateS2CPacketEvent.context();
+            ChunkSectionPos chunkSecPos = packet.sectionPos;
+            // Chunk updateChunk = mc.world.getChunk(chunkPos.getX(), chunkPos.getZ(), ChunkStatus.FULL, false);
+            ChunkPos chunkPos = new ChunkPos(chunkSecPos.getX(), chunkSecPos.getZ());
+            scheduleChunkTask(
+                    chunkPos,
+                    () -> {
+                        packet.visitUpdates((bp, bs) -> {
+                            onSingleBlockValueChange(bp.toImmutable());
+                        });
+                    },
+                    false);
         }
     }
 

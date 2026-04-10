@@ -491,37 +491,49 @@ public class Listener {
     @Cancelable
     @Modifiable
     @ExtraArgs({Entity.class})
-    private static final EventChannel<Vec3d> entityClientVelocityUpdate = new EventChannel<>();
+    private static final EventChannelDispatcher<Vec3d> entityClientVelocityUpdate =
+            new EventChannelDispatcher<>(event -> event.<Entity>getArgs(0).getType(), true);
 
     @Getter
     @Cancelable
-    private static final EventChannel<Entity> entityPreTickListener = new EventChannel<>();
+    private static final EventChannelDispatcher<Entity> entityPreTickListener =
+            new EventChannelDispatcher<>(Entity::getType);
 
     @Getter
     @Broadcast
-    private static final EventChannel<Entity> entityMidTickListener = new EventChannel<>();
+    private static final EventChannelDispatcher<Entity> entityMidTickListener =
+            new EventChannelDispatcher<>(Entity::getType);
 
     @Getter
     @Broadcast
-    private static final EventChannel<Entity> entityPostTickListener = new EventChannel<>();
+    private static final EventChannelDispatcher<Entity> entityPostTickListener =
+            new EventChannelDispatcher<>(Entity::getType);
 
     @Getter
     @Broadcast
     @ExtraArgs(
             value = {List.class},
             names = {"updatedEntry"})
-    private static final EventChannel<Entity> entityDataListener = new EventChannel<>();
+    private static final EventChannelDispatcher<Entity> entityDataListener =
+            new EventChannelDispatcher<>(Entity::getType);
 
     @Getter
     @Cancelable
     @Modifiable
     @ExtraArgs(value = {EntityType.class})
-    private static final EventChannel<Entity> entityCreateListener = new EventChannel<>();
+    private static final EventChannelDispatcher<Entity> entityCreateListener =
+            new EventChannelDispatcher<>((event -> event.getArgs(0)), true);
+
+    @Getter
+    @Cancelable
+    private static final EventChannelDispatcher<Entity> serverEntitySpawnListener =
+            new EventChannelDispatcher<>(Entity::getType);
 
     @Getter
     @Broadcast
     @ExtraArgs(value = {Entity.RemovalReason.class})
-    private static final EventChannel<Entity> entityRemoveListener = new EventChannel<>();
+    private static final EventChannelDispatcher<Entity> entityRemoveListener =
+            new EventChannelDispatcher<>(Entity::getType);
 
     // world events
 

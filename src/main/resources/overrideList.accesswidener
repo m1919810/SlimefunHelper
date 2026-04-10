@@ -81,3 +81,4 @@ accessible method net/minecraft/entity/LivingEntity applyClimbingSpeed (Lnet/min
 accessible field net/minecraft/client/input/Input movementVector Lnet/minecraft/util/math/Vec2f;
 
 accessible field net/minecraft/block/entity/BlockEntityType blocks Ljava/util/Set;
+accessible field net/minecraft/network/packet/s2c/play/ChunkDeltaUpdateS2CPacket sectionPos Lnet/minecraft/util/math/ChunkSectionPos;
