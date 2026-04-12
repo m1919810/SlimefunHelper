@@ -11,7 +11,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -84,7 +83,6 @@ public class PacketMine extends BaseModule {
                                     mc.interactionManager.breakBlock(pos);
                                     // mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
                                 }
-                                Debug.chat("Mine " + Tasks.getTick() + blockState);
                                 mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
                                 PlayerInteractionAccess.of(mc.interactionManager)
                                         .sendStopBreakPacket(pos, dir);
