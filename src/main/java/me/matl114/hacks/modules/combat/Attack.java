@@ -763,6 +763,9 @@ public class Attack extends BaseModule {
                 return true;
             }
         }
+        if (!canUseTp()) {
+            return false;
+        }
         double range = getTpSelectRange();
         Vec3d current = player.getPos();
         // feat : teleporting position should met the need of antishield
