@@ -171,7 +171,16 @@ public class TpInteract extends BaseModule {
         if (enable.get()) {
             var packet = event.context;
             switch (packet.getAction()) {
-                case START_DESTROY_BLOCK, STOP_DESTROY_BLOCK -> {}
+                case START_DESTROY_BLOCK, STOP_DESTROY_BLOCK -> {
+                    BlockPos involvedBlock = packet.getPos();
+                    // check y;
+                    if (involvedBlock == null) return;
+                    // filter "out of building height" shit
+                    if (involvedBlock.getY() < (mc.world.getBottomY() - 1)
+                            || involvedBlock.getY() > (mc.world.getBottomY() + mc.world.getHeight() + 1)) {
+                        return;
+                    }
+                }
                 default -> {
                     return;
                 }
