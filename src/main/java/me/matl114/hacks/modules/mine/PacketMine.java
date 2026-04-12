@@ -5,14 +5,18 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.*;
+import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -45,6 +49,14 @@ public class PacketMine extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
+    public final FlagRef ignoreAir = flagBuilder(Configs.MINE_CONFIG, makePath("mine-oneblock.ignore-air-state"))
+            .build();
+
+    public final EnumRef<Configs.BypassMode> mode = builder(
+                    Configs.MINE_CONFIG, makePath("mine-oneblock.mine-oneblock-mode"), Configs.BypassMode.class)
+            .defaultValue(Configs.BypassMode.NO_BYPASS)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -59,11 +71,21 @@ public class PacketMine extends BaseModule {
                 if (pos != null) {
                     double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
                     if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
-                        BlockState blockState = mc.world.getBlockState(pos);
-                        if (canMine(blockState)) {
-                            Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
-                            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-                            for (int i = 0; i < multiplePackets.get(); ++i) {
+                        for (int i = 0; i < multiplePackets.get(); ++i) {
+                            BlockState blockState = mc.world.getBlockState(pos);
+                            if (canMine(blockState)) {
+                                Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
+                                Direction dir =
+                                        Direction.getFacing(shouldFacing).getOpposite();
+                                if (!ignoreAir.get()
+                                        && PlayerInteractionAccess.of(mc.interactionManager)
+                                                        .getCurrentMiningProgress(true)
+                                                > 0.98F) {
+                                    mc.interactionManager.breakBlock(pos);
+                                    // mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
+                                }
+                                Debug.chat("Mine " + Tasks.getTick() + blockState);
+                                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
                                 PlayerInteractionAccess.of(mc.interactionManager)
                                         .sendStopBreakPacket(pos, dir);
                             }
@@ -76,6 +98,15 @@ public class PacketMine extends BaseModule {
 
     public boolean canMine(BlockState state) {
         // do not mine liquid, that's a disaster
-        return state.getBlock().getHardness() >= 0.0F && !state.isLiquid();
+        // do not mine air, shit
+        if (state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && !state.isAir()) {
+            if (mode.get().hasAc()) {
+                var access = PlayerInteractionAccess.of(mc.interactionManager);
+                return access.getCurrentMiningProgress(true) > 0.98F;
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 }

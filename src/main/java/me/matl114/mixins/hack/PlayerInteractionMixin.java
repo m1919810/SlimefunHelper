@@ -9,7 +9,6 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.modules.mine.MineExtra;
-import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -27,7 +26,6 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameMode;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -104,7 +102,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         //                    //no need to restore currentBreakingProgress?
         //                    return;
         //                }
-        int ticksSinceLastStart = Tasks.getTick() - this.lastStartMineBreakingProgressResetTick;
+        int ticksSinceLastStart = Tasks.getTick() - MineTasks.getMineExtra().lastStartMineBreakingProgressResetTick;
         // loading progress...
         return speed * ticksSinceLastStart;
     }
@@ -132,7 +130,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             if (currentFailBreakPos == null) {
                 currentFailBreakPos = pos;
                 currentBreakingPos = pos;
-                failBreakStartTick = lastStartMineBreakingProgressResetTick;
+                failBreakStartTick = MineTasks.getMineExtra().lastStartMineBreakingProgressResetTick;
                 return true;
             }
         } else {
@@ -217,101 +215,6 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         }
     }
 
-    @Unique
-    private int lastStartCooldownTick;
-
-    @Unique
-    private int gainedAdvantageCooldown;
-
-    private boolean thisTimeOptimizedSamePosBreak;
-
-    @Unique
-    private int cooldownManaging() {
-        MineExtra mineExtra = MineTasks.getMineExtra();
-        boolean fastBreak = mineExtra.quickMine.get();
-        int cooldownOverride = (fastBreak && mineExtra.breakCooldown.get() >= 0) ? mineExtra.breakCooldown.get() : 5;
-        if (thisTimeOptimizedSamePosBreak) {
-            thisTimeOptimizedSamePosBreak = false;
-            cooldownOverride = Math.max(1, cooldownOverride);
-        }
-        if (cooldownOverride < 5) {
-            if (mineExtra.fastBreakBypassMode.getValue() == Configs.BypassMode.BYPASS_GRIM) {
-                int currentTick = Tasks.getTick();
-                lastStartCooldownTick = currentTick;
-                if (gainedAdvantageCooldown > mineExtra.grimAcCounterThreshold.get()) {
-                    return 5;
-                }
-            }
-        }
-        return cooldownOverride;
-    }
-    //    private int fastBreakCooldownManaging(){
-    //        int cooldownOverride =  breakCoolDown.get();
-    //        if(thisTimeOptimizedSamePosBreak){
-    //            thisTimeOptimizedSamePosBreak = false;
-    //            cooldownOverride =  Math.max(1, cooldownOverride);
-    //        }
-    //        if(cooldownOverride < 5){
-    //            if(fastBreakBypass.getValue() == Configs.BypassMode.BYPASS_GRIM){
-    //                int currentTick = Tasks.getTick();
-    //                lastStartCooldownTick = currentTick;
-    //                if(gainedAdvantageCooldown > grimThreshold.get()){
-    //                    return 5;
-    //                }
-    //            }
-    //
-    //
-    ////            if(gainedAdvantage > 900){
-    ////                //reset
-    ////                shouldReset = true;
-    ////                return 5;
-    ////            }
-    //        }
-    //        return cooldownOverride;
-    //    }
-    //
-
-    @Unique
-    private void onStartingMine(BlockPos pos, float speed, boolean instaBreak) {
-        MineExtra mineExtra = MineTasks.getMineExtra();
-        lastStartingMineIsInstantBreak = instaBreak || speed > Math.min(1.0F, mineExtra.breakThreshold.get());
-
-        lastStartMineBreakingProgressResetTick = Tasks.getTick();
-
-        if (!mineExtra.quickMine.get()) {
-            return;
-        }
-        // escape init case
-        if (lastStartCooldownTick == 0) return;
-        if (instaBreak) return;
-        int thisCurrentTick = Tasks.getTick();
-        // this means it is ok to directly mine
-        boolean canResetThisTime = false;
-        if (thisCurrentTick >= lastStartCooldownTick + 5) {
-            canResetThisTime = true;
-            gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
-        } else {
-            gainedAdvantageCooldown += 300 - (thisCurrentTick - lastStartCooldownTick) * 50;
-        }
-        int threshold = mineExtra.grimAcCounterThreshold.get();
-        if (gainedAdvantageCooldown > threshold
-                && canResetThisTime
-                && mineExtra.fastBreakBypassMode.getValue() == Configs.BypassMode.BYPASS_GRIM) {
-            // reset
-            gainedAdvantageCooldown = 150;
-            ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
-                    .getOpposite();
-            for (int i = 0; i < 20; ++i) {
-                sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
-                    return new PlayerActionC2SPacket(
-                            PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, dir, sequence);
-                }));
-            }
-        }
-        gainedAdvantageCooldown = MathHelper.clamp(gainedAdvantageCooldown, -2 * threshold, 2 * threshold);
-    }
-
     // speed up with early packet when progress>0.7
     @Inject(
             method = "updateBlockBreakingProgress",
@@ -335,7 +238,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             // do insta break
             if (this.currentBreakingProgress >= mineExtra.breakThreshold.get()) {
                 // Debug.info("here");
-                if (ignoreNextFastBreakStatus > 0) {
+                if (mineExtra.ignoreNextFastBreakStatus > 0) {
                     return;
                 }
                 this.breakingBlock = false;
@@ -346,72 +249,17 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 });
                 float speed = blockState.calcBlockBreakingDelta(
                         MinecraftClient.getInstance().player, MinecraftClient.getInstance().world, pos);
-                onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
+                mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
                 if (!mineExtra.optimizeOneBlock.get()) {
                     this.currentBreakingProgress = 0.0F;
                 }
                 this.blockBreakingSoundCooldown = 0.0F;
-                this.blockBreakingCooldown = cooldownManaging();
+                this.blockBreakingCooldown = mineExtra.cooldownManaging();
+                cir.cancel();
             }
         }
     }
 
-    @Unique
-    private boolean nextTickEarlyBreak = false;
-
-    @Unique
-    private void onPostStopMiningLegally(BlockPos pos) {
-        MineExtra mineExtra = MineTasks.getMineExtra();
-        ignoreNextFastBreakStatus = 0;
-        gainedAdvantageMining = (int) (gainedAdvantageMining * 0.9);
-        int threshold = mineExtra.grimAcCounterThreshold.get();
-        if (gainedAdvantageMining > threshold
-                && mineExtra.fastBreakBypassMode.getValue() == Configs.BypassMode.BYPASS_GRIM) {
-            gainedAdvantageMining = 150;
-            ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
-                    .getOpposite();
-            for (int i = 0; i < 20; ++i) {
-                sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
-                    return new PlayerActionC2SPacket(
-                            PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, dir, sequence);
-                }));
-            }
-        }
-        gainedAdvantageCooldown = MathHelper.clamp(gainedAdvantageCooldown, -2 * threshold, 2 * threshold);
-    }
-
-    @Unique
-    private int lastStartMineBreakingProgressResetTick = 0;
-
-    private boolean lastStartingMineIsInstantBreak = false;
-
-    @Unique
-    private int gainedAdvantageMining;
-
-    @Unique
-    private int ignoreNextFastBreakStatus = 0;
-
-    @Unique
-    private void onPostStopMiningFastBreak(BlockPos pos, double speed, double currentProgress) {
-        ignoreNextFastBreakStatus = 0;
-        if (lastStartMineBreakingProgressResetTick == 0) {
-            return;
-        }
-        MineExtra mineExtra = MineTasks.getMineExtra();
-        int predictTick = (int) Math.ceil(1 / speed);
-        int tickUsed = (int) Math.ceil(currentProgress / speed);
-        int diff = predictTick - tickUsed;
-        gainedAdvantageMining += (diff + 1) * 50;
-        int threshold = mineExtra.grimAcCounterThreshold.get();
-        gainedAdvantageMining = MathHelper.clamp(gainedAdvantageMining, -2 * threshold, 2 * threshold);
-        if (gainedAdvantageMining > threshold
-                && mineExtra.fastBreakBypassMode.getValue() == Configs.BypassMode.BYPASS_GRIM) {
-            // only when starting bypass will we do
-            // trigger a common mine
-            ignoreNextFastBreakStatus = 2;
-        }
-    }
     //
     // fixme: fix
     @Inject(
@@ -433,7 +281,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
             if (Objects.equals(pos, currentBreakingPos)) {
 
-                if (this.lastStartMineBreakingProgressResetTick == 0 || this.lastStartingMineIsInstantBreak) {
+                if (!mineExtra.shouldExecuteOptimizeOneBlock()) {
                     return;
                 }
                 // loading progress...
@@ -444,7 +292,6 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 this.client.world.setBlockBreakingInfo(
                         this.client.player.getId(), this.currentBreakingPos, this.getBlockBreakingProgress());
                 // avoid targeting another block too quickly
-                this.thisTimeOptimizedSamePosBreak = true;
                 // update blockbreaking progress, do anything you want, sendpackets or sth
                 this.updateBlockBreakingProgress(pos, direction);
                 cir.setReturnValue(true);
@@ -546,7 +393,8 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             currentBreakingPos);
                     if (speed > 0) {
                         setStartFailBreakPos(currentBreakingPos);
-                        onPostStopMiningFastBreak(currentBreakingPos, speed, currentBreakingProgress);
+                        MineTasks.getMineExtra()
+                                .onPostStopMiningFastBreak(currentBreakingPos, speed, currentBreakingProgress);
                         return true;
                     }
                 }
@@ -583,7 +431,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             Direction direction,
             CallbackInfoReturnable<Boolean> cir,
             net.minecraft.block.BlockState blockState) {
-        onStartingMine(pos, Float.MAX_VALUE, true);
+        MineTasks.getMineExtra().onStartingMine(pos, Float.MAX_VALUE, true);
     }
 
     @Inject(
@@ -601,7 +449,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             Direction direction,
             CallbackInfoReturnable<Boolean> cir,
             net.minecraft.block.BlockState blockState) {
-        this.blockBreakingCooldown = cooldownManaging();
+        this.blockBreakingCooldown = MineTasks.getMineExtra().cooldownManaging();
         if (MineTasks.getMineExtra().quickMine.get()) {
             cir.setReturnValue(true);
         }
@@ -626,17 +474,12 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 MinecraftClient.getInstance().player,
                 MinecraftClient.getInstance().player.getEntityWorld(),
                 pos);
-        onStartingMine(pos, speed, false);
+        MineTasks.getMineExtra().onStartingMine(pos, speed, false);
         if (MineTasks.getMineExtra().quickMine.get()) {
             // make cooldown issues
 
-            if (ignoreNextFastBreakStatus > 0) {
-                // I accept the status !
-                ignoreNextFastBreakStatus -= 1;
-                // somehow we left one status here because of fastBreak
-                if (ignoreNextFastBreakStatus > 0) {
-                    return;
-                }
+            if (!MineTasks.getMineExtra().shouldUseQuickMine()) {
+                return;
             }
 
             // speed>1.0f可以秒破 此处不调用
@@ -653,7 +496,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             return new PlayerActionC2SPacket(
                                     PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
                         });
-                        this.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
+                        mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
                         //                CompletableFuture.runAsync(()->{
                         //
                         //                });
@@ -661,10 +504,10 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             this.currentBreakingProgress = 0.0F;
                         }
                         this.blockBreakingSoundCooldown = 0.0F;
-                        this.blockBreakingCooldown = cooldownManaging();
+                        this.blockBreakingCooldown = mineExtra.cooldownManaging();
                     } else if (mineExtra.fakeInstaBreak.get()
                             && speed > ((mineExtra.breakThreshold.get() / 2.0) + 0.04d)) {
-                        nextTickEarlyBreak = true;
+                        mineExtra.nextTickEarlyBreak = true;
                     }
                 }
             }
@@ -683,8 +526,8 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             cancellable = true,
             locals = LocalCapture.CAPTURE_FAILSOFT)
     public void instaBreakPacketWhenUpdate(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
-        onStartingMine(pos, Float.MAX_VALUE, true);
-        this.blockBreakingCooldown = cooldownManaging();
+        MineTasks.getMineExtra().onStartingMine(pos, Float.MAX_VALUE, true);
+        this.blockBreakingCooldown = MineTasks.getMineExtra().cooldownManaging();
     }
 
     @Inject(
@@ -698,23 +541,22 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             cancellable = true,
             locals = LocalCapture.CAPTURE_FAILSOFT)
     public void earlyBreakNextTickPacketSend(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
-        if (MineTasks.getMineExtra().fakeInstaBreak.get() && this.nextTickEarlyBreak) {
+        if (MineTasks.getMineExtra().fakeInstaBreak.get() && MineTasks.getMineExtra().nextTickEarlyBreak) {
             BlockState blockState = MinecraftClient.getInstance().world.getBlockState(pos);
             float speed = blockState.calcBlockBreakingDelta(
                     MinecraftClient.getInstance().player,
                     MinecraftClient.getInstance().player.getEntityWorld(),
                     pos);
-            this.nextTickEarlyBreak = false;
             this.breakingBlock = false;
             this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
                 this.breakBlock(pos);
                 return new PlayerActionC2SPacket(
                         PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
             });
-            onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress + speed);
+            MineTasks.getMineExtra().onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress + speed);
             if (!MineTasks.getMineExtra().optimizeOneBlock.get()) this.currentBreakingProgress = 0.0F;
             this.blockBreakingSoundCooldown = 0.0F;
-            this.blockBreakingCooldown = cooldownManaging();
+            this.blockBreakingCooldown = MineTasks.getMineExtra().cooldownManaging();
             //
             MinecraftClient.getInstance()
                     .world
@@ -733,7 +575,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             ordinal = 1,
                             shift = At.Shift.AFTER))
     private void onCommonBlockBreak(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
-        onPostStopMiningLegally(pos);
+        MineTasks.getMineExtra().onPostStopMiningLegally(pos);
     }
 
     @Redirect(
