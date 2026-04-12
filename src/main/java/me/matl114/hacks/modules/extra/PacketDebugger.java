@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.extra;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import me.matl114.events.Event;
@@ -13,9 +14,11 @@ import me.matl114.managers.config.StringRef;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 public class PacketDebugger extends BaseModule {
@@ -74,6 +77,12 @@ public class PacketDebugger extends BaseModule {
         registerListener(Listener.getPacketPoint(), this::onPacket);
     }
 
+    public static String simplifyId(Identifier id) {
+        if (Objects.equals("minecraft", id.getNamespace())) {
+            return "mc:" + id.getPath();
+        } else return id.toString();
+    }
+
     public void onPacketHandle(Event<Packet<?>> packetEvent) {
         if (packetEvent.isCancelled()) return;
         if (debugIn.get()) {
@@ -83,7 +92,7 @@ public class PacketDebugger extends BaseModule {
                     Vec3d vec3d = positionLookS2CPacket.change().position();
                     ExtraTasks.debug(
                             "Accept",
-                            type.getPacketId().id(),
+                            simplifyId(type.getPacketId().id()),
                             vec3d.x,
                             vec3d.y,
                             vec3d.z,
@@ -92,7 +101,7 @@ public class PacketDebugger extends BaseModule {
                             ", Yaw:",
                             positionLookS2CPacket.change().yaw());
                 } else {
-                    ExtraTasks.debug("Accept", type.getPacketId().id());
+                    ExtraTasks.debug("Accept", simplifyId(type.getPacketId().id()));
                 }
             }
         }
@@ -106,7 +115,7 @@ public class PacketDebugger extends BaseModule {
                 if (type instanceof PlayerMoveC2SPacket moveC2SPacket) {
                     ExtraTasks.debug(
                             "Send",
-                            type.getPacketId().id(),
+                            simplifyId(type.getPacketId().id()),
                             moveC2SPacket.getX(0.0),
                             moveC2SPacket.getY(0.0),
                             moveC2SPacket.getZ(0.0),
@@ -118,9 +127,15 @@ public class PacketDebugger extends BaseModule {
                             moveC2SPacket.isOnGround());
                 } else if (type instanceof PlayerInputC2SPacket playerInputC2SPacket) {
                     PlayerInputUtils.Input input = PlayerInputUtils.of(playerInputC2SPacket);
-                    ExtraTasks.debug("Send", type.getPacketId().id(), input);
+                    ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()), input);
+                } else if (type instanceof PlayerActionC2SPacket actionC2SPacket) {
+                    ExtraTasks.debug(
+                            "Send",
+                            simplifyId(type.getPacketId().id()),
+                            actionC2SPacket.getAction().name(),
+                            actionC2SPacket.getPos());
                 } else {
-                    ExtraTasks.debug("Send", type.getPacketId().id());
+                    ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()));
                 }
             }
         }
