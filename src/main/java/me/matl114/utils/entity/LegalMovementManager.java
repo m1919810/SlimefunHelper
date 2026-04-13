@@ -19,6 +19,20 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         return importantRotationStatePreserve != null && !importantRotationStatePreserve.isEmpty();
     }
 
+    public boolean hasImportantPitch() {
+        if (hasImportantRotation()) {
+            return importantRotationStatePreserve.stream().anyMatch(pair -> pair.getFirst() != null);
+        }
+        return false;
+    }
+
+    public boolean hasImportantYaw() {
+        if (hasImportantRotation()) {
+            return importantRotationStatePreserve.stream().anyMatch(pair -> pair.getSecond() != null);
+        }
+        return false;
+    }
+
     public void pushImportantRotation(boolean hasPitch, boolean hasYaw) {
         if (!hasPitch && !hasYaw) {
             return;

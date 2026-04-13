@@ -159,4 +159,6 @@ public class PostManager extends BaseModule {
             runAllQueuePackets(mc.getNetworkHandler());
         }
     }
+
+    public void onDisconnect(Event<Void> v) {}
 }
