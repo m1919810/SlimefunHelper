@@ -1772,18 +1772,18 @@ public class MovTasks {
     //                }
     //            };
     // This pipeline will modify pos not rot
-    public static final LegalMovementManager.ModifierPipeline PLAYER_PIPELINE_POS =
-            new LegalMovementManager.ModifierPipeline(1_000) {
-                @Override
-                public int priority() {
-                    return 1_000;
-                }
-
-                @Override
-                public boolean mayModifyRotation() {
-                    return false;
-                }
-            };
+    //    public static final LegalMovementManager.ModifierPipeline PLAYER_PIPELINE_POS =
+    //            new LegalMovementManager.ModifierPipeline(1_000) {
+    //                @Override
+    //                public int priority() {
+    //                    return 1_000;
+    //                }
+    //
+    //                @Override
+    //                public boolean mayModifyRotation() {
+    //                    return false;
+    //                }
+    //            };
 
     // Removed
     // move to NoFallModule.class
@@ -2207,6 +2207,12 @@ public class MovTasks {
     public static ElytraFlight elytraFlight;
 
     @Getter
+    public static ElytraFlightLegit elytraFlightLegit;
+
+    @Getter
+    public static Velocity velocity;
+
+    @Getter
     public static MovTest movTest;
 
     @Getter
@@ -2233,6 +2239,8 @@ public class MovTasks {
         stepHeight = new StepHeight().register(m);
         elytraExtra = new ElytraExtra().register(m);
         elytraFlight = new ElytraFlight().register(m);
+        // elytraFlightLegit = new ElytraFlightLegit().register(m);
+        velocity = new Velocity().register(m);
         movTest = new MovTest().register(m);
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);

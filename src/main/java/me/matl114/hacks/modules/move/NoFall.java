@@ -1307,10 +1307,11 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         @Override
         public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
             if (applyJumpThisTick && forThisTickInput != null) {
-                if (dupResync >= 3) {
+                if (dupResync >= 3 && lastStartWaitResyncTick == Tasks.getTick()) {
                     // flood
                     dupResync = 0;
                     lastFixTick = Tasks.getTick();
+                    forThisTickInput.forward(true).backward(false).jump(false);
                 }
                 //                    dupResync = 0;
                 //                    Debug.chat("Fix tick");

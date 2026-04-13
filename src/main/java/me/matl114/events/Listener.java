@@ -15,6 +15,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import lombok.Getter;
+import me.matl114.accessors.events.ClientConnectionAccess;
 import me.matl114.events.annotations.*;
 import me.matl114.events.catchers.AbstractTypedPacketCatcher;
 import me.matl114.events.catchers.PacketCatcher;
@@ -203,17 +204,23 @@ public class Listener {
             Class<T> clazz, BiPredicate<ClientConnection, T> predicate) {
         getPacketListenerPoint(clazz).registerHandler(wrapListener(predicate));
     }
-    //    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz){
-    //        registerSinglePacketCatcher(clazz, ((connection, t) -> {return true;}));
-    //    }
-    //    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz, Predicate< T> predicate){
-    //        registerSinglePacketCatcher(clazz, ((connection, t) -> predicate.test(t)));
-    //    }
-    //    public static <T extends Packet<?>> void registerSinglePacketCatcher(Class<T> clazz,
-    // BiPredicate<ClientConnection, T> predicate){
-    //        packetCatcher.computeIfAbsent((Class<?>) clazz, (c)->new
-    // ArrayDeque<>()).add((BiPredicate<ClientConnection, Packet<?>>) predicate);
-    //    }
+
+    public static ClientConnectionAccess getConnection() {
+        return ClientConnectionAccess.of(
+                MinecraftClient.getInstance().getNetworkHandler().getConnection());
+    }
+
+    public static void startPacketDelay() {
+        ClientConnectionAccess.of(
+                        MinecraftClient.getInstance().getNetworkHandler().getConnection())
+                .startInBoundDelayImmediately();
+    }
+
+    public static void stopPacketDelay() {
+        ClientConnectionAccess.of(
+                        MinecraftClient.getInstance().getNetworkHandler().getConnection())
+                .stopInBoundDelay();
+    }
 
     public static Packet<?> acceptS2CPacket(ClientConnection connection, Packet<?> packet) {
 

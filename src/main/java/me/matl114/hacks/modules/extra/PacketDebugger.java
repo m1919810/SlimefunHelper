@@ -16,6 +16,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.Identifier;
@@ -135,6 +136,12 @@ public class PacketDebugger extends BaseModule {
                             simplifyId(type.getPacketId().id()),
                             actionC2SPacket.getAction().name(),
                             actionC2SPacket.getPos());
+                } else if (type instanceof PlayerInteractEntityC2SPacket interact) {
+                    ExtraTasks.debug(
+                            "Send",
+                            simplifyId(type.getPacketId().id()),
+                            ((Enum) interact.type.getType()).name(),
+                            interact.entityId);
                 } else {
                     ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()));
                 }

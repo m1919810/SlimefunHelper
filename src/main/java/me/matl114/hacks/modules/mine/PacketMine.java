@@ -5,10 +5,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.*;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
@@ -48,12 +45,14 @@ public class PacketMine extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef ignoreAir = flagBuilder(Configs.MINE_CONFIG, makePath("mine-oneblock.ignore-air-state"))
+    public final FlagRef considerAirState = flagBuilder(
+                    Configs.MINE_CONFIG, makePath("mine-oneblock.consider-air-state"))
             .build();
 
-    public final EnumRef<Configs.BypassMode> mode = builder(
-                    Configs.MINE_CONFIG, makePath("mine-oneblock.mine-oneblock-mode"), Configs.BypassMode.class)
-            .defaultValue(Configs.BypassMode.NO_BYPASS)
+    public final DoubleRef mineThreshold = builder(
+                    Configs.MINE_CONFIG, makePath("mine-oneblock.mine-threshold"), DoubleRef.TYPE)
+            .defaultValue(0.7)
+            .validator(Configs.doubleRange(-0.0001F, 1.0001F))
             .build();
 
     @Override
@@ -76,7 +75,7 @@ public class PacketMine extends BaseModule {
                                 Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
                                 Direction dir =
                                         Direction.getFacing(shouldFacing).getOpposite();
-                                if (!ignoreAir.get()
+                                if (considerAirState.get()
                                         && PlayerInteractionAccess.of(mc.interactionManager)
                                                         .getCurrentMiningProgress(true)
                                                 > 0.98F) {
@@ -98,9 +97,9 @@ public class PacketMine extends BaseModule {
         // do not mine liquid, that's a disaster
         // do not mine air, shit
         if (state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && !state.isAir()) {
-            if (mode.get().hasAc()) {
+            if (mineThreshold.get() > 0) {
                 var access = PlayerInteractionAccess.of(mc.interactionManager);
-                return access.getCurrentMiningProgress(true) > 0.98F;
+                return access.getCurrentMiningProgress(true) > Math.min(0.98, mineThreshold.get());
             }
             return true;
         } else {

@@ -246,8 +246,7 @@ public class Attack extends BaseModule {
             // check if it can pass grimac in real situation
             boolean useTp = (canUseTp()
                     && target.getBoundingBox().squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(attackRange));
-            boolean delayTurningAround =
-                    legalTargetingMode.getValue() == Configs.LegalTargetingMode.DELAY_MOVEMENT || useTp;
+            boolean delayTurningAround = legalTargetingMode.getValue().isMovement() || useTp;
             if (!delayTurningAround && legalTargetingMode.getValue() == Configs.LegalTargetingMode.USEITEM_PACKET) {
                 // use item
                 // only do the targeting and attack
@@ -310,6 +309,14 @@ public class Attack extends BaseModule {
                     delayTick = 0;
                 }
                 final int elytraSlot = swapElytraSlot;
+                // testing failed,
+                // see Grim' s Reach
+                boolean preAttack = false; // legalTargetingMode.get().isPreAttack();
+                //                if(!useMaceAttack && preAttack) {
+                //                    // pieces of shit... may not bypass shit grim after one REACH flag, I dont know
+                // why??
+                //                    attackWithCritic(player, target, criticSprint);
+                //                }
                 ClientPlayerAccess.of(mc.player)
                         .getLegalMovementManager()
                         .addMovementModifier(new LegalMovementManager.MovementModifier() {
@@ -330,18 +337,20 @@ public class Attack extends BaseModule {
                             public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
                                 runThisTick = true;
                                 ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-                                if (useMaceAttack && args.isFallFlying()) {
-                                    max--;
-                                    runThisTick = false;
-                                    return;
+                                if (useMaceAttack) {
+                                    if (args.isFallFlying()) {
+                                        max--;
+                                        runThisTick = false;
+                                        return;
+                                    } else {
+
+                                    }
+                                } else {
                                 }
+
                                 // step back our position
                                 velocity = args.getVelocity();
                                 Vec3d predictedEyePos = mc.player.getEyePos();
-                                if (useMaceAttack || args.isFallFlying()) {
-                                    // fix targeting in big velocity
-                                    predictedEyePos = predictedEyePos.add(mc.player.getVelocity());
-                                }
                                 Vec3d vec3d = args.getPos();
                                 if (tpRange.get() > 1E-7
                                         && target.getBoundingBox().squaredMagnitude(predictedEyePos)
@@ -443,9 +452,12 @@ public class Attack extends BaseModule {
                                                 new RenderTasks.LineObject(args.getEyePos(), args.getRotationVector())
                                                         .color(Color.MAGENTA)));
                                     }
-                                    ACPostTasks.addPostTransactionAction((ch) -> {
-                                        attackWithCritic(player, target, criticSprint);
-                                    });
+                                    if (!preAttack) {
+                                        ACPostTasks.addPostTransactionAction((ch) -> {
+                                            attackWithCritic(player, target, criticSprint);
+                                        });
+                                    }
+
                                     movementManagerEvent.context.playerStatus.restoreRotation();
                                     if (posDelta != Vec3d.ZERO) {
                                         Vec3d trueDelta =
@@ -463,11 +475,13 @@ public class Attack extends BaseModule {
                                         posDelta = posDelta2 = Vec3d.ZERO;
                                     }
                                 } else {
-                                    ACPostTasks.addPostTransactionAction((ch) -> {
-                                        args.swingHand(Hand.MAIN_HAND);
-                                    });
+                                    if (!preAttack) {
+                                        ACPostTasks.addPostTransactionAction((ch) -> {
+                                            args.swingHand(Hand.MAIN_HAND);
+                                        });
+                                    }
                                 }
-                                if (useMaceAttack) {
+                                if (useMaceAttack && !preAttack) {
                                     if (armorFly) {
                                         elytraExtra.disableNextArmorFlyLazyElytraTransaction = 0;
                                         ACPostTasks.addPostTransactionAction((ch) -> {
