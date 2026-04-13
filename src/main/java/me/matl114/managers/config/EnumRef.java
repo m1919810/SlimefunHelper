@@ -7,6 +7,9 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
 
 public class EnumRef<T extends ConfigEnum> extends LazilyRegisterTypeRef<T, String> {
+    public static <T extends ConfigEnum> Class<T> parameter(Class<?> enumClass) {
+        return (Class<T>) enumClass;
+    }
 
     public EnumRef(ConfigEnum enumR) {
         super(enumR.getConfigEnumType(), (T) enumR);

@@ -1,6 +1,7 @@
 package me.matl114.hacks;
 
 import java.util.function.Consumer;
+import lombok.Getter;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.ac.PostManager;
 import net.minecraft.client.MinecraftClient;
@@ -23,6 +24,7 @@ public class ACPostTasks {
         postManager.addNextPreTickAction(packet);
     }
 
+    @Getter
     private static PostManager postManager;
 
     private static void initModules(ModuleManager moduleManager) {

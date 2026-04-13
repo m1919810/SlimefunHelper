@@ -190,6 +190,16 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
+    public final FlagRef rocketBoost = flagBuilder(
+                    Configs.MOV_CONFIG, makePath("elytra.custom-fireworks.firework-boost-enable"))
+            .build();
+
+    public final DoubleRef rocketBoostSpeed = builder(
+                    Configs.MOV_CONFIG, makePath("elytra.custom-fireworks.firework-boost-speed"), DoubleRef.TYPE)
+            .defaultValue(1.7D)
+            .validator(Configs.doubleRange(0.0d, 10000.0D))
+            .build();
+
     // public final FlagRef useFireworks =
     //        flagBuilder(Configs.MOV_CONFIG, ELYTRA_FLIGHT_CONTROL_FIREWORKS).build();
 
@@ -938,8 +948,21 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 thisFallFlyingIsAutoSwitch = -1;
             }
         }
-        // simple control
-
+        if (player.isFallFlying() && rocketBoost.get() && canFireworkControlMotion()) {
+            // Vec3d vec3d = player.getVelocity();
+            player.setVelocity(player.getRotationVector().multiply(rocketBoostSpeed.get()));
+        }
+        // slow falling with no crash
+        if (false && player.isFallFlying()) {
+            if (!movementManagerEvent.context().hasImportantRotation()) {
+                restoreRotThisTick = true;
+                player.setPitch(0.0F);
+                if (Tasks.getTick() % 2 == 0) {
+                    EntityUtils.setEntityYawSafe(player, player.getYaw() + 180);
+                }
+                movementManagerEvent.context.pushImportantRotation(true, true);
+            }
+        }
     }
 
     EntityDimensions pose = null;

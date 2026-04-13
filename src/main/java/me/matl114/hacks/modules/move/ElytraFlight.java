@@ -43,6 +43,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         "elytra", "simple-flight-control", "no-fall-when-landing"
     };
 
+    // public static final String[] SMART_FLOATING_
+
     public FlagRef enable = flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_FLY).build();
 
     public KeyBindRef hotkey = toggleHotkey(

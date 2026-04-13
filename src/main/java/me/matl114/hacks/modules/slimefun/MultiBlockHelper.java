@@ -190,7 +190,6 @@ public class MultiBlockHelper extends BaseModule {
             if (!clickMany || lastInteractTimestamp + (5) < Tasks.getTick()) {
                 lastInteractTimestamp = Tasks.getTick();
                 Vec3d interactTarget = result.getBlockPos().toCenterPos();
-                boolean useDelayMove = legalMode.getValue() == Configs.LegalInteractMode.DELAY_MOVEMENT;
                 Vec3d interactLook = interactTarget.add(
                         interactOffsetRand.nextDouble(-0.05d, 0.05d),
                         interactOffsetRand.nextDouble(-0.05d, 0.05d),

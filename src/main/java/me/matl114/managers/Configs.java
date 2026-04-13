@@ -48,7 +48,12 @@ public class Configs {
 
     public enum LegalTargetingMode implements ConfigEnum {
         DELAY_MOVEMENT,
+        // PRE_MOVEMENT,
         USEITEM_PACKET;
+
+        public boolean isMovement() {
+            return this == LegalTargetingMode.DELAY_MOVEMENT; // || this == LegalTargetingMode.PRE_MOVEMENT;
+        }
 
         @Override
         public Text getDisplay() {

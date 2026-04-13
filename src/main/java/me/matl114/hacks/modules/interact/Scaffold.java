@@ -91,6 +91,7 @@ public class Scaffold extends BaseModule {
 
         if (legal.get()) {
             var mode = legalMode.get();
+            // todo: delay movement fix
             switch (mode) {
                 case USEITEM_PACKET -> placeBlockUseItem(hand, result);
                 case DELAY_MOVEMENT -> placeBlockDelayMovement(hand, result);
