@@ -10,6 +10,7 @@ import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.managers.Tasks;
+import me.matl114.utils.ItemStackUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -26,6 +27,7 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -86,9 +88,12 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         if (block.isAir()) {
             return -1.0F;
         }
-        if (!shouldPredict
-                || !MineTasks.getMineExtra().optimizeOneBlock.get()
-                || (breakingBlock && isCurrentlyBreaking(currentBreakingPos))) {
+        if ((breakingBlock && isCurrentlyBreaking(currentBreakingPos))) {
+            return this.currentBreakingProgress == 0.0F ? -1.0F : this.currentBreakingProgress;
+        }
+        // when oneBlock mode, the value is the predicted value
+        // when not in oneBlock mode, we should consider the predict flag
+        if (!MineTasks.getMineExtra().optimizeOneBlock.get() && !shouldPredict) {
             return this.currentBreakingProgress == 0.0F ? -1.0F : this.currentBreakingProgress;
         }
 
@@ -305,6 +310,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                     float predictedProgress = getCurrentMiningProgress(true);
                     if (predictedProgress <= 1.0F) {
                         if (onDoubleBreakAbort()) {
+                            // fixme： can not pass MultiBreak check..., may add a TickPacket or something
                             this.sendSequencedPacket(
                                     MinecraftClient.getInstance().world,
                                     (seq) -> new PlayerActionC2SPacket(
@@ -312,6 +318,18 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                                             currentBreakingPos,
                                             direction,
                                             seq));
+                            // fake packet to cheat MultiBreak module
+                            // magic, doesn't always work
+                            // shit, it crash with AirLiquidBreak.
+                            // shit, player has to choose in hand
+                            if (mineExtra.fastBreakBypassMode.get()
+                                            == MineExtra.FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS
+                                    && mineExtra.grimBadPacketFix1.get()) {
+                                this.sendSequencedPacket(
+                                        MinecraftClient.getInstance().world,
+                                        (seq) -> new PlayerActionC2SPacket(
+                                                PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, seq));
+                            }
                         }
                     }
                 }
@@ -345,9 +363,13 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         if (!MineTasks.getMineExtra().optimizeOneBlock.get() && onDoubleBreakAbort()) {
             // we make optimizeOneBlockMine delay its destroy packet to changing the currentPosition in method
             // sameBlockOptimize
+            Vec3d shouldFacing = currentBreakingPos
+                    .toCenterPos()
+                    .subtract(MinecraftClient.getInstance().player.getEyePos());
+            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
             this.sendSequencedPacket(MinecraftClient.getInstance().world, (seq) -> {
                 return new PlayerActionC2SPacket(
-                        PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, currentBreakingPos, Direction.DOWN, seq);
+                        PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, currentBreakingPos, dir, seq);
             });
             return;
         }
@@ -648,5 +670,12 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                                     "Lnet/minecraft/entity/player/PlayerEntity;currentScreenHandler:Lnet/minecraft/screen/ScreenHandler;"))
     public ScreenHandler onClickSlot(ScreenHandler original, @Local(argsOnly = true) PlayerEntity player) {
         return player instanceof ClientPlayerAccess clientPlayer ? clientPlayer.getServerScreenHandler() : original;
+    }
+
+    @Inject(method = "isCurrentlyBreaking", at = @At("HEAD"), cancellable = true)
+    public void onCurrentlyBreaking(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
+        // completely ignore the damage change
+        cir.setReturnValue(Objects.equals(pos, currentBreakingPos)
+                && ItemStackUtils.matchItemMiningAbility(this.client.player.getMainHandStack(), this.selectedStack));
     }
 }

@@ -503,6 +503,11 @@ public class ItemStackUtils {
         }
     }
 
+    public static boolean matchItemMiningAbility(ItemStack stack1, ItemStack stack2) {
+        return Objects.equals(stack1.get(TOOL), stack2.get(TOOL))
+                && Objects.equals(stack1.get(ENCHANTMENTS), stack2.get(ENCHANTMENTS));
+    }
+
     protected static String BUKKIT_NAMESPACE = "PublicBukkitValues";
     protected static String SLIMEFUN_ID_PATH = "slimefun:slimefun_item";
     protected static boolean isGrassOrShortGrass =
