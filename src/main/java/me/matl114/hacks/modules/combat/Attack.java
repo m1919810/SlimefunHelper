@@ -351,6 +351,11 @@ public class Attack extends BaseModule {
                                 // step back our position
                                 velocity = args.getVelocity();
                                 Vec3d predictedEyePos = mc.player.getEyePos();
+                                // revert shit
+                                if (useMaceAttack || args.isFallFlying()) {
+                                    // fix targeting in big velocity
+                                    predictedEyePos = predictedEyePos.add(mc.player.getVelocity());
+                                }
                                 Vec3d vec3d = args.getPos();
                                 if (tpRange.get() > 1E-7
                                         && target.getBoundingBox().squaredMagnitude(predictedEyePos)
