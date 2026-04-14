@@ -170,6 +170,9 @@ public class MineExtra extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final FlagRef grimBadPacketFix1 = flagBuilder(Configs.MINE_CONFIG, makePath("fast-break.grim-badpackets-1"))
+            .build();
+
     public double getReachDistance() {
         return mc.player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE) + reachDistance.get();
     }
@@ -185,6 +188,7 @@ public class MineExtra extends BaseModule {
                 Listener.getPacketPostSendPoint().getChannel(PlayerActionC2SPacket.class),
                 this::onGrimSBFastBreakExplode);
         registerListener(Listener.getPacketPostSendPoint().getChannel(HandSwingC2SPacket.class), this::onLastSwing);
+        registerListener(Listener.getPreGameTick(), this::onGrimCooldownResetPackets);
     }
 
     public void onGameJoin(Event<ClientPlayerEntity> gameJoin) {
@@ -236,16 +240,39 @@ public class MineExtra extends BaseModule {
             var packet = event.context();
             if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
                     && packet.getPos().getY() < 1145) {
-                int duplicate = ((Tasks.getTick() - lastFinishBreakingTick) >= 4) ? 5 : 1;
+                int duplicate = (doubleBreak.get() && (Tasks.getTick() - lastFinishBreakingTick) >= 5) ? 6 : 1;
                 for (var i = 0; i < duplicate; ++i) {
                     mc.interactionManager.sendSequencedPacket(
                             mc.world,
                             (seq) -> new PlayerActionC2SPacket(
                                     PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
                                     BlockPos.ofFloored(mc.player.getPos()).withY(9178),
-                                    Direction.UP,
+                                    Direction.DOWN,
                                     seq));
+                    if ((Tasks.getTick() - lastFinishBreakingTick) >= 5) {
+                        gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
+                    } else {
+                        gainedAdvantageCooldown += (300 - (Tasks.getTick() - lastFinishBreakingTick) * 50);
+                    }
                 }
+            }
+        }
+    }
+
+    public void onGrimCooldownResetPackets(Event<ClientPlayerEntity> tickEvent) {
+        if (quickMine.get() && fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS) {
+            // exact tick we send,
+            if (lastBreak != null && Tasks.getTick() - lastFinishBreakingTick == 6) {
+                do {
+                    mc.interactionManager.sendSequencedPacket(
+                            mc.world,
+                            (seq) -> new PlayerActionC2SPacket(
+                                    PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
+                                    BlockPos.ofFloored(mc.player.getPos()).withY(9178),
+                                    Direction.DOWN,
+                                    seq));
+                    gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
+                } while (gainedAdvantageCooldown > 100);
             }
         }
     }
@@ -288,12 +315,24 @@ public class MineExtra extends BaseModule {
         }
         if (cooldownOverride < 5) {
             if (fastBreakBypassMode.get().hasAc()) {
-                if (doubleBreak.get()) {
-
+                // shit......
+                if (false && doubleBreak.get()) {
                     return 5;
-                } else {
+                }
+                if (fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_LEGIT) {
                     if (gainedAdvantageCooldown > grimAcCounterThreshold.get()) {
                         return 5;
+                    }
+                } else if (fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS) {
+                    // still magic numbers...
+                    if (doubleBreak.get()) {
+                        if (gainedAdvantageCooldown > 100) {
+                            return 5;
+                        }
+                    } else {
+                        if (gainedAdvantageCooldown > 300) {
+                            return 5;
+                        }
                     }
                 }
             }
@@ -428,7 +467,7 @@ public class MineExtra extends BaseModule {
                     if (mc.player.getPos().squaredDistanceTo(pos) < 40000) {
                         RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0), Color.BLUE);
                         float progress = PlayerInteractionAccess.of(mc.interactionManager)
-                                .getCurrentMiningProgress(true);
+                                .getCurrentMiningProgress(false);
                         if (progress > 0.0F) {
                             BlockState state = mc.world.getBlockState(blockPos);
                             Box box;
