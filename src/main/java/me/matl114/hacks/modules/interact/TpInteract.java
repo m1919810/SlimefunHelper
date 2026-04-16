@@ -13,24 +13,18 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.inv.AutoSteal;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
-import net.minecraft.block.*;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.mob.ShulkerEntity;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -82,55 +76,28 @@ public class TpInteract extends BaseModule {
             double distance = MineTasks.getMineExtra().getReachDistance() + ENABLE_NO_TP_DISTANCE;
             if (new Box(blockPos).squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(distance)) {
                 if (!mc.player.isSneaking() && tryTpSteal.get().isAllPressed()) {
-                    if (mc.world.getBlockEntity(blockPos) instanceof Inventory inventory) {
-                        int size = inventory.size();
-                        if (inventory instanceof ChestBlockEntity chest) {
-                            BlockState state = chest.getCachedState();
-                            if (state.getBlock() instanceof ChestBlock chestBlock) {
-                                if (ChestBlock.isChestBlocked(mc.world, blockPos)) {
-                                    size = 0;
-                                } else if (ChestBlock.getDoubleBlockType(state) != DoubleBlockProperties.Type.SINGLE) {
-                                    size = 54;
-                                }
-                            }
+                    int size = AutoSteal.predictOpenVanillaContainerSize(blockPos);
+                    if (size != 0) {
+
+                        if (tpToBlock(
+                            blockPos,
+                            (sel) -> executeTp(sel, () -> {
+                                Debug.chat("[TpInteract] 尝试和物品栏交互");
+                                Listener.sendPacketNoEvents(packetToSend);
+                                AutoSteal.executePredictInventoryAction((handler)->{
+                                    for (var i = 0; i < size; ++i) {
+                                        mc.interactionManager.clickSlot(
+                                            handler.syncId,
+                                            i,
+                                            0,
+                                            SlotActionType.QUICK_MOVE,
+                                            mc.player);
+                                    }
+                                });
+                            }))) {
+                            event.cancel();
                         }
-                        if (inventory instanceof ShulkerBoxBlockEntity shulker) {
-                            BlockState state = shulker.getCachedState();
-                            if (shulker.getAnimationStage() == ShulkerBoxBlockEntity.AnimationStage.CLOSED
-                                    && canShulkerOpen(blockPos, state)) {
-                                size = 0;
-                            }
-                        }
-                        if (size != 0) {
-                            int nextPredictedIndex = (InvTasks.LAST_SYNC_ID % 100) + 1;
-                            int containerSize = size;
-                            if (tpToBlock(
-                                    blockPos,
-                                    (sel) -> executeTp(sel, () -> {
-                                        Debug.chat("[TpInteract] 尝试和物品栏交互");
-                                        Listener.sendPacketNoEvents(packetToSend);
-                                        ScreenHandler fakeScreenHandler =
-                                                GenericContainerScreenHandler.createGeneric9x6(
-                                                        nextPredictedIndex, mc.player.getInventory());
-                                        ScreenHandler handler = mc.player.currentScreenHandler;
-                                        try {
-                                            mc.player.currentScreenHandler = fakeScreenHandler;
-                                            for (var i = 0; i < containerSize; ++i) {
-                                                mc.interactionManager.clickSlot(
-                                                        fakeScreenHandler.syncId,
-                                                        i,
-                                                        0,
-                                                        SlotActionType.QUICK_MOVE,
-                                                        mc.player);
-                                            }
-                                        } finally {
-                                            mc.player.currentScreenHandler = handler;
-                                        }
-                                    }))) {
-                                event.cancel();
-                            }
-                            return;
-                        }
+                        return;
                     }
                 }
                 if (tpToBlock(blockPos, (sel) -> executeTp(sel, packetToSend))) {
@@ -140,12 +107,7 @@ public class TpInteract extends BaseModule {
         }
     }
 
-    private boolean canShulkerOpen(BlockPos pos, BlockState state) {
-        Box box = ShulkerEntity.calculateBoundingBox(
-                        1.0F, (Direction) state.get(ShulkerBoxBlock.FACING), 0.0F, 0.5F, pos.toBottomCenterPos())
-                .contract(1.0E-6);
-        return mc.world.isSpaceEmpty(box);
-    }
+
 
     public void onInteractEntity(Event<PlayerInteractEntityC2SPacket> event) {
         if (event.isCancelled()) return;
