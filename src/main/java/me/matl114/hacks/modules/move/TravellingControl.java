@@ -1,12 +1,14 @@
 package me.matl114.hacks.modules.move;
 
 import java.util.Locale;
+import java.util.Random;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.catchers.PacketCatcherImpl;
+import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.move.ElytraVelocity;
@@ -14,6 +16,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.utils.Debug;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
@@ -22,6 +25,7 @@ import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.ExecutePos;
+import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
@@ -69,11 +73,16 @@ public class TravellingControl extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
+    public FlagRef pitch40SafeHeight = flagBuilder(
+                    Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-end-safety"))
+            .build();
+
     private boolean doingTp = false;
     private boolean exempt = false;
 
     public static enum TravelControlType implements ConfigEnum {
         ELYTRASKY, // 原 ELYTRA
+        ELYTRA_PITCH40,
         MOV_VOID,
         MOV_VOID_2,
         PEARL,
@@ -125,7 +134,7 @@ public class TravellingControl extends BaseModule {
                             .subBuilder(SubCommand.taskBuilder())
                             .name("cancel")
                             .helper("中断传送旅行")
-                            .post(e -> e.executor(CommandContext.run(this::onTravelCancel)))
+                            .post(e -> e.executor(CommandContext.run(this::onTravelCancelCommand)))
                             .complete())
                     .complete();
         }
@@ -177,6 +186,12 @@ public class TravellingControl extends BaseModule {
                     return travelTask != info || info.stop;
                 })));
                 Tasks.scheduleRepeated(this::onTravelTickMovVoid2, 20, 2);
+            } else if (type == TravelControlType.ELYTRA_PITCH40) {
+                ClientPlayerAccess.of(mc.player)
+                        .getLegalMovementManager()
+                        .addMovementModifier(this.createTravelPitch40Controller(info));
+                // fuck...
+                Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
             } else {
                 travelTask.stop = true;
                 travelTask = null;
@@ -415,6 +430,131 @@ public class TravellingControl extends BaseModule {
 
         return false;
     }
+    // 总结 一定要 1. 及时断线 2. 断线之后要开自动鞘翅或者甲飞+平飞拉回来 3. 看情况 可以考虑不下降， 继续飞
+    private LegalMovementManager.MovementModifier createTravelPitch40Controller(TravelInfo state) {
+        state.state = TravelState.TOO_LOW;
+        return new LegalMovementManager.MovementModifier() {
+
+            final TravelInfo ti = state;
+            boolean startWork = false;
+            boolean stillWork = true;
+            int counter = 0;
+            int counter2 = 0;
+            float randomOffsetPitch = 0.0F;
+            float randomOffsetYaw = 0.0F;
+            Random rand = new Random();
+
+            @Override
+            public int priority() {
+                return PRIORITY_LOW;
+            }
+
+            @Override
+            public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+                ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+                updateState(ti, player.getY());
+                if (!startWork) {
+                    if (ti.state == TravelState.TOO_HIGH) {
+                        startWork = true;
+                        Debug.chat("[Pitch440] 开始工作!");
+                    } else if (++counter % 60 == 0) {
+                        Debug.chat("[Pitch40] 请拉升到MaxHeight以启动:", maxHeight.get());
+                    }
+                }
+                if (startWork) {
+                    movementManagerEvent.context.pushImportantRotation(true, true);
+                    Vec3d currentPos = mc.player.getPos();
+                    Vec3d towards = ti.pos0.subtract(currentPos);
+                    // anti afk
+                    if (Tasks.getTick() % 40 == 0) {
+                        randomOffsetPitch = (float) rand.nextDouble(-2.5, 2.5);
+                        randomOffsetYaw = (float) rand.nextDouble(1.0F);
+                    }
+                    float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y + randomOffsetPitch;
+                    counter2 += 1;
+
+                    switch (ti.state) {
+                        case STABLE, TOO_HIGH -> {
+                            EntityUtils.setEntityYawSafe(player, yaw);
+                            if (player.getVelocity().y < 0) {
+                                if (counter2 > 1) {
+                                    Debug.chat("[Pitch40] Current Height", player.getY());
+                                }
+                                counter2 = 0;
+                                EntityUtils.setEntityPitchSafe(player, 32 + randomOffsetYaw);
+                            } else {
+                                // fly higher..
+                                EntityUtils.setEntityPitchSafe(
+                                        player, Math.min(-50 + counter2 * 0.5F, 32) + randomOffsetYaw);
+                            }
+                        }
+                        case TOO_LOW -> {
+                            EntityUtils.setEntityYawSafe(player, yaw);
+                            EntityUtils.setEntityPitchSafe(
+                                    player, Math.min(-50 + counter2 * 0.5F, 32) + randomOffsetYaw);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+                if (startWork) {
+                    // movementManagerEvent.context.playerStatus.restoreRotation();
+                    ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+                    if (pitch40SafeHeight.get() && player.getY() < minHeight.get() - 16) {
+                        // emergency
+                        Debug.info("Pitch40 out of control!");
+                        Debug.chat("[Pitch40] 滑翔失控了,我们需要直接断线");
+                        MainTasks.scheduleDisconnect();
+                        startWork = false;
+                        stillWork = false;
+                        // return immediately.
+                        return false;
+                    }
+                }
+                if (checkFinish(ti) || (startWork && mc.player != null && !mc.player.isFallFlying())) {
+                    if (!ti.stopManually && pitch40SafeHeight.get()) {
+                        Debug.chat("[Pitch40] 当前处于虚空维度, 我们需要确保你不会掉下去!");
+                        Debug.chat("[Pitch40] 我们需要自动断线");
+                        MainTasks.scheduleDisconnect();
+                    }
+                    stillWork = false;
+                }
+                return stillWork;
+            }
+        };
+    }
+
+    private boolean onTravelPitch40DaemonTask() {
+        // player cancel it by hand
+        if (mc.player != null && travelTask == null) {
+            return true;
+        }
+        if (mc.player == null) {
+            if (pitch40SafeHeight.get()) {
+                Tasks.scheduleRepeated(
+                        () -> {
+                            if (mc.player != null) {
+                                Debug.chat("Disconnect because of safety");
+                                MainTasks.scheduleDisconnect();
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        },
+                        1,
+                        1);
+            }
+            // cancel the task automatically
+            if (travelTask != null) {
+                travelTask.stop = true;
+                travelTask = null;
+            }
+            return true;
+        }
+        return false;
+    }
 
     private void updateState(TravelInfo ti, double currentY) {
         switch (ti.state) {
@@ -448,9 +588,10 @@ public class TravellingControl extends BaseModule {
         velocity.x(towards.x).y(towards.y).z(towards.z);
     }
 
-    public void onTravelCancel() {
+    public void onTravelCancelCommand() {
         if (travelTask != null) {
             travelTask.stop = true;
+            travelTask.stopManually = true;
             travelTask = null;
         }
         doingTp = false;
@@ -468,6 +609,7 @@ public class TravellingControl extends BaseModule {
         public TravelState state;
         public boolean stop = false;
         public TravellingControl instance;
+        public boolean stopManually = false;
     }
 
     public static enum TravelState {

@@ -222,7 +222,11 @@ public class ClientExtra extends BaseModule {
     }
 
     protected void checkClientData(Screen screen) {
-        if (mc.player != null && mc.world != null && mc.inGameHud != null && mc.getNetworkHandler() != null) {
+        if (mc.player != null
+                && mc.world != null
+                && mc.inGameHud != null
+                && mc.getNetworkHandler() != null
+                && mc.interactionManager != null) {
             ScreenAccess.of(screen).openFromCurrent();
         } else {
             // 严重问题

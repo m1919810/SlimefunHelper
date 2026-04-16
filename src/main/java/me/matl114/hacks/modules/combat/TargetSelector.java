@@ -16,6 +16,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.mob.ZombifiedPiglinEntity;
@@ -35,6 +37,7 @@ public class TargetSelector extends BaseModule {
     public static final String[] ATTACK_NAMED = {"attack", "att-named"};
     public static final String[] ATTACK_TEAMMATE = {"attack", "att-teammate"};
     public static final String[] ATTACK_HOSTILE = {"attack", "att-hostile"};
+    public static final String[] ATTACK_INVULNERABLE = {"attack", "att-invulnerable"};
     public static final String[] COMBAT_OPPOSITE_ATTACK_MULTIPLY = {"attack", "opposite-attack-multiply"};
     public static final String[] COMBAT_PLAYER_ATTACK_MULTIPLY = {"attack", "player-attack-multiply"};
     public static final String[] FAKE_PLAYER_DETECT = {"attack", "fake-player-and-npc-detect"};
@@ -72,6 +75,9 @@ public class TargetSelector extends BaseModule {
     public final FlagRef hostile = builder(Configs.COMBAT_CONFIG, ATTACK_HOSTILE, Boolean.class)
             .defaultValue(true)
             .build();
+
+    public final FlagRef invulnerable =
+            flagBuilder(Configs.COMBAT_CONFIG, ATTACK_INVULNERABLE).build();
 
     public final FlagRef multiplyBackward =
             flagBuilder(Configs.COMBAT_CONFIG, COMBAT_OPPOSITE_ATTACK_MULTIPLY).build();
@@ -116,6 +122,9 @@ public class TargetSelector extends BaseModule {
         }
 
         if (!passTeamCheck(target)) {
+            return false;
+        }
+        if (!passInvulnerableCheck(target)) {
             return false;
         }
         return true;
@@ -175,6 +184,26 @@ public class TargetSelector extends BaseModule {
                 }
                 // more, consider colors of chestplates
                 return true;
+            }
+        }
+        return true;
+    }
+
+    private boolean passInvulnerableCheck(Entity e) {
+        if (!invulnerable.get()) {
+            if (e instanceof PlayerEntity pl) {
+                // login players are invulnerable
+                if (pl.getAttributeValue(EntityAttributes.MOVEMENT_SPEED) < 1e-6) {
+                    return false;
+                }
+                // creative players are invulnerable
+                if (pl.getGameMode() != null && pl.getGameMode().isCreative()) {
+                    return false;
+                }
+                // wtf
+                if (pl.isInvulnerable()) {
+                    return false;
+                }
             }
         }
         return true;
