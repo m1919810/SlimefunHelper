@@ -54,13 +54,13 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     public boolean canCancel = false;
 
     public void onEntityDamage(Event<EntityDamageS2CPacket> damage) {
-        if (enable.get() && damage.context.entityId() == mc.player.getId()) {
+        if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
             canCancel = true;
         }
     }
 
     public void onPlayerVelocity(Event<Vec3d> event) {
-        if (event.getArgs(0) == mc.player && enable.get() && canCancel) {
+        if (enable.get() && canCancel && mc.player != null && event.getArgs(0) == mc.player) {
             lastVelocityTick = Tasks.getTick();
             if (mode.get() == Configs.BypassMode.NO_BYPASS) {
                 event.cancel();

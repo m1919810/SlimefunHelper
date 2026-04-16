@@ -16,6 +16,7 @@ import me.matl114.managers.config.Config;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
 import net.minecraft.util.crash.CrashException;
@@ -111,6 +112,17 @@ public class MainTasks {
                 new ConfigurateNewStyleScreen(Config.getConfigs().stream().toList());
         newStyleScreen.setGlobal(config);
         ScreenAccess.of(newStyleScreen).openFromCurrent();
+    }
+
+    @ApiMethod
+    public static void scheduleDisconnect() {
+        Tasks.scheduleDelayed(
+                () -> {
+                    if (mc.world != null && mc.player != null) {
+                        mc.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
+                    }
+                },
+                0);
     }
 
     @Getter
