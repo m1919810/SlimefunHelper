@@ -2210,7 +2210,13 @@ public class MovTasks {
     public static ElytraFlightLegit elytraFlightLegit;
 
     @Getter
+    public static ElytraGrimAccelerate elytraGrimAccelerate;
+
+    @Getter
     public static Velocity velocity;
+
+    @Getter
+    public static FloatingUtils floatingUtils;
 
     @Getter
     public static MovTest movTest;
@@ -2239,8 +2245,10 @@ public class MovTasks {
         stepHeight = new StepHeight().register(m);
         elytraExtra = new ElytraExtra().register(m);
         elytraFlight = new ElytraFlight().register(m);
+        elytraGrimAccelerate = new ElytraGrimAccelerate().register(m);
         // elytraFlightLegit = new ElytraFlightLegit().register(m);
         velocity = new Velocity().register(m);
+        floatingUtils = new FloatingUtils().register(m);
         movTest = new MovTest().register(m);
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);
