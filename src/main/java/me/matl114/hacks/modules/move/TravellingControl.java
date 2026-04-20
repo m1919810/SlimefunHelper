@@ -26,8 +26,10 @@ import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
@@ -84,6 +86,7 @@ public class TravellingControl extends BaseModule {
     public static enum TravelControlType implements ConfigEnum {
         ELYTRASKY, // 原 ELYTRA
         ELYTRA_PITCH40,
+        ELYTRA_GRIM_FLY40,
         MOV_VOID,
         MOV_VOID_2,
         PEARL,
@@ -191,6 +194,12 @@ public class TravellingControl extends BaseModule {
                 ClientPlayerAccess.of(mc.player)
                         .getLegalMovementManager()
                         .addMovementModifier(this.createTravelPitch40Controller(info));
+                // fuck...
+                Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
+            } else if (type == TravelControlType.ELYTRA_GRIM_FLY40) {
+                ClientPlayerAccess.of(mc.player)
+                        .getLegalMovementManager()
+                        .addMovementModifier(this.createTravelGrimFly40Controller(info));
                 // fuck...
                 Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
             } else {
@@ -552,6 +561,162 @@ public class TravellingControl extends BaseModule {
                     }
                     stillWork = false;
                 }
+                return stillWork;
+            }
+        };
+    }
+
+    private LegalMovementManager.MovementModifier createTravelGrimFly40Controller(TravelInfo state) {
+        state.state = TravelState.TOO_LOW;
+        return new LegalMovementManager.MovementModifier() {
+
+            final TravelInfo ti = state;
+            boolean startWork = false;
+            boolean stillWork = true;
+            int counter = 0;
+            int counter2 = 0;
+            float randomOffsetPitch = 0.0F;
+            float randomOffsetYaw = 0.0F;
+            Random rand = new Random();
+            int dangerousNoFallFlyingTick = 0;
+
+            @Override
+            public int priority() {
+                return PRIORITY_LOW;
+            }
+
+            Packet<?> storedPacket = null;
+            double lastY = -999;
+            boolean currentFlyingHigh = false;
+
+            @Override
+            public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+                ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+                updateState(ti, player.getY());
+                if (!startWork && mc.player.isFallFlying()) {
+                    if (ti.state == TravelState.TOO_HIGH) {
+                        startWork = true;
+                        Debug.chat("[Pitch440] 开始工作!");
+                    } else if (++counter % 60 == 0) {
+                        Debug.chat("[Pitch40] 请拉升到MaxHeight以启动:", maxHeight.get());
+                    }
+                }
+                if (startWork) {
+                    if (mc.player.isFallFlying()) {
+                        movementManagerEvent.context.pushImportantRotation(true, true);
+                        Vec3d currentPos = mc.player.getPos();
+                        Vec3d towards = ti.pos0.subtract(currentPos);
+                        // anti afk
+                        if (Tasks.getTick() % 40 == 0) {
+                            randomOffsetPitch = (float) rand.nextDouble(-2.5, 2.5);
+                            randomOffsetYaw = (float) rand.nextDouble(1.0F);
+                        }
+                        float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y + randomOffsetPitch;
+                        counter2 += 1;
+
+                        switch (ti.state) {
+                            case STABLE, TOO_HIGH -> {
+                                EntityUtils.setEntityYawSafe(player, yaw);
+                                double y = mc.player.getY();
+                                if (currentFlyingHigh && y < lastY) {
+                                    currentFlyingHigh = false;
+                                    Debug.chat("[Pitch40] Current Height", lastY);
+                                }
+                                if (!currentFlyingHigh) {
+                                    counter2 = 0;
+                                    EntityUtils.setEntityPitchSafe(player, 20 + randomOffsetYaw);
+                                } else {
+                                    EntityUtils.setEntityPitchSafe(player, Math.min(-50, 20) + randomOffsetYaw);
+                                }
+                            }
+                            case TOO_LOW -> {
+                                currentFlyingHigh = true;
+                                EntityUtils.setEntityYawSafe(player, yaw);
+                                EntityUtils.setEntityPitchSafe(player, Math.min(-50, 20) + randomOffsetYaw);
+                            }
+                        }
+                    } else {
+                        if (dangerousNoFallFlyingTick > 20) {
+                            dangerousNoFallFlyingTick = 0;
+                        }
+                        if (dangerousNoFallFlyingTick == 0) {
+                            // reset fucking jump input
+                            MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                            // launch event from this method
+                            if (mc.player.checkGliding()) {
+                                mc.getNetworkHandler()
+                                        .sendPacket(new ClientCommandC2SPacket(
+                                                mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                            }
+
+                            // start counting down, if not startflying in 20 tick(1sec), auto logout
+                            dangerousNoFallFlyingTick = 1;
+                            MovTasks.getMovExtra().sendPacketsForStartFallFlying();
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+                if (startWork
+                        && mc.player != null
+                        && mc.player.isFallFlying()
+                        && !MovTasks.getElytraExtra().canFireworkControlMotion()) {
+                    // working tick
+                    movementManagerEvent.context.playerStatus.restorePos();
+                    movementManagerEvent.cancel();
+                    storedPacket = VPacket.newFull(
+                            mc.player.getX(),
+                            mc.player.getY(),
+                            mc.player.getZ(),
+                            mc.player.getYaw(),
+                            mc.player.getPitch(),
+                            mc.player.isOnGround(),
+                            mc.player.horizontalCollision);
+                }
+            }
+
+            @Override
+            public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+                if (storedPacket != null) {
+                    // avoid bad packet fix
+                    Listener.sendPacketNoEvents(storedPacket);
+                    storedPacket = null;
+                }
+                if (startWork) {
+                    // main logic, just logout for safety
+                    // movementManagerEvent.context.playerStatus.restoreRotation();
+                    ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+                    if (pitch40SafeHeight.get() && player.getY() < minHeight.get() - 16) {
+                        // emergency
+                        Debug.info("Pitch40 out of control!");
+                        Debug.chat("[Pitch40] 滑翔失控了,我们需要直接断线");
+                        MainTasks.scheduleDisconnect();
+                        startWork = false;
+                        stillWork = false;
+                        // return immediately.
+                        return false;
+                    }
+
+                    if (mc.player != null && !mc.player.isFallFlying()) {
+                        // start counting down
+                        if (dangerousNoFallFlyingTick > 0) {
+                            dangerousNoFallFlyingTick += 1;
+                        }
+                    } else {
+                        dangerousNoFallFlyingTick = 0;
+                    }
+                }
+                if (checkFinish(ti)) {
+                    if (!ti.stopManually && pitch40SafeHeight.get()) {
+                        Debug.chat("[Pitch40] 当前处于虚空维度, 我们需要确保你不会掉下去!");
+                        Debug.chat("[Pitch40] 我们需要自动断线");
+                        MainTasks.scheduleDisconnect();
+                    }
+                    stillWork = false;
+                }
+                lastY = mc.player.getY();
                 return stillWork;
             }
         };
