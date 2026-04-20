@@ -1,14 +1,18 @@
 package me.matl114.hacks.modules.move;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.utils.Debug;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.math.Direction;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.util.math.Vec3d;
 
 public class MovTest extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -21,6 +25,7 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
+        bindFlag(ExtraTasks.getTests().flag4);
     }
 
     public boolean enable() {
@@ -32,6 +37,27 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
         super.registerAll();
         // registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onJump);
         registerListener(Listener.getTeleportConfirmResponsePoint(), this::onSetback);
+        registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onTransaction);
+        registerListener(
+                Listener.getPacketPoint().getChannel(EntityVelocityUpdateS2CPacket.class), this::onVelocityPacket);
+    }
+
+    EntityVelocityUpdateS2CPacket veryBigVelocity;
+
+    @Override
+    public void onDisableModule() {
+        super.onDisableModule();
+        if (!delayedPackets.isEmpty()) {
+            //            Debug.chat("Flush rockets");
+
+            //            try{
+            //                veryBigVelocity.apply(mc.getNetworkHandler());
+            //            }catch (OffThreadException ex){
+            //            }catch (Exception ex){
+            //                ex.printStackTrace();
+            //            }
+
+        }
     }
 
     @Override
@@ -45,16 +71,28 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
         return false;
     }
 
-    @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-        ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-
+    public void onTransaction(Event<CommonPingS2CPacket> event) {
         if (enable()) {
-
-        } else {
-            step = null;
+            //            delayedPackets.add(event.context());
+            //            event.cancel();
         }
     }
+
+    public void onVelocityPacket(Event<EntityVelocityUpdateS2CPacket> event) {
+        if (enable() && !checkNull() && event.context.getEntityId() == mc.player.getId()) {
+            //            if(veryBigVelocity == null || (veryBigVelocity.getVelocity().lengthSquared() <
+            // event.context.getVelocity().lengthSquared())){
+            //                veryBigVelocity = event.context;
+            //            }
+            //            delayedPackets.add(event.context);
+            //            event.cancel();
+        }
+    }
+
+    Deque<EntityVelocityUpdateS2CPacket> delayedPackets = new ArrayDeque<>();
+
+    @Override
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
 
     public void onSetback(Event<MovTasks.MovInfo> setBack) {
         //            if(Tasks.getTick() < lastOnGround + 5){
@@ -67,12 +105,15 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        if (step == Step.WALK) {
-            //            PlayerInputUtils.of(mc.player.input)
-            //                .forward(true)
-            //                .jump(true)
-            //                .applyInput(mc.player.input);
-            //            mc.player.setOnGround(true);
+        if (!enable()) {
+            EntityVelocityUpdateS2CPacket packet;
+            //            while ((packet = delayedPackets.poll()) != null){
+            //                Vec3d velocity = packet.getVelocity();
+            //                if(velocity.lengthSquared() > mc.player.getVelocity().lengthSquared()){
+            //                    Debug.chat("Use cached Velocity");
+            //                    mc.player.setVelocity(velocity);
+            //                }
+            //            }
         }
     }
 
@@ -81,93 +122,51 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
     Vec3d storePos;
     boolean runOnGroundThisTick;
     int sleep = 0;
+    Packet<?> storedPacket = null;
+    Deque<Vec3d> posDeque = new ArrayDeque<>();
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (enable()) {
-
-            var entity = movementManagerEvent.context.playerStatus;
-            ClientPlayerEntity player = entity.entity;
-            if (step == Step.SLEEP && sleep++ > 20) {
-                step = null;
-                sleep = 0;
-                player.setOnGround(true);
-                step = Step.ON_GROUND_1;
-            }
-            if (step == null) {
-                if (!player.isOnGround()) {
-                    step = Step.ON_GROUND_1;
-                }
-            }
-            if (step != null) {
-                if (step == Step.SLEEP) {
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    movementManagerEvent.cancel();
-                    Listener.sendPacketNoEvents(VPacket.newFull(
-                            mc.player.getX(),
-                            mc.player.getY() + 9e-8,
-                            mc.player.getZ(),
-                            mc.player.getYaw(),
-                            mc.player.getPitch(),
-                            true,
-                            mc.player.horizontalCollision));
-                    player.setOnGround(true);
-                } else if (step == Step.ON_GROUND_1) {
-                    // mc.player.setPosition(storePos.x, yLevel, storePos.z);
-                    storePos = mc.player.getPos();
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    movementManagerEvent.cancel();
-                    player.setOnGround(true);
-
-                    Listener.sendPacketNoEvents(VPacket.newFull(
-                            mc.player.getX(),
-                            mc.player.getY() + 9e-8,
-                            mc.player.getZ(),
-                            mc.player.getYaw(),
-                            mc.player.getPitch(),
-                            true,
-                            mc.player.horizontalCollision));
-                    step = Step.ON_GROUND_2;
-                } else if (step == Step.ON_GROUND_2) {
-                    storePos = mc.player.getPos();
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    movementManagerEvent.cancel();
-                    player.setOnGround(true);
-
-                    Listener.sendPacketNoEvents(VPacket.newFull(
-                            mc.player.getX(),
-                            mc.player.getY() + 9e-8,
-                            mc.player.getZ(),
-                            mc.player.getYaw(),
-                            mc.player.getPitch(),
-                            true,
-                            mc.player.horizontalCollision));
-                    step = Step.WALK;
-                } else if (step == Step.WALK) {
-                    player.setOnGround(true);
-                    movementManagerEvent.cancel();
-                    mc.player.setPosition(
-                            mc.player.getX(), movementManagerEvent.context.playerStatus.pos.y, mc.player.getZ());
-                    Listener.sendPacketNoEvents(VPacket.newFull(
-                            mc.player.getX(),
-                            mc.player.getY() + 9e-8,
-                            mc.player.getZ(),
-                            mc.player.getYaw(),
-                            mc.player.getPitch(),
-                            true,
-                            mc.player.horizontalCollision));
-                    step = Step.SLEEP;
-                }
-            }
+            movementManagerEvent.cancel();
+            movementManagerEvent.context.playerStatus.restorePos();
+            storedPacket = VPacket.newFull(
+                    mc.player.getX(),
+                    mc.player.getY(),
+                    mc.player.getZ(),
+                    mc.player.getYaw(),
+                    mc.player.getPitch(),
+                    mc.player.isOnGround(),
+                    mc.player.horizontalCollision);
         }
     }
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        if (runOnGroundThisTick) {
-            mc.player.setPosition(storePos.x, mc.player.getY(), storePos.z);
-            mc.player.setOnGround(true);
-            mc.player.setVelocity(mc.player.getVelocity().withAxis(Direction.Axis.Y, 0));
+        if (storedPacket != null) {
+            Listener.sendPacketNoEvents(storedPacket);
+            storedPacket = null;
+        }
+        if (enable()) {
+            if (posDeque == null) {
+                posDeque = new ArrayDeque<>();
+            }
+            posDeque.add(mc.player.getPos());
+            Vec3d last19Vec3d = null;
+            // >= 21,
+            while (posDeque.size() > 20) {
+                last19Vec3d = posDeque.removeFirst();
+            }
+            if (last19Vec3d != null) {
+                Debug.chat(
+                        "Speed last one sec :",
+                        mc.player.getPos().subtract(last19Vec3d).length());
+            }
+        } else {
+            if (posDeque != null) {
+                posDeque.clear();
+                posDeque = null;
+            }
         }
         return true;
     }
