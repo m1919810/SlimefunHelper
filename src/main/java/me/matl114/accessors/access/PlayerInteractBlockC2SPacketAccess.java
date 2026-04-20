@@ -9,6 +9,8 @@ public interface PlayerInteractBlockC2SPacketAccess {
 
     void setBlockHitResult(BlockHitResult blockHitResult);
 
+    void setSequence(int sequence);
+
     static PlayerInteractBlockC2SPacketAccess of(PlayerInteractBlockC2SPacket packet) {
         return (PlayerInteractBlockC2SPacketAccess) packet;
     }

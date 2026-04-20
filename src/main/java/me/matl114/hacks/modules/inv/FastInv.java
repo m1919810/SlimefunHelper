@@ -4,6 +4,7 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
+import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
@@ -24,17 +25,17 @@ public class FastInv extends BaseModule {
     public static final String[] DROP_HOTKEY = {"fastinv", "fast-drop"};
     public static final String[] QUICK_DROP_HOTKEY = {"fastinv", "quick-drop"};
     public static final String[] SHIFT_HOTKEY = {"fastinv", "fast-mov"};
-    public static final String[] FAST_INV = {"button-toggle", "fast-inv"};
-    public static final String[] LEFT_ONE = {"button-toggle", "left-one"};
+    public static final String[] FAST_INV = {"fastinv", "fast-inv"};
+    public static final String[] LEFT_ONE = {"fastinv", "left-one"};
 
     public FastInv() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.TOGGLE_CONFIG, FAST_INV).build();
+    public final FlagRef enable = flagBuilder(Configs.INV_CONFIG, FAST_INV).build();
 
     public final FlagRef enableLeftOne =
-            flagBuilder(Configs.TOGGLE_CONFIG, LEFT_ONE).build();
+            flagBuilder(Configs.INV_CONFIG, LEFT_ONE).build();
 
     public final FlagRef enableDrop = flagBuilder(Configs.INV_CONFIG, DO_DROP).build();
 
@@ -56,6 +57,13 @@ public class FastInv extends BaseModule {
                     new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q, KeyCode.MOUSE_BUTTON_1))
             .registerHotkey(HotKeyUtils.asHandler(this::onQuickDropAction))
             .build();
+
+    @Override
+    public void registerAll() {
+        super.registerAll();
+        TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "fast-inv", enable);
+        TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "left-one", enableLeftOne);
+    }
 
     public boolean onShiftAction() {
         PlayerEntity player = mc.player;

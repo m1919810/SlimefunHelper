@@ -22,6 +22,7 @@ import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
 import net.minecraft.client.MinecraftClient;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 
 public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
@@ -48,7 +49,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
     }
 
     protected FlagRef bindedFlag = null;
-    protected static final String REASON_BIND = "flag binding";
+    protected static final String REASON_BIND = "module binding";
     protected static final String REASON_LISTENER = "event listener";
     protected static final String REASON_VALIDATOR = "config validator";
     protected static final String REASON_UPDATE_LISTENER = "config update listener";
@@ -61,7 +62,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
     // bind the Module's status to the Flag
     public final void bindFlag(FlagRef flagRef) {
         if (bindedFlag != null) {
-            removeBind();
+            removeBindFlag();
         }
         bindedFlag = flagRef;
         if (flagRef != null) {
@@ -69,12 +70,21 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
         }
     }
 
-    private void removeBind() {
+    public final void bindHotkey(KeyBindRef keyBindRef) {
+        throw new NotImplementedException();
+    }
+
+    private void removeBindFlag() {
         if (bindedFlag != null) {
             bindedFlag.removeUpdateListener(s -> this.isOwner(s, REASON_BIND));
             bindedFlag = null;
         }
     }
+
+    private void removeBindHotkey() {
+        throw new NotImplementedException();
+    }
+
     // this is called via the bindedFlag
     protected final void updateActiveStatus(boolean active) {
         if (lastActiveFlag != active) {
@@ -109,7 +119,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
         if (removed) {
             throw new IllegalStateException("Removed twice");
         }
-        removeBind();
+        removeBindFlag();
         unregisterAll();
         removed = true;
     }
@@ -207,7 +217,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget> {
         return builder(config, MultiKeyBind.class)
                 .path(path)
                 .defaultValue(defaultValue)
-                .registerHotkey(TaskManagers.getToggleHandler(path));
+                .registerHotkey(TaskManagers.getToggleHandler(Configs.TOGGLE_CONFIG, path));
     }
 
     public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(

@@ -122,6 +122,10 @@ public class PlayerInputUtils {
             MinecraftClient.getInstance().getNetworkHandler().sendPacket(toPlayerInputPacket());
         }
 
+        public void sendPlayerSneakUpdatePacket() {
+            sendPlayerInputPacket();
+        }
+
         public int forwardSpeed() {
             return this.forward == this.backward ? 0 : (this.forward ? 1 : -1);
         }

@@ -651,4 +651,6 @@ public class ItemStackUtils {
         var enchantmentRegistry = ItemStackUtils.registry().getWrapperOrThrow(RegistryKeys.ENCHANTMENT);
         return component.getLevel(enchantmentRegistry.getOrThrow(key));
     }
+
+    //    public static double getAttributeValue(ItemStack stack)
 }

@@ -49,12 +49,18 @@ public class InteractionTasks {
     @Getter
     public static Airplace airplace;
 
+    @ApiStatus.Experimental
+    @Getter
+    public static BlockRotate blockRotate;
+
     private static void initModules(ModuleManager m) {
         interactExtra = new InteractExtra().register(m);
 
         scaffold = new Scaffold().register(m);
         tpInteract = new TpInteract().register(m);
         airplace = new Airplace().register(m);
+
+        blockRotate = new BlockRotate().register(m);
     }
 
     static {

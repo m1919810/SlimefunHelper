@@ -8,7 +8,7 @@ import me.matl114.accessors.access.MerchantScreenAccess;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.modules.inv.FastCraft;
-import me.matl114.managers.TaskManagers;
+import me.matl114.managers.task.ToggleManager;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.MinecraftClient;
@@ -149,7 +149,8 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                         3 * (SLOT_WIDTH + 2) + TRADE_ICON_WIDTH + 1, 4 + BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .setElementHandler(new ButtonElement(
                                 TextProvider.of(LABEL_DROP_CRAFT),
-                                ButtonAction.run(TaskManagers.getToggleTask(FastCraft.TOGGLE_DROP_CRAFT)))
+                                ButtonAction.run(ToggleManager.wrapFlagAsToggle(
+                                        FastCraft.TOGGLE_DROP_CRAFT, InvTasks.getFastCraft().dropCraft)))
                         .withTooltips(TooltipHandler.of(TOOLTIPS_DROPCRAFT)))
                 .addToSub(this);
         DisplayWidget.instance(10, 0, 3 * (SLOT_WIDTH + 2) + TRADE_ICON_WIDTH - 20, 20)

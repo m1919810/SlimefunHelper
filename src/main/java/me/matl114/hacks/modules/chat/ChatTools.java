@@ -16,10 +16,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.ScheduleService;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.Tasks;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
-import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.config.StringRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
@@ -48,8 +45,8 @@ public class ChatTools extends BaseModule {
 
     public static final String[] CHAT_HELPER_PERIOD = {"chat-screen-tools", "auto-chat-period"};
     public static final String[] CHAT_HELPER_MULTIPLE = {"chat-screen-tools", "auto-chat-multiple"};
-    public static final String[] AUTO_SEND = {"simple-toggle", "auto-chat"};
-    private static final String[] KEEP_CHAT_INV = {"simple-toggle", "keep-chat-inv"};
+    public static final String[] AUTO_SEND = {"chat-screen-tools", "auto-chat"};
+    private static final String[] KEEP_CHAT_INV = {"chat-screen-tools", "keep-chat-inv"};
 
     public ChatTools() {
         bindFlag(enableChatScreenTools);
@@ -77,7 +74,7 @@ public class ChatTools extends BaseModule {
     public final StringRef chatCache =
             builder(Configs.CHAT_CONFIG, CACHE, String.class).defaultValue("").build();
 
-    public final FlagRef autoSend = toggle(Configs.TOGGLE_CONFIG, AUTO_SEND).build();
+    public final FlagRef autoSend = toggle(Configs.CHAT_CONFIG, AUTO_SEND).build();
 
     public final IntRef period = builder(Configs.CHAT_CONFIG, Integer.class)
             .path(CHAT_HELPER_PERIOD)
@@ -90,7 +87,7 @@ public class ChatTools extends BaseModule {
             .build();
 
     public final FlagRef keepChatInv =
-            toggle(Configs.TOGGLE_CONFIG, KEEP_CHAT_INV).build();
+            toggle(Configs.CHAT_CONFIG, KEEP_CHAT_INV).build();
 
     public final FlagRef obfLogin = flagBuilder(Configs.CHAT_CONFIG, OBF_LOGIN).build();
 
@@ -107,6 +104,9 @@ public class ChatTools extends BaseModule {
         registerListener(Listener.getPostInitializeScreen(), this::onChatScreenInitialize);
         registerListener(Listener.getPreSetScreen(), this::onCloseChatScreen);
         registerListener(Listener.getPostInitializeScreen(), this::fixIMBlockerStateError);
+        TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "auto-chat", autoSend);
+        TaskManagers.getToggleManager()
+                .register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-chat-inv", keepChatInv);
     }
 
     public void onRemoveCommandPrefix() {
@@ -212,7 +212,7 @@ public class ChatTools extends BaseModule {
                         .withTooltips(TooltipHandler.of(TOOLTIPS_SEND_CACHE)))
                 .addToSub(basicSubScreenWidget);
 
-        Runnable toggle = TaskManagers.getToggleTask(AUTO_SEND);
+        Runnable toggle = TaskManagers.getToggleTask(Configs.CHAT_CONFIG, AUTO_SEND);
         ExecutableWidget.instance(180, 48, 50, 20)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("auto-send")), ButtonAction.run(toggle))
@@ -220,7 +220,7 @@ public class ChatTools extends BaseModule {
                                 .withTooltips(TooltipHandler.of(TOOLTIPS_AUTO_SEND)))
                 .addToSub(basicSubScreenWidget);
 
-        Runnable toggle2 = TaskManagers.getToggleTask(KEEP_CHAT_INV);
+        Runnable toggle2 = TaskManagers.getToggleTask(Configs.CHAT_CONFIG, KEEP_CHAT_INV);
         ExecutableWidget.instance(180, 24, 70, 20)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("keep-chat-inv")), ButtonAction.run(toggle2))

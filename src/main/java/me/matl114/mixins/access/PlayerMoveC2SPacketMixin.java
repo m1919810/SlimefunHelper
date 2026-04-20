@@ -25,4 +25,18 @@ public abstract class PlayerMoveC2SPacketMixin implements PlayerMoveC2SPacketAcc
     @Mutable
     @Accessor("yaw")
     public abstract void setYaw(float yaw);
+    //
+    //    boolean manual = false;
+    //
+    //    @Unique
+    //    @Override
+    //    public void setManual(boolean manual){
+    //        this.manual = manual;
+    //    }
+    //
+    //    @Unique
+    //    @Override
+    //    public boolean isManual(){
+    //        return manual;
+    //    }
 }

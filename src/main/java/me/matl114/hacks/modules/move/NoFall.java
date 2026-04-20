@@ -725,7 +725,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     // If there is a recent nofall without duplicate , then it must be the first nofall, check it
                     // carefully
                     shouldCheck = (lastNoFall + latency >= Tasks.getTick())
-                            || afterSetbackFlag
+                            || (afterSetbackFlag && lastNoFall + latency * 10 >= Tasks.getTick())
                             || (entity.entity.getY() <= module.lastOnGroundHeight - module.safeDistance);
                 }
                 boolean shouldCheckHard = duplicatingNoFall || (lastNoFall + latency >= Tasks.getTick());
@@ -925,9 +925,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
         @Override
         public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-            if (module.isActive() && step == Step.REAPPLY_MOVEMENT
-                    || step == Step.WAIT_FOR_RESYNC
-                    || step == Step.HANDLE_RESYNC) {
+            if (module.isActive()
+                    && (step == Step.REAPPLY_MOVEMENT || step == Step.WAIT_FOR_RESYNC || step == Step.HANDLE_RESYNC)) {
                 // do not make velocity input
                 // Debug.info("check input");
                 ClientPlayerEntity entity = movementManagerEvent.context.playerStatus.entity;
@@ -1006,12 +1005,14 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                         // If there is a recent nofall without duplicate , then it must be the first nofall, check it
                         // carefully
                         shouldCheck = (lastNoFall + latency >= Tasks.getTick())
-                                || afterSetbackFlag
+                                // prepare server network lag
+                                || (afterSetbackFlag && lastNoFall + latency * 10 >= Tasks.getTick())
                                 || (entity.entity.getY() <= module.lastOnGroundHeight - module.safeDistance);
                     }
                     boolean shouldCheckHard = step == Step.HANDLE_RESYNC || (lastNoFall + latency >= Tasks.getTick());
-                    if (!shouldCheckHard) {
+                    if (shouldCheck && !shouldCheckHard) {
                         duplicateCount = 0;
+                        afterSetbackFlag = false;
                     }
                     // Debug.info("should check : " + shouldCheck);
                     if (shouldCheck) {
@@ -1024,9 +1025,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             //                            afterSetbackFlag = false;
                             //                        }
                             // check
-                            if (!shouldCheckHard) {
-                                afterSetbackFlag = false;
-                            }
                             if (!entity.onGround && entity.entity.isOnGround()) {
                                 if (step == Step.HANDLE_RESYNC) {
                                     duplicateCount += 1;

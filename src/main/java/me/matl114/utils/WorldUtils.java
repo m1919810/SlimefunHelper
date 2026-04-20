@@ -13,17 +13,29 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.AttributeContainer;
+import net.minecraft.entity.attribute.DefaultAttributeRegistry;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.effect.StatusEffectUtil;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.waypoint.TrackedWaypoint;
-import net.minecraft.world.waypoint.Waypoint;
 
 public class WorldUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -139,6 +151,67 @@ public class WorldUtils {
                         || (optionalUid != null && optionalUid.equalsIgnoreCase(s.getDisplayName())))
                 .findFirst()
                 .orElse(null);
+    }
+
+    public static float getPlayerBlockBreakingSpeedWithCanMineMultiply(
+            PlayerEntity player, BlockState state, ItemStack stack) {
+        float f = stack.getMiningSpeedMultiplier(state);
+        if (f > 1.0F) {
+            AttributeContainer attributeContainer = new AttributeContainer(
+                    DefaultAttributeRegistry.get((EntityType<? extends LivingEntity>) player.getType()));
+            attributeContainer.setFrom(player.getAttributes());
+            stack.applyAttributeModifiers(EquipmentSlot.MAINHAND, (holder, attr) -> {
+                EntityAttributeInstance instance = attributeContainer.getCustomInstance(holder);
+                if (instance != null) {
+                    instance.removeModifier(attr.id());
+                    instance.addTemporaryModifier(attr);
+                }
+            });
+            f += attributeContainer.getValue(EntityAttributes.MINING_EFFICIENCY);
+        }
+
+        if (StatusEffectUtil.hasHaste(player)) {
+            f *= 1.0F + (float) (StatusEffectUtil.getHasteAmplifier(player) + 1) * 0.2F;
+        }
+
+        if (player.hasStatusEffect(StatusEffects.MINING_FATIGUE)) {
+            float var10000;
+            switch (player.getStatusEffect(StatusEffects.MINING_FATIGUE).getAmplifier()) {
+                case 0 -> var10000 = 0.3F;
+                case 1 -> var10000 = 0.09F;
+                case 2 -> var10000 = 0.0027F;
+                default -> var10000 = 8.1E-4F;
+            }
+
+            float g = var10000;
+            f *= g;
+        }
+
+        f *= (float) player.getAttributeValue(EntityAttributes.BLOCK_BREAK_SPEED);
+        if (player.isSubmergedIn(FluidTags.WATER)) {
+            f *= (float) player.getAttributeInstance(EntityAttributes.SUBMERGED_MINING_SPEED)
+                    .getValue();
+        }
+
+        if (!player.isOnGround()) {
+            f /= 5.0F;
+        }
+        int i = canToolHarvest(state, stack) ? 30 : 100;
+        return f / i;
+    }
+
+    public static float calcBlockBreakingDelta(
+            BlockState state, BlockView world, BlockPos pos, float playerBreakSpeed) {
+        float f = state.getHardness(world, pos);
+        if (f == -1.0F) {
+            return 0.0F;
+        } else {
+            return playerBreakSpeed / f;
+        }
+    }
+
+    private static boolean canToolHarvest(BlockState state, ItemStack stack) {
+        return !state.isToolRequired() || stack.isSuitableFor(state);
     }
 
     @Getter

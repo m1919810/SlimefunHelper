@@ -23,4 +23,9 @@ public abstract class PlayerInteractBlockC2SPacketMixin implements PlayerInterac
     @Mutable
     @Accessor("blockHitResult")
     public abstract void setBlockHitResult(BlockHitResult blockHitResult);
+
+    @Override
+    @Mutable
+    @Accessor("sequence")
+    public abstract void setSequence(int sequence);
 }

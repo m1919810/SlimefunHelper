@@ -11,6 +11,7 @@ import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.WorldUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -80,6 +81,19 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Nullable
     public BlockPos getCurrentFailBreakPos() {
         return MineTasks.getMineExtra().doubleBreak.get() ? currentFailBreakPos : null;
+    }
+
+    @Override
+    public float predictCurrentMiningProgressWithTool(ItemStack tool) {
+        BlockState block = this.client.world.getBlockState(currentBreakingPos);
+        if (block.isAir()) {
+            return -1.0F;
+        }
+        float miningSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(this.client.player, block, tool);
+        float speed = WorldUtils.calcBlockBreakingDelta(block, this.client.world, currentBreakingPos, miningSpeed);
+        int ticksSinceLastStart = Tasks.getTick() - MineTasks.getMineExtra().lastStartMineBreakingProgressResetTick;
+        // loading progress...
+        return speed * ticksSinceLastStart;
     }
 
     @Override
