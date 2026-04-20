@@ -528,6 +528,8 @@ public class BowEnhance extends BaseModule {
             if (Float.isNaN(red.x) || Float.isInfinite(red.x) || Float.isNaN(red.y) || Float.isInfinite(red.y)) {
                 Debug.chat("[Bow Aim] Arrow failed to reach the target");
             } else {
+                mc.getNetworkHandler()
+                        .sendPacket(VPacket.newOnGroundOnly(mc.player.isOnGround(), mc.player.horizontalCollision));
                 mc.interactionManager.sendSequencedPacket(mc.world, (s) -> {
                     return new PlayerInteractItemC2SPacket(mc.player.getActiveHand(), s, red.y, red.x);
                 });

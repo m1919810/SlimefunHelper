@@ -454,6 +454,9 @@ public class RenderTasks {
     public static RenderExtra renderExtra;
 
     @Getter
+    public static EntityLog entityLog;
+
+    @Getter
     public static EntityESP entityESP;
 
     @Getter
@@ -485,6 +488,7 @@ public class RenderTasks {
 
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
+        entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);
         chestESP = new ChestESP().register(m);
         itemESP = new ItemESP().register(m);

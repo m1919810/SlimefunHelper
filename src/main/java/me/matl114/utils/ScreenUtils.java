@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.events.Listener;
 import me.matl114.events.catchers.PacketCatcherImpl;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.collections.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
@@ -16,9 +17,11 @@ import net.minecraft.client.gui.screen.option.KeybindsScreen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.Window;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
@@ -78,6 +81,17 @@ public class ScreenUtils {
             return false;
         }));
         return cf;
+    }
+
+    public static IndexEntry<Slot> getSlot(ScreenHandler handler, Inventory inventory, int index) {
+        for (int i = 0; i < handler.slots.size(); ++i) {
+            Slot slot = (Slot) handler.slots.get(i);
+            if (slot.inventory == inventory && index == slot.getIndex()) {
+                return new IndexEntry<>(i, slot);
+            }
+        }
+
+        return null;
     }
 
     public static boolean hasShiftDown() {

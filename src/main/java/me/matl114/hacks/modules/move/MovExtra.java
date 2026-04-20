@@ -90,6 +90,14 @@ public class MovExtra extends BaseModule {
         }
     }
 
+    public void sendPacketsForStartFallFlying() {
+        if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
+            var input = PlayerInputUtils.of(mc.player.input).jump(true);
+            input.sendPlayerInputPacket();
+            input.applyInput(mc.player.input);
+        }
+    }
+
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
         switch (presetEvent.context.getValue()) {
                 // check 1.21.2+

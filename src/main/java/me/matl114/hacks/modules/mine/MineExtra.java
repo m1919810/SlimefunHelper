@@ -183,7 +183,7 @@ public class MineExtra extends BaseModule {
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
         registerListener(Listener.getGameJoinPoint(), this::onGameJoin);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onMineBadPacketFix);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onMine);
         registerListener(
                 Listener.getPacketPostSendPoint().getChannel(PlayerActionC2SPacket.class),
                 this::onGrimSBFastBreakExplode);
@@ -204,9 +204,9 @@ public class MineExtra extends BaseModule {
 
     int lastFinishBreakPacket = 0;
 
-    public void onMineBadPacketFix(Event<PlayerActionC2SPacket> packetEvent) {
+    public void onMine(Event<PlayerActionC2SPacket> packetEvent) {
         PlayerActionC2SPacket packet = packetEvent.context();
-        // fix abort badpackets
+        // just for fixing grimac abort badpackets
         switch (packet.getAction()) {
             case START_DESTROY_BLOCK -> {
                 lastBreak = packet.getPos();
@@ -224,6 +224,14 @@ public class MineExtra extends BaseModule {
             }
             default -> {
                 return;
+            }
+        }
+        // statistic update
+        if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) {
+            PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
+            // filter bad packets
+            if (Objects.equals(access.getCurrentMiningPos(), packet.getPos())) {
+                lastStartMineBreakingProgressResetTick = Tasks.getTick();
             }
         }
         // swing packet fix
@@ -298,7 +306,6 @@ public class MineExtra extends BaseModule {
         lastFinishBreakingTick = 0;
         gainedAdvantageCooldown = 0;
         thisTimeOptimizedSamePosBreak = false;
-        lastStartMineBreakingProgressResetTick = 0;
         lastStartingMineIsInstantBreak = false;
         gainedAdvantageMining = 0;
         ignoreNextFastBreakStatus = 0;
@@ -343,8 +350,6 @@ public class MineExtra extends BaseModule {
     public void onStartingMine(BlockPos pos, float speed, boolean instaBreak) {
         MineExtra mineExtra = this;
         lastStartingMineIsInstantBreak = instaBreak || speed > Math.min(1.0F, mineExtra.breakThreshold.get());
-
-        lastStartMineBreakingProgressResetTick = Tasks.getTick();
 
         if (!mineExtra.quickMine.get()) {
             return;

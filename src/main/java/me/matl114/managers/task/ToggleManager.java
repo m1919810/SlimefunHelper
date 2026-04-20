@@ -1,11 +1,8 @@
 package me.matl114.managers.task;
 
-import com.google.common.base.Preconditions;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import me.matl114.managers.Configs;
-import me.matl114.managers.config.Config;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import net.minecraft.text.Text;
@@ -27,15 +24,20 @@ public interface ToggleManager extends TaskManager {
 
     public void register(String value, boolean defaultValue);
 
+    public void register(String value, FlagRef flagRef);
+
     public FlagRef getFlag(String value);
 
     public FlagRef getOrRegister(String value, boolean defaultValue);
+
+    public static Runnable wrapFlagAsToggle(String[] path, FlagRef flagRef) {
+        return wrapFlagAsToggle(String.join(".", path), flagRef);
+    }
 
     public static Runnable wrapFlagAsToggle(String path, FlagRef flagRef) {
         return () -> {
             boolean result = !flagRef.get();
             flagRef.set(result);
-            Configs.TOGGLE_CONFIG.markForSave();
             Debug.chat("Toggle", Text.translatableWithFallback(path, path), (result ? "on" : "off"));
         };
     }
@@ -63,6 +65,11 @@ public interface ToggleManager extends TaskManager {
             return toggle == FALSE ? () -> {} : wrapFlagAsToggle(value, toggle);
         }
 
+        @Override
+        public void register(String value, boolean defaultValue) {
+            register(value, new FlagRef(defaultValue));
+        }
+
         public Map<String, Runnable> getTasks() {
             LinkedHashMap<String, Runnable> toggles = new LinkedHashMap<>();
             for (String toggle : this.flags.keySet()) {
@@ -71,10 +78,8 @@ public interface ToggleManager extends TaskManager {
             return toggles;
         }
 
-        public void register(String value, boolean defaultValue) {
-            Preconditions.checkArgument(!this.flags.containsKey(value));
-
-            this.flags.put(value, getToggleFlag(value, defaultValue));
+        public void register(String value, FlagRef flagRef) {
+            this.flags.put(value, flagRef);
         }
 
         @Override
@@ -84,7 +89,7 @@ public interface ToggleManager extends TaskManager {
 
         @Override
         public FlagRef getOrRegister(String value, boolean defaultValue) {
-            return this.flags.computeIfAbsent(value, (s) -> getToggleFlag(value, defaultValue));
+            return this.flags.computeIfAbsent(value, (s) -> new FlagRef(defaultValue));
         }
 
         @NotNull
@@ -102,20 +107,5 @@ public interface ToggleManager extends TaskManager {
         public Runnable getOrRegister(String value, Runnable task) {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public static FlagRef getToggleFlag(String value, boolean defaultValue) {
-        String[] path = Config.cutToPath(value);
-        FlagRef toggle = Configs.TOGGLE_CONFIG.getBoolean(path);
-        if (toggle == null) {
-            Configs.TOGGLE_CONFIG
-                    .builder(Boolean.class)
-                    .path(path)
-                    .defaultValue(defaultValue)
-                    .build();
-            toggle = Configs.TOGGLE_CONFIG.getBoolean(path);
-            Preconditions.checkNotNull(toggle);
-        }
-        return toggle;
     }
 }

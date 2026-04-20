@@ -28,6 +28,7 @@ import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
@@ -443,6 +444,7 @@ public class TravellingControl extends BaseModule {
             float randomOffsetPitch = 0.0F;
             float randomOffsetYaw = 0.0F;
             Random rand = new Random();
+            int dangerousNoFallFlyingTick = 0;
 
             @Override
             public int priority() {
@@ -453,7 +455,7 @@ public class TravellingControl extends BaseModule {
             public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
                 ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
                 updateState(ti, player.getY());
-                if (!startWork) {
+                if (!startWork && mc.player.isFallFlying()) {
                     if (ti.state == TravelState.TOO_HIGH) {
                         startWork = true;
                         Debug.chat("[Pitch440] 开始工作!");
@@ -462,36 +464,56 @@ public class TravellingControl extends BaseModule {
                     }
                 }
                 if (startWork) {
-                    movementManagerEvent.context.pushImportantRotation(true, true);
-                    Vec3d currentPos = mc.player.getPos();
-                    Vec3d towards = ti.pos0.subtract(currentPos);
-                    // anti afk
-                    if (Tasks.getTick() % 40 == 0) {
-                        randomOffsetPitch = (float) rand.nextDouble(-2.5, 2.5);
-                        randomOffsetYaw = (float) rand.nextDouble(1.0F);
-                    }
-                    float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y + randomOffsetPitch;
-                    counter2 += 1;
+                    if (mc.player.isFallFlying()) {
+                        movementManagerEvent.context.pushImportantRotation(true, true);
+                        Vec3d currentPos = mc.player.getPos();
+                        Vec3d towards = ti.pos0.subtract(currentPos);
+                        // anti afk
+                        if (Tasks.getTick() % 40 == 0) {
+                            randomOffsetPitch = (float) rand.nextDouble(-2.5, 2.5);
+                            randomOffsetYaw = (float) rand.nextDouble(1.0F);
+                        }
+                        float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y + randomOffsetPitch;
+                        counter2 += 1;
 
-                    switch (ti.state) {
-                        case STABLE, TOO_HIGH -> {
-                            EntityUtils.setEntityYawSafe(player, yaw);
-                            if (player.getVelocity().y < 0) {
-                                if (counter2 > 1) {
-                                    Debug.chat("[Pitch40] Current Height", player.getY());
+                        switch (ti.state) {
+                            case STABLE, TOO_HIGH -> {
+                                EntityUtils.setEntityYawSafe(player, yaw);
+                                if (player.getVelocity().y < 0) {
+                                    if (counter2 > 1) {
+                                        Debug.chat("[Pitch40] Current Height", player.getY());
+                                    }
+                                    counter2 = 0;
+                                    EntityUtils.setEntityPitchSafe(player, 32 + randomOffsetYaw);
+                                } else {
+                                    // fly higher..
+                                    EntityUtils.setEntityPitchSafe(
+                                            player, Math.min(-50 + counter2 * 0.5F, 32) + randomOffsetYaw);
                                 }
-                                counter2 = 0;
-                                EntityUtils.setEntityPitchSafe(player, 32 + randomOffsetYaw);
-                            } else {
-                                // fly higher..
+                            }
+                            case TOO_LOW -> {
+                                EntityUtils.setEntityYawSafe(player, yaw);
                                 EntityUtils.setEntityPitchSafe(
                                         player, Math.min(-50 + counter2 * 0.5F, 32) + randomOffsetYaw);
                             }
                         }
-                        case TOO_LOW -> {
-                            EntityUtils.setEntityYawSafe(player, yaw);
-                            EntityUtils.setEntityPitchSafe(
-                                    player, Math.min(-50 + counter2 * 0.5F, 32) + randomOffsetYaw);
+                    } else {
+                        if (dangerousNoFallFlyingTick > 20) {
+                            dangerousNoFallFlyingTick = 0;
+                        }
+                        if (dangerousNoFallFlyingTick == 0) {
+                            // reset fucking jump input
+                            MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                            // launch event from this method
+                            if (mc.player.checkGliding()) {
+                                mc.getNetworkHandler()
+                                        .sendPacket(new ClientCommandC2SPacket(
+                                                mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                            }
+
+                            // start counting down, if not startflying in 20 tick(1sec), auto logout
+                            dangerousNoFallFlyingTick = 1;
+                            MovTasks.getMovExtra().sendPacketsForStartFallFlying();
                         }
                     }
                 }
@@ -500,6 +522,7 @@ public class TravellingControl extends BaseModule {
             @Override
             public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
                 if (startWork) {
+                    // main logic, just logout for safety
                     // movementManagerEvent.context.playerStatus.restoreRotation();
                     ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
                     if (pitch40SafeHeight.get() && player.getY() < minHeight.get() - 16) {
@@ -512,8 +535,16 @@ public class TravellingControl extends BaseModule {
                         // return immediately.
                         return false;
                     }
+                    if (mc.player != null && !mc.player.isFallFlying()) {
+                        // start counting down
+                        if (dangerousNoFallFlyingTick > 0) {
+                            dangerousNoFallFlyingTick += 1;
+                        }
+                    } else {
+                        dangerousNoFallFlyingTick = 0;
+                    }
                 }
-                if (checkFinish(ti) || (startWork && mc.player != null && !mc.player.isFallFlying())) {
+                if (checkFinish(ti)) {
                     if (!ti.stopManually && pitch40SafeHeight.get()) {
                         Debug.chat("[Pitch40] 当前处于虚空维度, 我们需要确保你不会掉下去!");
                         Debug.chat("[Pitch40] 我们需要自动断线");
