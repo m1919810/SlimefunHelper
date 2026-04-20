@@ -18,16 +18,10 @@ public class TaskManagers {
         KeyCode.init();
     }
 
-    public static SimpleHotKey.InputHandler getToggleHandler(String... path) {
+    public static Runnable getToggleTask(Config config, String... path) {
         String commonPath = String.join(".", path);
-        FlagRef flagRef = toggleManager.getOrRegister(commonPath, false);
-        return getToggleHandler(commonPath, flagRef);
-    }
-
-    public static Runnable getToggleTask(String... path) {
-        String commonPath = String.join(".", path);
-        FlagRef flagRef = toggleManager.getOrRegister(commonPath, false);
-        return ToggleManager.wrapFlagAsToggle(commonPath, flagRef);
+        var flag = config.getBoolean(path);
+        return ToggleManager.wrapFlagAsToggle(commonPath, flag);
     }
 
     public static SimpleHotKey.InputHandler getToggleHandler(String commonPath, FlagRef flagRef) {
@@ -92,10 +86,9 @@ public class TaskManagers {
     public static final String PREFIX_CONFIG = "toggle";
     public static final String PREFIX_HOTKEY_TASKS = "hotkeys";
 
-    @Deprecated
-    @Getter
-    private static final ToggleManager toggleManager = ToggleManager.of();
-
     @Getter
     private static final TaskManager taskManager = TaskManager.of();
+
+    @Getter
+    private static final ToggleManager toggleManager = ToggleManager.of();
 }

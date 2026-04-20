@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.mine;
 
+import java.util.OptionalInt;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -9,9 +10,14 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
+import me.matl114.utils.WorldUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -55,6 +61,9 @@ public class PacketMine extends BaseModule {
             .validator(Configs.doubleRange(-0.0001F, 1.0001F))
             .build();
 
+    public final FlagRef autoTool =
+            flagBuilder(Configs.MINE_CONFIG, MINE_ONEBLOCK_PACKET_PICKAXE).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -69,22 +78,56 @@ public class PacketMine extends BaseModule {
                 if (pos != null) {
                     double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
                     if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
-                        for (int i = 0; i < multiplePackets.get(); ++i) {
-                            BlockState blockState = mc.world.getBlockState(pos);
-                            if (canMine(blockState)) {
-                                Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
-                                Direction dir =
-                                        Direction.getFacing(shouldFacing).getOpposite();
-                                if (considerAirState.get()
-                                        && PlayerInteractionAccess.of(mc.interactionManager)
-                                                        .getCurrentMiningProgress(true)
-                                                > 0.98F) {
-                                    mc.interactionManager.breakBlock(pos);
-                                    // mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
+
+                        BlockState blockState = mc.world.getBlockState(pos);
+                        OptionalInt currentItemSlot = getCurrentUsableTool(blockState);
+                        Slot currentToolSlot = currentItemSlot.isPresent()
+                                ? mc.player.currentScreenHandler.getSlot(currentItemSlot.getAsInt())
+                                : null;
+                        ItemStack currentTool = currentToolSlot == null
+                                ? mc.player.getStackInHand(Hand.MAIN_HAND)
+                                : currentToolSlot.getStack();
+                        if (canMine(blockState, currentTool)) {
+                            int selectedSlot = mc.player.getInventory().getSelectedSlot();
+                            if (currentItemSlot.isPresent() && currentToolSlot != null) {
+                                if (currentToolSlot.getIndex() < 9) {
+                                    PlayerInteractionAccess.of(mc.interactionManager)
+                                            .syncSelectedHotbar(currentToolSlot.getIndex());
+                                } else {
+                                    mc.interactionManager.clickSlot(
+                                            mc.player.currentScreenHandler.syncId,
+                                            currentItemSlot.getAsInt(),
+                                            selectedSlot,
+                                            SlotActionType.SWAP,
+                                            mc.player);
                                 }
+                            }
+                            Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
+                            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+                            if (considerAirState.get()
+                                    && PlayerInteractionAccess.of(mc.interactionManager)
+                                                    .getCurrentMiningProgress(true)
+                                            > 0.98F) {
+                                mc.interactionManager.breakBlock(pos);
+                                // mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
+                            }
+                            for (int i = 0; i < multiplePackets.get(); ++i) {
                                 mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
                                 PlayerInteractionAccess.of(mc.interactionManager)
                                         .sendStopBreakPacket(pos, dir);
+                            }
+                            if (currentItemSlot.isPresent() && currentToolSlot != null) {
+                                if (currentToolSlot.getIndex() < 9) {
+                                    PlayerInteractionAccess.of(mc.interactionManager)
+                                            .syncSelectedHotbar(selectedSlot);
+                                } else {
+                                    mc.interactionManager.clickSlot(
+                                            mc.player.currentScreenHandler.syncId,
+                                            currentItemSlot.getAsInt(),
+                                            selectedSlot,
+                                            SlotActionType.SWAP,
+                                            mc.player);
+                                }
                             }
                         }
                     }
@@ -93,13 +136,38 @@ public class PacketMine extends BaseModule {
         }
     }
 
-    public boolean canMine(BlockState state) {
+    public OptionalInt getCurrentUsableTool(BlockState currentState) {
+        PlayerInventory inv = mc.player.getInventory();
+        if (autoTool.get()) {
+            ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
+            double bestMiningSpeed =
+                    WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, currentState, stack);
+            int bestMiningIndex = inv.getSelectedSlot();
+            for (var i = 0; i < inv.size(); ++i) {
+                ItemStack stackInventory = inv.getStack(i);
+                if (!stackInventory.isEmpty()) {
+                    double mul = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                            mc.player, currentState, stackInventory);
+                    if (mul > bestMiningSpeed) {
+                        bestMiningIndex = i;
+                        bestMiningSpeed = mul;
+                    }
+                }
+            }
+            if (bestMiningIndex != -1) {
+                return mc.player.currentScreenHandler.getSlotIndex(inv, bestMiningIndex);
+            }
+        }
+        return mc.player.currentScreenHandler.getSlotIndex(inv, inv.getSelectedSlot());
+    }
+
+    public boolean canMine(BlockState state, ItemStack tool) {
         // do not mine liquid, that's a disaster
         // do not mine air, shit
         if (state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && !state.isAir()) {
             if (mineThreshold.get() > 0) {
                 var access = PlayerInteractionAccess.of(mc.interactionManager);
-                return access.getCurrentMiningProgress(true) > Math.min(0.98, mineThreshold.get());
+                return access.predictCurrentMiningProgressWithTool(tool) > Math.min(0.98, mineThreshold.get());
             }
             return true;
         } else {

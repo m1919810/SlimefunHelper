@@ -15,17 +15,11 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VRender;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.registry.Registries;
-import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
@@ -36,7 +30,7 @@ public class EntityESP extends BaseModule {
     public static final String[] DETECT_ENTITY_TOGGLE = {"detect-entity", "entity-esp", "hotkey"};
     public static final String[] DETECT_SPAWN_WHITELIST = {"detect-entity", "entity-esp", "whitelist"};
     public static final String[] RENDER_COLOR = {"detect-entity", "entity-esp", "color"};
-    public static final String[] LOG_ON_SCREEN = {"detect-entity", "entity-esp", "log-to-chat"};
+
     public static final String[] ENTITY_TRACE = {"detect-entity", "entity-esp", "tracing-option"};
     public static final String[] ENTITY_GLOW = {"detect-entity", "entity-esp", "glow-effect"};
 
@@ -71,11 +65,6 @@ public class EntityESP extends BaseModule {
                     TextColor.fromFormatting(Formatting.RED)))
             .build();
 
-    public final FlagRef logEntity = builder(Configs.RENDER_CONFIG, FlagRef.TYPE)
-            .path(LOG_ON_SCREEN)
-            .defaultValue(false)
-            .build();
-
     public final NBTRef<TracingOption> traceOption = builder(Configs.RENDER_CONFIG, ENTITY_TRACE, TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
@@ -85,86 +74,9 @@ public class EntityESP extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(EntitySpawnS2CPacket.class), this::onEntitySpawn);
-        registerListener(
-                Listener.getPacketPreHandlePoint().getChannel(EntitiesDestroyS2CPacket.class), this::onEntityRemove);
+
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
         registerListener(Listener.getPostGameTick(), this::onTick);
-    }
-
-    public void onEntitySpawn(Event<EntitySpawnS2CPacket> packetEvent) {
-        // Debug.info("check entity", packet.getEntityType());
-        var packet = packetEvent.context();
-        if (enable.get()) {
-            if (whiteList.get().test(packet.getEntityType())) {
-                EntityType<?> type = packet.getEntityType();
-                if (logEntity.get()) {
-                    if (type == EntityType.PLAYER) {
-                        Text text = null;
-                        if (MinecraftClient.getInstance().world != null) {
-                            PlayerListEntry entry = MinecraftClient.getInstance()
-                                    .getNetworkHandler()
-                                    .getPlayerListEntry(packet.getUuid());
-                            if (entry != null) {
-                                text = Text.literal(entry.getProfile().name()).formatted(Formatting.GREEN);
-                            }
-                        }
-
-                        Debug.chat(
-                                "Player ",
-                                text == null ? "" : text,
-                                "spawn at position ",
-                                ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()),
-                                ",distance: %.2f"
-                                        .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())));
-                        Debug.chat("Player Entity Id ", packet.getEntityId());
-                    } else {
-                        // if(LivingEntity.class.isAssignableFrom( packet.getEntityType().getBaseClass())){
-                        // only log the living Entity; the common Entities are mostly functional and are noisy
-                        Debug.chat(
-                                "Entity",
-                                packet.getEntityType().getName(),
-                                "spawn at position ",
-                                ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()),
-                                ",distance: %.2f"
-                                        .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())));
-                        // }
-
-                    }
-                }
-            }
-        }
-    }
-
-    public void onEntityRemove(Event<EntitiesDestroyS2CPacket> packetEvent) {
-        if (enable.get()) {
-            var packet = packetEvent.context();
-            if (mc.world != null) {
-                Set<Entity> removing = new LinkedHashSet<>();
-                for (int i : packet.getEntityIds()) {
-                    Entity entity = mc.world.getEntityById(i);
-                    if (entity == null) continue;
-                    if (whiteList.get().test(entity.getType())) {
-                        removing.add(entity);
-                    }
-                }
-                if (logEntity.get()) {
-                    for (var entity : removing) {
-                        Debug.chat(
-                                "Entity",
-                                entity.getType().getName(),
-                                entity instanceof PlayerEntity pl
-                                        ? pl.getName()
-                                        : (entity.hasCustomName() ? entity.getCustomName() : ""),
-                                "disappear at position ",
-                                ChatUtils.getDisplayedLocation(entity.getX(), entity.getY(), entity.getZ()),
-                                ",distance: %.2f"
-                                        .formatted(calculateDistance(entity.getX(), entity.getY(), entity.getZ())));
-                    }
-                }
-            }
-        }
     }
 
     List<Entity> entities = new ArrayList<>();
@@ -244,14 +156,6 @@ public class EntityESP extends BaseModule {
                 RenderUtils.stopDrawVirtual(stack);
             }
         }
-    }
-
-    private static double calculateDistance(double x1, double y1, double z1) {
-        if (MinecraftClient.getInstance().player != null) {
-            ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            return Math.sqrt(player.getPos().squaredDistanceTo(x1, y1, z1));
-        }
-        return -1.0f;
     }
 
     private Color getShaderColorByEntityType(Entity entity) {

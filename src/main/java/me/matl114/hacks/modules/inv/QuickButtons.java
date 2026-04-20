@@ -1,10 +1,7 @@
 package me.matl114.hacks.modules.inv;
 
 import com.google.common.util.concurrent.Runnables;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -84,7 +81,7 @@ public class QuickButtons extends BaseModule {
         }
         Map<String, Optional<FlagRef>> buttonToggles = new LinkedHashMap<>();
         for (var re : toggleList.get()) {
-            FlagRef flagRef = Configs.TOGGLE_CONFIG.getBoolean(TaskManagers.PREFIX_BUTTON_TOGGLE, re);
+            FlagRef flagRef = TaskManagers.getToggleManager().getFlag(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + re);
             buttonToggles.put(re, Optional.ofNullable(flagRef));
         }
 

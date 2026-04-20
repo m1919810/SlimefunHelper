@@ -971,6 +971,10 @@ public class InvTasks {
         LAST_SYNC_ID = packet.context.getSyncId();
     }
 
+    public static void onGameJoin(Event<ClientPlayerEntity> gameJoin) {
+        LAST_SYNC_ID = 0;
+    }
+
     public static void openEditorForPlayer() {
         if (mc.player != null) {
             getItemEditor().openEditorForPlayer(mc.player);
@@ -1012,6 +1016,9 @@ public class InvTasks {
     public static AutoStore autoStore;
 
     @Getter
+    public static AutoSteal autoSteal;
+
+    @Getter
     public static ChestHistory chestHistory;
 
     @Getter
@@ -1045,6 +1052,7 @@ public class InvTasks {
         fastCraft = new FastCraft().register(m);
         fastChest = new FastChest().register(m);
         autoStore = new AutoStore().register(m);
+        autoSteal = new AutoSteal().register(m);
         chestHistory = new ChestHistory().register(m);
         itemEditor = new ItemEditor().register(m);
         pickItem = new PickItem().register(m);
@@ -1059,6 +1067,7 @@ public class InvTasks {
         });
         Listener.registerSinglePacketListener(PlayerInteractBlockC2SPacket.class, InvTasks::listenInteractBlockPacket);
         Listener.getPacketPoint().getChannel(OpenScreenS2CPacket.class).registerHandler(InvTasks::onOpenScreen);
+        Listener.getGameJoinPoint().registerHandler(InvTasks::onGameJoin);
         moduleManager.registerFactories(InvTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
     }

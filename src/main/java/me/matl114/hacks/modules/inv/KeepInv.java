@@ -12,19 +12,20 @@ import net.minecraft.text.Text;
 
 public class KeepInv extends BaseModule {
 
-    public static final String[] KEEP_INV = {"button-toggle", "keep-inv"};
+    public static final String[] KEEP_INV = {"inventory", "keep-inv"};
     public static final String CLEAR_KEEP = "clear-keep";
 
     public KeepInv() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.TOGGLE_CONFIG, KEEP_INV).build();
+    public final FlagRef enable = flagBuilder(Configs.INV_CONFIG, KEEP_INV).build();
 
     @Override
     public void registerAll() {
         super.registerAll();
-        TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
+        TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enable);
+        TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + CLEAR_KEEP, this::clearKeep);
     }
 
     public void clearKeep() {

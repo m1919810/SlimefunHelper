@@ -80,21 +80,17 @@ public class TpInteract extends BaseModule {
                     if (size != 0) {
 
                         if (tpToBlock(
-                            blockPos,
-                            (sel) -> executeTp(sel, () -> {
-                                Debug.chat("[TpInteract] 尝试和物品栏交互");
-                                Listener.sendPacketNoEvents(packetToSend);
-                                AutoSteal.executePredictInventoryAction((handler)->{
-                                    for (var i = 0; i < size; ++i) {
-                                        mc.interactionManager.clickSlot(
-                                            handler.syncId,
-                                            i,
-                                            0,
-                                            SlotActionType.QUICK_MOVE,
-                                            mc.player);
-                                    }
-                                });
-                            }))) {
+                                blockPos,
+                                (sel) -> executeTp(sel, () -> {
+                                    Debug.chat("[TpInteract] 尝试和物品栏交互");
+                                    Listener.sendPacketNoEvents(packetToSend);
+                                    AutoSteal.executePredictInventoryAction((handler) -> {
+                                        for (var i = 0; i < size; ++i) {
+                                            mc.interactionManager.clickSlot(
+                                                    handler.syncId, i, 0, SlotActionType.QUICK_MOVE, mc.player);
+                                        }
+                                    });
+                                }))) {
                             event.cancel();
                         }
                         return;
@@ -106,8 +102,6 @@ public class TpInteract extends BaseModule {
             }
         }
     }
-
-
 
     public void onInteractEntity(Event<PlayerInteractEntityC2SPacket> event) {
         if (event.isCancelled()) return;

@@ -44,10 +44,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import org.jetbrains.annotations.ApiStatus;
 
 public class Attack extends BaseModule {
@@ -354,7 +351,11 @@ public class Attack extends BaseModule {
                                 // revert shit
                                 if (useMaceAttack || args.isFallFlying()) {
                                     // fix targeting in big velocity
-                                    predictedEyePos = predictedEyePos.add(mc.player.getVelocity());
+                                    predictedEyePos = predictedEyePos.add(
+                                            mc.player.getX() - mc.player.lastX,
+                                            mc.player.getY() - mc.player.lastY,
+                                            mc.player.getZ()
+                                                    - mc.player.lastZ); // predictedEyePos.add(mc.player.getVelocity());
                                 }
                                 Vec3d vec3d = args.getPos();
                                 if (tpRange.get() > 1E-7
@@ -426,22 +427,30 @@ public class Attack extends BaseModule {
                             @Override
                             public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
                                 if (!runThisTick) return;
-                                if (lookVec != null) {
+                                ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+                                PlayerInputUtils.Input input = PlayerInputUtils.of(args.input);
+                                // there is no need for fall flying player to correct this
+                                if (lookVec != null && !args.isFallFlying()) {
                                     // rewrite input to fit lookVec
-                                    ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-                                    PlayerInputUtils.Input input = PlayerInputUtils.of(args.input);
-                                    PlayerInputUtils.Input input1 = PlayerInputUtils.tryCorrectMovementInput(
+
+                                    input = PlayerInputUtils.tryCorrectMovementInput(
                                             input, movementManagerEvent.context.playerStatus.yaw, args.getYaw());
                                     // cancel sprint
-                                    if (!input1.forward() || critic.get()) {
-                                        input1.sprint(false);
+                                    if (!input.forward() || critic.get()) {
+                                        input.sprint(false);
                                         player.setSprinting(false);
                                     }
-
                                     //  Debug.chat("Try correct", input1);
-                                    input1.applyInput(args.input);
                                 }
+                                //                                if(critic.get()) {
+                                //                                    input.jump(true);
+                                //                                }
+                                input.applyInput(args.input);
                             }
+
+                            @Override
+                            public void applyBeforeMovementPacketModify(
+                                    Event<LegalMovementManager> movementManagerEvent) {}
 
                             @Override
                             public boolean postModify(
