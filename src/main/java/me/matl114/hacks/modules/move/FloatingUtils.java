@@ -79,7 +79,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     Packet<?> storedPacket;
 
     public void onTransactionPacket(Event<CommonPingS2CPacket> packet) {
-        if (enableGrim.get()) {
+        if (false && enableGrim.get()) {
             delayedPackets.add(packet.context());
             packet.cancel();
         }
@@ -107,14 +107,8 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         if (enableGrim.get()) {
             movementManagerEvent.cancel();
             movementManagerEvent.context.playerStatus.restorePos();
-            storedPacket = VPacket.newFull(
-                    mc.player.getX(),
-                    mc.player.getY() - 0.1,
-                    mc.player.getZ(),
-                    mc.player.getYaw(),
-                    mc.player.getPitch(),
-                    mc.player.isOnGround(),
-                    mc.player.horizontalCollision);
+            storedPacket = VPacket.newLookAndOnGround(
+                    mc.player.getYaw(), mc.player.getPitch(), mc.player.isOnGround(), mc.player.horizontalCollision);
         }
     }
 
@@ -125,7 +119,8 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             movementManagerEvent.context.playerStatus.restoreRotation();
         }
         if (storedPacket != null) {
-            Listener.sendPacketNoEvents(storedPacket);
+            mc.getNetworkHandler().sendPacket(storedPacket);
+            // Listener.sendPacketNoEvents(storedPacket);
             storedPacket = null;
         }
         return true;
