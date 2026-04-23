@@ -188,19 +188,6 @@ public class AutoSteal extends BaseModule {
 
     public void onClickShulkerBoxOrPlaceShulkerBox(Event<PlayerInteractBlockC2SPacket> event) {
 
-        //
-        //        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-        //                RenderTasks.DEBUG_TICK,
-        //                new RenderTasks.BoxObject(
-        //                        Vec3d.of(hitResult.getBlockPos()),
-        //                        Vec3d.of(hitResult.getBlockPos()).add(1, 1, 1),
-        //                        Color.WHITE)));
-        //        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-        //                RenderTasks.DEBUG_TICK,
-        //                new RenderTasks.BoxObject(
-        //                        hitResult.getPos().add(-0.1, -0.1, -0.1),
-        //                        hitResult.getPos().add(0.1, 0.1, 0.1),
-        //                        Color.RED)));
         if (autoShulker.get()) {
             PlayerInteractBlockC2SPacket packet = event.context;
             BlockHitResult hitResult = packet.getBlockHitResult();

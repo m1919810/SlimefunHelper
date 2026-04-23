@@ -1,13 +1,16 @@
 package me.matl114.hacks.modules.move;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.catchers.PacketCatcherImpl;
+import me.matl114.events.catchers.TimedPacketCatcherImpl;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -33,6 +36,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Direction;
@@ -78,6 +82,23 @@ public class TravellingControl extends BaseModule {
 
     public FlagRef pitch40SafeHeight = flagBuilder(
                     Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-end-safety"))
+            .build();
+
+    public IntRef pitch40Pitch = builder(
+                    Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-pitch-positive"), IntRef.TYPE)
+            .defaultValue(15)
+            .validator(Configs.INT_POSITIVE)
+            .build();
+    public IntRef pitch40Negative = builder(
+                    Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-pitch-negative"), IntRef.TYPE)
+            .defaultValue(60)
+            .validator(Configs.INT_POSITIVE)
+            .build();
+
+    public DoubleRef negativeArgument = builder(
+                    Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-negative-delta"), DoubleRef.TYPE)
+            .defaultValue(0.0)
+            .validator(Configs.doubleRange(0, 90))
             .build();
 
     private boolean doingTp = false;
@@ -454,6 +475,8 @@ public class TravellingControl extends BaseModule {
             float randomOffsetYaw = 0.0F;
             Random rand = new Random();
             int dangerousNoFallFlyingTick = 0;
+            double[] last3Y = {-999, -999, -999, -999, -999};
+            int last3YIndex = 0;
 
             @Override
             public int priority() {
@@ -488,22 +511,35 @@ public class TravellingControl extends BaseModule {
                         switch (ti.state) {
                             case STABLE, TOO_HIGH -> {
                                 EntityUtils.setEntityYawSafe(player, yaw);
-                                if (player.getVelocity().y < 0) {
+                                double y = mc.player.getY();
+                                double last3YY = this.last3Y[last3YIndex];
+                                boolean goingDown = (y < last3YY);
+                                if (goingDown) {
                                     if (counter2 > 1) {
                                         Debug.chat("[Pitch40] Current Height", player.getY());
                                     }
                                     counter2 = 0;
-                                    EntityUtils.setEntityPitchSafe(player, 32 + randomOffsetYaw);
+                                    EntityUtils.setEntityPitchSafe(player, pitch40Pitch.get() + randomOffsetYaw);
                                 } else {
                                     // fly higher..
                                     EntityUtils.setEntityPitchSafe(
-                                            player, Math.min(-50 + counter2 * 0.5F, 32) + randomOffsetYaw);
+                                            player,
+                                            Math.min(
+                                                            -pitch40Negative.get()
+                                                                    + counter2 * (float) negativeArgument.get(),
+                                                            pitch40Pitch.get())
+                                                    + randomOffsetYaw);
                                 }
                             }
                             case TOO_LOW -> {
                                 EntityUtils.setEntityYawSafe(player, yaw);
                                 EntityUtils.setEntityPitchSafe(
-                                        player, Math.min(-50 + counter2 * 0.5F, 32) + randomOffsetYaw);
+                                        player,
+                                        Math.min(
+                                                        -pitch40Negative.get()
+                                                                + counter2 * (float) negativeArgument.get(),
+                                                        pitch40Pitch.get())
+                                                + randomOffsetYaw);
                             }
                         }
                     } else {
@@ -561,6 +597,10 @@ public class TravellingControl extends BaseModule {
                     }
                     stillWork = false;
                 }
+                if (mc.player != null) {
+                    last3Y[last3YIndex] = mc.player.getY();
+                    last3YIndex = (last3YIndex + 1) % last3Y.length;
+                }
                 return stillWork;
             }
         };
@@ -586,8 +626,11 @@ public class TravellingControl extends BaseModule {
             }
 
             Packet<?> storedPacket = null;
-            double lastY = -999;
+            // avoid setbacks
+            double[] last3Y = {-999, -999, -999, -999, -999, -999, -999, -999, -999, -999};
+            int last3YIndex = 0;
             boolean currentFlyingHigh = false;
+            boolean useGrimPacketFly = false;
 
             @Override
             public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
@@ -601,6 +644,8 @@ public class TravellingControl extends BaseModule {
                         Debug.chat("[Pitch40] 请拉升到MaxHeight以启动:", maxHeight.get());
                     }
                 }
+                final int pitch40 = pitch40Pitch.get();
+                final int pitchn40 = -pitch40Negative.get();
                 if (startWork) {
                     if (mc.player.isFallFlying()) {
                         movementManagerEvent.context.pushImportantRotation(true, true);
@@ -618,21 +663,56 @@ public class TravellingControl extends BaseModule {
                             case STABLE, TOO_HIGH -> {
                                 EntityUtils.setEntityYawSafe(player, yaw);
                                 double y = mc.player.getY();
-                                if (currentFlyingHigh && y < lastY) {
+                                double last3YY = this.last3Y[last3YIndex];
+                                boolean goingDown = (y < last3YY);
+                                if (currentFlyingHigh && goingDown) {
                                     currentFlyingHigh = false;
-                                    Debug.chat("[Pitch40] Current Height", lastY);
+                                    Debug.chat("[Pitch40] Current Height", last3YY);
                                 }
                                 if (!currentFlyingHigh) {
                                     counter2 = 0;
-                                    EntityUtils.setEntityPitchSafe(player, 20 + randomOffsetYaw);
+                                    useGrimPacketFly = true;
+                                    EntityUtils.setEntityPitchSafe(player, pitch40 + randomOffsetYaw);
                                 } else {
-                                    EntityUtils.setEntityPitchSafe(player, Math.min(-50, 20) + randomOffsetYaw);
+                                    EntityUtils.setEntityPitchSafe(
+                                            player,
+                                            Math.min(
+                                                            -pitch40Negative.get()
+                                                                    + counter2 * (float) negativeArgument.get(),
+                                                            pitch40Pitch.get())
+                                                    + randomOffsetYaw);
                                 }
                             }
                             case TOO_LOW -> {
+                                if (!currentFlyingHigh) {
+                                    // at this tick, we launch a PacketCatcher
+                                    AtomicInteger counter = new AtomicInteger(20);
+                                    AtomicDouble max = new AtomicDouble(-999);
+                                    Listener.addPostPacketCatcher(new TimedPacketCatcherImpl<>(
+                                            EntityVelocityUpdateS2CPacket.class, 200, (event) -> {
+                                                Vec3d velocity = event.context.getVelocity();
+                                                //  Debug.chat("check velocity", velocity);
+                                                if (velocity.y <= max.get()
+                                                        || velocity.y > 3.0F
+                                                        || counter.getAndDecrement() < 0) {
+                                                    Tasks.scheduleDelayed(() -> useGrimPacketFly = false, 0);
+                                                    // useGrimPacketFly = false;
+
+                                                    return true;
+                                                }
+                                                max.set(velocity.y);
+                                                return false;
+                                            }));
+                                }
                                 currentFlyingHigh = true;
                                 EntityUtils.setEntityYawSafe(player, yaw);
-                                EntityUtils.setEntityPitchSafe(player, Math.min(-50, 20) + randomOffsetYaw);
+                                EntityUtils.setEntityPitchSafe(
+                                        player,
+                                        Math.min(
+                                                        -pitch40Negative.get()
+                                                                + counter2 * (float) negativeArgument.get(),
+                                                        pitch40Pitch.get())
+                                                + randomOffsetYaw);
                             }
                         }
                     } else {
@@ -662,6 +742,7 @@ public class TravellingControl extends BaseModule {
                 if (startWork
                         && mc.player != null
                         && mc.player.isFallFlying()
+                        && useGrimPacketFly
                         && !MovTasks.getElytraExtra().canFireworkControlMotion()) {
                     // working tick
                     movementManagerEvent.context.playerStatus.restorePos();
@@ -716,7 +797,10 @@ public class TravellingControl extends BaseModule {
                     }
                     stillWork = false;
                 }
-                lastY = mc.player.getY();
+                if (mc.player != null) {
+                    last3Y[last3YIndex] = mc.player.getY();
+                    last3YIndex = (last3YIndex + 1) % last3Y.length;
+                }
                 return stillWork;
             }
         };

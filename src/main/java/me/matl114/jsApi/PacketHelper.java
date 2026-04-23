@@ -2,6 +2,7 @@ package me.matl114.jsApi;
 
 import java.util.List;
 import java.util.Objects;
+import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
@@ -114,7 +115,15 @@ public class PacketHelper {
         BlockHitResult hitResult = RaycastUtils.createHitResult(blockPos, dir);
         syncHotbar();
         mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
-            return new PlayerInteractBlockC2SPacket(offhand ? Hand.OFF_HAND : Hand.MAIN_HAND, hitResult, seq);
+            var packet = new PlayerInteractBlockC2SPacket(offhand ? Hand.OFF_HAND : Hand.MAIN_HAND, hitResult, seq);
+            if (packet instanceof PlayerInteractBlockC2SPacketAccess access) {
+                access.setUseContext(new PlayerInteractBlockC2SPacketAccess.UseContext(
+                        mc.player
+                                .getStackInHand(offhand ? Hand.OFF_HAND : Hand.MAIN_HAND)
+                                .copy(),
+                        mc.world.getBlockState(hitResult.getBlockPos())));
+            }
+            return packet;
         });
     }
 
