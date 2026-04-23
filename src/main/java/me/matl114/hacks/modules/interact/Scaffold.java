@@ -1,14 +1,16 @@
 package me.matl114.hacks.modules.interact;
 
-import java.util.Objects;
-import me.matl114.accessors.access.ClientAccess;
-import me.matl114.accessors.access.ClientPlayerAccess;
+import com.google.common.util.concurrent.Runnables;
+import java.awt.*;
+import java.util.*;
+import java.util.List;
+import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ACPostTasks;
 import me.matl114.hacks.InteractionTasks;
+import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
@@ -16,24 +18,22 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RaycastUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
+import net.minecraft.registry.Registries;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.world.EmptyBlockView;
 
 public class Scaffold extends BaseModule {
@@ -49,13 +49,25 @@ public class Scaffold extends BaseModule {
         bindFlag(enable);
     }
 
+    List<Vec3i> searchOffsets;
+
+    public void updateSearchRange(int range) {
+        searchOffsets = new ArrayList<>();
+        for (int x = -range; x <= range; x++) {
+            for (int y = -3; y <= 0; y++) { // y <= 0
+                for (int z = -range; z <= range; z++) {
+                    if (x == 0 && y == 0 && z == 0) continue; // 过滤零点
+                    searchOffsets.add(new Vec3i(x, y, z));
+                }
+            }
+        }
+        searchOffsets.sort(Comparator.comparingInt(
+                v -> (int) Math.max(Math.max(Math.abs(v.getX()), Math.abs(v.getY())), Math.abs(v.getZ()))));
+    }
+
     public final FlagRef enable = flagBuilder(Configs.INTERACT_CONFIG, ENABLE).build();
 
-    public final KeyBindRef keyBind = toggleHotkey(
-                    Configs.INTERACT_CONFIG,
-                    ENABLE_HOTKEY,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_SEMICOLON),
-                    ENABLE)
+    public final KeyBindRef keyBind = toggleHotkey(Configs.INTERACT_CONFIG, ENABLE_HOTKEY, new MultiKeyBind(), ENABLE)
             .build();
 
     public final FlagRef legal =
@@ -66,10 +78,27 @@ public class Scaffold extends BaseModule {
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
-    public final IntRef cooldownOverride = builder(
-                    Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE, IntRef.TYPE)
-            .defaultValue(-1)
+    public final FlagRef keepInHand = flagBuilder(
+                    Configs.INTERACT_CONFIG, makePath("interact-scaffold.keep-block-in-hand"))
             .build();
+
+    public final IntRef expandYDepth = builder(
+                    Configs.INTERACT_CONFIG, makePath("interact-scaffold.expand-interact-y-depth"), IntRef.TYPE)
+            .defaultValue(0)
+            .validator(Configs.intRange(0, 3))
+            .build();
+
+    public final IntRef expandInteractRange = builder(
+                    Configs.INTERACT_CONFIG, makePath("interact-scaffold.expand-interact-range"), IntRef.TYPE)
+            .defaultValue(1)
+            .updateListener(this::updateSearchRange)
+            .validator(Configs.intRange(0, 3))
+            .build();
+
+    //    public final IntRef cooldownOverride = builder(
+    //                    Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE, IntRef.TYPE)
+    //            .defaultValue(-1)
+    //            .build();
 
     @Override
     public void registerAll() {
@@ -77,28 +106,58 @@ public class Scaffold extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onRightClick);
     }
 
-    private void placeBlockLegally(Hand hand, BlockHitResult result) {
-        if (mc.crosshairTarget instanceof BlockHitResult result1) {
-            // same block same side
-            // use vanilla crosshairtarget
-            if (Objects.equals(result1.getBlockPos(), result.getBlockPos())
-                    && Objects.equals(result1.getSide(), result.getSide())
-                    && Objects.equals(result1.getType(), result.getType())) {
-                InteractionTasks.placeBlock(hand, result1);
-                return;
+    private void placeBlockLegally(int hand, BlockHitResult result) {
+        int selected = mc.player.getInventory().getSelectedSlot();
+        boolean shouldInv = hand != mc.player.getInventory().getSelectedSlot();
+        int swapped = -1;
+        if (shouldInv) {
+            if (hand < 9) {
+                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
+            } else {
+                MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
+                if (slotIndex.isPresent()) {
+                    mc.interactionManager.clickSlot(
+                            mc.player.currentScreenHandler.syncId,
+                            slotIndex.getAsInt(),
+                            selected,
+                            SlotActionType.SWAP,
+                            mc.player);
+                    swapped = slotIndex.getAsInt();
+                } else return;
             }
         }
-
-        if (legal.get()) {
-            var mode = legalMode.get();
-            // todo: delay movement fix
-            switch (mode) {
-                case USEITEM_PACKET -> placeBlockUseItem(hand, result);
-                case DELAY_MOVEMENT -> placeBlockDelayMovement(hand, result);
-                case MOVEMENT -> placeBlockMovement(hand, result);
+        try {
+            if (mc.crosshairTarget instanceof BlockHitResult result1) {
+                // same block same side
+                // use vanilla crosshairtarget
+                if (Objects.equals(result1.getBlockPos(), result.getBlockPos())
+                        && Objects.equals(result1.getSide(), result.getSide())
+                        && Objects.equals(result1.getType(), result.getType())) {
+                    InteractionTasks.placeBlock(Hand.MAIN_HAND, result1);
+                    return;
+                }
             }
-        } else {
-            InteractionTasks.placeBlock(hand, result);
+
+            if (legal.get()) {
+                var mode = legalMode.get();
+                // todo: delay movement fix
+                switch (mode) {
+                    case USEITEM_PACKET -> placeBlockUseItem(Hand.MAIN_HAND, result);
+                    case DELAY_MOVEMENT -> placeBlockDelayMovement(Hand.MAIN_HAND, result);
+                    case MOVEMENT -> placeBlockMovement(Hand.MAIN_HAND, result);
+                }
+            } else {
+                InteractionTasks.placeBlock(Hand.MAIN_HAND, result);
+            }
+        } finally {
+            if (shouldInv && !keepInHand.get()) {
+                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
+                if (swapped >= 0) {
+                    mc.interactionManager.clickSlot(
+                            mc.player.currentScreenHandler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
+                }
+            }
         }
     }
 
@@ -109,55 +168,14 @@ public class Scaffold extends BaseModule {
                 .normalize());
         mc.interactionManager.sendSequencedPacket(
                 mc.world, (i) -> new PlayerInteractItemC2SPacket(hand, i, rotation.y, rotation.x));
-        InteractionTasks.placeBlock(hand, result);
+        InteractionTasks.placeBlock(Hand.MAIN_HAND, result);
+
         return;
     }
 
     private void placeBlockDelayMovement(Hand hand, BlockHitResult result) {
-        ClientPlayerAccess.of(mc.player)
-                .getLegalMovementManager()
-                .addMovementModifier(new LegalMovementManager.MovementModifier() {
-                    @Override
-                    public int priority() {
-                        return PRIORITY_LOW;
-                    }
-
-                    @Override
-                    public boolean mayModifyRotation() {
-                        return true;
-                    }
-
-                    @Override
-                    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-                        Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
-                                .toCenterPos()
-                                .subtract(mc.player.getEyePos())
-                                .normalize());
-                        movementManagerEvent.context.pushImportantRotation(true, true);
-                        EntityUtils.setEntityYawSafe(player, rotation.y);
-                        EntityUtils.setEntityPitchSafe(player, rotation.x);
-                    }
-
-                    @Override
-                    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-                        // after input tick,
-                        // we may change some of the direction flag, so the velocity will be better
-                        movementManagerEvent.context().tryCorrectMovementInput();
-                    }
-
-                    @Override
-                    public boolean postModify(
-                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                        if (enabledThisTick) {
-                            movementManagerEvent.context.playerStatus.restoreRotation();
-                            ACPostTasks.addPostTransactionAction((h) -> {
-                                InteractionTasks.placeBlock(hand, result);
-                            });
-                        }
-                        return false;
-                    }
-                });
+        InteractionTasks.placeBlock(hand, result);
+        InteractionTasks.addPostRotationCorrectTask(result.getBlockPos().toCenterPos(), Runnables.doNothing());
     }
 
     private void placeBlockMovement(Hand hand, BlockHitResult result) {
@@ -171,33 +189,67 @@ public class Scaffold extends BaseModule {
         InteractionTasks.placeBlock(hand, result);
     }
 
-    public void onRightClick(Event<Void> rightClickEvent) {
+    private Set<Item> availableItemBlocks;
 
-        // check scaffold when player right pressed the mouse
-        // todo: check this
-        if (mc.player != null && enable.get() && mc.options.useKey.isPressed()) {
-            // check hand item
-            Hand hand = null;
-            for (Hand hand0 : Hand.values()) {
-                ItemStack item = mc.player.getStackInHand(hand0);
-                // we assert player hold block while scaffold, or it will be really annoying
-                // the holding block must be a full cube
-                if (!item.isEmpty()
-                        && item.getItem() instanceof BlockItem blockItem
+    public int supplyBlock() {
+        if (availableItemBlocks == null) {
+            availableItemBlocks = new HashSet<>();
+            for (var item : Registries.ITEM) {
+                if (item instanceof BlockItem blockItem
                         && !blockItem.getBlock().getDefaultState().isAir()
                         && blockItem
                                 .getBlock()
                                 .getDefaultState()
                                 .isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN)) {
-                    // make position estimate, 2ticks after current position
-                    hand = hand0;
-                    break;
-                    // the supporting block cannot support the player
-                    // the supporting block can be replaced
-
+                    availableItemBlocks.add(blockItem);
                 }
             }
-            if (hand == null) {
+        }
+        // do not consider offHand, because some game do not support
+        PlayerInventory pinv = mc.player.getInventory();
+        ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
+        // we assert player hold block while scaffold, or it will be really annoying
+        // the holding block must be a full cube
+        int selecedSlot = pinv.getSelectedSlot();
+        if (!item.isEmpty() && availableItemBlocks.contains(item.getItem())) {
+            // make position estimate, 2ticks after current position
+
+            return selecedSlot;
+            // the supporting block cannot support the player
+            // the supporting block can be replaced
+        }
+        if (mc.player.currentScreenHandler.syncId != mc.player.playerScreenHandler.syncId) {
+            return -1;
+        }
+        for (var i = 0; i < pinv.size(); ++i) {
+            ItemStack stack = pinv.getStack(i);
+            if (!stack.isEmpty() && availableItemBlocks.contains(stack.getItem())) {
+                //                if(keepInHand.get()){
+                //                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                //                    OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(pinv, i);
+                //                    if(slotIndex.isPresent()){
+                //                        mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId,
+                // slotIndex.getAsInt(), selecedSlot, SlotActionType.SWAP, mc.player);
+                //                        return selecedSlot;
+                //                    }
+                //                }else
+                return i;
+            }
+        }
+        return -1;
+
+        // search block in backpack
+    }
+
+    public void onRightClick(Event<Void> rightClickEvent) {
+
+        // check scaffold when player right pressed the mouse
+        // todo: check this
+        if (mc.player != null && enable.get()) {
+            // check hand item
+            int idx = supplyBlock();
+
+            if (idx < 0) {
                 return;
             }
             // Debug.chat("tick", ClientAccess.of(mc).getCooldown());
@@ -207,8 +259,9 @@ public class Scaffold extends BaseModule {
             // do not predict y level
             playerPos = new Vec3d(playerPos.x, mc.player.getY(), playerPos.z);
 
-            BlockPos testPos1 = BlockPos.ofFloored(playerPos);
+            BlockPos testPos1 = BlockPos.ofFloored(playerPos.subtract(0, 0.500001F, 0));
             BlockState blockState = mc.world.getBlockState(testPos1);
+            // test if the supporting block can support player
             if (!blockState.isAir()
                     && !MoonriseBlockStateBaseAccess.of(blockState).isConstantCollisionShapeEmpty()) {
                 // if player is on a slab or something
@@ -216,32 +269,13 @@ public class Scaffold extends BaseModule {
                 //  Debug.chat("ret 1");
                 return;
             }
-            // test if the supporting block can support player
-            BlockPos supportingPos = testPos1.down();
-            BlockState supportingState = mc.world.getBlockState(supportingPos);
-            if (!supportingState.isAir()
-                    && !MoonriseBlockStateBaseAccess.of(supportingState).isConstantCollisionShapeEmpty()) {
-                // Debug.info("empty");
-                //  Debug.info("item");
-                // Debug.chat("ret 2", supportingState);
-                return;
-            }
-            if (supportingState.isReplaceable()) {
-                BlockHitResult hitResult = guessTheBestPlacePositionForTargetingBlock(supportingPos);
+
+            if (blockState.isReplaceable()) {
+                BlockHitResult hitResult = guessTheBestPlacePositionForTargetingBlock(
+                        playerPos.add(0, mc.player.dimensions.eyeHeight(), 0), testPos1);
                 if (hitResult != null) {
                     // Debug.chat("interact", hitResult.getBlockPos(), hitResult.getSide(), hitResult.getPos());
-                    placeBlockLegally(hand, hitResult);
-                    int cool = cooldownOverride.get();
-                    if (cool >= 0) {
-                        ClientAccess.of(mc).setItemUseCooldown(cool);
-                    } else {
-                        Event<Integer> event = new Event<>(4, true, true);
-                        Listener.getUseItemCooldownReset().handleValue(event);
-                        if (!event.isCancelled() && event.context() != null) {
-                            ClientAccess.of(mc).setItemUseCooldown(event.context());
-                        }
-                    }
-
+                    placeBlockLegally(idx, hitResult);
                     // todo should we autostack
 
                     return;
@@ -251,6 +285,7 @@ public class Scaffold extends BaseModule {
 
         }
     }
+
     //    //fixme delete log
     //    //fixme lefthand work
     //    //fixme speed effect
@@ -261,7 +296,7 @@ public class Scaffold extends BaseModule {
     //        }
     //    }
 
-    public BlockHitResult guessTheBestPlacePositionForTargetingBlock(BlockPos pos) {
+    public BlockHitResult guessTheBestPlacePositionForTargetingBlock(Vec3d predictedPos, BlockPos pos) {
         if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.BLOCK) {
             BlockHitResult hitResult = ((BlockHitResult) mc.crosshairTarget);
             BlockPos targetPos = hitResult.getBlockPos();
@@ -272,15 +307,8 @@ public class Scaffold extends BaseModule {
                 return hitResult;
             }
         }
-        for (Direction direction : Direction.values()) {
-            BlockPos testPos = pos.offset(direction);
-            BlockState state = mc.world.getBlockState(testPos);
-            // fixme donot place on liquid,
-            // air liquidplace
-            if (!state.isAir() && !state.isLiquid()) {
-                return RaycastUtils.createHitResult(testPos, direction.getOpposite());
-            }
-        }
+        BlockHitResult hitResult = createHitNormal(predictedPos, pos);
+        if (hitResult != null) return hitResult;
         if (!legal.get()) {
             // not legal, we can airplace
             return RaycastUtils.createHitResult(pos.offset(Direction.DOWN), Direction.UP);
@@ -290,6 +318,39 @@ public class Scaffold extends BaseModule {
         //
         //
         //
+        for (var vec3d : searchOffsets) {
+            if (vec3d.getY() >= -expandYDepth.get()) {
+                BlockPos checkPos = pos.add(vec3d);
+                BlockState state = mc.world.getBlockState(checkPos);
+                // filter can place blocks
+                if (state.isReplaceable()) {
+                    //                    RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+                    //                        2, new RenderTasks.BoxObject(Vec3d.of(checkPos),
+                    // Vec3d.of(checkPos).add(1,1,1), Color.MAGENTA)));
+
+                    hitResult = createHitNormal(predictedPos, checkPos);
+                    if (hitResult != null) return hitResult;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public BlockHitResult createHitNormal(Vec3d predictedPos, BlockPos pos) {
+        for (Direction direction : Direction.values()) {
+            BlockPos testPos = pos.offset(direction);
+            BlockState state = mc.world.getBlockState(testPos);
+            // fixme donot place on liquid,
+            // air liquidplace
+            if (!state.isAir() && !state.isLiquid()) {
+                Vec3d targetSeePos = pos.toCenterPos().offset(direction, 0.5);
+                Vec3d iSee = mc.player.getEyePos().subtract(targetSeePos);
+                if (iSee.dotProduct(direction.getDoubleVector()) < 0.0) {
+                    return RaycastUtils.createHitResult(testPos, direction.getOpposite());
+                }
+            }
+        }
         return null;
     }
 

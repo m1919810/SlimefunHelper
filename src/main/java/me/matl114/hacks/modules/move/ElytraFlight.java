@@ -43,6 +43,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         "elytra", "simple-flight-control", "no-fall-when-landing"
     };
 
+    public static final String[] MOVE_ELYTRA_FLOATING = {"elytra", "simple-flight-control", "use-floating-utils"};
+
     // public static final String[] SMART_FLOATING_
 
     public FlagRef enable = flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_FLY).build();
@@ -72,11 +74,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public final FlagRef noFallLand =
             flagBuilder(Configs.MOV_CONFIG, ELYTRA_NO_FALL_WHEN_CONTROL).build();
 
-    public final FlagRef simpleControlM =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_MOTION_CONTROL).build();
-
-    public final FlagRef simpleControlH =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_HEIGHT_CONTROL).build();
+    public final FlagRef useFloatingUtils =
+            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_FLOATING).build();
 
     private static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -110,8 +109,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     return false;
                 case SIMPLE:
                     return ((mc.options.forwardKey.isPressed() != mc.options.backKey.isPressed()))
-                            || (simpleControlH.get()
-                                    && (mc.options.jumpKey.isPressed() != mc.options.sneakKey.isPressed()));
+                            || ((mc.options.jumpKey.isPressed() != mc.options.sneakKey.isPressed()));
             }
         }
         return false;
@@ -144,9 +142,9 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                             packetMotion = true;
                         }
                     }
+                    controlMotion = velocity;
                     if (packetMotion) {
                         shouldControl = true;
-                        controlMotion = velocity;
                     }
                 }
                 case ROTATION -> {
@@ -163,62 +161,72 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                             packetMotion = true;
                         }
                     }
+                    controlMotion = velocity;
                     if (packetMotion) {
                         shouldControl = true;
-                        controlMotion = velocity;
                     }
                 }
                 case SIMPLE -> {
-                    if (simpleControlM.get()) {
-                        // motion control
-                        boolean forward = input.forward();
-                        boolean backward = input.backward();
-                        if (forward != backward) {
-                            boolean packetMotion = true;
-                            if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
-                                packetMotion = false;
-                                shouldCheckRocket = true;
-                                if (MovTasks.getElytraExtra().canFireworkControlMotion() && motionAdjust.get()) {
-                                    packetMotion = true;
-                                }
-                            }
-                            if (packetMotion) {
-                                shouldControl = true;
-                                controlMotion = controlMotion.add(mc.player
-                                        .getRotationVector()
-                                        .normalize()
-                                        .multiply(forward ? 1 : -1));
+                    // if (simpleControlM.get()) {
+                    // motion control
+                    boolean forward = input.forward();
+                    boolean backward = input.backward();
+                    if (forward != backward) {
+                        boolean packetMotion = true;
+                        if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
+                            packetMotion = false;
+                            shouldCheckRocket = true;
+                            if (MovTasks.getElytraExtra().canFireworkControlMotion() && motionAdjust.get()) {
+                                packetMotion = true;
                             }
                         }
-                    }
-                    if (simpleControlH.get()) {
-                        boolean upward = input.jump();
-                        boolean downward = input.sneak();
-                        if (upward != downward) {
-                            boolean packetMotion = true;
-                            if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
-                                packetMotion = false;
-                                shouldCheckRocket = true;
-                                if (MovTasks.getElytraExtra().canFireworkControlMotion() && motionAdjust.get()) {
-                                    packetMotion = true;
-                                }
-                            }
-                            if (packetMotion) {
-                                shouldControl = true;
-                                controlMotion = controlMotion.add(0, upward ? 1 : -1, 0);
-                            }
+                        controlMotion = controlMotion.add(
+                                mc.player.getRotationVector().normalize().multiply(forward ? 1 : -1));
+                        if (packetMotion) {
+                            shouldControl = true;
                         }
                     }
+                    // }
+                    //  if (simpleControlH.get()) {
+                    boolean upward = input.jump();
+                    boolean downward = input.sneak();
+                    if (upward != downward) {
+                        boolean packetMotion = true;
+                        if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
+                            packetMotion = false;
+                            shouldCheckRocket = true;
+                            if (MovTasks.getElytraExtra().canFireworkControlMotion() && motionAdjust.get()) {
+                                packetMotion = true;
+                            }
+                        }
+                        controlMotion = controlMotion.add(0, upward ? 1 : -1, 0);
+                        if (packetMotion) {
+                            shouldControl = true;
+                        }
+                    }
+                    // }
                 }
             }
-
+            Vec3d wayVector = controlMotion.normalize();
+            Vec3d realVector = wayVector.multiply(motionAmount);
+            // add custom elytra event for bot to control elytra
+            ElytraVelocity velocity = new ElytraVelocity(realVector);
+            Listener.getCustomListener().broadcast(new EventContainer<>(ElytraVelocity.class, velocity));
+            realVector = velocity.toVelocity();
+            // add FloatingUtils
+            if (MovTasks.getFloatingUtils().workGrimFloatingThisTick()) {
+                realVector = Vec3d.ZERO;
+                shouldControl = true;
+                shouldCheckRocket = false;
+            } else if (useFloatingUtils.get() && realVector.lengthSquared() < 1e-6) {
+                if (!MovTasks.getElytraExtra().canFireworkControlMotion()) {
+                    realVector = Vec3d.ZERO;
+                    MovTasks.getFloatingUtils().setGrimFloatingTick(true);
+                }
+                shouldControl = true;
+                shouldCheckRocket = false;
+            }
             if (shouldControl) {
-                Vec3d wayVector = controlMotion.normalize();
-                Vec3d realVector = wayVector.multiply(motionAmount);
-                // add custom elytra event for bot to control elytra
-                ElytraVelocity velocity = new ElytraVelocity(realVector);
-                Listener.getCustomListener().broadcast(new EventContainer<>(ElytraVelocity.class, velocity));
-                realVector = velocity.toVelocity();
                 boolean fakeGlideNoFall = MovTasks.getElytraExtra().shouldExcuteAntiKick();
                 mc.player.setVelocity(realVector);
                 if (fakeGlideNoFall) {

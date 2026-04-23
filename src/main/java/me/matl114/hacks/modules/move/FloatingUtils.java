@@ -70,6 +70,12 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         }
     }
 
+    boolean forceFloatingThisTick = false;
+
+    public void setGrimFloatingTick(boolean t) {
+        forceFloatingThisTick = true;
+    }
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -83,6 +89,10 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             delayedPackets.add(packet.context());
             packet.cancel();
         }
+    }
+
+    public boolean workGrimFloatingThisTick() {
+        return enableGrim.get() || forceFloatingThisTick;
     }
 
     boolean workElytraRotateThisTick = false;
@@ -104,7 +114,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        if (enableGrim.get()) {
+        if (workGrimFloatingThisTick() && !mc.player.isOnGround()) {
             movementManagerEvent.cancel();
             movementManagerEvent.context.playerStatus.restorePos();
             storedPacket = VPacket.newLookAndOnGround(
@@ -118,6 +128,8 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             workElytraRotateThisTick = false;
             movementManagerEvent.context.playerStatus.restoreRotation();
         }
+        forceFloatingThisTick = false;
+
         if (storedPacket != null) {
             mc.getNetworkHandler().sendPacket(storedPacket);
             // Listener.sendPacketNoEvents(storedPacket);
