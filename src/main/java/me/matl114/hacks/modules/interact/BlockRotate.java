@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.interact;
 
 import com.google.common.util.concurrent.Runnables;
-import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -122,7 +121,8 @@ public class BlockRotate extends BaseModule {
                         InteractionTasks.addPostRotationCorrectTask(lookVec, Runnables.doNothing());
                     }
                     if (enable3.get()
-                            && fi.dy.masa.litematica.config.Configs.Generic.EASY_PLACE_MODE.getBooleanValue()) {
+                            && LitematicaHooks.getInstance().isEnabled()
+                            && LitematicaHooks.getInstance().isEasyPlaceEnabled()) {
                         // fix post
                         ACPostTasks.addPostTransactionAction(ch -> Listener.sendPacketNoEvents(e.context));
                         e.cancel();
@@ -149,7 +149,7 @@ public class BlockRotate extends BaseModule {
         if (enable2.get() && LitematicaHooks.getInstance().isEnabled()) {
             BlockHitResult packetHitResult = packet.getBlockHitResult();
             BlockState litematicaState, clientState;
-            World litematicaWorld = SchematicWorldHandler.getSchematicWorld();
+            World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
 
             BlockPos modifyingBlockPos = useContext.getPlaceBlockPos(packet.getHand(), packetHitResult);
             clientState = mc.world.getBlockState(modifyingBlockPos);

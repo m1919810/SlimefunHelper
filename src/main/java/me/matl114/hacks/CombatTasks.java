@@ -223,6 +223,9 @@ public class CombatTasks {
     public static TotemLog totemLog;
 
     @Getter
+    public static AutoLogout autoLogout;
+
+    @Getter
     public static SpearEnhance spearEnhance;
 
     @Getter
@@ -245,10 +248,11 @@ public class CombatTasks {
         attack = new Attack().register(m);
         attackArua = new AttackArua().register(m);
         bowEnhance = new BowEnhance().register(m);
+        bowTp = new BowTp().register(m);
         projectileEnhance = new ProjectileEnhance().register(m);
         autoTotem = new AutoTotem().register(m);
         totemLog = new TotemLog().register(m);
-        bowTp = new BowTp().register(m);
+        autoLogout = new AutoLogout().register(m);
         spearEnhance = new SpearEnhance().register(m);
         spearAttack = new SpearAttack().register(m);
     }
