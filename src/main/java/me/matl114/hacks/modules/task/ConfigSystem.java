@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.task;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -40,12 +41,8 @@ public class ConfigSystem extends BaseModule {
         MainTasks.openConfigScreen(config);
     }
 
-    private final ContentDelegateWidget<ExecutableWidget> delegateWidget = new ContentDelegateWidget<>(0, 5, 100, 20) {
-        @Override
-        public int getX() {
-            return mc.currentScreen instanceof MultiplayerScreen mp ? mp.width - 205 : super.getX();
-        }
-    };
+    private final ContentDelegateWidget<ExecutableWidget> delegateWidget = McWidgetHelpers.createDynamicDelegateWidget(
+            () -> mc.currentScreen instanceof MultiplayerScreen mp ? mp.width - 205 : 0, () -> 5, 100, 20);
 
     public void onScreenInitialize(Event<Screen> screenEvent) {
         if (screenEvent.context() instanceof MultiplayerScreen mp) {

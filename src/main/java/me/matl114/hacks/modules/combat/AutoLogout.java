@@ -1,0 +1,131 @@
+package me.matl114.hacks.modules.combat;
+
+import me.matl114.events.Event;
+import me.matl114.events.Listener;
+import me.matl114.hacks.CombatTasks;
+import me.matl114.hacks.MainTasks;
+import me.matl114.hacks.api.BaseModule;
+import me.matl114.managers.Configs;
+import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.MultiKeyBind;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityStatuses;
+import net.minecraft.entity.EntityType;
+import net.minecraft.item.Items;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+
+public class AutoLogout extends BaseModule {
+    public AutoLogout() {
+        bindFlag(enable);
+    }
+
+    // 总开关
+    public final FlagRef enable =
+            flagBuilder(Configs.COMBAT_CONFIG, makePath("auto-logout.enable")).build();
+
+    public final KeyBindRef keyBindRef = toggleHotkey(
+                    Configs.COMBAT_CONFIG,
+                    makePath("auto-logout.hotkey"),
+                    new MultiKeyBind(),
+                    makePath("auto-logout.enable"))
+            .build();
+
+    // 1. 血量相关
+    public final FlagRef healthEnable = flagBuilder(Configs.COMBAT_CONFIG, makePath("auto-logout.health.enable"))
+            .build();
+    public final IntRef healthThreshold = builder(
+                    Configs.COMBAT_CONFIG, makePath("auto-logout.health.threshold"), IntRef.TYPE)
+            .defaultValue(4)
+            .build();
+
+    // 2. 不死图腾剩余数量相关
+    public final FlagRef totemLeftEnable = flagBuilder(Configs.COMBAT_CONFIG, makePath("auto-logout.totem-left.enable"))
+            .build();
+    public final IntRef totemLeftThreshold = builder(
+                    Configs.COMBAT_CONFIG, makePath("auto-logout.totem-left.threshold"), IntRef.TYPE)
+            .defaultValue(1)
+            .build();
+
+    // 3. 图腾触发时自动退出
+    public final FlagRef totemTriggerEnable = flagBuilder(
+                    Configs.COMBAT_CONFIG, makePath("auto-logout.totem-trigger.enable"))
+            .build();
+
+    // 4. 最低高度相关
+    public final FlagRef minHeightEnable = flagBuilder(Configs.COMBAT_CONFIG, makePath("auto-logout.min-height.enable"))
+            .build();
+    public final IntRef minHeightThreshold = builder(
+                    Configs.COMBAT_CONFIG, makePath("auto-logout.min-height.threshold"), IntRef.TYPE)
+            .defaultValue(256)
+            .build();
+
+    // 5. 陌生玩家出现
+    public final FlagRef strangerPlayerEnable = flagBuilder(
+                    Configs.COMBAT_CONFIG, makePath("auto-logout.stranger-player.enable"))
+            .build();
+
+    @Override
+    public void registerAll() {
+        super.registerAll();
+        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onPacketTotem);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(EntitySpawnS2CPacket.class), this::onPlayerSpawn);
+    }
+
+    public void onTick(Event<ClientPlayerEntity> event) {
+        if (enable.get()) {
+            ClientPlayerEntity player = event.context;
+            if (healthEnable.get() && player.getHealth() <= healthThreshold.get()) {
+                MainTasks.scheduleDisconnect();
+                return;
+            }
+            if (totemLeftEnable.get()) {
+                int cnt = 0;
+                for (var item : player.getInventory()) {
+                    if (!item.isEmpty() && item.getItem() == Items.TOTEM_OF_UNDYING) {
+                        cnt += 1;
+                    }
+                }
+                if (cnt <= totemLeftThreshold.get()) {
+                    MainTasks.scheduleDisconnect();
+                    return;
+                }
+            }
+            if (minHeightEnable.get() && player.getY() < minHeightThreshold.get()) {
+                MainTasks.scheduleDisconnect();
+                return;
+            }
+        }
+    }
+
+    public void onPacketTotem(Event<EntityStatusS2CPacket> event) {
+        EntityStatusS2CPacket statusS2CPacket = event.context();
+        if (enable.get()
+                && totemTriggerEnable.get()
+                && statusS2CPacket.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING
+                && mc.world != null
+                && mc.player != null) {
+            Entity entity = statusS2CPacket.getEntity(mc.world);
+            if (entity != null && entity.getId() == mc.player.getId()) {
+                MainTasks.scheduleDisconnect();
+            }
+        }
+    }
+
+    public void onPlayerSpawn(Event<EntitySpawnS2CPacket> event) {
+        if (enable.get() && strangerPlayerEnable.get() && mc.player != null) {
+            EntitySpawnS2CPacket spawn = event.context();
+            if (spawn.getEntityType() == EntityType.PLAYER && spawn.getEntityId() != mc.player.getId()) {
+                Entity entity = mc.world.getEntityById(spawn.getEntityId());
+                if (entity != null && CombatTasks.getTargetSelector().isNotFriend(entity)) {
+                    MainTasks.scheduleDisconnect();
+                }
+            }
+        }
+    }
+}

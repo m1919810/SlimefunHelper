@@ -27,6 +27,8 @@ import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.IInputManager;
 import me.matl114.utils.collections.FPoint;
 import me.matl114.utils.collections.Point;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
@@ -40,6 +42,8 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.network.ServerAddress;
+import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.Entity;
@@ -65,6 +69,8 @@ import net.minecraft.util.Language;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.BlockEntityTickInvoker;
@@ -287,6 +293,12 @@ public class Listener {
     @Getter
     @Broadcast
     private static final EventChannel<Void> serverDisconnectPoint = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    @Modifiable
+    @ExtraArgs({ServerInfo.class})
+    private static final EventChannel<ServerAddress> serverPreConnectPoint = new EventChannel<>();
 
     @Getter // cancelable
     @Broadcast
@@ -544,6 +556,30 @@ public class Listener {
     @Getter
     @Cancelable
     private static final EventChannel<BlockEntityTickInvoker> blockEntityTickListener = new EventChannel<>();
+
+    @Getter
+    @Modifiable
+    private static final EventChannel<Boolean> preWorldScannListener = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    private static final EventChannel<Void> resetWorldScannListener = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    private static final EventChannel<List<BiPredicate<BlockPos, BlockState>>> worldScannChunkBlockFilterList =
+            new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    @ExtraArgs({BlockPos.class, ChunkPos.class})
+    private static final EventChannelDispatcher<BlockState> worldScannBlockResult =
+            new EventChannelDispatcher<>(AbstractBlock.AbstractBlockState::getBlock);
+
+    @Getter
+    @Broadcast
+    @ExtraArgs({ChunkPos.class})
+    private static final EventChannel<Map<BlockPos, BlockState>> worldScannChunkResult = new EventChannel<>();
 
     // client interactions and attacks
     @Getter // handle player uses and attacks

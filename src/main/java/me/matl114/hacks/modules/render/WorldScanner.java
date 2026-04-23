@@ -7,10 +7,10 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.BiPredicate;
-import java.util.function.BooleanSupplier;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
@@ -18,9 +18,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ColorUtils;
-import me.matl114.utils.CommonUtils;
 import me.matl114.utils.RenderUtils;
-import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.block.Block;
@@ -29,15 +27,11 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 
@@ -90,16 +84,19 @@ public class WorldScanner extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostGameTick(), this::onTick);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class),
-                this::onPostBlockStateUpdate);
-        registerListener(Listener.getPacketPostHandlePoint().getChannel(ChunkDataS2CPacket.class), this::onChunkUpdate);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
-        registerListener(Listener.getServerDisconnectPoint(), this::onGameExit);
+
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(ChunkDeltaUpdateS2CPacket.class),
-                this::onChunkDeltaUpdate);
+        registerListener(Listener.getPreWorldScannListener(), this::onRequestScann);
+        registerListener(Listener.getResetWorldScannListener(), this::onResetWorldScanner);
+        registerListener(Listener.getWorldScannChunkBlockFilterList(), this::onChunkScannPredicate);
+        registerListener(Listener.getWorldScannChunkResult(), this::onChunkScannResult);
+        registerListener(Listener.getWorldScannBlockResult(), this::onBlockScannResult);
+    }
+
+    public void onRequestScann(Event<Boolean> event) {
+        if (enable.get()) {
+            event.context(Boolean.TRUE);
+        }
     }
 
     public void onEnableModule() {
@@ -112,34 +109,56 @@ public class WorldScanner extends BaseModule {
     @Override
     public void onDisableModule() {
         super.onDisableModule();
-        cancelAllPendingChunkTasks();
-    }
-
-    public void onWorldChange(Event<World> event) {
-        cancelAllPendingChunkTasks();
-    }
-
-    public void onGameExit(Event<Void> event) {
-        cancelAllPendingChunkTasks();
     }
 
     boolean pendingRefreshWhenInGame = true;
     public Set<Block> currentSearchingSet = new HashSet<>();
     public Map<ChunkPos, Map<BlockPos, BlockState>> currentSearchingResult = new ConcurrentHashMap<>();
-    public Map<ChunkPos, Queue<BooleanSupplier>> pendingUpdateTasks = new ConcurrentHashMap<>();
 
-    public void restartWorldScanner() {
+    public void onResetWorldScanner(Event<Void> event) {
         currentSearchingResult.clear();
-        cancelAllPendingChunkTasks();
-        if (checkNull()) return;
-        refreshAllChunks();
     }
 
-    public void refreshAllChunks() {
-        RegistryRegex<Block> regex = typeFilter.get();
-        for (Chunk chunk : CommonUtils.chunks(false)) {
-            ChunkPos chunkPos = chunk.getPos();
-            scheduleChunkTask(chunkPos, () -> onChunkReScann(chunkPos, regex), true);
+    public void onChunkScannPredicate(Event<List<BiPredicate<BlockPos, BlockState>>> event) {
+        if (enable.get()) {
+            event.context.add((s, b) -> currentSearchingSet.contains(b.getBlock()));
+        }
+    }
+
+    public void onChunkScannResult(Event<Map<BlockPos, BlockState>> chunkScannResultEvent) {
+        if (enable.get()) {
+            // accepted
+            ChunkPos chunkPos = chunkScannResultEvent.getArgs(0);
+            ConcurrentHashMap<BlockPos, BlockState> stateMap =
+                    new ConcurrentHashMap<>(chunkScannResultEvent.context.size());
+            for (var entry : chunkScannResultEvent.context.entrySet()) {
+                if (currentSearchingSet.contains(entry.getValue().getBlock())) {
+                    stateMap.put(entry.getKey(), entry.getValue());
+                }
+            }
+            currentSearchingResult.put(chunkPos, stateMap);
+        }
+    }
+
+    public void onBlockScannResult(Event<BlockState> stateUpdate) {
+        if (enable.get()) {
+            BlockState state = stateUpdate.context;
+            BlockPos pos = stateUpdate.getArgs(0);
+            ChunkPos chunkPos = stateUpdate.getArgs(1);
+            boolean accept = currentSearchingSet.contains(state.getBlock());
+            if (accept) {
+                Map<BlockPos, BlockState> stateMap =
+                        currentSearchingResult.computeIfAbsent(chunkPos, k -> new ConcurrentHashMap<>());
+                stateMap.put(pos, state);
+            } else {
+                Map<BlockPos, BlockState> stateMap = currentSearchingResult.get(chunkPos);
+                if (stateMap != null) {
+                    stateMap.remove(pos);
+                    if (stateMap.isEmpty()) {
+                        currentSearchingResult.remove(chunkPos);
+                    }
+                }
+            }
         }
     }
 
@@ -171,143 +190,6 @@ public class WorldScanner extends BaseModule {
                 }
             }
         }
-        Set<ChunkPos> chunkPoses = new HashSet<>(pendingUpdateTasks.keySet());
-        for (var key : chunkPoses) {
-            if (!mc.world.getChunkManager().isChunkLoaded(key.x, key.z)) {
-                cancelPendingChunkTask(key);
-            }
-        }
-    }
-
-    public void scheduleChunkTask(ChunkPos pos, Runnable runnable, boolean async) {
-        BooleanSupplier asyncTask = async
-                ? () -> {
-                    // note that there is async task running, capturing tasks in the queue
-                    pendingUpdateTasks.computeIfAbsent(pos, (v) -> new ConcurrentLinkedDeque<>());
-                    CompletableFuture.runAsync(runnable)
-                            .thenRunAsync(
-                                    () -> {
-                                        Queue<BooleanSupplier> runnables = pendingUpdateTasks.get(pos);
-                                        if (runnables != null) {
-                                            while (!runnables.isEmpty()) {
-                                                var task = runnables.poll();
-                                                if (task.getAsBoolean()) {
-                                                    // wait until next async task finish to pull the rest of the task
-                                                    return;
-                                                } else {
-                                                    continue;
-                                                }
-                                            }
-                                            // all task finished
-                                            pendingUpdateTasks.remove(pos);
-                                        }
-                                    },
-                                    mc);
-                    return true;
-                }
-                : () -> {
-                    runnable.run();
-                    return false;
-                };
-        mc.execute(() -> {
-            // all "pendingUpdateTasks map" was modified on Main Thread (mc)
-            if (pendingUpdateTasks.computeIfPresent(pos, (k, v) -> {
-                        v.add(asyncTask);
-                        return v;
-                    })
-                    == null) {
-                asyncTask.getAsBoolean();
-            }
-        });
-    }
-
-    public void cancelPendingChunkTask(ChunkPos chunkPos) {
-        mc.execute(() -> pendingUpdateTasks.remove(chunkPos));
-    }
-
-    public void cancelAllPendingChunkTasks() {
-        mc.execute(() -> pendingUpdateTasks.clear());
-    }
-
-    private void onSingleBlockValueChange(BlockPos pos) {
-        if (checkNull()) return;
-        ChunkPos chunkPos = CommonUtils.toChunk(pos);
-        if (mc.world.getChunkManager().isChunkLoaded(chunkPos.x, chunkPos.z)) {
-            BlockState state = mc.world.getBlockState(pos);
-            boolean accept = currentSearchingSet.contains(state.getBlock());
-            if (accept) {
-                Map<BlockPos, BlockState> stateMap =
-                        currentSearchingResult.computeIfAbsent(chunkPos, k -> new ConcurrentHashMap<>());
-                stateMap.put(pos, state);
-            } else {
-                Map<BlockPos, BlockState> stateMap = currentSearchingResult.get(chunkPos);
-                if (stateMap != null) {
-                    stateMap.remove(pos);
-                    if (stateMap.isEmpty()) {
-                        currentSearchingResult.remove(chunkPos);
-                    }
-                }
-            }
-        }
-    }
-
-    private void onChunkReScann(ChunkPos chunkPos, RegistryRegex<Block> oldRegex) {
-        if (checkNull()) return;
-        if (mc.world.getChunkManager().isChunkLoaded(chunkPos.x, chunkPos.z)) {
-            Chunk chunk = mc.world.getChunkManager().getChunk(chunkPos.x, chunkPos.z, ChunkStatus.FULL, false);
-            if (chunk != null) {
-                BiPredicate<BlockPos, BlockState> predicate = (b, s) -> oldRegex.test(s.getBlock());
-                Map<BlockPos, BlockState> stateMap = WorldUtils.scannChunk(chunk, predicate);
-                if (typeFilter.get() == oldRegex
-                        || typeFilter.get().getFilterValue().equals(oldRegex.getFilterValue())) {
-                    // accepted
-                    currentSearchingResult.put(chunkPos, new ConcurrentHashMap<>(stateMap));
-                }
-            }
-        }
-    }
-
-    public void onPostBlockStateUpdate(Event<BlockUpdateS2CPacket> updateS2CPacketEvent) {
-        if (checkNull()) return;
-        if (enable.get()) {
-            BlockUpdateS2CPacket blockUpdateS2CPacket = updateS2CPacketEvent.context();
-            BlockPos blockPos = blockUpdateS2CPacket.getPos();
-            ChunkPos chunkPos = CommonUtils.toChunk(blockPos);
-            scheduleChunkTask(chunkPos, () -> onSingleBlockValueChange(blockPos.toImmutable()), false);
-        }
-    }
-
-    public void onChunkUpdate(Event<ChunkDataS2CPacket> chunkDataS2CPacketEvent) {
-        if (checkNull()) return;
-        if (enable.get()) {
-            ChunkDataS2CPacket packet = chunkDataS2CPacketEvent.context();
-            Chunk updatedChunk = mc.world.getChunk(packet.getChunkX(), packet.getChunkZ(), ChunkStatus.FULL, false);
-            if (updatedChunk != null) {
-                ChunkPos chunkPos = new ChunkPos(packet.getChunkX(), packet.getChunkZ());
-                RegistryRegex<Block> regex = typeFilter.get();
-                // because of chunk update, cancel all the last
-                cancelPendingChunkTask(chunkPos);
-                scheduleChunkTask(chunkPos, () -> onChunkReScann(chunkPos, regex), true);
-            }
-        }
-    }
-
-    public void onChunkDeltaUpdate(Event<ChunkDeltaUpdateS2CPacket> chunkDeltaUpdateS2CPacketEvent) {
-        if (checkNull()) return;
-        if (enable.get()) {
-            ChunkDeltaUpdateS2CPacket packet = chunkDeltaUpdateS2CPacketEvent.context();
-            ChunkSectionPos chunkSecPos = packet.sectionPos;
-            // Chunk updateChunk = mc.world.getChunk(chunkPos.getX(), chunkPos.getZ(), ChunkStatus.FULL, false);
-            ChunkPos chunkPos = new ChunkPos(chunkSecPos.getX(), chunkSecPos.getZ());
-            scheduleChunkTask(
-                    chunkPos,
-                    () -> {
-                        packet.visitUpdates((bp, bs) -> {
-                            onSingleBlockValueChange(bp.toImmutable());
-                        });
-                    },
-                    false);
-        }
     }
 
     int resultUpdate = 0;
@@ -319,7 +201,7 @@ public class WorldScanner extends BaseModule {
                 && (mc.currentScreen == null || mc.currentScreen instanceof HandledScreen<?>)) {
             // do not refresh when config is open or when player open exit menu
             pendingRefreshWhenInGame = false;
-            restartWorldScanner();
+            WorldTasks.restartWorldScanner();
         }
         if (enable.get()) {
             if (resultUpdate < 50) {

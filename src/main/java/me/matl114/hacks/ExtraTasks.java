@@ -48,6 +48,9 @@ public class ExtraTasks {
     public static ServerScanner serverScanner;
 
     @Getter
+    public static AutoReconnect autoReconnect;
+
+    @Getter
     public static Warps warps;
 
     private static void initModules(ModuleManager m) {
@@ -62,6 +65,7 @@ public class ExtraTasks {
         guiFix = new GuiFix().register(m);
 
         serverScanner = new ServerScanner().register(m);
+        autoReconnect = new AutoReconnect().register(m);
         warps = new Warps().register(m);
     }
 

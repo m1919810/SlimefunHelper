@@ -572,9 +572,11 @@ public class TravellingControl extends BaseModule {
                     ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
                     if (pitch40SafeHeight.get() && player.getY() < minHeight.get() - 16) {
                         // emergency
-                        Debug.info("Pitch40 out of control!");
-                        Debug.chat("[Pitch40] 滑翔失控了,我们需要直接断线");
-                        MainTasks.scheduleDisconnect();
+                        Debug.chat("[Pitch40] 滑翔失控了");
+                        if (pitch40SafeHeight.get()) {
+                            Debug.info("Pitch40 out of control!");
+                            MainTasks.scheduleDisconnect();
+                        }
                         startWork = false;
                         stillWork = false;
                         // return immediately.
@@ -745,16 +747,18 @@ public class TravellingControl extends BaseModule {
                         && useGrimPacketFly
                         && !MovTasks.getElytraExtra().canFireworkControlMotion()) {
                     // working tick
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    movementManagerEvent.cancel();
-                    storedPacket = VPacket.newFull(
-                            mc.player.getX(),
-                            mc.player.getY(),
-                            mc.player.getZ(),
-                            mc.player.getYaw(),
-                            mc.player.getPitch(),
-                            mc.player.isOnGround(),
-                            mc.player.horizontalCollision);
+                    if (true) {
+                        movementManagerEvent.context.playerStatus.restorePos();
+                        movementManagerEvent.cancel();
+                        storedPacket = VPacket.newFull(
+                                mc.player.getX(),
+                                mc.player.getY() + 0.25 * ((Tasks.getTick() % 3) + 1),
+                                mc.player.getZ(),
+                                mc.player.getYaw(),
+                                mc.player.getPitch(),
+                                mc.player.isOnGround(),
+                                mc.player.horizontalCollision);
+                    }
                 }
             }
 
@@ -769,11 +773,13 @@ public class TravellingControl extends BaseModule {
                     // main logic, just logout for safety
                     // movementManagerEvent.context.playerStatus.restoreRotation();
                     ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-                    if (pitch40SafeHeight.get() && player.getY() < minHeight.get() - 16) {
+                    if (player.getY() < minHeight.get() - 16) {
                         // emergency
-                        Debug.info("Pitch40 out of control!");
-                        Debug.chat("[Pitch40] 滑翔失控了,我们需要直接断线");
-                        MainTasks.scheduleDisconnect();
+                        Debug.chat("[Pitch40] 滑翔失控了");
+                        if (pitch40SafeHeight.get()) {
+                            Debug.info("Pitch40 out of control!");
+                            MainTasks.scheduleDisconnect();
+                        }
                         startWork = false;
                         stillWork = false;
                         // return immediately.

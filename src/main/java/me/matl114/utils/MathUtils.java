@@ -29,6 +29,14 @@ public class MathUtils {
         return Integer.compare(t, 0);
     }
 
+    public static boolean isInBox(Vec3d a, Vec3d b, double range) {
+        return isInBox(a.subtract(b), range);
+    }
+
+    public static boolean isInBox(Vec3d a, double range) {
+        return Math.abs(a.x) < range && Math.abs(a.y) < range && Math.abs(a.z) < range;
+    }
+
     public static Vec3d linearInterpolation(Vec3d[] vec3ds, int ticksLater) {
         if (ticksLater <= 0 || vec3ds.length < 3) return vec3ds[vec3ds.length - 1];
         if (vec3ds[0] == null || vec3ds[1] == null || vec3ds[2] == null) return vec3ds[2];
