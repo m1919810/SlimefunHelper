@@ -2,6 +2,7 @@ package me.matl114.gui;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ContentDelegateWidget;
@@ -11,6 +12,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.EditBoxWidget;
@@ -143,6 +146,20 @@ public class McWidgetHelpers {
             TextFieldAccess.of(widget).setBorderColorProvider(boxColorProvider);
         }
         return new TextContentDelegateWidget<>(0, 0, widget);
+    }
+
+    public static <T extends Element & Drawable & Selectable> ContentDelegateWidget<T> createDynamicDelegateWidget(
+            IntSupplier xS, IntSupplier yS, int dx, int dy) {
+        return new ContentDelegateWidget<>(0, 0, dx, dy) {
+            @Override
+            public int getX() {
+                return xS.getAsInt();
+            }
+
+            public int getY() {
+                return yS.getAsInt();
+            }
+        };
     }
 
     public static class TextContentDelegateWidget<T extends ClickableWidget> extends ContentDelegateWidget<T> {

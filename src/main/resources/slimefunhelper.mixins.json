@@ -30,6 +30,7 @@
 		"events.ClientPlayerInteractionManagerEvents",
 		"events.ClientPlayNetworkHandlerEvents",
 		"events.ClientWorldEvents",
+		"events.ConnectScreenEvents",
 		"events.DataTrackerEvents",
 		"events.EntityEvents",
 		"events.EntityTypeEvents",

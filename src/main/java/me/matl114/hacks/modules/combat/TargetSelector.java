@@ -114,14 +114,14 @@ public class TargetSelector extends BaseModule {
             // if it is not friendly to us, and attackHostile is enabled, then we can still attack them
         }
 
-        if (!passNameCheck(target)) {
+        if (!isNotFriend(target)) {
             return false;
         }
 
-        if (!passTeamCheck(target)) {
+        if (!isNotTeamMate(target)) {
             return false;
         }
-        if (!passInvulnerableCheck(target)) {
+        if (!isNotInvulnerable(target)) {
             return false;
         }
         return true;
@@ -131,7 +131,7 @@ public class TargetSelector extends BaseModule {
         return checkWeapon(target, true) && canAttack(target);
     }
 
-    private boolean passNameCheck(Entity e) {
+    public boolean isNotFriend(Entity e) {
         if (e instanceof PlayerEntity pl) {
             String name = pl.getNameForScoreboard();
             String regex = friendNameRegex.get();
@@ -157,7 +157,7 @@ public class TargetSelector extends BaseModule {
         }
     }
 
-    private boolean passTeamCheck(Entity e) {
+    public boolean isNotTeamMate(Entity e) {
         if (teamMate.get()) {
             if (e instanceof PlayerEntity pl) {
 
@@ -186,7 +186,7 @@ public class TargetSelector extends BaseModule {
         return true;
     }
 
-    private boolean passInvulnerableCheck(Entity e) {
+    public boolean isNotInvulnerable(Entity e) {
         if (!invulnerable.get()) {
             if (e instanceof PlayerEntity pl) {
                 // login players are invulnerable

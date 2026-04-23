@@ -60,6 +60,7 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.function.Consumers;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 // todo: add more Functional Method as API
@@ -2230,6 +2231,10 @@ public class MovTasks {
     @Getter
     public static TravellingControl travellingControl;
 
+    @ApiStatus.Experimental
+    @Getter
+    public static ElytraFinder elytraFinder;
+
     private static void initModules(ModuleManager m) {
         // move
         movExtra = new MovExtra().register(m);
@@ -2253,6 +2258,7 @@ public class MovTasks {
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);
         travellingControl = new TravellingControl().register(m);
+        elytraFinder = new ElytraFinder().register(m);
     }
 
     static {

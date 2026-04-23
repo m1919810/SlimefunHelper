@@ -145,6 +145,7 @@ public class MainTasks {
         RenderTasks.init();
         InvTasks.init();
         CombatTasks.init();
+        WorldTasks.init();
         MovTasks.init();
         NetworksTasks.init();
         InteractionTasks.init();
