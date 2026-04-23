@@ -18,6 +18,7 @@ import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
@@ -225,12 +226,95 @@ public class EntityUtils {
         return new Vec2f(rotationToPitch(vec), rotationToYaw(vec));
     }
 
+    public static Vec2f directionToPitchYaw(Direction direction) {
+        switch (direction) {
+            case DOWN:
+                return new Vec2f(89.9F, 0);
+            case UP:
+                return new Vec2f(-89.9F, 0);
+            case NORTH:
+                return new Vec2f(0, 180);
+            case SOUTH:
+                return new Vec2f(0, 0);
+            case WEST:
+                return new Vec2f(0, 90);
+            case EAST:
+                return new Vec2f(0, -90);
+            default:
+                throw new IllegalArgumentException("Unknown direction: " + direction);
+        }
+    }
+
     public static float rotationToYaw(Vec3d vec) {
         return (float) Math.toDegrees(Math.atan2(-vec.x, vec.z));
     }
 
+    public static float rotationToYaw(Direction direction) {
+        switch (direction) {
+            case SOUTH:
+                return 0.0F;
+            case WEST:
+                return 90.0F;
+            case NORTH:
+                return 180.0F;
+            case EAST:
+                return -90.0F;
+            default:
+                // 对于UP/DOWN，返回0或任意值，但通常不会调用
+                return 0.0F;
+        }
+    }
+
     public static float rotationToPitch(Vec3d vec) {
         return (float) Math.toDegrees(Math.asin(-vec.y));
+    }
+
+    public static Direction pitchYawToDirection(Vec2f pitchYaw) {
+        float pitch = pitchYaw.x;
+        float yaw = pitchYaw.y;
+
+        double radPitch = Math.toRadians(pitch);
+        double radYaw = Math.toRadians(yaw);
+
+        double cosPitch = Math.cos(radPitch);
+        double sinPitch = Math.sin(radPitch);
+        double cosYaw = Math.cos(radYaw);
+        double sinYaw = Math.sin(radYaw);
+
+        double x = -cosPitch * sinYaw;
+        double y = -sinPitch;
+        double z = cosPitch * cosYaw;
+
+        double x2 = x * x;
+        double y2 = y * y;
+        double z2 = z * z;
+
+        if (x2 > y2 && x2 > z2) {
+            return x > 0 ? Direction.EAST : Direction.WEST;
+        } else if (y2 > x2 && y2 > z2) {
+            return y > 0 ? Direction.UP : Direction.DOWN;
+        } else {
+            return z > 0 ? Direction.SOUTH : Direction.NORTH;
+        }
+    }
+
+    public static Direction yawToHorizontalDirection(float yaw) {
+        // 将角度偏移 45°，使边界落在整数点上
+        float shifted = yaw + 45;
+        // 归一化到 [0, 360)
+        float norm = shifted % 360;
+        if (norm < 0) norm += 360;
+        int quarter = (int) (norm / 90);
+        switch (quarter) {
+            case 0:
+                return Direction.SOUTH; // 原偏移后 0-90 -> 原 -45~45 -> 南
+            case 1:
+                return Direction.WEST; // 90-180 -> 45~135 -> 西
+            case 2:
+                return Direction.NORTH; // 180-270 -> 135~225 -> 北
+            default:
+                return Direction.EAST; // 270-360 -> 225~315 -> 东
+        }
     }
 
     public static double getProjectileGravity(Item item) {

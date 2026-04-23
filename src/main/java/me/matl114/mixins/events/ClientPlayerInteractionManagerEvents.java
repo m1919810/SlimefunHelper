@@ -1,23 +1,36 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.sugar.Local;
+import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.client.network.SequencedPacketCreator;
+import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayerInteractionManager.class)
 public abstract class ClientPlayerInteractionManagerEvents {
+
+    @Shadow
+    @Final
+    private MinecraftClient client;
 
     @Inject(method = "clickRecipe", at = @At("HEAD"))
     public void onClickRecipe(int syncId, NetworkRecipeId recipeId, boolean craftAll, CallbackInfo ci) {
@@ -44,5 +57,29 @@ public abstract class ClientPlayerInteractionManagerEvents {
     public void onPostInteractBlock(
             ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir) {
         Listener.doItemUseAtBlockPost(hand, hitResult);
+    }
+
+    @ModifyArg(
+            method = "interactBlock",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V"),
+            index = 1)
+    public SequencedPacketCreator onModifyArgument(
+            SequencedPacketCreator packetCreator,
+            @Local(argsOnly = true) Hand hand,
+            @Local(argsOnly = true) BlockHitResult hitResult) {
+        ItemStack stackCopy = client.player.getStackInHand(hand).copy();
+        BlockState state = client.world.getBlockState(hitResult.getBlockPos());
+
+        return (seq) -> {
+            var packet = packetCreator.predict(seq);
+            if (packet instanceof PlayerInteractBlockC2SPacketAccess access) {
+                access.setUseContext(new PlayerInteractBlockC2SPacketAccess.UseContext(stackCopy, state));
+            }
+            return packet;
+        };
     }
 }

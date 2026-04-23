@@ -19,6 +19,7 @@ import me.matl114.utils.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
 
 public class RenderTasks {
@@ -47,6 +48,23 @@ public class RenderTasks {
         if (DEBUG_RENDER_COLLISION_RENDERING && DEBUG_RENDER_COLLISION) {
             RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
                     DEBUG_TICK, new BoxObject(box.getMinPos(), box.getMaxPos(), STATIC_DEBUG_COLOR)));
+        }
+    }
+
+    public static void debugBlockHitResult(BlockHitResult packetHitResult) {
+        if (DEBUG_RENDER_INTERACTION) {
+            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+                    RenderTasks.DEBUG_TICK,
+                    new RenderTasks.BoxObject(
+                            Vec3d.of(packetHitResult.getBlockPos()),
+                            Vec3d.of(packetHitResult.getBlockPos()).add(1, 1, 1),
+                            Color.WHITE)));
+            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+                    RenderTasks.DEBUG_TICK,
+                    new RenderTasks.BoxObject(
+                            packetHitResult.getPos().add(-0.1, -0.1, -0.1),
+                            packetHitResult.getPos().add(0.1, 0.1, 0.1),
+                            Color.RED)));
         }
     }
 
