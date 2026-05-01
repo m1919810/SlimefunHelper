@@ -82,6 +82,11 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onTransactionPacket);
     }
 
+    @Override
+    public int priority() {
+        return PRIORITY_MONITOR;
+    }
+
     Packet<?> storedPacket;
 
     public void onTransactionPacket(Event<CommonPingS2CPacket> packet) {
@@ -92,7 +97,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     }
 
     public boolean workGrimFloatingThisTick() {
-        return enableGrim.get() || forceFloatingThisTick;
+        return (enableGrim.get() && !mc.player.isOnGround()) || forceFloatingThisTick;
     }
 
     boolean workElytraRotateThisTick = false;
@@ -114,7 +119,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        if (workGrimFloatingThisTick() && !mc.player.isOnGround()) {
+        if (workGrimFloatingThisTick()) {
             movementManagerEvent.cancel();
             movementManagerEvent.context.playerStatus.restorePos();
             storedPacket = VPacket.newLookAndOnGround(

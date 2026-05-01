@@ -22,6 +22,11 @@ public abstract class NetworkThreadUtilsEvents {
                             target =
                                     "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V"))
     private void wrapPacketHandle(Packet instance, PacketListener t, Operation<Void> original) {
+        // do not handle serverbound packet
+        if (t.getSide() == NetworkSide.SERVERBOUND) {
+            original.call(instance, t);
+            return;
+        }
         Listener.callPacketHandleEvent(instance, t, original::call);
     }
 }

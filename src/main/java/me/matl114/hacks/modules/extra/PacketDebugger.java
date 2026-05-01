@@ -14,10 +14,7 @@ import me.matl114.managers.config.StringRef;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -74,7 +71,7 @@ public class PacketDebugger extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle);
-        registerListener(Listener.getPacketPostSendPoint(), this::onPacketSend);
+        registerListener(Listener.getPacketPostSendPoint(), this::onPacketSend, Integer.MAX_VALUE);
         registerListener(Listener.getPacketPoint(), this::onPacket);
     }
 
@@ -142,6 +139,11 @@ public class PacketDebugger extends BaseModule {
                             simplifyId(type.getPacketId().id()),
                             ((Enum) interact.type.getType()).name(),
                             interact.entityId);
+                } else if (type instanceof ClientCommandC2SPacket ccmd) {
+                    ExtraTasks.debug(
+                            "Send",
+                            simplifyId(type.getPacketId().id()),
+                            ccmd.getMode().name());
                 } else {
                     ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()));
                 }

@@ -9,7 +9,7 @@ import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ACPostTasks;
+import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
@@ -242,7 +242,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                                 }
                                 PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
 
-                                ACPostTasks.addPostTransactionAction(han -> {
+                                ACTasks.addPostTransactionAction(han -> {
                                     // to trigger plugin events
                                     input.sneak(true).sendPlayerInputPacket();
                                     input.sneak(false).sendPlayerInputPacket();

@@ -1,16 +1,13 @@
 package me.matl114.hacks.modules.interact;
 
-import com.google.common.util.concurrent.Runnables;
-import java.awt.*;
 import java.util.*;
 import java.util.List;
-import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InteractionTasks;
-import me.matl114.hacks.MovTasks;
+import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
@@ -19,17 +16,14 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.EntityUtils;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.RaycastUtils;
-import me.matl114.versioned.api.VPacket;
+import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.registry.Registries;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -104,28 +98,13 @@ public class Scaffold extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onRightClick);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetReload);
     }
 
     private void placeBlockLegally(int hand, BlockHitResult result) {
-        int selected = mc.player.getInventory().getSelectedSlot();
-        boolean shouldInv = hand != mc.player.getInventory().getSelectedSlot();
-        int swapped = -1;
-        if (shouldInv) {
-            if (hand < 9) {
-                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
-            } else {
-                MovTasks.getMovExtra().sendPacketsForInventoryAction();
-                OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
-                if (slotIndex.isPresent()) {
-                    mc.interactionManager.clickSlot(
-                            mc.player.currentScreenHandler.syncId,
-                            slotIndex.getAsInt(),
-                            selected,
-                            SlotActionType.SWAP,
-                            mc.player);
-                    swapped = slotIndex.getAsInt();
-                } else return;
-            }
+        Runnable callback = InvTasks.getInvExtra().swapInventoryIndexToHand(hand);
+        if (callback == null) {
+            return;
         }
         try {
             if (mc.crosshairTarget instanceof BlockHitResult result1) {
@@ -142,51 +121,15 @@ public class Scaffold extends BaseModule {
             if (legal.get()) {
                 var mode = legalMode.get();
                 // todo: delay movement fix
-                switch (mode) {
-                    case USEITEM_PACKET -> placeBlockUseItem(Hand.MAIN_HAND, result);
-                    case DELAY_MOVEMENT -> placeBlockDelayMovement(Hand.MAIN_HAND, result);
-                    case MOVEMENT -> placeBlockMovement(Hand.MAIN_HAND, result);
-                }
+                InteractionTasks.handlePlaceMode(mode, result, Hand.MAIN_HAND);
             } else {
                 InteractionTasks.placeBlock(Hand.MAIN_HAND, result);
             }
         } finally {
-            if (shouldInv && !keepInHand.get()) {
-                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
-                if (swapped >= 0) {
-                    mc.interactionManager.clickSlot(
-                            mc.player.currentScreenHandler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
-                }
+            if (!keepInHand.get()) {
+                callback.run();
             }
         }
-    }
-
-    private void placeBlockUseItem(Hand hand, BlockHitResult result) {
-        Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
-                .toCenterPos()
-                .subtract(mc.player.getEyePos())
-                .normalize());
-        mc.interactionManager.sendSequencedPacket(
-                mc.world, (i) -> new PlayerInteractItemC2SPacket(hand, i, rotation.y, rotation.x));
-        InteractionTasks.placeBlock(Hand.MAIN_HAND, result);
-
-        return;
-    }
-
-    private void placeBlockDelayMovement(Hand hand, BlockHitResult result) {
-        InteractionTasks.placeBlock(hand, result);
-        InteractionTasks.addPostRotationCorrectTask(result.getBlockPos().toCenterPos(), Runnables.doNothing());
-    }
-
-    private void placeBlockMovement(Hand hand, BlockHitResult result) {
-        Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
-                .toCenterPos()
-                .subtract(mc.player.getEyePos())
-                .normalize());
-        mc.getNetworkHandler()
-                .sendPacket(VPacket.newLookAndOnGround(
-                        rotation.y, rotation.x, mc.player.isOnGround(), mc.player.horizontalCollision));
-        InteractionTasks.placeBlock(hand, result);
     }
 
     private Set<Item> availableItemBlocks;
@@ -206,37 +149,9 @@ public class Scaffold extends BaseModule {
             }
         }
         // do not consider offHand, because some game do not support
-        PlayerInventory pinv = mc.player.getInventory();
-        ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
-        // we assert player hold block while scaffold, or it will be really annoying
-        // the holding block must be a full cube
-        int selecedSlot = pinv.getSelectedSlot();
-        if (!item.isEmpty() && availableItemBlocks.contains(item.getItem())) {
-            // make position estimate, 2ticks after current position
-
-            return selecedSlot;
-            // the supporting block cannot support the player
-            // the supporting block can be replaced
-        }
-        if (mc.player.currentScreenHandler.syncId != mc.player.playerScreenHandler.syncId) {
-            return -1;
-        }
-        for (var i = 0; i < pinv.size(); ++i) {
-            ItemStack stack = pinv.getStack(i);
-            if (!stack.isEmpty() && availableItemBlocks.contains(stack.getItem())) {
-                //                if(keepInHand.get()){
-                //                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
-                //                    OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(pinv, i);
-                //                    if(slotIndex.isPresent()){
-                //                        mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId,
-                // slotIndex.getAsInt(), selecedSlot, SlotActionType.SWAP, mc.player);
-                //                        return selecedSlot;
-                //                    }
-                //                }else
-                return i;
-            }
-        }
-        return -1;
+        IndexEntry<ItemStack> stackEntry =
+                InventoryUtils.findPlayerItem((item) -> availableItemBlocks.contains(item.getItem()), true);
+        return stackEntry == null ? -1 : stackEntry.index();
 
         // search block in backpack
     }

@@ -18,6 +18,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
+import net.minecraft.network.NetworkSide;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
@@ -277,6 +278,11 @@ public abstract class ClientPlayNetworkHandlerEvents {
                             target =
                                     "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V"))
     private void wrapBundledPacket(Packet instance, PacketListener t, Operation<Void> original) {
+        // do not handle serverbound packet
+        if (t.getSide() == NetworkSide.SERVERBOUND) {
+            original.call(instance, t);
+            return;
+        }
         Listener.callPacketHandleEvent(instance, t, original::call);
     }
 }

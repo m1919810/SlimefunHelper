@@ -207,7 +207,7 @@ public class WorldTasks {
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(ChunkDataS2CPacket.class), WorldTasks::onChunkUpdate);
         registerListener(Listener.getWorldSwitchPoint(), WorldTasks::onWorldChange);
-        registerListener(Listener.getServerDisconnectPoint(), WorldTasks::onGameExit);
+        registerListener(Listener.getServerLeavePoint(), WorldTasks::onGameExit);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(ChunkDeltaUpdateS2CPacket.class),
                 WorldTasks::onChunkDeltaUpdate);

@@ -25,7 +25,7 @@ public class KeepInv extends BaseModule {
     public void registerAll() {
         super.registerAll();
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enable);
-        TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + CLEAR_KEEP, this::clearKeep);
+        TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
     }
 
     public void clearKeep() {

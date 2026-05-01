@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.move;
 
 import java.util.Locale;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -39,10 +38,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public static final String[] ELYTRA_FLIGHT_CONTROL = {"elytra", "simple-flight-control", "flight-mode"};
 
-    public static final String[] ELYTRA_NO_FALL_WHEN_CONTROL = {
-        "elytra", "simple-flight-control", "no-fall-when-landing"
-    };
-
     public static final String[] MOVE_ELYTRA_FLOATING = {"elytra", "simple-flight-control", "use-floating-utils"};
 
     // public static final String[] SMART_FLOATING_
@@ -70,9 +65,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public final FlagRef motionAdjust = builder(Configs.MOV_CONFIG, MOVE_ELYTRA_MOTION_ADJUST, FlagRef.TYPE)
             .defaultValue(true)
             .build();
-
-    public final FlagRef noFallLand =
-            flagBuilder(Configs.MOV_CONFIG, ELYTRA_NO_FALL_WHEN_CONTROL).build();
 
     public final FlagRef useFloatingUtils =
             flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_FLOATING).build();
@@ -233,7 +225,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     realVector = MovTasks.getCreativeFlight().processAntiKickMotion(realVector, true);
                     mc.player.setVelocity(realVector);
                 }
-                controllingTick = true;
                 if (Math.abs(realVector.y) <= 1e-7) {
                     modifyNoGravity = player.hasNoGravity();
                     player.setNoGravity(true);
@@ -255,29 +246,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         }
     }
 
-    boolean controllingTick = false;
+    // boolean controllingTick = false;
     boolean modifyPitchYawThisTick = false;
     Boolean modifyNoGravity = null;
-    boolean nextTickIsOnGroundTick = false;
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-
-        if (enable.get()
-                && noFallLand.get()
-                && controllingTick
-                && !nextTickIsOnGroundTick
-                && player.isOnGround()
-                && !movementManagerEvent.context.playerStatus.onGround) {
-            player.setPosition(player.getX(), movementManagerEvent.context.playerStatus.pos.y + 9E-8, player.getZ());
-            ClientPlayerAccess.of(player).resyncPos();
-            player.setOnGround(false);
-            MovTasks.getNoFall().setLastOnGroundHeight(movementManagerEvent.context.playerStatus.pos.y + 9E-8);
-            nextTickIsOnGroundTick = true;
-        } else {
-            nextTickIsOnGroundTick = false;
-        }
     }
 
     @Override
@@ -290,7 +265,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             movementManagerEvent.context().playerStatus.entity.setNoGravity(modifyNoGravity);
             modifyNoGravity = null;
         }
-        controllingTick = false;
         return true;
     }
 

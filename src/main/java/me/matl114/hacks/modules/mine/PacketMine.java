@@ -4,6 +4,7 @@ import java.util.OptionalInt;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
@@ -17,7 +18,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -89,18 +89,9 @@ public class PacketMine extends BaseModule {
                                 : currentToolSlot.getStack();
                         if (canMine(blockState, currentTool)) {
                             int selectedSlot = mc.player.getInventory().getSelectedSlot();
+                            Runnable callback = null;
                             if (currentItemSlot.isPresent() && currentToolSlot != null) {
-                                if (currentToolSlot.getIndex() < 9) {
-                                    PlayerInteractionAccess.of(mc.interactionManager)
-                                            .syncSelectedHotbar(currentToolSlot.getIndex());
-                                } else {
-                                    mc.interactionManager.clickSlot(
-                                            mc.player.currentScreenHandler.syncId,
-                                            currentItemSlot.getAsInt(),
-                                            selectedSlot,
-                                            SlotActionType.SWAP,
-                                            mc.player);
-                                }
+                                callback = InvTasks.getInvExtra().swapInventoryIndexToHand(currentToolSlot.getIndex());
                             }
                             Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
                             Direction dir = Direction.getFacing(shouldFacing).getOpposite();
@@ -116,18 +107,8 @@ public class PacketMine extends BaseModule {
                                 PlayerInteractionAccess.of(mc.interactionManager)
                                         .sendStopBreakPacket(pos, dir);
                             }
-                            if (currentItemSlot.isPresent() && currentToolSlot != null) {
-                                if (currentToolSlot.getIndex() < 9) {
-                                    PlayerInteractionAccess.of(mc.interactionManager)
-                                            .syncSelectedHotbar(selectedSlot);
-                                } else {
-                                    mc.interactionManager.clickSlot(
-                                            mc.player.currentScreenHandler.syncId,
-                                            currentItemSlot.getAsInt(),
-                                            selectedSlot,
-                                            SlotActionType.SWAP,
-                                            mc.player);
-                                }
+                            if (callback != null) {
+                                callback.run();
                             }
                         }
                     }
