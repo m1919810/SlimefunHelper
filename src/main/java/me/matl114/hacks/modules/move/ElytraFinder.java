@@ -220,22 +220,34 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
         if (enable.get() && render.get()) {
             // render DragonHead
             MatrixStack stack = event.context();
-            if (currentShipStructure != null) {
-                VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
-                    operation.drawOutlinedBox(
-                            stack,
-                            vertexConsumer,
-                            currentShipStructure.toCenterPos().add(RenderTasks.FROM),
-                            currentShipStructure.toCenterPos().add(RenderTasks.TO),
-                            ColorUtils.withAlphaInt(Color.MAGENTA.getRGB(), 255));
-                    Vec3d vec3d = currentShipStructure.toCenterPos().add(0, 3, 0);
-                    operation.drawOutlinedBox(
-                            stack,
-                            vertexConsumer,
-                            vec3d.add(RenderTasks.FROM),
-                            vec3d.add(RenderTasks.TO),
-                            ColorUtils.withAlphaInt(Color.MAGENTA.getRGB(), 255));
-                }));
+            RenderUtils.startDrawVirtual(stack);
+            try {
+                if (currentShipStructure != null) {
+                    Vec3d camerPos = RenderUtils.getCameraPos();
+                    VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
+                        operation.drawOutlinedBox(
+                                stack,
+                                vertexConsumer,
+                                currentShipStructure
+                                        .toCenterPos()
+                                        .add(RenderTasks.FROM)
+                                        .subtract(camerPos),
+                                currentShipStructure
+                                        .toCenterPos()
+                                        .add(RenderTasks.TO)
+                                        .subtract(camerPos),
+                                ColorUtils.withAlphaInt(Color.MAGENTA.getRGB(), 255));
+                        Vec3d vec3d = currentShipStructure.toCenterPos().add(0, 3, 0);
+                        operation.drawOutlinedBox(
+                                stack,
+                                vertexConsumer,
+                                vec3d.add(RenderTasks.FROM).subtract(camerPos),
+                                vec3d.add(RenderTasks.TO).subtract(camerPos),
+                                ColorUtils.withAlphaInt(Color.MAGENTA.getRGB(), 255));
+                    }));
+                }
+            } finally {
+                RenderUtils.stopDrawVirtual(stack);
             }
         }
     }

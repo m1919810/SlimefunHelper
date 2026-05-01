@@ -151,7 +151,7 @@ public class MainTasks {
         InteractionTasks.init();
         SlimefunTasks.init();
         ModelTasks.init();
-        ACPostTasks.init();
+        ACTasks.init();
         ExtraTasks.init();
     }
 }

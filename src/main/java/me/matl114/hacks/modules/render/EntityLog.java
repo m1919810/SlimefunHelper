@@ -76,7 +76,7 @@ public class EntityLog extends BaseModule {
                             ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()),
                             ",distance: %.2f"
                                     .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())));
-                    Debug.chat("Player Entity Id ", packet.getEntityId());
+                    // Debug.chat("Player Entity Id ", packet.getEntityId());
                 } else {
                     // if(LivingEntity.class.isAssignableFrom( packet.getEntityType().getBaseClass())){
                     // only log the living Entity; the common Entities are mostly functional and are noisy

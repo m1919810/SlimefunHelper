@@ -992,7 +992,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     boolean shouldCheck;
                     if (step == Step.WAIT_FOR_RESYNC) {
                         shouldCheck = true;
-                        if (lastNoFall + latency <= Tasks.getTick()) {
+                        if (lastNoFall + 2 * latency <= Tasks.getTick()) {
                             step = Step.COMMON;
                         }
                     } else if (step == Step.HANDLE_RESYNC) {

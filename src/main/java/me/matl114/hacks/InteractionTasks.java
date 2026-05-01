@@ -1,6 +1,6 @@
 package me.matl114.hacks;
 
-import java.awt.*;
+import com.google.common.util.concurrent.Runnables;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
@@ -8,11 +8,14 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.interact.*;
+import me.matl114.managers.Configs;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -85,6 +88,34 @@ public class InteractionTasks {
                 });
     }
 
+    public static void handlePlaceMode(Configs.LegalInteractMode mode, BlockHitResult result, Hand hand) {
+        switch (mode) {
+            case USEITEM_PACKET -> {
+                Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
+                        .toCenterPos()
+                        .subtract(mc.player.getEyePos())
+                        .normalize());
+                mc.interactionManager.sendSequencedPacket(
+                        mc.world, (i) -> new PlayerInteractItemC2SPacket(hand, i, rotation.y, rotation.x));
+                InteractionTasks.placeBlock(hand, result);
+            }
+            case DELAY_MOVEMENT -> {
+                InteractionTasks.placeBlock(hand, result);
+                InteractionTasks.addPostRotationCorrectTask(result.getBlockPos().toCenterPos(), Runnables.doNothing());
+            }
+            case MOVEMENT -> {
+                Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
+                        .toCenterPos()
+                        .subtract(mc.player.getEyePos())
+                        .normalize());
+                mc.getNetworkHandler()
+                        .sendPacket(VPacket.newLookAndOnGround(
+                                rotation.y, rotation.x, mc.player.isOnGround(), mc.player.horizontalCollision));
+                InteractionTasks.placeBlock(hand, result);
+            }
+        }
+    }
+
     @ApiMethod
     @Getter
     public static final ModuleGroup moduleManager = new ModuleGroup("Interaction");
@@ -107,9 +138,11 @@ public class InteractionTasks {
     @Getter
     public static Airplace airplace;
 
-    @ApiStatus.Experimental
     @Getter
     public static BlockRotate blockRotate;
+
+    @Getter
+    public static PrinterRewrite printerRewrite;
 
     private static void initModules(ModuleManager m) {
         interactExtra = new InteractExtra().register(m);
@@ -119,6 +152,7 @@ public class InteractionTasks {
         airplace = new Airplace().register(m);
 
         blockRotate = new BlockRotate().register(m);
+        printerRewrite = new PrinterRewrite().register(m);
     }
 
     static {

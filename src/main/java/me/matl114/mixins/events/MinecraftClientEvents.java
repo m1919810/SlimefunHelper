@@ -96,10 +96,17 @@ public abstract class MinecraftClientEvents {
         }
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At("HEAD"))
-    public void onServerDisconnect(Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
+    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;ZZ)V", at = @At("HEAD"))
+    public void onServerDisconnect(
+            Screen disconnectionScreen, boolean transferring, boolean stopSounds, CallbackInfo ci) {
         // origin exit
-        if (!transferring) Listener.getServerDisconnectPoint().broadcast(null);
+        Listener.getServerLeavePoint().handleValue(new Event<>(null, false, false, true));
+        Listener.getServerDisconnectPoint().handleValue(new Event<>(null, false, false, transferring));
+    }
+
+    @Inject(method = "enterReconfiguration", at = @At("HEAD"))
+    public void onServerReconfiguration(Screen reconfigurationScreen, CallbackInfo ci) {
+        Listener.getServerLeavePoint().handleValue(new Event<>(null, false, false, false));
     }
 
     @WrapOperation(

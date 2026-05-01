@@ -467,7 +467,7 @@ public class Attack extends BaseModule {
                                                         .color(Color.MAGENTA)));
                                     }
                                     if (!preAttack) {
-                                        ACPostTasks.addPostTransactionAction((ch) -> {
+                                        ACTasks.addPostTransactionAction((ch) -> {
                                             attackWithCritic(player, target, criticSprint);
                                         });
                                     }
@@ -490,7 +490,7 @@ public class Attack extends BaseModule {
                                     }
                                 } else {
                                     if (!preAttack) {
-                                        ACPostTasks.addPostTransactionAction((ch) -> {
+                                        ACTasks.addPostTransactionAction((ch) -> {
                                             args.swingHand(Hand.MAIN_HAND);
                                         });
                                     }
@@ -498,7 +498,7 @@ public class Attack extends BaseModule {
                                 if (useMaceAttack && !preAttack) {
                                     if (armorFly) {
                                         elytraExtra.disableNextArmorFlyLazyElytraTransaction = 0;
-                                        ACPostTasks.addPostTransactionAction((ch) -> {
+                                        ACTasks.addPostTransactionAction((ch) -> {
                                             if (elytraExtra.onSwitchItemArmorFallFlying()) {
                                                 mc.getNetworkHandler()
                                                         .sendPacket(new ClientCommandC2SPacket(
@@ -512,7 +512,7 @@ public class Attack extends BaseModule {
                                         });
                                     } else {
                                         if (elytraSlot != -1) {
-                                            ACPostTasks.addPostTransactionAction((ch) -> {
+                                            ACTasks.addPostTransactionAction((ch) -> {
                                                 elytraExtra.switchSlotToArmor(elytraSlot);
                                                 if (!mc.player.isFallFlying())
                                                     ch.sendPacket(new ClientCommandC2SPacket(
