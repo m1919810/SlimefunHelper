@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.interact;
 
 import java.awt.*;
+import java.util.Locale;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
@@ -10,9 +11,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.DoubleRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
@@ -25,6 +24,7 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -38,7 +38,7 @@ public class Airplace extends BaseModule {
 
     public static final String[] AIR_PLACE_RENDER = {"interaction-tweaks", "air-place", "render"};
 
-    public static final String[] AIR_WALL = {"interaction-tweaks", "air-place", "grim-air-wall"};
+    public static final String[] AIR_WALL = {"interaction-tweaks", "air-place", "mode"};
 
     public Airplace() {}
 
@@ -55,10 +55,11 @@ public class Airplace extends BaseModule {
 
     public final FlagRef render =
             flagBuilder(Configs.INTERACT_CONFIG, AIR_PLACE_RENDER).build();
-
-    public final FlagRef enableAirWall = flagBuilder(Configs.INTERACT_CONFIG, AIR_WALL)
+    // todo: add to switch mode
+    public final EnumRef<AirPlaceMode> enableAirWall = builder(Configs.INTERACT_CONFIG, AIR_WALL, AirPlaceMode.class)
+            .defaultValue(AirPlaceMode.VANILLA)
             .updateListener(s -> {
-                clearCurrentAirWall();
+                onSwitch();
             })
             .build();
 
@@ -87,21 +88,30 @@ public class Airplace extends BaseModule {
                 if (hitResult.getType() == HitResult.Type.MISS) {
                     HitResult result = getCameraEntity().raycast(range.get(), 0, false);
                     if (result.getType() == HitResult.Type.MISS && result instanceof BlockHitResult block) {
-                        if (enableAirWall.get()) {
-                            onGrimAirWall(block);
-                            return;
+                        switch (enableAirWall.get()) {
+                            case VANILLA -> {
+                                BlockHitResult newResult = new BlockHitResult(
+                                        block.getPos(),
+                                        block.getSide(),
+                                        block.getBlockPos(),
+                                        block.isInsideBlock(),
+                                        block.isAgainstWorldBorder());
+                                event.context(newResult);
+                                return;
+                            }
+                            case GRIM_GHOST_BLOCK_WALL -> {
+                                onGrimAirWall(block);
+                                return;
+                            }
                         }
-                        BlockHitResult newResult = new BlockHitResult(
-                                block.getPos(),
-                                block.getSide(),
-                                block.getBlockPos(),
-                                block.isInsideBlock(),
-                                block.isAgainstWorldBorder());
-                        event.context(newResult);
                     }
                 }
             }
         }
+    }
+
+    public void onSwitch() {
+        clearCurrentAirWall();
     }
 
     public void clearCurrentAirWall() {
@@ -213,5 +223,15 @@ public class Airplace extends BaseModule {
             return mc.getCameraEntity();
         }
         return mc.player;
+    }
+
+    public static enum AirPlaceMode implements ConfigEnum {
+        VANILLA,
+        GRIM_GHOST_BLOCK_WALL;
+
+        @Override
+        public Text getDisplay() {
+            return Text.translatable("configenum.air-place-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
     }
 }
