@@ -5,12 +5,11 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.netty.channel.*;
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import me.matl114.accessors.events.ClientConnectionAccess;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import me.matl114.events.Listener;
+import me.matl114.events.PacketManager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -20,9 +19,9 @@ import net.minecraft.network.PacketCallbacks;
 import net.minecraft.network.handler.PacketSizeLogger;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -37,68 +36,9 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
     @Shadow
     public Channel channel;
 
-    @Unique
-    boolean delayInbound;
-
-    @Unique
-    private final Deque<Packet<?>> incomePackets = new ConcurrentLinkedDeque<>();
-
-    @Unique
-    boolean isProcessingQueue;
-
-    @Unique
-    public void stopInBoundDelay() {
-        this.channel.eventLoop().execute(this::processDelayedQueue);
-    }
-
-    @Unique
-    public void startInBoundDelay() {
-        this.channel.eventLoop().execute(() -> {
-            delayInbound = true;
-        });
-    }
-
-    public void startInBoundDelayImmediately() {
-        delayInbound = true;
-    }
-
-    @Unique
-    public boolean isInBoundDelay() {
-        return delayInbound;
-    }
-
-    public void addPacketInBoundDelayQueue(Packet<?> packet) {
-        if (delayInbound) {
-            incomePackets.add(packet);
-        } else {
-            this.channel.eventLoop().execute(() -> {
-                ChannelHandlerContext ctx = this.channel.pipeline().context(this);
-                channelRead0(ctx, packet);
-            });
-        }
-    }
-
-    @Unique
-    private void processDelayedQueue() {
-        if (isProcessingQueue) return;
-        isProcessingQueue = true;
-
-        try {
-            ChannelHandlerContext ctx = this.channel.pipeline().context(this);
-
-            Packet<?> packet;
-            while ((packet = incomePackets.poll()) != null) {
-                channelRead0(ctx, packet);
-            }
-        } finally {
-            isProcessingQueue = false;
-            if (incomePackets.isEmpty()) {
-                delayInbound = false;
-            } else {
-                this.channel.eventLoop().execute(this::processDelayedQueue);
-            }
-        }
-    }
+    @Shadow
+    @Final
+    private NetworkSide side;
 
     @Inject(
             method = "channelRead0(Lio/netty/channel/ChannelHandlerContext;Lnet/minecraft/network/packet/Packet;)V",
@@ -113,8 +53,11 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
             ci.cancel();
             return;
         }
-        if (delayInbound && !isProcessingQueue) {
-            incomePackets.add(packet);
+        // do not handle serverbound packet
+        if (this.side == NetworkSide.SERVERBOUND) {
+            return;
+        }
+        if (PacketManager.handleQueueInPacket(packet, (ClientConnection) (Object) this)) {
             ci.cancel();
             return;
         }
@@ -143,6 +86,14 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
             ci.cancel();
             return;
         }
+        // do not handle serverbound packet
+        if (this.side == NetworkSide.SERVERBOUND) {
+            return;
+        }
+        if (PacketManager.handleQueueOutPacket(packet, (ClientConnection) (Object) this)) {
+            ci.cancel();
+            return;
+        }
         Packet<?> packetToSend = Listener.sendC2SPacket((ClientConnection) (Object) this, packet);
         if (packetToSend != packet) {
             if (packetToSend == null) {
@@ -157,6 +108,10 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
             method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V",
             at = @At("RETURN"))
     private void sendPacketPost(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
+        // do not handle serverbound packet
+        if (this.side == NetworkSide.SERVERBOUND) {
+            return;
+        }
         Listener.getPacketPostSendPoint().broadcast(packet);
     }
 
@@ -168,6 +123,11 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
                             target =
                                     "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V"))
     private static void applyPacketMainThread(Packet instance, PacketListener t, Operation<Void> original) {
+        // do not handle serverbound packet
+        if (t.getSide() == NetworkSide.SERVERBOUND) {
+            original.call(instance, t);
+            return;
+        }
         if (!MinecraftClient.getInstance().isOnThread() && !Listener.isAsyncImportantPacket(instance)) {
             original.call(instance, t);
             return;

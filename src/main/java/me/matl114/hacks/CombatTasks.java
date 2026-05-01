@@ -17,6 +17,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
+import org.jetbrains.annotations.ApiStatus;
 
 public class CombatTasks {
     public static void init() {}
@@ -230,6 +231,13 @@ public class CombatTasks {
 
     @Getter
     public static SpearAttack spearAttack;
+
+    @Getter
+    public static Blink blink;
+
+    @ApiStatus.Experimental
+    @Getter
+    public static TransactionBlocker transactionBlocker;
     // todo: 带矛冲锋
 
     // todo antikb
@@ -255,6 +263,8 @@ public class CombatTasks {
         autoLogout = new AutoLogout().register(m);
         spearEnhance = new SpearEnhance().register(m);
         spearAttack = new SpearAttack().register(m);
+        blink = new Blink().register(m);
+        //        transactionBlocker = new TransactionBlocker().register(m);
     }
 
     static {

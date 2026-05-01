@@ -210,7 +210,7 @@ public class RecipeTasks {
     }
 
     static {
-        Listener.getServerDisconnectPoint().registerHandler((v) -> {
+        Listener.getServerLeavePoint().registerHandler((v) -> {
             resetCache();
         });
         Listener.getPacketPostHandlePoint()

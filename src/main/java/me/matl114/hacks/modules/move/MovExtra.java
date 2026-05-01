@@ -74,9 +74,9 @@ public class MovExtra extends BaseModule {
         if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
             ClientPlayerEntity player = mc.player;
             if (player.isSprinting()) {
-                ClientPlayerAccess.of(player).resyncSprint();
                 mc.getNetworkHandler()
                         .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                ClientPlayerAccess.of(player).resyncSprint();
             }
             PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
             input.right(false)
@@ -89,8 +89,16 @@ public class MovExtra extends BaseModule {
             ClientPlayerAccess.of(player).resyncInput();
         }
     }
+    // mostly same as InventoryAction packets
+    public void sendPacketsForPreStartFallFlying() {
+        if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
+            var input = PlayerInputUtils.of(mc.player.input).jump(false);
+            input.sendPlayerInputPacket();
+            input.applyInput(mc.player.input);
+        }
+    }
 
-    public void sendPacketsForStartFallFlying() {
+    public void sendPacketsForPostStartFallFlying() {
         if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
             var input = PlayerInputUtils.of(mc.player.input).jump(true);
             input.sendPlayerInputPacket();

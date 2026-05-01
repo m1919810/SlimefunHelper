@@ -219,18 +219,6 @@ public class Listener {
                 MinecraftClient.getInstance().getNetworkHandler().getConnection());
     }
 
-    public static void startPacketDelay() {
-        ClientConnectionAccess.of(
-                        MinecraftClient.getInstance().getNetworkHandler().getConnection())
-                .startInBoundDelayImmediately();
-    }
-
-    public static void stopPacketDelay() {
-        ClientConnectionAccess.of(
-                        MinecraftClient.getInstance().getNetworkHandler().getConnection())
-                .stopInBoundDelay();
-    }
-
     public static Packet<?> acceptS2CPacket(ClientConnection connection, Packet<?> packet) {
 
         return unpackMultiPacket(connection, packet, true);
@@ -243,11 +231,12 @@ public class Listener {
     @Unique
     private static Packet<?> onSinglePacketListen(ClientConnection connection, Packet<?> packet, boolean s2c) {
         Event<Packet<?>> packetEvent = new Event<>(packet, true, true, connection);
-        if (s2c) {
-            getPacketAcceptPoint().handleValue(packetEvent);
-        } else {
-            getPacketSendPoint().handleValue(packetEvent);
-        }
+        // already handled in PacketEventChannel
+        //        if (s2c) {
+        //            getPacketAcceptPoint().handleValue(packetEvent);
+        //        } else {
+        //            getPacketSendPoint().handleValue(packetEvent);
+        //        }
         getPacketPoint().handleValue(packetEvent);
         if (packetEvent.isCancelled()) {
             return null;
@@ -292,9 +281,15 @@ public class Listener {
     @Getter
     @Broadcast
     private static final EventChannel<World> worldSwitchPoint = new EventChannel<>();
-
+    // disconnect or enter reconfiguration
     @Getter
     @Broadcast
+    @ExtraArgs({boolean.class}) // whether disconnect or not
+    private static final EventChannel<Void> serverLeavePoint = new EventChannel<>();
+    // disconnect from server
+    @Getter
+    @Broadcast
+    @ExtraArgs({boolean.class}) // whether transferring
     private static final EventChannel<Void> serverDisconnectPoint = new EventChannel<>();
 
     @Getter

@@ -558,7 +558,7 @@ public class TravellingControl extends BaseModule {
 
                             // start counting down, if not startflying in 20 tick(1sec), auto logout
                             dangerousNoFallFlyingTick = 1;
-                            MovTasks.getMovExtra().sendPacketsForStartFallFlying();
+                            MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
                         }
                     }
                 }
@@ -733,7 +733,7 @@ public class TravellingControl extends BaseModule {
 
                             // start counting down, if not startflying in 20 tick(1sec), auto logout
                             dangerousNoFallFlyingTick = 1;
-                            MovTasks.getMovExtra().sendPacketsForStartFallFlying();
+                            MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
                         }
                     }
                 }

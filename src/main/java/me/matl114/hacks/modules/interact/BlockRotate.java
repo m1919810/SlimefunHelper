@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.interact;
 
 import com.google.common.util.concurrent.Runnables;
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 import me.matl114.accessors.access.HitResultAccess;
@@ -9,7 +8,7 @@ import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ACPostTasks;
+import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -45,6 +44,8 @@ public class BlockRotate extends BaseModule {
 
     public static final String[] ENABLE_LITEMATICA_FIX = makePath("block-rotate.litematica-shit-fix.enable");
 
+    public static final String[] ENABLE_LEGAL_MODE = makePath("block-rotate.litematica-shit-fix.legal-look");
+
     public static final String[] ENABLE_LITEMATICA_EASY_PLACE_FIX =
             makePath("block-rotate.litematica-shit-fix.enable-easyplace-post-fix");
 
@@ -64,6 +65,9 @@ public class BlockRotate extends BaseModule {
 
     public final FlagRef enable2 =
             flagBuilder(Configs.INTERACT_CONFIG, ENABLE_LITEMATICA_FIX).build();
+
+    public final FlagRef legal =
+            flagBuilder(Configs.INTERACT_CONFIG, ENABLE_LEGAL_MODE).build();
 
     public final FlagRef enable3 = flagBuilder(Configs.INTERACT_CONFIG, ENABLE_LITEMATICA_EASY_PLACE_FIX)
             .build();
@@ -124,7 +128,7 @@ public class BlockRotate extends BaseModule {
                             && LitematicaHooks.getInstance().isEnabled()
                             && LitematicaHooks.getInstance().isEasyPlaceEnabled()) {
                         // fix post
-                        ACPostTasks.addPostTransactionAction(ch -> Listener.sendPacketNoEvents(e.context));
+                        ACTasks.addPostTransactionAction(ch -> Listener.sendPacketNoEvents(e.context));
                         e.cancel();
                     }
                 }
@@ -179,7 +183,9 @@ public class BlockRotate extends BaseModule {
                     // handle direction
                     handleYawDeceive(litematicaState, yawDeceive);
                 }
-                look.context(packetHitResult.getBlockPos().toCenterPos());
+                if (legal.get()) {
+                    look.context(packetHitResult.getBlockPos().toCenterPos());
+                }
             }
 
             RenderTasks.debugBlockHitResult(packetHitResult);
@@ -188,12 +194,17 @@ public class BlockRotate extends BaseModule {
 
     public BlockHitResult correctEasyPlaceHitResult(BlockHitResult hitResult, BlockState targetState) {
         BlockHitResult result = null;
-        result = createHitResultRelatived(hitResult, hitResult.getBlockPos(), targetState);
+        result = createHitResultRelatived(
+                hitResult.getSide().getOpposite(), hitResult.getBlockPos(), targetState, false, false);
         return result == null ? hitResult : result;
     }
 
     public static BlockHitResult createHitResultRelatived(
-            BlockHitResult blockPos, BlockPos placeTargetBlock, BlockState targetState) {
+            Direction preferredDirection,
+            BlockPos placeTargetBlock,
+            BlockState targetState,
+            boolean enableAirPlace,
+            boolean enablePositionPlace) {
         Set<Direction> availableSides = new HashSet<>(List.of(Direction.values()));
         Block block = targetState.getBlock();
         Vec3d centerPos = placeTargetBlock.toCenterPos();
@@ -210,19 +221,23 @@ public class BlockRotate extends BaseModule {
                 Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
                 BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
 
-                if (mc.world.getBlockState(targetPos).isAir()) {
-                    continue;
-                }
                 Vec3d interactPos = (direction == Direction.DOWN || direction == Direction.UP)
                         ? plateCenter
                         : plateCenter.add(0, 0.25 * (half == BlockHalf.TOP ? 1 : -1), 0);
+                if (enableAirPlace) {
+                    return new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false);
+                }
+                BlockState interactState = mc.world.getBlockState(targetPos);
+                if (interactState.isAir() || interactState.isLiquid()) {
+                    continue;
+                }
                 if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
                     // ?
                     return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
                 } else {
                     Vec3d iSeeVect = eyePos.subtract(plateCenter);
                     Vec3d plateLLL = direction.getDoubleVector();
-                    if (iSeeVect.dotProduct(plateLLL) < 0) {
+                    if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                         return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
                     }
                 }
@@ -251,9 +266,6 @@ public class BlockRotate extends BaseModule {
                 BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
                 // check double condition
                 BlockState interactState = mc.world.getBlockState(targetPos);
-                if (interactState.isAir() || interactState.isLiquid()) {
-                    continue;
-                }
                 // this will make the interactState become DOUBLE
                 if (interactState.isOf(targetState.getBlock())
                         && interactState.get(SlabBlock.TYPE) != SlabType.DOUBLE
@@ -263,13 +275,19 @@ public class BlockRotate extends BaseModule {
                 Vec3d interactPos = (direction == Direction.DOWN || direction == Direction.UP)
                         ? plateCenter
                         : plateCenter.add(0, 0.25 * (double) sgn, 0);
+                if (enableAirPlace) {
+                    return new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false);
+                }
+                if ((interactState.isAir() || interactState.isLiquid())) {
+                    continue;
+                }
                 if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
                     // ?
                     return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
                 } else {
                     Vec3d iSeeVect = eyePos.subtract(plateCenter);
                     Vec3d plateLLL = direction.getDoubleVector();
-                    if (iSeeVect.dotProduct(plateLLL) < 0) {
+                    if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                         return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
                     }
                 }
@@ -287,6 +305,7 @@ public class BlockRotate extends BaseModule {
             }
             // 添加水平方向
             order.addAll(Arrays.asList(Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST));
+
             for (var direction : order) {
                 if (direction.getAxis().isHorizontal()
                         && targetState.get(TrapdoorBlock.FACING) != direction.getOpposite()) {
@@ -296,9 +315,6 @@ public class BlockRotate extends BaseModule {
                 Vec3d interactBlockCenter = centerPos.offset(direction, 1.0);
                 BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
                 BlockState interactState = mc.world.getBlockState(targetPos);
-                if (interactState.isAir() || interactState.isLiquid()) {
-                    continue;
-                }
                 // 交互点：对于垂直方向使用 plateCenter，对于水平方向需要根据 HALF 调整 Y 偏移
                 Vec3d interactPos;
                 if (direction == Direction.DOWN || direction == Direction.UP) {
@@ -307,12 +323,18 @@ public class BlockRotate extends BaseModule {
                     double yOffset = (half == BlockHalf.TOP) ? 0.25 : -0.25;
                     interactPos = plateCenter.add(0, yOffset, 0);
                 }
+                if (enableAirPlace) {
+                    return new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false);
+                }
+                if ((interactState.isAir() || interactState.isLiquid())) {
+                    continue;
+                }
                 if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
                     return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
                 } else {
                     Vec3d iSeeVect = eyePos.subtract(plateCenter);
                     Vec3d plateLLL = direction.getDoubleVector();
-                    if (iSeeVect.dotProduct(plateLLL) < 0) {
+                    if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                         return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
                     }
                 }
@@ -374,7 +396,7 @@ public class BlockRotate extends BaseModule {
                 // 由于我们已经在 TrapdoorBlock 之后处理了 WallHangingSignBlock 的过滤（见之前代码），这里不再重复
             }
             // 其他方块不做过滤（保留所有方向）
-            Direction dir = blockPos.getSide().getOpposite();
+            Direction dir = preferredDirection;
             if (availableSides.contains(dir.getOpposite())) {
                 order.add(dir);
             }
@@ -385,23 +407,31 @@ public class BlockRotate extends BaseModule {
                     order.add(direction);
                 }
             }
-
-            for (var direction : order) {
-                Vec3d plateCenter = centerPos.offset(direction, 0.5);
-                Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
-                BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
-                BlockState interactState = mc.world.getBlockState(targetPos);
-                if (interactState.isAir() || interactState.isLiquid()) {
-                    continue;
+            if (enableAirPlace) {
+                if (order.isEmpty()) {
+                    return null;
                 }
-                if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
-                    // ?
-                    return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true);
-                } else {
-                    Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                    Vec3d plateLLL = direction.getDoubleVector();
-                    if (iSeeVect.dotProduct(plateLLL) < 0) {
-                        return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false);
+                Direction availableDirection = order.get(0);
+                Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
+                return new BlockHitResult(plateCenter, availableDirection.getOpposite(), placeTargetBlock, false);
+            } else {
+                for (var direction : order) {
+                    Vec3d plateCenter = centerPos.offset(direction, 0.5);
+                    Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
+                    BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
+                    BlockState interactState = mc.world.getBlockState(targetPos);
+                    if ((interactState.isAir() || interactState.isLiquid())) {
+                        continue;
+                    }
+                    if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
+                        // ?
+                        return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true);
+                    } else {
+                        Vec3d iSeeVect = eyePos.subtract(plateCenter);
+                        Vec3d plateLLL = direction.getDoubleVector();
+                        if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
+                            return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false);
+                        }
                     }
                 }
             }

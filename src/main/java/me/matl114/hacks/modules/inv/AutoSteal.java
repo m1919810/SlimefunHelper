@@ -1,11 +1,10 @@
 package me.matl114.hacks.modules.inv;
 
-import java.awt.*;
 import java.util.function.Consumer;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ACPostTasks;
+import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.config.Regex;
@@ -247,7 +246,7 @@ public class AutoSteal extends BaseModule {
                 if (placedState.getBlock() instanceof ShulkerBoxBlock) {
                     BlockHitResult hitResult1 = RaycastUtils.createHitResult(placedBlock);
                     // mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult1);
-                    ACPostTasks.addPostTransactionAction((ch) -> {
+                    ACTasks.addPostTransactionAction((ch) -> {
                         mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult1);
                     });
                 }

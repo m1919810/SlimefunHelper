@@ -12,6 +12,7 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
+import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.ClientUtils;
@@ -34,6 +35,8 @@ import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
+import net.minecraft.client.render.fog.FogRenderer;
+import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.joml.Matrix4f;
@@ -51,6 +54,10 @@ public class SleepMode extends BaseModule {
             .defaultValue(new MultiKeyBind(KeyCode.KEY_F11))
             .build();
 
+    public final FlagRef runnerOptimize = flagBuilder(
+                    Configs.RENDER_CONFIG, makePath("render.sleep-mode-runner-optimize"))
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -66,6 +73,15 @@ public class SleepMode extends BaseModule {
         registerListener(Listener.getMouseDrag(), this::interceptMouseDragged);
         registerListener(Listener.getPreSetScreen(), this::interceptSetScreen);
         registerCommandBootstrap(this::onSleepCommandBootstrap);
+        registerListener(Listener.getPacketPoint().getChannel(ChunkDataS2CPacket.class), this::onChunkData);
+    }
+
+    boolean runnerOptimizeStart = false;
+
+    public void checkOptimizeState() {
+        if (!isScreenSleeping()) {
+            runnerOptimizeStart = false;
+        }
     }
 
     public void onSleepCommandBootstrap(MainCommand mainCommand) {
@@ -104,6 +120,9 @@ public class SleepMode extends BaseModule {
         String val = re.nextNonnull();
         String val2 = re.nextArg();
         if ("confirm".equals(val)) {
+            if (runnerOptimize.get()) {
+                runnerOptimizeStart = true;
+            }
             Tasks.scheduleDelayed(() -> RenderTasks.getSleepMode().setCustomScreenSleeping(level, val2), 1);
         } else {
             Debug.chat("使用sleep confirm 确认进入睡眠模式, 进入睡眠模式后可以按 "
@@ -480,6 +499,15 @@ public class SleepMode extends BaseModule {
     }
 
     // fixme: hoverEvent and clickEvent does not work in SleepingChatScreen
+
+    public void onChunkData(Event<ChunkDataS2CPacket> dataS2CPacket) {
+        if (!runnerOptimizeStart) return;
+        checkOptimizeState();
+        if (checkNull()) return;
+        if (runnerOptimizeStart && mc.player.getY() > mc.world.getBottomY() + mc.world.getHeight()) {
+            dataS2CPacket.cancel();
+        }
+    }
 
     // TODO: add status renderer , inGameHud
 }

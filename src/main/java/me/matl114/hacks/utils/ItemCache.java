@@ -54,7 +54,7 @@ public class ItemCache {
                 1000 * 60,
                 1000 * 60 * 5);
         // auto unload
-        Listener.getServerDisconnectPoint().registerHandler((ev) -> {
+        Listener.getServerLeavePoint().registerHandler((ev) -> {
             if (this.loaded) {
                 this.unload();
             }
@@ -102,12 +102,7 @@ public class ItemCache {
     public void load() {
         loading = true;
         try {
-            try {
-                // check the access to registry(),
-                ItemStackUtils.registry();
-            } catch (Throwable e) {
-                throw new IllegalStateException("Illegal access to registry!", e);
-            }
+            checkRegistry();
             JsonObject jsonObject;
             Debug.info("Start loading item cache");
             long startTime = System.currentTimeMillis();
@@ -136,6 +131,8 @@ public class ItemCache {
                     byItem.put(value, Pair.of(key, value));
                 });
                 activeIds.clear();
+                // if the client disconnect before async data load, then do not broadcast load,
+                checkRegistry();
                 Debug.info("Finish data loading of item cache, using", System.currentTimeMillis() - startTime, "ms");
                 try {
                     itemDataBaseLoad.broadcast(null);
@@ -150,6 +147,16 @@ public class ItemCache {
             }
         } finally {
             loading = false;
+        }
+    }
+
+    private void checkRegistry() {
+        // check if the registry present
+        try {
+            // check the access to registry(),
+            ItemStackUtils.registry();
+        } catch (Throwable e) {
+            throw new IllegalStateException("Illegal access to registry!", e);
         }
     }
 

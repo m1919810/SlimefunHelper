@@ -8,7 +8,7 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
-import me.matl114.hacks.ACPostTasks;
+import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -392,7 +392,7 @@ public class BowEnhance extends BaseModule {
                         // add post packets
                         // mc.getNetworkHandler().sendPacket(actionPacket);
                         if (true)
-                            ACPostTasks.addPostTransactionAction((handler) -> {
+                            ACTasks.addPostTransactionAction((handler) -> {
                                 Listener.sendPacketNoEvents(handler.getConnection(), delayedPacket);
                             });
                         return false;
@@ -528,8 +528,6 @@ public class BowEnhance extends BaseModule {
             if (Float.isNaN(red.x) || Float.isInfinite(red.x) || Float.isNaN(red.y) || Float.isInfinite(red.y)) {
                 Debug.chat("[Bow Aim] Arrow failed to reach the target");
             } else {
-                mc.getNetworkHandler()
-                        .sendPacket(VPacket.newOnGroundOnly(mc.player.isOnGround(), mc.player.horizontalCollision));
                 mc.interactionManager.sendSequencedPacket(mc.world, (s) -> {
                     return new PlayerInteractItemC2SPacket(mc.player.getActiveHand(), s, red.y, red.x);
                 });

@@ -19,6 +19,9 @@ public class AutoReconnect extends BaseModule {
     public final FlagRef enable = flagBuilder(Configs.TEST_CONFIG, makePath("other.auto-reconnect.enable"))
             .build();
 
+    public final FlagRef enableB = flagBuilder(Configs.TEST_CONFIG, makePath("other.auto-reconnect.enable-buttons"))
+            .build();
+
     public final IntRef delay = builder(Configs.TEST_CONFIG, makePath("other.auto-reconnect.delay"), IntRef.TYPE)
             .defaultValue(5)
             .validator(Configs.INT_POSITIVE)
@@ -34,7 +37,7 @@ public class AutoReconnect extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
-        registerListener(Listener.getServerDisconnectPoint(), this::onServerDisconnect);
+        registerListener(Listener.getPostSetScreen(), this::onServerDisconnectScreenSetup);
         registerListener(Listener.getServerPreConnectPoint(), this::onServerConnect);
     }
 
@@ -47,7 +50,7 @@ public class AutoReconnect extends BaseModule {
     ServerInfo lastServer;
 
     public void onScreenInitialize(Event<Screen> event) {
-        if (event.context instanceof DisconnectedScreen disconnected) {
+        if (enableB.get() && event.context instanceof DisconnectedScreen disconnected) {
             SubScreenWidget widget = new SubScreenWidget(0, 0, 200, 50);
             widget.addDrawableChild(ExecutableWidget.instance(0, 25, 200, 20)
                     .setElementHandler(new ButtonElement(
@@ -71,8 +74,8 @@ public class AutoReconnect extends BaseModule {
         }
     }
 
-    public void onServerDisconnect(Event<Void> event) {
-        if (enable.get()) {
+    public void onServerDisconnectScreenSetup(Event<Screen> event) {
+        if (enable.get() && event.context instanceof DisconnectedScreen disconnected) {
             counter = delay.get() * 20;
             Tasks.scheduleRepeated(
                     () -> {
@@ -80,12 +83,11 @@ public class AutoReconnect extends BaseModule {
                             counter--;
                             return false;
                         }
-                        if (counter == 0
-                                && enable.get()
-                                && mc.currentScreen instanceof DisconnectedScreen disconnected) {
+                        if (enable.get() && mc.currentScreen instanceof DisconnectedScreen) {
                             reconect(disconnected.parent);
+                            return true;
                         }
-                        return true;
+                        return mc.currentScreen != null;
                     },
                     1,
                     1);
