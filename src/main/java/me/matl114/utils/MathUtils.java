@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntSupplier;
 import lombok.AllArgsConstructor;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
@@ -35,6 +37,10 @@ public class MathUtils {
 
     public static boolean isInBox(Vec3d a, double range) {
         return Math.abs(a.x) < range && Math.abs(a.y) < range && Math.abs(a.z) < range;
+    }
+
+    public static Box getBlockBox(BlockPos pos) {
+        return new Box(pos);
     }
 
     public static Vec3d linearInterpolation(Vec3d[] vec3ds, int ticksLater) {

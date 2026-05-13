@@ -36,7 +36,6 @@ public class PlayerInputUtils {
         float diff = EntityUtils.getSafeYawDiff(originalYaw, currentYaw);
         int forwardSpeed;
         int sidewaySpeed;
-        boolean w, a, s, d;
         int movementForward = input.forwardSpeed();
         int movementSideways = input.sidewaysSpeed();
         if (diff < 22.5 && diff >= -22.5) {
@@ -158,6 +157,10 @@ public class PlayerInputUtils {
 
         public boolean hasWASDMovement() {
             return (forward != backward) || (left != right);
+        }
+
+        public boolean hasMovementControl() {
+            return forward || backward || left || right || jump || sneak;
         }
 
         @Override

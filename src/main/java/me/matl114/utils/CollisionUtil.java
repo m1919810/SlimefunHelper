@@ -22,6 +22,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.EmptyBlockView;
+import net.minecraft.world.World;
 
 public final class CollisionUtil {
 
@@ -2222,4 +2223,32 @@ public final class CollisionUtil {
     }
 
     // todo line and given box collide method
+
+    public static boolean isEntitySupported(Entity entity) {
+        return isEntitySupported(entity, 0.5D);
+    }
+
+    public static boolean isEntitySupported(Entity entity, double yDepth) {
+        World world = entity.getEntityWorld();
+        Box originalBox = entity.getBoundingBox();
+        // 向下平移 0.5 格，检测区域从脚底下方 0.5 格处开始
+        Box checkBox = originalBox.stretch(0, -yDepth, 0);
+
+        List<VoxelShape> voxelShapes = new ArrayList<>();
+        List<Box> aabbShapes = new ArrayList<>();
+        int flags = 0; // 不需要加载未加载区块，不需要边界检测
+
+        boolean hasCollision = CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+                world,
+                entity, // 可为 null，但传入实体可能用于特殊上下文（如忽略自身）
+                checkBox,
+                voxelShapes,
+                aabbShapes,
+                flags,
+                null, // 方块过滤器（可选）
+                null // 环境过滤器（可选）
+                );
+
+        return hasCollision;
+    }
 }

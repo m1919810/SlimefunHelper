@@ -195,6 +195,8 @@ public class Blink extends BaseModule {
         enable.set(false);
     }
 
+    boolean escapeSwing = false;
+
     public void onPacketQueue(Event<Packet<?>> packet) {
         if (enable.get()) {
             var pkt = packet.context;
@@ -207,6 +209,17 @@ public class Blink extends BaseModule {
                 }
                 if (closeOnAttack.get()) {
                     enable.set(false);
+                    flush = true;
+                }
+                if (!flush) {
+                    packet.cancel();
+                }
+                escapeSwing = true;
+            } else if (pkt instanceof HandSwingC2SPacket swing && escapeSwing) {
+                escapeSwing = false;
+                boolean flush = false;
+                if (flushOnAttack.get()) {
+                    flush();
                     flush = true;
                 }
                 if (!flush) {

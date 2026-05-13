@@ -495,7 +495,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {
-            case AC_GRIM, AC_MATRIX -> {
+            case AC_GRIM, AC_GRIM_LEGACY, AC_MATRIX -> {
                 canFly.set(false);
             }
             default -> {
@@ -503,7 +503,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             }
         }
         switch (modulePreset) {
-            case AC_GRIM -> {
+            case AC_GRIM, AC_GRIM_LEGACY -> {
                 overrideFlySpeed.set(false);
                 overrideWalkSpeed.set(false);
             }

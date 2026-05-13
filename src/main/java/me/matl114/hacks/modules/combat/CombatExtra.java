@@ -12,20 +12,20 @@ import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.network.packet.s2c.play.CooldownUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.HitResult;
 
 public class CombatExtra extends BaseModule {
     public static final String[] COMBAT_INTERVEL = {"attack", "cancel-interval"};
     public static final String[] COMBAT_RIDING = {"attack", "riding-attack"};
     public static final String[] ATTACK_RANGE = {"attack", "att-range"};
     public static final String[] COMBAT_SHIELDING = {"attack", "shielding-attack"};
-    public static final String[] COMBAT_AUTOSHIELD = {"attack", "no-grim-shield-setback"};
+
+    public static final String[] COMBAT_AUTOSHIELD = {"attack", "shielding-setback-log"};
     public static final String[] COMBAT_MACE_FALLFLYING_TICKS = {"attack", "att-ticks-predict-fallflying"};
 
     public final DoubleRef range = builder(Configs.COMBAT_CONFIG, ATTACK_RANGE, DoubleRef.TYPE)
@@ -36,7 +36,7 @@ public class CombatExtra extends BaseModule {
             .defaultValue(false)
             .build();
 
-    public final FlagRef shieldAttack =
+    public final FlagRef useAttack =
             flagBuilder(Configs.COMBAT_CONFIG, COMBAT_SHIELDING).build();
 
     public final FlagRef rideAttack =
@@ -61,12 +61,17 @@ public class CombatExtra extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(EntityTrackerUpdateS2CPacket.class), this::onShieldSetback);
         registerListener(
-                Listener.getPacketPostSendPoint().getChannel(HandSwingC2SPacket.class), this::onShieldSetbackPredict);
-        registerListener(
                 Listener.getPacketPoint().getChannel(CooldownUpdateS2CPacket.class), this::asyncUpdateShieldCooldown);
+        registerListener(Listener.getAttackAction(), this::onUseAttackNoSlow);
     }
 
     public int shieldExceptionspam = 0;
+
+    public void onUseAttackNoSlow(Event<HitResult> event) {
+        //        if (shieldAttack.get() && mc.player.isUsingItem()) {
+        //            MovTasks.getNoSlowDown().setPreAttackUseTick();
+        //        }
+    }
 
     public void onShieldSetback(Event<EntityTrackerUpdateS2CPacket> trackerUpdateS2CPacketEvent) {
         if (trackerUpdateS2CPacketEvent.isCancelled()) {
@@ -96,26 +101,10 @@ public class CombatExtra extends BaseModule {
                             shieldExceptionspam = Tasks.getTick();
                             Debug.chat(Text.literal("[AC] 阻挡异常盾牌禁用").formatted(Formatting.RED));
                         }
-                        mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
-                            return new PlayerInteractItemC2SPacket(
-                                    hand, sequence, mc.player.getYaw(), mc.player.getPitch());
-                        });
-                        trackerUpdateS2CPacketEvent.cancel();
+                        // trackerUpdateS2CPacketEvent.cancel();
                     }
                 }
             }
-        }
-    }
-
-    public void onShieldSetbackPredict(Event<HandSwingC2SPacket> packet) {
-        if (shieldPredict.get()
-                && mc.player.isUsingItem()
-                && VItem.getInstance().isShield(mc.player.getActiveItem())
-                && !mc.player.getItemCooldownManager().isCoolingDown(mc.player.getActiveItem())) {
-            mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
-                return new PlayerInteractItemC2SPacket(
-                        mc.player.getActiveHand(), sequence, mc.player.getYaw(), mc.player.getPitch());
-            });
         }
     }
 

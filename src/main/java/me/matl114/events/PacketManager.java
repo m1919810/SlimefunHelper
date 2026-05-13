@@ -1,6 +1,9 @@
 package me.matl114.events;
 
 import com.google.common.collect.Queues;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -27,6 +30,38 @@ public class PacketManager {
 
     public static final ConcurrentLinkedQueue<PacketStorage> packetQueueIn = Queues.newConcurrentLinkedQueue();
     public static final ConcurrentLinkedQueue<PacketStorage> packetQueueOut = Queues.newConcurrentLinkedQueue();
+
+    public static final WeakHashMap<Packet<?>, List<Consumer<Event<Packet<?>>>>> postSendQueue = new WeakHashMap<>();
+
+    public static void schedulePostSendPacket(Packet<?> post, Packet<?> packet) {
+        schedulePostCallback(post, (ev) -> {
+            ClientConnection conn = ev.getArgs(0);
+            conn.send(packet);
+        });
+    }
+
+    public static <T extends Packet<?>> void schedulePostCallback(T post, Runnable packet) {
+        schedulePostCallback(post, (ev) -> {
+            packet.run();
+        });
+    }
+
+    public static <T extends Packet<?>> void schedulePostCallback(T post, Consumer<Event<T>> packet) {
+        postSendQueue.computeIfAbsent(post, (kv) -> new ArrayList<>()).add((Consumer) packet);
+    }
+
+    public static void onPostPacketSend(Event<Packet<?>> packet) {
+        var lst = postSendQueue.remove(packet.context);
+        if (lst != null && !lst.isEmpty()) {
+            for (var pkt : lst) {
+                pkt.accept(packet);
+            }
+        }
+    }
+
+    static {
+        Listener.getPacketPostSendPoint().registerHandler(PacketManager::onPostPacketSend);
+    }
 
     private static boolean startFlushIn = false;
     private static boolean startFlushOut = false;

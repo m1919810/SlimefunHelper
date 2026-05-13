@@ -1,18 +1,16 @@
 package me.matl114.mixins.hack;
 
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.hacks.MovTasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
@@ -46,13 +44,24 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
         }
     }
 
-    @Inject(
-            method = "slowMovement",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onLanding()V", shift = At.Shift.AFTER),
-            cancellable = true)
-    private void onSlowMovementDoNotModifyVelocity(BlockState state, Vec3d multiplier, CallbackInfo ci) {
-        if (checkClientPlayer() && MovTasks.getNoSlowDown().blockIn.get()) {
-            ci.cancel();
+    //    @Inject(
+    //            method = "slowMovement",
+    //            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onLanding()V", shift =
+    // At.Shift.AFTER),
+    //            cancellable = true)
+    //    private void onSlowMovementDoNotModifyVelocity(BlockState state, Vec3d multiplier, CallbackInfo ci) {
+    //        if (checkClientPlayer() && MovTasks.getNoSlowDown().blockIn.get()) {
+    //            ci.cancel();
+    //        }
+    //    }
+
+    @WrapWithCondition(
+            method = "pushAwayFrom",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;addVelocity(DDD)V"))
+    public boolean onEntityNoPush(Entity instance, double deltaX, double deltaY, double deltaZ) {
+        if (MovTasks.getVelocity().noEntityPush.get()) {
+            return false;
         }
+        return true;
     }
 }

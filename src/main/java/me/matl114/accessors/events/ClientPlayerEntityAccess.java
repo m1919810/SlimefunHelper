@@ -36,6 +36,8 @@ public interface ClientPlayerEntityAccess extends LivingEntityAccess<ClientPlaye
 
     public void resyncRot();
 
+    public void resyncMovementPacket();
+
     public void resyncInput();
 
     @Nonnull

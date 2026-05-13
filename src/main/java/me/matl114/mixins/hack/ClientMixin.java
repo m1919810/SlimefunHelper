@@ -167,7 +167,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
                             ordinal = 0))
     public boolean onAllowingPlayerAttackWhenUseItem(ClientPlayerEntity instance, Operation<Boolean> original) {
         boolean flag = original.call(instance);
-        if (flag && CombatTasks.getCombatExtra().shieldAttack.get()) {
+        if (flag && CombatTasks.getCombatExtra().useAttack.get()) {
             // do attack logic
             boolean bl3 = false;
             // still do attack first
@@ -190,7 +190,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",
                             ordinal = 0))
     public boolean onAllowingPlayerBreakingWhenUseItem(ClientPlayerEntity player) {
-        if (CombatTasks.getCombatExtra().shieldAttack.get()) {
+        if (CombatTasks.getCombatExtra().useAttack.get()) {
             return false;
         } else {
             return player.isUsingItem();

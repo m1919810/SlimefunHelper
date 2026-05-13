@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.mine;
 
+import java.util.Objects;
 import java.util.OptionalInt;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
@@ -68,6 +69,13 @@ public class PacketMine extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onTick);
+    }
+
+    public void cancelPacketMine(BlockPos pos) {
+        BlockPos po = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+        if (Objects.equals(po, pos)) {
+            PlayerInteractionAccess.of(mc.interactionManager).resetCurrentMiningPos();
+        }
     }
 
     public void onTick(Event<ClientPlayerEntity> tickEvent) {

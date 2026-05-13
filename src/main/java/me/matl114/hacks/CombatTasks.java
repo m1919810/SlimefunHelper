@@ -209,6 +209,9 @@ public class CombatTasks {
     public static AttackArua attackArua;
 
     @Getter
+    public static Criticals criticals;
+
+    @Getter
     public static BowEnhance bowEnhance;
 
     @Getter
@@ -235,6 +238,9 @@ public class CombatTasks {
     @Getter
     public static Blink blink;
 
+    @Getter
+    public static ElytraBot elytraBot;
+
     @ApiStatus.Experimental
     @Getter
     public static TransactionBlocker transactionBlocker;
@@ -255,6 +261,7 @@ public class CombatTasks {
         positionPredict = new PositionPredict().register(m);
         attack = new Attack().register(m);
         attackArua = new AttackArua().register(m);
+        criticals = new Criticals().register(m);
         bowEnhance = new BowEnhance().register(m);
         bowTp = new BowTp().register(m);
         projectileEnhance = new ProjectileEnhance().register(m);
@@ -264,6 +271,7 @@ public class CombatTasks {
         spearEnhance = new SpearEnhance().register(m);
         spearAttack = new SpearAttack().register(m);
         blink = new Blink().register(m);
+        elytraBot = new ElytraBot().register(m);
         //        transactionBlocker = new TransactionBlocker().register(m);
     }
 

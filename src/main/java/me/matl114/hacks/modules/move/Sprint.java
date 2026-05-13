@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.move;
 
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -68,14 +67,12 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public void onEnableModule() {
         super.onEnableModule();
         enableSprintDirectionalThisTick = false;
-        workRotationThisTick = false;
     }
 
     @Override
     public void onDisableModule() {
         super.onDisableModule();
         enableSprintDirectionalThisTick = false;
-        workRotationThisTick = false;
     }
 
     public void onTick(Event<ClientPlayerEntity> event) {
@@ -86,8 +83,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
             }
         }
     }
-
-    boolean workRotationThisTick;
 
     @Override
     public int priority() {
@@ -103,7 +98,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     }
 
     boolean lastTickLandingRotateJump = false;
-    boolean workRotationLastTick = false;
 
     public boolean mayWorkSprint() {
         return !mc.player.isFallFlying()
@@ -125,7 +119,8 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     && input.backward()
                     && !movementManagerEvent.context.hasImportantRotation()) {
                 EntityUtils.setEntityYawSafe(player, player.getYaw() + 180);
-                workRotationThisTick = true;
+                movementManagerEvent.context.markForResetRot();
+                movementManagerEvent.context.markForMoveFix();
             }
         }
     }
@@ -139,17 +134,9 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         // Debug.info(player.input.movementForward);
         if (directionalSprint.get() && directionalSprintMode.getValue().hasAc()) {
             PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
-            if (workRotationThisTick) {
-                input = input.clone()
-                        .right(input.left())
-                        .left(input.right())
-                        .forward(input.backward())
-                        .backward(input.forward());
-                if (lastTickLandingRotateJump) {
-                    input.jump(false);
-                }
+            if (lastTickLandingRotateJump) {
+                input.jump(false);
             }
-
             input.applyInput(player.input);
         }
         if (directionalSprint.get() && directionalSprintMode.getValue() == Configs.BypassMode.NO_BYPASS) {
@@ -228,14 +215,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                 && movementManagerEvent.context.playerStatus.entity.isOnGround()) {
             lastTickLandingRotateJump = true;
         }
-        workRotationLastTick = workRotationThisTick;
-        if (workRotationThisTick) {
-            workRotationThisTick = false;
-            movementManagerEvent.context.playerStatus.restoreRotation();
-            ClientPlayerAccess.of(movementManagerEvent.context.playerStatus.entity)
-                    .resyncRot();
-        }
-        workRotationThisTick = false;
+
         if (fakeSprintThisTick) {
             movementManagerEvent.context.playerStatus.entity.setSprinting(true);
             fakeSprintThisTick = false;
@@ -254,7 +234,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
             }
         }
         switch (preset) {
-            case AC_GRIM -> {
+            case AC_GRIM, AC_GRIM_LEGACY -> {
                 fakeSprintMode.set(Configs.BypassMode.BYPASS_GRIM);
             }
             default -> {

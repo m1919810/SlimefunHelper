@@ -77,6 +77,7 @@
 		"hack.FogRendererMixin",
 		"hack.GameRenderMixin",
 		"hack.InGameHudMixin",
+		"hack.InGameOverlayRendererMixin",
 		"hack.ItemStackMixin",
 		"hack.LightMapTextureMixin",
 		"hack.LivingEntityMixin",
@@ -101,6 +102,7 @@
 	"mixins": [
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
-		"fix.ScreenHandlerFixMixin"
+		"fix.ScreenHandlerFixMixin",
+		"hack.CobwebBlockMixin"
 	]
 }

@@ -6,7 +6,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 
 public class GenericBackGroundScreen extends GenericScreen {
-    protected GenericBackGroundScreen(Text title, int backgroundWidth, int backgroundDefaultHeight) {
+    public GenericBackGroundScreen(Text title, int backgroundWidth, int backgroundDefaultHeight) {
         super(title, backgroundWidth, backgroundDefaultHeight);
     }
 

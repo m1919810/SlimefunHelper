@@ -15,6 +15,7 @@ import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
+import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.entity.LegalMovementManager;
@@ -108,7 +109,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         delegateMap.put(NofallBypassMode.LAZY_GRIM_PLUS, new NoFallGrimLazyPlus(this));
         delegateMap.put(NofallBypassMode.LAZY_GRIM_PLUS_2, new NoFallFuckGrimLazyPlusV2(this));
         delegateMap.put(NofallBypassMode.TEST, new NoFallFuckGrimTest(this));
-        // delegateMap.put(NofallBypassMode.TEST2, new NoFallFuckGrimTest2(this));
+        delegateMap.put(NofallBypassMode.TEST2, new NoFallFuckGrimTest2(this));
     }
 
     private void initArguments() {
@@ -1201,7 +1202,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if (counter > 100) {
                 noFallSetbackResponse = false;
             }
-
+            boolean modifyRot = false;
             if (module.isActive()) {
                 // do not make velocity input
                 // Debug.info("check input");
@@ -1303,11 +1304,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 }
                 dupResync = Math.max(0, dupResync + (resyncCnt ? 2 : -1));
             }
+            if (modifyRot) {
+                movementManagerEvent.context.markForResetRot();
+            }
         }
 
         int lastRotTick = 0;
         float modifyYaw = 0.0F;
-        boolean modifyRot = false;
         PlayerInputUtils.Input forThisTickInput = null;
         boolean applyJumpThisTick = false;
         int lastFixTick = 0;
@@ -1451,10 +1454,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if (runningThisTick) {
                 // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
             }
-            if (modifyRot) {
-                modifyRot = false;
-                movementManagerEvent.context.playerStatus.restoreRotation();
-            }
             return true;
         }
 
@@ -1514,6 +1513,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
         @Override
         public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+            boolean modifyRot = false;
             ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
             boolean forceNoFall = ClientPlayerAccess.of(args).isForceNoFall();
             if (forceNoFall) {
@@ -1640,11 +1640,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 }
                 dupResync = Math.max(0, dupResync + (resyncCnt ? 2 : -1));
             }
+            if (modifyRot) {
+                movementManagerEvent.context.markForResetRot();
+            }
         }
 
         int lastRotTick = 0;
         float modifyYaw = 0.0F;
-        boolean modifyRot = false;
         PlayerInputUtils.Input forThisTickInput = null;
         boolean applyJumpThisTick = false;
         int lastFixTick = 0;
@@ -1787,10 +1789,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if (runningThisTick) {
                 // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
             }
-            if (modifyRot) {
-                modifyRot = false;
-                movementManagerEvent.context.playerStatus.restoreRotation();
-            }
             return true;
         }
 
@@ -1840,17 +1838,15 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         @Override
         public void onSetback(Event<MovTasks.MovInfo> setBack) {
             super.onSetback(setBack);
-            //            if(Tasks.getTick() < lastOnGround + 5){
-            //                MovTasks.MovInfo set = setBack.context();
-            //                setBack.context(set.withOGroundOverride(Boolean.TRUE));
-            //                Debug.chat("OnGround");
-            //                lastOnGround = 0;
-            //            }
+            noFallSetbackResponse = true;
         }
 
-        int lastOnGround;
-        Vec3d storePos;
-        boolean runOnGroundThisTick;
+        boolean flagTick;
+
+        @Override
+        public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {}
+
+        boolean testFlag1 = false;
 
         @Override
         public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
@@ -1858,56 +1854,39 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 var entity = movementManagerEvent.context.playerStatus;
                 ClientPlayerEntity player = entity.entity;
                 boolean shouldCheck = (entity.entity.getY() <= module.lastOnGroundHeight - module.safeDistance);
-                //                if(yLevel == 0){
-                //                    yLevel = mc.player.getY();
-                //                }else {
-                //                    mc.player.setPosition(mc.player.getX(), yLevel, mc.player.getZ());
-                //                }
-                if (lastOnGround == Tasks.getTick() - 1) {
-                    module.lastOnGroundHeight = entity.entity.getY();
-                    mc.player.setOnGround(true);
-                    storePos = mc.player.getPos();
-                    // mc.player.setPosition(storePos.x, yLevel, storePos.z);
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    movementManagerEvent.cancel();
-
-                    Listener.sendPacketNoEvents(VPacket.newFull(
-                            mc.player.getX(),
-                            mc.player.getY(),
-                            mc.player.getZ(),
-                            mc.player.getYaw(),
-                            mc.player.getPitch(),
-                            true,
-                            mc.player.horizontalCollision));
-                    runOnGroundThisTick = true;
-                } else if (shouldCheck) {
-                    // movementManagerEvent.cancel();
-                    storePos = mc.player.getPos();
-                    // mc.player.setPosition(storePos.x, yLevel, storePos.z);
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    movementManagerEvent.cancel();
-                    lastOnGround = Tasks.getTick();
-                    Listener.sendPacketNoEvents(VPacket.newFull(
-                            mc.player.getX(),
-                            mc.player.getY(),
-                            mc.player.getZ(),
-                            mc.player.getYaw(),
-                            mc.player.getPitch(),
-                            true,
-                            mc.player.horizontalCollision));
-                    runOnGroundThisTick = true;
+                //                                if(yLevel == 0){
+                //                                    yLevel = mc.player.getY();
+                //                                }else {
+                //                                    mc.player.setPosition(mc.player.getX(), yLevel, mc.player.getZ());
+                //                                }
+                if (testFlag1 && noFallSetbackResponse && mc.player.isOnGround()) {
+                    Debug.chat(mc.player.getY());
+                    testFlag1 = false;
+                    noFallSetbackResponse = false;
+                    flagTick = false;
+                    mc.player.setPosition(mc.player
+                            .getPos()
+                            .withAxis(Direction.Axis.Y, movementManagerEvent.context.playerStatus.pos.y + 9E-5));
+                    // can not bypass
+                    mc.player.setOnGround(false);
+                    ClientPlayerAccess.of(mc.player).resyncPos();
                 }
+                if (shouldCheck && mc.player.isOnGround() && !movementManagerEvent.context.playerStatus.onGround) {
+                    mc.player.setOnGround(false);
+                    module.lastOnGroundHeight = mc.player.getY();
+                    mc.player.setPosition(movementManagerEvent.context.playerStatus.pos.add(0, DELTA_Y, 0));
+                    ClientPlayerAccess.of(mc.player).resyncPos();
+                    testFlag1 = true;
+                }
+
+            } else {
+                testFlag1 = false;
             }
         }
 
         @Override
         public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-            if (runOnGroundThisTick) {
-                mc.player.setPosition(storePos.x, storePos.y, storePos.z);
-                mc.player.setOnGround(true);
-                //  mc.player.setVelocity(mc.player.getVelocity().withAxis(Direction.Axis.Y, 0));
-                runOnGroundThisTick = false;
-            }
+
             return true;
         }
     }
@@ -1956,7 +1935,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {
-            case AC_GRIM -> {
+            case AC_GRIM, AC_GRIM_LEGACY -> {
                 if (noFallModel.get() != NofallBypassMode.LAZY_GRIM_PLUS) {
                     noFallModel.set(NofallBypassMode.LAZY_GRIM_PLUS);
                     //                    if (noFall.get()) {

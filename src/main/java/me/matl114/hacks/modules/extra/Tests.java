@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.extra;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import me.matl114.hacks.RenderTasks;
@@ -21,14 +20,20 @@ import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
 import me.matl114.utils.render.UV;
 import me.matl114.versioned.api.VRender;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class Tests extends BaseModule {
@@ -57,14 +62,17 @@ public class Tests extends BaseModule {
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::doTest2))
             .build();
 
+    public final FlagRef flag1 =
+            flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_1).build();
+
     public final KeyBindRef key1 = toggleConfigHotkey(
                     Configs.HOTKEY_CONFIG,
                     TEST_TOGGLE_1,
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_1))
             .build();
 
-    public final FlagRef flag1 =
-            flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_1).build();
+    public final FlagRef flag2 =
+            flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_2).build();
 
     public final KeyBindRef key2 = toggleConfigHotkey(
                     Configs.HOTKEY_CONFIG,
@@ -72,8 +80,8 @@ public class Tests extends BaseModule {
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_2))
             .build();
 
-    public final FlagRef flag2 =
-            flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_2).build();
+    public final FlagRef flag3 =
+            flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_3).build();
 
     public final KeyBindRef key3 = toggleConfigHotkey(
                     Configs.HOTKEY_CONFIG,
@@ -81,17 +89,14 @@ public class Tests extends BaseModule {
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_3))
             .build();
 
-    public final FlagRef flag3 =
-            flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_3).build();
+    public final FlagRef flag4 =
+            flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_4).build();
 
     public final KeyBindRef key4 = toggleConfigHotkey(
                     Configs.HOTKEY_CONFIG,
                     TEST_TOGGLE_4,
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_4))
             .build();
-
-    public final FlagRef flag4 =
-            flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_4).build();
 
     private boolean swapState = false;
     private CompletableFuture<Void> future = null;
@@ -382,25 +387,43 @@ public class Tests extends BaseModule {
     }
 
     public void doTest2() {
+        //        if (mc.player != null) {
+        //            Vec3d pos = mc.player.getEyePos();
+        //            Vec3d look = mc.player.getRotationVector().multiply(20);
+        //            var iter = RaycastUtils.createRaycastBlockPosIterator(mc.world, pos, pos.add(look));
+        //            BlockPos lastPos = null;
+        //            BlockPos thisPos = null;
+        //            RenderTasks.registerVirtualRenderTask(
+        //                    new RenderTasks.RenderTask(500, new RenderTasks.LineObject(pos, look)));
+        //            while (iter.hasNext()) {
+        //                lastPos = thisPos;
+        //                thisPos = iter.next();
+        //                if (Objects.equals(lastPos, thisPos)) {
+        //                    Debug.chat("duplicate blockPos");
+        //                } else {
+        //                    RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+        //                            500,
+        //                            new RenderTasks.BoxObject(
+        //                                    Vec3d.of(thisPos), Vec3d.of(thisPos.add(1, 1, 1)), Color.MAGENTA)));
+        //                }
+        //            }
+        //        }
+
         if (mc.player != null) {
-            Vec3d pos = mc.player.getEyePos();
-            Vec3d look = mc.player.getRotationVector().multiply(20);
-            var iter = RaycastUtils.createRaycastBlockPosIterator(mc.world, pos, pos.add(look));
-            BlockPos lastPos = null;
-            BlockPos thisPos = null;
-            RenderTasks.registerVirtualRenderTask(
-                    new RenderTasks.RenderTask(500, new RenderTasks.LineObject(pos, look)));
-            while (iter.hasNext()) {
-                lastPos = thisPos;
-                thisPos = iter.next();
-                if (Objects.equals(lastPos, thisPos)) {
-                    Debug.chat("duplicate blockPos");
-                } else {
-                    RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-                            500,
-                            new RenderTasks.BoxObject(
-                                    Vec3d.of(thisPos), Vec3d.of(thisPos.add(1, 1, 1)), Color.MAGENTA)));
-                }
+            HitResult result = mc.player.raycast(10, 0, false);
+            if (result != null && result.getType() == HitResult.Type.BLOCK) {
+                BlockPos pos = ((BlockHitResult) result).getBlockPos();
+                RenderTasks.drawBox(new Box(pos), 50, Color.MAGENTA);
+                Direction dir = mc.player.getFacing();
+                mc.interactionManager.sendSequencedPacket(
+                        mc.world,
+                        (seq) -> new PlayerActionC2SPacket(
+                                PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, dir.getOpposite(), seq));
+                mc.interactionManager.sendSequencedPacket(
+                        mc.world,
+                        (seq) -> new PlayerActionC2SPacket(
+                                PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, dir.getOpposite(), seq));
+                mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
             }
         }
     }

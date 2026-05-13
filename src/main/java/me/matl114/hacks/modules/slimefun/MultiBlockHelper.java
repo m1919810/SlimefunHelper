@@ -13,6 +13,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
+import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
@@ -26,7 +27,6 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.containers.MetaData;
 import me.matl114.utils.entity.LegalMovementManager;
-import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.Screen;
@@ -59,9 +59,6 @@ public class MultiBlockHelper extends BaseModule {
             .defaultValue(9)
             .validator(Configs.INT_POSITIVE)
             .build();
-
-    public final FlagRef legal =
-            flagBuilder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_MB_LEGAL).build();
 
     public final EnumRef<Configs.LegalInteractMode> legalMode = builder(
                     Configs.SLIMEFUN_CONFIG, SLIMEFUN_MB_LEGAL_MODE, Configs.LegalInteractMode.class)
@@ -185,7 +182,7 @@ public class MultiBlockHelper extends BaseModule {
             currentLookingAt = true;
         }
         // illegal click, with legal mode, have to redirect
-        if (!currentLookingAt && legal.get()) {
+        if (!currentLookingAt && legalMode.get().isLegal()) {
             // the 300ms limit or the legalMode
             if (!clickMany || lastInteractTimestamp + (5) < Tasks.getTick()) {
                 lastInteractTimestamp = Tasks.getTick();
@@ -199,7 +196,7 @@ public class MultiBlockHelper extends BaseModule {
                 Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(cacheDirection);
                 switch (legalMode.get()) {
                     case USEITEM_PACKET -> clickUsePacket(result, pitchYaw, rateLimit);
-                    case MOVEMENT -> clickMovement(result, pitchYaw, rateLimit);
+                    case LEGACY_SLIENT_ROT -> clickSnap(result, pitchYaw, rateLimit);
                     case DELAY_MOVEMENT -> clickDelayMovement(result, pitchYaw, rateLimit);
                 }
             } else {
@@ -251,6 +248,7 @@ public class MultiBlockHelper extends BaseModule {
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityPitchSafe(args, pitchYaw.x);
                         EntityUtils.setEntityYawSafe(args, pitchYaw.y);
+                        movementManagerEvent.context.markForResetRot();
                     }
 
                     @Override
@@ -264,16 +262,13 @@ public class MultiBlockHelper extends BaseModule {
                                     (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, result, sequence)));
                         }
                         ClientAccess.of(mc).setItemUseCooldown(0);
-                        movementManagerEvent.context().playerStatus.restoreRotation();
                         return false;
                     }
                 });
     }
 
-    public void clickMovement(BlockHitResult result, Vec2f pitchYaw, int clickRate) {
-        mc.getNetworkHandler()
-                .sendPacket(VPacket.newLookAndOnGround(
-                        pitchYaw.y, pitchYaw.x, mc.player.isOnGround(), mc.player.horizontalCollision));
+    public void clickSnap(BlockHitResult result, Vec2f pitchYaw, int clickRate) {
+        MovTasks.getLegacySnapRotManager().snapAt(pitchYaw.x, pitchYaw.y, false);
         for (int i = 0; i < clickRate; ++i) {
             mc.interactionManager.sendSequencedPacket(
                     mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, result, sequence)));
@@ -304,7 +299,7 @@ public class MultiBlockHelper extends BaseModule {
             }
             ClientAccess.of(mc).setItemUseCooldown(0);
         } else {
-            clickMovement(result, pitchYaw, clickRate);
+            clickSnap(result, pitchYaw, clickRate);
         }
     }
 

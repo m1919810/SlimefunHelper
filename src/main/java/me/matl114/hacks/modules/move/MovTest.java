@@ -25,7 +25,6 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
-        bindFlag(ExtraTasks.getTests().flag4);
     }
 
     public boolean enable() {
@@ -40,24 +39,6 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onTransaction);
         registerListener(
                 Listener.getPacketPoint().getChannel(EntityVelocityUpdateS2CPacket.class), this::onVelocityPacket);
-    }
-
-    EntityVelocityUpdateS2CPacket veryBigVelocity;
-
-    @Override
-    public void onDisableModule() {
-        super.onDisableModule();
-        if (!delayedPackets.isEmpty()) {
-            //            Debug.chat("Flush rockets");
-
-            //            try{
-            //                veryBigVelocity.apply(mc.getNetworkHandler());
-            //            }catch (OffThreadException ex){
-            //            }catch (Exception ex){
-            //                ex.printStackTrace();
-            //            }
-
-        }
     }
 
     @Override

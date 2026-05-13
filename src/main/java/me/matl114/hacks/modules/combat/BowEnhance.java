@@ -25,7 +25,6 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.entity.LegalMovementManager;
-import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
@@ -156,9 +155,10 @@ public class BowEnhance extends BaseModule {
                     velocity = 3.0F;
                 }
                 switch (mode.get()) {
-                    case MOVEMENT -> bowActionMovement(actionEvent, targetEntity, velocity);
+                    case LEGACY_SLIENT_ROT -> bowActionMovement(actionEvent, targetEntity, velocity);
                     case DELAY_MOVEMENT -> bowActionDelayMovement(actionEvent, targetEntity, velocity);
                     case USEITEM_PACKET -> bowActionInteractItem(actionEvent, targetEntity, velocity);
+                    default -> bowActionInteractItem(actionEvent, targetEntity, velocity);
                 }
             }
         }
@@ -334,9 +334,7 @@ public class BowEnhance extends BaseModule {
             if (Float.isNaN(red.x) || Float.isInfinite(red.x) || Float.isNaN(red.y) || Float.isInfinite(red.y)) {
                 Debug.chat("[Bow Aim] Arrow failed to reach the target");
             } else {
-                mc.getNetworkHandler()
-                        .sendPacket(VPacket.newLookAndOnGround(
-                                red.y, red.x, mc.player.isOnGround(), mc.player.horizontalCollision));
+                MovTasks.getLegacySnapRotManager().snapAt(red.x, red.y, false);
             }
         }
 
@@ -382,13 +380,12 @@ public class BowEnhance extends BaseModule {
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityPitchSafe(player, pitchYaw.x);
                         EntityUtils.setEntityYawSafe(player, pitchYaw.y);
+                        movementManagerEvent.context.markForResetRot();
                     }
 
                     @Override
                     public boolean postModify(
                             Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                        if (enabledThisTick)
-                            movementManagerEvent.context().playerStatus.restoreRotation();
                         // add post packets
                         // mc.getNetworkHandler().sendPacket(actionPacket);
                         if (true)
@@ -546,14 +543,14 @@ public class BowEnhance extends BaseModule {
                     tpDistance.set(-tpDistance.get());
                 }
                 if (mode.get() == Configs.LegalInteractMode.DELAY_MOVEMENT) {
-                    mode.set(Configs.LegalInteractMode.MOVEMENT);
+                    mode.set(Configs.LegalInteractMode.LEGACY_SLIENT_ROT);
                 }
             }
             default -> {
                 if (tpDistance.get() > 0) {
                     tpDistance.set(-tpDistance.get());
                 }
-                if (mode.get() == Configs.LegalInteractMode.MOVEMENT) {
+                if (mode.get() == Configs.LegalInteractMode.LEGACY_SLIENT_ROT) {
                     mode.set(Configs.LegalInteractMode.DELAY_MOVEMENT);
                 }
             }

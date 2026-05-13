@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.BidirectionalIterator;
 import java.util.Objects;
+import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -21,6 +22,7 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.PlayerInput;
@@ -31,6 +33,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
@@ -75,6 +78,12 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Shadow
     private boolean lastOnGround;
+
+    @Shadow
+    public abstract void init();
+
+    @Shadow
+    private int ticksSinceLastPositionPacketSent;
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -130,6 +139,11 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     public void resyncInput() {
         this.resyncLastInput = true;
+    }
+
+    @Unique
+    public void resyncMovementPacket() {
+        this.ticksSinceLastPositionPacketSent = 100;
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -284,5 +298,19 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                 return false;
             }
         }
+    }
+
+    @ModifyArg(
+            method = "sendMovementPackets",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    private Packet onSendMovementPackets(Packet par1) {
+        if (par1 instanceof PlayerMoveC2SPacketAccess acc) {
+            acc.setCause(PlayerMoveC2SPacketAccess.Cause.PLAYER_MOVEMENT);
+        }
+        return par1;
     }
 }
