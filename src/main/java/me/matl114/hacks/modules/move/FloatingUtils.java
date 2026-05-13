@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
@@ -15,6 +16,7 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 
 public class FloatingUtils extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -25,7 +27,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
-        instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
+        instance.setDelegate(this::cast);
     }
 
     public static final String[] ENABLE_GRIM = makePath("velocity-management.floating-utils.grim-floating.enable");
@@ -80,6 +82,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onTransactionPacket);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMoveNoPosition);
     }
 
     @Override
@@ -88,6 +91,13 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     }
 
     Packet<?> storedPacket;
+    boolean hasNoPosition = false;
+
+    public void onMoveNoPosition(Event<PlayerMoveC2SPacket> eventMove) {
+        if (!eventMove.isCancelled() && !eventMove.context.changesPosition()) {
+            hasNoPosition = true;
+        }
+    }
 
     public void onTransactionPacket(Event<CommonPingS2CPacket> packet) {
         if (false && enableGrim.get()) {
@@ -97,22 +107,22 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     }
 
     public boolean workGrimFloatingThisTick() {
-        return (enableGrim.get() && !mc.player.isOnGround()) || forceFloatingThisTick;
+        return (enableGrim.get() // && !mc.player.isOnGround()
+                )
+                || forceFloatingThisTick;
     }
-
-    boolean workElytraRotateThisTick = false;
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         if (enableElytraSlowFall.get()) {
             if (mc.player.isFallFlying() && !mc.player.isOnGround()) {
-                workElytraRotateThisTick = true;
                 boolean rotateYaw = Tasks.getTick() % 2 == 0;
                 movementManagerEvent.context.pushImportantRotation(true, rotateYaw);
                 EntityUtils.setEntityPitchSafe(mc.player, 0);
                 if (rotateYaw) {
                     EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
                 }
+                movementManagerEvent.context.markForResetRot();
             }
         }
     }
@@ -129,17 +139,17 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        if (workElytraRotateThisTick) {
-            workElytraRotateThisTick = false;
-            movementManagerEvent.context.playerStatus.restoreRotation();
-        }
         forceFloatingThisTick = false;
 
         if (storedPacket != null) {
-            mc.getNetworkHandler().sendPacket(storedPacket);
+            // optimize current, only if rotation different, send duplicate packet
+            if (!hasNoPosition || ExtraTasks.getBadPacketsFix().isRotationDifferent()) {
+                mc.getNetworkHandler().sendPacket(storedPacket);
+            }
             // Listener.sendPacketNoEvents(storedPacket);
             storedPacket = null;
         }
+        hasNoPosition = false;
         return true;
     }
 }

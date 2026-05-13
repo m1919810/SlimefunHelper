@@ -84,3 +84,4 @@ accessible field net/minecraft/block/entity/BlockEntityType blocks Ljava/util/Se
 accessible field net/minecraft/network/packet/s2c/play/ChunkDeltaUpdateS2CPacket sectionPos Lnet/minecraft/util/math/ChunkSectionPos;
 accessible field net/minecraft/client/gui/screen/DisconnectedScreen parent Lnet/minecraft/client/gui/screen/Screen;
 accessible field net/minecraft/client/gui/screen/DisconnectedScreen grid Lnet/minecraft/client/gui/widget/DirectionalLayoutWidget;
+accessible field net/minecraft/client/network/PendingUpdateManager sequence I

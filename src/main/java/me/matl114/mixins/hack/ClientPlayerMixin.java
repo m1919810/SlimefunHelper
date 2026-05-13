@@ -198,8 +198,18 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @ModifyExpressionValue(
             method = "applyMovementSpeedFactors",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
-    private boolean noSlotUsingItem(boolean original) {
-        if (MovTasks.getNoSlowDown().useItem.get()) {
+    private boolean noSlowUsingItem(boolean original) {
+        if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
+            return false;
+        }
+        return original;
+    }
+
+    @ModifyExpressionValue(
+            method = "isBlockedFromSprinting",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
+    private boolean noSlowUsingItemDoNotBlockSprint(boolean original) {
+        if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
             return false;
         }
         return original;
@@ -385,6 +395,13 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
             return null;
         } else {
             return super.dropItem(stack, throwRandomly, retainOwnership);
+        }
+    }
+
+    @Inject(method = "pushOutOfBlocks", at = @At("HEAD"), cancellable = true)
+    public void onBlockVelocity(double x, double z, CallbackInfo ci) {
+        if (MovTasks.getVelocity().noBlock.get()) {
+            ci.cancel();
         }
     }
 }

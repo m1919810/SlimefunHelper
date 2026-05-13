@@ -20,11 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(DataTracker.class)
 @Environment(EnvType.CLIENT)
 public abstract class DataTrackerEvents {
-
-    @Final
-    @Shadow
-    private DataTracker.Entry<?>[] entries;
-
     @Final
     @Shadow
     private DataTracked trackedEntity;

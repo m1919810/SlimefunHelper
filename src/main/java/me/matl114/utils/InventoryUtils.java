@@ -1,8 +1,10 @@
 package me.matl114.utils;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.inventory.ImmutableInventory;
 import me.matl114.utils.inventory.ImmutableListInventory;
@@ -13,6 +15,7 @@ import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 
 @ApiMethod
@@ -61,22 +64,36 @@ public class InventoryUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public static IndexEntry<ItemStack> findPlayerItem(
-            Predicate<ItemStack> predicate, boolean doNotFSearchWhenOpenOtherScreen) {
+            Predicate<ItemStack> predicate, boolean doNotFSearchWhenOpenOtherScreen, boolean acceptEmpty) {
+        return findPlayerItem(predicate, doNotFSearchWhenOpenOtherScreen, acceptEmpty, true);
+    }
+
+    public static IndexEntry<ItemStack> findPlayerItem(
+            Predicate<ItemStack> predicate,
+            boolean doNotFSearchWhenOpenOtherScreen,
+            boolean acceptEmpty,
+            boolean handPriority) {
         PlayerInventory pinv = mc.player.getInventory();
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
         // we assert player hold block while scaffold, or it will be really annoying
         // the holding block must be a full cube
         int selecedSlot = pinv.getSelectedSlot();
-        if (!item.isEmpty() && predicate.test(item)) {
-            return new IndexEntry<>(selecedSlot, item);
+        IndexEntry<ItemStack> result = null;
+        if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
+            result = new IndexEntry<>(selecedSlot, item);
+        }
+        if (handPriority && result != null) {
+            return result;
         }
         // while player is open Screen
-        if (mc.player.currentScreenHandler.syncId != mc.player.playerScreenHandler.syncId) {
-            return null;
+        if (doNotFSearchWhenOpenOtherScreen
+                && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId
+                        != mc.player.playerScreenHandler.syncId) {
+            return result;
         }
         for (var i = 0; i < pinv.size(); ++i) {
             ItemStack stack = pinv.getStack(i);
-            if (!stack.isEmpty() && predicate.test(stack)) {
+            if ((acceptEmpty || !stack.isEmpty()) && predicate.test(stack)) {
                 //                if(keepInHand.get()){
                 //                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 //                    OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(pinv, i);
@@ -87,6 +104,119 @@ public class InventoryUtils {
                 //                    }
                 //                }else
                 return new IndexEntry<>(i, stack);
+            }
+        }
+        return null;
+    }
+
+    public static IndexEntry<ItemStack> findPlayerHotBarItem(
+            Predicate<ItemStack> predicate, boolean acceptEmpty, boolean acceptOffhand) {
+        PlayerInventory pinv = mc.player.getInventory();
+        ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
+        // we assert player hold block while scaffold, or it will be really annoying
+        // the holding block must be a full cube
+        int selecedSlot = pinv.getSelectedSlot();
+        if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
+            return new IndexEntry<>(selecedSlot, item);
+        }
+        if (acceptOffhand) {
+            item = mc.player.getStackInHand(Hand.OFF_HAND);
+            if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
+                return new IndexEntry<>(40, item);
+            }
+        }
+
+        for (var i = 0; i < 9; ++i) {
+            ItemStack stack = pinv.getStack(i);
+            if (i == selecedSlot) continue;
+            if ((acceptEmpty || !stack.isEmpty()) && predicate.test(stack)) {
+                //                if(keepInHand.get()){
+                //                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                //                    OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(pinv, i);
+                //                    if(slotIndex.isPresent()){
+                //                        mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId,
+                // slotIndex.getAsInt(), selecedSlot, SlotActionType.SWAP, mc.player);
+                //                        return selecedSlot;
+                //                    }
+                //                }else
+                return new IndexEntry<>(i, stack);
+            }
+        }
+        return null;
+    }
+
+    public static IndexEntry<ItemStack> findBestPlayerItem(
+            Function<ItemStack, Double> maxFunction, boolean doNotFSearchWhenOpenOtherScreen, boolean acceptEmpty) {
+        // while player is open Screen
+        PlayerInventory pinv = mc.player.getInventory();
+        ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
+        // we assert player hold block while scaffold, or it will be really annoying
+        // the holding block must be a full cube
+        int selecedSlot = pinv.getSelectedSlot();
+        Double maxValue = null;
+        IndexEntry<ItemStack> result = null;
+        if ((acceptEmpty || !item.isEmpty())) {
+            maxValue = maxFunction.apply(item);
+            result = new IndexEntry<>(selecedSlot, item);
+        }
+        if (doNotFSearchWhenOpenOtherScreen
+                && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId
+                        != mc.player.playerScreenHandler.syncId) {
+            return result;
+        }
+
+        Double currentValue;
+        for (var i = 0; i < pinv.size(); ++i) {
+            ItemStack stack = pinv.getStack(i);
+            if ((acceptEmpty || !stack.isEmpty()) && (currentValue = maxFunction.apply(stack)) != null) {
+                if (maxValue == null || currentValue > maxValue) {
+                    maxValue = currentValue;
+                    result = new IndexEntry<>(i, stack);
+                }
+            }
+        }
+        return result;
+    }
+
+    public static IndexEntry<Slot> findScreenSlot(List<Slot> slots, Predicate<Slot> predicate, boolean acceptEmpty) {
+        for (var i = 0; i < slots.size(); ++i) {
+            var slot = slots.get(i);
+            ItemStack stack = slot.getStack();
+            if (!acceptEmpty && stack.isEmpty()) continue;
+            if (predicate.test(slot)) {
+                return new IndexEntry<>(i, slot);
+            }
+        }
+        return null;
+    }
+
+    public static IndexEntry<Slot> findBestScreenSlot(
+            List<Slot> slots, Function<Slot, Double> maxFunction, boolean acceptEmpty) {
+        IndexEntry<Slot> result = null;
+        Double maxVal = null;
+        for (var i = 0; i < slots.size(); ++i) {
+            var slot = slots.get(i);
+            ItemStack stack = slot.getStack();
+            if (!acceptEmpty && stack.isEmpty()) continue;
+            Double val = maxFunction.apply(slot);
+            if (val != null) {
+                if (maxVal == null || maxVal < val) {
+                    maxVal = val;
+                    result = new IndexEntry<>(i, slot);
+                }
+            }
+        }
+        return result;
+    }
+
+    public static IndexEntry<Slot> findScreenItem(
+            List<Slot> slots, Predicate<ItemStack> predicate, boolean acceptEmpty) {
+        for (var i = 0; i < slots.size(); ++i) {
+            var slot = slots.get(i);
+            ItemStack stack = slot.getStack();
+            if (!acceptEmpty && stack.isEmpty()) continue;
+            if (predicate.test(stack)) {
+                return new IndexEntry<>(i, slot);
             }
         }
         return null;

@@ -84,6 +84,11 @@ public class ItemUtils_v1_21_11 implements VItem {
     }
 
     @Override
+    public boolean isAxe(ItemStack stack) {
+        return stack.getItem().getRegistryEntry().isIn(ItemTags.AXES);
+    }
+
+    @Override
     public ItemStack fromNbt(NbtCompound tag) {
         return tag.isEmpty()
                 ? ItemStack.EMPTY

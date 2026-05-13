@@ -6,7 +6,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.entity.CameraEntity;
-import me.matl114.hacks.utils.move.ElytraVelocity;
+import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -63,7 +63,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onStopInteractWithSelf);
         registerListener(Listener.getPlayerChangeLook(), this::onPlayerChangeLook);
-        registerListener(Listener.getCustomListener().getChannel(ElytraVelocity.class), this::onElytraControl);
+        registerListener(Listener.getCustomListener().getChannel(FlightVelocity.class), this::onElytraControl);
     }
 
     CameraEntity camera;
@@ -93,6 +93,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     }
 
     public void initializeCamera() {
+        removeCamera();
         if (mc.player == null) return;
         camera = new CameraEntity(mc.world, mc.player, GameMode.SPECTATOR, true);
         displayEntity = new CameraEntity(mc.world, mc.player, GameMode.CREATIVE, false);
@@ -150,10 +151,10 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         event.cancel();
     }
 
-    public void onElytraControl(Event<EventContainer<ElytraVelocity>> event) {
+    public void onElytraControl(Event<EventContainer<FlightVelocity>> event) {
         if (true || camera == null) return;
         // fuck, this module directly reed mc.options,
-        ElytraVelocity velocity = event.context().value;
+        FlightVelocity velocity = event.context().value;
         velocity.x(0).y(0).z(0);
     }
 

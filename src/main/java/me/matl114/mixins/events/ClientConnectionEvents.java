@@ -6,6 +6,7 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.netty.channel.*;
 import me.matl114.accessors.events.ClientConnectionAccess;
+import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import net.fabricmc.api.EnvType;
@@ -107,7 +108,8 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
         if (this.side == NetworkSide.SERVERBOUND) {
             return;
         }
-        Listener.getPacketPostSendPoint().broadcast(packet);
+        Listener.getPacketPostSendPoint()
+                .handleValue(new Event<>(packet, false, false, (ClientConnection) (Object) this));
     }
 
     @WrapOperation(

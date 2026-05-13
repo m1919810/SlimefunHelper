@@ -6,8 +6,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
 public interface PlayerInteractionAccess {
-    public void autoSendStopPacket();
-
     public void sendStartBreakPacket(BlockPos pos, Direction direction);
 
     public void sendStopBreakPacket(BlockPos pos, Direction direction);
@@ -19,6 +17,8 @@ public interface PlayerInteractionAccess {
     public float calculateBreakingSpeed(BlockPos pos);
 
     public BlockPos getCurrentMiningPos();
+
+    public void resetCurrentMiningPos();
 
     public BlockPos getCurrentFailBreakPos();
 

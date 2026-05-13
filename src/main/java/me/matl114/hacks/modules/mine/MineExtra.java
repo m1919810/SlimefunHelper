@@ -4,10 +4,8 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
+import me.matl114.events.*;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
-import me.matl114.events.Listener;
-import me.matl114.events.RenderListener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
@@ -17,6 +15,7 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
+import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RenderUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -185,8 +184,7 @@ public class MineExtra extends BaseModule {
         registerListener(Listener.getGameJoinPoint(), this::onGameJoin);
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onMine);
         registerListener(
-                Listener.getPacketPostSendPoint().getChannel(PlayerActionC2SPacket.class),
-                this::onGrimSBFastBreakExplode);
+                Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onGrimSBFastBreakExplode);
         registerListener(Listener.getPacketPostSendPoint().getChannel(HandSwingC2SPacket.class), this::onLastSwing);
         registerListener(Listener.getPreGameTick(), this::onGrimCooldownResetPackets);
     }
@@ -244,25 +242,37 @@ public class MineExtra extends BaseModule {
     }
 
     public void onGrimSBFastBreakExplode(Event<PlayerActionC2SPacket> event) {
-        if (quickMine.get() && fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS) {
+        if (quickMine.get()
+                && fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS
+                && mc.player != null) {
             var packet = event.context();
             if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
                     && packet.getPos().getY() < 1145) {
                 int duplicate = (doubleBreak.get() && (Tasks.getTick() - lastFinishBreakingTick) >= 5) ? 6 : 1;
+                List<PlayerActionC2SPacket> actionPackets = new ArrayList<>();
+
                 for (var i = 0; i < duplicate; ++i) {
-                    mc.interactionManager.sendSequencedPacket(
-                            mc.world,
-                            (seq) -> new PlayerActionC2SPacket(
-                                    PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
-                                    BlockPos.ofFloored(mc.player.getPos()).withY(9178),
-                                    Direction.DOWN,
-                                    seq));
+                    //                    mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(
+                    //                        PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
+                    //                        BlockPos.ofFloored(mc.player.getPos()).withY(9178),
+                    //                        Direction.DOWN,
+                    //                        packet.getSequence()));
+                    actionPackets.add(new PlayerActionC2SPacket(
+                            PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
+                            BlockPos.ofFloored(mc.player.getPos()).withY(9178),
+                            Direction.DOWN,
+                            NetworkUtils.generateNextSequence()));
                     if ((Tasks.getTick() - lastFinishBreakingTick) >= 5) {
                         gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
                     } else {
                         gainedAdvantageCooldown += (300 - (Tasks.getTick() - lastFinishBreakingTick) * 50);
                     }
                 }
+                PacketManager.schedulePostCallback(packet, () -> {
+                    for (var pkt : actionPackets) {
+                        mc.getNetworkHandler().sendPacket(pkt);
+                    }
+                });
             }
         }
     }
@@ -543,7 +553,7 @@ public class MineExtra extends BaseModule {
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {
-            case AC_GRIM -> {
+            case AC_GRIM, AC_GRIM_LEGACY -> {
                 fastBreakBypassMode.set(FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS);
             }
             default -> {

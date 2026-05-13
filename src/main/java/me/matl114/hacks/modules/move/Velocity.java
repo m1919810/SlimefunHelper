@@ -2,17 +2,22 @@ package me.matl114.hacks.modules.move;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Objects;
+import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.PacketManager;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
+import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.entity.LegalMovementManager;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.network.OffThreadException;
 import net.minecraft.network.packet.Packet;
@@ -20,7 +25,11 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class Velocity extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -30,8 +39,27 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     public static final String[] MODE = BaseModule.makePath("velocity-management.antikb.mode");
 
     public final FlagRef enable = flagBuilder(Configs.MOV_CONFIG, ENABLE).build();
-    public final EnumRef<Configs.BypassMode> mode = builder(Configs.MOV_CONFIG, MODE, Configs.BypassMode.class)
-            .defaultValue(Configs.BypassMode.NO_BYPASS)
+    public final EnumRef<Mode> mode = builder(Configs.MOV_CONFIG, MODE, Mode.class)
+            .defaultValue(Mode.NONE)
+            .build();
+
+    public final FlagRef explosions = flagBuilder(
+                    Configs.MOV_CONFIG, makePath("velocity-management.antikb.bypass-explosions"))
+            .build();
+
+    public final FlagRef onGroundOnly = flagBuilder(
+                    Configs.MOV_CONFIG, makePath("velocity-management.antikb.on-ground-only"))
+            .build();
+
+    public final FlagRef inWall = flagBuilder(
+                    Configs.MOV_CONFIG, makePath("velocity-management.antikb.execute-in-wall"))
+            .build();
+
+    public final FlagRef noBlock = flagBuilder(Configs.MOV_CONFIG, makePath("velocity-management.antikb.no-block-push"))
+            .build();
+
+    public final FlagRef noEntityPush = flagBuilder(
+                    Configs.MOV_CONFIG, makePath("velocity-management.antikb.no-entity-push"))
             .build();
 
     public static LegalMovementManager.DelegateMovementModifier instance;
@@ -57,11 +85,88 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetPosition);
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onPing);
+        registerListener(
+                PacketManager.getPacketQueueEvent().getChannel(EntityDamageS2CPacket.class), this::onEntityDamageQueue);
+        registerListener(
+                PacketManager.getPacketQueueEvent().getChannel(EntityVelocityUpdateS2CPacket.class),
+                this::onPlayerVelocityQueue);
+        registerListener(PacketManager.getPacketQueueEvent().getPacketReceiveChannel(), this::onPacketQueue);
     }
 
     public int lastHurtTick = 0;
     public boolean canCancel = false;
+    public boolean canQueue = false;
     int lastGroundTick = 0;
+
+    public void onEntityDamageQueue(Event<EntityDamageS2CPacket> damage) {
+        if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
+            canQueue = true;
+        }
+    }
+
+    long startQueuePacket = 0;
+
+    public void onPlayerVelocityQueue(Event<EntityVelocityUpdateS2CPacket> entityVelocity) {
+        if (enable.get() && mc.player != null && entityVelocity.context.getEntityId() == mc.player.getId()) {
+            //            if(mode.get() == Configs.BypassMode.BYPASS_GRIM && canQueue && mc.player.isOnGround()){
+            //                startQueuePacket = System.currentTimeMillis();
+            //                entityVelocity.cancel();
+            //                onMineSchedule();
+            //            }
+            canQueue = false;
+        }
+    }
+    // todo: get from LiquidBounce
+    // todo: try use Freeze
+
+    public void onMineSchedule() {
+        BlockPos pos = mc.player.getVelocityAffectingPos();
+        if (pos != null) {
+            PlayerInteractionAccess.of(mc.interactionManager).sendStartBreakPacket(pos, Direction.UP);
+            long endQueue = startQueuePacket;
+            Tasks.scheduleRepeatedPre(
+                    () -> {
+                        //                if(endQueue > 0 && System.currentTimeMillis() - endQueue < 200 &&
+                        // !checkNull()){
+                        BlockPos breakPos = PlayerInteractionAccess.of(mc.interactionManager)
+                                .getCurrentMiningPos();
+                        if (Objects.equals(breakPos, pos)) {
+                            PlayerInteractionAccess.of(mc.interactionManager)
+                                    .sendStopBreakPacket(breakPos, Direction.UP);
+                            mc.world.setBlockState(breakPos, Blocks.AIR.getDefaultState());
+                            return true;
+                        }
+                        return true;
+                        // }return true;
+                    },
+                    0,
+                    1);
+        }
+    }
+
+    public void flush() {
+        PacketManager.flushInBound((pkts) -> {
+            if (pkts.packet() instanceof EntityVelocityUpdateS2CPacket vc) {
+                return PacketManager.FlushAction.DROP;
+            } else {
+                return PacketManager.FlushAction.FLUSH;
+            }
+        });
+        startQueuePacket = 0;
+    }
+
+    public void onPacketQueue(Event<Packet<?>> packet) {
+        if (startQueuePacket > 0) {
+            if (PacketManager.isAsyncOrNotTransactionS2CPacket(packet.context)) return;
+            long systemMs = System.currentTimeMillis();
+            if (systemMs > startQueuePacket + 50) {
+                startQueuePacket = 0;
+                flush();
+            } else {
+                packet.cancel();
+            }
+        }
+    }
 
     public void onEntityDamage(Event<EntityDamageS2CPacket> damage) {
         if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
@@ -70,51 +175,47 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         }
     }
 
-    public int lastFakeGroundTick = 0;
     boolean shouldDelay = false;
 
     public void onPlayerVelocity(Event<Vec3d> event) {
         if (enable.get() && mc.player != null && event.getArgs(0) == mc.player) {
 
-            if (mode.get() == Configs.BypassMode.NO_BYPASS) {
+            if (mode.get() == Mode.NONE) {
                 if (canCancel) {
                     event.cancel();
                 }
             } else {
-
-                if (false && (canCancel || shouldDelay)) {
-                    shouldDelay = true;
-                    lastGroundTick = Tasks.getTick();
-                    event.cancel();
+                if (canCancel) {
+                    if (MovTasks.getElytraExtra().canFireworkControlMotion()) {
+                        canCancel = false;
+                        event.cancel();
+                        return;
+                    }
+                    if (MovTasks.getFloatingUtils().workGrimFloatingThisTick()) {
+                        canCancel = false;
+                        event.cancel();
+                        return;
+                    }
                 }
-
-                //                if(canCancel){
-                //                    event.cancel();
-                //                }else if(lastHurtTick +20> Tasks.getTick()){
-                //                    event.cancel();
-                //                    var entity = mc.player;
-                //                    mc.getNetworkHandler()
-                //                        .sendPacket(VPacket.newFull(
-                //                            entity.getX(),
-                //                            entity.getY() + 9E-8,
-                //                            entity.getZ(),
-                //                            entity.getYaw(),
-                //                            entity.getPitch(),
-                //                            !entity.isOnGround(),
-                //                            entity.horizontalCollision));
-                //                }
-                //                event.cancel();
-                //                mc.getNetworkHandler()
-                //                    .sendPacket(
-                //                        VPacket.newOnGroundOnly(true, mc.player.horizontalCollision)
-                //                    );
-                //                mc.getNetworkHandler().sendPacket(new
-                // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, this.mc.player.getBlockPos(),
-                // Direction.UP));
+                if (canCancel && mode.get() == Mode.GRIM_LEGACY_GROUND) {
+                    canCancel = false;
+                    handleVelocityGrimLegacy(event);
+                    return;
+                }
+                if (canCancel && mode.get() == Mode.GRIM_NEW_GROUND) {
+                    canCancel = false;
+                    handleVelocityGrimNew(event);
+                    return;
+                }
+                // todo: copy from what
             }
             canCancel = false;
         }
     }
+
+    public void handleVelocityGrimLegacy(Event<Vec3d> eventVc) {}
+
+    public void handleVelocityGrimNew(Event<Vec3d> eventVc) {}
 
     Deque<Packet> packets = new ArrayDeque<>();
 
@@ -144,8 +245,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     //    }
 
     public void onSendMove(Event<PlayerMoveC2SPacket> event) {}
-
-    boolean dealWithSetbackVelocity2 = false;
 
     public void onPlayerSetBack(Event<MovTasks.MovInfo> event) {}
 
@@ -198,8 +297,25 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         switch (event.context.getValue()) {
-            case AC_GRIM, AC_MATRIX -> mode.set(Configs.BypassMode.BYPASS_GRIM);
-            default -> mode.set(Configs.BypassMode.NO_BYPASS);
+            case AC_GRIM_LEGACY -> mode.set(Mode.GRIM_LEGACY_GROUND);
+            case AC_GRIM, AC_MATRIX -> mode.set(Mode.GRIM_NEW_GROUND);
+            default -> mode.set(Mode.NONE);
+        }
+    }
+
+    public enum Mode implements ConfigEnum {
+        NONE,
+        GRIM_LEGACY_GROUND,
+        GRIM_NEW_GROUND;
+
+        @Override
+        public Text getDisplay() {
+            return Text.literal(name());
+        }
+
+        @Override
+        public String getConfigEnumType() {
+            return "velocity_bypass_mode";
         }
     }
 }

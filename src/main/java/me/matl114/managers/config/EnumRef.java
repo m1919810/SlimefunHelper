@@ -1,7 +1,6 @@
 package me.matl114.managers.config;
 
 import com.google.common.base.Preconditions;
-import java.util.Locale;
 import java.util.Objects;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
@@ -60,7 +59,7 @@ public class EnumRef<T extends ConfigEnum> extends LazilyRegisterTypeRef<T, Stri
     }
 
     public void setEnumType(Class<? extends Enum> clazz) {
-        if (!Objects.equals(enumType, clazz.getSimpleName().toLowerCase(Locale.ROOT))) {
+        if (!Objects.equals(enumType, ConfigEnum.getConfigEnumType(clazz))) {
             throw new IllegalArgumentException("Enum type mismatch the class name: " + enumType + " and " + clazz);
         }
         if (!resolved) {

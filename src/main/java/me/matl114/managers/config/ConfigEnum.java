@@ -9,18 +9,32 @@ import net.minecraft.util.StringIdentifiable;
 
 public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegisterType {
     public static Map<String, Map<String, ConfigEnum>> registeredConfigs = new HashMap<>();
+    public static Map<String, Class<? extends ConfigEnum>> registeredEnumsClasses = new HashMap<>();
 
-    static void register(Class<? extends Enum> configEnum) {
+    static void register(String type, Class<? extends Enum> configEnum) {
+        if (registeredEnumsClasses.containsKey(type)) {
+            throw new IllegalArgumentException("Duplicate config enum name: " + type);
+        }
+        registeredEnumsClasses.put(type, (Class) configEnum);
         Map<String, ConfigEnum> maps = new LinkedHashMap<>();
         for (var e : configEnum.getEnumConstants()) {
             maps.put(e.name(), (ConfigEnum) e);
         }
-        registeredConfigs.put(configEnum.getSimpleName().toLowerCase(Locale.ROOT), maps);
+        registeredConfigs.put(type, maps);
+    }
+
+    static String getConfigEnumType(Class<? extends Enum> configEnum) {
+        if (configEnum.getEnumConstants().length == 0) {
+            return configEnum.getSimpleName().toLowerCase(Locale.ROOT);
+        } else {
+            return ((ConfigEnum) configEnum.getEnumConstants()[0]).getConfigEnumType();
+        }
     }
 
     static void ensureRegistered(Class<? extends Enum> configEnum) {
-        if (!registeredConfigs.containsKey(configEnum.getSimpleName().toLowerCase(Locale.ROOT))) {
-            register(configEnum);
+        String configTypeName = getConfigEnumType(configEnum);
+        if (!registeredConfigs.containsKey(configTypeName)) {
+            register(configTypeName, configEnum);
         }
     }
     //        public Text getDisplay();

@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.inv;
 
 import com.google.common.util.concurrent.Runnables;
 import java.util.OptionalInt;
+import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
@@ -37,8 +38,49 @@ public class InvExtra extends BaseModule {
     public void onClickSlot(Event<ClickSlotC2SPacket> event) {
         if (invGrimFix.get()) {
             // do not support viafabric, I guess
-            MovTasks.getMovExtra().sendPacketsForInventoryAction();
+            // just send input packets, do not change sprint status
+            // do not send the fucking sprint packets, shit
+            MovTasks.getMovExtra().sendInputPacketsForInventoryAction();
         }
+    }
+
+    public Runnable switchOrSwapInventoryIndexToHand(int hand) {
+        int selected = mc.player.getInventory().getSelectedSlot();
+        if (selected != hand) {
+            if (hand < 9) {
+                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
+                return () -> {
+                    PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
+                };
+            } else {
+                OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
+                if (slotIndex.isPresent()) {
+                    int swapped = slotIndex.getAsInt();
+                    if (swapped >= 0) {
+                        MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                        mc.interactionManager.clickSlot(
+                                mc.player.currentScreenHandler.syncId,
+                                swapped,
+                                selected,
+                                SlotActionType.SWAP,
+                                mc.player);
+                        return () -> {
+                            mc.interactionManager.clickSlot(
+                                    mc.player.currentScreenHandler.syncId,
+                                    swapped,
+                                    selected,
+                                    SlotActionType.SWAP,
+                                    mc.player);
+                        };
+                    } else {
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
+            }
+        }
+        return Runnables.doNothing();
     }
 
     public Runnable swapInventoryIndexToHand(int hand) {
@@ -55,7 +97,6 @@ public class InvExtra extends BaseModule {
                 int swapped = slotIndex.getAsInt();
                 if (swapped >= 0) {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
-
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
                     return () -> {
@@ -66,6 +107,8 @@ public class InvExtra extends BaseModule {
                                 SlotActionType.SWAP,
                                 mc.player);
                     };
+                } else {
+                    return null;
                 }
             } else {
                 return null;
@@ -73,5 +116,27 @@ public class InvExtra extends BaseModule {
             // }
         }
         return Runnables.doNothing();
+    }
+
+    public Runnable swapInventoryIndexToOffhand(int hand) {
+        if (hand == 40) return Runnables.doNothing();
+        OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
+        if (slotIndex.isPresent()) {
+            int swapped = slotIndex.getAsInt();
+            if (swapped >= 0) {
+                MovTasks.getMovExtra().sendPacketsForInventoryAction();
+
+                mc.interactionManager.clickSlot(
+                        mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
+                return () -> {
+                    mc.interactionManager.clickSlot(
+                            mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
+                };
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 }

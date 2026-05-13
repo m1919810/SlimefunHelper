@@ -14,8 +14,15 @@ public class NetworkUtils {
 
     public static int generateNextSequence() {
         var re = mc.world.getPendingUpdateManager().incrementSequence();
-        int seq = re.getSequence();
+        int seq = re.sequence;
         re.close();
         return seq;
+    }
+
+    public static void restoreSequence(int sequenceRestore) {
+        var re = mc.world.getPendingUpdateManager();
+        if (re.sequence == sequenceRestore) {
+            --re.sequence;
+        }
     }
 }

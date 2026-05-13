@@ -7,7 +7,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.utils.move.ElytraVelocity;
+import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -202,15 +202,20 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             Vec3d wayVector = controlMotion.normalize();
             Vec3d realVector = wayVector.multiply(motionAmount);
             // add custom elytra event for bot to control elytra
-            ElytraVelocity velocity = new ElytraVelocity(realVector);
-            Listener.getCustomListener().broadcast(new EventContainer<>(ElytraVelocity.class, velocity));
+            boolean fakeGlideNoFall = MovTasks.getElytraExtra().shouldExcuteAntiKick();
+            if (fakeGlideNoFall) {
+                realVector = MovTasks.getCreativeFlight().processAntiKickMotion(realVector, true);
+            }
+            FlightVelocity velocity = new FlightVelocity(realVector, motionAmount);
+            Listener.getCustomListener().broadcast(new EventContainer<>(FlightVelocity.class, velocity));
             realVector = velocity.toVelocity();
+
             // add FloatingUtils
             if (MovTasks.getFloatingUtils().workGrimFloatingThisTick()) {
                 realVector = Vec3d.ZERO;
                 shouldControl = true;
                 shouldCheckRocket = false;
-            } else if (useFloatingUtils.get() && realVector.lengthSquared() < 1e-6) {
+            } else if (useFloatingUtils.get() && realVector.lengthSquared() < 1e-4) {
                 if (!MovTasks.getElytraExtra().canFireworkControlMotion()) {
                     realVector = Vec3d.ZERO;
                     MovTasks.getFloatingUtils().setGrimFloatingTick(true);
@@ -219,22 +224,17 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 shouldCheckRocket = false;
             }
             if (shouldControl) {
-                boolean fakeGlideNoFall = MovTasks.getElytraExtra().shouldExcuteAntiKick();
                 mc.player.setVelocity(realVector);
-                if (fakeGlideNoFall) {
-                    realVector = MovTasks.getCreativeFlight().processAntiKickMotion(realVector, true);
-                    mc.player.setVelocity(realVector);
-                }
-                if (Math.abs(realVector.y) <= 1e-7) {
+                if (Math.abs(realVector.y) <= 1e-2) {
                     modifyNoGravity = player.hasNoGravity();
                     player.setNoGravity(true);
                 }
                 if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
                     // fliter zero control
-                    if (realVector.lengthSquared() > 1e-6 && !movementManagerEvent.context.hasImportantRotation()) {
+                    if (realVector.lengthSquared() > 5e-3 && !movementManagerEvent.context.hasImportantRotation()) {
                         movementManagerEvent.context.pushImportantRotation(true, true);
-                        Vec2f py = EntityUtils.rotationToPitchYaw(wayVector);
-                        modifyPitchYawThisTick = true;
+                        Vec2f py = EntityUtils.rotationToPitchYaw(realVector.normalize());
+                        movementManagerEvent.context.markForResetRot();
                         EntityUtils.setEntityPitchSafe(mc.player, py.x);
                         EntityUtils.setEntityYawSafe(mc.player, py.y);
                     }
@@ -247,7 +247,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     }
 
     // boolean controllingTick = false;
-    boolean modifyPitchYawThisTick = false;
     Boolean modifyNoGravity = null;
 
     @Override
@@ -257,10 +256,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        if (modifyPitchYawThisTick) {
-            modifyPitchYawThisTick = false;
-            movementManagerEvent.context().playerStatus.restoreRotation();
-        }
         if (modifyNoGravity != null) {
             movementManagerEvent.context().playerStatus.entity.setNoGravity(modifyNoGravity);
             modifyNoGravity = null;
@@ -279,7 +274,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     packetMotion.set(2.5F);
                 }
             }
-            case AC_GRIM, AC_MATRIX -> {
+            case AC_GRIM, AC_GRIM_LEGACY, AC_MATRIX -> {
                 motionMode.set(ElytraExtra.MotionMode.FIRE_WORKS);
                 if (packetMotion.get() > 1.7F) {
                     packetMotion.set(1.7F);

@@ -14,6 +14,21 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
     public EntityMovementStatus<ClientPlayerEntity> playerStatus;
     public EntityMovementStatus<ClientPlayerEntity> playerPostHackStatus;
     public Deque<Pair<Float, Float>> importantRotationStatePreserve;
+    boolean moveFix = false;
+    boolean resetPos = false;
+    boolean resetRot = false;
+
+    public void markForMoveFix() {
+        moveFix = true;
+    }
+
+    public void markForResetPos() {
+        resetPos = true;
+    }
+
+    public void markForResetRot() {
+        resetRot = true;
+    }
 
     public boolean hasImportantRotation() {
         return importantRotationStatePreserve != null && !importantRotationStatePreserve.isEmpty();
@@ -73,7 +88,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
 
         // 获取安全的角度（处理NaN等异常情况）
         float currentYaw = EntityUtils.getSafeYaw(player, playerStatus.yaw);
-        float previousYaw = EntityUtils.getSafeYaw(player, playerPostHackStatus.yaw);
+        float previousYaw = EntityUtils.getSafeYaw(player, player.getYaw());
 
         // 计算两个角度之间的最小差值（处理360度环绕）
         float diff = Math.abs(currentYaw - previousYaw);
@@ -85,7 +100,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
 
     public boolean pitchModified() {
         return Math.abs(EntityUtils.getSafePitch(playerStatus.pitch)
-                        - EntityUtils.getSafePitch(playerPostHackStatus.pitch))
+                        - EntityUtils.getSafePitch(playerStatus.entity.getPitch()))
                 > 2.0F;
     }
 
@@ -94,6 +109,9 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         this.playerStatus = new EntityMovementStatus<>(args);
         this.currentTickEnableHacks = new ArrayList<>();
         this.importantRotationStatePreserve = null;
+        this.resetPos = false;
+        this.resetRot = false;
+        this.moveFix = false;
         // start new tick, removing contents and replace with new
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         for (var hack : hacks) {
@@ -112,6 +130,18 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         for (var hack : this.currentTickEnableHacks) {
             hack.applyAfterInputTick(movementManagerEvent);
+        }
+        if (moveFix) {
+            var input = PlayerInputUtils.of(player.input);
+            input = PlayerInputUtils.tryCorrectMovementInput(
+                    input, movementManagerEvent.context.playerStatus.yaw, player.getYaw());
+            // one cannot sprint if forward is not pressed
+            if (!input.forward() && (input.sprint() || player.isSprinting())) {
+                input.sprint(false);
+                player.setSprinting(false);
+                input.applyInput(player.input);
+            }
+            input.applyInput(player.input);
         }
     }
 
@@ -182,6 +212,12 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
                 iter.remove();
             }
         }
+        if (resetPos) {
+            playerStatus.restorePos();
+        }
+        if (resetRot) {
+            playerStatus.restoreRotation();
+        }
         return;
     }
 
@@ -191,15 +227,9 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
     }
 
     // functions:
-    public void tryCorrectMovementInput() {
-
+    public void tryMarkForMoveFix() {
         if (yawModified()) {
-            ClientPlayerEntity player = playerStatus.entity;
-            float originYaw = playerStatus.yaw;
-            // rotated
-            PlayerInputUtils.Input input = PlayerInputUtils.tryCorrectMovementInput(
-                    PlayerInputUtils.of(player.input), originYaw, player.getYaw());
-            input.applyInput(player.input);
+            markForMoveFix();
         }
     }
 

@@ -64,16 +64,15 @@ public class Scaffold extends BaseModule {
     public final KeyBindRef keyBind = toggleHotkey(Configs.INTERACT_CONFIG, ENABLE_HOTKEY, new MultiKeyBind(), ENABLE)
             .build();
 
-    public final FlagRef legal =
-            flagBuilder(Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_LEGAL).build();
+    //    public final FlagRef legal =
+    //            flagBuilder(Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_LEGAL).build();
 
     public final EnumRef<Configs.LegalInteractMode> legalMode = builder(
                     Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_TARGET_MODE, Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
-    public final FlagRef keepInHand = flagBuilder(
-                    Configs.INTERACT_CONFIG, makePath("interact-scaffold.keep-block-in-hand"))
+    public final FlagRef swapHand = flagBuilder(Configs.INTERACT_CONFIG, makePath("interact-scaffold.swap-hand"))
             .build();
 
     public final IntRef expandYDepth = builder(
@@ -102,7 +101,9 @@ public class Scaffold extends BaseModule {
     }
 
     private void placeBlockLegally(int hand, BlockHitResult result) {
-        Runnable callback = InvTasks.getInvExtra().swapInventoryIndexToHand(hand);
+        Runnable callback = swapHand.get()
+                ? InvTasks.getInvExtra().switchOrSwapInventoryIndexToHand(hand)
+                : InvTasks.getInvExtra().swapInventoryIndexToHand(hand);
         if (callback == null) {
             return;
         }
@@ -118,7 +119,7 @@ public class Scaffold extends BaseModule {
                 }
             }
 
-            if (legal.get()) {
+            if (legalMode.get().isLegal()) {
                 var mode = legalMode.get();
                 // todo: delay movement fix
                 InteractionTasks.handlePlaceMode(mode, result, Hand.MAIN_HAND);
@@ -126,9 +127,7 @@ public class Scaffold extends BaseModule {
                 InteractionTasks.placeBlock(Hand.MAIN_HAND, result);
             }
         } finally {
-            if (!keepInHand.get()) {
-                callback.run();
-            }
+            callback.run();
         }
     }
 
@@ -150,7 +149,7 @@ public class Scaffold extends BaseModule {
         }
         // do not consider offHand, because some game do not support
         IndexEntry<ItemStack> stackEntry =
-                InventoryUtils.findPlayerItem((item) -> availableItemBlocks.contains(item.getItem()), true);
+                InventoryUtils.findPlayerItem((item) -> availableItemBlocks.contains(item.getItem()), true, false);
         return stackEntry == null ? -1 : stackEntry.index();
 
         // search block in backpack
@@ -224,7 +223,7 @@ public class Scaffold extends BaseModule {
         }
         BlockHitResult hitResult = createHitNormal(predictedPos, pos);
         if (hitResult != null) return hitResult;
-        if (!legal.get()) {
+        if (!legalMode.get().isLegal()) {
             // not legal, we can airplace
             return RaycastUtils.createHitResult(pos.offset(Direction.DOWN), Direction.UP);
         }
@@ -271,8 +270,9 @@ public class Scaffold extends BaseModule {
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         switch (event.context().getValue()) {
-            case HACKING, VANILLA -> legal.set(false);
-            default -> legal.set(true);
+            case AC_GRIM_LEGACY -> legalMode.set(Configs.LegalInteractMode.LEGACY_SLIENT_ROT);
+            case HACKING, VANILLA -> legalMode.set(Configs.LegalInteractMode.NONE);
+            default -> legalMode.set(Configs.LegalInteractMode.DELAY_MOVEMENT);
         }
     }
 }

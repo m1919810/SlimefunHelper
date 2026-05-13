@@ -40,6 +40,7 @@ public class RenderExtra extends BaseModule {
     public static final String[] RENDER_REJECT_WURST = {"render", "disable-wurst-hud"};
     public static final String[] RENDER_ENHANCED_DEBUG_HUD = {"render", "enhanced-debug-hud"};
     public static final String[] RENDER_REARRANGE_GAME_MENU = {"render", "optimize-game-menu"};
+    public static final String[] RENDER_NO_VANILLA_RENDER = {"render", "no-overlay"};
 
     public RenderExtra() {}
 
@@ -60,6 +61,12 @@ public class RenderExtra extends BaseModule {
 
     public final FlagRef noEffectForce =
             flagBuilder(Configs.RENDER_CONFIG, RENDER_NO_EFFECT_FORCE).build();
+
+    public final FlagRef noOverlay =
+            flagBuilder(Configs.RENDER_CONFIG, RENDER_NO_VANILLA_RENDER).build();
+
+    public final FlagRef noFireOverlay = flagBuilder(Configs.RENDER_CONFIG, makePath("render.no-fire-overlay"))
+            .build();
 
     public final NBTRef<RegistryRegex<StatusEffect>> noEffectTypes = builder(
                     Configs.RENDER_CONFIG,

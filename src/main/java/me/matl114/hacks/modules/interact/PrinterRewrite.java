@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -60,7 +61,6 @@ public class PrinterRewrite extends BaseModule {
     public final KeyBindRef hotkey = toggleHotkey(Configs.INTERACT_CONFIG, HOTKEY, new MultiKeyBind(), PRINTER)
             .build();
 
-    public final FlagRef legal = flagBuilder(Configs.INTERACT_CONFIG, LEGAL).build();
     public final EnumRef<Configs.LegalInteractMode> mode = builder(
                     Configs.INTERACT_CONFIG, PRINTER_MODE, Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.DELAY_MOVEMENT)
@@ -126,7 +126,10 @@ public class PrinterRewrite extends BaseModule {
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
             BlockPos posStanding = mc.player.getSteppingPos();
             BlockPos posCenter = posStanding.add(0, 1, 0);
-            int multiply = legal.get() ? 1 : mul.get();
+            int multiply = (mode.get().canMultiRotPlace()
+                            || (ACTasks.getDisablerManager().isMultiRotPlaceCheckDisabled()))
+                    ? mul.get()
+                    : 1;
             int placeCount = 0;
             for (var offset : blocksSeq) {
                 BlockPos checkPos = posCenter.add(offset);
@@ -136,7 +139,10 @@ public class PrinterRewrite extends BaseModule {
                     if ((clientState.isAir() || clientState.isLiquid() || clientState.isReplaceable())
                             && clientState != state) {
                         // do place
-                        if (doPlace(checkPos, state, !legal.get())) {
+                        if (placeCount != 0) {
+                            InteractionTasks.flushACPlaceQueue();
+                        }
+                        if (doPlace(checkPos, state, !mode.get().isLegal())) {
                             placeCount += 1;
                             if (placeCount >= multiply) {
                                 break;
@@ -151,7 +157,7 @@ public class PrinterRewrite extends BaseModule {
     public int supplyBlocks(Block needBlock) {
         Item needItem = needBlock.asItem();
         if (needItem == Items.AIR) return -1;
-        var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, true);
+        var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, true, false);
         return entry == null ? -1 : entry.index();
     }
 
@@ -210,7 +216,7 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public void handlePlace(BlockHitResult result) {
-        if (!legal.get()) {
+        if (!mode.get().isLegal()) {
             InteractionTasks.placeBlock(Hand.MAIN_HAND, result);
         } else {
             InteractionTasks.handlePlaceMode(mode.get(), result, Hand.MAIN_HAND);
@@ -250,8 +256,8 @@ public class PrinterRewrite extends BaseModule {
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         switch (event.context.getValue()) {
-            case HACKING, VANILLA -> legal.set(false);
-            default -> legal.set(true);
+            case HACKING, VANILLA -> mode.set(Configs.LegalInteractMode.NONE);
+            default -> mode.set(Configs.LegalInteractMode.DELAY_MOVEMENT);
         }
     }
 }
