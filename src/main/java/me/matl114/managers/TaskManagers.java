@@ -48,7 +48,7 @@ public class TaskManagers {
                 return true;
             };
         } else {
-            throw new IllegalArgumentException("No Flag");
+            throw new IllegalArgumentException("No Flag for " + commonPath);
         }
     }
 

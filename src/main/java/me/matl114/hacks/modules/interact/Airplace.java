@@ -71,6 +71,7 @@ public class Airplace extends BaseModule {
         registerListener(RenderListener.getRenderLayerTasks(), this::onRenderPos);
         registerListener(PacketManager.getPacketQueueEvent().getPacketReceiveChannel(), this::onPacketAcceptQueue);
         registerListener(Listener.getPostTick(), this::onPostTick);
+        registerListener(PacketManager.getQueueShutdownEvent(), this::onShutdownQueue);
     }
 
     @Override
@@ -110,12 +111,17 @@ public class Airplace extends BaseModule {
         }
     }
 
+    public void onShutdownQueue(Event<Void> event) {
+        clearCurrentAirWall();
+    }
+
     public void onSwitch() {
         clearCurrentAirWall();
     }
 
     public void clearCurrentAirWall() {
         targetPos = null;
+        lastDelayTick = 0;
     }
 
     public void onGrimAirWall(BlockHitResult hitResult) {

@@ -5,6 +5,7 @@ public enum ModulePreset {
     VANILLA,
     AC_COMMON,
     AC_GRIM,
+    AC_GRIM_LEGACY,
     AC_MATRIX,
     AC_VULCAN;
 }

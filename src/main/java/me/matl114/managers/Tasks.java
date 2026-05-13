@@ -38,19 +38,54 @@ public class Tasks {
     }
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    private static final Set<Runnable> tasks = new LinkedHashSet<>();
+
     private static final Set<Consumer<ClientPlayerEntity>> gameTasks = new LinkedHashSet<>();
 
-    public static void registerTickTask(Runnable r) {
-        tasks.add(r);
-    }
     // run when player is not null
     public static void registerGameTask(Consumer<ClientPlayerEntity> r) {
         gameTasks.add(r);
     }
 
-    public static void doTick() {
-        tasks.forEach(Runnable::run);
+    public static void doPostTick() {
+        var iter = postTaskQueue.iterator();
+        while (iter.hasNext()) {
+            try {
+                var task = iter.next();
+                if (task.execute()) {
+                    iter.remove();
+                }
+            } catch (CrashException | StackOverflowError e) {
+                // remove exceptional task
+                iter.remove();
+                throw e;
+            } catch (Throwable e) {
+                // log exception and remove
+                Debug.info("unexpected error while executing TimedTask:");
+                Debug.info(e);
+                iter.remove();
+            }
+        }
+    }
+
+    public static void doPreTick() {
+        var iter = preTaskQueue.iterator();
+        while (iter.hasNext()) {
+            try {
+                var task = iter.next();
+                if (task.execute()) {
+                    iter.remove();
+                }
+            } catch (CrashException | StackOverflowError e) {
+                // remove exceptional task
+                iter.remove();
+                throw e;
+            } catch (Throwable e) {
+                // log exception and remove
+                Debug.info("unexpected error while executing TimedTask:");
+                Debug.info(e);
+                iter.remove();
+            }
+        }
     }
 
     public static void doGameTick(ClientPlayerEntity player) {
@@ -65,54 +100,51 @@ public class Tasks {
         } else if (tickCounter % 20 == 0) {
             ++secondCounter;
         }
+        doPreTick();
     }
 
     public static void onPostTick(Event<Void> v) {
         if (mc.player != null) {
             Tasks.doGameTick(mc.player);
         }
-        Tasks.doTick();
+        doPostTick();
     }
 
-    private static final Deque<Task> taskQueue = new ConcurrentLinkedDeque<>();
+    private static final Deque<Task> postTaskQueue = new ConcurrentLinkedDeque<>();
+
+    private static final Deque<Task> preTaskQueue = new ConcurrentLinkedDeque<>();
 
     @ApiMethod
     public static void scheduleTask(Task task) {
-        taskQueue.addLast(task);
+        postTaskQueue.addLast(task);
     }
 
     @ApiMethod
     public static void scheduleDelayed(Runnable task, int delay) {
-        taskQueue.addLast(new TimedTask.Impl(task, delay));
+        postTaskQueue.addLast(new TimedTask.Impl(task, delay));
     }
 
     @ApiMethod
     public static void scheduleRepeated(BooleanSupplier task, int delay, int period) {
-        taskQueue.addLast(new RepeatTask.Impl(task, delay, period));
+        postTaskQueue.addLast(new RepeatTask.Impl(task, delay, period));
+    }
+
+    @ApiMethod
+    public static void scheduleTaskPre(Task task) {
+        preTaskQueue.addLast(task);
+    }
+
+    @ApiMethod
+    public static void scheduleDelayedPre(Runnable task, int delay) {
+        preTaskQueue.addLast(new TimedTask.Impl(task, delay));
+    }
+
+    @ApiMethod
+    public static void scheduleRepeatedPre(BooleanSupplier task, int delay, int period) {
+        preTaskQueue.addLast(new RepeatTask.Impl(task, delay, period));
     }
 
     static {
-        registerTickTask(() -> {
-            var iter = taskQueue.iterator();
-            while (iter.hasNext()) {
-                try {
-                    var task = iter.next();
-                    if (task.execute()) {
-                        iter.remove();
-                    }
-                } catch (CrashException | StackOverflowError e) {
-                    // remove exceptional task
-                    iter.remove();
-                    throw e;
-                } catch (Throwable e) {
-                    // log exception and remove
-                    Debug.info("unexpected error while executing TimedTask:");
-                    Debug.info(e);
-                    iter.remove();
-                }
-            }
-        });
-
         Listener.getPostTick().registerHandler(Tasks::onPostTick);
         Listener.getPreTick().registerHandler(Tasks::onPreTick);
     }

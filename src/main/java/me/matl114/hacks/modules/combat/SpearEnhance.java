@@ -28,7 +28,8 @@ public class SpearEnhance extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onPreTick);
     }
 
-    public boolean isUsingSpear() {
+    public static boolean isUsingSpear() {
+        // todo consider viaversion
         return mc.player != null
                 && mc.player.isUsingItem()
                 && VItem.getInstance().isSpear(mc.player.getActiveItem());

@@ -14,7 +14,7 @@ import me.matl114.events.catchers.TimedPacketCatcherImpl;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
-import me.matl114.hacks.utils.move.ElytraVelocity;
+import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -29,10 +29,8 @@ import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.entity.LegalMovementManager;
-import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
@@ -125,7 +123,7 @@ public class TravellingControl extends BaseModule {
         super.registerAll();
         registerCommandBootstrap(this::bootStrapTravelCommand);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMove);
-        registerListener(Listener.getCustomListener().getChannel(ElytraVelocity.class), this::onElytraVelocity);
+        registerListener(Listener.getCustomListener().getChannel(FlightVelocity.class), this::onElytraVelocity);
         registerListener(Listener.getPacketPoint().getChannel(TeleportConfirmC2SPacket.class), this::onTeleportConfirm);
     }
 
@@ -626,8 +624,6 @@ public class TravellingControl extends BaseModule {
             public int priority() {
                 return PRIORITY_LOW;
             }
-
-            Packet<?> storedPacket = null;
             // avoid setbacks
             double[] last3Y = {-999, -999, -999, -999, -999, -999, -999, -999, -999, -999};
             int last3YIndex = 0;
@@ -737,38 +733,13 @@ public class TravellingControl extends BaseModule {
                         }
                     }
                 }
-            }
-
-            @Override
-            public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-                if (startWork
-                        && mc.player != null
-                        && mc.player.isFallFlying()
-                        && useGrimPacketFly
-                        && !MovTasks.getElytraExtra().canFireworkControlMotion()) {
-                    // working tick
-                    if (true) {
-                        movementManagerEvent.context.playerStatus.restorePos();
-                        movementManagerEvent.cancel();
-                        storedPacket = VPacket.newFull(
-                                mc.player.getX(),
-                                mc.player.getY() + 0.25 * ((Tasks.getTick() % 3) + 1),
-                                mc.player.getZ(),
-                                mc.player.getYaw(),
-                                mc.player.getPitch(),
-                                mc.player.isOnGround(),
-                                mc.player.horizontalCollision);
-                    }
+                if (useGrimPacketFly) {
+                    MovTasks.getElytraGrimAccelerate().setTryWorkingTick();
                 }
             }
 
             @Override
             public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                if (storedPacket != null) {
-                    // avoid bad packet fix
-                    Listener.sendPacketNoEvents(storedPacket);
-                    storedPacket = null;
-                }
                 if (startWork) {
                     // main logic, just logout for safety
                     // movementManagerEvent.context.playerStatus.restoreRotation();
@@ -864,12 +835,12 @@ public class TravellingControl extends BaseModule {
         }
     }
 
-    private void onElytraVelocity(Event<EventContainer<ElytraVelocity>> event) {
+    private void onElytraVelocity(Event<EventContainer<FlightVelocity>> event) {
         if (elytraPos == null) {
             return;
         }
-        EventContainer<ElytraVelocity> eventContainer = event.context();
-        ElytraVelocity velocity = eventContainer.getValue();
+        EventContainer<FlightVelocity> eventContainer = event.context();
+        FlightVelocity velocity = eventContainer.getValue();
         Vec3d towards = elytraPos.subtract(mc.player.getPos()).normalize().multiply(speed.get());
         velocity.x(towards.x).y(towards.y).z(towards.z);
     }

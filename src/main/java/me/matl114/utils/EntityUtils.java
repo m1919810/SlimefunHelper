@@ -3,8 +3,10 @@ package me.matl114.utils;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.SpawnerBlock;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.*;
@@ -15,10 +17,7 @@ import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
 import org.joml.Vector2d;
 import org.spongepowered.include.com.google.common.collect.BiMap;
@@ -174,6 +173,12 @@ public class EntityUtils {
         //        if(newYaw == -180.0 || newYaw == 180.0)return newYaw;
         //        float oldYaw = entity.getYaw();
         float oldYaw = entity.getYaw();
+        return getSafeYaw(oldYaw, newYaw);
+    }
+
+    public static float getSafeYaw(float oldYaw, float newYaw) {
+        //        if(newYaw == -180.0 || newYaw == 180.0)return newYaw;
+        //        float oldYaw = entity.getYaw();
         float diff = getSafeYawDiff(oldYaw, newYaw);
         return oldYaw + diff;
     }
@@ -314,6 +319,10 @@ public class EntityUtils {
         }
     }
 
+    public static boolean isRotationDifferent(float lastPitch, float pitch, float lastYaw, float yaw) {
+        return Math.abs(pitch - lastPitch) > 1e-2 || Math.abs(EntityUtils.getSafeYawDiff(lastYaw, yaw)) > 1e-2;
+    }
+
     public static double getProjectileGravity(Item item) {
         if (item instanceof RangedWeaponItem) return 0.05;
 
@@ -415,5 +424,71 @@ public class EntityUtils {
         return target instanceof PlayerEntity player
                 ? Text.literal(player.getNameForScoreboard())
                 : target.getDisplayName();
+    }
+
+    public static double sqrtSpeed(Vec3d vec) {
+        return Math.sqrt(vec.x * vec.x + vec.z * vec.z);
+    }
+
+    public static Vec3d withStrafe(Vec3d self, double speed, double strength, PlayerInputUtils.Input input, float yaw) {
+        // 输入无效（无移动输入）时水平速度清零
+        if (input != null && !input.hasWASDMovement()) {
+            return new Vec3d(0.0, self.y, 0.0);
+        }
+
+        // 保留部分原有水平速度
+        double prevX = self.x * (1.0 - strength);
+        double prevZ = self.z * (1.0 - strength);
+        double useSpeed = speed * strength;
+
+        // 根据 yaw 计算新方向的单位向量，并叠加原速度
+        double angle = Math.toRadians(yaw);
+        double x = -Math.sin(angle) * useSpeed + prevX;
+        double z = Math.cos(angle) * useSpeed + prevZ;
+
+        return new Vec3d(x, self.y, z);
+    }
+
+    public static float getMovementDirectionOfInput(float facingYaw, PlayerInputUtils.Input input) {
+        boolean forwards = input.forward() && !input.backward();
+        boolean backwards = input.backward() && !input.forward();
+        boolean left = input.left() && !input.right();
+        boolean right = input.right() && !input.left();
+
+        float actualYaw = facingYaw;
+        float forward = 1.0f;
+
+        if (backwards) {
+            actualYaw += 180f;
+            forward = -0.5f;
+        } else if (forwards) {
+            forward = 0.5f;
+        }
+
+        if (left) {
+            actualYaw -= 90f * forward;
+        }
+        if (right) {
+            actualYaw += 90f * forward;
+        }
+
+        return MathHelper.wrapDegrees(actualYaw);
+    }
+
+    public static final double SQRT_SPEED = Math.sqrt(0.0825);
+
+    public static Vec3d withStrafe(Vec3d self, double speed) {
+
+        return withStrafe(self, speed, 1.0D);
+    }
+
+    /**
+     * 指定 speed 和 strength
+     */
+    public static Vec3d withStrafe(Vec3d self, double speed, double strength) {
+        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+        float yaw = getMovementDirectionOfInput(player.getYaw(), input);
+        return withStrafe(self, speed, strength, input, yaw);
     }
 }

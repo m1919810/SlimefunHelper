@@ -31,7 +31,7 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
-        instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
+        instance.setDelegate(this::cast);
         bindFlag(enable);
     }
 

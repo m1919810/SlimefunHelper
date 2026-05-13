@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.util.Objects;
+import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
@@ -181,7 +182,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
             PlayerPositionLookS2CPacket packet, CallbackInfo ci, @Local PlayerEntity playerEntity) {
         // turn this into Event
 
-        if (!Listener.getTeleportConfirmResponsePoint().isEmpty()) {
+        {
             MovTasks.MovInfo eventContext = new MovTasks.MovInfo(
                     playerEntity.getPos(), false, false, new Vec2f(playerEntity.getPitch(), playerEntity.getYaw()));
             Event<MovTasks.MovInfo> setBackEvent = new Event<>(eventContext, false, true);
@@ -194,13 +195,15 @@ public abstract class ClientPlayNetworkHandlerEvents {
                     eventContext.oGroundOverride() == null ? playerEntity.isOnGround() : eventContext.oGroundOverride();
             // send and cancel
             this.getConnection()
-                    .send(new PlayerMoveC2SPacket.Full(
-                            eventContext.vec3d().x,
-                            eventContext.vec3d().y,
-                            eventContext.vec3d().z,
-                            yaw,
-                            pitch,
-                            onGround));
+                    .send(PlayerMoveC2SPacketAccess.setCause(
+                            new PlayerMoveC2SPacket.Full(
+                                    eventContext.vec3d().x,
+                                    eventContext.vec3d().y,
+                                    eventContext.vec3d().z,
+                                    yaw,
+                                    pitch,
+                                    onGround),
+                            PlayerMoveC2SPacketAccess.Cause.SET_BACK));
 
             ci.cancel();
         }

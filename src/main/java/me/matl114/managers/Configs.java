@@ -10,7 +10,6 @@ import java.util.regex.PatternSyntaxException;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.ConfigLoader;
-import net.minecraft.registry.*;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -49,10 +48,15 @@ public class Configs {
     public enum LegalTargetingMode implements ConfigEnum {
         DELAY_MOVEMENT,
         // PRE_MOVEMENT,
-        USEITEM_PACKET;
+        // USEITEM_PACKET,
+        LEGACY_SLIENT_ROT;
 
         public boolean isMovement() {
             return this == LegalTargetingMode.DELAY_MOVEMENT; // || this == LegalTargetingMode.PRE_MOVEMENT;
+        }
+
+        public boolean isLegacy() {
+            return this == LegalTargetingMode.LEGACY_SLIENT_ROT;
         }
 
         @Override
@@ -63,14 +67,25 @@ public class Configs {
     }
 
     public enum LegalInteractMode implements ConfigEnum {
-        MOVEMENT,
+        NONE,
+        // MOVEMENT,
         DELAY_MOVEMENT,
-        USEITEM_PACKET;
+        USEITEM_PACKET,
+        LEGACY_SLIENT_ROT;
+        ;
 
         @Override
         public Text getDisplay() {
             return Text.translatable(
                     "configenum.legal-interact-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
+
+        public boolean isLegal() {
+            return this != NONE;
+        }
+
+        public boolean canMultiRotPlace() {
+            return this == NONE || this == LEGACY_SLIENT_ROT;
         }
     }
 
@@ -111,6 +126,17 @@ public class Configs {
 
         public Text getDisplay() {
             return Text.translatable("configenum.auto-inv-mode." + this.name().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    public enum SetBackTriggerType implements ConfigEnum {
+        SIMULATION,
+        CRASH_PACKETS;
+
+        @Override
+        public Text getDisplay() {
+            return Text.translatable(
+                    "configenum.setback-trigger-type." + this.name().toLowerCase(Locale.ROOT));
         }
     }
 

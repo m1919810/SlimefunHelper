@@ -77,6 +77,11 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         return currentBreakingPos;
     }
 
+    public void resetCurrentMiningPos() {
+        currentBreakingPos = new BlockPos(-1, -1, -1);
+        currentBreakingProgress = 0.0F;
+    }
+
     @Override
     @Nullable
     public BlockPos getCurrentFailBreakPos() {

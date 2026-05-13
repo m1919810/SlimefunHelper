@@ -1,6 +1,8 @@
 package me.matl114.hacks;
 
 import com.google.common.util.concurrent.Runnables;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
@@ -12,15 +14,15 @@ import me.matl114.managers.Configs;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
-import me.matl114.versioned.api.VPacket;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Pair;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import org.jetbrains.annotations.ApiStatus;
 
 public class InteractionTasks {
@@ -67,21 +69,13 @@ public class InteractionTasks {
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityYawSafe(player, rotation.y);
                         EntityUtils.setEntityPitchSafe(player, rotation.x);
-                    }
-
-                    @Override
-                    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-                        // after input tick,
-                        // we may change some of the direction flag, so the velocity will be better
-                        movementManagerEvent.context().tryCorrectMovementInput();
+                        movementManagerEvent.context.tryMarkForMoveFix();
+                        movementManagerEvent.context.markForResetRot();
                     }
 
                     @Override
                     public boolean postModify(
                             Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                        if (enabledThisTick) {
-                            movementManagerEvent.context.playerStatus.restoreRotation();
-                        }
                         callback.run();
                         return false;
                     }
@@ -103,17 +97,141 @@ public class InteractionTasks {
                 InteractionTasks.placeBlock(hand, result);
                 InteractionTasks.addPostRotationCorrectTask(result.getBlockPos().toCenterPos(), Runnables.doNothing());
             }
-            case MOVEMENT -> {
+            case LEGACY_SLIENT_ROT -> {
                 Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
                         .toCenterPos()
                         .subtract(mc.player.getEyePos())
                         .normalize());
-                mc.getNetworkHandler()
-                        .sendPacket(VPacket.newLookAndOnGround(
-                                rotation.y, rotation.x, mc.player.isOnGround(), mc.player.horizontalCollision));
+                MovTasks.getLegacySnapRotManager().snapAt(rotation.x, rotation.y, false);
+                InteractionTasks.placeBlock(hand, result);
+            }
+            case NONE -> {
                 InteractionTasks.placeBlock(hand, result);
             }
         }
+    }
+
+    public static void flushACPlaceQueue() {
+        // for flush places
+        //        ACTasks.getDisablerManager().flushACPlaceQueue();
+    }
+
+    public static void handlePlaceModeMulti(
+            Configs.LegalInteractMode mode, Vec3d targetCenter, List<Pair<BlockHitResult, Hand>> resultList) {
+        switch (mode) {
+            case USEITEM_PACKET -> {
+                Vec2f rotation = EntityUtils.rotationToPitchYaw(
+                        targetCenter.subtract(mc.player.getEyePos()).normalize());
+
+                int selectedSlot = -1;
+                for (Pair<BlockHitResult, Hand> pair : resultList) {
+                    var hand = pair.getRight();
+                    var result = pair.getLeft();
+                    if (selectedSlot == -1) {
+                        selectedSlot = mc.player.getInventory().getSelectedSlot();
+                        mc.interactionManager.sendSequencedPacket(
+                                mc.world,
+                                (i) -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, i, rotation.y, rotation.x));
+                    } else {
+                        flushACPlaceQueue();
+                    }
+                    InteractionTasks.placeBlock(hand, result);
+                }
+            }
+            case DELAY_MOVEMENT -> {
+                int selectedSlot = -1;
+                for (Pair<BlockHitResult, Hand> pair : resultList) {
+                    if (selectedSlot == -1) {
+                        selectedSlot = mc.player.getInventory().getSelectedSlot();
+                    } else {
+                        // for flush places
+                        flushACPlaceQueue();
+                    }
+                    var hand = pair.getRight();
+                    var result = pair.getLeft();
+                    InteractionTasks.placeBlock(hand, result);
+                }
+                InteractionTasks.addPostRotationCorrectTask(targetCenter, Runnables.doNothing());
+            }
+            case LEGACY_SLIENT_ROT -> {
+                int selectedSlot = -1;
+                for (Pair<BlockHitResult, Hand> pair : resultList) {
+                    if (selectedSlot == -1) {
+                        selectedSlot = mc.player.getInventory().getSelectedSlot();
+                    } else {
+                        // for flush places
+                        flushACPlaceQueue();
+                    }
+                    var hand = pair.getRight();
+                    var result = pair.getLeft();
+                    MovTasks.getLegacySnapRotManager()
+                            .snapAt(
+                                    result.getBlockPos()
+                                            .toCenterPos()
+                                            .subtract(mc.player.getEyePos())
+                                            .normalize(),
+                                    false);
+                    InteractionTasks.placeBlock(hand, result);
+                }
+            }
+            case NONE -> {
+                for (Pair<BlockHitResult, Hand> pair : resultList) {
+                    var hand = pair.getRight();
+                    var result = pair.getLeft();
+                    InteractionTasks.placeBlock(hand, result);
+                }
+            }
+        }
+    }
+
+    public static BlockHitResult getPlaceSupportingResult(
+            BlockPos blockPos, boolean enableAirPlace, boolean enablePositionPlace) {
+        return getPlaceSupportingResult(blockPos, mc.player.getFacing(), enableAirPlace, enablePositionPlace);
+    }
+
+    public static BlockHitResult getPlaceSupportingResult(
+            BlockPos blockPos, Direction preferredDirection, boolean enableAirPlace, boolean enablePositionPlace) {
+        Direction dir = preferredDirection;
+        List<Direction> order = new ArrayList<>();
+        order.add(dir);
+        for (var direction : new Direction[] {
+            Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST
+        }) {
+            if (direction != dir) {
+                order.add(direction);
+            }
+        }
+        Vec3d centerPos = blockPos.toCenterPos();
+        if (enableAirPlace) {
+            if (order.isEmpty()) {
+                return null;
+            }
+            Direction availableDirection = order.get(0);
+            Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
+            return new BlockHitResult(plateCenter, availableDirection.getOpposite(), blockPos, false);
+        } else {
+            Vec3d eyePos = mc.player.getEyePos();
+            for (var direction : order) {
+                Vec3d plateCenter = centerPos.offset(direction, 0.5);
+                Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
+                BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
+                BlockState interactState = mc.world.getBlockState(targetPos);
+                if ((interactState.isAir() || interactState.isLiquid())) {
+                    continue;
+                }
+                if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
+                    // ?
+                    return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true);
+                } else {
+                    Vec3d iSeeVect = eyePos.subtract(plateCenter);
+                    Vec3d plateLLL = direction.getDoubleVector();
+                    if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
+                        return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false);
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     @ApiMethod
@@ -139,6 +257,9 @@ public class InteractionTasks {
     public static Airplace airplace;
 
     @Getter
+    public static AutoSurround autoSurround;
+
+    @Getter
     public static BlockRotate blockRotate;
 
     @Getter
@@ -150,7 +271,7 @@ public class InteractionTasks {
         scaffold = new Scaffold().register(m);
         tpInteract = new TpInteract().register(m);
         airplace = new Airplace().register(m);
-
+        autoSurround = new AutoSurround().register(m);
         blockRotate = new BlockRotate().register(m);
         printerRewrite = new PrinterRewrite().register(m);
     }

@@ -89,6 +89,20 @@ public class MovExtra extends BaseModule {
             ClientPlayerAccess.of(player).resyncInput();
         }
     }
+
+    public void sendInputPacketsForInventoryAction() {
+        if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
+            ClientPlayerEntity player = mc.player;
+            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+            input.right(false)
+                    .left(false)
+                    .forward(false)
+                    .backward(false)
+                    .jump(false)
+                    .sendPlayerInputPacket();
+            ClientPlayerAccess.of(player).resyncInput();
+        }
+    }
     // mostly same as InventoryAction packets
     public void sendPacketsForPreStartFallFlying() {
         if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
@@ -109,7 +123,7 @@ public class MovExtra extends BaseModule {
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
         switch (presetEvent.context.getValue()) {
                 // check 1.21.2+
-            case AC_GRIM -> fuckGrimAC.set(SupportVersion.CURRENT.isHigherOrEqualTo(21, 2));
+            case AC_GRIM, AC_GRIM_LEGACY -> fuckGrimAC.set(SupportVersion.CURRENT.isHigherOrEqualTo(21, 2));
             default -> fuckGrimAC.set(false);
         }
     }

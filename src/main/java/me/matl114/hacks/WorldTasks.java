@@ -1,9 +1,7 @@
 package me.matl114.hacks;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.*;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -30,6 +28,8 @@ public class WorldTasks {
 
     public static Map<ChunkPos, Queue<BooleanSupplier>> pendingUpdateTasks = new ConcurrentHashMap<>();
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+    // optimize, do not block main thread
+    public static Executor executeThread = Executors.newSingleThreadExecutor();
 
     public static void onTick(Event<ClientPlayerEntity> eventUpdate) {
         Set<ChunkPos> chunkPoses = new HashSet<>(pendingUpdateTasks.keySet());
@@ -41,11 +41,11 @@ public class WorldTasks {
     }
 
     public static void cancelPendingChunkTask(ChunkPos chunkPos) {
-        mc.execute(() -> pendingUpdateTasks.remove(chunkPos));
+        executeThread.execute(() -> pendingUpdateTasks.remove(chunkPos));
     }
 
     public static void cancelAllPendingChunkTasks() {
-        mc.execute(() -> pendingUpdateTasks.clear());
+        executeThread.execute(() -> pendingUpdateTasks.clear());
     }
 
     public static void onWorldChange(Event<World> event) {
@@ -79,14 +79,14 @@ public class WorldTasks {
                                             pendingUpdateTasks.remove(pos);
                                         }
                                     },
-                                    mc);
+                                    executeThread);
                     return true;
                 }
                 : () -> {
                     runnable.run();
                     return false;
                 };
-        mc.execute(() -> {
+        executeThread.execute(() -> {
             // all "pendingUpdateTasks map" was modified on Main Thread (mc)
             if (pendingUpdateTasks.computeIfPresent(pos, (k, v) -> {
                         v.add(asyncTask);

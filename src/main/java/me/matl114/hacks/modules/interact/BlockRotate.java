@@ -107,6 +107,7 @@ public class BlockRotate extends BaseModule {
                         Direction currentHorizontal = mc.player.getHorizontalFacing();
                         // optimize packet, only deceive when mismatch horizontalfacing and facing
                         if (direction != currentDirection || horizontal != currentHorizontal) {
+                            // todo: check
                             if (bypassMode.get() == Configs.BypassMode.BYPASS_GRIM) {
                                 // to ensure the rotate is successfully done
                                 // use a wrong sequence id to ensure that this packet cancelled by grimac
@@ -120,6 +121,7 @@ public class BlockRotate extends BaseModule {
                                     .setSequence(NetworkUtils.generateNextSequence());
                         }
                     }
+                    // todo: check legacy snap
                     if (playerLookAt.context != null && bypassMode2.get().hasAc()) {
                         Vec3d lookVec = playerLookAt.context;
                         InteractionTasks.addPostRotationCorrectTask(lookVec, Runnables.doNothing());
@@ -441,11 +443,11 @@ public class BlockRotate extends BaseModule {
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> e) {
         switch (e.context.getValue()) {
-            case AC_GRIM -> bypassMode.set(Configs.BypassMode.BYPASS_GRIM);
+            case AC_GRIM, AC_GRIM_LEGACY -> bypassMode.set(Configs.BypassMode.BYPASS_GRIM);
             default -> bypassMode.set(Configs.BypassMode.NO_BYPASS);
         }
         switch (e.context.getValue()) {
-            case AC_GRIM -> bypassMode2.set(Configs.BypassMode.BYPASS_GRIM);
+            case AC_GRIM, AC_GRIM_LEGACY -> bypassMode2.set(Configs.BypassMode.BYPASS_GRIM);
             default -> bypassMode2.set(Configs.BypassMode.NO_BYPASS);
         }
     }

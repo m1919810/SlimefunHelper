@@ -14,6 +14,21 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
     public EntityMovementStatus<ClientPlayerEntity> playerStatus;
     public EntityMovementStatus<ClientPlayerEntity> playerPostHackStatus;
     public Deque<Pair<Float, Float>> importantRotationStatePreserve;
+    boolean moveFix = false;
+    boolean resetPos = false;
+    boolean resetRot = false;
+
+    public void markForMoveFix() {
+        moveFix = true;
+    }
+
+    public void markForResetPos() {
+        resetPos = true;
+    }
+
+    public void markForResetRot() {
+        resetRot = true;
+    }
 
     public boolean hasImportantRotation() {
         return importantRotationStatePreserve != null && !importantRotationStatePreserve.isEmpty();
@@ -73,7 +88,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
 
         // 获取安全的角度（处理NaN等异常情况）
         float currentYaw = EntityUtils.getSafeYaw(player, playerStatus.yaw);
-        float previousYaw = EntityUtils.getSafeYaw(player, playerPostHackStatus.yaw);
+        float previousYaw = EntityUtils.getSafeYaw(player, player.getYaw());
 
         // 计算两个角度之间的最小差值（处理360度环绕）
         float diff = Math.abs(currentYaw - previousYaw);
@@ -85,7 +100,7 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
 
     public boolean pitchModified() {
         return Math.abs(EntityUtils.getSafePitch(playerStatus.pitch)
-                        - EntityUtils.getSafePitch(playerPostHackStatus.pitch))
+                        - EntityUtils.getSafePitch(playerStatus.entity.getPitch()))
                 > 2.0F;
     }
 
@@ -94,6 +109,9 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         this.playerStatus = new EntityMovementStatus<>(args);
         this.currentTickEnableHacks = new ArrayList<>();
         this.importantRotationStatePreserve = null;
+        this.resetPos = false;
+        this.resetRot = false;
+        this.moveFix = false;
         // start new tick, removing contents and replace with new
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         for (var hack : hacks) {
@@ -112,6 +130,18 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         for (var hack : this.currentTickEnableHacks) {
             hack.applyAfterInputTick(movementManagerEvent);
+        }
+        if (moveFix) {
+            var input = PlayerInputUtils.of(player.input);
+            input = PlayerInputUtils.tryCorrectMovementInput(
+                    input, movementManagerEvent.context.playerStatus.yaw, player.getYaw());
+            // one cannot sprint if forward is not pressed
+            if (!input.forward() && (input.sprint() || player.isSprinting())) {
+                input.sprint(false);
+                player.setSprinting(false);
+                input.applyInput(player.input);
+            }
+            input.applyInput(player.input);
         }
     }
 
@@ -182,6 +212,12 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
                 iter.remove();
             }
         }
+        if (resetPos) {
+            playerStatus.restorePos();
+        }
+        if (resetRot) {
+            playerStatus.restoreRotation();
+        }
         return;
     }
 
@@ -191,52 +227,9 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
     }
 
     // functions:
-    public void tryCorrectMovementInput() {
-
+    public void tryMarkForMoveFix() {
         if (yawModified()) {
-            ClientPlayerEntity player = playerStatus.entity;
-            float originYaw = playerStatus.yaw;
-            // rotated
-            float diff = EntityUtils.getSafeYawDiff(originYaw, player.getYaw());
-            Input input = player.input;
-            float forwardSpeed;
-            float sidewaySpeed;
-            boolean w, a, s, d;
-            if (diff < 22.5 && diff >= -22.5) {
-                // do nothing
-                return;
-            } else if (diff < 67.5 && diff >= 22.5) {
-                // turn to
-                forwardSpeed = (input.movementForward - input.movementSideways);
-                sidewaySpeed = (input.movementForward + input.movementSideways);
-            } else if (diff >= 67.5 && diff < 90.0F + 22.5F) {
-                forwardSpeed = -input.movementSideways;
-                sidewaySpeed = input.movementForward;
-            } else if (diff >= 90.0F + 22.5F && diff < 90.0F + 67.5F) {
-                forwardSpeed = (-input.movementForward - input.movementSideways);
-                sidewaySpeed = (input.movementForward - input.movementSideways);
-            } else if (diff >= 90.0F + 67.5F || diff < -90.0F - 67.5F) {
-                forwardSpeed = -input.movementForward;
-                sidewaySpeed = -input.movementSideways;
-            } else if (diff >= -90.0F - 67.5F && diff < -90.0F - 22.5F) {
-                forwardSpeed = (-input.movementForward + input.movementSideways);
-                sidewaySpeed = (-input.movementForward - input.movementSideways);
-            } else if (diff >= -90.0F - 22.5F && diff < -90.0F + 22.5F) {
-                forwardSpeed = input.movementSideways;
-                sidewaySpeed = -input.movementForward;
-            } else if (diff >= -90.0F + 22.5F && diff < -22.5F) {
-                forwardSpeed = (input.movementForward + input.movementSideways);
-                sidewaySpeed = (-input.movementForward + input.movementSideways);
-            } else {
-                return;
-            }
-            // sync values
-            input.movementForward = forwardSpeed > 0 ? 1.0F : (forwardSpeed < 0 ? -1.0F : 0.0F);
-            input.movementSideways = sidewaySpeed > 0 ? 1.0F : (sidewaySpeed < 0 ? -1.0F : 0.0F);
-            input.pressingForward = input.movementForward > 0;
-            input.pressingBack = input.movementForward < 0;
-            input.pressingLeft = input.movementSideways > 0;
-            input.pressingRight = input.movementSideways < 0;
+            markForMoveFix();
         }
     }
 

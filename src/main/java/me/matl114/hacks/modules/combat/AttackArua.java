@@ -99,7 +99,7 @@ public class AttackArua extends BaseModule {
                         // attack this kick
                         interval = 0;
                         for (Entity target : targets) {
-                            if (attack.attackEntity(target)) break;
+                            if (attack.attackEntity(target, attack.createAttackSettings())) break;
                             if (--max <= 0) {
                                 return;
                             }

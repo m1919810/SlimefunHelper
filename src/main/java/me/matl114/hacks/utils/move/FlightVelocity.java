@@ -10,17 +10,25 @@ import net.minecraft.util.math.Vec3d;
 @Setter
 @ToString
 @Accessors(chain = true, fluent = true)
-public class ElytraVelocity {
+public class FlightVelocity {
     double x, y, z;
+    final double maxVelocity;
 
-    public ElytraVelocity(double x, double y, double z) {
+    public FlightVelocity(double x, double y, double z, double maxVelocity) {
         this.x = x;
         this.y = y;
         this.z = z;
+        this.maxVelocity = maxVelocity;
     }
 
-    public ElytraVelocity(Vec3d vec) {
-        this(vec.x, vec.y, vec.z);
+    public void velocity(Vec3d vec3d) {
+        this.x = vec3d.x;
+        this.y = vec3d.y;
+        this.z = vec3d.z;
+    }
+
+    public FlightVelocity(Vec3d vec, double maxVelocity) {
+        this(vec.x, vec.y, vec.z, maxVelocity);
     }
 
     public Vec3d toVelocity() {

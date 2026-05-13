@@ -132,7 +132,8 @@ public class PacketDebugger extends BaseModule {
                             "Send",
                             simplifyId(type.getPacketId().id()),
                             actionC2SPacket.getAction().name(),
-                            actionC2SPacket.getPos());
+                            actionC2SPacket.getPos(),
+                            actionC2SPacket.getSequence());
                 } else if (type instanceof PlayerInteractEntityC2SPacket interact) {
                     ExtraTasks.debug(
                             "Send",

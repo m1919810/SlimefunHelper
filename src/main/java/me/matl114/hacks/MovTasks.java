@@ -2175,6 +2175,12 @@ public class MovTasks {
     public static MovExtra movExtra;
 
     @Getter
+    public static FallDistanceManager fallDistanceManager;
+
+    @Getter
+    public static LegacySnapRotManager legacySnapRotManager;
+
+    @Getter
     public static ForwardTp forwardTp;
 
     @Getter
@@ -2238,6 +2244,8 @@ public class MovTasks {
     private static void initModules(ModuleManager m) {
         // move
         movExtra = new MovExtra().register(m);
+        fallDistanceManager = new FallDistanceManager().register(m);
+        legacySnapRotManager = new LegacySnapRotManager().register(m);
         forwardTp = new ForwardTp().register(m);
         noSlowDown = new NoSlowDown().register(m);
         noFall = new NoFall().register(m);
@@ -2251,6 +2259,7 @@ public class MovTasks {
         elytraExtra = new ElytraExtra().register(m);
         elytraFlight = new ElytraFlight().register(m);
         elytraGrimAccelerate = new ElytraGrimAccelerate().register(m);
+
         // elytraFlightLegit = new ElytraFlightLegit().register(m);
         velocity = new Velocity().register(m);
         floatingUtils = new FloatingUtils().register(m);
