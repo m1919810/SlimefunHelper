@@ -10,6 +10,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
@@ -55,6 +56,10 @@ public class AutoLogout extends BaseModule {
                     Configs.COMBAT_CONFIG, makePath("auto-logout.totem-trigger.enable"))
             .build();
 
+    public final IntRef totemTriggerCheckLeftTotem = builder(Configs.COMBAT_CONFIG, makePath("auto-logout.totem-trigger.threshold"), IntRef.TYPE)
+        .defaultValue(99)
+        .build();
+
     // 4. 最低高度相关
     public final FlagRef minHeightEnable = flagBuilder(Configs.COMBAT_CONFIG, makePath("auto-logout.min-height.enable"))
             .build();
@@ -85,12 +90,7 @@ public class AutoLogout extends BaseModule {
                 return;
             }
             if (totemLeftEnable.get()) {
-                int cnt = 0;
-                for (var item : player.getInventory()) {
-                    if (!item.isEmpty() && item.getItem() == Items.TOTEM_OF_UNDYING) {
-                        cnt += 1;
-                    }
-                }
+                double cnt = InventoryUtils.computeInventory((v)-> v.getItem() == Items.TOTEM_OF_UNDYING ? (double)v.getCount() : null, false);
                 if (cnt <= totemLeftThreshold.get()) {
                     MainTasks.scheduleDisconnect();
                     return;
@@ -112,7 +112,12 @@ public class AutoLogout extends BaseModule {
                 && mc.player != null) {
             Entity entity = statusS2CPacket.getEntity(mc.world);
             if (entity != null && entity.getId() == mc.player.getId()) {
-                MainTasks.scheduleDisconnect();
+                int leftTotem = totemTriggerCheckLeftTotem.get();
+                double cnt = InventoryUtils.computeInventory((v)-> v.getItem() == Items.TOTEM_OF_UNDYING ? (double)v.getCount() : null, false);
+                if(cnt <= leftTotem) {
+                    MainTasks.scheduleDisconnect();
+                    return;
+                }
             }
         }
     }

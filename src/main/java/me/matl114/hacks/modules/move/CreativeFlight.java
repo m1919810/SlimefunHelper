@@ -9,6 +9,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -60,7 +61,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public final KeyBindRef keybind = toggleHotkey(
                     Configs.MOV_CONFIG,
                     TOGGLE_FLIGHT,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_F),
+                    new MultiKeyBind(),
                     FLIGHT)
             .build();
 
@@ -96,7 +97,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             .build();
 
     public final KeyBindRef overridingSpeedKeybind = hotkey(Configs.MOV_CONFIG, MOVE_SPEED_OVERRIDE_TASK)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_LEFT_BRACKET))
+            .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleSpeed))
             .build();
 
@@ -243,7 +244,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
                         yield true;
                     }
                     case MOTION -> {
-                        if (isActive()) {
+                        if (isActive() && mc.player.getAbilities().flying) {
                             PlayerInputUtils.Input input = PlayerInputUtils.of(mc.options);
                             Vec3d movementInput =
                                     new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
@@ -251,6 +252,10 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
                                     movementInput, (float) (5 * getOverridingFlySpeed()), player.getYaw());
                             player.setVelocity(velocity);
                             velocity = dispatchAntiKickMotion(velocity);
+                            // set FlightVelocity Event
+                            FlightVelocity flightVelocity = new FlightVelocity(velocity, 5 * getOverridingFlySpeed(), FlightVelocity.Mode.MOTION_FLIGHT);
+                            Listener.getCustomListener().broadcast(new EventContainer<>(FlightVelocity.class, flightVelocity));
+                            velocity = flightVelocity.toVelocity();
                             player.setVelocity(velocity);
                             yield true;
                         }

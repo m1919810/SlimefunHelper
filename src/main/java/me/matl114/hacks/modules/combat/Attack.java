@@ -73,7 +73,7 @@ public class Attack extends BaseModule {
     public final KeyBindRef hotkey = toggleHotkey(
                     Configs.COMBAT_CONFIG,
                     HOTKEY_ATTACK,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_K),
+                    new MultiKeyBind(),
                     ATTACK)
             .build();
 
@@ -108,10 +108,13 @@ public class Attack extends BaseModule {
 
     public final FlagRef autoSwap = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.attack-inv-swap"))
             .build();
+
+    public final FlagRef autoSelect = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.attack-select-best-weapon"))
+        .build();
     //
-    //    public final FlagRef autoRelease = flagBuilder(Configs.COMBAT_CONFIG,
-    // makePath("att-bot.auto-release-using-when-attack"))
-    //        .build();
+        public final FlagRef autoRelease = flagBuilder(Configs.COMBAT_CONFIG,
+     makePath("att-bot.auto-handle-use-when-attack"))
+            .build();
 
     @ApiStatus.Experimental
     public final FlagRef autoMaceSwap =
@@ -219,13 +222,14 @@ public class Attack extends BaseModule {
         boolean useTp = canUseTp();
         boolean maceSwap = autoMaceSwap.get();
         boolean invSwap = autoSwap.get();
+        boolean selectWeapon = autoSelect.get();
         boolean antiShield = autoAntiShield.get();
-        boolean useAttack = CombatTasks.getCombatExtra().useAttack.get() && mc.player.isUsingItem();
+        boolean useAttack = autoRelease.get() && mc.player.isUsingItem();
         boolean elytraSwitch = MovTasks.getElytraExtra().shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack();
         boolean criticalSprint = !legalMode.get() && mc.player.isSprinting();
         boolean maceVClip = useTp && !legalMode.get() && maceHeight.get() > 1E-7;
         return new AttackSettings(
-                useTp, maceSwap, invSwap, antiShield, useAttack, elytraSwitch, criticalSprint, maceVClip);
+                useTp, maceSwap, invSwap, selectWeapon, antiShield, useAttack, elytraSwitch, criticalSprint, maceVClip);
     }
 
     public static void attackWithSettings(PlayerEntity player, Entity target, AttackSettings attackSettings) {
@@ -270,6 +274,18 @@ public class Attack extends BaseModule {
                                 false,
                                 false))
                         != null) {
+            callback = InvTasks.getInvExtra().swapInventoryIndexToHand(invResult.index());
+        } else if(attackSettings.selectWeapon() && !mc.player.getStackInHand(Hand.MAIN_HAND).isEmpty() && target instanceof LivingEntity && (
+                invResult = InventoryUtils.findBestPlayerItem(
+                    (ex)->{
+                        if(ex.isOf(mc.player.getStackInHand(Hand.MAIN_HAND).getItem())){
+                            return DamageUtils.getAttackDamage(player, target, ex)
+                                * DamageUtils.getAttackSpeed(player, ex);
+                        }
+                        return null;
+                    }, false, false
+                )
+            ) != null){
             callback = InvTasks.getInvExtra().swapInventoryIndexToHand(invResult.index());
         }
         attackWithCritic(player, target, attackSettings.criticalSprint());
@@ -363,8 +379,7 @@ public class Attack extends BaseModule {
             final int elytraSlot = swapElytraSlot;
             // testing failed,
             // see Grim' s Reach
-            if (mc.player.isUsingItem()
-                    && CombatTasks.getCombatExtra().useAttack.get()) {
+            if (settings.useAttack()) {
                 MovTasks.getNoSlowDown().setPreAttackUseTick();
             }
             boolean preAttack = false; // legalTargetingMode.get().isPreAttack();
@@ -585,8 +600,7 @@ public class Attack extends BaseModule {
         // after move player, do target
         if (distancePassAttack) {
             boolean useItem = false;
-            if (mc.player.isUsingItem()
-                    && CombatTasks.getCombatExtra().useAttack.get()) {
+            if (settings.useAttack()) {
                 useItem = true;
                 mc.player.stopUsingItem();
                 mc.getNetworkHandler()
@@ -1002,6 +1016,7 @@ public class Attack extends BaseModule {
             boolean useTp,
             boolean maceSwap,
             boolean invSwap,
+            boolean selectWeapon,
             boolean antiShieldSwap,
             boolean useAttack,
             boolean elytraDelaySwitch,

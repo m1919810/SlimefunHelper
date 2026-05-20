@@ -18,6 +18,7 @@ import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
@@ -170,6 +171,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                             }
                         }
                     }
+                    hasCollision = collideEntities.stream().anyMatch(e -> e instanceof LivingEntity || e instanceof EndCrystalEntity);
                     if (canPlace && !hasCollision) {
                         if (placeCnt == 0) {
                             var re = supplyBlocks();

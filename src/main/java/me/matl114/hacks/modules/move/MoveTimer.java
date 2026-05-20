@@ -23,7 +23,7 @@ public class MoveTimer extends BaseModule {
     public final KeyBindRef keyBind = toggleHotkey(
                     Configs.MOV_CONFIG,
                     MOVE_TIMER_ENABLE_HOTKEY,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_Y),
+                    new MultiKeyBind(),
                     MOVE_TIMER_ENABLE)
             .build();
 

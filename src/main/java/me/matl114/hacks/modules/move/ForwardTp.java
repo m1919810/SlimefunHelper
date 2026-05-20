@@ -27,12 +27,12 @@ public class ForwardTp extends BaseModule {
     public ForwardTp() {}
 
     public final KeyBindRef frontKey = hotkey(Configs.MOV_CONFIG, MOVE_FRONT)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_W, KeyCode.KEY_GRAVE_ACCENT))
+            .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::quickMovFront))
             .build();
 
     public final KeyBindRef wallKey = hotkey(Configs.MOV_CONFIG, MOVE_WALL)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_W, KeyCode.KEY_F1))
+            .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::quickMovTowardsWall))
             .build();
 

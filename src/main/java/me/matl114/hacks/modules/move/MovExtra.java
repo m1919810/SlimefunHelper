@@ -7,6 +7,7 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -71,27 +72,30 @@ public class MovExtra extends BaseModule {
     }
 
     public void sendPacketsForInventoryAction() {
-        if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
+        if (fuckGrimAC.get()) {
             ClientPlayerEntity player = mc.player;
+            // only sprint need to be toggled
             if (player.isSprinting()) {
                 mc.getNetworkHandler()
                         .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
                 ClientPlayerAccess.of(player).resyncSprint();
             }
-            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
-            input.right(false)
+            if(ViaFabricPlusHooks.isSupportEndTick()){
+                PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+                input.right(false)
                     .left(false)
                     .forward(false)
                     .backward(false)
                     .jump(false)
                     .sprint(false)
                     .sendPlayerInputPacket();
-            ClientPlayerAccess.of(player).resyncInput();
+                ClientPlayerAccess.of(player).resyncInput();
+            }
         }
     }
 
     public void sendInputPacketsForInventoryAction() {
-        if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
+        if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
             ClientPlayerEntity player = mc.player;
             PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
             input.right(false)
@@ -105,7 +109,7 @@ public class MovExtra extends BaseModule {
     }
     // mostly same as InventoryAction packets
     public void sendPacketsForPreStartFallFlying() {
-        if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
+        if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
             var input = PlayerInputUtils.of(mc.player.input).jump(false);
             input.sendPlayerInputPacket();
             input.applyInput(mc.player.input);
@@ -113,7 +117,7 @@ public class MovExtra extends BaseModule {
     }
 
     public void sendPacketsForPostStartFallFlying() {
-        if (fuckGrimAC.get() && SupportVersion.CURRENT.isHigherOrEqualTo(21, 2)) {
+        if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
             var input = PlayerInputUtils.of(mc.player.input).jump(true);
             input.sendPlayerInputPacket();
             input.applyInput(mc.player.input);
@@ -123,7 +127,7 @@ public class MovExtra extends BaseModule {
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
         switch (presetEvent.context.getValue()) {
                 // check 1.21.2+
-            case AC_GRIM, AC_GRIM_LEGACY -> fuckGrimAC.set(SupportVersion.CURRENT.isHigherOrEqualTo(21, 2));
+            case AC_GRIM, AC_GRIM_LEGACY -> fuckGrimAC.set(true);
             default -> fuckGrimAC.set(false);
         }
     }

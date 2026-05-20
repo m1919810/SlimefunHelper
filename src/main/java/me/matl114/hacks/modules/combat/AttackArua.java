@@ -12,6 +12,7 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 
@@ -24,6 +25,7 @@ public class AttackArua extends BaseModule {
     public static final String[] ONCE_MAX = {"att-bot", "max-at-once"};
 
     public static final String[] CUSTOM_ATTACKING_RATE = {"att-bot", "auto-att-rate"};
+    //add do not abort eating
 
     public AttackArua() {
         bindFlag(enable);
@@ -35,7 +37,7 @@ public class AttackArua extends BaseModule {
     public final KeyBindRef hotkey = toggleHotkey(
                     Configs.COMBAT_CONFIG,
                     AUTO_ATTACK_HOTKEY,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_APOSTROPHE),
+                    new MultiKeyBind(),
                     AUTO_ATTACK)
             .build();
 
@@ -57,6 +59,9 @@ public class AttackArua extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
+    public final FlagRef doNotAttackWhenEat = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.stop-attack-when-eat"))
+        .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -75,6 +80,9 @@ public class AttackArua extends BaseModule {
             interval += 1;
             int custom = customRate.get();
             if (custom <= interval) {
+                if(doNotAttackWhenEat.get() && mc.player.isUsingItem() && VItem.getInstance().isEatable(mc.player.getActiveItem())){
+                    return;
+                }
                 if (attack.legalMode.get()
                         || ((holdingWeapon && cooldownWeapon.get()) || (!holdingWeapon && cooldownHand.get()))) {
                     // do not attack because of legal mode

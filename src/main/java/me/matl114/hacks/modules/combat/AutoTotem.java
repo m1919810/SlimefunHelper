@@ -85,7 +85,7 @@ public class AutoTotem extends BaseModule {
 
     public void onTotemLazy() {
         if (!canBeAccepted(mc.player.getOffHandStack())) {
-            if (smartTotem.get() && canBeAccepted(mc.player.getMainHandStack())) {
+            if (smartTotem.get() && mc.player.getMainHandStack().getItem() == Items.TOTEM_OF_UNDYING) {
                 return;
             }
             // well looks

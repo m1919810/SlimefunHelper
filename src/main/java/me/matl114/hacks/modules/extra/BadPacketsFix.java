@@ -6,6 +6,7 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
@@ -62,7 +63,8 @@ public class BadPacketsFix extends BaseModule {
     }
 
     boolean serverSprint = false;
-    boolean serverSneak = false;
+    // removed due to protocol change
+    //boolean serverSneak = false;
     boolean serverCanFly = false;
     PlayerInputUtils.Input serverInput = PlayerInputUtils.EMPTY;
     float serverPitch;
@@ -80,7 +82,7 @@ public class BadPacketsFix extends BaseModule {
     public void onPlayerInitialize(Event<ClientPlayerEntity> event) {
         ClientPlayerEntity entity = event.context();
         serverSprint = entity.isSprinting();
-        serverSneak = entity.isSneaking();
+        //serverSneak = entity.isSneaking();
         serverInput = PlayerInputUtils.EMPTY;
         serverCanFly = entity.getAbilities().allowFlying;
         serverPitch = entity.getPitch();
@@ -106,7 +108,7 @@ public class BadPacketsFix extends BaseModule {
     public void onSendInput(Event<PlayerInputC2SPacket> inputC2SPacketEvent) {
         PlayerInputUtils.Input input = PlayerInputUtils.of(inputC2SPacketEvent.context());
         if (Objects.equals(input, serverInput)) {
-            if (shouldConsiderInputPacket && enableInput.get()) {
+            if (!mc.player.isRiding() && shouldConsiderInputPacket && enableInput.get()) {
                 inputC2SPacketEvent.cancel();
             }
         } else {

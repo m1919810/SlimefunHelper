@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.events.Listener;
 import me.matl114.gui.config.ConfigurateNewStyleScreen;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
@@ -81,12 +82,12 @@ public class MainTasks {
     // store the crash exception
 
     public static void clientCrash(String[] args) {
-        mc.world = null;
-        CompletableFuture.runAsync(() -> {
-            mc.execute(() -> {
+        Tasks.scheduleDelayed(
+            () -> {
+                mc.world = null;
                 throw new CrashException(new CrashReport("test crash", new NullPointerException()));
-            });
-        });
+            },
+            1);
     }
 
     public static void clientLiteCrash(String[] args) {
@@ -121,8 +122,19 @@ public class MainTasks {
                     if (mc.world != null && mc.player != null) {
                         mc.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
                     }
+                    if(Listener.getClientConnection() != null && Listener.getClientConnection().isOpen()){
+                        Listener.getClientConnection().disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
+                    }
                 },
                 0);
+    }
+
+    @ApiMethod
+    public static void disconnectImmediately(){
+        mc.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
+        if(Listener.getClientConnection() != null && Listener.getClientConnection().isOpen()){
+            Listener.getClientConnection().disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
+        }
     }
 
     @Getter

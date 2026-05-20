@@ -108,7 +108,7 @@ public class MineExtra extends BaseModule {
     public final KeyBindRef quickMineKeyBind = toggleHotkey(
                     Configs.MINE_CONFIG,
                     QUICK_MINE_HOTKEY,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_M),
+                    new MultiKeyBind(),
                     QUICK_MINE)
             .build();
 
@@ -237,7 +237,7 @@ public class MineExtra extends BaseModule {
                 && packet.getAction() == PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK
                 && Tasks.getTick() != lastSwingPacket) {
             // will set lastSwingPacket in the listener above
-            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            mc.player.swingHand(Hand.MAIN_HAND);
         }
     }
 

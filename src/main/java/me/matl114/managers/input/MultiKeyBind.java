@@ -44,6 +44,10 @@ public class MultiKeyBind {
         validateKeys();
     }
 
+    public MultiKeyBind(){
+        this(new int[0]);
+    }
+
     public String asString() {
         return "hotkey:" + String.join(",", keys);
     }

@@ -6,6 +6,7 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.presets.choices.QuestionScreen;
+import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -23,6 +24,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.ClientConnection;
+import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.registry.Registries;
@@ -67,6 +70,16 @@ public class ClientExtra extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final FlagRef noDecodeException = builder(Configs.TEST_CONFIG, Boolean.class)
+        .path(makePath("other.no-disconnect-on-packet-decode"))
+        .defaultValue(false)
+        .build();
+
+    public final FlagRef noUnexpected = builder(Configs.TEST_CONFIG, Boolean.class)
+        .path(makePath("other.no-disconnect-on-packet-unexpected"))
+        .defaultValue(false)
+        .build();
+
     public final FlagRef portalGui =
             flagBuilder(Configs.TEST_CONFIG, PORTAL_GUI).build();
 
@@ -85,13 +98,20 @@ public class ClientExtra extends BaseModule {
         super.registerAll();
         registerListener(Listener.getClientMainExit(), this::onCrash);
         registerListener(
-                Listener.getExceptionListener().getChannel(Listener.ExceptionType.NETWORK), this::onNetworkException);
+                Listener.getExceptionListener().getChannel(Listener.ExceptionType.PACKET_HANDLE_EXCEPTION), this::onNetworkException);
         registerListener(
                 Listener.getExceptionListener().getChannel(Listener.ExceptionType.ENTITY_TICK),
                 this::onEntityException);
         registerListener(
                 Listener.getExceptionListener().getChannel(Listener.ExceptionType.BLOCK_ENTITY_TICK),
                 this::onBlockEntityException);
+        registerListener(
+            Listener.getExceptionListener().getChannel(Listener.ExceptionType.PACKET_DECODE_EXCEPTION),
+            this::onDecodeException);
+
+        registerListener(
+            Listener.getExceptionListener().getChannel(Listener.ExceptionType.UNKNOWN_CHANNEL_EXCEPTION),
+            this::onUnexpectedException);
     }
 
     private final Text questionCrash =
@@ -217,20 +237,68 @@ public class ClientExtra extends BaseModule {
         }
     }
 
+    public void onDecodeException(Event<Listener.WrapperException> event) {
+        if (noDecodeException.get()) {
+            Listener.WrapperException we = event.context();
+            PacketListener packet = event.getArgs(0);
+            Throwable exception = we.exception();
+            if(packet instanceof ClientPlayPacketListener playListener){
+                if (mc.player != null) {
+                    Debug.chat(Text.literal("Error while decoding packet: ")
+                        .formatted(Formatting.RED)
+                    );
+                    Debug.chat(
+                        exception.getClass().getSimpleName(),
+                        ":",
+                        Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
+                }
+                Debug.info("Exception StackTrace:");
+                Debug.info(exception);
+                event.cancel();
+            }
+        }
+    }
+
+    public void onUnexpectedException(Event<Listener.WrapperException> event) {
+        if (noUnexpected.get()) {
+            Listener.WrapperException we = event.context();
+            PacketListener packet = event.getArgs(0);
+            Throwable exception = we.exception();
+            if(packet instanceof ClientPlayPacketListener playListener){
+                if (mc.player != null) {
+                    Debug.chat(Text.literal("Error while receiving packet: ")
+                        .formatted(Formatting.RED)
+                    );
+                    Debug.chat(
+                        exception.getClass().getSimpleName(),
+                        ":",
+                        Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
+                }
+                Debug.info("Exception StackTrace:");
+                Debug.info(exception);
+                event.cancel();
+            }
+        }
+    }
+
+
     public boolean validVec3d(Vec3d vec3d) {
         return Double.isFinite(vec3d.x) && Double.isFinite(vec3d.y) && Double.isFinite(vec3d.z);
     }
 
     protected void checkClientData(Screen screen) {
+        ScreenAccess currentScreen = ScreenAccess.of( mc.currentScreen);
+        Screen parentScreen = (currentScreen instanceof QuestionScreen ? currentScreen.getParent() : mc.currentScreen);
         if (mc.player != null
                 && mc.world != null
                 && mc.inGameHud != null
                 && mc.getNetworkHandler() != null
                 && mc.interactionManager != null) {
-            ScreenAccess.of(screen).openFromCurrent();
+            ScreenAccess.of(screen).openFrom(parentScreen);
         } else {
             // 严重问题
-            mc.disconnect(screen);
+            MainTasks.disconnectImmediately();
+            ScreenAccess.of(screen).openFrom(parentScreen);
         }
     }
 
