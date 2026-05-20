@@ -226,7 +226,7 @@ public class PrinterRewrite extends BaseModule {
     public void onRender(Event<MatrixStack> event) {
         MatrixStack stack = event.context();
         if (enable.get() && render.get()) {
-            RenderUtils.stopDrawVirtual(stack);
+            RenderUtils.startDrawVirtual(stack);
             try {
                 VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
                     Vec3d camerPos = RenderUtils.getCameraPos();

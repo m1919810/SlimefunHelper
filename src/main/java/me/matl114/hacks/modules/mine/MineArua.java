@@ -41,7 +41,7 @@ public class MineArua extends BaseModule {
     public KeyBindRef keyBind = toggleHotkey(
                     Configs.MINE_CONFIG,
                     MINEARUA_HOTKEY,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_N),
+                    new MultiKeyBind(),
                     MINEARUA)
             .build();
 
@@ -51,6 +51,9 @@ public class MineArua extends BaseModule {
                     NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(.*bed)$"), Registries.BLOCK))
             .build();
+
+    public FlagRef autoBreak = flagBuilder(Configs.MINE_CONFIG, makePath("mine-arua.auto-break"))
+        .build();
 
     @Override
     public void registerAll() {
@@ -66,6 +69,13 @@ public class MineArua extends BaseModule {
     }
 
     public void onMineBlockAction(Event<HitResult> event) {
+        //todo: sb, rewrite pls sb sb sb sb
+        if(false && isActive()){
+            BlockPos pos = refreshMineAruaTarget();
+            if(pos != this.cachePosition){
+                //mc.interactionManager.sendSequencedPacket(mc.world, );
+            }
+        }
         if (mc.player != null && isActive()) {
             BlockPos pos = refreshMineAruaTarget();
             if (pos != this.cachePosition) {

@@ -840,6 +840,7 @@ public class TravellingControl extends BaseModule {
             return;
         }
         EventContainer<FlightVelocity> eventContainer = event.context();
+        if(eventContainer.getValue().mode() != FlightVelocity.Mode.ELYTRA_FLIGHT)return;
         FlightVelocity velocity = eventContainer.getValue();
         Vec3d towards = elytraPos.subtract(mc.player.getPos()).normalize().multiply(speed.get());
         velocity.x(towards.x).y(towards.y).z(towards.z);

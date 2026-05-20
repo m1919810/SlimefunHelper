@@ -221,4 +221,17 @@ public class InventoryUtils {
         }
         return null;
     }
+
+    public static double computeInventory(Function<ItemStack, Double> maxFunction, boolean acceptEmpty) {
+        double sum = 0.0D;
+        Double currentValue ;
+        PlayerInventory pinv = mc.player.getInventory();
+        for (var i = 0; i < pinv.size(); ++i) {
+            ItemStack stack = pinv.getStack(i);
+            if ((acceptEmpty || !stack.isEmpty()) && (currentValue = maxFunction.apply(stack)) != null) {
+                sum += currentValue;
+            }
+        }
+        return sum;
+    }
 }

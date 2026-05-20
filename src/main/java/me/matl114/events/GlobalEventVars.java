@@ -1,7 +1,9 @@
 package me.matl114.events;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.crash.CrashReport;
 
 public class GlobalEventVars {
     public static CrashReport crashReport = null;
+    public static Event<MinecraftClient> crashReportEvent = null;
 }

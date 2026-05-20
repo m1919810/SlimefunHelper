@@ -11,93 +11,48 @@ import net.minecraft.block.BlockState;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.world.World;
 
-public class LitematicaHooks implements IHooks {
-    @Getter
-    boolean enabled;
+public abstract class LitematicaHooks implements IHooks {
+    public abstract BlockHitResult getEasyPlaceClickedPosition(
+            BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2);
 
-    final InvokeContext context;
+    public abstract World getSchematicWorld();
 
-    public LitematicaHooks() {
-        MethodHandle mh = null;
-        InvokeContext ctx;
-        try {
-            Class<?> clazz = SchematicWorldHandler.class;
-            enabled = true;
-            ctx = new Success();
-        } catch (Throwable e) {
-            enabled = false;
-            ctx = new Empty();
-        }
-        context = ctx;
-    }
-
-    public BlockHitResult getEasyPlaceClickedPosition(
-            BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
-        return context.getEasyPlaceClickedPosition(blockHitResult, blockState, blockState2);
-    }
-
-    public World getSchematicWorld() {
-        return context.getSchematicWorld();
-    }
-
-    public boolean isEasyPlaceEnabled() {
-        return context.isEasyPlaceEnabled();
-    }
+    public abstract boolean isEasyPlaceEnabled();
 
     public static LitematicaHooks instance;
 
     public static LitematicaHooks getInstance() {
         if (instance == null) {
-            instance = new LitematicaHooks();
+            try{
+                instance = new Impl();
+            }catch (Throwable e){
+                instance = new Default();
+            }
         }
         return instance;
     }
 
-    public static interface InvokeContext {
-        BlockHitResult getEasyPlaceClickedPosition(
-                BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2);
-
-        World getSchematicWorld();
-
-        public boolean isEasyPlaceEnabled();
-    }
-
-    private static class Empty implements InvokeContext {
-
-        @Override
-        public BlockHitResult getEasyPlaceClickedPosition(
-                BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
-            return null;
-        }
-
-        @Override
-        public World getSchematicWorld() {
-            return null;
-        }
-
-        public boolean isEasyPlaceEnabled() {
-            return false;
-        }
-    }
-
-    private static class Success implements InvokeContext {
+    public static class Impl extends LitematicaHooks {
         public static final MethodHandle easyPlaceHandle;
-
         static {
             try {
                 var lookup = MethodHandles.privateLookupIn(EasyPlaceUtils.class, MethodHandles.lookup());
                 Method method = EasyPlaceUtils.class.getDeclaredMethod(
-                        "getClickPosition", BlockHitResult.class, BlockState.class, BlockState.class);
+                    "getClickPosition", BlockHitResult.class, BlockState.class, BlockState.class);
                 method.setAccessible(true);
                 easyPlaceHandle = lookup.unreflect(method);
             } catch (Throwable e) {
                 throw new RuntimeException(e);
             }
         }
+        public Impl() {
+            Class<?> clazz = SchematicWorldHandler.class;
+        }
+
 
         @Override
         public BlockHitResult getEasyPlaceClickedPosition(
-                BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
+            BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
             try {
                 return (BlockHitResult) easyPlaceHandle.invokeExact(blockHitResult, blockState, blockState2);
             } catch (Throwable e) {
@@ -113,6 +68,34 @@ public class LitematicaHooks implements IHooks {
         @Override
         public boolean isEasyPlaceEnabled() {
             return Configs.Generic.EASY_PLACE_MODE.getBooleanValue();
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return true;
+        }
+    }
+
+    public static class Default extends LitematicaHooks {
+
+        @Override
+        public boolean isEnabled() {
+            return false;
+        }
+
+        @Override
+        public BlockHitResult getEasyPlaceClickedPosition(BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
+            return null;
+        }
+
+        @Override
+        public World getSchematicWorld() {
+            return null;
+        }
+
+        @Override
+        public boolean isEasyPlaceEnabled() {
+            return false;
         }
     }
 }

@@ -125,20 +125,48 @@ public abstract class MinecraftClientEvents {
         }
     }
 
+    @WrapOperation(method = "printCrashReport(Lnet/minecraft/util/crash/CrashReport;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;cleanUpAfterCrash()V"))
+    private void onSystemPreExitClearGameContent(MinecraftClient client, Operation<Void> original, @Local(argsOnly = true) CrashReport report) {
+        if(client == null){
+            return;
+        }
+        GlobalEventVars.crashReport = report;
+
+        GlobalEventVars.crashReportEvent = new Event<>(client, client.isRunning(), false, report);
+        //call the event previously
+        if (!Listener.getClientMainExit().isEmpty()) {
+            Event<MinecraftClient> exitEvent = GlobalEventVars.crashReportEvent;
+            Listener.getClientMainExit().handleValue(exitEvent);
+        }
+        if(!GlobalEventVars.crashReportEvent.isCancelled()) {
+            original.call(client);
+        }
+    }
+
     @Inject(
             method =
                     "printCrashReport(Lnet/minecraft/client/MinecraftClient;Ljava/io/File;Lnet/minecraft/util/crash/CrashReport;)V",
-            at = @At(value = "INVOKE", target = "Ljava/lang/System;exit(I)V", shift = At.Shift.BEFORE),
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;saveCrashReport(Ljava/io/File;Lnet/minecraft/util/crash/CrashReport;)I", shift = At.Shift.AFTER),
             cancellable = true)
     private static void onSystemExit(
             MinecraftClient client, File runDirectory, CrashReport crashReport, CallbackInfo ci) {
+        if(client == null){
+            return;
+        }
         GlobalEventVars.crashReport = crashReport;
-        if (!Listener.getClientMainExit().isEmpty()) {
-            Event<MinecraftClient> exitEvent = new Event<>(client, client.isRunning(), false, crashReport);
-            Listener.getClientMainExit().handleValue(exitEvent);
-            if (exitEvent.isCancelled()) {
-                ci.cancel();
+        if(GlobalEventVars.crashReportEvent == null){
+            GlobalEventVars.crashReportEvent = new Event<>(client, client.isRunning(), false, crashReport);
+            if (!Listener.getClientMainExit().isEmpty()) {
+                Event<MinecraftClient> exitEvent = GlobalEventVars.crashReportEvent;
+                Listener.getClientMainExit().handleValue(exitEvent);
             }
+        }
+        if (GlobalEventVars.crashReportEvent.isCancelled()) {
+            ci.cancel();
+        }else{
+            GlobalEventVars.crashReportEvent = null;
+            GlobalEventVars.crashReport = null;
+            // exit
         }
     }
 

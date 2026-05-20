@@ -6,6 +6,7 @@ import net.minecraft.component.type.AttributeModifiersComponent;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -26,7 +27,7 @@ public class DamageUtils {
         return speed;
     }
 
-    public static double getEnchantmentBonus(PlayerEntity player, LivingEntity target, ItemStack stack) {
+    public static double getEnchantmentBonus(PlayerEntity player, Entity target, ItemStack stack) {
         ItemEnchantmentsComponent enchantments = stack.get(DataComponentTypes.ENCHANTMENTS);
         float bonus = 0.0F;
         if (enchantments != null && !enchantments.isEmpty()) {
@@ -83,7 +84,7 @@ public class DamageUtils {
         return baseBonus;
     }
 
-    public static double getAttackDamage(PlayerEntity player, LivingEntity livingEntity, ItemStack stack) {
+    public static double getAttackDamage(PlayerEntity player, Entity livingEntity, ItemStack stack) {
         double att = player.getAttributeBaseValue(EntityAttributes.ATTACK_DAMAGE);
         AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers != null && !modifiers.modifiers().isEmpty()) {

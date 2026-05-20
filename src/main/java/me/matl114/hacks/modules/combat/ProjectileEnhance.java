@@ -57,7 +57,7 @@ public class ProjectileEnhance extends BaseModule {
     public KeyBindRef hotkey = toggleHotkey(
                     Configs.COMBAT_CONFIG,
                     BOW_ENHANCE_HOTKEY,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_H),
+                    new MultiKeyBind(),
                     BOW_ENHANCE)
             .build();
 

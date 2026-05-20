@@ -157,7 +157,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .build();
 
     public final FlagRef armorFly =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY).build();
+            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY).updateListener(this::onToggleArmorFly).build();
 
     public final KeyBindRef keyBind = toggleHotkey(
                     Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY_HOTKEY, new MultiKeyBind(), MOVE_ELYTRA_ARMOR_FLY)
@@ -364,6 +364,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
                             // try start
                             if (canContinueGliding() && hasGlidingEquipments()) {
+                                MovTasks.getMovExtra().sendPacketsForPreStartFallFlying();
+                                mc.getNetworkHandler()
+                                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                                MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
                                 serializedEntryUpdateEvent.context(
                                         new DataTracker.SerializedEntry(val.id(), val.handler(), (byte)
                                                 (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX))));
@@ -536,8 +540,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public void attackPost(Event<PlayerInteractEntityC2SPacket> packet) {
         if (packet.context() == lastHandledPacket) {
-            mc.getNetworkHandler()
-                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
             nextPacketResetFallFlying = true;
         }
         lastHandledPacket = null;
@@ -812,6 +814,22 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         } else {
             thisTickSwitchingIndex = -1;
             return true;
+        }
+    }
+
+    public void onToggleArmorFly(boolean armorFly){
+        if(mc.player != null && mc.player.isFallFlying()){
+            if(!armorFly){
+                if(thisFallFlyingIsArmorFly != -1){
+                    //current ArmoFly
+                    // switch Elytra on
+                    switchSlotToArmor(thisFallFlyingIsArmorFly);
+                    nextPacketResetFallFlying = true;
+                    thisFallFlyingIsArmorFly = -1;
+                }
+            }else{
+                thisFallFlyingIsArmorFly = -1;
+            }
         }
     }
 

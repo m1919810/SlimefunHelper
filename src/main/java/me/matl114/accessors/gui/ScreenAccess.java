@@ -23,6 +23,8 @@ public interface ScreenAccess extends MetadataHolder {
 
     public void openFromCurrent();
 
+    public void openFrom(Screen parent);
+
     public void switchToScreen(Screen anotherScreen);
 
     public void switchFromCurrent();
