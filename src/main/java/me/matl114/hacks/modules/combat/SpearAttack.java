@@ -69,7 +69,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             .build();
 
     public final KeyBindRef keyBind = hotkey(Configs.COMBAT_CONFIG, SPEAR_ATTACK_HOTKEY)
-            .defaultValue(new MultiKeyBind(KeyCode.MOUSE_BUTTON_1))
+            .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onSpearAction))
             .build();
 

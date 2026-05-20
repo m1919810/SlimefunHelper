@@ -33,7 +33,7 @@ public class SaveItem extends BaseModule {
     public SaveItem() {}
 
     public KeyBindRef keyBind = hotkey(Configs.INV_CONFIG, SAVE_ITEM_KEY)
-            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_A, KeyCode.MOUSE_BUTTON_1))
+            .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::saveItem))
             .build();
 

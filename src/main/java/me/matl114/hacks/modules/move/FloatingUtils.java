@@ -2,6 +2,8 @@ package me.matl114.hacks.modules.move;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+
+import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ExtraTasks;
@@ -94,7 +96,8 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     boolean hasNoPosition = false;
 
     public void onMoveNoPosition(Event<PlayerMoveC2SPacket> eventMove) {
-        if (!eventMove.isCancelled() && !eventMove.context.changesPosition()) {
+        //FIX: legacy snap seen as noPosition
+        if (!eventMove.isCancelled() && (!eventMove.context.changesPosition())) {
             hasNoPosition = true;
         }
     }
@@ -132,6 +135,8 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         if (workGrimFloatingThisTick()) {
             movementManagerEvent.cancel();
             movementManagerEvent.context.playerStatus.restorePos();
+            //also reset onground status to avoid false flag
+            mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
             storedPacket = VPacket.newLookAndOnGround(
                     mc.player.getYaw(), mc.player.getPitch(), mc.player.isOnGround(), mc.player.horizontalCollision);
         }

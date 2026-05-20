@@ -66,6 +66,12 @@ public abstract class ScreenMixin extends AbstractParentElement implements Scree
     }
 
     @Unique
+    public void openFrom(Screen parent){
+        this.parent = parent;
+        open();
+    }
+
+    @Unique
     public void switchToScreen(Screen anotherScreen) {
         Screen p = this.parent;
         this.parent = null;

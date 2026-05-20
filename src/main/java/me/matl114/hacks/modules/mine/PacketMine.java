@@ -42,7 +42,7 @@ public class PacketMine extends BaseModule {
     public final KeyBindRef hotkey = toggleHotkey(
                     Configs.MINE_CONFIG,
                     MINE_ONEBLOCK_HOTKEY,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_O),
+                    new MultiKeyBind(),
                     MINE_ONEBLOCK)
             .build();
 

@@ -42,6 +42,8 @@ public interface VItem {
 
     public boolean isAxe(ItemStack stack);
 
+    public boolean isEatable(ItemStack stack);
+
     public ItemStack fromNbt(NbtCompound tag);
     // now we save DataVersion field
     public NbtCompound toNbt(ItemStack tag);

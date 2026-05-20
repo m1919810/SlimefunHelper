@@ -69,7 +69,7 @@ public class BowEnhance extends BaseModule {
     public KeyBindRef hotkey = toggleHotkey(
                     Configs.COMBAT_CONFIG,
                     BOW_ENHANCE_HOTKEY,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_H),
+                    new MultiKeyBind(),
                     BOW_ENHANCE)
             .build();
 
@@ -553,6 +553,17 @@ public class BowEnhance extends BaseModule {
                 if (mode.get() == Configs.LegalInteractMode.LEGACY_SLIENT_ROT) {
                     mode.set(Configs.LegalInteractMode.DELAY_MOVEMENT);
                 }
+            }
+        }
+        switch (preset){
+            case HACKING, VANILLA -> {
+                mode.set(Configs.LegalInteractMode.NONE);
+            }
+            case AC_GRIM_LEGACY -> {
+                mode.set(Configs.LegalInteractMode.LEGACY_SLIENT_ROT);
+            }
+            default -> {
+                mode.set(Configs.LegalInteractMode.USEITEM_PACKET);
             }
         }
     }

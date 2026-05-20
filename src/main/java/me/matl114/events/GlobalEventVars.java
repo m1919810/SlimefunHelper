@@ -1,5 +1,6 @@
 package me.matl114.events;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.crash.CrashReport;
 
 public class GlobalEventVars {
@@ -13,4 +14,5 @@ public class GlobalEventVars {
         }
         return false;
     }
+    public static Event<MinecraftClient> crashReportEvent = null;
 }

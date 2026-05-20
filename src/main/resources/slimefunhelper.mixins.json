@@ -52,7 +52,9 @@
 		"events.WorldEvents",
 		"events.WorldRendererEvents",
 		"fix.AbstractElementButtonFixMixin",
+		"fix.ClientPlayerListLookupCMEFix",
 		"fix.EntityRenderStateFixMixin",
+		"fix.KeyboardDebugCrashFix",
 		"fix.LoginHelloPacketNameFixMixin",
 		"fix.PacketByteBufFixMixin",
 		"fix.ParentElementButtonFixMixin",
@@ -100,6 +102,7 @@
 		"defaultRequire": 1
 	},
 	"mixins": [
+		"fix.DecoderByteBufExceptionFixMixin",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
 		"fix.ScreenHandlerFixMixin",

@@ -1,6 +1,8 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -130,6 +132,9 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Shadow
     public abstract void swingHand(Hand hand);
 
+    @Shadow public abstract boolean isUsingItem();
+
+    @Shadow private boolean usingItem;
     @Getter
     @Unique
     public HandledScreen keepedInv = null;
@@ -229,6 +234,51 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
             return false;
         }
         return original;
+    }
+
+    @WrapOperation(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;canStartSprinting()Z"))
+    private boolean noSlowUsingItemDoNotBlockSprint1(ClientPlayerEntity instance, Operation<Boolean> original){
+        //fix viafabric
+        if(MovTasks.getNoSlowDown().shouldNoSlowUseItem()){
+            boolean v = usingItem;
+            usingItem = false;
+            try{
+                return original.call(instance);
+            }finally {
+                usingItem = v;
+            }
+        }
+        return original.call(instance);
+    }
+
+    @WrapOperation(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSprinting()Z"))
+    private boolean noSlowUsingItemDoNotBlockSprint2(ClientPlayerEntity instance, Operation<Boolean> original){
+        //fix viafabric
+        if(MovTasks.getNoSlowDown().shouldNoSlowUseItem()){
+            boolean v = usingItem;
+            usingItem = false;
+            try{
+                return original.call(instance);
+            }finally {
+                usingItem = v;
+            }
+        }
+        return original.call(instance);
+    }
+
+    @WrapOperation(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSwimSprinting()Z"))
+    private boolean nnoSlowUsingItemDoNotBlockSprint3(ClientPlayerEntity instance, Operation<Boolean> original){
+        //fix viafabric
+        if(MovTasks.getNoSlowDown().shouldNoSlowUseItem()){
+            boolean v = usingItem;
+            usingItem = false;
+            try{
+                return original.call(instance);
+            }finally {
+                usingItem = v;
+            }
+        }
+        return original.call(instance);
     }
 
     @ModifyExpressionValue(

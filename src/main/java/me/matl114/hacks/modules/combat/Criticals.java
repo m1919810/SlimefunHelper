@@ -124,6 +124,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         var x = mc.player.getX();
         var y = mc.player.getY();
         var z = mc.player.getZ();
+        // todo: handle sprint, handle inWater, handle condition
         switch (mode.get()) {
             case PACKET -> {
                 // do not influence tp
@@ -165,7 +166,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             }
             case GRIM_GROUND_SIMULATION -> {
                 if (mc.player.isOnGround()) {
-                    if (!autoFakeGround.get() && !nextAttackIsKillarua) {
+                    if (!shouldApplyGrimGroundSimulationAutoFakeGround()) {
                         mc.getNetworkHandler()
                                 .sendPacket(VPacket.newPositionAndOnGround(x, y + 5.0E-5, z, true, false));
                     }
@@ -257,12 +258,23 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     int fakeTicks = 0;
     // grim ground critical optimize
 
+    public boolean shouldApplyCriticalConditionCheck(){
+        return hasNoMovement()
+            && hasTargetNear();
+    }
+
+    public boolean shouldApplyGrimGroundSimulationAutoFakeGround(){
+        return (autoFakeGround.get() || nextAttackIsKillarua)
+            && mc.player.isOnGround()
+            && shouldApplyCriticalConditionCheck();
+    }
+
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
 
         boolean lastLastOnGround = lastOnGroundT;
         lastOnGroundT = mc.player.isOnGround() && !movementManagerEvent.context.playerStatus.onGround;
-        if (enable.get() && mode.get() == CriticalMode.FREEZE && hasNoMovement() && hasTargetNear()) {
+        if (enable.get() && mode.get() == CriticalMode.FREEZE && shouldApplyCriticalConditionCheck()) {
             boolean shouldApplyFreeze = false;
             if (groundOnly.get()) {
                 shouldApplyFreeze = lastLastOnGround || lastOnGroundT;
@@ -284,10 +296,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         }
         if (enable.get()
                 && mode.get() == CriticalMode.GRIM_GROUND_SIMULATION
-                && (autoFakeGround.get() || nextAttackIsKillarua)
-                && mc.player.isOnGround()
-                && hasNoMovement()
-                && hasTargetNear()) {
+                && shouldApplyGrimGroundSimulationAutoFakeGround()) {
             double yLevel = mc.player.getY();
 
             if (setbackFlag <= 0) {

@@ -206,7 +206,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             if (fakeGlideNoFall) {
                 realVector = MovTasks.getCreativeFlight().processAntiKickMotion(realVector, true);
             }
-            FlightVelocity velocity = new FlightVelocity(realVector, motionAmount);
+            FlightVelocity velocity = new FlightVelocity(realVector, motionAmount, FlightVelocity.Mode.ELYTRA_FLIGHT);
             Listener.getCustomListener().broadcast(new EventContainer<>(FlightVelocity.class, velocity));
             realVector = velocity.toVelocity();
 

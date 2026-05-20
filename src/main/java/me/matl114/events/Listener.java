@@ -23,6 +23,7 @@ import me.matl114.events.channels.EventChannel;
 import me.matl114.events.channels.EventChannelDispatcher;
 import me.matl114.events.channels.PacketEventChannel;
 import me.matl114.hacks.MovTasks;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.IInputManager;
 import me.matl114.utils.collections.FPoint;
@@ -52,6 +53,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.OffThreadException;
+import net.minecraft.network.listener.ClientCookieRequestPacketListener;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.message.MessageSignatureData;
@@ -213,10 +215,13 @@ public class Listener {
             Class<T> clazz, BiPredicate<ClientConnection, T> predicate) {
         getPacketListenerPoint(clazz).registerHandler(wrapListener(predicate));
     }
+    @Getter
+    public static ClientConnection clientConnection;
 
-    public static ClientConnectionAccess getConnection() {
+
+    public static ClientConnectionAccess getConnectionAccess() {
         return ClientConnectionAccess.of(
-                MinecraftClient.getInstance().getNetworkHandler().getConnection());
+                clientConnection);
     }
 
     public static Packet<?> acceptS2CPacket(ClientConnection connection, Packet<?> packet) {
@@ -686,6 +691,11 @@ public class Listener {
     @ExtraArgs({NetworkSide.class, Boolean.class})
     private static final EventChannel<ChannelPipeline> connectionChannelInitialize = new EventChannel<>();
 
+    @Getter
+    @Broadcast
+    @ExtraArgs({NetworkSide.class, PacketListener.class})
+    private static final EventChannel<ClientConnection> connectionEstablish = new EventChannel<>();
+
     private static final Set<Class<?>> asyncPackets = ImmutableSet.<Class<?>>builder()
             .add(CustomPayloadS2CPacket.class)
             .add(StartChunkSendS2CPacket.class)
@@ -714,7 +724,7 @@ public class Listener {
                         && crashException.getCause() instanceof OutOfMemoryError) {
                     throw e;
                 }
-                if (handleException(e, ExceptionType.NETWORK, instance, t)) {
+                if (handleException(e, ExceptionType.PACKET_HANDLE_EXCEPTION, instance, t)) {
                     throw e;
                 }
             } finally {
@@ -830,6 +840,22 @@ public class Listener {
         postPlayerUseItemAtBlock.handleValue(event);
     }
 
+    public static void onClientConnectionEstablish(Event<ClientConnection> event){
+        if(event.getArgs(0) == NetworkSide.CLIENTBOUND && event.getArgs(1) instanceof ClientCookieRequestPacketListener){
+            clientConnection = event.context;
+            Tasks.scheduleRepeated(()->{
+                // after the connection
+                if(clientConnection != null && clientConnection.isChannelAbsent() && !clientConnection.isOpen()){
+                    clientConnection = null;
+                    return true;
+                }
+                return false;
+            }, 20, 20);
+        }
+    }
+
+
+
     static {
         Listener.getPacketPreHandlePoint()
                 .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(preCatchers, ev));
@@ -840,6 +866,8 @@ public class Listener {
                 .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
         Listener.getPacketPostSendPoint()
                 .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
+        Listener.getConnectionEstablish().registerHandler((Consumer<Event<ClientConnection>>) Listener::onClientConnectionEstablish);
+
     }
 
     public static boolean handleException(Throwable e, ExceptionType type, Object... objects) {
@@ -855,7 +883,9 @@ public class Listener {
     public static record WrapperException(ExceptionType type, Throwable exception) {}
 
     public static enum ExceptionType {
-        NETWORK,
+        PACKET_HANDLE_EXCEPTION,
+        PACKET_DECODE_EXCEPTION,
+        UNKNOWN_CHANNEL_EXCEPTION,
         CLIENT_CRASH,
         ENTITY_TICK,
         BLOCK_ENTITY_TICK,

@@ -63,7 +63,7 @@ public class MineBot extends BaseModule {
     public final KeyBindRef keyBind = toggleHotkey(
                     Configs.MINE_CONFIG,
                     MINEBOT_HOTKEYS,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_B),
+                    new MultiKeyBind(),
                     MINEBOT)
             .build();
 

@@ -51,10 +51,11 @@ public class RecipeTasks {
     }
 
     private static void init() {
-
         if (CACHE == null || CACHE.isEmpty()) {
-            resetCache();
-            CACHE = new LinkedHashMap<>();
+            synchronized (RecipeTasks.class) {
+                resetCache();
+                CACHE = new LinkedHashMap<>();
+            }
             // init empty map and do not go in if you are not in a world
             if (mc.world == null) {
                 return;

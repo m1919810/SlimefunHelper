@@ -2175,7 +2175,7 @@ public class MovTasks {
     public static MovExtra movExtra;
 
     @Getter
-    public static FallDistanceManager fallDistanceManager;
+    public static PlayerStateManager playerStateManager;
 
     @Getter
     public static LegacySnapRotManager legacySnapRotManager;
@@ -2244,7 +2244,7 @@ public class MovTasks {
     private static void initModules(ModuleManager m) {
         // move
         movExtra = new MovExtra().register(m);
-        fallDistanceManager = new FallDistanceManager().register(m);
+        //fallDistanceManager = new FallDistanceManager().register(m);
         legacySnapRotManager = new LegacySnapRotManager().register(m);
         forwardTp = new ForwardTp().register(m);
         noSlowDown = new NoSlowDown().register(m);

@@ -1,13 +1,22 @@
 package me.matl114.versioned;
 
 import lombok.Getter;
-import net.minecraft.SharedConstants;
 
 @Getter
 public class SupportVersion {
     public static final SupportVersion CURRENT = create();
     int major;
     int minor;
+
+    public static SupportVersion parse(String version) {
+        String[] versions = version.split("\\.");
+        try {
+            return new SupportVersion(
+                Integer.parseInt(versions[versions.length - 2]), Integer.parseInt(versions[versions.length - 1]));
+        } catch (Throwable e) {
+            return new SupportVersion(21, 1);
+        }
+    }
 
     public SupportVersion(int major, int minor) {
         this.major = major;
@@ -43,13 +52,12 @@ public class SupportVersion {
     }
 
     public static SupportVersion create() {
-        String version = SharedConstants.VERSION_NAME;
-        String[] versions = version.split("\\.");
-        try {
-            return new SupportVersion(
-                    Integer.parseInt(versions[versions.length - 2]), Integer.parseInt(versions[versions.length - 1]));
-        } catch (Throwable e) {
-            return new SupportVersion(21, 1);
-        }
+        String version = "1.21.11";
+        return parse(version);
+    }
+
+    @Override
+    public String toString() {
+        return major > 25 ? major + "." + minor : "1." + major + "." + minor;
     }
 }

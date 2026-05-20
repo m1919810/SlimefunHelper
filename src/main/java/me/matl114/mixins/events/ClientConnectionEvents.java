@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.netty.channel.*;
+import io.netty.handler.codec.DecoderException;
 import me.matl114.accessors.events.ClientConnectionAccess;
 import me.matl114.events.Event;
 import io.netty.channel.ChannelHandlerContext;
@@ -18,8 +19,13 @@ import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.PacketCallbacks;
 import net.minecraft.network.handler.PacketSizeLogger;
+import net.minecraft.network.listener.ClientPacketListener;
 import net.minecraft.network.listener.PacketListener;
+import net.minecraft.network.listener.ServerPacketListener;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.handshake.ConnectionIntent;
+import net.minecraft.network.state.NetworkState;
+import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -40,6 +46,26 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
     @Shadow
     @Final
     private NetworkSide side;
+
+    @Shadow private volatile @Nullable PacketListener packetListener;
+
+    @Shadow private boolean errored;
+
+    @Inject(method = "exceptionCaught", at = @At(value = "FIELD", target = "Lnet/minecraft/network/ClientConnection;packetListener:Lnet/minecraft/network/listener/PacketListener;", shift = At.Shift.BEFORE), cancellable = true)
+    private void onChannelException(ChannelHandlerContext context, Throwable ex, CallbackInfo ci){
+        if(ex instanceof DecoderException decodeExp && decodeExp.getMessage().contains("Failed to decode packet")){
+            if(!Listener.handleException(ex, Listener.ExceptionType.PACKET_DECODE_EXCEPTION, this.packetListener, this)){
+                // cancel exception
+                errored = false;
+                ci.cancel();
+            }
+        }else{
+            if(!Listener.handleException(ex, Listener.ExceptionType.UNKNOWN_CHANNEL_EXCEPTION, this.packetListener, this)){
+                errored = false;
+                ci.cancel();
+            }
+        }
+    }
 
     @Inject(
             method = "channelRead0(Lio/netty/channel/ChannelHandlerContext;Lnet/minecraft/network/packet/Packet;)V",
@@ -70,6 +96,13 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
                 packetLocalRef.set(packetToRecv);
             }
         }
+    }
+
+    @Inject(method = "connect(Ljava/lang/String;ILnet/minecraft/network/state/NetworkState;Lnet/minecraft/network/state/NetworkState;Lnet/minecraft/network/listener/ClientPacketListener;Lnet/minecraft/network/packet/c2s/handshake/ConnectionIntent;)V", at = @At("RETURN"))
+    private <S extends ServerPacketListener, C extends ClientPacketListener> void onConnect(
+
+        String address, int port, NetworkState<S> outboundState, NetworkState<C> inboundState, C prePlayStateListener, ConnectionIntent intent, CallbackInfo ci){
+        Listener.getConnectionEstablish().handleValue(new Event<>((ClientConnection) (Object)this, false, false, inboundState.side(), prePlayStateListener));
     }
 
     @Inject(

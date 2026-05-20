@@ -42,7 +42,7 @@ public class EntityESP extends BaseModule {
     public final KeyBindRef hotkeyToggle = toggleHotkey(
                     Configs.RENDER_CONFIG,
                     DETECT_ENTITY_TOGGLE,
-                    new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_P),
+                    new MultiKeyBind(),
                     DETECT_ENTITY)
             .build();
 

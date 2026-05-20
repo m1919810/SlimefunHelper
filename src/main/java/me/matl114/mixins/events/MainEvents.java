@@ -18,26 +18,42 @@ public abstract class MainEvents {
     private static void onMain(String[] args, CallbackInfo ci) {
         // handled crash in the printCrashReportMixin\\
         // printCrashReport will call System.exit, if we see a crashReport here then it is cancelled in the event here
+        if(MinecraftClient.getInstance() == null){
+            return;
+        }
         if (GlobalEventVars.crashReport != null) {
             GlobalEventVars.crashReport = null;
+            GlobalEventVars.crashReportEvent = null;
             mainLoop(MinecraftClient.getInstance());
         } else {
             // not a crash
-            if (!Listener.getClientMainExit().isEmpty()) {
+            if(GlobalEventVars.crashReportEvent == null){
                 MinecraftClient mc = MinecraftClient.getInstance();
-                Event<MinecraftClient> event = new Event<>(mc, mc.isRunning(), false);
-                Listener.getClientMainExit().handleValue(event);
-                if (mc.isRunning()) {
-                    if (event.isCancelled()) {
-                        mainLoop(mc);
-                    }
+                GlobalEventVars.crashReportEvent = new Event<>(mc, mc.isRunning(), false);
+                if (!Listener.getClientMainExit().isEmpty()) {
+                    Listener.getClientMainExit().handleValue(GlobalEventVars.crashReportEvent);
                 }
+            }
+            if(MinecraftClient.getInstance().isRunning()){
+                if(GlobalEventVars.crashReportEvent.isCancelled()){
+                    GlobalEventVars.crashReportEvent = null;
+                    GlobalEventVars.crashReport = null;
+                    mainLoop(MinecraftClient.getInstance());
+                }else {
+                    GlobalEventVars.crashReportEvent = null;
+                    GlobalEventVars.crashReport = null;
+                    return;
+                }
+            }else {
+                GlobalEventVars.crashReportEvent = null;
             }
         }
     }
 
     private static void mainLoop(MinecraftClient mc) {
         while (true) {
+            GlobalEventVars.crashReportEvent = null;
+            GlobalEventVars.crashReport = null;
             mc.run();
             if (GlobalEventVars.crashReport != null) {
                 GlobalEventVars.crashReport = null;
