@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
@@ -14,20 +15,17 @@ import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.screen.slot.SlotActionType;
 
 public class InvExtra extends BaseModule {
-    public static final String[] INV_CLICK_LIMIT = {"inventory", "packet-limit"};
-
-    public static final String[] INV_GUI_CLICK_GRIM_FIX = {"inventory", "move-click-grim-fix"};
+    public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
     public InvExtra() {}
 
-    public final IntRef inventoryClickLimit = builder(Configs.INV_CONFIG, IntRef.TYPE)
-            .path(INV_CLICK_LIMIT)
+    public final IntRef inventoryClickLimit = intBuilder(inventory.add("packet-limit"))
             .defaultValue(40)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final FlagRef invGrimFix =
-            flagBuilder(Configs.INV_CONFIG, INV_GUI_CLICK_GRIM_FIX).build();
+            flagBuilder(inventory.add("move-click-grim-fix")).build();
 
     @Override
     public void registerAll() {

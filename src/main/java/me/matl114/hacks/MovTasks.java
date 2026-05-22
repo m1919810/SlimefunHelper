@@ -643,6 +643,23 @@ public class MovTasks {
     }
 
     @ApiMethod
+    public static boolean isCollidingWithEnvironment(Entity entity){
+        final List<Box> collisionsBB = new java.util.ArrayList<>();
+        final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
+        CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+            entity.getEntityWorld(),
+            entity,
+            entity.getBoundingBox(),
+            collisionsVoxel,
+            collisionsBB,
+            CollisionUtil.COLLISION_FLAG_CHECK_BORDER,
+            null,
+            null
+        );
+        return !collisionsVoxel.isEmpty() || !collisionsBB.isEmpty();
+    }
+
+    @ApiMethod
     private static boolean checkEnvironmentCollision(
             Entity entity, Vec3d pos, boolean checkLiquid, boolean ignoreChunkBorder) {
         // should also consider entity collision, shit shulker
@@ -2244,6 +2261,7 @@ public class MovTasks {
     private static void initModules(ModuleManager m) {
         // move
         movExtra = new MovExtra().register(m);
+        playerStateManager = new PlayerStateManager().register(m);
         //fallDistanceManager = new FallDistanceManager().register(m);
         legacySnapRotManager = new LegacySnapRotManager().register(m);
         forwardTp = new ForwardTp().register(m);

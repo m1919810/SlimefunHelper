@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigLoader;
 import me.matl114.managers.config.KeyBindRef;
@@ -28,11 +29,11 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class SaveItem extends BaseModule {
-    private static final String[] SAVE_ITEM_KEY = {"inventory", "save-slot-item"};
+    public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
     public SaveItem() {}
 
-    public KeyBindRef keyBind = hotkey(Configs.INV_CONFIG, SAVE_ITEM_KEY)
+    public KeyBindRef keyBind = hotkey(inventory.add("save-slot-item"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::saveItem))
             .build();

@@ -17,6 +17,7 @@ import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
@@ -58,54 +59,12 @@ import net.minecraft.world.World;
 
 public class ElytraExtra extends BaseModule implements LegalMovementManager.MovementModifier {
     private static LegalMovementManager.DelegateMovementModifier instance;
-    public static final String[] ELYTRA_NO_KINETIC = {"elytra", "elytra-tweaks", "no-kinetic"};
 
-    public static final String[] ELYTRA_NO_KINETIC_MODE = {"elytra", "elytra-tweaks", "no-kinetic-mode"};
-
-    public static final String[] ELYTRA_MACE_FIX = {"elytra", "elytra-tweaks", "mace-hit-fix"};
-
-    public static final String[] ELYTRA_MACE_FIX_MODE = {"elytra", "elytra-tweaks", "mace-hit-fix-mode"};
-
-    public static final String[] ELYTRA_LOCK_ROTATION = {"elytra", "elytra-tweaks", "lock-rotation-hotkey"};
-
-    public static final String[] ELYTRA_AUTO_SWITCH = {"elytra", "elytra-tweaks", "auto-switch"};
-
-    public static final String[] ELYTRA_LIQUID_FLY_FIX = {"elytra", "elytra-tweaks", "liquid-fallflying-fix"};
-
-    public static final String[] ELYTRA_NO_FALL_WHEN_CONTROL = {"elytra", "elytra-tweaks", "no-fall-when-landing"};
-
-    // public static final String[] ELYTRA_ANTI_KB = {"elytra", "elytra-tweaks", "elytra-anti-kb"};
-
-    public static final String[] MOVE_UNBREAKABLE_ELYTRA = {"elytra", "unbreakable-elytra", "enable"};
-
-    public static final String[] MOVE_ELYTRA_CHECK_PREIOD = {"elytra", "unbreakable-elytra", "period"};
-
-    public static final String[] MOVE_ELYTRA_DELAY = {"elytra", "unbreakable-elytra", "delay"};
-
-    public static final String[] MOVE_ELYTRA_ARMOR_FLY = {"elytra", "armor-fly", "enable"};
-    public static final String[] MOVE_ELYTRA_ARMOR_FLY_HOTKEY = {"elytra", "armor-fly", "enable-hotkey"};
-    public static final String[] MOVE_ELYTRA_ARMOR_ARMOR_MODE = {"elytra", "armor-fly", "armor-mode"};
-
-    public static final String[] MOVE_ELYTRA_ARMOR_FLY_NO_KICK = {"elytra", "armor-fly", "antikick"};
-
-    public static final String[] MOVE_ELYTRA_ARMOR_FLY_POSE_FIX = {"elytra", "armor-fly", "pose-fix"};
-
-    public static final String[] ELYTRA_FIREWORKS_TICKS = {
-        "elytra", "custom-fireworks", "firework-delay-multiply-vanilla"
-    };
-
-    public static final String[] ELYTRA_FIREWORKS_TICKS_CUSTOM = {
-        "elytra", "custom-fireworks", "firework-delay-cooldown-custom"
-    };
-
-    public static final String[] ELYTRA_CUSTOM_FIREWORKS = {"elytra", "custom-fireworks", "firework-item-id"};
-
-    public static final String[] AUTO_USE_FIREWORKS = {"elytra", "custom-fireworks", "firework-auto-use-vanilla"};
-
-    public static final String[] FIREWORKS_BUFFER = {"elytra", "custom-fireworks", "firework-effect-remain-ticks"};
-
-    // public static final String[] ELYTRA_FLIGHT_CONTROL_FIREWORKS = {"elytra", "custom-fireworks",
-    // "enable-fireworks"};
+    public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
+    public final ModulePath elytraTweaks = elytra.add("elytra-tweaks");
+    public final ModulePath unbreakableElytra = elytra.add("unbreakable-elytra");
+    public final ModulePath armorFlyPath = elytra.add("armor-fly");
+    public final ModulePath customFireworksPath = elytra.add("custom-fireworks");
 
     public ElytraExtra() {
         if (instance == null) {
@@ -118,73 +77,76 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef fuckGrimAC = MovTasks.getMovExtra().fuckGrimAC;
 
     public final FlagRef noKinetic =
-            flagBuilder(Configs.MOV_CONFIG, ELYTRA_NO_KINETIC).build();
+            flagBuilder(elytraTweaks.add("no-kinetic")).build();
 
     public final EnumRef<Configs.BypassMode> noKineticMode = builder(
-                    Configs.MOV_CONFIG, ELYTRA_NO_KINETIC_MODE, Configs.BypassMode.class)
+                    elytraTweaks.add("no-kinetic-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
     public final FlagRef maceFix =
-            flagBuilder(Configs.MOV_CONFIG, ELYTRA_MACE_FIX).build();
+            flagBuilder(elytraTweaks.add("mace-hit-fix")).build();
     // todo: remove this shit,
     public final EnumRef<Configs.BypassMode> maceFixMode = builder(
-                    Configs.MOV_CONFIG, ELYTRA_MACE_FIX_MODE, Configs.BypassMode.class)
+                    elytraTweaks.add("mace-hit-fix-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
-    public final KeyBindRef lockRot = hotkey(Configs.MOV_CONFIG, ELYTRA_LOCK_ROTATION, new MultiKeyBind())
+    public final KeyBindRef lockRot = hotkey(elytraTweaks.add("lock-rotation-hotkey"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleLockRot))
             .build();
 
     public final FlagRef liquidFix =
-            flagBuilder(Configs.MOV_CONFIG, ELYTRA_LIQUID_FLY_FIX).build();
+            flagBuilder(elytraTweaks.add("liquid-fallflying-fix")).build();
 
     public final FlagRef noFallLanding =
-            flagBuilder(Configs.MOV_CONFIG, ELYTRA_NO_FALL_WHEN_CONTROL).build();
+            flagBuilder(elytraTweaks.add("no-fall-when-landing")).build();
 
     public final FlagRef autoSwitch =
-            flagBuilder(Configs.MOV_CONFIG, ELYTRA_AUTO_SWITCH).build();
+            flagBuilder(elytraTweaks.add("auto-switch")).build();
 
     // public final FlagRef elytraAntiKB = flagBuilder(Configs.MOV_CONFIG, ELYTRA_ANTI_KB).build();
 
     public final FlagRef enableUnbreakableElytra =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_UNBREAKABLE_ELYTRA).build();
+            flagBuilder(unbreakableElytra.add("enable")).build();
 
-    public final IntRef period = builder(Configs.MOV_CONFIG, MOVE_ELYTRA_CHECK_PREIOD, IntRef.TYPE)
+    public final IntRef period = intBuilder(unbreakableElytra.add("period"))
             .defaultValue(16)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final FlagRef armorFly =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY).updateListener(this::onToggleArmorFly).build();
+            flagBuilder(armorFlyPath.add("enable")).updateListener(this::onToggleArmorFly).build();
 
-    public final KeyBindRef keyBind = toggleHotkey(
-                    Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY_HOTKEY, new MultiKeyBind(), MOVE_ELYTRA_ARMOR_FLY)
+    public final KeyBindRef keyBind = moduleEntry(
+                    armorFlyPath.add("enable-hotkey"), new MultiKeyBind(), armorFlyPath.add("enable"))
             .build();
 
     public final EnumRef<ArmorFlyMode> armorMode = builder(
-                    Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_ARMOR_MODE, ArmorFlyMode.class)
+                    armorFlyPath.add("armor-mode"), ArmorFlyMode.class)
             .defaultValue(ArmorFlyMode.LAZY)
             .build();
 
-    public final FlagRef antiKick = builder(Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY_NO_KICK, Boolean.class)
+    public final FlagRef antiKick = builder(armorFlyPath.add("antikick"), Boolean.class)
             .defaultValue(true)
             .build();
 
     public final FlagRef poseFix =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_ARMOR_FLY_POSE_FIX).build();
+            flagBuilder(armorFlyPath.add("pose-fix")).build();
 
-    public final NBTRef<Regex> customFireworks = builder(Configs.MOV_CONFIG, ELYTRA_CUSTOM_FIREWORKS, Regex.class)
+    public final FlagRef renderFix = flagBuilder(armorFlyPath.add("render-fix"))
+        .build();
+
+    public final NBTRef<Regex> customFireworks = builder(customFireworksPath.add("firework-item-id"), Regex.class)
             .defaultValue(new Regex("^(.*?_MULTI_TOOL|STAFF_ELEMENTAL_WIND)$"))
             .build();
 
-    public final IntRef fireworkTicks = builder(Configs.MOV_CONFIG, ELYTRA_FIREWORKS_TICKS, IntRef.TYPE)
+    public final IntRef fireworkTicks = intBuilder(customFireworksPath.add("firework-delay-multiply-vanilla"))
             .defaultValue(10)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final IntRef customFireworkTicks = builder(Configs.MOV_CONFIG, ELYTRA_FIREWORKS_TICKS_CUSTOM, IntRef.TYPE)
+    public final IntRef customFireworkTicks = intBuilder(customFireworksPath.add("firework-delay-cooldown-custom"))
             .defaultValue(100)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
@@ -194,19 +156,19 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FireworkTimer timerCustom = new FireworkTimer(customFireworkTicks);
 
     public final FlagRef autoRocket =
-            flagBuilder(Configs.MOV_CONFIG, AUTO_USE_FIREWORKS).build();
+            flagBuilder(customFireworksPath.add("firework-auto-use-vanilla")).build();
 
-    public final IntRef rocketBuffer = builder(Configs.MOV_CONFIG, FIREWORKS_BUFFER, IntRef.TYPE)
+    public final IntRef rocketBuffer = intBuilder(customFireworksPath.add("firework-effect-remain-ticks"))
             .defaultValue(7)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     public final FlagRef rocketBoost = flagBuilder(
-                    Configs.MOV_CONFIG, makePath("elytra.custom-fireworks.firework-boost-enable"))
+                    customFireworksPath.add("firework-boost-enable"))
             .build();
 
-    public final DoubleRef rocketBoostSpeed = builder(
-                    Configs.MOV_CONFIG, makePath("elytra.custom-fireworks.firework-boost-speed"), DoubleRef.TYPE)
+    public final DoubleRef rocketBoostSpeed = doubleBuilder(
+                    customFireworksPath.add("firework-boost-speed"))
             .defaultValue(1.7D)
             .validator(Configs.doubleRange(0.0d, 10000.0D))
             .build();
@@ -303,8 +265,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     private boolean nextTimeLaunchElytraUnbreakable = false;
     public int elytraUnbreakableSwitchSlot = -1;
 
+    public boolean isCurrentArmorGliding(){
+        return armorFly.get() && thisFallFlyingIsArmorFly != -1;
+    }
+
     public boolean shouldElytraUnbreakable() {
-        return !(armorFly.get() && thisFallFlyingIsArmorFly != -1)
+        return !isCurrentArmorGliding()
                 && enableUnbreakableElytra.get()
                 && mc.player != null
                 && mc.player.getEquippedStack(EquipmentSlot.CHEST).get(DataComponentTypes.UNBREAKABLE) == null;
@@ -876,6 +842,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         int selected = mc.player.getInventory().getSelectedSlot();
         Runnable callback = null;
         try {
+            float lastYaw = PlayerStateManager.INSTANCE.lastYaw;
+            float lastPitch = PlayerStateManager.INSTANCE.lastPitch;
             while (!delayQueue.isEmpty()) {
                 var packetEntry = delayQueue.poll();
                 if (!packetEntry.isEmpty()) {
@@ -886,22 +854,22 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             Listener.sendPacketNoEvents(new PlayerInteractItemC2SPacket(
                                     Hand.MAIN_HAND,
                                     NetworkUtils.generateNextSequence(),
-                                    mc.player.getYaw(),
-                                    mc.player.getPitch()));
+                                    lastYaw ,
+                                    lastPitch));
                         } else {
                             callback = InvTasks.getInvExtra().swapInventoryIndexToOffhand(findResult.index());
                             if (callback != null) {
                                 Listener.sendPacketNoEvents(new PlayerInteractItemC2SPacket(
                                         Hand.OFF_HAND,
                                         NetworkUtils.generateNextSequence(),
-                                        mc.player.getYaw(),
-                                        mc.player.getPitch()));
+                                        lastYaw,
+                                        lastPitch));
                                 callback.run();
                             }
                         }
                     }
                 } else {
-                    sendUsePacket(mc.player.getPitch(), mc.player.getYaw());
+                    sendUsePacket(lastYaw, lastPitch);
                 }
             }
         } finally {

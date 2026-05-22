@@ -6,6 +6,8 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
@@ -42,57 +44,54 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         bindFlag(enable);
     }
 
+    public final ModulePath autoSurround = makePath(Configs.INTERACT_CONFIG, "place-utils.auto-surround");
+
+
     @Override
     public int priority() {
         return PRIORITY_MONITOR;
     }
 
-    public final FlagRef enable = flagBuilder(Configs.INTERACT_CONFIG, makePath("place-utils.auto-surround.enable"))
+    public final FlagRef enable = flagBuilder(autoSurround.addEnable())
             .build();
 
-    public final KeyBindRef hotkey = toggleHotkey(
-                    Configs.INTERACT_CONFIG,
-                    makePath("place-utils.auto-surround.hotkey"),
+    public final KeyBindRef hotkey = moduleEntry(
+                    autoSurround.addHotkey(),
                     new MultiKeyBind(),
-                    makePath("place-utils.auto-surround.enable"))
+                    autoSurround.addEnable())
             .build();
 
     public final IntRef delay = builder(
-                    Configs.INTERACT_CONFIG, makePath("place-utils.auto-surround.delay"), IntRef.TYPE)
+                    autoSurround.add("delay"), IntRef.TYPE)
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final IntRef multiply = builder(
-                    Configs.INTERACT_CONFIG, makePath("place-utils.auto-surround.multiply"), IntRef.TYPE)
+                    autoSurround.add("multiply"), IntRef.TYPE)
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final EnumRef<Configs.LegalInteractMode> mode = builder(
-                    Configs.INTERACT_CONFIG,
-                    makePath("place-utils.auto-surround.mode"),
+                    autoSurround.add("mode"),
                     Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.DELAY_MOVEMENT)
             .build();
 
-    public final FlagRef placeUpper = flagBuilder(Configs.INTERACT_CONFIG, makePath("place-utils.auto-surround.upper"))
+    public final FlagRef placeUpper = flagBuilder(autoSurround.add("upper"))
             .build();
 
-    //    public final FlagRef antiKnockBack = flagBuilder(Configs.INTERACT_CONFIG,
-    // makePath("place-utils.auto-surround.no-knockback-when-surround"))
-    //        .build();
-
     public final FlagRef autoAttackCrystals = flagBuilder(
-                    Configs.INTERACT_CONFIG, makePath("place-utils.auto-surround.auto-attack-crystal"))
+                    autoSurround.add("auto-attack-crystal"))
             .build();
 
     public final FlagRef onlyGround = flagBuilder(
-                    Configs.INTERACT_CONFIG, makePath("place-utils.auto-surround.only-ground"))
+                    autoSurround.add("only-ground"))
             .build();
 
     public final FlagRef autoCenter = flagBuilder(
-                    Configs.INTERACT_CONFIG, makePath("place-utils.auto-surround.auto-center"))
+                    autoSurround.add("auto-center"))
             .build();
 
     @Override
@@ -141,7 +140,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         boolean legal = mode.get().isLegal();
         Box playerBox = mc.player.getBoundingBox();
         int mul =
-                (mode.get().canMultiRotPlace() || (ACTasks.getDisablerManager().isMultiRotPlaceCheckDisabled()))
+                (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
                         ? multiply.get()
                         : 1;
         int minY = ((int) playerBox.getMin(Direction.Axis.Y)) - 1;

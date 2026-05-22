@@ -2,8 +2,12 @@ package me.matl114.utils;
 
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class CodecUtils {
@@ -26,5 +30,22 @@ public class CodecUtils {
                         mp -> mp.entrySet().stream()
                                 .map(v -> Pair.of(v.getKey(), v.getValue()))
                                 .toList());
+    }
+
+    public static <T extends Enum<T>> Codec<T> enumCodec(Class<T> clazz) {
+        Map<String, T> map = new HashMap<>();
+        for (var re : clazz.getEnumConstants()) {
+            map.put(re.name().toLowerCase(Locale.ROOT), re);
+        }
+        return Codec.STRING.comapFlatMap(
+            str -> {
+                String s = str.toLowerCase(Locale.ROOT);
+                if(map.containsKey(s)){
+                    return DataResult.success(map.get(s));
+                }else {
+                    return DataResult.error(()->"Not in enum directory");
+                }
+            }, Enum::name
+        );
     }
 }

@@ -14,6 +14,7 @@ import me.matl114.events.catchers.TimedPacketCatcherImpl;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -42,59 +43,50 @@ import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
 
 public class TravellingControl extends BaseModule {
-    public static final String[] ENABLE = makePath("travelling-control.enable");
-    public static final String[] CONTROL_TYPE = makePath("travelling-control.control-type");
-    public static final String[] SPEED = makePath("travelling-control.speed");
-    public static final String[] ELYTRA_SPEED = makePath("travelling-control.elytra-speed");
-    public static final String[] MIN_HEIGHT = makePath("travelling-control.min-height");
-    public static final String[] MAX_HEIGHT = makePath("travelling-control.max-height");
+    public final ModulePath travellingControl = makePath(Configs.MOV_CONFIG, "travelling-control");
 
     public TravellingControl() {}
 
-    //    public FlagRef enable = flagBuilder(Configs.MOV_CONFIG, ENABLE).build();
+    //    public FlagRef enable = flagBuilder(travellingControl.add("enable")).build();
 
-    public EnumRef<TravelControlType> controlType = builder(Configs.MOV_CONFIG, CONTROL_TYPE, TravelControlType.class)
+    public EnumRef<TravelControlType> controlType = builder(travellingControl.add("control-type"), TravelControlType.class)
             .defaultValue(TravelControlType.MOV_VOID)
             .build();
 
-    public DoubleRef speed = builder(Configs.MOV_CONFIG, SPEED, DoubleRef.TYPE)
+    public DoubleRef speed = builder(travellingControl.add("speed"), DoubleRef.TYPE)
             .defaultValue(9.9D)
             .build();
 
-    public DoubleRef elytraSpeed = builder(Configs.MOV_CONFIG, ELYTRA_SPEED, DoubleRef.TYPE)
+    public DoubleRef elytraSpeed = builder(travellingControl.add("elytra-speed"), DoubleRef.TYPE)
             .defaultValue(1.7D)
             .build();
 
-    public IntRef minHeight = builder(Configs.MOV_CONFIG, MIN_HEIGHT, IntRef.TYPE)
+    public IntRef minHeight = builder(travellingControl.add("min-height"), IntRef.TYPE)
             .defaultValue(256)
             .build();
 
-    public IntRef maxHeight = builder(Configs.MOV_CONFIG, MAX_HEIGHT, IntRef.TYPE)
+    public IntRef maxHeight = builder(travellingControl.add("max-height"), IntRef.TYPE)
             .defaultValue(400)
             .build();
 
-    public IntRef void2Arg = builder(Configs.MOV_CONFIG, makePath("travelling-control.void-2-dup-packet"), IntRef.TYPE)
+    public IntRef void2Arg = builder(travellingControl.add("void-2-dup-packet"), IntRef.TYPE)
             .defaultValue(4)
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public FlagRef pitch40SafeHeight = flagBuilder(
-                    Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-end-safety"))
+    public FlagRef pitch40SafeHeight = flagBuilder(travellingControl.add("pitch-40-end-safety"))
             .build();
 
-    public IntRef pitch40Pitch = builder(
-                    Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-pitch-positive"), IntRef.TYPE)
+    public IntRef pitch40Pitch = builder(travellingControl.add("pitch-40-pitch-positive"), IntRef.TYPE)
             .defaultValue(15)
             .validator(Configs.INT_POSITIVE)
             .build();
-    public IntRef pitch40Negative = builder(
-                    Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-pitch-negative"), IntRef.TYPE)
+    public IntRef pitch40Negative = builder(travellingControl.add("pitch-40-pitch-negative"), IntRef.TYPE)
             .defaultValue(60)
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public DoubleRef negativeArgument = builder(
-                    Configs.MOV_CONFIG, makePath("travelling-control.pitch-40-negative-delta"), DoubleRef.TYPE)
+    public DoubleRef negativeArgument = builder(travellingControl.add("pitch-40-negative-delta"), DoubleRef.TYPE)
             .defaultValue(0.0)
             .validator(Configs.doubleRange(0, 90))
             .build();

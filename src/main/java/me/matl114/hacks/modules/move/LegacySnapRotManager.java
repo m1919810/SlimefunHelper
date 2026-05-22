@@ -15,7 +15,10 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class LegacySnapRotManager extends BaseModule {
-    public LegacySnapRotManager() {}
+    public static LegacySnapRotManager INSTANCE;
+    public LegacySnapRotManager() {
+        INSTANCE = this;
+    }
 
     @Override
     public void registerAll() {
@@ -37,14 +40,14 @@ public class LegacySnapRotManager extends BaseModule {
             float pitch = eventInteract.context.getPitch();
             float yaw = eventInteract.context.getYaw();
             if (EntityUtils.isRotationDifferent(lastSnapPitchYaw.x, pitch, lastSnapPitchYaw.y, yaw)
-                    && ExtraTasks.getBadPacketsFix().isRotationDifferent(pitch, yaw)) {
+                    && PlayerStateManager.INSTANCE.isRotationDifferent(pitch, yaw)) {
                 snapAt(pitch, yaw, false);
             }
         }
     }
 
     public void resyncSnap() {
-        if (lastSnapPitchYaw != null && ExtraTasks.getBadPacketsFix().isRotationDifferent()) {
+        if (lastSnapPitchYaw != null && PlayerStateManager.INSTANCE.isRotationDifferent()) {
             mc.getNetworkHandler()
                     .sendPacket(PlayerMoveC2SPacketAccess.setCause(
                             VPacket.newFull(
@@ -66,15 +69,15 @@ public class LegacySnapRotManager extends BaseModule {
     }
 
     public void snapAt(float pitch, float yaw, boolean force) {
-        if (force || ExtraTasks.getBadPacketsFix().isRotationDifferent(pitch, yaw)) {
-            Vec2f serverPitchYaw = ExtraTasks.getBadPacketsFix().getServerPitchYaw();
+        if (force || PlayerStateManager.INSTANCE.isRotationDifferent(pitch, yaw)) {
+            float lastYaw = PlayerStateManager.INSTANCE.lastYaw;
             mc.getNetworkHandler()
                     .sendPacket(PlayerMoveC2SPacketAccess.setCause(
                             VPacket.newFull(
                                     mc.player.getX(),
                                     mc.player.getY(),
                                     mc.player.getZ(),
-                                    EntityUtils.getSafeYaw(serverPitchYaw.y, yaw),
+                                    EntityUtils.getSafeYaw(lastYaw, yaw),
                                     EntityUtils.getSafePitch(pitch),
                                     mc.player.isOnGround(),
                                     mc.player.horizontalCollision),
@@ -84,13 +87,12 @@ public class LegacySnapRotManager extends BaseModule {
     }
 
     public void sendAsSnap(PlayerMoveC2SPacket full) {
-        Vec2f py = ExtraTasks.getBadPacketsFix().getServerPitchYaw();
         PlayerMoveC2SPacket recreateFull = VPacket.newFull(
                 full.getX(mc.player.getX()),
                 full.getY(mc.player.getY()),
                 full.getZ(mc.player.getZ()),
-                py.y,
-                py.x,
+                PlayerStateManager.INSTANCE.lastYaw,
+                PlayerStateManager.INSTANCE.lastPitch,
                 full.isOnGround(),
                 VPacket.getCollisionFlag(full));
         PlayerMoveC2SPacketAccess.of(recreateFull).setCause(PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);

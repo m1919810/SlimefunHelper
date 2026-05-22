@@ -12,13 +12,14 @@ import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.Debug;
@@ -44,54 +45,35 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class BowEnhance extends BaseModule {
-    public static final String[] BOW_ENHANCE = {"bow-att", "bow-enhance"};
-    public static final String[] BOW_ENHANCE_HOTKEY = {"bow-att", "bow-enhance-hotkey"};
-    public static final String[] BOW_AIM = {"bow-att", "aim-enable"};
-
-    public static final String[] BOW_TP = {"bow-att", "tp-enable"};
-
-    public static final String[] TARGETING = {"bow-att", "targeting-mode"};
-
-    public static final String[] TP_ACCELERATE = {"bow-att", "tp-accelerate"};
-
-    public static final String[] TP_EXACT = {"bow-att", "tp-accelerate-exact-tp"};
-
-    public static final String[] LOW_VERSION = {"bow-att", "version-lower-than-121"};
-
-    public static final String[] RENDER_TARGET = {"bow-att", "render-target"};
+    public final ModulePath bowAtt = makePath(Configs.COMBAT_CONFIG, "bow-att");
 
     public BowEnhance() {
         bindFlag(enable);
     }
 
-    public FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, BOW_ENHANCE).build();
+    public FlagRef enable = flagBuilder(bowAtt.add("bow-enhance")).build();
 
-    public KeyBindRef hotkey = toggleHotkey(
-                    Configs.COMBAT_CONFIG,
-                    BOW_ENHANCE_HOTKEY,
-                    new MultiKeyBind(),
-                    BOW_ENHANCE)
-            .build();
+    public KeyBindRef hotkey =
+            moduleEntry(bowAtt.add("bow-enhance-hotkey"), new MultiKeyBind(), bowAtt.add("bow-enhance"))
+                    .build();
 
-    public FlagRef enableAim = flagBuilder(Configs.COMBAT_CONFIG, BOW_AIM).build();
+    public FlagRef enableAim = flagBuilder(bowAtt.add("aim-enable")).build();
 
-    public FlagRef enableTp = flagBuilder(Configs.COMBAT_CONFIG, BOW_TP).build();
+    public FlagRef enableTp = flagBuilder(bowAtt.add("tp-enable")).build();
 
-    public EnumRef<Configs.LegalInteractMode> mode = builder(
-                    Configs.COMBAT_CONFIG, TARGETING, Configs.LegalInteractMode.class)
+    public EnumRef<Configs.LegalInteractMode> mode = builder(bowAtt.add("targeting-mode"), Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
-    public DoubleRef tpDistance = builder(Configs.COMBAT_CONFIG, TP_ACCELERATE, DoubleRef.TYPE)
+    public DoubleRef tpDistance = builder(bowAtt.add("tp-accelerate"), DoubleRef.TYPE)
             .defaultValue(150.0D)
             .build();
 
-    public FlagRef enhanceTp = flagBuilder(Configs.COMBAT_CONFIG, TP_EXACT).build();
+    public FlagRef enhanceTp = flagBuilder(bowAtt.add("tp-accelerate-exact-tp")).build();
     // todo: use onGround Packets to reduce low version problems
-    public FlagRef lowVersion = flagBuilder(Configs.COMBAT_CONFIG, LOW_VERSION).build();
+    public FlagRef lowVersion = flagBuilder(bowAtt.add("version-lower-than-121")).build();
 
-    public FlagRef renderTarget =
-            flagBuilder(Configs.COMBAT_CONFIG, RENDER_TARGET).build();
+    public FlagRef renderTarget = flagBuilder(bowAtt.add("render-target")).build();
 
     public boolean canTp() {
         return enableTp.get() && tpDistance.get() > 1E-7;
@@ -334,7 +316,8 @@ public class BowEnhance extends BaseModule {
             if (Float.isNaN(red.x) || Float.isInfinite(red.x) || Float.isNaN(red.y) || Float.isInfinite(red.y)) {
                 Debug.chat("[Bow Aim] Arrow failed to reach the target");
             } else {
-                MovTasks.getLegacySnapRotManager().snapAt(red.x, red.y, false);
+                //todo: may reset speed
+                LegacySnapRotManager.INSTANCE.snapAt(red.x, red.y, false);
             }
         }
 

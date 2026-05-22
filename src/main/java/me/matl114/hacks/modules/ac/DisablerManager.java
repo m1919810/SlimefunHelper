@@ -24,6 +24,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class DisablerManager extends BaseModule {
+    public static DisablerManager INSTANCE;
     public final EnumRef<SupportAC> currentAC = builder(
                     Configs.TEST_CONFIG, makePath("disablers.current-ac"), SupportAC.class)
             .defaultValue(SupportAC.NONE)
@@ -49,7 +50,9 @@ public class DisablerManager extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public DisablerManager() {}
+    public DisablerManager() {
+        INSTANCE = this;
+    }
 
     boolean grimSelfCheckDisabler;
 

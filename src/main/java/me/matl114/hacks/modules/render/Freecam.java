@@ -5,6 +5,7 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.entity.CameraEntity;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
@@ -28,9 +29,7 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 public class Freecam extends BaseModule implements LegalMovementManager.MovementModifier {
-    public static final String[] FREECAM = {"freecam", "enable"};
-    public static final String[] FREECAM_HOTKEY = {"freecam", "enable-hotkey"};
-    public static final String[] CAMERA_SPEED = {"freecam", "speed"};
+    public final ModulePath freecam = makePath(Configs.RENDER_CONFIG, "freecam");
     private static LegalMovementManager.DelegateMovementModifier instance;
 
     public Freecam() {
@@ -42,13 +41,13 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         instance.setDelegate(this::cast);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.RENDER_CONFIG, FREECAM).build();
+    public final FlagRef enable = flagBuilder(freecam.add("enable")).build();
 
-    public final KeyBindRef keyBind = toggleHotkey(
-                    Configs.RENDER_CONFIG, FREECAM_HOTKEY, new MultiKeyBind(KeyCode.KEY_U), FREECAM)
+    public final KeyBindRef keyBind = moduleEntry(
+                    Configs.RENDER_CONFIG, freecam.add("enable-hotkey").toPath(), new MultiKeyBind(KeyCode.KEY_U), freecam.add("enable").toPath())
             .build();
 
-    public final DoubleRef speed = builder(Configs.RENDER_CONFIG, CAMERA_SPEED, DoubleRef.TYPE)
+    public final DoubleRef speed = builder(freecam.add("speed"), DoubleRef.TYPE)
             .defaultValue(1.0D)
             .validator(Configs.doubleRange(0.0, 100000))
             .build();

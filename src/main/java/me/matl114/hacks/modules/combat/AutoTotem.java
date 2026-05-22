@@ -11,6 +11,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
@@ -31,27 +32,22 @@ import net.minecraft.screen.slot.SlotActionType;
 
 public class AutoTotem extends BaseModule {
     private final Random inventorRandom = new Random();
-    public static final String[] AUTO_TOTEM = {"totem", "auto-totem"};
-    public static final String[] TOTEM_MODE = {"totem", "auto-totem-mode"};
+    public final ModulePath totem = makePath(Configs.COMBAT_CONFIG, "totem");
 
     public AutoTotem() {}
 
-    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, AUTO_TOTEM).build();
+    public final FlagRef enable = flagBuilder(totem.add("auto-totem")).build();
 
-    public final EnumRef<Configs.AutoInvMode> mode = builder(Configs.COMBAT_CONFIG, Configs.AutoInvMode.class)
-            .path(TOTEM_MODE)
+    public final EnumRef<Configs.AutoInvMode> mode = builder(totem.add("auto-totem-mode"), Configs.AutoInvMode.class)
             .defaultValue(Configs.AutoInvMode.LAZY)
             .build();
 
-    public final FlagRef smartTotem = flagBuilder(Configs.COMBAT_CONFIG, makePath("totem.smart-auto-totem"))
-            .build();
+    public final FlagRef smartTotem = flagBuilder(totem.add("smart-auto-totem")).build();
 
-    public final NBTRef<RegistryRegex<Item>> enableHandItems = builder(
-                    Configs.COMBAT_CONFIG,
-                    makePath("totem.enable-hand-items"),
-                    NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
-            .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.ITEM))
-            .build();
+    public final NBTRef<RegistryRegex<Item>> enableHandItems =
+            builder(totem.add("enable-hand-items"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
+                    .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.ITEM))
+                    .build();
 
     @Override
     public void registerAll() {

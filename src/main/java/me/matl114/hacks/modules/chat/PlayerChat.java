@@ -35,6 +35,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
@@ -60,74 +61,58 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class PlayerChat extends BaseModule {
-    public static final String[] GAME_MESSAGE_PATTERN_AS_PLAYER_MESSAGE = new String[] {
-        "player-chat", "game-message-as-player-message",
-    };
-    public static final String[] DETECT_PLAYER_NAMES_IN_MESSAGE =
-            new String[] {"player-chat", "detect-all-message-with-player-names"};
-    public static final String[] APPEND_CHAT_HEAD = new String[] {"player-chat", "append-chat-head"};
-    public static final String[] APPEND_TIME_STAMP = new String[] {"player-chat", "append-time-stamp"};
-
-    public static final String[] ENCRYPT_MESSAGE_OUT = new String[] {"player-chat", "encrypt-message-out"};
-    public static final String[] DECRYPT_MESSAGE_IN = new String[] {"player-chat", "decrypt-message-in"};
-    public static final String[] ENCRYPT_ALGORITHM = new String[] {"player-chat", "encrypt-algorithm"};
-    public static final String[] ENCRYPT_PASS_PHRASE = new String[] {"player-chat", "encrypt-key-pass-phrase"};
-    public static final String[] ENCRYPT_KEY = new String[] {"player-chat", "encrypt-key"};
-    public static final String[] ENCRYPT_COMMAND_MESSAGE =
-            new String[] {"player-chat", "encrypt-command-message-pattern"};
-    public final String[] ENCRYPT_PREFIX = new String[] {"player-chat", "encrypt-prefix"};
-    public final String[] DECRYPT_SUFFIX = new String[] {"player-chat", "decrypt-ignore-suffix"};
+    public final ModulePath playerChat = makePath(Configs.CHAT_CONFIG, "player-chat");
 
     public PlayerChat() {}
 
     public List<Pattern> compile;
 
-    public final ListRef chatMessageFormat = builder(
-                    Configs.CHAT_CONFIG, GAME_MESSAGE_PATTERN_AS_PLAYER_MESSAGE, ListRef.TYPE)
-            .defaultValue(List.of(
-                    "^.*\\[([^\\]\\[\\s]+)\\]\\s*[:➟→»》]\\s*(.*)$",
-                    "^.*\\[[^\\]\\[]+\\].* ([^\\]\\[\\s]+)\\s*[:➟→»》]\\s*(.*)$",
-                    "^.*<([^><\\s]+)>\\s*[:➟→»》]\\s*(.*)$",
-                    "^.*《([^》《\\s]+)》\\s*[:➟→»》]\\s*(.*)$",
-                    "^.*«([^»«\\s]+)»\\s+(.*)$"))
-            .listValidator(Configs.REGEX_VALIDATOR)
-            .updateListener(s -> compile = s.stream().map(Pattern::compile).toList())
-            .build();
+    public final ListRef chatMessageFormat =
+            builder(playerChat.add("game-message-as-player-message"), ListRef.TYPE)
+                    .defaultValue(List.of(
+                            "^.*\\[([^\\]\\[\\s]+)\\]\\s*[:➟→»》]\\s*(.*)$",
+                            "^.*\\[[^\\]\\[]+\\].* ([^\\]\\[\\s]+)\\s*[:➟→»》]\\s*(.*)$",
+                            "^.*<([^><\\s]+)>\\s*[:➟→»》]\\s*(.*)$",
+                            "^.*《([^》《\\s]+)》\\s*[:➟→»》]\\s*(.*)$",
+                            "^.*«([^»«\\s]+)»\\s+(.*)$"))
+                    .listValidator(Configs.REGEX_VALIDATOR)
+                    .updateListener(s -> compile = s.stream().map(Pattern::compile).toList())
+                    .build();
 
     public final FlagRef detectPlayerName =
-            flagBuilder(Configs.CHAT_CONFIG, DETECT_PLAYER_NAMES_IN_MESSAGE).build();
+            flagBuilder(playerChat.add("detect-all-message-with-player-names")).build();
 
     public final FlagRef timeStamp =
-            flagBuilder(Configs.CHAT_CONFIG, APPEND_TIME_STAMP).build();
+            flagBuilder(playerChat.add("append-time-stamp")).build();
 
     public final FlagRef playerHead =
-            flagBuilder(Configs.CHAT_CONFIG, APPEND_CHAT_HEAD).build();
+            flagBuilder(playerChat.add("append-chat-head")).build();
 
     public final FlagRef encrypt =
-            flagBuilder(Configs.CHAT_CONFIG, ENCRYPT_MESSAGE_OUT).build();
+            flagBuilder(playerChat.add("encrypt-message-out")).build();
 
     public final FlagRef decrypt =
-            flagBuilder(Configs.CHAT_CONFIG, DECRYPT_MESSAGE_IN).build();
+            flagBuilder(playerChat.add("decrypt-message-in")).build();
     boolean dirty = true;
 
-    public final EnumRef<EncryptAlgorithm> algorithm = builder(
-                    Configs.CHAT_CONFIG, ENCRYPT_ALGORITHM, EncryptAlgorithm.class)
-            .defaultValue(EncryptAlgorithm.NONE)
-            .updateListener(s -> dirty = true)
-            .build();
+    public final EnumRef<EncryptAlgorithm> algorithm =
+            builder(playerChat.add("encrypt-algorithm"), EncryptAlgorithm.class)
+                    .defaultValue(EncryptAlgorithm.NONE)
+                    .updateListener(s -> dirty = true)
+                    .build();
 
-    public final NBTRef<EncryptionKey> key = builder(Configs.CHAT_CONFIG, ENCRYPT_KEY, EncryptionKey.class)
+    public final NBTRef<EncryptionKey> key = builder(playerChat.add("encrypt-key"), EncryptionKey.class)
             .defaultValue(EncryptionKey.EMPTY)
             .updateListener(s -> dirty = true)
             .build();
 
-    public final StringRef prefixEncrypt = builder(Configs.CHAT_CONFIG, ENCRYPT_PREFIX, StringRef.TYPE)
+    public final StringRef prefixEncrypt = builder(playerChat.add("encrypt-prefix"), StringRef.TYPE)
             .defaultValue("")
             .validator(s -> s.isEmpty() || s.endsWith(" "))
             .build();
     CharSet charSet = new CharArraySet();
 
-    public final StringRef suffixDecrypt = builder(Configs.CHAT_CONFIG, DECRYPT_SUFFIX, StringRef.TYPE)
+    public final StringRef suffixDecrypt = builder(playerChat.add("decrypt-ignore-suffix"), StringRef.TYPE)
             .defaultValue("喵")
             .updateListener(s -> {
                 CharSet cs = new CharArraySet();
@@ -138,7 +123,7 @@ public class PlayerChat extends BaseModule {
             })
             .build();
 
-    public final NBTRef<Regex> commandPattern = builder(Configs.CHAT_CONFIG, ENCRYPT_COMMAND_MESSAGE, Regex.class)
+    public final NBTRef<Regex> commandPattern = builder(playerChat.add("encrypt-command-message-pattern"), Regex.class)
             .defaultValue(new Regex("^/(minecraft:)?(msg|say|me) ([^\\s]+) (.*)$"))
             .build();
 

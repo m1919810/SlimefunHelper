@@ -6,6 +6,7 @@ import java.util.List;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.ItemStackUtils;
@@ -18,13 +19,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class ShowIdTooltips extends BaseModule {
-    public static final String[] ENABLE_SF_TOOLTIPS = {"slimefun-settings", "enable-tooltips-display"};
+    public final ModulePath slimefunSettings = makePath(Configs.SLIMEFUN_CONFIG, "slimefun-settings");
 
     public ShowIdTooltips() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = builder(Configs.SLIMEFUN_CONFIG, ENABLE_SF_TOOLTIPS, Boolean.class)
+    public final FlagRef enable = builder(slimefunSettings.add("enable-tooltips-display"), Boolean.class)
             .defaultValue(true)
             .build();
 

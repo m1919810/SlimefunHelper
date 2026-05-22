@@ -4,6 +4,7 @@ import java.util.List;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
@@ -21,26 +22,23 @@ import net.minecraft.text.Text;
 
 public class NbtTooltips extends BaseModule {
     // todo: nbt tooltips
-    public static final String[] NBT_TOOLTIPS_ENABLE = new String[] {"item-editor", "nbt-tooltips", "enable"};
-    public static final String[] NBT_TOOLTIPS_WIDTH = new String[] {"item-editor", "nbt-tooltips", "width"};
-    public static final String[] NBT_TOOLTIPS_FORMATTED = new String[] {"item-editor", "nbt-tooltips", "format-indent"};
-    public static final String[] NBT_TOOLTIPS_SHOW_HOTKEY = new String[] {"item-editor", "nbt-tooltips", "show-hotkey"};
+    public final ModulePath itemEditor = makePath(Configs.INV_CONFIG, "item-editor");
+    public final ModulePath nbtTooltips = itemEditor.add("nbt-tooltips");
 
     public NbtTooltips() {}
 
-    public final FlagRef enable =
-            flagBuilder(Configs.INV_CONFIG, NBT_TOOLTIPS_ENABLE).build();
+    public final FlagRef enable = flagBuilder(nbtTooltips.add("enable")).build();
 
-    public final KeyBindRef keyBind = hotkey(Configs.INV_CONFIG, NBT_TOOLTIPS_SHOW_HOTKEY)
+    public final KeyBindRef keyBind = hotkey(nbtTooltips.add("show-hotkey"))
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_ALT))
             .build();
 
-    public final IntRef width = builder(Configs.INV_CONFIG, NBT_TOOLTIPS_WIDTH, IntRef.TYPE)
+    public final IntRef width = intBuilder(nbtTooltips.add("width"))
             .defaultValue(360)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final IntRef formatedWidth = builder(Configs.INV_CONFIG, NBT_TOOLTIPS_FORMATTED, IntRef.TYPE)
+    public final IntRef formatedWidth = intBuilder(nbtTooltips.add("format-indent"))
             .defaultValue(0)
             .validator(Configs.INT_NONNEGATIVE)
             .build();

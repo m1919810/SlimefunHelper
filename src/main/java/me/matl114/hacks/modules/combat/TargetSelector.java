@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
@@ -32,15 +33,7 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 
 public class TargetSelector extends BaseModule {
-    public static final String[] ATTACK_WHITELISTED = {"attack", "whitelist"};
-    public static final String[] ATTACK_PLAYER_FRIENDLIST = {"attack", "friends"};
-    public static final String[] ATTACK_NAMED = {"attack", "att-named"};
-    public static final String[] ATTACK_TEAMMATE = {"attack", "att-teammate"};
-    public static final String[] ATTACK_HOSTILE = {"attack", "att-hostile"};
-    public static final String[] ATTACK_INVULNERABLE = {"attack", "att-invulnerable"};
-    public static final String[] COMBAT_OPPOSITE_ATTACK_MULTIPLY = {"attack", "opposite-attack-multiply"};
-    public static final String[] COMBAT_PLAYER_ATTACK_MULTIPLY = {"attack", "player-attack-multiply"};
-    public static final String[] FAKE_PLAYER_DETECT = {"attack", "fake-player-and-npc-detect"};
+    public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "attack");
 
     public TargetSelector() {}
 
@@ -52,43 +45,39 @@ public class TargetSelector extends BaseModule {
         types = va;
     }
 
-    public final StringRef whiteListTypes = builder(Configs.COMBAT_CONFIG, ATTACK_WHITELISTED, StringRef.TYPE)
+    public final StringRef whiteListTypes = builder(attack.add("whitelist"), StringRef.TYPE)
             .defaultValue("^(monster|!endermite|player)$")
             .validator(Configs.REGEX_VALIDATOR)
             .updateListener(this::parseEntityTypes)
             .build();
 
-    public final StringRef friendNameRegex = builder(Configs.COMBAT_CONFIG, ATTACK_PLAYER_FRIENDLIST, StringRef.TYPE)
+    public final StringRef friendNameRegex = builder(attack.add("friends"), StringRef.TYPE)
             .defaultValue("^(.*NPC.*|matl114)$")
             .validator(Configs.REGEX_VALIDATOR)
             .build();
 
-    public final FlagRef attackNamedEntity = builder(Configs.COMBAT_CONFIG, ATTACK_NAMED, Boolean.class)
+    public final FlagRef attackNamedEntity = builder(attack.add("att-named"), Boolean.class)
             .defaultValue(true)
             .build();
 
     @ApiStatus.Experimental
-    public final FlagRef teamMate = builder(Configs.COMBAT_CONFIG, ATTACK_TEAMMATE, Boolean.class)
+    public final FlagRef teamMate = builder(attack.add("att-teammate"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef hostile = builder(Configs.COMBAT_CONFIG, ATTACK_HOSTILE, Boolean.class)
+    public final FlagRef hostile = builder(attack.add("att-hostile"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef invulnerable =
-            flagBuilder(Configs.COMBAT_CONFIG, ATTACK_INVULNERABLE).build();
+    public final FlagRef invulnerable = flagBuilder(attack.add("att-invulnerable")).build();
 
-    public final FlagRef multiplyBackward =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_OPPOSITE_ATTACK_MULTIPLY).build();
+    public final FlagRef multiplyBackward = flagBuilder(attack.add("opposite-attack-multiply")).build();
 
-    public final DoubleRef multiplyPlayer = builder(
-                    Configs.COMBAT_CONFIG, COMBAT_PLAYER_ATTACK_MULTIPLY, DoubleRef.TYPE)
+    public final DoubleRef multiplyPlayer = builder(attack.add("player-attack-multiply"), DoubleRef.TYPE)
             .defaultValue(0.0D)
             .build();
 
-    public final FlagRef fakePlayerDetect =
-            flagBuilder(Configs.COMBAT_CONFIG, FAKE_PLAYER_DETECT).build();
+    public final FlagRef fakePlayerDetect = flagBuilder(attack.add("fake-player-and-npc-detect")).build();
 
     {
         if (Configs.COMBAT_CONFIG.get("att-bot", "whitelist") instanceof StringRef stringRef

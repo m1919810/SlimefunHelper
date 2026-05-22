@@ -11,6 +11,7 @@ import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -33,79 +34,52 @@ import org.jetbrains.annotations.ApiStatus;
 public class ChatExtra extends BaseModule {
     public ChatExtra() {}
 
-    public static final String[] IGNORE_INPUT_LIMIT = {"chat-helper", "ignore-chat-len-limit"};
-
-    public static final String[] ESCAPE_TRIM = {"chat-helper", "escape-trim-chat"};
-
-    public static final String[] ESCAPE_NORMALIZE_SPACE = {"chat-helper", "escape-normalize-space-chat"};
-
-    public static final String[] CHECK_MESSAGE_LENGTH = {"chat-helper", "check-chat-len"};
-
-    public static final String[] MESSAGE_LENGTH_LIMIT = {"chat-helper", "chat-len-limit"};
-
-    public static final String[] CHECK_COMMAND_LENGTH = {"chat-helper", "check-command-len"};
-
-    public static final String[] COMMAND_LENGTH_LIMIT = {"chat-helper", "command-len-limit"};
-
-    public static final String[] LIMITATION_WARN_FORMAT = {"chat-helper", "limit-warn-format"};
-
-    public static final String[] CHAT_HISTORY_LENGTH_OVERRIDE = {"chat-helper", "override-chat-history-len"};
-
-    public static final String[] CHAT_HISTORY_LENGTH = {"chat-helper", "chat-history-len"};
-
-    public static final String[] ADD_HISTORY_WHE_CLOSE = {"chat-helper", "add-to-history-when-close"};
-
-    public static final String[] DO_NOT_SEND_EMPTY_MESSAGE = {"chat-helper", "dont-send-empty-message"};
-
-    public static final String[] TAB_FIX = {"chat-helper", "enable-tab-fix"};
+    public final ModulePath chat = makePath(Configs.CHAT_CONFIG, "chat-helper");
+    public final ModulePath chatTools = makePath(Configs.CHAT_CONFIG, "chat-screen-tools");
 
     public final FlagRef noChathudInputLimit =
-            flagBuilder(Configs.CHAT_CONFIG, IGNORE_INPUT_LIMIT).build();
+            flagBuilder(chat.add("ignore-chat-len-limit")).build();
 
     public final FlagRef escapeChatTrim =
-            flagBuilder(Configs.CHAT_CONFIG, ESCAPE_TRIM).build();
+            flagBuilder(chat.add("escape-trim-chat")).build();
 
     public final FlagRef escapeNormalize =
-            flagBuilder(Configs.CHAT_CONFIG, ESCAPE_NORMALIZE_SPACE).build();
+            flagBuilder(chat.add("escape-normalize-space-chat")).build();
 
     public final FlagRef checkMessageLength =
-            flagBuilder(Configs.CHAT_CONFIG, CHECK_MESSAGE_LENGTH).build();
+            flagBuilder(chat.add("check-chat-len")).build();
 
-    public final IntRef messageLengthLimit = builder(Configs.CHAT_CONFIG, Integer.class)
-            .path(MESSAGE_LENGTH_LIMIT)
+    public final IntRef messageLengthLimit = intBuilder(chat.add("chat-len-limit"))
             .defaultValue(256)
             .build();
 
     public final FlagRef checkCommandLength =
-            flagBuilder(Configs.CHAT_CONFIG, CHECK_COMMAND_LENGTH).build();
+            flagBuilder(chat.add("check-command-len")).build();
 
-    public final IntRef commandLengthLimit = builder(Configs.CHAT_CONFIG, Integer.class)
-            .path(COMMAND_LENGTH_LIMIT)
+    public final IntRef commandLengthLimit = intBuilder(chat.add("command-len-limit"))
             .defaultValue(32760)
             .build();
 
-    public final StringRef warnFormat = builder(Configs.CHAT_CONFIG, String.class)
-            .path(LIMITATION_WARN_FORMAT)
+    public final StringRef warnFormat = builder(chat.add("limit-warn-format"), String.class)
             .defaultValue("&c你的输入内容太长了! %d / %d")
             .build();
 
     public final FlagRef overrideChatHistoryLength =
-            flagBuilder(Configs.CHAT_CONFIG, CHAT_HISTORY_LENGTH_OVERRIDE).build();
+            flagBuilder(chat.add("override-chat-history-len")).build();
 
-    public final IntRef chatHistoryLength = builder(Configs.CHAT_CONFIG, Integer.class)
-            .path(CHAT_HISTORY_LENGTH)
+    public final IntRef chatHistoryLength = intBuilder(chat.add("chat-history-len"))
             .defaultValue(100)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     @ApiStatus.Experimental
     public final FlagRef addToHistoryWhenClose =
-            flagBuilder(Configs.CHAT_CONFIG, ADD_HISTORY_WHE_CLOSE).build();
+            flagBuilder(chat.add("add-to-history-when-close")).build();
 
     public final FlagRef doNotSendEmptyMessage =
-            flagBuilder(Configs.CHAT_CONFIG, DO_NOT_SEND_EMPTY_MESSAGE).build();
+            flagBuilder(chat.add("dont-send-empty-message")).build();
 
-    public final FlagRef tabFix = flagBuilder(Configs.CHAT_CONFIG, TAB_FIX).build();
+    public final FlagRef tabFix = flagBuilder(chat.add("enable-tab-fix")).build();
 
     @Override
     public void registerAll() {
@@ -160,23 +134,18 @@ public class ChatExtra extends BaseModule {
         return sent;
     }
 
-    private static final String[] LOGIN_COMMAND_REGEX = {"chat-screen-tools", "login-command-pattern"};
-
-    private static final String[] PASSWORD_ENCRYPT = {"chat-screen-tools", "password-encrypt"};
-    private static final String[] PASSWORD_ENCRYPT_LENGTH = {"chat-screen-tools", "password-encrypt-length"};
-    private static final String[] PASSWORD_ENCRYPT_SALT = {"chat-screen-tools", "password-encrypt-salt"};
-    private final NBTRef<Regex> regexLogin = builder(Configs.CHAT_CONFIG, LOGIN_COMMAND_REGEX, Regex.class)
+    private final NBTRef<Regex> regexLogin = builder(chatTools.add("login-command-pattern"), Regex.class)
             .defaultValue(new Regex("^(/login|/l|/reg|/register|/changepass|/changepassword) (.+)$"))
             .build();
 
     public final FlagRef encryptPass =
-            flagBuilder(Configs.CHAT_CONFIG, PASSWORD_ENCRYPT).build();
+            flagBuilder(chatTools.add("password-encrypt")).build();
 
-    public final IntRef encryptLength = builder(Configs.CHAT_CONFIG, PASSWORD_ENCRYPT_LENGTH, IntRef.TYPE)
+    public final IntRef encryptLength = intBuilder(chatTools.add("password-encrypt-length"))
             .defaultValue(20)
             .build();
 
-    public final StringRef encryptSalt = builder(Configs.CHAT_CONFIG, PASSWORD_ENCRYPT_SALT, StringRef.TYPE)
+    public final StringRef encryptSalt = builder(chatTools.add("password-encrypt-salt"), String.class)
             .defaultValue("")
             .build();
 
@@ -302,20 +271,14 @@ public class ChatExtra extends BaseModule {
         return builder.toString();
     }
 
-    public static final String[] AUTO_PREFIX_SUFFIX = {"chat-helper", "enable-chat-message-format"};
-
-    public static final String[] AUTO_FORMAT = {"chat-helper", "chat-message-format-str"};
-
-    public static final String[] AUTO_FORMAT_ESCAPE = {"chat-helper", "chat-message-escape-format"};
-
     public final FlagRef enableFormat =
-            flagBuilder(Configs.CHAT_CONFIG, AUTO_PREFIX_SUFFIX).build();
+            flagBuilder(chat.add("enable-chat-message-format")).build();
 
-    public final StringRef formatStr = builder(Configs.CHAT_CONFIG, AUTO_FORMAT, String.class)
+    public final StringRef formatStr = builder(chat.add("chat-message-format-str"), String.class)
             .defaultValue("%s喵 | SlimefunHelper client | {random6}")
             .build();
 
-    public final StringRef commandEscapeFormatPattern = builder(Configs.CHAT_CONFIG, AUTO_FORMAT_ESCAPE, String.class)
+    public final StringRef commandEscapeFormatPattern = builder(chat.add("chat-message-escape-format"), String.class)
             .defaultValue("^[/#!.](.*)$")
             .build();
     private final Pattern randomPattern = Pattern.compile("\\{random(\\d+)\\}");

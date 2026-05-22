@@ -5,6 +5,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -18,6 +19,9 @@ import net.minecraft.util.math.Vec3d;
 
 public class ElytraGrimAccelerate extends BaseModule implements LegalMovementManager.MovementModifier {
     static LegalMovementManager.DelegateMovementModifier instance;
+    public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
+    public final ModulePath elytraFlightLegit = elytra.add("elytra-flight-legit");
+    public final ModulePath grimAccelerate = elytraFlightLegit.add("grim-accelerate");
 
     public ElytraGrimAccelerate() {
         if (instance == null) {
@@ -28,34 +32,22 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
         bindFlag(enable);
     }
 
-    public static final String[] ENABLE = makePath("elytra.elytra-flight-legit.grim-accelerate.enable");
-
-    public static final String[] HOTKEY = makePath("elytra.elytra-flight-legit.grim-accelerate.hotkey");
-
-    public final FlagRef enable = flagBuilder(Configs.MOV_CONFIG, ENABLE).build();
+    public final FlagRef enable = flagBuilder(grimAccelerate.add("enable")).build();
 
     public final KeyBindRef hotkey =
-            toggleHotkey(Configs.MOV_CONFIG, HOTKEY, new MultiKeyBind(), ENABLE).build();
+            moduleEntry(grimAccelerate.add("hotkey"), new MultiKeyBind(), grimAccelerate.add("enable")).build();
 
-    public final EnumRef<Configs.SetBackTriggerType> mode = builder(
-                    Configs.MOV_CONFIG,
-                    makePath("elytra.elytra-flight-legit.grim-accelerate.set-back-mode"),
-                    Configs.SetBackTriggerType.class)
-            .defaultValue(Configs.SetBackTriggerType.SIMULATION)
-            .build();
+    public final EnumRef<Configs.SetBackTriggerType> mode =
+            builder(grimAccelerate.add("set-back-mode"), Configs.SetBackTriggerType.class)
+                    .defaultValue(Configs.SetBackTriggerType.SIMULATION)
+                    .build();
 
-    public final DoubleRef maxVelocityAccept = builder(
-                    Configs.MOV_CONFIG,
-                    makePath("elytra.elytra-flight-legit.grim-accelerate.max-accelerate-velocity"),
-                    Double.class)
+    public final DoubleRef maxVelocityAccept = builder(grimAccelerate.add("max-accelerate-velocity"), Double.class)
             .defaultValue(4.0D)
             .validator(Configs.doubleRange(0.0D, 100.0D))
             .build();
 
-    public final DoubleRef minVelocityAccept = builder(
-                    Configs.MOV_CONFIG,
-                    makePath("elytra.elytra-flight-legit.grim-accelerate.min-accelerate-velocity"),
-                    Double.class)
+    public final DoubleRef minVelocityAccept = builder(grimAccelerate.add("min-accelerate-velocity"), Double.class)
             .defaultValue(3.6D)
             .validator(Configs.doubleRange(0.0D, 100.0D))
             .build();

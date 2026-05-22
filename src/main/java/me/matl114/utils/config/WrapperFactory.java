@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.mojang.serialization.DynamicOps;
 import lombok.AllArgsConstructor;
 import me.matl114.utils.RuntimeAbort;
 
@@ -100,6 +102,31 @@ public interface WrapperFactory<T, W> {
 
     public static <T, W> WrapperFactory<List<T>, List<W>> list(WrapperFactory<T, W> factory) {
         return new ListWrapperFactory<>(factory);
+    }
+
+    public static <S, T, U, V> WrapperFactory<Map<U, V>, Map<S, T>> map(WrapperFactory<U, S> keyMapper, WrapperFactory<V, T> valueMapper) {
+        return WrapperFactory.of(
+            (map1)->{
+                Map<S, T> map2 = new LinkedHashMap<>();
+                for (var re : map1.entrySet()){
+                    map2.put(keyMapper.create(re.getKey()), valueMapper.create(re.getValue()));
+                }
+                return map2;
+            },
+            (map2)->{
+                Map<U, V> map1 = new LinkedHashMap<>();
+                for (var re : map2.entrySet()){
+                    map1.put(keyMapper.get(re.getKey()), valueMapper.get(re.getValue()));
+                }
+                return map1;
+            }
+        );
+    }
+
+    public static <R, S extends R, T> WrapperFactory<S, T> fromCodec(Codec<T> codec, DynamicOps<R> ops){
+        return WrapperFactory.of(
+            s -> codec.decode(ops, s).getOrThrow().getFirst(), t -> (S)codec.<R>encodeStart(ops, t).getOrThrow()
+        );
     }
 
     public static final WrapperFactory<List<Pair>, Map<?, ?>> LIST_MAP_WRAPPER_FACTORY = WrapperFactory.of(

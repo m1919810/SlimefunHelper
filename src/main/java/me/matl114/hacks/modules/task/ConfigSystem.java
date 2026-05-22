@@ -10,6 +10,7 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.single.SimpleScreen;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.KeyBindRef;
@@ -23,16 +24,16 @@ import net.minecraft.client.option.SimpleOption;
 import net.minecraft.text.Text;
 
 public class ConfigSystem extends BaseModule {
-    public static final String[] OPEN_MENU_HOTKEY = new String[] {"hotkeys", "open-menu"};
+    public final ModulePath hotkeys = makePath(Configs.HOTKEY_CONFIG, "hotkeys");
 
     public ConfigSystem() {}
 
-    public final KeyBindRef keyBind = hotkey(Configs.HOTKEY_CONFIG, OPEN_MENU_HOTKEY)
+    public final KeyBindRef keyBind = hotkey(Configs.HOTKEY_CONFIG, hotkeys.add("open-menu").toPath())
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_G))
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::openConfigMenu))
             .build();
 
-    public final KeyBindRef optionsKeyBind = hotkey(Configs.HOTKEY_CONFIG, makePath("hotkeys.open-options-menu"))
+    public final KeyBindRef optionsKeyBind = hotkey(Configs.HOTKEY_CONFIG, hotkeys.add("open-options-menu").toPath())
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::openGameOptionsMenu))
             .build();

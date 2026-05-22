@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.other.BeaconEffectSelectButton;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
@@ -19,14 +20,14 @@ import net.minecraft.network.packet.c2s.play.UpdateBeaconC2SPacket;
 import net.minecraft.text.Text;
 
 public class BeaconEnhance extends BaseModule {
-    public static final String[] ENABLE_BEACON_ENHANCE = {"other", "enable-beacon-enhance"};
+    public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
 
     public BeaconEnhance() {
         bindFlag(enable);
     }
 
     public final FlagRef enable =
-            flagBuilder(Configs.TEST_CONFIG, ENABLE_BEACON_ENHANCE).build();
+            flagBuilder(other.add("enable-beacon-enhance")).build();
 
     @Override
     public void registerAll() {

@@ -7,9 +7,9 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ACTasks;
-import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -22,7 +22,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
-import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -41,21 +40,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class NoSlowDown extends BaseModule implements LegalMovementManager.MovementModifier {
-    public static final String[] NO_SLOW_DOWN_SNEAK = {"move-speed", "no-slowdown", "when-sneak"};
-    public static final String[] NO_SLOW_DOWN_USEITEM = {"move-speed", "no-slowdown", "when-use-item"};
-    //    public static final String[] NO_SLOW_DOWN_BLOCK_FRAC = {"move-speed","no-slowdown", "when-walk-on-block"};
-    public static final String[] NO_SLOW_DOWN_BLOCK_SLOW = {"move-speed", "no-slowdown", "when-with-block"};
-    public static final String[] NO_SLOW_DOWN_BLOCK_FRAC = {"move-speed", "no-slowdown", "when-on-block"};
-    public static final String[] NO_SLOW_DOWN_BLOCK_IN = {"move-speed", "no-slowdown", "when-in-block"};
-    public static final String[] NO_SLOW_DOWN_BLOCK_SPECIAL = {"move-speed", "no-slowdown", "when-special-block"};
-    public static final String[] FAKE_SNEAK = {"move-speed", "no-slowdown", "fake-sneak"};
-    public static final String[] FAKE_SNEAK_HOTKEY = {"move-speed", "no-slowdown", "fake-sneak-hotkey"};
-    public static final String[] FAKE_SNEAK_MODE = {"move-speed", "no-slowdown", "fake-sneak-mode"};
-    public static final String[] FAKE_SNEAK_STATUS = {"move-speed", "fake-sneak-status"};
-    public static final String[] FAKE_SNEAK_STATUS_MODE = {"move-speed", "no-slowdown", "fake-sneak-status-mode"};
+    public final ModulePath moveSpeed = makePath(Configs.MOV_CONFIG, "move-speed");
+    public final ModulePath noSlowdown = moveSpeed.add("no-slowdown");
+    public final ModulePath fakeSneakStatusPath = moveSpeed.add("fake-sneak-status");
 
     public static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -81,6 +72,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onInteractSend);
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
+        registerListener(Listener.getPlayerWebSlowPoint(), this::onWeb);
         //        registerListener(Listener.getPacketPoint().getChannel(SupportVersion.CURRENT.isHigherOrEqualTo(21,2) ?
         // ClientTickEndC2SPacket.class : PlayerMoveC2SPacket.class), this::onSendMovePreNoSlowUse);
         //
@@ -89,52 +81,55 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     public final FlagRef sneak =
-            flagBuilder(Configs.MOV_CONFIG, NO_SLOW_DOWN_SNEAK).build();
+            flagBuilder(noSlowdown.add("when-sneak")).build();
 
     public final FlagRef useItem =
-            flagBuilder(Configs.MOV_CONFIG, NO_SLOW_DOWN_USEITEM).build();
+            flagBuilder(noSlowdown.add("when-use-item")).build();
 
     public final FlagRef blockSlow =
-            flagBuilder(Configs.MOV_CONFIG, NO_SLOW_DOWN_BLOCK_SLOW).build();
+            flagBuilder(noSlowdown.add("when-with-block")).build();
 
     public final FlagRef blockFrac =
-            flagBuilder(Configs.MOV_CONFIG, NO_SLOW_DOWN_BLOCK_FRAC).build();
+            flagBuilder(noSlowdown.add("when-on-block")).build();
 
     public final FlagRef blockIn =
-            flagBuilder(Configs.MOV_CONFIG, NO_SLOW_DOWN_BLOCK_IN).build();
+            flagBuilder(noSlowdown.add("when-in-block")).build();
 
     public final FlagRef blockSpecial =
-            flagBuilder(Configs.MOV_CONFIG, NO_SLOW_DOWN_BLOCK_SPECIAL).build();
+            flagBuilder(noSlowdown.add("when-special-block")).build();
 
     public final FlagRef enableFakeSneak =
-            flagBuilder(Configs.MOV_CONFIG, FAKE_SNEAK).build();
+            flagBuilder(noSlowdown.add("fake-sneak")).build();
 
-    public final KeyBindRef keyBindRef = toggleHotkey(
-                    Configs.MOV_CONFIG, FAKE_SNEAK_HOTKEY, new MultiKeyBind(), FAKE_SNEAK)
+    public final KeyBindRef keyBindRef = moduleEntry(
+                    noSlowdown.add("fake-sneak-hotkey"), new MultiKeyBind(), noSlowdown.add("fake-sneak"))
             .build();
 
     public final EnumRef<UseBypassMode> useItemBypass = builder(
-                    Configs.MOV_CONFIG, makePath("move-speed.no-slowdown.use-item-bypass"), UseBypassMode.class)
+                    noSlowdown.add("use-item-bypass"), UseBypassMode.class)
             .defaultValue(UseBypassMode.NO_BYPASS)
             .build();
 
     public final EnumRef<Configs.BypassMode> blockInBypass = builder(
-                    Configs.MOV_CONFIG, makePath("move-speed.no-slowdown.block-in-bypass"), Configs.BypassMode.class)
+                    noSlowdown.add("block-in-bypass"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
+
+    public final FlagRef blockInKeepYVelocity = flagBuilder(noSlowdown.add("block-in-keep-y"))
+        .build();
 
     public final EnumRef<Configs.BypassMode> fakeSneakBypass = builder(
-                    Configs.MOV_CONFIG, FAKE_SNEAK_MODE, Configs.BypassMode.class)
+                    noSlowdown.add("fake-sneak-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
-    public final KeyBindRef fakeStatus = hotkey(Configs.MOV_CONFIG, FAKE_SNEAK_STATUS)
+    public final KeyBindRef fakeStatus = hotkey(fakeSneakStatusPath)
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onSneakStatus))
             .build();
 
     public final EnumRef<PacketSneakMode> fakeStatusBypass = builder(
-                    Configs.MOV_CONFIG, FAKE_SNEAK_STATUS_MODE, PacketSneakMode.class)
+                    noSlowdown.add("fake-sneak-status-mode"), PacketSneakMode.class)
             .defaultValue(PacketSneakMode.BAD_PACKET)
             .build();
 
@@ -183,22 +178,44 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    public boolean onWeb(BlockPos pos) {
+    public void onWeb(Event<Vec3d> slowMovement) {
         if (blockIn.get()) {
+            BlockPos pos = slowMovement.getArgs(0);
             switch (blockInBypass.get()) {
                 case BYPASS_GRIM -> {
-                    if (!mc.player.isFallFlying()
-                            && PlayerInputUtils.of(mc.player.input).hasWASDMovement()) {
-                        mc.player.setVelocity(EntityUtils.withStrafe(mc.player.getVelocity(), 0.64));
+                    if(blockInKeepYVelocity.get()){
+                        slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y, 1.0F));
                     }
-                    return false;
+                    //todo: why
+                    var input = PlayerInputUtils.of(mc.player.input);
+//                    if(blockInKeepYVelocity.get() && mc.player.isOnGround() && input.jump()){
+////                        mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP, seq));
+//                        mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP, seq));
+//                        //mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
+//                        slowMovement.cancel();
+//                        return;
+//                        //slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y, 1.0F));
+//                    }
+                    if(mc.player.isFallFlying()){
+                        return;
+                    }
+                    if (input.hasMovement()
+                    //PlayerInputUtils.of(mc.player.input).hasMovement()
+                    ) {
+//                        Vec3d magicVec = mc.player.getVelocity();
+                        mc.player.setVelocity(EntityUtils.withStrafe(mc.player.getVelocity(), 0.64));
+//                        Vec3d magicVec2 = mc.player.getVelocity();
+                       // Debug.chat("Magic", magicVec.length(), magicVec2.length());
+                    }
+                    return;
                 }
                 case NO_BYPASS -> {
-                    return true;
+                    slowMovement.cancel();
+                    return;
                 }
             }
         }
-        return false;
+        return;
     }
 
     public void onInputEvent(Event<Void> event) {
@@ -456,7 +473,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         // save current server sprinting status
         // use MultiActionsC to create ghost inventory and bypass useItem NoSlow
         // pre, send sprint
-        ExtraTasks.getBadPacketsFix().sendSprintingStatus(mc.player.isSprinting());
+        PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
         // try find a empty slot to switch
         if (!stackEmpty.isEmpty()) {
             postHotbar2 = selectedIdx;

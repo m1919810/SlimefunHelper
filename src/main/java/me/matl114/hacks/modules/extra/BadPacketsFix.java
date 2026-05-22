@@ -6,6 +6,7 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -19,31 +20,26 @@ import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
 import net.minecraft.util.math.Vec2f;
 
 public class BadPacketsFix extends BaseModule {
-    public static final String[] BAD_PACKETS_SPRINT = new String[] {"bad-packets", "fix-dup-sprint"};
-    public static final String[] BAD_PACKETS_SNEAK = new String[] {"bad-packets", "fix-dup-sneak"};
-    public static final String[] BAD_PACKETS_INPUT = new String[] {"bad-packets", "fix-dup-input"};
-
-    public static final String[] BAD_PACKETS_FLY = new String[] {"bad-packets", "fix-fly-packets"};
-    public static final String[] BAD_PACKETS_ROT = new String[] {"bad-packets", "fix-dup-rot"};
+    public final ModulePath badPackets = makePath(Configs.TEST_CONFIG, "bad-packets");
 
     public BadPacketsFix() {}
 
-    public final FlagRef enableSprint = builder(Configs.TEST_CONFIG, BAD_PACKETS_SPRINT, Boolean.class)
+    public final FlagRef enableSprint = builder(badPackets.add("fix-dup-sprint"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef enableSneak = builder(Configs.TEST_CONFIG, BAD_PACKETS_SNEAK, Boolean.class)
+    public final FlagRef enableSneak = builder(badPackets.add("fix-dup-sneak"), Boolean.class)
             .defaultValue(true)
             .build();
-    public final FlagRef enableInput = builder(Configs.TEST_CONFIG, BAD_PACKETS_INPUT, Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final FlagRef enableFly = builder(Configs.TEST_CONFIG, BAD_PACKETS_FLY, Boolean.class)
+    public final FlagRef enableInput = builder(badPackets.add("fix-dup-input"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef enableRot = builder(Configs.TEST_CONFIG, BAD_PACKETS_ROT, Boolean.class)
+    public final FlagRef enableFly = builder(badPackets.add("fix-fly-packets"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef enableRot = builder(badPackets.add("fix-dup-rot"), Boolean.class)
             .defaultValue(true)
             .build();
 
@@ -163,50 +159,21 @@ public class BadPacketsFix extends BaseModule {
         if (serverPitch == this.serverPitch && serverYaw == this.serverYaw) {
             if (packet.changesLook() && enableRot.get()) {
                 if (packet instanceof PlayerMoveC2SPacket.Full full) {
-                    packetEvent.context(VPacket.newPositionAndOnGround(
+                    packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(VPacket.newPositionAndOnGround(
                             packet.getX(mc.player.getX()),
                             packet.getY(mc.player.getY()),
                             packet.getZ(mc.player.getX()),
                             packet.isOnGround(),
-                            VPacket.getCollisionFlag(full)));
+                            VPacket.getCollisionFlag(full)), full));
                 } else if (packet instanceof PlayerMoveC2SPacket.LookAndOnGround lookAndOnGround) {
-                    packetEvent.context(VPacket.newOnGroundOnly(
-                            lookAndOnGround.isOnGround(), VPacket.getCollisionFlag(lookAndOnGround)));
+                    packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(VPacket.newOnGroundOnly(
+                            lookAndOnGround.isOnGround(), VPacket.getCollisionFlag(lookAndOnGround)), lookAndOnGround));
                 }
             }
         } else {
             this.serverPitch = serverPitch;
             this.serverYaw = serverYaw;
             return;
-        }
-    }
-
-    public boolean isRotationDifferent() {
-        return EntityUtils.isRotationDifferent(serverPitch, mc.player.getPitch(), serverYaw, mc.player.getYaw());
-    }
-
-    public boolean isRotationDifferent(float pitch, float yaw) {
-        return EntityUtils.isRotationDifferent(serverPitch, pitch, serverYaw, yaw);
-    }
-
-    public Vec2f getServerPitchYaw() {
-        return new Vec2f(serverPitch, serverYaw);
-    }
-
-    public boolean isServerSprinting() {
-        return serverSprint;
-    }
-
-    public void sendSprintingStatus(boolean bl) {
-        if (bl != serverSprint) {
-            if (bl) {
-                mc.getNetworkHandler()
-                        .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_SPRINTING));
-            } else {
-                mc.getNetworkHandler()
-                        .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-            }
-            ClientPlayerAccess.of(mc.player).resyncSprint();
         }
     }
 }

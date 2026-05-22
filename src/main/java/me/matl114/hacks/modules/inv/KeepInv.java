@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.inv;
 
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
@@ -12,14 +13,15 @@ import net.minecraft.text.Text;
 
 public class KeepInv extends BaseModule {
 
-    public static final String[] KEEP_INV = {"inventory", "keep-inv"};
+    public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
+    public final ModulePath keepInv = inventory.add("keep-inv");
     public static final String CLEAR_KEEP = "clear-keep";
 
     public KeepInv() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.INV_CONFIG, KEEP_INV).build();
+    public final FlagRef enable = flagBuilder(keepInv).build();
 
     @Override
     public void registerAll() {

@@ -12,6 +12,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -24,6 +25,11 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.*;
 
 public class ElytraFinder extends BaseModule implements LegalMovementManager.MovementModifier {
+    public final ModulePath travellingControl = makePath(Configs.MOV_CONFIG, "travelling-control");
+    public final ModulePath elytraFinder = travellingControl.add("elytra-finder");
+    public final ModulePath internalTravellingControl = makePath(Configs.INTERNAL_CONFIG, "travelling-control");
+    public final ModulePath internalElytraFinder = internalTravellingControl.add("elytra-finder");
+
     static LegalMovementManager.DelegateMovementModifier instance;
 
     public ElytraFinder() {
@@ -35,13 +41,13 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
         bindFlag(enable);
     }
 
-    public FlagRef enable = flagBuilder(Configs.MOV_CONFIG, makePath("travelling-control.elytra-finder.enable"))
+    public FlagRef enable = flagBuilder(elytraFinder.add("enable"))
             .build();
 
-    public FlagRef autoPilot = flagBuilder(Configs.MOV_CONFIG, makePath("travelling-control.elytra-finder.auto-pilot"))
+    public FlagRef autoPilot = flagBuilder(elytraFinder.add("auto-pilot"))
             .build();
 
-    public FlagRef render = flagBuilder(Configs.MOV_CONFIG, makePath("travelling-control.elytra-finder.render"))
+    public FlagRef render = flagBuilder(elytraFinder.add("render"))
             .build();
 
     Map<String, Set<BlockPos>> locatedPlaces = new LinkedHashMap<>();
@@ -108,7 +114,7 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
     }
 
     public StringRef located = builder(
-                    Configs.INTERNAL_CONFIG, makePath("travelling-control.elytra-finder.history"), StringRef.TYPE)
+                    elytraFinder.add("history"), StringRef.TYPE)
             .defaultValue("{}")
             .updateListener(this::updateStore)
             .build();

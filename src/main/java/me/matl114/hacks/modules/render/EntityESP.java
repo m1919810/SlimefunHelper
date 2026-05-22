@@ -8,10 +8,10 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VRender;
@@ -26,35 +26,29 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class EntityESP extends BaseModule {
-    public static final String[] DETECT_ENTITY = {"detect-entity", "entity-esp", "enable"};
-    public static final String[] DETECT_ENTITY_TOGGLE = {"detect-entity", "entity-esp", "hotkey"};
-    public static final String[] DETECT_SPAWN_WHITELIST = {"detect-entity", "entity-esp", "whitelist"};
-    public static final String[] RENDER_COLOR = {"detect-entity", "entity-esp", "color"};
-
-    public static final String[] ENTITY_TRACE = {"detect-entity", "entity-esp", "tracing-option"};
-    public static final String[] ENTITY_GLOW = {"detect-entity", "entity-esp", "glow-effect"};
+    public final ModulePath entityRoot = makePath(Configs.RENDER_CONFIG, "detect-entity");
+    public final ModulePath entityEsp = entityRoot.add("entity-esp");
 
     public EntityESP() {}
 
     public final FlagRef enable =
-            flagBuilder(Configs.RENDER_CONFIG, DETECT_ENTITY).build();
+            flagBuilder(entityEsp.add("enable")).build();
 
     public final KeyBindRef hotkeyToggle = toggleHotkey(
                     Configs.RENDER_CONFIG,
-                    DETECT_ENTITY_TOGGLE,
+                    entityEsp.add("hotkey").toPath(),
                     new MultiKeyBind(),
-                    DETECT_ENTITY)
+                    entityEsp.add("enable").toPath())
             .build();
 
     public final NBTRef<RegistryRegex<EntityType<?>>> whiteList = builder(
                     Configs.RENDER_CONFIG, RegistryRegex.<EntityType<?>>parameter())
-            .path(DETECT_SPAWN_WHITELIST)
+            .path(entityEsp.add("whitelist").toPath())
             .defaultValue(new RegistryRegex<>(new Regex("player,wither"), Registries.ENTITY_TYPE))
             .build();
 
     public final NBTRef<EntryPrimitiveMap<EntityType<?>, TextColor>> renderColor = builder(
-                    Configs.RENDER_CONFIG,
-                    RENDER_COLOR,
+                    entityEsp.add("color"),
                     NBTType.<EntryPrimitiveMap<EntityType<?>, TextColor>>parameter(EntryPrimitiveMap.class))
             .defaultValue(new EntryPrimitiveMap<>(
                     Registries.ENTITY_TYPE,
@@ -65,11 +59,11 @@ public class EntityESP extends BaseModule {
                     TextColor.fromFormatting(Formatting.RED)))
             .build();
 
-    public final NBTRef<TracingOption> traceOption = builder(Configs.RENDER_CONFIG, ENTITY_TRACE, TracingOption.class)
+    public final NBTRef<TracingOption> traceOption = builder(entityEsp.add("tracing-option"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
     public final FlagRef glowEntity =
-            flagBuilder(Configs.RENDER_CONFIG, ENTITY_GLOW).build();
+            flagBuilder(entityEsp.add("glow-effect")).build();
 
     @Override
     public void registerAll() {

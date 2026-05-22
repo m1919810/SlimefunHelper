@@ -3,6 +3,8 @@ package me.matl114.hacks.modules;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.utils.ApiMethod;
 
+import java.util.Collection;
+
 @ApiMethod
 public class HackModules {
 
@@ -14,6 +16,10 @@ public class HackModules {
 
     public static ModuleGroup getModuleGroup(String name) {
         return main.moduleGroups.get(name);
+    }
+
+    public static Collection<ModuleGroup> getModuleGroups(){
+        return main.moduleGroups.values();
     }
 
     public static void reloadModuleGroups() {

@@ -4,6 +4,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
@@ -14,17 +15,16 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 
 public class TransactionBlocker extends BaseModule {
+    public final ModulePath lagUtils = makePath(Configs.COMBAT_CONFIG, "lag-utils");
+    public final ModulePath transactionBlocker = lagUtils.add("transaction-blocker");
 
     public TransactionBlocker() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.transaction-blocker.enable"))
-            .build();
+    public final FlagRef enable = flagBuilder(transactionBlocker.add("enable")).build();
 
-    public final FlagRef enableC = flagBuilder(
-                    Configs.COMBAT_CONFIG, makePath("lag-utils.transaction-blocker.bw-test-1"))
-            .build();
+    public final FlagRef enableC = flagBuilder(transactionBlocker.add("bw-test-1")).build();
 
     @Override
     public void registerAll() {

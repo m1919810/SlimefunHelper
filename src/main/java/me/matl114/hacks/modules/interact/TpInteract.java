@@ -12,6 +12,7 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.inv.AutoSteal;
 import me.matl114.managers.Configs;
@@ -33,24 +34,21 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class TpInteract extends BaseModule {
-    public static final String[] TP_INTERACT_ENABLE = {"tp-interact", "enable"};
-    public static final String[] TP_INTERACT_HOTKEY = {"tp-interact", "enable-hotkey"};
-
-    public static final String[] TP_MINE_USE_FALL_MINE = {"tp-interact", "mine-interact-use-fail-mine"};
+    public final ModulePath tpInteract = makePath(Configs.INTERACT_CONFIG, "tp-interact");
 
     public TpInteract() {}
 
     public final FlagRef enable =
-            flagBuilder(Configs.INTERACT_CONFIG, TP_INTERACT_ENABLE).build();
+            flagBuilder(tpInteract.add("enable")).build();
 
-    public final KeyBindRef keyBindRef = toggleHotkey(
-                    Configs.INTERACT_CONFIG, TP_INTERACT_HOTKEY, new MultiKeyBind(), TP_INTERACT_ENABLE)
+    public final KeyBindRef keyBindRef = moduleEntry(
+                    tpInteract.add("enable-hotkey"), new MultiKeyBind(), tpInteract.add("enable"))
             .build();
 
     public final FlagRef useFallMine =
-            flagBuilder(Configs.INTERACT_CONFIG, TP_MINE_USE_FALL_MINE).build();
+            flagBuilder(tpInteract.add("mine-interact-use-fail-mine")).build();
 
-    public final KeyBindRef tryTpSteal = hotkey(Configs.INTERACT_CONFIG, makePath("tp-interact.try-tp-steal-chest-key"))
+    public final KeyBindRef tryTpSteal = hotkey(Configs.INTERACT_CONFIG, tpInteract.add("try-tp-steal-chest-key").toPath())
             .defaultValue(new MultiKeyBind())
             .build();
 

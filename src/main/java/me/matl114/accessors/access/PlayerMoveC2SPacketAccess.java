@@ -18,6 +18,10 @@ public interface PlayerMoveC2SPacketAccess {
         return packet;
     }
 
+    public static PlayerMoveC2SPacket setCauseFrom(PlayerMoveC2SPacket packet, PlayerMoveC2SPacket packet2) {
+        return setCause(packet, of(packet2).getCause());
+    }
+
     public static PlayerMoveC2SPacketAccess of(PlayerMoveC2SPacket packet) {
         return (PlayerMoveC2SPacketAccess) packet;
     }
@@ -29,6 +33,7 @@ public interface PlayerMoveC2SPacketAccess {
         SET_BACK,
         PLAYER_MOVEMENT,
         HACKING_PACKETS,
-        LEGACY_SNAP;
+        LEGACY_SNAP,
+        TRIGGER_SIMULATION;
     }
 }

@@ -5,6 +5,7 @@ import static me.matl114.utils.ItemStackUtils.getSfId;
 import java.util.Locale;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
@@ -23,11 +24,11 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 
 public class CopyId extends BaseModule {
-    private static final String[] COPY_ID = new String[] {"slimefun-settings", "slimefunid-copy"};
+    public final ModulePath slimefunSettings = makePath(Configs.SLIMEFUN_CONFIG, "slimefun-settings");
 
     public CopyId() {}
 
-    public KeyBindRef keyBind = hotkey(Configs.SLIMEFUN_CONFIG, COPY_ID)
+    public KeyBindRef keyBind = hotkey(Configs.SLIMEFUN_CONFIG, slimefunSettings.add("slimefunid-copy").toPath())
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_C, KeyCode.MOUSE_BUTTON_1))
             .registerHotkey(HotKeyUtils.asHandler(this::copySfIdInHand))
             .build();

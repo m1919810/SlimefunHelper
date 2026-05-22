@@ -14,7 +14,10 @@ import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 
 public class PostManager extends BaseModule {
-    public PostManager() {}
+    public static PostManager INSTANCE;
+    public PostManager() {
+        INSTANCE = this;
+    }
 
     private int peekPingRequest;
     private int lastPingTick;

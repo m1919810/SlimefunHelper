@@ -8,11 +8,11 @@ import me.matl114.events.*;
 import me.matl114.events.Event;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.NetworkUtils;
@@ -32,24 +32,7 @@ import org.joml.Vector2i;
 import org.spongepowered.asm.mixin.Unique;
 
 public class MineExtra extends BaseModule {
-    public static final String[] QUICK_MINE = {"fast-break", "quick-mine"};
-    public static final String[] QUICK_MINE_HOTKEY = {"fast-break", "quick-mine-hotkey"};
-    //    public static final String[] MINE_REACH_HOTKEY = {"hotkeys-toggle", "reach"};
-    public static final String[] MINE_ENABLE_FAKE_INSTANT_BREAK = {"fast-break", "use-fake-instant-break"};
 
-    public static final String[] MINE_BYPASS_FAST_BREAK_BYPASS_MODE = {"fast-break", "bypass-mode"};
-
-    public static final String[] MINE_FASTBREAK_THRESHOLD = {"fast-break", "break-threshold"};
-    public static final String[] MINE_FASTBREAK_BREAKCOOLDOWN = {"fast-break", "break-cooldown"};
-    public static final String[] MINE_FASTBREAK_REACH = {"fast-break", "reach-distance"};
-
-    public static final String[] MINE_DOUBLE_BREAK = {"fast-break", "double-break"};
-
-    public static final String[] MINE_FASTBREAK_SAME_BLOCK_OPTIMIZE = {"fast-break", "same-block-optimize"};
-    public static final String[] MINE_RENDER_CURRENT_MINING_BLOCK = {"fast-break", "render-current-break-pos"};
-    public static final String[] FAST_BREAK_GRIMAC_THRESHOLD = {"fast-break", "grim-punishment-threshold"};
-
-    public static final String[] BREAK_FIX_SWING_PACKET = {"fast-break", "fix-swing-packet"};
 
     public MineExtra() {}
 
@@ -101,41 +84,37 @@ public class MineExtra extends BaseModule {
             }
         }
     }
+    public final ModulePath fastbreak = makePath(Configs.MINE_CONFIG, "fast-break");
 
     public final FlagRef quickMine =
-            flagBuilder(Configs.MINE_CONFIG, QUICK_MINE).build();
+            flagBuilder(fastbreak.addEnable()).build();
 
     public final KeyBindRef quickMineKeyBind = toggleHotkey(
                     Configs.MINE_CONFIG,
-                    QUICK_MINE_HOTKEY,
+                    fastbreak.addHotkey(),
                     new MultiKeyBind(),
-                    QUICK_MINE)
+                    fastbreak.addEnable())
             .build();
 
-    public final FlagRef fakeInstaBreak = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(MINE_ENABLE_FAKE_INSTANT_BREAK)
-            .defaultValue(false)
-            .build();
+    public final FlagRef fakeInstaBreak = flagBuilder(fastbreak.add("use-fake-instant-break"))
+        .build();
+
 
     public final EnumRef<FastBreakBypassMode> fastBreakBypassMode = builder(
-                    Configs.MINE_CONFIG, FastBreakBypassMode.class)
-            .path(MINE_BYPASS_FAST_BREAK_BYPASS_MODE)
+                    fastbreak.add("bypass-mode"), FastBreakBypassMode.class)
             .defaultValue(FastBreakBypassMode.NO_BYPASS)
             .build();
 
-    public final IntRef grimAcCounterThreshold = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(FAST_BREAK_GRIMAC_THRESHOLD)
+    public final IntRef grimAcCounterThreshold = builder(fastbreak.add("grim-punishment-threshold"), Integer.class)
             .defaultValue(500)
             .build();
 
-    public final DoubleRef breakThreshold = builder(Configs.MINE_CONFIG, Double.class)
-            .path(MINE_FASTBREAK_THRESHOLD)
+    public final DoubleRef breakThreshold = builder(fastbreak.add("break-threshold"), Double.class)
             .defaultValue(0.99)
             .validator(Configs.doubleRange(0.0, 1.1))
             .build();
 
-    public final IntRef breakCooldown = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(MINE_FASTBREAK_BREAKCOOLDOWN)
+    public final IntRef breakCooldown = builder(fastbreak.add("break-cooldown"), Integer.class)
             .defaultValue(5)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
@@ -146,30 +125,23 @@ public class MineExtra extends BaseModule {
     //                    REACH_TOGGLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_R))
     //            .build();
 
-    public final DoubleRef reachDistance = builder(Configs.MINE_CONFIG, Double.class)
-            .path(MINE_FASTBREAK_REACH)
+    public final DoubleRef reachDistance = builder(fastbreak.add("reach-distance"), Double.class)
             .defaultValue(0.0)
             .build();
 
-    public final FlagRef doubleBreak = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(MINE_DOUBLE_BREAK)
-            .defaultValue(false)
+    public final FlagRef doubleBreak = flagBuilder(fastbreak.add("double-break"))
             .build();
 
-    public final FlagRef optimizeOneBlock = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(MINE_FASTBREAK_SAME_BLOCK_OPTIMIZE)
-            .defaultValue(false)
+    public final FlagRef optimizeOneBlock = flagBuilder(fastbreak.add("same-block-optimize"))
             .build();
 
     public final FlagRef swingFix =
-            flagBuilder(Configs.MINE_CONFIG, BREAK_FIX_SWING_PACKET).build();
+            flagBuilder(fastbreak.add("fix-swing-packet")).build();
 
-    public final FlagRef mineRender = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(MINE_RENDER_CURRENT_MINING_BLOCK)
-            .defaultValue(false)
+    public final FlagRef mineRender = flagBuilder(fastbreak.add("render-current-break-pos"))
             .build();
 
-    public final FlagRef grimBadPacketFix1 = flagBuilder(Configs.MINE_CONFIG, makePath("fast-break.grim-badpackets-1"))
+    public final FlagRef grimBadPacketFix1 = flagBuilder(fastbreak.add("grim-badpackets-1"))
             .build();
 
     public double getReachDistance() {

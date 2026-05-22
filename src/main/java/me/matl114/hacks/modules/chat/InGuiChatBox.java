@@ -8,16 +8,17 @@ import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.gui.other.ChatLikeInputSubScreen;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 
 public class InGuiChatBox extends BaseModule {
-    public static final String[] CHAT_BOX_IN_GUI = {"chat-helper", "chat-box-in-gui"};
+    public final ModulePath chat = makePath(Configs.CHAT_CONFIG, "chat-helper");
 
     public final FlagRef enable =
-            flagBuilder(Configs.CHAT_CONFIG, CHAT_BOX_IN_GUI).build();
+            flagBuilder(chat.add("chat-box-in-gui")).build();
 
     public InGuiChatBox() {
         bindFlag(enable);

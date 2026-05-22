@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ListRef;
 import me.matl114.utils.Debug;
@@ -15,7 +16,7 @@ import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 
 public class CustomTextures extends BaseModule {
-    public static final String[] CUSTOM_TEXTURE_PATTERN = {"texture-config", "namespace-for-custom-textures"};
+    public final ModulePath textureConfig = makePath(Configs.MODEL_CONFIG, "texture-config");
 
     public CustomTextures() {}
 
@@ -25,7 +26,7 @@ public class CustomTextures extends BaseModule {
         registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlasSupply);
     }
 
-    public final ListRef customTexturePath = builder(Configs.MODEL_CONFIG, CUSTOM_TEXTURE_PATTERN, ListRef.TYPE)
+    public final ListRef customTexturePath = builder(textureConfig.add("namespace-for-custom-textures"), ListRef.TYPE)
             .defaultValue(List.of("ae2", "infinityexpansion", "avaritia"))
             .build();
 

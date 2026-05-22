@@ -504,6 +504,9 @@ public class RenderTasks {
     @Getter
     public static RenderOptimize renderOptimize;
 
+    @Getter
+    public static Hud hud;
+
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         entityLog = new EntityLog().register(m);
@@ -517,6 +520,7 @@ public class RenderTasks {
         customOverlay = new CustomOverlay().register(m);
         freecam = new Freecam().register(m);
         renderOptimize = new RenderOptimize().register(m);
+        hud = new Hud().register(m);
     }
 
     static {

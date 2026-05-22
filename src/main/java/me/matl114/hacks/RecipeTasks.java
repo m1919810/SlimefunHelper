@@ -52,27 +52,32 @@ public class RecipeTasks {
 
     private static void init() {
         if (CACHE == null || CACHE.isEmpty()) {
+            Map<Identifier, RecipeRecord> map;
             synchronized (RecipeTasks.class) {
                 resetCache();
                 CACHE = new LinkedHashMap<>();
+                map = CACHE;
             }
             // init empty map and do not go in if you are not in a world
             if (mc.world == null) {
                 return;
             }
+
             for (var entry : mc.player.getRecipeBook().recipes.entrySet()) {
                 var key = entry.getKey();
                 var value = entry.getValue();
-                CACHE.put(Identifier.ofVanilla(String.valueOf(key.index())), RecipeRecord.of(value));
+                map.put(Identifier.ofVanilla(String.valueOf(key.index())), RecipeRecord.of(value));
             }
         }
     }
 
     private static void resetCache() {
-        if (CACHE != null) {
-            CACHE.clear();
+        synchronized (RecipeTasks.class){
+            if (CACHE != null) {
+                CACHE.clear();
+            }
+            CACHE = new LinkedHashMap<>();
         }
-        CACHE = null;
     }
 
     public static record RecipeRecord(
@@ -193,20 +198,21 @@ public class RecipeTasks {
 
     public static void addRecipe(Event<RecipeBookAddS2CPacket> event) {
         if (mc.world == null) return;
-        init();
+        var map = getAllRecipe();
         for (RecipeBookAddS2CPacket.Entry entry : event.context().entries()) {
             RecipeDisplayEntry entry0 = entry.contents();
-            CACHE.put(Identifier.ofVanilla(String.valueOf(entry0.id().index())), RecipeRecord.of(entry0));
+            map.put(Identifier.ofVanilla(String.valueOf(entry0.id().index())), RecipeRecord.of(entry0));
         }
     }
 
     public static void removeRecipe(Event<RecipeBookRemoveS2CPacket> event) {
-        if (CACHE != null) {
+        Map<Identifier, RecipeRecord> map;
+        if ((map = CACHE) != null) {
             event.context().recipes().stream()
                     .map(NetworkRecipeId::index)
                     .map(String::valueOf)
                     .map(Identifier::ofVanilla)
-                    .forEach(CACHE::remove);
+                    .forEach(map::remove);
         }
     }
 

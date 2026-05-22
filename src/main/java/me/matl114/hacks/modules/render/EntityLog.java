@@ -5,6 +5,7 @@ import java.util.Set;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
@@ -27,19 +28,18 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class EntityLog extends BaseModule {
-    public static final String[] LOG_ON_SCREEN = {"detect-entity", "entity-log", "enable"};
-    public static final String[] DETECT_ENTITY_TOGGLE = {"detect-entity", "entity-log", "hotkey"};
-    public static final String[] DETECT_SPAWN_WHITELIST = {"detect-entity", "entity-log", "whitelist"};
-    public final FlagRef enable = builder(Configs.RENDER_CONFIG, FlagRef.TYPE)
-            .path(LOG_ON_SCREEN)
-            .defaultValue(false)
+    public final ModulePath entityLog = makePath(Configs.RENDER_CONFIG, "detect-entity.entity-log");
+    public final FlagRef enable = flagBuilder(entityLog.add("enable"))
             .build();
     public final KeyBindRef hotkeyToggle = toggleHotkey(
-                    Configs.RENDER_CONFIG, DETECT_ENTITY_TOGGLE, new MultiKeyBind(), LOG_ON_SCREEN)
+                    Configs.RENDER_CONFIG,
+                    entityLog.add("hotkey").toPath(),
+                    new MultiKeyBind(),
+                    entityLog.add("enable").toPath())
             .build();
     public final NBTRef<RegistryRegex<EntityType<?>>> whiteList = builder(
                     Configs.RENDER_CONFIG, RegistryRegex.<EntityType<?>>parameter())
-            .path(DETECT_SPAWN_WHITELIST)
+            .path(entityLog.add("whitelist").toPath())
             .defaultValue(new RegistryRegex<>(new Regex("player"), Registries.ENTITY_TYPE))
             .build();
 
