@@ -5,6 +5,7 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
@@ -16,11 +17,8 @@ import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 
 public class Sprint extends BaseModule implements LegalMovementManager.MovementModifier {
-    public static final String[] MOVE_AUTO_TOGGLE_SPRINT = {"move-speed", "sprint", "legal-auto-sprint"};
-    public static final String[] FAKE_SPRINT = {"move-speed", "sprint", "fake-sprint"};
-    public static final String[] FAKE_SPRINT_MODE = {"move-speed", "sprint", "fake-sprint-mode"};
-    public static final String[] MOVE_ALL_DIRECTION_SPRINT = {"move-speed", "sprint", "all-direction-sprint"};
-    public static final String[] MOVE_SPRINT_BYPASS_MODE = {"move-speed", "sprint", "bypass-mode"};
+    public final ModulePath moveSpeed = makePath(Configs.MOV_CONFIG, "move-speed");
+    public final ModulePath sprint = moveSpeed.add("sprint");
 
     public static LegalMovementManager.DelegateMovementModifier instance;
     // todo: 顶头跑 here
@@ -34,21 +32,21 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     }
 
     public final FlagRef autoSprintLegal =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_AUTO_TOGGLE_SPRINT).build();
+            flagBuilder(sprint.add("legal-auto-sprint")).build();
     // todo: attack entity cause fake sprint, keep the state, do not send any other packets, try later
     public final FlagRef fakeSprint =
-            flagBuilder(Configs.MOV_CONFIG, FAKE_SPRINT).build();
+            flagBuilder(sprint.add("fake-sprint")).build();
 
     public final EnumRef<Configs.BypassMode> fakeSprintMode = builder(
-                    Configs.MOV_CONFIG, FAKE_SPRINT_MODE, Configs.BypassMode.class)
+                    sprint.add("fake-sprint-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
     public final FlagRef directionalSprint =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ALL_DIRECTION_SPRINT).build();
+            flagBuilder(sprint.add("all-direction-sprint")).build();
 
     public final EnumRef<Configs.BypassMode> directionalSprintMode = builder(
-                    Configs.MOV_CONFIG, MOVE_SPRINT_BYPASS_MODE, Configs.BypassMode.class)
+                    sprint.add("bypass-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 

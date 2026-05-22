@@ -4,6 +4,7 @@ import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.ItemStackUtils;
@@ -19,21 +20,19 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 
 public class NewStyleModel extends BaseModule {
-    public static final String[] ENABLE_ENCHANTBOOK_NEWSTYLE = {"new-style-item", "enable-enchant-book"};
-    public static final String[] ENABLE_NEWSTYLE_ITEM = {"new-style-item", "enable-new-style-item"};
-    public static final String[] ENABLE_NEW_STYLE_NBT = {"new-style-item", "enable-new-style-nbt"};
+    public final ModulePath newStyleItem = makePath(Configs.MODEL_CONFIG, "new-style-item");
 
     public NewStyleModel() {}
 
-    public final FlagRef enableEnchant = builder(Configs.MODEL_CONFIG, ENABLE_ENCHANTBOOK_NEWSTYLE, Boolean.class)
+    public final FlagRef enableEnchant = builder(newStyleItem.add("enable-enchant-book"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef enableNewVersion = builder(Configs.MODEL_CONFIG, ENABLE_NEWSTYLE_ITEM, Boolean.class)
+    public final FlagRef enableNewVersion = builder(newStyleItem.add("enable-new-style-item"), Boolean.class)
             .defaultValue(false)
             .build();
 
-    public final FlagRef enableNewVersionNbt = builder(Configs.MODEL_CONFIG, ENABLE_NEW_STYLE_NBT, Boolean.class)
+    public final FlagRef enableNewVersionNbt = builder(newStyleItem.add("enable-new-style-nbt"), Boolean.class)
             .defaultValue(true)
             .build();
 

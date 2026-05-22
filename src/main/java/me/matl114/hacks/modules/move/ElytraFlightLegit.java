@@ -3,21 +3,21 @@ package me.matl114.hacks.modules.move;
 import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.entity.LegalMovementManager;
 
 public class ElytraFlightLegit extends BaseModule implements LegalMovementManager.MovementModifier {
-    public static final String[] ENABLE = makePath("elytra.elytra-flight-legit.enable");
-    public static final String[] SPEED = makePath("elytra.elytra-flight-legit.speed");
-    public static final String[] MODE = makePath("elytra.elytra-flight-legit.mode");
+    public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
+    public final ModulePath elytraFlightLegit = elytra.add("elytra-flight-legit");
 
-    public final FlagRef enable = flagBuilder(Configs.MOV_CONFIG, ENABLE).build();
-    //    public final DoubleRef speed = builder(Configs.MOV_CONFIG, SPEED, DoubleRef.TYPE)
+    public final FlagRef enable = flagBuilder(elytraFlightLegit.add("enable")).build();
+    //    public final DoubleRef speed = builder(elytraFlightLegit.add("speed"), DoubleRef.TYPE)
     //        .defaultValue(1.0)
     //        .build();
-    //    public final EnumRef<ElytraFlight.ElytraMode> controlMode = builder(Configs.MOV_CONFIG, MODE,
-    // ElytraFlight.ElytraMode.class)
+    //    public final EnumRef<ElytraFlight.ElytraMode> controlMode = builder(
+    //                    elytraFlightLegit.add("mode"), ElytraFlight.ElytraMode.class)
     //        .defaultValue(ElytraFlight.ElytraMode.CONTROL)
     //        .build();
 

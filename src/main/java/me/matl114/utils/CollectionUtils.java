@@ -100,4 +100,21 @@ public class CollectionUtils {
     public static <A, B> Pair<A, B> entryToPair(Map.Entry<A, B> entry) {
         return Pair.of(entry.getKey(), entry.getValue());
     }
+
+    public static <A, B> List<Pair<A, B>> mapToPairList(Map<A, B> map) {
+        List<Pair<A, B>> list = new ArrayList<>();
+        for (Map.Entry<A, B> entry : map.entrySet()) {
+            list.add(Pair.of(entry.getKey(), entry.getValue()));
+        }
+        return list;
+    }
+
+    public static <A, B> Map<A, B> pairListToMap(List<Pair<A, B>> map) {
+        Map<A, B> list = new LinkedHashMap<>();
+        for (Pair<A, B> entry : map) {
+            list.put(entry.getFirst(), entry.getSecond());
+        }
+        return list;
+    }
+
 }

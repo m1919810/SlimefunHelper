@@ -10,6 +10,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.utils.Debug;
@@ -17,38 +18,33 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.ApiStatus;
 
 public class ConnectionProxy extends BaseModule {
-    public static final String[] HTTP_PROXY_SERVER = {"proxy-server", "host"};
-    public static final String[] HTTP_PROXY_PORT = {"proxy-server", "port"};
-    public static final String[] HTTP_PROXY_ENABLE = {"proxy-server", "enable"};
-    public static final String[] HTTP_PROXY_USERNAME = {"proxy-server", "username"};
-    public static final String[] HTTP_PROXY_OPTIONAL_PASSWORD = {"proxy-server", "password?"};
-    public static final String[] HTTP_PROXY_TYPE = {"proxy-server", "type"};
+    public final ModulePath proxyServer = makePath(Configs.HTTP_CONFIG, "proxy-server");
 
     public ConnectionProxy() {
         bindFlag(enable);
     }
 
     public final FlagRef enable =
-            flagBuilder(Configs.HTTP_CONFIG, HTTP_PROXY_ENABLE).build();
+            flagBuilder(proxyServer.add("enable")).build();
 
-    public final IntRef port = builder(Configs.HTTP_CONFIG, HTTP_PROXY_PORT, IntRef.TYPE)
+    public final IntRef port = builder(proxyServer.add("port"), IntRef.TYPE)
             .defaultValue(7890)
             .validator(Configs.intRange(0, 65536))
             .build();
 
-    public final StringRef ip = builder(Configs.HTTP_CONFIG, HTTP_PROXY_SERVER, StringRef.TYPE)
+    public final StringRef ip = builder(proxyServer.add("host"), StringRef.TYPE)
             .defaultValue("127.0.0.1")
             .build();
 
-    public final EnumRef<HttpProxyType> proxyType = builder(Configs.HTTP_CONFIG, HTTP_PROXY_TYPE, HttpProxyType.class)
+    public final EnumRef<HttpProxyType> proxyType = builder(proxyServer.add("type"), HttpProxyType.class)
             .defaultValue(HttpProxyType.SOCKS)
             .build();
 
-    public final StringRef userName = builder(Configs.HTTP_CONFIG, HTTP_PROXY_USERNAME, StringRef.TYPE)
+    public final StringRef userName = builder(proxyServer.add("username"), StringRef.TYPE)
             .defaultValue("")
             .build();
 
-    public final StringRef password = builder(Configs.HTTP_CONFIG, HTTP_PROXY_OPTIONAL_PASSWORD, StringRef.TYPE)
+    public final StringRef password = builder(proxyServer.add("password?"), StringRef.TYPE)
             .defaultValue("")
             .build();
 

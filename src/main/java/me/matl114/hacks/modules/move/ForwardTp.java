@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.move;
 
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
@@ -16,32 +17,24 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 
 public class ForwardTp extends BaseModule {
-    public static final String[] MOV_MAX_DISTANCE = {"quick-move", "max-distance"};
-    public static final String[] QUICK_MOVE_IGNORE_COLLISION = {"quick-move", "ignore-move-collision"};
-    public static final String[] MOVE_FRONT = {"quick-move", "quick-move"};
-    public static final String[] MOVE_WALL = {"quick-move", "quick-to-wall"};
-
-    @ApiStatus.Experimental
-    public static final String[] MOVE_LEFT = {"hotkeys", "quick-vclip"};
+    public final ModulePath quickMove = makePath(Configs.MOV_CONFIG, "quick-move");
 
     public ForwardTp() {}
 
-    public final KeyBindRef frontKey = hotkey(Configs.MOV_CONFIG, MOVE_FRONT)
-            .defaultValue(new MultiKeyBind())
+    public final KeyBindRef frontKey = hotkey(quickMove.add("quick-move"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::quickMovFront))
             .build();
 
-    public final KeyBindRef wallKey = hotkey(Configs.MOV_CONFIG, MOVE_WALL)
-            .defaultValue(new MultiKeyBind())
+    public final KeyBindRef wallKey = hotkey(quickMove.add("quick-to-wall"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::quickMovTowardsWall))
             .build();
 
-    public final DoubleRef maxDistance = builder(Configs.MOV_CONFIG, MOV_MAX_DISTANCE, DoubleRef.TYPE)
+    public final DoubleRef maxDistance = builder(quickMove.add("max-distance"), DoubleRef.TYPE)
             .defaultValue(120.0D)
             .validator(Configs.doubleRange(0.0D, 114514.0D))
             .build();
 
-    public final FlagRef useTpMethod = builder(Configs.MOV_CONFIG, QUICK_MOVE_IGNORE_COLLISION, FlagRef.TYPE)
+    public final FlagRef useTpMethod = builder(quickMove.add("ignore-move-collision"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
 

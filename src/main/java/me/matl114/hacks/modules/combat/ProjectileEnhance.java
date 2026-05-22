@@ -8,11 +8,11 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
@@ -33,55 +33,37 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class ProjectileEnhance extends BaseModule {
-    public static final String[] BOW_ENHANCE = {"bow-att", "bow-enhance"};
-    public static final String[] BOW_ENHANCE_HOTKEY = {"bow-att", "bow-enhance-hotkey"};
-    public static final String[] BOW_AIM = {"projectile", "aim-enable"};
-
-    public static final String[] BOW_TP = {"projectile", "tp-enable"};
-
-    public static final String[] TARGETING = {"projectile", "targeting-mode"};
-
-    public static final String[] TP_ACCELERATE = {"projectile", "tp-accelerate"};
-
-    public static final String[] TP_EXACT = {"projectile", "tp-accelerate-exact-tp"};
-
-    public static final String[] USE_ITEM_ID = {"projectile", "tp-accelerate-exact-tp"};
-
-    public static final String[] TRIDENT_DUPE = {"projectile", "trident-auto-dupe"};
+    public final ModulePath projectile = makePath(Configs.COMBAT_CONFIG, "projectile");
 
     public ProjectileEnhance() {}
 
-    // we share the flag with BowEnhance, that's ok
-    public FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, BOW_ENHANCE).build();
 
-    public KeyBindRef hotkey = toggleHotkey(
-                    Configs.COMBAT_CONFIG,
-                    BOW_ENHANCE_HOTKEY,
-                    new MultiKeyBind(),
-                    BOW_ENHANCE)
-            .build();
+    public FlagRef enable = flagBuilder(projectile.add("projectile-enhance")).build();
 
-    public FlagRef enableAim = flagBuilder(Configs.COMBAT_CONFIG, BOW_AIM).build();
+    public KeyBindRef hotkey =
+            moduleEntry(projectile.add("projectile-enhance-hotkey"), new MultiKeyBind(), projectile.add("projectile-enhance"))
+                    .build();
 
-    public FlagRef enableTp = flagBuilder(Configs.COMBAT_CONFIG, BOW_TP).build();
+    public FlagRef enableAim = flagBuilder(projectile.add("aim-enable")).build();
 
-    public EnumRef<Configs.LegalInteractMode> mode = builder(
-                    Configs.COMBAT_CONFIG, TARGETING, Configs.LegalInteractMode.class)
-            .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
-            .build();
+    public FlagRef enableTp = flagBuilder(projectile.add("tp-enable")).build();
 
-    public DoubleRef tpDistance = builder(Configs.COMBAT_CONFIG, TP_ACCELERATE, DoubleRef.TYPE)
+    public EnumRef<Configs.LegalInteractMode> mode =
+            builder(projectile.add("targeting-mode"), Configs.LegalInteractMode.class)
+                    .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
+                    .build();
+
+    public DoubleRef tpDistance = builder(projectile.add("tp-accelerate"), DoubleRef.TYPE)
             .defaultValue(150.0D)
             .build();
 
-    public FlagRef enhanceTp = flagBuilder(Configs.COMBAT_CONFIG, TP_EXACT).build();
+    public FlagRef enhanceTp = flagBuilder(projectile.add("tp-accelerate-exact-tp")).build();
 
-    public NBTRef<Regex> useItemId = builder(Configs.COMBAT_CONFIG, USE_ITEM_ID, Regex.class)
+    public NBTRef<Regex> useItemId = builder(projectile.add("tp-accelerate-exact-tp"), Regex.class)
             .defaultValue(new Regex("^(LOGITECH_LASER_GUN)$"))
             .build();
 
-    public FlagRef tridentDupe =
-            flagBuilder(Configs.COMBAT_CONFIG, TRIDENT_DUPE).build();
+    public FlagRef tridentDupe = flagBuilder(projectile.add("trident-auto-dupe")).build();
 
     @Override
     public void registerAll() {

@@ -8,6 +8,7 @@ import me.matl114.events.Listener;
 import me.matl114.gui.presets.choices.QuestionScreen;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -39,56 +40,42 @@ import org.jetbrains.annotations.ApiStatus;
 public class ClientExtra extends BaseModule {
     public ClientExtra() {}
 
-    public static final String[] CLIENT_BRAND_NAME = {"other", "client-brand-name"};
+    public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
 
-    public static final String[] TEST_NO_CRASH = {"other", "no-client-crash"};
-
-    public static final String[] NO_ENTITY_CRASH = {"other", "no-entity-crash"};
-
-    public static final String[] NO_BLOCK_ENTITY_CRASH = {"other", "no-block-entity-crash"};
-
-    public static final String[] IGNORE_PROTOCOL_ERROR = {"other", "no-disconnect-on-network-error"};
-
-    @ApiStatus.Experimental
-    public static final String[] PORTAL_GUI = {"other", "keep-gui-open-on-portal"};
-
-    public static final String[] SCREEN_CURSOR_LOCK_SWITCH = {"other", "cursor-switch-hotkey"};
-
-    public final FlagRef noCrash = builder(Configs.TEST_CONFIG, Boolean.class)
-            .path(TEST_NO_CRASH)
+    public final FlagRef noCrash = builder(other.add("no-client-crash"), Boolean.class)
             .defaultValue(false)
             .build();
+
+    public final FlagRef keepInServer = flagBuilder(other.add("client-crash-keep-in-server"))
+        .build();
 
     public final FlagRef noEntityCrash =
-            flagBuilder(Configs.TEST_CONFIG, NO_ENTITY_CRASH).build();
+            flagBuilder(other.add("no-entity-crash")).build();
 
     public final FlagRef noBlockEntityCrash =
-            flagBuilder(Configs.TEST_CONFIG, NO_BLOCK_ENTITY_CRASH).build();
+            flagBuilder(other.add("no-block-entity-crash")).build();
 
-    public final FlagRef noNtwException = builder(Configs.TEST_CONFIG, Boolean.class)
-            .path(IGNORE_PROTOCOL_ERROR)
+    public final FlagRef noNtwException = builder(other.add("no-disconnect-on-network-error"), Boolean.class)
             .defaultValue(false)
             .build();
 
-    public final FlagRef noDecodeException = builder(Configs.TEST_CONFIG, Boolean.class)
-        .path(makePath("other.no-disconnect-on-packet-decode"))
+    public final FlagRef noDecodeException = builder(other.add("no-disconnect-on-packet-decode"), Boolean.class)
         .defaultValue(false)
         .build();
 
-    public final FlagRef noUnexpected = builder(Configs.TEST_CONFIG, Boolean.class)
-        .path(makePath("other.no-disconnect-on-packet-unexpected"))
+    public final FlagRef noUnexpected = builder(other.add("no-disconnect-on-packet-unexpected"), Boolean.class)
         .defaultValue(false)
         .build();
 
     public final FlagRef portalGui =
-            flagBuilder(Configs.TEST_CONFIG, PORTAL_GUI).build();
+            flagBuilder(other.add("keep-gui-open-on-portal")).build();
 
-    public final StringRef clientBrandName = builder(Configs.TEST_CONFIG, CLIENT_BRAND_NAME, StringRef.TYPE)
+    public final StringRef clientBrandName = builder(other.add("client-brand-name"), StringRef.TYPE)
             .defaultValue("")
             .hideConfig()
             .build();
 
-    public final KeyBindRef cursorSwitchKey = hotkey(Configs.TEST_CONFIG, SCREEN_CURSOR_LOCK_SWITCH)
+    public final KeyBindRef cursorSwitchKey = hotkey(Configs.TEST_CONFIG, other.add("cursor-switch-hotkey").toPath())
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::onCursorLockSwitch))
             .build();
@@ -289,7 +276,7 @@ public class ClientExtra extends BaseModule {
     protected void checkClientData(Screen screen) {
         ScreenAccess currentScreen = ScreenAccess.of( mc.currentScreen);
         Screen parentScreen = (currentScreen instanceof QuestionScreen ? currentScreen.getParent() : mc.currentScreen);
-        if (mc.player != null
+        if (keepInServer.get() && mc.player != null
                 && mc.world != null
                 && mc.inGameHud != null
                 && mc.getNetworkHandler() != null

@@ -1,16 +1,15 @@
 package me.matl114.hacks.modules.mine;
 
-import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
@@ -31,28 +30,24 @@ public class MineArua extends BaseModule {
         bindFlag(enable);
     }
 
-    public static final String[] MINEARUA_WHILELIST = {"mine-arua", "block-whitelist"};
-    public static final String[] MINEARUA = {"mine-arua", "mine-arua"};
-    public static final String[] MINEARUA_HOTKEY = {"mine-arua", "mine-arua-hotkey"};
     private BlockPos cachePosition;
     private int lastRefreshTick;
-    public FlagRef enable = flagBuilder(Configs.MINE_CONFIG, MINEARUA).build();
+    public final ModulePath mineArua = makePath(Configs.MINE_CONFIG,"mine-arua");
 
-    public KeyBindRef keyBind = toggleHotkey(
-                    Configs.MINE_CONFIG,
-                    MINEARUA_HOTKEY,
+    public final FlagRef enable = flagBuilder(mineArua.addEnable()).build();
+    public KeyBindRef keyBind = moduleEntry(
+                    mineArua.addHotkey(),
                     new MultiKeyBind(),
-                    MINEARUA)
+                    mineArua.addEnable())
             .build();
 
     public NBTRef<RegistryRegex<Block>> whiteListRegex = builder(
-                    Configs.MINE_CONFIG,
-                    MINEARUA_WHILELIST,
+                    mineArua.add("block-whitelist"),
                     NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(.*bed)$"), Registries.BLOCK))
             .build();
 
-    public FlagRef autoBreak = flagBuilder(Configs.MINE_CONFIG, makePath("mine-arua.auto-break"))
+    public FlagRef autoBreak = flagBuilder(mineArua.add("auto-break"))
         .build();
 
     @Override

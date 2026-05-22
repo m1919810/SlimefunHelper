@@ -6,10 +6,11 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
-import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -31,32 +32,26 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 
 public class Airplace extends BaseModule {
-    public static final String[] AIR_PLACE = {"interaction-tweaks", "air-place", "enable"};
-
-    public static final String[] HOTKEY = {"interaction-tweaks", "air-place", "hotkey"};
-    public static final String[] AIR_PLACE_RANGE = {"interaction-tweaks", "air-place", "range"};
-
-    public static final String[] AIR_PLACE_RENDER = {"interaction-tweaks", "air-place", "render"};
-
-    public static final String[] AIR_WALL = {"interaction-tweaks", "air-place", "mode"};
+    public final ModulePath interactionTweaks = makePath(Configs.INTERACT_CONFIG, "interaction-tweaks");
+    public final ModulePath airPlace = interactionTweaks.add("air-place");
 
     public Airplace() {}
 
     public final FlagRef enable =
-            flagBuilder(Configs.INTERACT_CONFIG, AIR_PLACE).build();
+            flagBuilder(airPlace.add("enable")).build();
 
-    public final KeyBindRef hotkey = toggleHotkey(Configs.INTERACT_CONFIG, HOTKEY, new MultiKeyBind(), AIR_PLACE)
+    public final KeyBindRef hotkey = moduleEntry(airPlace.add("hotkey"), new MultiKeyBind(), airPlace.add("enable"))
             .build();
 
-    public final DoubleRef range = builder(Configs.INTERACT_CONFIG, AIR_PLACE_RANGE, DoubleRef.TYPE)
+    public final DoubleRef range = builder(airPlace.add("range"), DoubleRef.TYPE)
             .defaultValue(5.0D)
             .validator(Configs.doubleRange(0, 10000))
             .build();
 
     public final FlagRef render =
-            flagBuilder(Configs.INTERACT_CONFIG, AIR_PLACE_RENDER).build();
+            flagBuilder(airPlace.add("render")).build();
     // todo: add to switch mode
-    public final EnumRef<AirPlaceMode> enableAirWall = builder(Configs.INTERACT_CONFIG, AIR_WALL, AirPlaceMode.class)
+    public final EnumRef<AirPlaceMode> enableAirWall = builder(airPlace.add("mode"), AirPlaceMode.class)
             .defaultValue(AirPlaceMode.VANILLA)
             .updateListener(s -> {
                 onSwitch();
@@ -126,7 +121,7 @@ public class Airplace extends BaseModule {
 
     public void onGrimAirWall(BlockHitResult hitResult) {
         clearCurrentAirWall();
-        if (ACTasks.getDisablerManager().isGrimSelfCheckDisabled()) {
+        if (DisablerManager.INSTANCE.isGrimSelfCheckDisabled()) {
             targetPos = hitResult.getBlockPos();
         } else {
             Debug.chat("[AirWall] 当前暂未禁用GrimSelfCheck,无法执行");

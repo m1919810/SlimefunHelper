@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.combat;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.StringRef;
@@ -14,17 +15,15 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 
 public class TotemLog extends BaseModule {
-    public static final String[] TOTEM_LOG = {"totem", "log-totem"};
-
-    public static final String[] TOTEM_LOG_FORMAT = {"totem", "log-totem-format"};
+    public final ModulePath totem = makePath(Configs.COMBAT_CONFIG, "totem");
 
     public TotemLog() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, TOTEM_LOG).build();
+    public final FlagRef enable = flagBuilder(totem.add("log-totem")).build();
 
-    public final StringRef logFormat = builder(Configs.COMBAT_CONFIG, TOTEM_LOG_FORMAT, StringRef.TYPE)
+    public final StringRef logFormat = builder(totem.add("log-totem-format"), StringRef.TYPE)
             .defaultValue("&c[Totem]&f %s trigger totem")
             .build();
 

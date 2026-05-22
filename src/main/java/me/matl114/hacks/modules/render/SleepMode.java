@@ -9,6 +9,7 @@ import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -43,17 +44,15 @@ import net.minecraft.util.Formatting;
 public class SleepMode extends BaseModule {
 
     private int sleepingLevel = 0;
+    public final ModulePath render = makePath(Configs.RENDER_CONFIG, "render");
 
     public SleepMode() {}
 
-    public static final String[] END_SLEEP_KEY = {"render", "wake-up-screen"};
-
-    public final KeyBindRef keyBindRef = hotkey(Configs.RENDER_CONFIG, END_SLEEP_KEY)
+    public final KeyBindRef keyBindRef = hotkey(Configs.RENDER_CONFIG, render.add("wake-up-screen").toPath())
             .defaultValue(new MultiKeyBind(KeyCode.KEY_F11))
             .build();
 
-    public final FlagRef runnerOptimize = flagBuilder(
-                    Configs.RENDER_CONFIG, makePath("render.sleep-mode-runner-optimize"))
+    public final FlagRef runnerOptimize = flagBuilder(render.add("sleep-mode-runner-optimize"))
             .build();
 
     @Override

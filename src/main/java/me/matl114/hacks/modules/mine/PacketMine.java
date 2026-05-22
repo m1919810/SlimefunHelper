@@ -7,9 +7,9 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.WorldUtils;
@@ -26,44 +26,38 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class PacketMine extends BaseModule {
-    public static final String[] MINE_ONEBLOCK_PACKET_MULTIPLE = {"mine-oneblock", "multiple-packets"};
-    public static final String[] MINE_ONEBLOCK_PACKET_LAZY = {"mine-oneblock", "lazy-mode"};
-    public static final String[] MINE_ONEBLOCK_PACKET_PICKAXE = {"mine-oneblock", "auto-pickaxe"};
-    public static final String[] MINE_ONEBLOCK = {"mine-oneblock", "mine-oneblock"};
-    public static final String[] MINE_ONEBLOCK_HOTKEY = {"mine-oneblock", "mine-oneblock-hotkey"};
-
     public PacketMine() {
         bindFlag(autoEnable);
     }
 
-    public final FlagRef autoEnable =
-            flagBuilder(Configs.MINE_CONFIG, MINE_ONEBLOCK).build();
+    public ModulePath packetMine = makePath(Configs.MINE_CONFIG, "mine-oneblock");
 
-    public final KeyBindRef hotkey = toggleHotkey(
-                    Configs.MINE_CONFIG,
-                    MINE_ONEBLOCK_HOTKEY,
+    public final FlagRef autoEnable =
+            flagBuilder(packetMine.add("enable")).build();
+
+    public final KeyBindRef hotkey = moduleEntry(
+                    packetMine.addHotkey(),
                     new MultiKeyBind(),
-                    MINE_ONEBLOCK)
+                    packetMine.addEnable())
             .build();
 
-    public final IntRef multiplePackets = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(MINE_ONEBLOCK_PACKET_MULTIPLE)
+    public final IntRef multiplePackets = intBuilder(packetMine.add("multiple-packets"))
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final FlagRef considerAirState = flagBuilder(
-                    Configs.MINE_CONFIG, makePath("mine-oneblock.consider-air-state"))
+                    packetMine.add("consider-air-state"))
             .build();
 
     public final DoubleRef mineThreshold = builder(
-                    Configs.MINE_CONFIG, makePath("mine-oneblock.mine-threshold"), DoubleRef.TYPE)
+                    packetMine.add("mine-threshold"), DoubleRef.TYPE)
             .defaultValue(0.7)
             .validator(Configs.doubleRange(-0.0001F, 1.0001F))
             .build();
 
     public final FlagRef autoTool =
-            flagBuilder(Configs.MINE_CONFIG, MINE_ONEBLOCK_PACKET_PICKAXE).build();
+            flagBuilder(packetMine.add("auto-pickaxe")).build();
 
     @Override
     public void registerAll() {

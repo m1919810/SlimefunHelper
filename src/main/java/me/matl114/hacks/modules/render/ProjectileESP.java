@@ -11,6 +11,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -40,29 +41,26 @@ import net.minecraft.util.math.random.Random;
 import org.joml.Vector2d;
 
 public class ProjectileESP extends BaseModule {
-    public static final String[] CAL_TRACE = {"detect-entity", "calculate-trace"};
-    public static final String[] CAL_FIREBALL_TRACE = {"detect-entity", "cal-fireball"};
-    public static final String[] CAL_PROJECTILE_TRACE = {"detect-entity", "cal-projectile"};
-    public static final String[] RENDER_FIREBALL_TRACE = {"detect-entity", "render-fireball"};
-    public static final String[] RENDER_PROJECTILE_TRACE = {"detect-entity", "render-projectile"};
+    public final ModulePath detectEntity = makePath(Configs.RENDER_CONFIG, "detect-entity");
+    public final ModulePath calculateTrace = detectEntity.add("calculate-trace");
 
     public ProjectileESP() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.RENDER_CONFIG, CAL_TRACE).build();
+    public final FlagRef enable = flagBuilder(calculateTrace).build();
 
     public final FlagRef calculateFireball =
-            flagBuilder(Configs.RENDER_CONFIG, CAL_FIREBALL_TRACE).build();
+            flagBuilder(detectEntity.add("cal-fireball")).build();
 
     public final FlagRef calculateArrow =
-            flagBuilder(Configs.RENDER_CONFIG, CAL_PROJECTILE_TRACE).build();
+            flagBuilder(detectEntity.add("cal-projectile")).build();
 
     public final FlagRef renderFireball =
-            flagBuilder(Configs.RENDER_CONFIG, RENDER_FIREBALL_TRACE).build();
+            flagBuilder(detectEntity.add("render-fireball")).build();
 
     public final FlagRef renderArrow =
-            flagBuilder(Configs.RENDER_CONFIG, RENDER_PROJECTILE_TRACE).build();
+            flagBuilder(detectEntity.add("render-projectile")).build();
 
     @Override
     public void registerAll() {

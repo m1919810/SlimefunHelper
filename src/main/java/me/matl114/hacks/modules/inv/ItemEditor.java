@@ -4,6 +4,7 @@ import java.util.function.Consumer;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.itemEdit.ItemEditScreen;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
@@ -18,11 +19,11 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class ItemEditor extends BaseModule {
-    public static final String[] OPEN_EDITOR = {"item-editor", "open-editor"};
+    public final ModulePath itemEditor = makePath(Configs.INV_CONFIG, "item-editor");
 
     public ItemEditor() {}
 
-    public final KeyBindRef keyBind = hotkey(Configs.INV_CONFIG, OPEN_EDITOR)
+    public final KeyBindRef keyBind = hotkey(Configs.INV_CONFIG, itemEditor.add("open-editor").toPath())
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_I))
             .registerHotkey(HotKeyUtils.asHandler(this::openEditor))
             .build();

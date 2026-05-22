@@ -6,6 +6,7 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -15,30 +16,24 @@ import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.entity.PlayerInputUtils;
-import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.Vec3d;
 
 public class MovExtra extends BaseModule {
-    public static final String[] MOVE_COMPATE_HIGHER_VERSION = {"move-safety", "disable-stepheight-feature"};
-
-    public static final String[] ELYTRA_CONSIDER_FUCKING_GRIMAC_1_21_2_INPUT = {
-        "move-safety", "grimac-1-21-2-input-features"
-    };
-
-    public static final String[] FLIGTH_HOTKEY = {"move-safety", "flight", "toggle-flying"};
+    public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
+    public final ModulePath flight = moveSafety.add("flight");
 
     public MovExtra() {}
 
-    public final FlagRef fuckGrimAC = flagBuilder(Configs.MOV_CONFIG, ELYTRA_CONSIDER_FUCKING_GRIMAC_1_21_2_INPUT)
+    public final FlagRef fuckGrimAC = flagBuilder(moveSafety.add("grimac-1-21-2-input-features"))
             .build();
 
     public final FlagRef noStepHeightFeature =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_COMPATE_HIGHER_VERSION).build();
+            flagBuilder(moveSafety.add("disable-stepheight-feature")).build();
 
-    public final KeyBindRef toggleFlyStateKeyBind = hotkey(Configs.MOV_CONFIG, FLIGTH_HOTKEY)
+    public final KeyBindRef toggleFlyStateKeyBind = hotkey(flight.add("toggle-flying"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onFlightToggle))
             .build();

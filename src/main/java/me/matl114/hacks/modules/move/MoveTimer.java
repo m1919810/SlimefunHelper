@@ -1,33 +1,31 @@
 package me.matl114.hacks.modules.move;
 
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 
 public class MoveTimer extends BaseModule {
-    public static final String[] MOVE_TIMER_ENABLE = {"move-speed", "timer", "timer-enable"};
-    public static final String[] MOVE_TIMER_ENABLE_HOTKEY = {"move-speed", "timer", "timer-enable-hotkey"};
-    public static final String[] MOVE_TICK_TIMER = {"move-speed", "timer", "multiply"};
+    public final ModulePath moveSpeed = makePath(Configs.MOV_CONFIG, "move-speed");
+    public final ModulePath moveTimer = moveSpeed.add("timer");
 
     public MoveTimer() {
         bindFlag(enable);
     }
 
     public final FlagRef enable =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_TIMER_ENABLE).build();
+            flagBuilder(moveTimer.add("timer-enable")).build();
 
-    public final KeyBindRef keyBind = toggleHotkey(
-                    Configs.MOV_CONFIG,
-                    MOVE_TIMER_ENABLE_HOTKEY,
+    public final KeyBindRef keyBind = moduleEntry(
+                    moveTimer.add("timer-enable-hotkey"),
                     new MultiKeyBind(),
-                    MOVE_TIMER_ENABLE)
+                    moveTimer.add("timer-enable"))
             .build();
 
-    public final IntRef timer = builder(Configs.MOV_CONFIG, MOVE_TICK_TIMER, IntRef.TYPE)
+    public final IntRef timer = builder(moveTimer.add("multiply"), IntRef.TYPE)
             .defaultValue(0)
             .validator(Configs.INT_NONNEGATIVE)
             .build();

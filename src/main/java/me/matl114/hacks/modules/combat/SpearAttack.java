@@ -16,6 +16,7 @@ import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
@@ -41,12 +42,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 
 public class SpearAttack extends BaseModule implements LegalMovementManager.MovementModifier {
-    public static final String[] SPEAR_ATTACK_ENABLE = new String[] {"spear-module", "spear-attack-enable"};
-    public static final String[] SPEAR_ATTACK_HOTKEY = new String[] {"spear-module", "spear-attack-hotkey"};
-    public static final String[] SPEAR_DISTANCE = new String[] {"spear-module", "spear-motion-simulation"};
-    public static final String[] SPEAR_MAX_TP = new String[] {"spear-module", "spear-max-tp"};
-    public static final String[] SPEAR_BACK_TP_DELAY_TICK = new String[] {"spear-module", "spear-server-tick-delay"};
-    public static final String[] SPEAR_RENDER = new String[] {"spear-module", "render-target"};
+    public final ModulePath spearModule = makePath(Configs.COMBAT_CONFIG, "spear-module");
     private static LegalMovementManager.DelegateMovementModifier INSTANCE;
 
     public SpearAttack() {
@@ -64,27 +60,26 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         return PRIORITY_LOW;
     }
 
-    public final FlagRef enable = builder(Configs.COMBAT_CONFIG, SPEAR_ATTACK_ENABLE, Boolean.class)
+    public final FlagRef enable = builder(spearModule.add("spear-attack-enable"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final KeyBindRef keyBind = hotkey(Configs.COMBAT_CONFIG, SPEAR_ATTACK_HOTKEY)
+    public final KeyBindRef keyBind = hotkey(spearModule.add("spear-attack-hotkey"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onSpearAction))
             .build();
 
-    public final DoubleRef spearDistance = builder(Configs.COMBAT_CONFIG, SPEAR_DISTANCE, DoubleRef.TYPE)
+    public final DoubleRef spearDistance = builder(spearModule.add("spear-motion-simulation"), DoubleRef.TYPE)
             .defaultValue(50.0D)
             .build();
 
-    public final DoubleRef spearMaxTp = builder(Configs.COMBAT_CONFIG, SPEAR_MAX_TP, DoubleRef.TYPE)
+    public final DoubleRef spearMaxTp = builder(spearModule.add("spear-max-tp"), DoubleRef.TYPE)
             .defaultValue(100.0D)
             .build();
 
-    public final FlagRef spearRender =
-            flagBuilder(Configs.COMBAT_CONFIG, SPEAR_RENDER).build();
+    public final FlagRef spearRender = flagBuilder(spearModule.add("render-target")).build();
 
-    public final IntRef delay = builder(Configs.COMBAT_CONFIG, SPEAR_BACK_TP_DELAY_TICK, IntRef.TYPE)
+    public final IntRef delay = intBuilder(spearModule.add("spear-server-tick-delay"))
             .defaultValue(2)
             .validator(Configs.INT_POSITIVE)
             .build();

@@ -3,36 +3,32 @@ package me.matl114.hacks.modules.interact;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 
 public class InteractExtra extends BaseModule {
-    public static final String[] NO_COOLDOWN_ENABLE = {"interact-fix", "no-cool-down"};
-    public static final String[] NO_COOLDOWN_VALUE = {"interact-fix", "cool-down-rewrite"};
-    public static final String[] INTERACT_WHEN_RIDING = {"interact-fix", "allow-ride-interact"};
-    public static final String[] INTERACT_HOLD_USE = {"interact-fix", "hold-use"};
-
-    public static final String[] INTERACT_HOLD_USE_SMALL_PERIOD = {"interact-fix", "hold-use-start-tick"};
+    public final ModulePath interactFix = makePath(Configs.INTERACT_CONFIG, "interact-fix");
 
     public InteractExtra() {}
 
     public final FlagRef noCooldown =
-            flagBuilder(Configs.INTERACT_CONFIG, NO_COOLDOWN_ENABLE).build();
+            flagBuilder(interactFix.add("no-cool-down")).build();
 
-    public final IntRef noCooldownValue = builder(Configs.INTERACT_CONFIG, NO_COOLDOWN_VALUE, IntRef.TYPE)
+    public final IntRef noCooldownValue = intBuilder(interactFix.add("cool-down-rewrite"))
             .defaultValue(4)
             .build();
 
-    public final FlagRef rideUse = builder(Configs.INTERACT_CONFIG, INTERACT_WHEN_RIDING, FlagRef.TYPE)
+    public final FlagRef rideUse = builder(interactFix.add("allow-ride-interact"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
 
-    public final FlagRef holdUse = builder(Configs.INTERACT_CONFIG, INTERACT_HOLD_USE, FlagRef.TYPE)
+    public final FlagRef holdUse = builder(interactFix.add("hold-use"), FlagRef.TYPE)
             .defaultValue(false)
             .build();
 
-    public final IntRef holdUseStartTick = builder(Configs.INTERACT_CONFIG, INTERACT_HOLD_USE_SMALL_PERIOD, IntRef.TYPE)
+    public final IntRef holdUseStartTick = intBuilder(interactFix.add("hold-use-start-tick"))
             .defaultValue(4)
             .build();
 

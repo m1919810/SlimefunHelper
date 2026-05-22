@@ -10,6 +10,7 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
@@ -40,6 +41,8 @@ import org.jetbrains.annotations.ApiStatus;
 public class NoFall extends BaseModule implements LegalMovementManager.MovementModifier {
 
     public static LegalMovementManager.DelegateMovementModifier instance;
+    public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
+    public final ModulePath noFallPath = moveSafety.add("no-fall");
 
     public NoFall() {
         if (instance == null) {
@@ -48,38 +51,26 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
+        bindFlag(noFall);
     }
 
-    public static final String[] MOVE_NOFALL = {"move-safety", "no-fall", "toggle"};
-    public static final String[] MOVE_NOFALL_MODE = {"move-safety", "no-fall", "bypass-mode"};
-    public static final String[] MOVE_NOFALL_SAFE_DISTANCE = {"move-safety", "no-fall", "safe-distance-modify"};
-    public static final String[] MOVE_NOFALL_INVULNERABLE_EQUIPMENT_ID = {
-        "move-safety", "no-fall", "equipment-id-bypass-nofall"
-    };
 
-    public static final String[] MOVE_NOFALL_WHEN_FLY = {"move-safety", "no-fall", "disable-when-allow-flying"};
-
-    public final FlagRef noFall = builder(Configs.MOV_CONFIG, Boolean.class)
-            .path(MOVE_NOFALL)
-            .defaultValue(false)
-            .apply(this::bindFlag)
+    public final FlagRef noFall = flagBuilder(noFallPath.add("toggle"))
             .build();
-    public final EnumRef<NofallBypassMode> noFallModel = builder(Configs.MOV_CONFIG, NofallBypassMode.class)
-            .path(MOVE_NOFALL_MODE)
+    public final EnumRef<NofallBypassMode> noFallModel = builder(noFallPath.add("bypass-mode"), NofallBypassMode.class)
             .defaultValue(NofallBypassMode.NO_BYPASS)
             .build();
 
-    public final IntRef noFallSafeDistance = builder(Configs.MOV_CONFIG, Integer.class)
-            .path(MOVE_NOFALL_SAFE_DISTANCE)
+    public final IntRef noFallSafeDistance = intBuilder(noFallPath.add("safe-distance-modify"))
             .defaultValue(0)
             .build();
 
     public final NBTRef<Regex> equipmentIdBypass = builder(
-                    Configs.MOV_CONFIG, MOVE_NOFALL_INVULNERABLE_EQUIPMENT_ID, Regex.class)
+                    noFallPath.add("equipment-id-bypass-nofall"), Regex.class)
             .defaultValue(new Regex("^(SLIME.*_BOOTS)$"))
             .build();
 
-    public final FlagRef disableFlyNoFall = builder(Configs.MOV_CONFIG, MOVE_NOFALL_WHEN_FLY, Boolean.class)
+    public final FlagRef disableFlyNoFall = builder(noFallPath.add("disable-when-allow-flying"), Boolean.class)
             .defaultValue(true)
             .build();
 

@@ -17,6 +17,7 @@ import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -39,68 +40,58 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraBot extends BaseModule {
+    public final ModulePath combatBot = makePath(Configs.COMBAT_CONFIG, "combat-bot");
+    public final ModulePath elytraBot = combatBot.add("elytra-bot");
+
     public ElytraBot() {}
 
-    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.enable"))
-            .build();
+    public final FlagRef enable = flagBuilder(elytraBot.add("enable")).build();
 
-    public final KeyBindRef keyBind = toggleHotkey(
-                    Configs.COMBAT_CONFIG,
-                    makePath("combat-bot.elytra-bot.hotkey"),
+    public final KeyBindRef keyBind = moduleEntry(
+                    elytraBot.add("hotkey"),
                     new MultiKeyBind(),
-                    makePath("combat-bot.elytra-bot.enable"))
+                    elytraBot.add("enable"), () -> this.mode.get().getDisplay())
             .build();
 
-    public final EnumRef<Mode> mode = builder(Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.mode"), Mode.class)
+    public final EnumRef<Mode> mode = builder(elytraBot.add("mode"), Mode.class)
             .defaultValue(Mode.FOLLOW)
             .build();
 
-    public final FlagRef autoFly = flagBuilder(
-                    Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.auto-start-fallflying"))
-            .build();
+    public final FlagRef autoFly = flagBuilder(elytraBot.add("auto-start-fallflying")).build();
 
-    public final DoubleRef maceHeight = builder(
-                    Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.mace-height"), DoubleRef.TYPE)
+    public final DoubleRef maceHeight = builder(elytraBot.add("mace-height"), DoubleRef.TYPE)
             .defaultValue(3.0D)
             .build();
 
-    public final FlagRef playerOnly = builder(
-                    Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.player-only"), FlagRef.TYPE)
+    public final FlagRef playerOnly = builder(elytraBot.add("player-only"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
 
-    public final FlagRef onlyWhenNoWASD = flagBuilder(
-                    Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.only-when-no-wasd"))
-            .build();
+    public final FlagRef onlyWhenNoWASD = flagBuilder(elytraBot.add("only-when-no-wasd")).build();
 
-    public final DoubleRef followOnGroundHeight = builder(
-                    Configs.COMBAT_CONFIG,
-                    makePath("combat-bot.elytra-bot.follow-on-ground-height-extra"),
-                    Double.class)
+    public final DoubleRef followOnGroundHeight = builder(elytraBot.add("follow-on-ground-height-extra"), Double.class)
             .defaultValue(0.5D)
             .validator(Configs.doubleRange(0.0D, 10.0D))
             .build();
 
-    public final DoubleRef minimalAttackRange = builder(
-                    Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.min-attack-range"), Double.class)
+    public final DoubleRef minimalAttackRange = builder(elytraBot.add("min-attack-range"), Double.class)
             .defaultValue(2.0D)
             .build();
 
 
-    public final DoubleRef combatRange = builder(Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.combat-range"), DoubleRef.TYPE)
+    public final DoubleRef combatRange = builder(elytraBot.add("combat-range"), DoubleRef.TYPE)
         .defaultValue(3.5D)
         .build();
 
-    public final IntRef maceRemainPullUpTick = builder(Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.mace-max-extra-pull-up-tick"), IntRef.TYPE)
+    public final IntRef maceRemainPullUpTick = builder(elytraBot.add("mace-max-extra-pull-up-tick"), IntRef.TYPE)
         .defaultValue(20)
         .build();
 
-    public final FlagRef render = flagBuilder(Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.render"))
-            .build();
+    public final FlagRef render = flagBuilder(elytraBot.add("render")).build();
 
 
 
-    public final KeyBindRef switchMode = hotkey(Configs.COMBAT_CONFIG, makePath("combat-bot.elytra-bot.switch-hotkey"))
+    public final KeyBindRef switchMode = hotkey(elytraBot.add("switch-hotkey"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onSwitch))
             .build();
@@ -740,7 +731,7 @@ public class ElytraBot extends BaseModule {
 
         @Override
         public Text getDisplay() {
-            return Text.of(name().toLowerCase(Locale.ROOT));
+            return Text.translatable("configenum.elytra-bot-mode." + name().toLowerCase(Locale.ROOT));
         }
     }
 }

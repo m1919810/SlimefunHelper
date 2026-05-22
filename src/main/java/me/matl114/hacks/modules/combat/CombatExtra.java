@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.combat;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -20,32 +21,26 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 
 public class CombatExtra extends BaseModule {
-    public static final String[] COMBAT_INTERVEL = {"attack", "cancel-interval"};
-    public static final String[] COMBAT_RIDING = {"attack", "riding-attack"};
-    public static final String[] ATTACK_RANGE = {"attack", "att-range"};
-    public static final String[] COMBAT_SHIELDING = {"attack", "shielding-attack"};
 
-    public static final String[] COMBAT_AUTOSHIELD = {"attack", "shielding-setback-log"};
-    public static final String[] COMBAT_MACE_FALLFLYING_TICKS = {"attack", "att-ticks-predict-fallflying"};
+    public final ModulePath combat = makePath(Configs.COMBAT_CONFIG, "attack");
 
-    public final DoubleRef range = builder(Configs.COMBAT_CONFIG, ATTACK_RANGE, DoubleRef.TYPE)
+    public final DoubleRef range = doubleBuilder(combat.add("att-range"))
             .defaultValue(0.0D)
             .build();
 
-    public final FlagRef shieldPredict = builder(Configs.COMBAT_CONFIG, COMBAT_AUTOSHIELD, Boolean.class)
-            .defaultValue(false)
+    public final FlagRef shieldPredict = flagBuilder(combat.add("shielding-setback-log"))
             .build();
 
     public final FlagRef useAttack =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_SHIELDING).build();
+            flagBuilder(combat.add( "shielding-attack")).build();
 
     public final FlagRef rideAttack =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_RIDING).build();
+            flagBuilder(combat.add("riding-attack")).build();
 
     public final FlagRef noCooldown =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_INTERVEL).build();
+            flagBuilder(combat.add("cancel-interval")).build();
 
-    public final IntRef fallFlyVcMultiply = builder(Configs.COMBAT_CONFIG, COMBAT_MACE_FALLFLYING_TICKS, IntRef.TYPE)
+    public final IntRef fallFlyVcMultiply = intBuilder(combat.add("att-ticks-predict-fallflying"))
             .defaultValue(2)
             .validator(Configs.INT_NONNEGATIVE)
             .build();

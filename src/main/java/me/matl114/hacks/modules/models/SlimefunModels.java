@@ -8,6 +8,7 @@ import me.matl114.ModConfig;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.ListRef;
@@ -26,22 +27,20 @@ import net.minecraft.util.Identifier;
 import org.yaml.snakeyaml.Yaml;
 
 public class SlimefunModels extends BaseModule {
-    public static final String[] SLIMEFUN_MODEL_ID = {"model-config", "enable-slimefun-cmd-override"};
-    public static final String[] ITEM_MODEL_OVERRIDE = {"model-config", "enable-item-model-override"};
-
-    public static final String[] AUTO_MODEL_PATTERN = {"slimefun-models", "path-pattern-for-slimefun-model"};
+    public final ModulePath modelConfig = makePath(Configs.MODEL_CONFIG, "model-config");
+    public final ModulePath slimefunModels = makePath(Configs.MODEL_CONFIG, "slimefun-models");
 
     public SlimefunModels() {}
 
-    public final FlagRef enableCmd = builder(Configs.MODEL_CONFIG, SLIMEFUN_MODEL_ID, Boolean.class)
+    public final FlagRef enableCmd = builder(modelConfig.add("enable-slimefun-cmd-override"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef enableModel = builder(Configs.MODEL_CONFIG, ITEM_MODEL_OVERRIDE, Boolean.class)
+    public final FlagRef enableModel = builder(modelConfig.add("enable-item-model-override"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final ListRef autoModelPattern = builder(Configs.MODEL_CONFIG, AUTO_MODEL_PATTERN, ListRef.TYPE)
+    public final ListRef autoModelPattern = builder(slimefunModels.add("path-pattern-for-slimefun-model"), ListRef.TYPE)
             .defaultValue(List.of("^slimefunhelper:slimefunitem/.*$", "^slimefunhelper:test/.*$"))
             .listValidator(Configs.REGEX_VALIDATOR)
             .build();

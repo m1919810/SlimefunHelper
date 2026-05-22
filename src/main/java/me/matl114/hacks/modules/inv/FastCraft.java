@@ -9,6 +9,7 @@ import me.matl114.gui.other.TradeInformationSubScreen;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RecipeTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
@@ -32,15 +33,14 @@ import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Unique;
 
 public class FastCraft extends BaseModule {
+    public final ModulePath fastCraft = makePath(Configs.INV_CONFIG, "fast-craft");
+
     public FastCraft() {}
 
-    public static final String[] FAST_CRAFT = {"fast-craft", "enable-fastcraft-buttons"};
-    public static final String[] TOGGLE_DROP_CRAFT = {"fast-craft", "drop-craft"};
-
-    public final FlagRef enable = flagBuilder(Configs.INV_CONFIG, FAST_CRAFT).build();
+    public final FlagRef enable = flagBuilder(fastCraft.add("enable-fastcraft-buttons")).build();
 
     public final FlagRef dropCraft =
-            flagBuilder(Configs.INV_CONFIG, TOGGLE_DROP_CRAFT).build();
+            flagBuilder(fastCraft.add("drop-craft")).build();
 
     @Override
     public void registerAll() {
@@ -173,7 +173,7 @@ public class FastCraft extends BaseModule {
                         .withTooltips(TooltipHandler.of(
                                 ChatUtils.parseTooltipsTranslation("widget.fast-craft.lock.tooltips", ""))))
                 .addToSub(recipeSubScreen);
-        Runnable toggle = ToggleManager.wrapFlagAsToggle(TOGGLE_DROP_CRAFT, dropCraft);
+        Runnable toggle = ToggleManager.wrapFlagAsToggle("fast-craft.drop-craft", dropCraft);
 
         ExecutableWidget toggleDropButton = ExecutableWidget.instance(120, screen.height / 2 - 72, 24, 12)
                 .setElementHandler(new ButtonElement(
@@ -221,7 +221,7 @@ public class FastCraft extends BaseModule {
                         .withTooltips(TooltipHandler.of(
                                 ChatUtils.parseTooltipsTranslation("widget.fast-craft.lock.tooltips", ""))))
                 .addToSub(recipeSubScreen);
-        Runnable toggle = ToggleManager.wrapFlagAsToggle(TOGGLE_DROP_CRAFT, dropCraft);
+        Runnable toggle = ToggleManager.wrapFlagAsToggle("fast-craft.drop-craft", dropCraft);
 
         ExecutableWidget toggleDropButton = ExecutableWidget.instance(150, screen.height / 2 - 72, 24, 12)
                 .setElementHandler(new ButtonElement(

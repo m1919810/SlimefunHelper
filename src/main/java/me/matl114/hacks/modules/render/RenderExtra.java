@@ -9,6 +9,7 @@ import java.util.Set;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
@@ -31,57 +32,50 @@ import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 
 public class RenderExtra extends BaseModule {
-    public static final String[] RESOURCE_IGNORE_SERVER = {"resource", "server", "ignore-server-request"};
-    public static final String[] RENDER_NO_EFFECT = {"render", "no-effect"};
-    public static final String[] NO_NAUSEA = {"render", "no-nausea"};
-    public static final String[] RENDER_NIGHTVISION = {"render", "nightvision"};
-    public static final String[] RENDER_NO_EFFECT_FORCE = {"render", "eff-setting", "force-no"};
-    public static final String[] RENDER_NO_EFFECT_TYPES = {"render", "eff-setting", "types"};
-    public static final String[] RENDER_REJECT_WURST = {"render", "disable-wurst-hud"};
-    public static final String[] RENDER_ENHANCED_DEBUG_HUD = {"render", "enhanced-debug-hud"};
-    public static final String[] RENDER_REARRANGE_GAME_MENU = {"render", "optimize-game-menu"};
-    public static final String[] RENDER_NO_VANILLA_RENDER = {"render", "no-overlay"};
+    public final ModulePath resource = makePath(Configs.RENDER_CONFIG, "resource");
+    public final ModulePath serverResource = resource.add("server");
+    public final ModulePath render = makePath(Configs.RENDER_CONFIG, "render");
+    public final ModulePath effectSetting = render.add("eff-setting");
 
     public RenderExtra() {}
 
     public final FlagRef enableRejectResourcePack =
-            flagBuilder(Configs.RENDER_CONFIG, RESOURCE_IGNORE_SERVER).build();
+            flagBuilder(serverResource.add("ignore-server-request")).build();
 
-    public final FlagRef nightVision = builder(Configs.RENDER_CONFIG, RENDER_NIGHTVISION, Boolean.class)
+    public final FlagRef nightVision = builder(render.add("nightvision"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef noEffect = builder(Configs.RENDER_CONFIG, RENDER_NO_EFFECT, Boolean.class)
+    public final FlagRef noEffect = builder(render.add("no-effect"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef noNausea = builder(Configs.RENDER_CONFIG, NO_NAUSEA, Boolean.class)
+    public final FlagRef noNausea = builder(render.add("no-nausea"), Boolean.class)
             .defaultValue(true)
             .build();
 
     public final FlagRef noEffectForce =
-            flagBuilder(Configs.RENDER_CONFIG, RENDER_NO_EFFECT_FORCE).build();
+            flagBuilder(effectSetting.add("force-no")).build();
 
     public final FlagRef noOverlay =
-            flagBuilder(Configs.RENDER_CONFIG, RENDER_NO_VANILLA_RENDER).build();
+            flagBuilder(render.add("no-overlay")).build();
 
-    public final FlagRef noFireOverlay = flagBuilder(Configs.RENDER_CONFIG, makePath("render.no-fire-overlay"))
+    public final FlagRef noFireOverlay = flagBuilder(render.add("no-fire-overlay"))
             .build();
 
     public final NBTRef<RegistryRegex<StatusEffect>> noEffectTypes = builder(
-                    Configs.RENDER_CONFIG,
-                    RENDER_NO_EFFECT_TYPES,
+                    effectSetting.add("types"),
                     NBTType.<RegistryRegex<StatusEffect>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(blindness|darkness|nausea)$"), Registries.STATUS_EFFECT))
             .build();
 
     public final FlagRef noWurstHud =
-            flagBuilder(Configs.RENDER_CONFIG, RENDER_REJECT_WURST).build();
+            flagBuilder(render.add("disable-wurst-hud")).build();
 
     public final FlagRef enhancedDebugHud =
-            flagBuilder(Configs.RENDER_CONFIG, RENDER_ENHANCED_DEBUG_HUD).build();
+            flagBuilder(render.add("enhanced-debug-hud")).build();
 
-    public final FlagRef optimizeGameMenu = builder(Configs.RENDER_CONFIG, RENDER_REARRANGE_GAME_MENU, FlagRef.TYPE)
+    public final FlagRef optimizeGameMenu = builder(render.add("optimize-game-menu"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
 

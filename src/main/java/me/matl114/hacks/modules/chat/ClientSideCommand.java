@@ -23,6 +23,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
@@ -43,18 +44,17 @@ import net.minecraft.text.Texts;
 import net.minecraft.util.Formatting;
 
 public class ClientSideCommand extends BaseModule {
-    public static final String[] CLIENT_COMMAND_OVERRIDE = {"client-side-command", "client-side-command-override"};
-    public static final String[] CHAT_HELPER_CLIENT_GIVE = {"client-side-command", "client-side-give"};
+    public final ModulePath clientSideCommand = makePath(Configs.CHAT_CONFIG, "client-side-command");
 
     public ClientSideCommand() {
         bindFlag(enable);
     }
 
     public final FlagRef enable =
-            flagBuilder(Configs.CHAT_CONFIG, CLIENT_COMMAND_OVERRIDE).build();
+            flagBuilder(clientSideCommand.add("client-side-command-override")).build();
 
     public final FlagRef enableGive =
-            flagBuilder(Configs.CHAT_CONFIG, CHAT_HELPER_CLIENT_GIVE).build();
+            flagBuilder(clientSideCommand.add("client-side-give")).build();
 
     private static final Predicate<CommandSource> requirement = (val) -> true;
     private static final Command<CommandSource> success = (val) -> Command.SINGLE_SUCCESS;

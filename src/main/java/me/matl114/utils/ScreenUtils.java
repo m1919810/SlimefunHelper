@@ -1,5 +1,6 @@
 package me.matl114.utils;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 import me.matl114.accessors.access.HandledScreenAccess;
@@ -25,6 +26,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
@@ -125,6 +127,37 @@ public class ScreenUtils {
 
     public static boolean isToggle(int keyCode) {
         return keyCode == 257 || keyCode == 32 || keyCode == 335;
+    }
+
+    public static final Map<ScreenHandlerType<?>, Integer> nonPlayerSlots = Map.ofEntries(
+        Map.entry(ScreenHandlerType.GENERIC_9X1, 9),
+        Map.entry(ScreenHandlerType.GENERIC_9X2, 18),
+        Map.entry(ScreenHandlerType.GENERIC_9X3, 27),
+        Map.entry(ScreenHandlerType.GENERIC_9X4, 36),
+        Map.entry(ScreenHandlerType.GENERIC_9X5, 45),
+        Map.entry(ScreenHandlerType.GENERIC_9X6, 54),
+        Map.entry(ScreenHandlerType.GENERIC_3X3, 9),
+        Map.entry(ScreenHandlerType.CRAFTER_3X3, 9),
+        Map.entry(ScreenHandlerType.ANVIL, 3),
+        Map.entry(ScreenHandlerType.BEACON, 1),
+        Map.entry(ScreenHandlerType.BLAST_FURNACE, 3),
+        Map.entry(ScreenHandlerType.BREWING_STAND, 5),
+        Map.entry(ScreenHandlerType.CRAFTING, 10),
+        Map.entry(ScreenHandlerType.ENCHANTMENT, 2),
+        Map.entry(ScreenHandlerType.FURNACE, 3),
+        Map.entry(ScreenHandlerType.GRINDSTONE, 3),
+        Map.entry(ScreenHandlerType.HOPPER, 5),
+        Map.entry(ScreenHandlerType.LOOM, 4),
+        Map.entry(ScreenHandlerType.MERCHANT, 3),
+        Map.entry(ScreenHandlerType.SHULKER_BOX, 27),
+        Map.entry(ScreenHandlerType.SMITHING, 4), // 1.20+ 锻造台
+        Map.entry(ScreenHandlerType.SMOKER, 3),
+        Map.entry(ScreenHandlerType.CARTOGRAPHY_TABLE, 3),
+        Map.entry(ScreenHandlerType.STONECUTTER, 2)
+    );
+
+    public static Integer getUpperInventorySize(ScreenHandlerType<?> type){
+        return nonPlayerSlots.get(type);
     }
 
     public static int getCurrentModifiers() {

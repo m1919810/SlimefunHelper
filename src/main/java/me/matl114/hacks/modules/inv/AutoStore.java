@@ -6,6 +6,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
@@ -22,10 +23,12 @@ import net.minecraft.util.collection.DefaultedList;
 
 public class AutoStore extends BaseModule {
     // do it later
+    public final ModulePath autoInv = makePath(Configs.INV_CONFIG, "auto-inv");
+    public final ModulePath autoStore = autoInv.add("auto-store");
+
     public AutoStore() {}
 
-    public static final String[] AUTO_STORE = {"auto-inv", "auto-store", "enable"};
-    public final FlagRef enable = flagBuilder(Configs.INV_CONFIG, AUTO_STORE).build();
+    public final FlagRef enable = flagBuilder(autoStore.add("enable")).build();
 
     @Override
     public void registerAll() {

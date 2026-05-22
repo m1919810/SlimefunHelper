@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.move;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.StringRef;
@@ -15,29 +16,21 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 
 public class SetBackLog extends BaseModule {
+    public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
+
     public SetBackLog() {}
 
-    public static final String[] MOVE_LOG_RESYNC_PACKETS = {"move-safety", "log-resync-packets"};
-    public static final String[] MOVE_LOG_RESYNC_FORMAT = {"move-safety", "log-resync-format"};
-    public static final String[] MOVE_CHECK_SETBACK = {"move-safety", "check-setback-packets"};
-    public static final String[] MOVE_LOG_AC_FORMAT = {"move-safety", "log-ac-format"};
-    public final FlagRef logResync = builder(Configs.MOV_CONFIG, Boolean.class)
-            .path(MOVE_LOG_RESYNC_PACKETS)
-            .defaultValue(false)
+    public final FlagRef logResync = flagBuilder(moveSafety.add("log-resync-packets"))
             .build();
 
-    public final StringRef logResyncFormat = builder(Configs.MOV_CONFIG, String.class)
-            .path(MOVE_LOG_RESYNC_FORMAT)
+    public final StringRef logResyncFormat = builder(moveSafety.add("log-resync-format"), String.class)
             .defaultValue("&fPos Resync &a[%.2f,%.2f,%.2f]")
             .build();
 
-    public final FlagRef logAc = builder(Configs.MOV_CONFIG, Boolean.class)
-            .path(MOVE_CHECK_SETBACK)
-            .defaultValue(false)
+    public final FlagRef logAc = flagBuilder(moveSafety.add("check-setback-packets"))
             .build();
 
-    public final StringRef logAcFormat = builder(Configs.MOV_CONFIG, String.class)
-            .path(MOVE_LOG_AC_FORMAT)
+    public final StringRef logAcFormat = builder(moveSafety.add("log-ac-format"), String.class)
             .defaultValue("&c[AC] 反作弊回弹! tp号:%d")
             .build();
 

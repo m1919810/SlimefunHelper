@@ -38,11 +38,13 @@ public class DrawContext_v1_21_11 implements VDrawContext {
 
     @Override
     public DrawContext pushMatrix() {
+        getMatrices().pushMatrix();
         return this.drawContext;
     }
 
     @Override
     public DrawContext popMatrix() {
+        getMatrices().popMatrix();
         return this.drawContext;
     }
 

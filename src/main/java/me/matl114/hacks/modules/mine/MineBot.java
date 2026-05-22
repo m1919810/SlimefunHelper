@@ -11,11 +11,11 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VPacket;
@@ -42,84 +42,61 @@ public class MineBot extends BaseModule {
         bindFlag(enable);
     }
 
-    public static final String[] MINE_BOT_MINE_MIN_DY = {"mine-bot", "min-dy"};
-    public static final String[] MINE_BOT_MINE_MAX_DY = {"mine-bot", "max-dy"};
-    public static final String[] MINE_BOT_MODE = {"mine-bot", "mine-mode"};
-    public static final String[] MINE_BOT_WIDTH = {"mine-bot", "max-width"};
-    private static final String[] MINE_BOT_DOWN_PRIORITY = {"mine-bot", "y-low-first"};
-    public static final String[] MINE_BOT_MAX_INSTANT_MINE = {"mine-bot", "max-instant-mine"};
-    public static final String[] MINE_BOT_WHITELIST = {"mine-bot", "whitelist"};
-    public static final String[] MINE_BOT_PACKET_MULTIPLE = {"mine-bot", "multiple-packets"};
-    public static final String[] MINE_BOT_LEGAL_MODE = {"mine-bot", "legal-mode"};
-    private static final String[] MINE_BOT_RIGHT_CLICK = {"mine-bot", "right-click"};
-    public static final String[] MINE_BOT_DURABILITY_PROTECT = {"mine-bot", "durability-protect"};
-    public static final String[] MINEBOT = {"mine-bot", "mine-bot"};
-    public static final String[] MINEBOT_HOTKEYS = {"mine-bot", "mine-bot-hotkey"};
     // should initialize before the config
     private final Random rand = new Random();
+    public final ModulePath mineBot = makePath(Configs.MINE_CONFIG, "mine-bot");
+    public final FlagRef enable = flagBuilder(mineBot.addEnable()).build();
 
-    public final FlagRef enable = flagBuilder(Configs.MINE_CONFIG, MINEBOT).build();
-
-    public final KeyBindRef keyBind = toggleHotkey(
-                    Configs.MINE_CONFIG,
-                    MINEBOT_HOTKEYS,
+    public final KeyBindRef keyBind = moduleEntry(
+                    mineBot.addHotkey(),
                     new MultiKeyBind(),
-                    MINEBOT)
+                    mineBot.addEnable(), ()-> this.mineBotMode.get().getDisplay()
+        )
             .build();
 
-    public final IntRef minY = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(MINE_BOT_MINE_MIN_DY)
+    public final IntRef minY = intBuilder(mineBot.add("min-dy"))
             .defaultValue(0)
             .build();
 
-    public final IntRef maxY = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(MINE_BOT_MINE_MAX_DY)
+    public final IntRef maxY = intBuilder(mineBot.add("max-dy"))
             .defaultValue(6)
             .build();
 
     public final NBTRef<RegistryRegex<Block>> whiteListBlockRegex = builder(
-                    Configs.MINE_CONFIG,
-                    MINE_BOT_WHITELIST,
+                    mineBot.add("whitelist"),
                     NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(cobblestone|stone|.*ore)$"), Registries.BLOCK))
             .build();
 
-    public final EnumRef<MineBotMode> mineBotMode = builder(Configs.MINE_CONFIG, MineBotMode.class)
-            .path(MINE_BOT_MODE)
+    public final EnumRef<MineBotMode> mineBotMode = builder(mineBot.add("mine-mode"), MineBotMode.class)
             .defaultValue(MineBotMode.SPHERICAL)
             .build();
 
-    public final IntRef width = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(MINE_BOT_WIDTH)
+    public final IntRef width = intBuilder(mineBot.add("max-width"))
             .defaultValue(1)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final IntRef maxInstaMine = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(MINE_BOT_MAX_INSTANT_MINE)
+    public final IntRef maxInstaMine = intBuilder(mineBot.add("max-instant-mine"))
+
             .defaultValue(30)
             .build();
 
-    public final IntRef multiplePackets = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(MINE_BOT_PACKET_MULTIPLE)
+    public final IntRef multiplePackets = intBuilder(mineBot.add("multiple-packets"))
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final EnumRef<Configs.MineTargetingMode> legalMode = builder(
-                    Configs.MINE_CONFIG, Configs.MineTargetingMode.class)
-            .path(MINE_BOT_LEGAL_MODE)
+                    mineBot.add("legal-mode"), Configs.MineTargetingMode.class)
             .defaultValue(Configs.MineTargetingMode.NO_BYPASS)
             .build();
 
-    public final FlagRef toolProtect = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(MINE_BOT_DURABILITY_PROTECT)
+    public final FlagRef toolProtect = builder(mineBot.add("durability-protect"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef rightClickMode = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(MINE_BOT_RIGHT_CLICK)
-            .defaultValue(false)
+    public final FlagRef rightClickMode = flagBuilder(mineBot.add("right-click"))
             .build();
 
     private boolean isMineable(BlockState state) {

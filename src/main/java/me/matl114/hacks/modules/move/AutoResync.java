@@ -8,6 +8,7 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -26,50 +27,37 @@ import net.minecraft.world.World;
 
 @SuppressWarnings("all")
 public class AutoResync extends BaseModule {
+    public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
+
     public AutoResync() {}
 
     public Optional<Vec3d> pos;
     public int ticksTilExpire;
-    public static final String[] MOVE_AUTO_RESYNC_PITCH_YAW = {"move-safety", "auto-resync-rotation"};
-
-    public static final String[] MOVE_DISABLE_SETBACK_VELOCITY_RESET = {"move-safety", "auto-resync-velocity"};
-
-    public static final String[] MOVE_AUTO_RESYNC_POS = {"move-safety", "auto-resync-pos"};
-
-    public static final String[] MOVE_AUTO_RESYNC_DISTANCE = {"move-safety", "auto-resync-distance"};
-
-    public static final String[] MOVE_LOG_AUTO_RESYNC = {"move-safety", "log-auto-resync-request"};
-
-    public static final String[] MOVE_AUTO_RESYNC_EXPIRE = {"move-safety", "auto-resync-request-expire-tick"};
-
-    public static final String[] MOVE_AUTO_RESYNC_RECURSIVE = {"move-safety", "auto-resync-request-recursively"};
 
     public final FlagRef autoResyncRot =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_AUTO_RESYNC_PITCH_YAW).build();
+            flagBuilder(moveSafety.add("auto-resync-rotation")).build();
 
     public final FlagRef noVelocitySetback =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_DISABLE_SETBACK_VELOCITY_RESET).build();
+            flagBuilder(moveSafety.add("auto-resync-velocity")).build();
 
     public final FlagRef autoResyncPos =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_AUTO_RESYNC_POS).build();
+            flagBuilder(moveSafety.add("auto-resync-pos")).build();
 
     public final DoubleRef autoResyncPosDistance = builder(
-                    Configs.MOV_CONFIG, MOVE_AUTO_RESYNC_DISTANCE, DoubleRef.TYPE)
+                    moveSafety.add("auto-resync-distance"), DoubleRef.TYPE)
             .defaultValue(10.0D)
             .build();
 
-    public final FlagRef logAutoResync = builder(Configs.MOV_CONFIG, Boolean.class)
-            .path(MOVE_LOG_AUTO_RESYNC)
-            .defaultValue(true)
+    public final FlagRef logAutoResync = flagBuilder(moveSafety.add("log-auto-resync-request"))
             .build();
 
-    public final IntRef expireTick = builder(Configs.MOV_CONFIG, MOVE_AUTO_RESYNC_EXPIRE, IntRef.TYPE)
+    public final IntRef expireTick = builder(moveSafety.add("auto-resync-request-expire-tick"), IntRef.TYPE)
             .defaultValue(10)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final FlagRef recursive =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_AUTO_RESYNC_RECURSIVE).build();
+            flagBuilder(moveSafety.add("auto-resync-request-recursively")).build();
 
     public void setAutoResyncSchedule(Optional<Vec3d> pos) {
         this.setAutoResyncSchedule(pos, expireTick.get());

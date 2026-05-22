@@ -4,6 +4,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import lombok.Getter;
 import me.matl114.gui.basic.*;
@@ -95,4 +96,10 @@ public interface AttrKeyValues {
     static final Type LIST_TYPE = new TypeToken<List<String>>() {}.getType();
     public static final WrapperFactory<String, List<String>> STR_LIST_FACTORY =
             WrapperFactory.of(s -> gson.fromJson(s, LIST_TYPE), gson::toJson);
+
+    static final Type MAP_TYPE = new TypeToken<Map<String, String>>(){}.getType();
+
+    public static final WrapperFactory<String, Map<String, String>> STR_MAP_FACTORY = WrapperFactory.of(
+        s -> gson.fromJson(s, MAP_TYPE), gson::toJson
+    );
 }

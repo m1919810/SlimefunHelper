@@ -7,11 +7,12 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
-import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
@@ -36,42 +37,29 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 
 public class PrinterRewrite extends BaseModule {
-    public static final String[] PRINTER = makePath("block-rotate.litematica-printer-rewrite.enable");
-
-    public static final String[] HOTKEY = makePath("block-rotate.litematica-printer-rewrite.hotkey");
-
-    public static final String[] PRINTER_MODE = makePath("block-rotate.litematica-printer-rewrite.mode");
-
-    public static final String[] SPEED = makePath("block-rotate.litematica-printer-rewrite.delay");
-
-    public static final String[] LEGAL = makePath("block-rotate.litematica-printer-rewrite.legal-mode");
-
-    public static final String[] MULTIPLY = makePath("block-rotate.litematica-printer-rewrite.multiply");
-
-    public static final String[] RANGE = makePath("block-rotate.litematica-printer-rewrite.range");
-
-    public static final String[] RENDER = makePath("block-rotate.litematica-printer-rewrite.render");
+    public final ModulePath blockRotate = makePath(Configs.INTERACT_CONFIG, "block-rotate");
+    public final ModulePath litematicaPrinterRewrite = blockRotate.add("litematica-printer-rewrite");
 
     public PrinterRewrite() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.INTERACT_CONFIG, PRINTER).build();
+    public final FlagRef enable = flagBuilder(litematicaPrinterRewrite.add("enable")).build();
 
-    public final KeyBindRef hotkey = toggleHotkey(Configs.INTERACT_CONFIG, HOTKEY, new MultiKeyBind(), PRINTER)
+    public final KeyBindRef hotkey = moduleEntry(litematicaPrinterRewrite.add("hotkey"), new MultiKeyBind(), litematicaPrinterRewrite.add("enable"))
             .build();
 
     public final EnumRef<Configs.LegalInteractMode> mode = builder(
-                    Configs.INTERACT_CONFIG, PRINTER_MODE, Configs.LegalInteractMode.class)
+                    litematicaPrinterRewrite.add("mode"), Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.DELAY_MOVEMENT)
             .build();
 
-    public final IntRef delay = builder(Configs.INTERACT_CONFIG, SPEED, IntRef.TYPE)
+    public final IntRef delay = builder(litematicaPrinterRewrite.add("delay"), IntRef.TYPE)
             .defaultValue(5)
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final IntRef mul = builder(Configs.INTERACT_CONFIG, MULTIPLY, IntRef.TYPE)
+    public final IntRef mul = builder(litematicaPrinterRewrite.add("multiply"), IntRef.TYPE)
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
@@ -94,13 +82,13 @@ public class PrinterRewrite extends BaseModule {
         }
     }
 
-    public final IntRef interactRangeOverride = builder(Configs.INTERACT_CONFIG, RANGE, IntRef.TYPE)
+    public final IntRef interactRangeOverride = builder(litematicaPrinterRewrite.add("range"), IntRef.TYPE)
             .defaultValue(5)
             .validator(Configs.INT_POSITIVE)
             .updateListener(this::updateBlocks)
             .build();
 
-    public final FlagRef render = flagBuilder(Configs.INTERACT_CONFIG, RENDER).build();
+    public final FlagRef render = flagBuilder(litematicaPrinterRewrite.add("render")).build();
 
     @Override
     public void registerAll() {
@@ -127,7 +115,7 @@ public class PrinterRewrite extends BaseModule {
             BlockPos posStanding = mc.player.getSteppingPos();
             BlockPos posCenter = posStanding.add(0, 1, 0);
             int multiply = (mode.get().canMultiRotPlace()
-                            || (ACTasks.getDisablerManager().isMultiRotPlaceCheckDisabled()))
+                            || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
                     ? mul.get()
                     : 1;
             int placeCount = 0;

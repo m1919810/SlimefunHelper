@@ -12,6 +12,7 @@ import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.managers.Configs;
@@ -34,42 +35,31 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 
 public class BlockRotate extends BaseModule {
-    public static final String[] ENABLE = makePath("block-rotate.test.enable");
-
-    public static final String[] BYPASS = makePath("block-rotate.yaw-deceive-bypass-mode");
-
-    public static final String[] BYPASS2 = makePath("block-rotate.rotate-bypass-mode");
-
-    //    public static final String[] BYPASS3 = makePath("block-rotate.rotate-bypass-mode");
-
-    public static final String[] ENABLE_LITEMATICA_FIX = makePath("block-rotate.litematica-shit-fix.enable");
-
-    public static final String[] ENABLE_LEGAL_MODE = makePath("block-rotate.litematica-shit-fix.legal-look");
-
-    public static final String[] ENABLE_LITEMATICA_EASY_PLACE_FIX =
-            makePath("block-rotate.litematica-shit-fix.enable-easyplace-post-fix");
+    public final ModulePath blockRotate = makePath(Configs.INTERACT_CONFIG, "block-rotate");
+    public final ModulePath blockRotateTest = blockRotate.add("test");
+    public final ModulePath litematicaFix = blockRotate.add("litematica-shit-fix");
 
     public BlockRotate() {}
 
-    public final FlagRef enable = flagBuilder(Configs.INTERACT_CONFIG, ENABLE).build();
+    public final FlagRef enable = flagBuilder(blockRotateTest.add("enable")).build();
 
     public final EnumRef<Configs.BypassMode> bypassMode = builder(
-                    Configs.INTERACT_CONFIG, BYPASS, Configs.BypassMode.class)
+                    blockRotate.add("yaw-deceive-bypass-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
     public final EnumRef<Configs.BypassMode> bypassMode2 = builder(
-                    Configs.INTERACT_CONFIG, BYPASS2, Configs.BypassMode.class)
+                    blockRotate.add("rotate-bypass-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
     public final FlagRef enable2 =
-            flagBuilder(Configs.INTERACT_CONFIG, ENABLE_LITEMATICA_FIX).build();
+            flagBuilder(litematicaFix.add("enable")).build();
 
     public final FlagRef legal =
-            flagBuilder(Configs.INTERACT_CONFIG, ENABLE_LEGAL_MODE).build();
+            flagBuilder(litematicaFix.add("legal-look")).build();
 
-    public final FlagRef enable3 = flagBuilder(Configs.INTERACT_CONFIG, ENABLE_LITEMATICA_EASY_PLACE_FIX)
+    public final FlagRef enable3 = flagBuilder(litematicaFix.add("enable-easyplace-post-fix"))
             .build();
 
     @Override

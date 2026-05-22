@@ -10,6 +10,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.interact.*;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.managers.Configs;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.EntityUtils;
@@ -102,7 +103,7 @@ public class InteractionTasks {
                         .toCenterPos()
                         .subtract(mc.player.getEyePos())
                         .normalize());
-                MovTasks.getLegacySnapRotManager().snapAt(rotation.x, rotation.y, false);
+                LegacySnapRotManager.INSTANCE.snapAt(rotation.x, rotation.y, false);
                 InteractionTasks.placeBlock(hand, result);
             }
             case NONE -> {
@@ -164,7 +165,7 @@ public class InteractionTasks {
                     }
                     var hand = pair.getRight();
                     var result = pair.getLeft();
-                    MovTasks.getLegacySnapRotManager()
+                    LegacySnapRotManager.INSTANCE
                             .snapAt(
                                     result.getBlockPos()
                                             .toCenterPos()

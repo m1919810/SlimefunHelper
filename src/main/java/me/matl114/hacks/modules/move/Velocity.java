@@ -10,6 +10,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -24,6 +25,7 @@ import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.damage.DamageType;
 import net.minecraft.network.OffThreadException;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
@@ -31,10 +33,8 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.network.packet.s2c.play.*;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -44,44 +44,39 @@ import net.minecraft.util.math.Vec3d;
 
 public class Velocity extends BaseModule implements LegalMovementManager.MovementModifier {
     // 还没想好 先新建文件夹
+    public final ModulePath velocityManagement = makePath(Configs.MOV_CONFIG, "velocity-management");
+    public final ModulePath antiKb = velocityManagement.add("antikb");
 
-    public static final String[] ENABLE = BaseModule.makePath("velocity-management.antikb.enable");
-    public static final String[] MODE = BaseModule.makePath("velocity-management.antikb.mode");
+    public final FlagRef enable = flagBuilder(antiKb.addEnable()).build();
 
-    public final FlagRef enable = flagBuilder(Configs.MOV_CONFIG, ENABLE).build();
-
-    public final DoubleRef minHorizontalVelocity = builder(Configs.MOV_CONFIG, makePath("velocity-management.antikb.horizontal-threshold"), DoubleRef.TYPE)
+    public final DoubleRef minHorizontalVelocity = builder(antiKb.add("horizontal-threshold"), DoubleRef.TYPE)
         .defaultValue(0.01)
         .build();
 
-    public final DoubleRef minVerticalVelocity = builder(Configs.MOV_CONFIG, makePath("velocity-management.antikb.vertical-threshold"), DoubleRef.TYPE)
+    public final DoubleRef minVerticalVelocity = builder(antiKb.add("vertical-threshold"), DoubleRef.TYPE)
         .defaultValue(0.05)
         .build();
 
-    public final EnumRef<Mode> mode = builder(Configs.MOV_CONFIG, MODE, Mode.class)
+    public final EnumRef<Mode> mode = builder(antiKb.add("mode"), Mode.class)
             .defaultValue(Mode.NONE)
             .build();
 
-    public final FlagRef explosions = flagBuilder(
-                    Configs.MOV_CONFIG, makePath("velocity-management.antikb.bypass-explosions"))
+    public final FlagRef explosions = flagBuilder(antiKb.add("bypass-explosions"))
             .build();
 
-    public final FlagRef onGroundOnly = flagBuilder(
-                    Configs.MOV_CONFIG, makePath("velocity-management.antikb.on-ground-only"))
+    public final FlagRef onGroundOnly = flagBuilder(antiKb.add("on-ground-only"))
             .build();
 
-    public final FlagRef notInWater = flagBuilder(Configs.MOV_CONFIG, makePath("velocity-management.antikb.not-in-water"))
+    public final FlagRef notInWater = flagBuilder(antiKb.add("not-in-water"))
         .build();
 
-    public final FlagRef inWall = flagBuilder(
-                    Configs.MOV_CONFIG, makePath("velocity-management.antikb.execute-in-wall"))
+    public final FlagRef inWall = flagBuilder(antiKb.add("execute-in-wall"))
             .build();
 
-    public final FlagRef noBlock = flagBuilder(Configs.MOV_CONFIG, makePath("velocity-management.antikb.no-block-push"))
+    public final FlagRef noBlock = flagBuilder(antiKb.add("no-block-push"))
             .build();
 
-    public final FlagRef noEntityPush = flagBuilder(
-                    Configs.MOV_CONFIG, makePath("velocity-management.antikb.no-entity-push"))
+    public final FlagRef noEntityPush = flagBuilder(antiKb.add("no-entity-push"))
             .build();
 
     public static LegalMovementManager.DelegateMovementModifier instance;
@@ -115,6 +110,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         registerListener(PacketManager.getPacketQueueEvent().getPacketReceiveChannel(), this::onPacketQueue);
         registerListener(Listener.getPreGameTick(), this::onPreTick);
         registerListener(Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
+        registerListener(Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class), this::onExplosion);
     }
 
     public int lastHurtTick = 0;
@@ -194,8 +190,12 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public void onEntityDamage(Event<EntityDamageS2CPacket> damage) {
         if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
-            canCancel = true;
-            lastHurtTick = Tasks.getTick();
+            var type = damage.context.sourceType();
+            // ignore no knockback types
+            if(!type.isIn(DamageTypeTags.NO_KNOCKBACK)){
+                canCancel = true;
+                lastHurtTick = Tasks.getTick();
+            }
         }
     }
 
@@ -212,6 +212,12 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         lastCancelledVelocity = lastVelocity;
        // Debug.chat("Cancel vc", lastCancelledVelocity.length());
     }
+    public void onExplosion(Event<ExplosionS2CPacket> eventExplosion){
+        if (enable.get() && explosions.get() && mc.player != null && eventExplosion.context.playerKnockback().isPresent()){
+            canCancel = true;
+        }
+    }
+
     public void onPlayerVelocity(Event<Vec3d> event) {
         lastVelocityNS = System.nanoTime();
         lastVelocity = event.context;
