@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -37,12 +38,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class ItemESP extends BaseModule {
-    public static final String[] ENABLE_ITEM = makePath("detect-entity.item-esp.enable-item");
-    public static final String[] ENABLE_FRAME = makePath("detect-entity.item-esp.enable-frame");
-    public static final String[] NBT = makePath("detect-entity.item-esp.nbt-predicate");
-    public static final String[] TYPE = makePath("detect-entity.item-esp.item-type");
-    public static final String[] COLOR = makePath("detect-entity.item-esp.color");
-    public static final String[] OPTIONS = makePath("detect-entity.item-esp.options");
+    public final ModulePath detectEntity = makePath(Configs.RENDER_CONFIG, "detect-entity");
+    public final ModulePath itemEsp = detectEntity.add("item-esp");
 
     public ItemESP() {}
 
@@ -72,31 +69,31 @@ public class ItemESP extends BaseModule {
         }
     }
 
-    public FlagRef enableItem = flagBuilder(Configs.RENDER_CONFIG, ENABLE_ITEM)
+    public FlagRef enableItem = flagBuilder(itemEsp.add("enable-item"))
             .updateListener(s -> launchDelayUpdateTask())
             .build();
-    public FlagRef enableFrame = flagBuilder(Configs.RENDER_CONFIG, ENABLE_FRAME)
+    public FlagRef enableFrame = flagBuilder(itemEsp.add("enable-frame"))
             .updateListener(s -> launchDelayUpdateTask())
             .build();
     // NBT 谓词（字符串格式，默认为空）
     public NBTRef<PrimitiveList<NbtCompound>> nbtPredicate = builder(
-                    Configs.RENDER_CONFIG, NBT, PrimitiveList.<NbtCompound>parameter())
+                    itemEsp.add("nbt-predicate"), PrimitiveList.<NbtCompound>parameter())
             .defaultValue(new PrimitiveList<>(NBTTypes.NBT_COMPOUND_TYPE, List.of()))
             .updateListener(s -> updatePredicate(s.list()))
             .build();
 
     // 物品类型过滤器（默认识别所有物品）
-    public NBTRef<RegistryRegex<Item>> itemType = builder(Configs.RENDER_CONFIG, TYPE, RegistryRegex.<Item>parameter())
+    public NBTRef<RegistryRegex<Item>> itemType = builder(itemEsp.add("item-type"), RegistryRegex.<Item>parameter())
             .defaultValue(new RegistryRegex<>(new Regex("^(wither_skeleton_skull)$"), Registries.ITEM))
             .updateListener(this::updateSet)
             .build();
 
     // 颜色（使用 WrapColor，默认绿色）
-    public NBTRef<WrapColor> color = builder(Configs.RENDER_CONFIG, COLOR, WrapColor.class)
+    public NBTRef<WrapColor> color = builder(itemEsp.add("color"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
             .build();
 
-    public NBTRef<TracingOption> option = builder(Configs.RENDER_CONFIG, OPTIONS, TracingOption.class)
+    public NBTRef<TracingOption> option = builder(itemEsp.add("options"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
 

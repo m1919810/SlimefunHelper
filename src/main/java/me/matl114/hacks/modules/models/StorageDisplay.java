@@ -17,6 +17,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -34,24 +35,20 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
 public class StorageDisplay extends BaseModule {
-    public static final String[] ENABLE_STORAGE_DISPLAY = {"model-config", "enable-storage-display"};
-
-    public static final String[] ENABLE_SHULKER_DISPLAY = {"model-config", "enable-shulker-display"};
-
-    public static final String[] ENABLE_ITEM_INFO_DISPLAY = {"model-config", "enable-info-display"};
+    public final ModulePath modelConfig = makePath(Configs.MODEL_CONFIG, "model-config");
 
     public StorageDisplay() {}
 
-    public final FlagRef storageDisplay = builder(Configs.MODEL_CONFIG, ENABLE_STORAGE_DISPLAY, Boolean.class)
+    public final FlagRef storageDisplay = builder(modelConfig.add("enable-storage-display"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef infoDisplay = builder(Configs.MODEL_CONFIG, ENABLE_ITEM_INFO_DISPLAY, Boolean.class)
+    public final FlagRef infoDisplay = builder(modelConfig.add("enable-info-display"), Boolean.class)
             .defaultValue(true)
             .build();
 
     public final FlagRef shulkerDisplay =
-            flagBuilder(Configs.MODEL_CONFIG, ENABLE_SHULKER_DISPLAY).build();
+            flagBuilder(modelConfig.add("enable-shulker-display")).build();
 
     private static final Map<EntityType<?>, ItemStack> spawnEggNewStyleItem = new HashMap<>();
 

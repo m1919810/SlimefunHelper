@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.ChatUtils;
@@ -19,13 +20,13 @@ import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.util.math.Vec3d;
 
 public class EnderEyeLog extends BaseModule {
-    public static String[] ENABLE = {"other", "enable-ender-eye-log"};
+    public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
 
     public EnderEyeLog() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.TEST_CONFIG, ENABLE).build();
+    public final FlagRef enable = flagBuilder(other.add("enable-ender-eye-log")).build();
 
     @Override
     public void registerAll() {

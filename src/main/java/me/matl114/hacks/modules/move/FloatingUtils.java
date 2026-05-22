@@ -3,12 +3,11 @@ package me.matl114.hacks.modules.move;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -23,6 +22,10 @@ import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 
 public class FloatingUtils extends BaseModule implements LegalMovementManager.MovementModifier {
     static LegalMovementManager.DelegateMovementModifier instance;
+    public final ModulePath velocityManagement = makePath(Configs.MOV_CONFIG, "velocity-management");
+    public final ModulePath floatingUtils = velocityManagement.add("floating-utils");
+    public final ModulePath grimFloating = floatingUtils.add("grim-floating");
+    public final ModulePath elytraSlowFalling = floatingUtils.add("elytra-slow-falling");
 
     public FloatingUtils() {
         if (instance == null) {
@@ -32,28 +35,18 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         instance.setDelegate(this::cast);
     }
 
-    public static final String[] ENABLE_GRIM = makePath("velocity-management.floating-utils.grim-floating.enable");
-
-    public static final String[] HOTKEY_GRIM = makePath("velocity-management.floating-utils.grim-floating.hotkey");
-
-    public static final String[] ENABLE_ELYTRA =
-            makePath("velocity-management.floating-utils.elytra-slow-falling.enable");
-
-    public static final String[] HOTKEY_ELYTRA =
-            makePath("velocity-management.floating-utils.elytra-slow-falling.hotkey");
-
-    public final FlagRef enableGrim = flagBuilder(Configs.MOV_CONFIG, ENABLE_GRIM)
+    public final FlagRef enableGrim = flagBuilder(grimFloating.addEnable())
             .updateListener(this::onToggleGrimFloat)
             .build();
 
-    public final KeyBindRef hotkeyGrim = toggleHotkey(Configs.MOV_CONFIG, HOTKEY_GRIM, new MultiKeyBind(), ENABLE_GRIM)
+    public final KeyBindRef hotkeyGrim = moduleEntry(grimFloating.addHotkey(), new MultiKeyBind(), grimFloating.addEnable())
             .build();
 
     public final FlagRef enableElytraSlowFall =
-            flagBuilder(Configs.MOV_CONFIG, ENABLE_ELYTRA).build();
+            flagBuilder(elytraSlowFalling.addEnable()).build();
 
-    public final KeyBindRef hotkeySlowFall = toggleHotkey(
-                    Configs.MOV_CONFIG, HOTKEY_ELYTRA, new MultiKeyBind(), ENABLE_ELYTRA)
+    public final KeyBindRef hotkeySlowFall = moduleEntry(
+                    elytraSlowFalling.addHotkey(), new MultiKeyBind(), elytraSlowFalling.addEnable())
             .build();
 
     public Deque<Packet<?>> delayedPackets = new ArrayDeque<>();
@@ -148,7 +141,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
         if (storedPacket != null) {
             // optimize current, only if rotation different, send duplicate packet
-            if (!hasNoPosition || ExtraTasks.getBadPacketsFix().isRotationDifferent()) {
+            if (!hasNoPosition || PlayerStateManager.INSTANCE.isRotationDifferent()) {
                 mc.getNetworkHandler().sendPacket(storedPacket);
             }
             // Listener.sendPacketNoEvents(storedPacket);

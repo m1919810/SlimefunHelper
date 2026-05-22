@@ -16,6 +16,7 @@ import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -268,7 +269,7 @@ public class MultiBlockHelper extends BaseModule {
     }
 
     public void clickSnap(BlockHitResult result, Vec2f pitchYaw, int clickRate) {
-        MovTasks.getLegacySnapRotManager().snapAt(pitchYaw.x, pitchYaw.y, false);
+        LegacySnapRotManager.INSTANCE.snapAt(pitchYaw.x, pitchYaw.y, false);
         for (int i = 0; i < clickRate; ++i) {
             mc.interactionManager.sendSequencedPacket(
                     mc.world, (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, result, sequence)));

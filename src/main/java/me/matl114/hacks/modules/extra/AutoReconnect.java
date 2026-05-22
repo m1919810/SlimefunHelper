@@ -4,6 +4,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -16,13 +17,15 @@ import net.minecraft.client.network.ServerInfo;
 import net.minecraft.text.Text;
 
 public class AutoReconnect extends BaseModule {
-    public final FlagRef enable = flagBuilder(Configs.TEST_CONFIG, makePath("other.auto-reconnect.enable"))
+    public final ModulePath autoReconnect = makePath(Configs.TEST_CONFIG, "other.auto-reconnect");
+
+    public final FlagRef enable = flagBuilder(autoReconnect.add("enable"))
             .build();
 
-    public final FlagRef enableB = flagBuilder(Configs.TEST_CONFIG, makePath("other.auto-reconnect.enable-buttons"))
+    public final FlagRef enableB = flagBuilder(autoReconnect.add("enable-buttons"))
             .build();
 
-    public final IntRef delay = builder(Configs.TEST_CONFIG, makePath("other.auto-reconnect.delay"), IntRef.TYPE)
+    public final IntRef delay = intBuilder(autoReconnect.add("delay"))
             .defaultValue(5)
             .validator(Configs.INT_POSITIVE)
             .build();

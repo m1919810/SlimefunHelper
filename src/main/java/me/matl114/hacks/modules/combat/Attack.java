@@ -14,15 +14,16 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.ElytraExtra;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
@@ -52,78 +53,68 @@ import net.minecraft.util.math.*;
 import org.jetbrains.annotations.ApiStatus;
 
 public class Attack extends BaseModule {
-    public static final String[] COMBAT_TP_ENABLE = {"att-bot", "tp-enable"};
-    public static final String[] COMBAT_TP_REACH = {"att-bot", "tp-reach"};
-    public static final String[] COMBAT_LEGAL_MOD = {"att-bot", "legal-mode"};
-    public static final String[] COMBAT_MACE_ENABLE = {"att-bot", "mace-enable"};
-    public static final String[] COMBAT_MACE_HACK = {"att-bot", "mace-height-multiply"};
-    public static final String[] COMBAT_EXACT_ATTACK = {"att-bot", "exact-tp"};
-    public static final String[] COMBAT_LEGAL_TARGETTING = {"att-bot", "legal-targeting"};
-    public static final String[] COMBAT_CRITIC = {"att-bot", "auto-anti-shield"};
-    public static final String[] ATTACK = {"att-bot", "always-att"};
-    public static final String[] HOTKEY_ATTACK = {"att-bot", "always-att-hotkey"};
-    public static final String[] COMBAT_RENDER_TARGET = {"att-bot", "render-target"};
+    public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "att-bot");
+
 
     public Attack() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, ATTACK).build();
+    public final FlagRef enable = flagBuilder(attack.add("always-att")).build();
 
-    public final KeyBindRef hotkey = toggleHotkey(
-                    Configs.COMBAT_CONFIG,
-                    HOTKEY_ATTACK,
+    public final KeyBindRef hotkey = moduleEntry(
+                    attack.add("always-att-hotkey"),
                     new MultiKeyBind(),
-                    ATTACK)
+                    attack.add("always-att")
+    )
             .build();
 
     public final FlagRef legalMode =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_LEGAL_MOD).build();
+            flagBuilder(attack.add("legal-mode")).build();
 
     public final FlagRef enableTp =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_TP_ENABLE).build();
+            flagBuilder(attack.add("tp-enable")).build();
 
-    public final DoubleRef tpRange = builder(Configs.COMBAT_CONFIG, COMBAT_TP_REACH, DoubleRef.TYPE)
+    public final DoubleRef tpRange = doubleBuilder(attack.add("tp-reach"))
             .defaultValue(0.0D)
             .build();
 
     public final FlagRef enableMace =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_MACE_ENABLE).build();
+            flagBuilder(attack.add("mace-enable")).build();
 
-    public final DoubleRef maceHeight = builder(Configs.COMBAT_CONFIG, COMBAT_MACE_HACK, DoubleRef.TYPE)
+    public final DoubleRef maceHeight = doubleBuilder(attack.add("mace-height-multiply"))
             .defaultValue(30.0D)
             .validator(Configs.doubleRange(-200.0D, 200.0D))
             .build();
 
     public final FlagRef exactAttack =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_EXACT_ATTACK).build();
+            flagBuilder(attack.add("exact-tp")).build();
 
     public final EnumRef<Configs.LegalTargetingMode> legalTargetingMode = builder(
-                    Configs.COMBAT_CONFIG, COMBAT_LEGAL_TARGETTING, Configs.LegalTargetingMode.class)
+                    attack.add("legal-targeting"), Configs.LegalTargetingMode.class)
             .defaultValue(Configs.LegalTargetingMode.DELAY_MOVEMENT)
             .build();
 
     public final FlagRef autoAntiShield =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_CRITIC).build();
+            flagBuilder(attack.add( "auto-anti-shield")).build();
 
-    public final FlagRef autoSwap = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.attack-inv-swap"))
+    public final FlagRef autoSwap = flagBuilder(attack.add("attack-inv-swap"))
             .build();
 
-    public final FlagRef autoSelect = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.attack-select-best-weapon"))
+    public final FlagRef autoSelect = flagBuilder(attack.add("attack-select-best-weapon"))
         .build();
     //
-        public final FlagRef autoRelease = flagBuilder(Configs.COMBAT_CONFIG,
-     makePath("att-bot.auto-handle-use-when-attack"))
+        public final FlagRef autoRelease = flagBuilder(attack.add("auto-handle-use-when-attack"))
             .build();
 
     @ApiStatus.Experimental
     public final FlagRef autoMaceSwap =
-            flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.mace-swap")).build();
+            flagBuilder(attack.add("mace-swap")).build();
 
     // todo: ghosthand mace enchantment
 
     public final FlagRef renderAttackTarget =
-            flagBuilder(Configs.COMBAT_CONFIG, COMBAT_RENDER_TARGET).build();
+            flagBuilder(attack.add( "render-target")).build();
 
     private final Random attackOffsetRand = new Random();
 
@@ -330,7 +321,7 @@ public class Attack extends BaseModule {
     private boolean processLegalAttack(Entity target, AttackSettings settings) {
         var player = mc.player;
         if (player == null) return false;
-
+        //todo: pitch yaw fix;
         Vec3d vec3d = mc.player.getPos();
         // do not add mace or tp attack in legal mode
 
@@ -362,7 +353,7 @@ public class Attack extends BaseModule {
 
             // TODO: fix this bug: can not pass matrix ac when on ground , check numbers and positions,
             int swapElytraSlot = -1;
-            boolean armorFly = elytraExtra.thisFallFlyingIsArmorFly != -1;
+            boolean armorFly = elytraExtra.isCurrentArmorGliding();
             if (useMaceAttack) {
                 // do here
                 if (armorFly) {
@@ -617,7 +608,7 @@ public class Attack extends BaseModule {
                     attackOffsetRand.nextDouble(-0.05d, 0.05d));
             Vec3d cacheDirection = attackOffsetted.subtract(predictedEyePos).normalize();
             // mace
-            MovTasks.getLegacySnapRotManager().snapAt(cacheDirection, false);
+            LegacySnapRotManager.INSTANCE.snapAt(cacheDirection, false);
             attackWithSettings(mc.player, target, settings);
         }
 

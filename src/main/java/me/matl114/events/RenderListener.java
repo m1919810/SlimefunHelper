@@ -8,11 +8,14 @@ import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.annotations.Modifiable;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.utils.Debug;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.client.util.math.MatrixStack;
@@ -101,6 +104,11 @@ public class RenderListener {
             value = {float.class},
             names = {"ticksDelta"})
     private static final EventChannel<MatrixStack> renderLayerTasks = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    @ExtraArgs(value = {RenderTickCounter.class, boolean.class})
+    private static final EventChannel<VDrawContext> renderGameHudTasks = new EventChannel<>();
 
     public static void renderWorldTasks(MatrixStack stack, float tickDelta) {
         GL11.glEnable(GL11.GL_LINE_SMOOTH);

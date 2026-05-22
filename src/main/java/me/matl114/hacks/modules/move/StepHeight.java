@@ -5,6 +5,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
@@ -15,7 +16,8 @@ import net.minecraft.util.math.Vec3d;
 
 public class StepHeight extends BaseModule implements LegalMovementManager.MovementModifier {
 
-    public static final String[] MOVE_ENHANCED_STEPHEIGHT = {"move-safety", "enhance-stepheight"};
+    public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
+    public final ModulePath stepHeight = moveSafety.add("enhance-stepheight");
 
     public static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -30,7 +32,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
     }
 
     public final FlagRef enable =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ENHANCED_STEPHEIGHT).build();
+            flagBuilder(stepHeight).build();
 
     @Override
     public void onEnableModule() {

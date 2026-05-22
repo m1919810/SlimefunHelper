@@ -11,6 +11,7 @@ import me.matl114.gui.basic.*;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hooks.IMBlockerHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.ScheduleService;
@@ -33,63 +34,47 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 public class ChatTools extends BaseModule {
-    public static final String[] REMOVE_COMMAND_HOTKEY = {"chat-screen-tools", "remove-command-prefix-hotkey"};
-    public static final String[] ENABLE_CHATSCREEN_TOOLS = {"chat-screen-tools", "enable-tools"};
-
-    public static final String[] ENABLE_CHATSCREEN_QUICK_CHARS = {"chat-screen-tools", "enable-quick-chars"};
-
-    public static final String[] SPECIALCHARS = {"chat-screen-tools", "quick-chars"};
-
-    public static final String[] CACHE = {"chat-screen-tools", "cached"};
-    public static final String[] OBF_LOGIN = {"chat-screen-tools", "obf-login-message"};
-
-    public static final String[] CHAT_HELPER_PERIOD = {"chat-screen-tools", "auto-chat-period"};
-    public static final String[] CHAT_HELPER_MULTIPLE = {"chat-screen-tools", "auto-chat-multiple"};
-    public static final String[] AUTO_SEND = {"chat-screen-tools", "auto-chat"};
-    private static final String[] KEEP_CHAT_INV = {"chat-screen-tools", "keep-chat-inv"};
+    public final ModulePath chatTools = makePath(Configs.CHAT_CONFIG, "chat-screen-tools");
 
     public ChatTools() {
         bindFlag(enableChatScreenTools);
     }
 
-    public final KeyBindRef removeCmdKey = hotkey(Configs.CHAT_CONFIG, REMOVE_COMMAND_HOTKEY, new MultiKeyBind())
+    public final KeyBindRef removeCmdKey = hotkey(Configs.CHAT_CONFIG, chatTools.add("remove-command-prefix-hotkey").toPath(), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::onRemoveCommandPrefix))
             .build();
 
-    public final FlagRef enableChatScreenTools = flagBuilder(Configs.CHAT_CONFIG, ENABLE_CHATSCREEN_TOOLS)
+    public final FlagRef enableChatScreenTools = flagBuilder(chatTools.add("enable-tools"))
             .updateListener(this::toggleBasicToolScreen)
             .build();
 
-    public final FlagRef enableSpecialChars = flagBuilder(Configs.CHAT_CONFIG, ENABLE_CHATSCREEN_QUICK_CHARS)
+    public final FlagRef enableSpecialChars = flagBuilder(chatTools.add("enable-quick-chars"))
             .updateListener(this::toggleSpecialCharWidget)
             .build();
 
-    public final StringRef specialChars = builder(Configs.CHAT_CONFIG, String.class)
-            .path(SPECIALCHARS)
+    public final StringRef specialChars = builder(chatTools.add("quick-chars"), String.class)
             .defaultValue(
-                    "\uD83D\uDE21\uD83E\uDD13\uD83E\uDD75\uD83D\uDE2D\uD83E\uDD21\uD83D\uDE0B\uD83E\uDD24\uD83D\uDE0A\uD83D\uDE04\uD83E\uDD72\uD83D\uDE01\uD83D\uDC49\uD83D\uDC46\uD83E\uDD14\uD83D\uDE0E\uD83D\uDC0D\uD83D\uDE05♂♀")
+                    "😡🤓🥵😭🤡😋🤤😊😄🥲😁👉👆🤔😎🐍😅♂♀")
             .updateListener(this::refreshSpecialChars)
             .build();
 
     public final StringRef chatCache =
-            builder(Configs.CHAT_CONFIG, CACHE, String.class).defaultValue("").build();
+            builder(chatTools.add("cached"), String.class).defaultValue("").build();
 
-    public final FlagRef autoSend = toggle(Configs.CHAT_CONFIG, AUTO_SEND).build();
+    public final FlagRef autoSend = toggle(Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath()).build();
 
-    public final IntRef period = builder(Configs.CHAT_CONFIG, Integer.class)
-            .path(CHAT_HELPER_PERIOD)
+    public final IntRef period = intBuilder(chatTools.add("auto-chat-period"))
             .defaultValue(21)
             .build();
 
-    public final IntRef multiple = builder(Configs.CHAT_CONFIG, Integer.class)
-            .path(CHAT_HELPER_MULTIPLE)
+    public final IntRef multiple = intBuilder(chatTools.add("auto-chat-multiple"))
             .defaultValue(1)
             .build();
 
     public final FlagRef keepChatInv =
-            toggle(Configs.CHAT_CONFIG, KEEP_CHAT_INV).build();
+            toggle(Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath()).build();
 
-    public final FlagRef obfLogin = flagBuilder(Configs.CHAT_CONFIG, OBF_LOGIN).build();
+    public final FlagRef obfLogin = flagBuilder(chatTools.add("obf-login-message")).build();
 
     @Override
     public void onDisableModule() {
@@ -212,7 +197,7 @@ public class ChatTools extends BaseModule {
                         .withTooltips(TooltipHandler.of(TOOLTIPS_SEND_CACHE)))
                 .addToSub(basicSubScreenWidget);
 
-        Runnable toggle = TaskManagers.getToggleTask(Configs.CHAT_CONFIG, AUTO_SEND);
+        Runnable toggle = TaskManagers.getToggleTask(Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath());
         ExecutableWidget.instance(180, 48, 50, 20)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("auto-send")), ButtonAction.run(toggle))
@@ -220,7 +205,7 @@ public class ChatTools extends BaseModule {
                                 .withTooltips(TooltipHandler.of(TOOLTIPS_AUTO_SEND)))
                 .addToSub(basicSubScreenWidget);
 
-        Runnable toggle2 = TaskManagers.getToggleTask(Configs.CHAT_CONFIG, KEEP_CHAT_INV);
+        Runnable toggle2 = TaskManagers.getToggleTask(Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath());
         ExecutableWidget.instance(180, 24, 70, 20)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("keep-chat-inv")), ButtonAction.run(toggle2))

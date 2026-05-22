@@ -150,7 +150,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                 .setElementHandler(new ButtonElement(
                                 TextProvider.of(LABEL_DROP_CRAFT),
                                 ButtonAction.run(ToggleManager.wrapFlagAsToggle(
-                                        FastCraft.TOGGLE_DROP_CRAFT, InvTasks.getFastCraft().dropCraft)))
+                                        "fast-craft.drop-craft", InvTasks.getFastCraft().dropCraft)))
                         .withTooltips(TooltipHandler.of(TOOLTIPS_DROPCRAFT)))
                 .addToSub(this);
         DisplayWidget.instance(10, 0, 3 * (SLOT_WIDTH + 2) + TRADE_ICON_WIDTH - 20, 20)

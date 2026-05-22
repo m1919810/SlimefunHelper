@@ -15,6 +15,7 @@ import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -39,34 +40,27 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class BowTp extends BaseModule {
-
-    public static final String[] TP_ACCELERATE = {"bow-att", "bowtp-distance"};
-    public static final String[] TARGETING_DISTANCE = {"bow-att", "bowtp-target-distance"};
-    public static final String[] RENDER_TARGET = {"bow-att", "bowtp-render-target"};
-    public static final String[] DELTA_Y = {"bow-att", "bowtp-start-delta-y"};
-    public static final String[] ENABLE = {"bow-att", "bowtp-enable"};
-
-    public static final String[] ENABLE_HOTKEY = {"bow-att", "bowtp-enable-hotkey"};
+    public final ModulePath bowAtt = makePath(Configs.COMBAT_CONFIG, "bow-att");
 
     public BowTp() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, ENABLE).build();
-    public KeyBindRef keyBind = toggleHotkey(Configs.COMBAT_CONFIG, ENABLE_HOTKEY, new MultiKeyBind(), ENABLE)
+    public final FlagRef enable = flagBuilder(bowAtt.add("bowtp-enable")).build();
+    public KeyBindRef keyBind = moduleEntry(bowAtt.add("bowtp-enable-hotkey"), new MultiKeyBind(), bowAtt.add("bowtp-enable"))
             .build();
 
-    public DoubleRef tpDistance = builder(Configs.COMBAT_CONFIG, TP_ACCELERATE, DoubleRef.TYPE)
+    public DoubleRef tpDistance = builder(bowAtt.add("bowtp-distance"), DoubleRef.TYPE)
             .defaultValue(80.0D)
             .build();
 
-    public DoubleRef targetingDistance = builder(Configs.COMBAT_CONFIG, TARGETING_DISTANCE, DoubleRef.TYPE)
+    public DoubleRef targetingDistance = builder(bowAtt.add("bowtp-target-distance"), DoubleRef.TYPE)
             .defaultValue(80.0D)
             .build();
 
-    public FlagRef render = flagBuilder(Configs.COMBAT_CONFIG, RENDER_TARGET).build();
+    public FlagRef render = flagBuilder(bowAtt.add("bowtp-render-target")).build();
 
-    public DoubleRef deltaY = builder(Configs.COMBAT_CONFIG, DELTA_Y, DoubleRef.TYPE)
+    public DoubleRef deltaY = builder(bowAtt.add("bowtp-start-delta-y"), DoubleRef.TYPE)
             .defaultValue(0.0D)
             .validator(Configs.doubleRange(-1e-7, 100))
             .build();

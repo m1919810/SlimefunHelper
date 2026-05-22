@@ -15,12 +15,8 @@ import me.matl114.utils.config.kv.StringListAttrKeyValue;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
-public interface AttrKeyValue<T> extends PropertyTracker<Object, String> {
-    /**
-     * get the key name
-     * @return
-     */
-    public String getKeyName();
+public interface AttrKeyValue<T> extends KeyValue<T>,  PropertyTracker<Object, String> {
+
 
     /**
      * get the stringify factory,
@@ -39,37 +35,11 @@ public interface AttrKeyValue<T> extends PropertyTracker<Object, String> {
      */
     public String getValue();
 
-    /**
-     * get the original value
-     * @return
-     */
-    public T getOriginValue();
-
-    /**
-     * check if the value is valid
-     * @param val
-     * @return
-     */
-    boolean isValueValid(T val);
-
-    /**
-     * set the original value, will not update string value
-     * @param val
-     * @return
-     */
-    public boolean setOriginValue(T val);
-
     public boolean validateAndUpdate();
 
     default String updateValue(T val) {
         return getStringifyFactory().get(val);
     }
-
-    /**
-     * return if the current String can successfully cast into the instance and pass all the validators
-     * @return
-     */
-    public boolean isValidate();
 
     default void valueChangeInternal(Object selectable, T val) {
         valueChange(selectable, updateValue(val));
@@ -158,8 +128,8 @@ public interface AttrKeyValue<T> extends PropertyTracker<Object, String> {
         return new BaseAttrKeyValue<>(key, id, IDENTIFIER_FACTORY);
     }
 
-    public static interface CustomWidgetFactory<T> {
-        public DrawableWidget generateWidget(AttrKeyValue<T> kv, int x, int y, int dx, int dy);
+    public static interface CustomWidgetFactory<T> extends WidgetFactory<AttrKeyValue<T>>{
+       // public DrawableWidget generateWidget(AttrKeyValue<T> kv, int x, int y, int dx, int dy);
 
         public static <T> CustomWidgetFactory<T> cutSizeXLeft(CustomWidgetFactory<T> factory, double portion) {
             return (s1, x, y, dx, dy) -> {

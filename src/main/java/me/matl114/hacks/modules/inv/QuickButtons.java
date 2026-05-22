@@ -10,6 +10,7 @@ import me.matl114.gui.basic.ButtonElement;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.slimefun.SlimefunGuide;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
@@ -22,10 +23,8 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.text.Text;
 
 public class QuickButtons extends BaseModule {
-    public static final String[] QUICK_BUTTONS = {"quick-buttons", "enable-buttons"};
-    public static final String[] QUICK_BUTTON_TASKS = {"quick-buttons", "button-tasks"};
-    public static final String[] QUICK_BUTTON_TOGGLES = {"quick-buttons", "button-toggles"};
-    public final FlagRef enable = flagBuilder(Configs.INV_CONFIG, QUICK_BUTTONS).build();
+    public final ModulePath quickButtons = makePath(Configs.INV_CONFIG, "quick-buttons");
+    public final FlagRef enable = flagBuilder(quickButtons.add("enable-buttons")).build();
 
     public QuickButtons() {
         bindFlag(enable);
@@ -35,13 +34,11 @@ public class QuickButtons extends BaseModule {
         return y - 30;
     }
 
-    public final ListRef taskList = builder(Configs.INV_CONFIG, ListRef.TYPE)
-            .path(QUICK_BUTTON_TASKS)
+    public final ListRef taskList = builder(quickButtons.add("button-tasks"), ListRef.TYPE)
             .defaultValue(List.of(KeepInv.CLEAR_KEEP, FastChest.TAKE_ALL, FastChest.SAVE_ALL, SlimefunGuide.OPEN_GUIDE))
             .build();
 
-    public final ListRef toggleList = builder(Configs.INV_CONFIG, ListRef.TYPE)
-            .path(QUICK_BUTTON_TOGGLES)
+    public final ListRef toggleList = builder(quickButtons.add("button-toggles"), ListRef.TYPE)
             .defaultValue(List.of("keep-inv", "fast-inv", "auto-store", "left-one"))
             .build();
 

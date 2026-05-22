@@ -12,6 +12,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -36,30 +37,24 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 
 public class WorldScanner extends BaseModule {
-    public static final String[] SEARCH_ENABLE = new String[] {"detect-block", "search", "enable"};
-    public static final String[] SEARCH_ENABLE_TYPE = new String[] {"detect-block", "search", "search-type"};
-
-    public static final String[] SEARCH_COLOR = new String[] {"detect-block", "search", "search-color"};
-
-    public static final String[] SEARCH_RADIUS = new String[] {"detect-block", "search", "search-radius"};
-
-    public static final String[] SEARCH_ESP = new String[] {"detect-block", "search", "esp-option"};
+    public final ModulePath detectBlock = makePath(Configs.RENDER_CONFIG, "detect-block");
+    public final ModulePath worldScanner = detectBlock.add("search");
 
     public WorldScanner() {
         bindFlag(enable);
     }
 
-    public FlagRef enable = flagBuilder(Configs.RENDER_CONFIG, SEARCH_ENABLE).build();
+    public FlagRef enable = flagBuilder(worldScanner.add("enable")).build();
 
     public NBTRef<RegistryRegex<Block>> typeFilter = builder(
-                    Configs.RENDER_CONFIG, SEARCH_ENABLE_TYPE, RegistryRegex.<Block>parameter())
+                    worldScanner.add("search-type"), RegistryRegex.<Block>parameter())
             .defaultValue(
                     new RegistryRegex<>(new Regex("^(.*_portal|end_gateway|end_portal_frame)$"), Registries.BLOCK))
             .updateListener(this::updateBlockTypeFilter)
             .build();
 
     public NBTRef<EntryPrimitiveMap<Block, TextColor>> color = builder(
-                    Configs.RENDER_CONFIG, SEARCH_COLOR, EntryPrimitiveMap.<Block, TextColor>parameter())
+                    worldScanner.add("search-color"), EntryPrimitiveMap.<Block, TextColor>parameter())
             .defaultValue(new EntryPrimitiveMap<>(
                     Registries.BLOCK,
                     NBTTypes.COLOR_TYPE,
@@ -72,11 +67,11 @@ public class WorldScanner extends BaseModule {
                     color(Formatting.GREEN)))
             .build();
 
-    public IntRef distanceChunk = builder(Configs.RENDER_CONFIG, SEARCH_RADIUS, IntRef.TYPE)
+    public IntRef distanceChunk = builder(worldScanner.add("search-radius"), IntRef.TYPE)
             .defaultValue(12)
             .build();
 
-    public NBTRef<TracingOption> option = builder(Configs.RENDER_CONFIG, SEARCH_ESP, TracingOption.class)
+    public NBTRef<TracingOption> option = builder(worldScanner.add("esp-option"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
 

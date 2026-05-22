@@ -8,6 +8,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -27,63 +28,49 @@ import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.util.math.Box;
 
 public class Blink extends BaseModule {
+    public final ModulePath lagUtils = makePath(Configs.COMBAT_CONFIG, "lag-utils");
+    public final ModulePath blink = lagUtils.add("blink");
+
     public Blink() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.enable"))
-            .build();
+    public final FlagRef enable = flagBuilder(blink.add("enable")).build();
 
-    public final KeyBindRef hotkey = toggleHotkey(
-                    Configs.COMBAT_CONFIG,
-                    makePath("lag-utils.blink.hotkey"),
-                    new MultiKeyBind(),
-                    makePath("lag-utils.blink.enable"))
-            .build();
+    public final KeyBindRef hotkey =
+            moduleEntry(blink.add("hotkey"), new MultiKeyBind(), blink.add("enable"))
+                    .build();
 
-    public final KeyBindRef revert = hotkey(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.revert"))
+    public final KeyBindRef revert = hotkey(blink.add("revert"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::revertMoves))
             .build();
 
-    public final FlagRef render = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.render"))
-            .build();
+    public final FlagRef render = flagBuilder(blink.add("render")).build();
 
-    public final FlagRef autoClose = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.close-on-delay"))
-            .build();
+    public final FlagRef autoClose = flagBuilder(blink.add("close-on-delay")).build();
 
-    public final IntRef closeDelay = builder(
-                    Configs.COMBAT_CONFIG, makePath("lag-utils.blink.close-delay"), IntRef.TYPE)
+    public final IntRef closeDelay = intBuilder(blink.add("close-delay"))
             .defaultValue(50)
             .build();
 
-    public final FlagRef autoFlush = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.auto-flush"))
-            .build();
+    public final FlagRef autoFlush = flagBuilder(blink.add("auto-flush")).build();
 
-    public final IntRef autoFlushDelay = builder(
-                    Configs.COMBAT_CONFIG, makePath("lag-utils.blink.auto-flush-period"), IntRef.TYPE)
+    public final IntRef autoFlushDelay = intBuilder(blink.add("auto-flush-period"))
             .defaultValue(20)
             .build();
 
-    public final FlagRef flushOnAttack = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.flush-on-attack"))
-            .build();
+    public final FlagRef flushOnAttack = flagBuilder(blink.add("flush-on-attack")).build();
 
-    public final FlagRef closeOnAttack = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.close-on-attack"))
-            .build();
+    public final FlagRef closeOnAttack = flagBuilder(blink.add("close-on-attack")).build();
 
-    public final FlagRef flushOnHurt = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.flush-on-hurt"))
-            .build();
+    public final FlagRef flushOnHurt = flagBuilder(blink.add("flush-on-hurt")).build();
 
-    public final FlagRef closeOnHurt = flagBuilder(Configs.COMBAT_CONFIG, makePath("lag-utils.blink.close-on-hurt"))
-            .build();
+    public final FlagRef closeOnHurt = flagBuilder(blink.add("close-on-hurt")).build();
 
-    public final FlagRef flushOnVelocity = flagBuilder(
-                    Configs.COMBAT_CONFIG, makePath("lag-utils.blink.flush-on-velocity"))
-            .build();
+    public final FlagRef flushOnVelocity = flagBuilder(blink.add("flush-on-velocity")).build();
 
-    public final FlagRef closeOnVelocity = flagBuilder(
-                    Configs.COMBAT_CONFIG, makePath("lag-utils.blink.close-on-velocity"))
-            .build();
+    public final FlagRef closeOnVelocity = flagBuilder(blink.add("close-on-velocity")).build();
 
     @Override
     public void registerAll() {

@@ -9,6 +9,7 @@ import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
@@ -34,47 +35,37 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class Criticals extends BaseModule implements LegalMovementManager.MovementModifier {
+    public final ModulePath attBot = makePath(Configs.COMBAT_CONFIG, "att-bot");
+    public final ModulePath criticals = attBot.add("criticals");
 
-    public final FlagRef enable = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.criticals.enable"))
-            .build();
+    public final FlagRef enable = flagBuilder(criticals.add("enable")).build();
 
-    public final KeyBindRef hotkey = toggleHotkey(
-                    Configs.COMBAT_CONFIG,
-                    makePath("att-bot.criticals.hotkey"),
-                    new MultiKeyBind(),
-                    makePath("att-bot.criticals.enable"))
-            .build();
+    public final KeyBindRef hotkey =
+            moduleEntry(criticals.add("hotkey"), new MultiKeyBind(), criticals.add("enable"))
+                    .build();
 
-    public final EnumRef<CriticalMode> mode = builder(
-                    Configs.COMBAT_CONFIG, makePath("att-bot.criticals.mode"), CriticalMode.class)
+    public final EnumRef<CriticalMode> mode = builder(criticals.add("mode"), CriticalMode.class)
             .defaultValue(CriticalMode.PACKET)
             .build();
 
-    public final FlagRef groundOnly = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.criticals.ground-only"))
-            .build();
+    public final FlagRef groundOnly = flagBuilder(criticals.add("ground-only")).build();
 
-    public final FlagRef targetAround = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.criticals.target-only"))
-            .build();
+    public final FlagRef targetAround = flagBuilder(criticals.add("target-only")).build();
 
-    public final FlagRef movementOk = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.criticals.movement-ok"))
-            .build();
+    public final FlagRef movementOk = flagBuilder(criticals.add("movement-ok")).build();
 
-    public final FlagRef autoFakeGround = builder(
-                    Configs.COMBAT_CONFIG, makePath("att-bot.criticals.auto-fake-ground-height"), Boolean.class)
+    public final FlagRef autoFakeGround = builder(criticals.add("auto-fake-ground-height"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef autoWalk = builder(
-                    Configs.COMBAT_CONFIG, makePath("att-bot.criticals.auto-walk-resync"), Boolean.class)
+    public final FlagRef autoWalk = builder(criticals.add("auto-walk-resync"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final EnumRef<Configs.SetBackTriggerType> setBackType = builder(
-                    Configs.COMBAT_CONFIG,
-                    makePath("att-bot.criticals.set-back-mode"),
-                    Configs.SetBackTriggerType.class)
-            .defaultValue(Configs.SetBackTriggerType.SIMULATION)
-            .build();
+    public final EnumRef<Configs.SetBackTriggerType> setBackType =
+            builder(criticals.add("set-back-mode"), Configs.SetBackTriggerType.class)
+                    .defaultValue(Configs.SetBackTriggerType.SIMULATION)
+                    .build();
 
     static LegalMovementManager.DelegateMovementModifier instance;
 

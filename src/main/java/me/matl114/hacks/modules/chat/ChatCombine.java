@@ -9,6 +9,7 @@ import me.matl114.accessors.access.ChatHudAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.ChatUtils;
@@ -19,8 +20,7 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 
 public class ChatCombine extends BaseModule {
-    public static final String[] COMBINE_SAME_CHAT = {"chat-combine", "combine-same-chat"};
-    //    public static final String[] COMBINER_FORMAT = {"chat-combine", "combiner-format"};
+    public final ModulePath chatCombine = makePath(Configs.CHAT_CONFIG, "chat-combine");
     private static final String formatCombinedMessage = " &r&7&l[x&a%d&7&l]";
     private static final Pattern matcherCombinedMessageSuffix = Pattern.compile("^\\s*?\\[x(\\d*?)\\]$");
 
@@ -29,7 +29,7 @@ public class ChatCombine extends BaseModule {
     }
 
     public final FlagRef enable =
-            flagBuilder(Configs.CHAT_CONFIG, COMBINE_SAME_CHAT).build();
+            flagBuilder(chatCombine.add("enable")).build();
 
     @Override
     public void registerAll() {

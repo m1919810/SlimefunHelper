@@ -4,6 +4,7 @@ import java.util.Locale;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
@@ -22,24 +23,20 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class PositionPredict extends BaseModule {
-    public static final String[] ATTACK_POS_PREDICT_TICK = {"attack", "pos-predict-tick"};
-
-    public static final String[] COMBAT_PREDICT_MODE = {"attack", "pos-predict-mode"};
-
-    public static final String[] COMBAT_EXACT_ATTACK_SHIELD = {"att-bot", "exact-tp-anti-shield"};
+    public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "attack");
+    public final ModulePath attBot = makePath(Configs.COMBAT_CONFIG, "att-bot");
 
     public PositionPredict() {}
 
-    public final IntRef attackPredictTick = builder(Configs.COMBAT_CONFIG, ATTACK_POS_PREDICT_TICK, IntRef.TYPE)
+    public final IntRef attackPredictTick = intBuilder(attack.add("pos-predict-tick"))
             .defaultValue(2)
             .build();
 
-    public final FlagRef enableNoShield = builder(Configs.COMBAT_CONFIG, COMBAT_EXACT_ATTACK_SHIELD, Boolean.class)
+    public final FlagRef enableNoShield = builder(attBot.add("exact-tp-anti-shield"), Boolean.class)
             .defaultValue(false)
             .build();
 
-    public final EnumRef<PredictMode> predictMode = builder(
-                    Configs.COMBAT_CONFIG, COMBAT_PREDICT_MODE, PredictMode.class)
+    public final EnumRef<PredictMode> predictMode = builder(attack.add("pos-predict-mode"), PredictMode.class)
             .defaultValue(PredictMode.QUADRATIC)
             .build();
 

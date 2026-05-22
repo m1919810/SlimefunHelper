@@ -12,6 +12,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
@@ -40,107 +41,69 @@ import net.minecraft.world.chunk.BlockEntityTickInvoker;
 import org.apache.commons.lang3.function.BooleanConsumer;
 
 public class RenderOptimize extends BaseModule {
-    public static final String[] OPTIMIZE_ITEM_TICK = {"render-optimize", "optimize-item-tick"};
-    public static final String[] OPTIMIZE_ITEM_CULLING_DISTANCE = {"render-optimize", "item-culling-distance"};
-
-    public static final String[] OPTIMIZE_PARTICLE_TICK = {"render-optimize", "optimize-particle-tick"};
-
-    public static final String[] OPTIMIZE_ARMOR_STAND_TICK = {"render-optimize", "optimize-armor-stand-tick"};
-
-    public static final String[] OPTIMIZE_LABEL_RENDER = {"render-optimize", "optimize-entity-label-render"};
-
-    public static final String[] OPTIMIZE_ENTITY_LABEL_CULLING = {
-        "render-optimize", "entity-label-render-culling-distance"
-    };
-
-    public static final String[] OPTIMIZE_BLOCK_LABEL_RENDER = {"render-optimize", "optimize-block-label-render"};
-
-    public static final String[] OPTIMIZE_BLOCK_LABEL_CULLING_DISTANCE = {
-        "render-optimize", "block-label-render-culling-distance"
-    };
-
-    public static final String[] CULLING_ENABLE = {"render-optimize", "optimize-culling-enable"};
-
-    public static final String[] CULLING_ENABLE_HOTKEY = {"render-optimize", "optimize-culling-enable-hotkey"};
-
-    public static final String[] CULLING_ENTITY_TYPES = {"render-optimize", "optimize-culling-entity-types"};
-
-    public static final String[] CULLING_BLOCK_ENTITY_TYPES = {"render-optimize", "optimize-culling-block-entity-types"
-    };
-
-    public static final String[] CULLING_PARTICLE_TYPES = {"render-optimize", "optimize-culling-block-entity-types"};
-
-    public static final String[] OPTIMIZE_USE_RAYCAST = {"render-optimize", "optimize-culling-use-raycast"};
-
-    public static final String[] OPTIMIZE_CULL_RADIUS = {"render-optimize", "optimize-culling-radius"};
+    public final ModulePath renderOptimize = makePath(Configs.RENDER_CONFIG, "render-optimize");
 
     public RenderOptimize() {}
 
     public final FlagRef enableItemTickOpt =
-            flagBuilder(Configs.RENDER_CONFIG, OPTIMIZE_ITEM_TICK).build();
+            flagBuilder(renderOptimize.add("optimize-item-tick")).build();
 
-    public final DoubleRef cullingDistanceItem = builder(
-                    Configs.RENDER_CONFIG, OPTIMIZE_ITEM_CULLING_DISTANCE, DoubleRef.TYPE)
+    public final DoubleRef cullingDistanceItem = builder(renderOptimize.add("item-culling-distance"), DoubleRef.TYPE)
             .defaultValue(40.0D)
             .build();
 
     public final FlagRef enableParticleTickOpt =
-            flagBuilder(Configs.RENDER_CONFIG, OPTIMIZE_PARTICLE_TICK).build();
+            flagBuilder(renderOptimize.add("optimize-particle-tick")).build();
 
     public final FlagRef enableArmorStandTickOpt =
-            flagBuilder(Configs.RENDER_CONFIG, OPTIMIZE_ARMOR_STAND_TICK).build();
+            flagBuilder(renderOptimize.add("optimize-armor-stand-tick")).build();
 
     public final FlagRef enableLabelRenderOpt =
-            flagBuilder(Configs.RENDER_CONFIG, OPTIMIZE_LABEL_RENDER).build();
+            flagBuilder(renderOptimize.add("optimize-entity-label-render")).build();
 
-    public final DoubleRef cullingDistanceEntityLabel = builder(
-                    Configs.RENDER_CONFIG, OPTIMIZE_ENTITY_LABEL_CULLING, DoubleRef.TYPE)
+    public final DoubleRef cullingDistanceEntityLabel = builder(renderOptimize.add("entity-label-render-culling-distance"), DoubleRef.TYPE)
             .defaultValue(64.0D)
             .build();
 
     public final FlagRef enableBlockLabelRenderOpt =
-            flagBuilder(Configs.RENDER_CONFIG, OPTIMIZE_BLOCK_LABEL_RENDER).build();
+            flagBuilder(renderOptimize.add("optimize-block-label-render")).build();
 
-    public final DoubleRef cullingDistanceBlockLabel = builder(
-                    Configs.RENDER_CONFIG, OPTIMIZE_BLOCK_LABEL_CULLING_DISTANCE, DoubleRef.TYPE)
+    public final DoubleRef cullingDistanceBlockLabel = builder(renderOptimize.add("block-label-render-culling-distance"), DoubleRef.TYPE)
             .defaultValue(20.0D)
             .build();
 
     public final FlagRef cullingEnable =
-            flagBuilder(Configs.RENDER_CONFIG, CULLING_ENABLE).build();
+            flagBuilder(renderOptimize.add("optimize-culling-enable")).build();
 
     public final KeyBindRef keyBindRef = toggleHotkey(
-                    Configs.RENDER_CONFIG, CULLING_ENABLE_HOTKEY, new MultiKeyBind(), CULLING_ENABLE)
+                    Configs.RENDER_CONFIG, renderOptimize.add("optimize-culling-enable-hotkey"), new MultiKeyBind(), renderOptimize.add("optimize-culling-enable"))
             .build();
 
     public final NBTRef<RegistryRegex<EntityType<?>>> cullingTypes = builder(
-                    Configs.RENDER_CONFIG,
-                    CULLING_ENTITY_TYPES,
+                    renderOptimize.add("optimize-culling-entity-types"),
                     NBTType.<RegistryRegex<EntityType<?>>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(item.*)$"), Registries.ENTITY_TYPE))
             .build();
 
     public final NBTRef<RegistryRegex<BlockEntityType<?>>> cullingTypes2 = builder(
-                    Configs.RENDER_CONFIG,
-                    CULLING_BLOCK_ENTITY_TYPES,
+                    renderOptimize.add("optimize-culling-block-entity-types"),
                     NBTType.<RegistryRegex<BlockEntityType<?>>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(
                     new Regex("^((.*sign)|barrel|skull|(.*chest)|enchanting_table)$"), Registries.BLOCK_ENTITY_TYPE))
             .build();
 
     public final NBTRef<RegistryRegex<ParticleType<?>>> cullingTypes3 = builder(
-                    Configs.RENDER_CONFIG,
-                    CULLING_PARTICLE_TYPES,
+                    renderOptimize.add("optimize-culling-block-entity-types"),
                     NBTType.<RegistryRegex<ParticleType<?>>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(.*)$"), Registries.PARTICLE_TYPE))
             .build();
 
-    public final DoubleRef cullingRadius = builder(Configs.RENDER_CONFIG, OPTIMIZE_CULL_RADIUS, DoubleRef.TYPE)
+    public final DoubleRef cullingRadius = builder(renderOptimize.add("optimize-culling-radius"), DoubleRef.TYPE)
             .defaultValue(64.0D)
             .build();
 
     public final FlagRef cullingUseRaycast =
-            flagBuilder(Configs.RENDER_CONFIG, OPTIMIZE_USE_RAYCAST).build();
+            flagBuilder(renderOptimize.add("optimize-culling-use-raycast")).build();
 
     @Override
     public void registerAll() {

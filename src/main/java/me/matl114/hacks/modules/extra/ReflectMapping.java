@@ -1,7 +1,9 @@
 package me.matl114.hacks.modules.extra;
 
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
+import me.matl114.managers.Configs;
 
 public class ReflectMapping extends BaseModule {
-    public static final String[] REF_MAPPING_FILE = {"other", "mapping-file-path"};
+    public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
 }

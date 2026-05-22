@@ -4,6 +4,7 @@ import java.util.List;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.RegexList;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -16,20 +17,18 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Nullables;
 
 public class ChatSpamFix extends BaseModule {
-    public static String[] ENABLE = new String[] {"chat-spam-fix", "enable"};
-    public static String[] REGEX = new String[] {"chat-spam-fix", "regex-list"};
-    public static String[] LOG_FIXED = new String[] {"chat-spam-fix", "log-hidden-messages"};
+    public final ModulePath chatSpamFix = makePath(Configs.CHAT_CONFIG, "chat-spam-fix");
 
     public ChatSpamFix() {}
 
-    public final FlagRef enable = flagBuilder(Configs.CHAT_CONFIG, ENABLE).build();
+    public final FlagRef enable = flagBuilder(chatSpamFix.add("enable")).build();
 
-    public final NBTRef<RegexList> regexList = builder(
-                    Configs.CHAT_CONFIG, REGEX, NBTType.<RegexList>parameter(RegexList.class))
-            .defaultValue(new RegexList(List.of()))
-            .build();
+    public final NBTRef<RegexList> regexList =
+            builder(chatSpamFix.add("regex-list"), NBTType.<RegexList>parameter(RegexList.class))
+                    .defaultValue(new RegexList(List.of()))
+                    .build();
 
-    public final FlagRef logHidden = flagBuilder(Configs.CHAT_CONFIG, LOG_FIXED).build();
+    public final FlagRef logHidden = flagBuilder(chatSpamFix.add("log-hidden-messages")).build();
 
     @Override
     public void registerAll() {

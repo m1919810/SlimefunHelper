@@ -12,6 +12,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -38,33 +39,26 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 
 public class ChestESP extends BaseModule {
-    public static final String[] CHEST_ESP_ENABLE = new String[] {"detect-block", "chest-esp", "enable"};
-
-    public static final String[] CHEST_ESP_ENABLE_TYPES = new String[] {"detect-block", "chest-esp", "enable-types"};
-
-    public static final String[] CHEST_ESP_ENABLE_LINES =
-            new String[] {"detect-block", "chest-esp", "esp-trace-options"};
-
-    public static final String[] CHEST_ESP_COLOR = new String[] {"detect-block", "chest-esp", "color-map"};
+    public final ModulePath detectBlock = makePath(Configs.RENDER_CONFIG, "detect-block");
+    public final ModulePath chestEsp = detectBlock.add("chest-esp");
 
     public ChestESP() {}
 
     public final FlagRef enable =
-            flagBuilder(Configs.RENDER_CONFIG, CHEST_ESP_ENABLE).build();
+            flagBuilder(chestEsp.add("enable")).build();
 
     public final NBTRef<RegistryRegex<BlockEntityType<?>>> typeFilter = builder(
-                    Configs.RENDER_CONFIG, CHEST_ESP_ENABLE_TYPES, RegistryRegex.<BlockEntityType<?>>parameter())
+                    chestEsp.add("enable-types"), RegistryRegex.<BlockEntityType<?>>parameter())
             .defaultValue(new RegistryRegex<>(new Regex("^(.*chest|barrel|.*box)$"), Registries.BLOCK_ENTITY_TYPE))
             .build();
 
     public final NBTRef<TracingOption> enableLines = builder(
-                    Configs.RENDER_CONFIG, CHEST_ESP_ENABLE_LINES, TracingOption.class)
+                    chestEsp.add("esp-trace-options"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
 
     public final NBTRef<EntryPrimitiveMap<BlockEntityType<?>, TextColor>> colorMap = builder(
-                    Configs.RENDER_CONFIG,
-                    CHEST_ESP_COLOR,
+                    chestEsp.add("color-map"),
                     EntryPrimitiveMap.<BlockEntityType<?>, TextColor>parameter())
             .defaultValue(new EntryPrimitiveMap<>(
                     Registries.BLOCK_ENTITY_TYPE,

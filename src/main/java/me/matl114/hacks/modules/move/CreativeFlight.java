@@ -8,13 +8,13 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.HotKeyUtils;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
@@ -31,20 +31,9 @@ import net.minecraft.util.math.Vec3d;
 
 public class CreativeFlight extends BaseModule implements LegalMovementManager.MovementModifier {
     private static LegalMovementManager.DelegateMovementModifier instance;
-    public static final String[] FLIGHT = {"move-safety", "flight", "flight-enable"};
-    public static final String[] TOGGLE_FLIGHT = {"move-safety", "flight", "flight-enable-hotkey"};
-    public static final String[] FLIGHT_MODE = {"move-safety", "flight", "flight-mode"};
-    public static final String[] FLIGHT_MODE_SWITCH = {"move-safety", "flight", "flight-mode-switch-hotkey"};
-    public static final String[] MOVE_FLIGHT_ANTIKICK = {"move-safety", "flight", "antikick"};
-    public static final String[] MOVE_FLIGHT_ANTIKICK_PERIOD = {"move-safety", "flight", "antikick-period"};
-    // public static final String[] MOVE_FLIGHT_SAFETY_1 = {"move-safety", "flight", "fake-1"};
-    public static final String[] MOVE_SPEED_OVERRIDE_FLY = {"move-speed", "fly-speed-override"};
-    public static final String[] MOVE_SPEED_FLY_VAL_CREATIVE = {"move-speed", "fly-speed-creative"};
-    public static final String[] MOVE_SPEED_FLY_VAL = {"move-speed", "fly-speed"};
-    public static final String[] MOVE_SPEED_OVERRIDE_TASK = {"move-speed", "toggle-flight-speed"};
-    public static final String[] MOVE_SPEED_WALK_VAL = {"move-speed", "walk-speed"};
-    public static final String[] MOVE_SPEED_OVERRIDE_WALK = {"move-speed", "walk-speed-override"};
-    public static final String[] ON_GROUND_WHEN_MINE = {"move-safety", "flight", "onground-when-mine"};
+    public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
+    public final ModulePath flight = moveSafety.add("flight");
+    public final ModulePath moveSpeed = makePath(Configs.MOV_CONFIG, "move-speed");
 
     public CreativeFlight() {
         bindFlag(canFly);
@@ -56,63 +45,56 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     }
 
     public final FlagRef canFly =
-            flagBuilder(Configs.MOV_CONFIG, FLIGHT).defaultValue(false).build();
+            flagBuilder(flight.add("flight-enable")).defaultValue(false).build();
 
-    public final KeyBindRef keybind = toggleHotkey(
-                    Configs.MOV_CONFIG,
-                    TOGGLE_FLIGHT,
+    public final KeyBindRef keybind = moduleEntry(
+                    flight.add("flight-enable-hotkey"),
                     new MultiKeyBind(),
-                    FLIGHT)
+                    flight.add("flight-enable"), ()-> this.flightMode.get().getDisplay())
             .build();
 
-    public final EnumRef<FlightMode> flightMode = builder(Configs.MOV_CONFIG, FLIGHT_MODE, FlightMode.class)
+    public final EnumRef<FlightMode> flightMode = builder(flight.add("flight-mode"), FlightMode.class)
             .defaultValue(FlightMode.CREATIVE)
             .build();
 
-    public final KeyBindRef switchMode = hotkey(Configs.MOV_CONFIG, FLIGHT_MODE_SWITCH, new MultiKeyBind())
+    public final KeyBindRef switchMode = hotkey(flight.add("flight-mode-switch-hotkey"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleMode))
             .build();
 
-    public final FlagRef doAntiKick = builder(Configs.MOV_CONFIG, Boolean.class)
-            .path(MOVE_FLIGHT_ANTIKICK)
+    public final FlagRef doAntiKick = builder(flight.add("antikick"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final IntRef antiKickPeriod = builder(Configs.MOV_CONFIG, MOVE_FLIGHT_ANTIKICK_PERIOD, IntRef.TYPE)
+    public final IntRef antiKickPeriod = intBuilder(flight.add("antikick-period"))
             .defaultValue(60)
             .build();
-    public final FlagRef overrideFlySpeed = builder(Configs.MOV_CONFIG, Boolean.class)
-            .path(MOVE_SPEED_OVERRIDE_FLY)
+    public final FlagRef overrideFlySpeed = builder(moveSpeed.add("fly-speed-override"), Boolean.class)
             .defaultValue(false)
             .build();
 
-    public final DoubleRef overrideFlySpeedCreative = builder(Configs.MOV_CONFIG, Double.class)
-            .path(MOVE_SPEED_FLY_VAL_CREATIVE)
+    public final DoubleRef overrideFlySpeedCreative = builder(moveSpeed.add("fly-speed-creative"), Double.class)
             .defaultValue(0.8)
             .build();
 
-    public final DoubleRef overrideFlySpeedSurvival = builder(Configs.MOV_CONFIG, Double.class)
-            .path(MOVE_SPEED_FLY_VAL)
+    public final DoubleRef overrideFlySpeedSurvival = builder(moveSpeed.add("fly-speed"), Double.class)
             .defaultValue(0.4)
             .build();
 
-    public final KeyBindRef overridingSpeedKeybind = hotkey(Configs.MOV_CONFIG, MOVE_SPEED_OVERRIDE_TASK)
+    public final KeyBindRef overridingSpeedKeybind = hotkey(moveSpeed.add("toggle-flight-speed"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleSpeed))
             .build();
 
-    public final FlagRef overrideWalkSpeed = builder(Configs.MOV_CONFIG, Boolean.class)
-            .path(MOVE_SPEED_WALK_VAL)
+    public final FlagRef overrideWalkSpeed = builder(moveSpeed.add("walk-speed"), Boolean.class)
             .defaultValue(false)
             .build();
 
-    public final DoubleRef overridingWalkSpeedAll = builder(Configs.MOV_CONFIG, Double.class)
-            .path(MOVE_SPEED_OVERRIDE_WALK)
+    public final DoubleRef overridingWalkSpeedAll = builder(moveSpeed.add("walk-speed-override"), Double.class)
             .defaultValue(0.1)
             .build();
 
     public final FlagRef onGroundWhenMine =
-            flagBuilder(Configs.MOV_CONFIG, ON_GROUND_WHEN_MINE).build();
+            flagBuilder(flight.add("onground-when-mine")).build();
 
     //    public final FlagRef fake1 =
     //            flagBuilder(Configs.MOV_CONFIG, MOVE_FLIGHT_SAFETY_1).build();

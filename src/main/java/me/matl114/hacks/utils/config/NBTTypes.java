@@ -3,6 +3,7 @@ package me.matl114.hacks.utils.config;
 import static me.matl114.utils.config.BaseAttrKeyValue.*;
 import static me.matl114.utils.config.kv.AttrKeyValues.*;
 
+import com.mojang.datafixers.kinds.K2;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -10,15 +11,16 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
+import java.util.function.*;
 import java.util.regex.Pattern;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.presets.choices.ColorSelectIcon;
+import me.matl114.gui.presets.lists.NBTBoundedListScreen;
 import me.matl114.gui.presets.lists.NBTListModifyScreen;
 import me.matl114.managers.config.NBTType;
+import me.matl114.utils.CollectionUtils;
 import me.matl114.utils.collections.InitializationTask;
 import me.matl114.utils.config.*;
 import me.matl114.utils.config.kv.AttrKeyValues;
@@ -402,6 +404,23 @@ public interface NBTTypes {
                         .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
     }
 
+    public static <T, W> DrawableWidget generateBoundedListModifyButton(
+        AttrKeyValue<Map<T, W>> keyValue,
+        List<T> keyBound,
+        NBTType<W> valueType,WidgetFactory<T> keyWidget,
+        int x, int y, int dx, int dy, int keyLabelWidth, int listWidth, int listHeight
+    ){
+        return new SubScreenWidget(x, y, dx, dy)
+            .addDrawableChild(new ExecutableWidget(dy, 0, dx - dy, dy)
+                .setElementHandler(new ButtonElement(
+                    TextProvider.of(Constants.OPEN_LIST_EDIT_TEXT), ButtonAction.run(() -> {
+                    openBoundedListModifyScreen(keyValue, keyBound, valueType, keyWidget, keyLabelWidth, listWidth, listHeight);
+                }))
+                    .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))))
+            .addDrawableChild(DisplayWidget.instance(0, 0, dy - 1, dy)
+                .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
+    }
+
     public static <W> void openListModifyScreen(
             AttrKeyValue<List<W>> keyValue, NBTType<W> type, Supplier<W> supplier, int listWidth, int listHeight) {
         ScreenAccess.of(new NBTListModifyScreen<>(
@@ -412,6 +431,27 @@ public interface NBTTypes {
                         listWidth,
                         listHeight))
                 .openFromCurrent();
+    }
+
+    public static <T, W> void openBoundedListModifyScreen(
+        AttrKeyValue<Map<T, W>> keyValue, List<T> bound, NBTType<W> type, WidgetFactory<T> keyWidget, int keyLabelWidth, int listWidth, int listHeight
+    ){
+        Map<T, W> twMap = keyValue.getOriginValue();
+        boolean add = false;
+        for (var re : bound){
+            if(!twMap.containsKey(re)){
+                add = true;
+                twMap = new LinkedHashMap<>(twMap);
+                twMap.put(re, type.createEmpty());
+            }
+        }
+        if(add){
+            keyValue.valueChangeInternal(null, twMap);
+        }
+        NBTBoundedListScreen<T, W> listModifyScreenImmutable = new NBTBoundedListScreen<>(
+            keyValue, type, keyWidget, (map)-> keyValue.valueChangeInternal(null, map), keyLabelWidth, listWidth, listHeight
+        );
+        ScreenAccess.of(listModifyScreenImmutable).openFromCurrent();
     }
 
     public static Map<String, NBTType<?>> PRIMITIVE_TYPES = new LinkedHashMap<>();

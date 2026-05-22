@@ -9,6 +9,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
@@ -58,40 +59,29 @@ public class Scaffold extends BaseModule {
         searchOffsets.sort(Comparator.comparingInt(
                 v -> (int) Math.max(Math.max(Math.abs(v.getX()), Math.abs(v.getY())), Math.abs(v.getZ()))));
     }
+    final ModulePath scaffold = makePath(Configs.INTERACT_CONFIG, "interact-scaffold");
 
-    public final FlagRef enable = flagBuilder(Configs.INTERACT_CONFIG, ENABLE).build();
+    public final FlagRef enable = flagBuilder(scaffold.addEnable()).build();
 
-    public final KeyBindRef keyBind = toggleHotkey(Configs.INTERACT_CONFIG, ENABLE_HOTKEY, new MultiKeyBind(), ENABLE)
+    public final KeyBindRef keyBind = moduleEntry(scaffold.addHotkey(), new MultiKeyBind(), scaffold.addEnable())
             .build();
 
     //    public final FlagRef legal =
     //            flagBuilder(Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_LEGAL).build();
 
     public final EnumRef<Configs.LegalInteractMode> legalMode = builder(
-                    Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_TARGET_MODE, Configs.LegalInteractMode.class)
+                   scaffold.add("legal-targeting"), Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
-    public final FlagRef swapHand = flagBuilder(Configs.INTERACT_CONFIG, makePath("interact-scaffold.swap-hand"))
+    public final FlagRef swapHand = flagBuilder(scaffold.add("swap-hand"))
             .build();
 
     public final IntRef expandYDepth = builder(
-                    Configs.INTERACT_CONFIG, makePath("interact-scaffold.expand-interact-y-depth"), IntRef.TYPE)
+                    scaffold.add("expand-interact-y-depth"), IntRef.TYPE)
             .defaultValue(0)
             .validator(Configs.intRange(0, 3))
             .build();
-
-    public final IntRef expandInteractRange = builder(
-                    Configs.INTERACT_CONFIG, makePath("interact-scaffold.expand-interact-range"), IntRef.TYPE)
-            .defaultValue(1)
-            .updateListener(this::updateSearchRange)
-            .validator(Configs.intRange(0, 3))
-            .build();
-
-    //    public final IntRef cooldownOverride = builder(
-    //                    Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE, IntRef.TYPE)
-    //            .defaultValue(-1)
-    //            .build();
 
     @Override
     public void registerAll() {

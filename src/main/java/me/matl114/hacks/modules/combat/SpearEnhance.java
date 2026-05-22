@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.combat;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.versioned.api.VItem;
@@ -15,12 +16,11 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 
 public class SpearEnhance extends BaseModule {
-    public static final String[] SPEAR_AUTO_STOP_USE = new String[] {"spear-module", "spear-auto-restart"};
+    public final ModulePath spearModule = makePath(Configs.COMBAT_CONFIG, "spear-module");
 
     public SpearEnhance() {}
 
-    public final FlagRef spearAutoRestart =
-            flagBuilder(Configs.COMBAT_CONFIG, SPEAR_AUTO_STOP_USE).build();
+    public final FlagRef spearAutoRestart = flagBuilder(spearModule.add("spear-auto-restart")).build();
 
     @Override
     public void registerAll() {

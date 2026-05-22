@@ -450,6 +450,15 @@ public class Listener {
     private static final EventChannel<Integer> playerNotFlyJumpPoint = new EventChannel<>();
 
     @Getter
+    @Broadcast
+    private static final EventChannel<ClientPlayerEntity> playerLandingPoint = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    @ExtraArgs({BlockPos.class})
+    private static final EventChannel<Vec3d> playerWebSlowPoint = new EventChannel<>();
+
+    @Getter
     @Modifiable
     private static final EventChannel<MovTasks.MovInfo> teleportConfirmResponsePoint = new EventChannel<>();
 

@@ -7,6 +7,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
@@ -53,55 +54,47 @@ public class AutoSteal extends BaseModule {
     // 0 tick steal code
     // auto shulker dump
     // with hotkeys
-    private static final String[] ENABLE_PATH = makePath("auto-inv.steal.enable");
-    private static final String[] TOGGLE_KEY_PATH = makePath("auto-inv.steal.toggle-key");
-    private static final String[] TITLE_REGEX_PATH = makePath("auto-inv.steal.title-regex");
-    private static final String[] ITEM_FILTER_PATH = makePath("auto-inv.steal.item-filter");
-    private static final String[] AUTO_SHULKER_PATH = makePath("auto-inv.auto-shulker.enable");
-    private static final String[] AUTO_SHULKER_TOGGLE_KEY_PATH = makePath("auto-inv.auto-shulker.toggle-key");
-    private static final String[] AUTO_SHULKER_0TICK_STEAL_PATH = makePath("auto-inv.auto-shulker.0tick-steal");
+    public final ModulePath autoInv = makePath(Configs.INV_CONFIG, "auto-inv");
+    public final ModulePath steal = autoInv.add("steal");
+    public final ModulePath autoShulkerPath = autoInv.add("auto-shulker");
 
     // ===== 配置字段 =====
     // 主开关（FlagRef），同时也作为模块启用标志，需调用 bindFlag 绑定
-    public final FlagRef enable = flagBuilder(Configs.INV_CONFIG, ENABLE_PATH).build();
+    public final FlagRef enable = flagBuilder(steal.add("enable")).build();
 
     // 主开关切换快捷键（toggleHotkey）
-    public final KeyBindRef autoStealToggleKey = toggleHotkey(
-                    Configs.INV_CONFIG,
-                    TOGGLE_KEY_PATH,
+    public final KeyBindRef autoStealToggleKey = moduleEntry(
+                    steal.add("toggle-key"),
                     new MultiKeyBind(), // 默认按键 R（可自定义）
-                    ENABLE_PATH // 关联的开关配置路径
+                    steal.add("enable") // 关联的开关配置路径
                     )
             .build();
 
     // 标题正则（NBTRef 类型，存储正则表达式）
-    public final NBTRef<Regex> titleRegex = builder(
-                    Configs.INV_CONFIG, TITLE_REGEX_PATH, NBTType.<Regex>parameter(Regex.class))
-            .defaultValue(new Regex(".*")) // 默认匹配所有标题
-            .build();
+    public final NBTRef<Regex> titleRegex =
+            builder(steal.add("title-regex"), NBTType.<Regex>parameter(Regex.class))
+                    .defaultValue(new Regex(".*")) // 默认匹配所有标题
+                    .build();
 
     // 物品过滤器（RegistryRegex 类型，基于物品注册表过滤）
     public final NBTRef<RegistryRegex<Item>> itemFilter = builder(
-                    Configs.INV_CONFIG, ITEM_FILTER_PATH, NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
+                    steal.add("item-filter"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex(".*"), Registries.ITEM))
             .build();
 
     // 自动潜影盒子功能开关
-    public final FlagRef autoShulker =
-            flagBuilder(Configs.INV_CONFIG, AUTO_SHULKER_PATH).build();
+    public final FlagRef autoShulker = flagBuilder(autoShulkerPath.add("enable")).build();
 
     // 自动潜影盒切换快捷键
-    public final KeyBindRef autoShulkerToggleKey = toggleHotkey(
-                    Configs.INV_CONFIG,
-                    AUTO_SHULKER_TOGGLE_KEY_PATH,
+    public final KeyBindRef autoShulkerToggleKey = moduleEntry(
+                    autoShulkerPath.add("toggle-key"),
                     new MultiKeyBind(), // 默认按键 H
-                    AUTO_SHULKER_PATH // 关联自动潜影盒开关
+                    autoShulkerPath.add("enable") // 关联自动潜影盒开关
                     )
             .build();
 
     // 0 Tick 偷取开关（潜影盒专用）
-    public final FlagRef autoShulker0TickSteal =
-            flagBuilder(Configs.INV_CONFIG, AUTO_SHULKER_0TICK_STEAL_PATH).build();
+    public final FlagRef autoShulker0TickSteal = flagBuilder(autoShulkerPath.add("0tick-steal")).build();
 
     public AutoSteal() {}
 

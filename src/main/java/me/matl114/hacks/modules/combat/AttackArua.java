@@ -6,60 +6,49 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 
 public class AttackArua extends BaseModule {
-    public static final String[] DO_INTERVEL_WEAPON = {"att-bot", "respect-cooldown", "weapon"};
-    public static final String[] DO_INTERVEL_HAND = {"att-bot", "respect-cooldown", "hand"};
-
-    public static final String[] AUTO_ATTACK = {"att-bot", "auto-att"};
-    public static final String[] AUTO_ATTACK_HOTKEY = {"att-bot", "auto-att-hotkey"};
-    public static final String[] ONCE_MAX = {"att-bot", "max-at-once"};
-
-    public static final String[] CUSTOM_ATTACKING_RATE = {"att-bot", "auto-att-rate"};
-    //add do not abort eating
+    public final ModulePath attBot = makePath(Configs.COMBAT_CONFIG, "att-bot");
+    public final ModulePath respectCooldown = attBot.add("respect-cooldown");
 
     public AttackArua() {
         bindFlag(enable);
     }
 
-    public final FlagRef enable =
-            flagBuilder(Configs.COMBAT_CONFIG, AUTO_ATTACK).build();
+    public final FlagRef enable = flagBuilder(attBot.add("auto-att")).build();
 
-    public final KeyBindRef hotkey = toggleHotkey(
-                    Configs.COMBAT_CONFIG,
-                    AUTO_ATTACK_HOTKEY,
-                    new MultiKeyBind(),
-                    AUTO_ATTACK)
-            .build();
+    public final KeyBindRef hotkey =
+            moduleEntry(attBot.add("auto-att-hotkey"), new MultiKeyBind(), attBot.add("auto-att"))
+                    .build();
 
-    public final IntRef maxTargetPerTick = builder(Configs.COMBAT_CONFIG, ONCE_MAX, Integer.class)
+    public final IntRef maxTargetPerTick = intBuilder(attBot.add("max-at-once"))
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef cooldownWeapon = builder(Configs.COMBAT_CONFIG, DO_INTERVEL_WEAPON, Boolean.class)
+    public final FlagRef cooldownWeapon = builder(respectCooldown.add("weapon"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef cooldownHand = builder(Configs.COMBAT_CONFIG, DO_INTERVEL_HAND, Boolean.class)
+    public final FlagRef cooldownHand = builder(respectCooldown.add("hand"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final IntRef customRate = builder(Configs.COMBAT_CONFIG, CUSTOM_ATTACKING_RATE, IntRef.TYPE)
+    public final IntRef customRate = intBuilder(attBot.add("auto-att-rate"))
             .defaultValue(0)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final FlagRef doNotAttackWhenEat = flagBuilder(Configs.COMBAT_CONFIG, makePath("att-bot.stop-attack-when-eat"))
+    public final FlagRef doNotAttackWhenEat = flagBuilder(attBot.add("stop-attack-when-eat"))
         .build();
 
     @Override

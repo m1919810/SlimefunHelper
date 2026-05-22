@@ -6,6 +6,7 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
@@ -20,54 +21,38 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraFlight extends BaseModule implements LegalMovementManager.MovementModifier {
-    // public static final String[]
+    public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
+    public final ModulePath simpleFlightControl = elytra.add("simple-flight-control");
+    public final ModulePath customFireworks = elytra.add("custom-fireworks");
 
-    public static final String[] MOVE_ELYTRA_FLY = {"elytra", "simple-flight-control", "enable-control"};
+    public FlagRef enable = flagBuilder(simpleFlightControl.add("enable-control")).build();
 
-    public static final String[] MOVE_ELYTRA_FLY_HOTKEY = {"elytra", "simple-flight-control", "enable-control-hotkey"};
-
-    public static final String[] MOVE_ELYTRA_MOTION_CONTROL = {"elytra", "simple-flight-control", "enable-motion"};
-
-    public static final String[] MOVE_ELYTRA_MOTION_MODE = {"elytra", "simple-flight-control", "motion-mode"};
-
-    public static final String[] MOVE_ELYTRA_HEIGHT_CONTROL = {"elytra", "simple-flight-control", "enable-height"};
-
-    public static final String[] MOVE_ELYTRA_MOTION_ADJUST = {"elytra", "simple-flight-control", "motion-adjust"};
-
-    public static final String[] ELYTRA_PACKET_MOTION_AMOUNT = {"elytra", "custom-fireworks", "motion-amount"};
-
-    public static final String[] ELYTRA_FLIGHT_CONTROL = {"elytra", "simple-flight-control", "flight-mode"};
-
-    public static final String[] MOVE_ELYTRA_FLOATING = {"elytra", "simple-flight-control", "use-floating-utils"};
-
-    // public static final String[] SMART_FLOATING_
-
-    public FlagRef enable = flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_FLY).build();
-
-    public KeyBindRef hotkey = toggleHotkey(
-                    Configs.MOV_CONFIG, MOVE_ELYTRA_FLY_HOTKEY, new MultiKeyBind(), MOVE_ELYTRA_FLY)
+    public KeyBindRef hotkey = moduleEntry(
+                    simpleFlightControl.add("enable-control-hotkey"),
+                    new MultiKeyBind(),
+                    simpleFlightControl.add("enable-control"))
             .build();
 
-    public final DoubleRef packetMotion = builder(Configs.MOV_CONFIG, ELYTRA_PACKET_MOTION_AMOUNT, DoubleRef.TYPE)
+    public final DoubleRef packetMotion = builder(customFireworks.add("motion-amount"), DoubleRef.TYPE)
             .defaultValue(0.05)
             .validator(Configs.doubleRange(0.0, 10000.0))
             .build();
 
-    public final EnumRef<ElytraExtra.MotionMode> motionMode = builder(
-                    Configs.MOV_CONFIG, MOVE_ELYTRA_MOTION_MODE, ElytraExtra.MotionMode.class)
-            .defaultValue(ElytraExtra.MotionMode.VOID)
-            .build();
+    public final EnumRef<ElytraExtra.MotionMode> motionMode =
+            builder(simpleFlightControl.add("motion-mode"), ElytraExtra.MotionMode.class)
+                    .defaultValue(ElytraExtra.MotionMode.VOID)
+                    .build();
 
-    public final EnumRef<ElytraMode> controlMode = builder(Configs.MOV_CONFIG, ELYTRA_FLIGHT_CONTROL, ElytraMode.class)
+    public final EnumRef<ElytraMode> controlMode = builder(simpleFlightControl.add("flight-mode"), ElytraMode.class)
             .defaultValue(ElytraMode.CONTROL)
             .build();
 
-    public final FlagRef motionAdjust = builder(Configs.MOV_CONFIG, MOVE_ELYTRA_MOTION_ADJUST, FlagRef.TYPE)
+    public final FlagRef motionAdjust = builder(simpleFlightControl.add("motion-adjust"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
 
     public final FlagRef useFloatingUtils =
-            flagBuilder(Configs.MOV_CONFIG, MOVE_ELYTRA_FLOATING).build();
+            flagBuilder(simpleFlightControl.add("use-floating-utils")).build();
 
     private static LegalMovementManager.DelegateMovementModifier instance;
 

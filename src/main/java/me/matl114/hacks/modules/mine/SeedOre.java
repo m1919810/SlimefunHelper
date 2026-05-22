@@ -16,6 +16,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -64,12 +65,7 @@ import net.minecraft.world.gen.placementmodifier.PlacementModifier;
 import net.minecraft.world.gen.placementmodifier.RarityFilterPlacementModifier;
 
 public class SeedOre extends BaseModule {
-    public static final String[] XRAY_ENABLE_SEED = {"aaxray", "enable-seed"};
-    public static final String[] XRAY_ENABLE_SEED_RADIUS = {"aaxray", "seed-radius"};
-    public static final String[] XRAY_RENDER_FAKE_ORE = {"aaxray", "render-seed-ore"};
-    public static final String[] XRAY_MAKE_CLIENTSIDE_ORE = {"aaxray", "clientside-ore"};
 
-    public static final String[] XRAY_ORE_TYPE = {"aaxray", "show-ore-type"};
     public static final String[] SEED_MAP = new String[] {"seed", "seed-cache"};
     public final Object2LongMap<String> seedMap = new Object2LongOpenHashMap<>();
     // how to do cache: chunkUnload
@@ -99,39 +95,33 @@ public class SeedOre extends BaseModule {
         super();
         bindFlag(enable);
     }
+    public final ModulePath seed = makePath(Configs.MINE_CONFIG, "aaxray.seed-ore");
 
-    public final FlagRef enable = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(XRAY_ENABLE_SEED)
-            .defaultValue(false)
-            .build();
+    public final FlagRef enable = flagBuilder(seed.addEnable())
+        .build();
 
-    public final IntRef chunkRadius = builder(Configs.MINE_CONFIG, Integer.class)
-            .path(XRAY_ENABLE_SEED_RADIUS)
+
+    public final IntRef chunkRadius = builder(seed.add("chunk-radius"), IntRef.TYPE)
             .defaultValue(6)
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef enableRender = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(XRAY_RENDER_FAKE_ORE)
-            .defaultValue(false)
-            .build();
+    public final FlagRef enableRender = flagBuilder(seed.add("render-ore"))
+        .build();
 
     boolean fakeOre = false;
-    public final FlagRef enableFakeOres = builder(Configs.MINE_CONFIG, Boolean.class)
-            .path(XRAY_MAKE_CLIENTSIDE_ORE)
+    public final FlagRef enableFakeOres = flagBuilder(seed.add("enable-fake-ore"))
             .defaultValue(false)
             .updateListener(this::onFakeOreToggle)
             .build();
 
-    public final StringRef oreWhiteList = builder(Configs.MINE_CONFIG, String.class)
-            .path(XRAY_ORE_TYPE)
+    public final StringRef oreWhiteList = builder(seed.add("ore-white-list"), String.class)
             .defaultValue("^(diamond)$")
             .validator(Configs.REGEX_VALIDATOR)
             .updateListener(Ore::reloadOreSettings)
             .build();
 
-    public final StringRef seedMapSave = builder(Configs.INTERNAL_CONFIG, String.class)
-            .path(SEED_MAP)
+    public final StringRef seedMapSave = builder(Configs.INTERNAL_CONFIG, SEED_MAP, String.class)
             .defaultValue("{}")
             .validator(Configs.JSON_VALIDATOR)
             .updateListener(this::onSeedMap)

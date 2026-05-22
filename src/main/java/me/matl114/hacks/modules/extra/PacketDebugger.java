@@ -8,6 +8,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.StringRef;
@@ -20,15 +21,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 public class PacketDebugger extends BaseModule {
-    public static final String[] DEBUG_PACKET_IN = new String[] {"packet-debugger", "debug-packet-in"};
-
-    public static final String[] DEBUG_PACKET_OUT = new String[] {"packet-debugger", "debug-packet-out"};
-
-    public static final String[] DEBUG_PACKET_TYPE = new String[] {"packet-debugger", "debug-packet-type"};
-
-    public static final String[] INTERCEPT_PACKET = new String[] {"packet-debugger", "intercept-packet"};
-
-    public static final String[] INTERCEPT_PACKET_TYPE = new String[] {"packet-debugger", "intercept-packet-type"};
+    public final ModulePath packetDebugger = makePath(Configs.TEST_CONFIG, "packet-debugger");
 
     public PacketDebugger() {}
 
@@ -47,21 +40,21 @@ public class PacketDebugger extends BaseModule {
     }
 
     public final FlagRef debugIn =
-            flagBuilder(Configs.TEST_CONFIG, DEBUG_PACKET_IN).build();
+            flagBuilder(packetDebugger.add("debug-packet-in")).build();
 
     public final FlagRef debugOut =
-            flagBuilder(Configs.TEST_CONFIG, DEBUG_PACKET_OUT).build();
+            flagBuilder(packetDebugger.add("debug-packet-out")).build();
 
-    public final StringRef debugPacketType = builder(Configs.TEST_CONFIG, DEBUG_PACKET_TYPE, StringRef.TYPE)
+    public final StringRef debugPacketType = builder(packetDebugger.add("debug-packet-type"), StringRef.TYPE)
             .defaultValue("^(move_player_.*)$")
             .validator(Configs.REGEX_VALIDATOR)
             .updateListener((v) -> typesDebug = getDebugTypes(v))
             .build();
 
     public final FlagRef interceptPacket =
-            flagBuilder(Configs.TEST_CONFIG, INTERCEPT_PACKET).build();
+            flagBuilder(packetDebugger.add("intercept-packet")).build();
 
-    public final StringRef interceptPacketType = builder(Configs.TEST_CONFIG, INTERCEPT_PACKET_TYPE, StringRef.TYPE)
+    public final StringRef interceptPacketType = builder(packetDebugger.add("intercept-packet-type"), StringRef.TYPE)
             .defaultValue("^()$")
             .validator(Configs.REGEX_VALIDATOR)
             .updateListener((v) -> typesIntercept = getDebugTypes(v))
