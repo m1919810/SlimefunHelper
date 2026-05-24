@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.move;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.utils.EntityUtils;
 import me.matl114.versioned.api.VPacket;
@@ -16,6 +15,7 @@ import net.minecraft.util.math.Vec3d;
 
 public class LegacySnapRotManager extends BaseModule {
     public static LegacySnapRotManager INSTANCE;
+
     public LegacySnapRotManager() {
         INSTANCE = this;
     }

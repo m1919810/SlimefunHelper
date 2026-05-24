@@ -32,13 +32,9 @@ public class PacketMine extends BaseModule {
 
     public ModulePath packetMine = makePath(Configs.MINE_CONFIG, "mine-oneblock");
 
-    public final FlagRef autoEnable =
-            flagBuilder(packetMine.add("enable")).build();
+    public final FlagRef autoEnable = flagBuilder(packetMine.add("enable")).build();
 
-    public final KeyBindRef hotkey = moduleEntry(
-                    packetMine.addHotkey(),
-                    new MultiKeyBind(),
-                    packetMine.addEnable())
+    public final KeyBindRef hotkey = moduleEntry(packetMine.addHotkey(), new MultiKeyBind(), packetMine.addEnable())
             .build();
 
     public final IntRef multiplePackets = intBuilder(packetMine.add("multiple-packets"))
@@ -46,18 +42,15 @@ public class PacketMine extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef considerAirState = flagBuilder(
-                    packetMine.add("consider-air-state"))
-            .build();
+    public final FlagRef considerAirState =
+            flagBuilder(packetMine.add("consider-air-state")).build();
 
-    public final DoubleRef mineThreshold = builder(
-                    packetMine.add("mine-threshold"), DoubleRef.TYPE)
+    public final DoubleRef mineThreshold = builder(packetMine.add("mine-threshold"), DoubleRef.TYPE)
             .defaultValue(0.7)
             .validator(Configs.doubleRange(-0.0001F, 1.0001F))
             .build();
 
-    public final FlagRef autoTool =
-            flagBuilder(packetMine.add("auto-pickaxe")).build();
+    public final FlagRef autoTool = flagBuilder(packetMine.add("auto-pickaxe")).build();
 
     @Override
     public void registerAll() {

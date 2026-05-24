@@ -50,12 +50,13 @@ public class SleepMode extends BaseModule {
 
     public SleepMode() {}
 
-    public final KeyBindRef keyBindRef = hotkey(Configs.RENDER_CONFIG, render.add("wake-up-screen").toPath())
+    public final KeyBindRef keyBindRef = hotkey(
+                    Configs.RENDER_CONFIG, render.add("wake-up-screen").toPath())
             .defaultValue(new MultiKeyBind(KeyCode.KEY_F11))
             .build();
 
-    public final FlagRef runnerOptimize = flagBuilder(render.add("sleep-mode-runner-optimize"))
-            .build();
+    public final FlagRef runnerOptimize =
+            flagBuilder(render.add("sleep-mode-runner-optimize")).build();
 
     @Override
     public void registerAll() {

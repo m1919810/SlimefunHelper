@@ -25,7 +25,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.ClientConnection;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
@@ -35,7 +34,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.BlockEntityTickInvoker;
-import org.jetbrains.annotations.ApiStatus;
 
 public class ClientExtra extends BaseModule {
     public ClientExtra() {}
@@ -46,8 +44,8 @@ public class ClientExtra extends BaseModule {
             .defaultValue(false)
             .build();
 
-    public final FlagRef keepInServer = flagBuilder(other.add("client-crash-keep-in-server"))
-        .build();
+    public final FlagRef keepInServer =
+            flagBuilder(other.add("client-crash-keep-in-server")).build();
 
     public final FlagRef noEntityCrash =
             flagBuilder(other.add("no-entity-crash")).build();
@@ -60,12 +58,12 @@ public class ClientExtra extends BaseModule {
             .build();
 
     public final FlagRef noDecodeException = builder(other.add("no-disconnect-on-packet-decode"), Boolean.class)
-        .defaultValue(false)
-        .build();
+            .defaultValue(false)
+            .build();
 
     public final FlagRef noUnexpected = builder(other.add("no-disconnect-on-packet-unexpected"), Boolean.class)
-        .defaultValue(false)
-        .build();
+            .defaultValue(false)
+            .build();
 
     public final FlagRef portalGui =
             flagBuilder(other.add("keep-gui-open-on-portal")).build();
@@ -75,7 +73,8 @@ public class ClientExtra extends BaseModule {
             .hideConfig()
             .build();
 
-    public final KeyBindRef cursorSwitchKey = hotkey(Configs.TEST_CONFIG, other.add("cursor-switch-hotkey").toPath())
+    public final KeyBindRef cursorSwitchKey = hotkey(
+                    Configs.TEST_CONFIG, other.add("cursor-switch-hotkey").toPath())
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::onCursorLockSwitch))
             .build();
@@ -85,7 +84,8 @@ public class ClientExtra extends BaseModule {
         super.registerAll();
         registerListener(Listener.getClientMainExit(), this::onCrash);
         registerListener(
-                Listener.getExceptionListener().getChannel(Listener.ExceptionType.PACKET_HANDLE_EXCEPTION), this::onNetworkException);
+                Listener.getExceptionListener().getChannel(Listener.ExceptionType.PACKET_HANDLE_EXCEPTION),
+                this::onNetworkException);
         registerListener(
                 Listener.getExceptionListener().getChannel(Listener.ExceptionType.ENTITY_TICK),
                 this::onEntityException);
@@ -93,12 +93,12 @@ public class ClientExtra extends BaseModule {
                 Listener.getExceptionListener().getChannel(Listener.ExceptionType.BLOCK_ENTITY_TICK),
                 this::onBlockEntityException);
         registerListener(
-            Listener.getExceptionListener().getChannel(Listener.ExceptionType.PACKET_DECODE_EXCEPTION),
-            this::onDecodeException);
+                Listener.getExceptionListener().getChannel(Listener.ExceptionType.PACKET_DECODE_EXCEPTION),
+                this::onDecodeException);
 
         registerListener(
-            Listener.getExceptionListener().getChannel(Listener.ExceptionType.UNKNOWN_CHANNEL_EXCEPTION),
-            this::onUnexpectedException);
+                Listener.getExceptionListener().getChannel(Listener.ExceptionType.UNKNOWN_CHANNEL_EXCEPTION),
+                this::onUnexpectedException);
     }
 
     private final Text questionCrash =
@@ -229,15 +229,13 @@ public class ClientExtra extends BaseModule {
             Listener.WrapperException we = event.context();
             PacketListener packet = event.getArgs(0);
             Throwable exception = we.exception();
-            if(packet instanceof ClientPlayPacketListener playListener){
+            if (packet instanceof ClientPlayPacketListener playListener) {
                 if (mc.player != null) {
-                    Debug.chat(Text.literal("Error while decoding packet: ")
-                        .formatted(Formatting.RED)
-                    );
+                    Debug.chat(Text.literal("Error while decoding packet: ").formatted(Formatting.RED));
                     Debug.chat(
-                        exception.getClass().getSimpleName(),
-                        ":",
-                        Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
+                            exception.getClass().getSimpleName(),
+                            ":",
+                            Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
                 }
                 Debug.info("Exception StackTrace:");
                 Debug.info(exception);
@@ -251,15 +249,13 @@ public class ClientExtra extends BaseModule {
             Listener.WrapperException we = event.context();
             PacketListener packet = event.getArgs(0);
             Throwable exception = we.exception();
-            if(packet instanceof ClientPlayPacketListener playListener){
+            if (packet instanceof ClientPlayPacketListener playListener) {
                 if (mc.player != null) {
-                    Debug.chat(Text.literal("Error while receiving packet: ")
-                        .formatted(Formatting.RED)
-                    );
+                    Debug.chat(Text.literal("Error while receiving packet: ").formatted(Formatting.RED));
                     Debug.chat(
-                        exception.getClass().getSimpleName(),
-                        ":",
-                        Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
+                            exception.getClass().getSimpleName(),
+                            ":",
+                            Text.literal(exception.getMessage() == null ? "Exception: null" : exception.getMessage()));
                 }
                 Debug.info("Exception StackTrace:");
                 Debug.info(exception);
@@ -268,15 +264,15 @@ public class ClientExtra extends BaseModule {
         }
     }
 
-
     public boolean validVec3d(Vec3d vec3d) {
         return Double.isFinite(vec3d.x) && Double.isFinite(vec3d.y) && Double.isFinite(vec3d.z);
     }
 
     protected void checkClientData(Screen screen) {
-        ScreenAccess currentScreen = ScreenAccess.of( mc.currentScreen);
+        ScreenAccess currentScreen = ScreenAccess.of(mc.currentScreen);
         Screen parentScreen = (currentScreen instanceof QuestionScreen ? currentScreen.getParent() : mc.currentScreen);
-        if (keepInServer.get() && mc.player != null
+        if (keepInServer.get()
+                && mc.player != null
                 && mc.world != null
                 && mc.inGameHud != null
                 && mc.getNetworkHandler() != null

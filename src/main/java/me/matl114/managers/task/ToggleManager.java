@@ -39,7 +39,11 @@ public interface ToggleManager extends TaskManager {
         return () -> {
             boolean result = !flagRef.get();
             flagRef.set(result);
-            Debug.chat(Text.literal(result? "[+]" : "[-]").formatted(result ? Formatting.GREEN : Formatting.RED).formatted(Formatting.BOLD),Text.translatableWithFallback(path, path));
+            Debug.chat(
+                    Text.literal(result ? "[+]" : "[-]")
+                            .formatted(result ? Formatting.GREEN : Formatting.RED)
+                            .formatted(Formatting.BOLD),
+                    Text.translatableWithFallback(path, path));
         };
     }
 

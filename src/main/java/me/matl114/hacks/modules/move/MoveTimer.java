@@ -16,13 +16,10 @@ public class MoveTimer extends BaseModule {
         bindFlag(enable);
     }
 
-    public final FlagRef enable =
-            flagBuilder(moveTimer.add("timer-enable")).build();
+    public final FlagRef enable = flagBuilder(moveTimer.add("timer-enable")).build();
 
     public final KeyBindRef keyBind = moduleEntry(
-                    moveTimer.add("timer-enable-hotkey"),
-                    new MultiKeyBind(),
-                    moveTimer.add("timer-enable"))
+                    moveTimer.add("timer-enable-hotkey"), new MultiKeyBind(), moveTimer.add("timer-enable"))
             .build();
 
     public final IntRef timer = builder(moveTimer.add("multiply"), IntRef.TYPE)

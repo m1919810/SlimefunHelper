@@ -97,9 +97,8 @@ public interface AttrKeyValues {
     public static final WrapperFactory<String, List<String>> STR_LIST_FACTORY =
             WrapperFactory.of(s -> gson.fromJson(s, LIST_TYPE), gson::toJson);
 
-    static final Type MAP_TYPE = new TypeToken<Map<String, String>>(){}.getType();
+    static final Type MAP_TYPE = new TypeToken<Map<String, String>>() {}.getType();
 
-    public static final WrapperFactory<String, Map<String, String>> STR_MAP_FACTORY = WrapperFactory.of(
-        s -> gson.fromJson(s, MAP_TYPE), gson::toJson
-    );
+    public static final WrapperFactory<String, Map<String, String>> STR_MAP_FACTORY =
+            WrapperFactory.of(s -> gson.fromJson(s, MAP_TYPE), gson::toJson);
 }

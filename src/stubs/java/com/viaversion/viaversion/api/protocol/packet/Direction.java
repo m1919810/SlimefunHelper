@@ -4,6 +4,5 @@ public enum Direction {
     CLIENTBOUND,
     SERVERBOUND;
 
-    private Direction() {
-    }
+    private Direction() {}
 }

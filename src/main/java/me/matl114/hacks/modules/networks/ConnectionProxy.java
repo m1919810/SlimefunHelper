@@ -24,8 +24,7 @@ public class ConnectionProxy extends BaseModule {
         bindFlag(enable);
     }
 
-    public final FlagRef enable =
-            flagBuilder(proxyServer.add("enable")).build();
+    public final FlagRef enable = flagBuilder(proxyServer.add("enable")).build();
 
     public final IntRef port = builder(proxyServer.add("port"), IntRef.TYPE)
             .defaultValue(7890)

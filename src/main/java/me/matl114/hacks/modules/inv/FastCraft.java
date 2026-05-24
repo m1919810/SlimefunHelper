@@ -37,10 +37,10 @@ public class FastCraft extends BaseModule {
 
     public FastCraft() {}
 
-    public final FlagRef enable = flagBuilder(fastCraft.add("enable-fastcraft-buttons")).build();
+    public final FlagRef enable =
+            flagBuilder(fastCraft.add("enable-fastcraft-buttons")).build();
 
-    public final FlagRef dropCraft =
-            flagBuilder(fastCraft.add("drop-craft")).build();
+    public final FlagRef dropCraft = flagBuilder(fastCraft.add("drop-craft")).build();
 
     @Override
     public void registerAll() {

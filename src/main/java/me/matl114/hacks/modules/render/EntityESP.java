@@ -31,8 +31,7 @@ public class EntityESP extends BaseModule {
 
     public EntityESP() {}
 
-    public final FlagRef enable =
-            flagBuilder(entityEsp.add("enable")).build();
+    public final FlagRef enable = flagBuilder(entityEsp.add("enable")).build();
 
     public final KeyBindRef hotkeyToggle = toggleHotkey(
                     Configs.RENDER_CONFIG,
@@ -62,8 +61,7 @@ public class EntityESP extends BaseModule {
     public final NBTRef<TracingOption> traceOption = builder(entityEsp.add("tracing-option"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
-    public final FlagRef glowEntity =
-            flagBuilder(entityEsp.add("glow-effect")).build();
+    public final FlagRef glowEntity = flagBuilder(entityEsp.add("glow-effect")).build();
 
     @Override
     public void registerAll() {

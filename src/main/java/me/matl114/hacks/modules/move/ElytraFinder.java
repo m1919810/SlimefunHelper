@@ -41,14 +41,11 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
         bindFlag(enable);
     }
 
-    public FlagRef enable = flagBuilder(elytraFinder.add("enable"))
-            .build();
+    public FlagRef enable = flagBuilder(elytraFinder.add("enable")).build();
 
-    public FlagRef autoPilot = flagBuilder(elytraFinder.add("auto-pilot"))
-            .build();
+    public FlagRef autoPilot = flagBuilder(elytraFinder.add("auto-pilot")).build();
 
-    public FlagRef render = flagBuilder(elytraFinder.add("render"))
-            .build();
+    public FlagRef render = flagBuilder(elytraFinder.add("render")).build();
 
     Map<String, Set<BlockPos>> locatedPlaces = new LinkedHashMap<>();
 
@@ -114,7 +111,7 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
     }
 
     public StringRef located = builder(
-                    elytraFinder.add("history"), StringRef.TYPE)
+                    Configs.INTERNAL_CONFIG, elytraFinder.add("history").toPath(), StringRef.TYPE)
             .defaultValue("{}")
             .updateListener(this::updateStore)
             .build();

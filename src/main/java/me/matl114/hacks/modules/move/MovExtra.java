@@ -27,8 +27,8 @@ public class MovExtra extends BaseModule {
 
     public MovExtra() {}
 
-    public final FlagRef fuckGrimAC = flagBuilder(moveSafety.add("grimac-1-21-2-input-features"))
-            .build();
+    public final FlagRef fuckGrimAC =
+            flagBuilder(moveSafety.add("grimac-1-21-2-input-features")).build();
 
     public final FlagRef noStepHeightFeature =
             flagBuilder(moveSafety.add("disable-stepheight-feature")).build();
@@ -75,15 +75,15 @@ public class MovExtra extends BaseModule {
                         .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
                 ClientPlayerAccess.of(player).resyncSprint();
             }
-            if(ViaFabricPlusHooks.isSupportEndTick()){
+            if (ViaFabricPlusHooks.isSupportEndTick()) {
                 PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
                 input.right(false)
-                    .left(false)
-                    .forward(false)
-                    .backward(false)
-                    .jump(false)
-                    .sprint(false)
-                    .sendPlayerInputPacket();
+                        .left(false)
+                        .forward(false)
+                        .backward(false)
+                        .jump(false)
+                        .sprint(false)
+                        .sendPlayerInputPacket();
                 ClientPlayerAccess.of(player).resyncInput();
             }
         }

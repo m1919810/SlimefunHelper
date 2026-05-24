@@ -7,10 +7,14 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
 public class ModuleEntry {
-    Config config; String[] path; String[] hotkeyPath;
+    Config config;
+    String[] path;
+    String[] hotkeyPath;
     FlagRef flagRef;
+
     @Getter
     String translationKey;
+
     public ModuleEntry(Config config, String[] path, String[] hotkeyPath) {
         this.config = config;
         this.path = path;
@@ -19,22 +23,22 @@ public class ModuleEntry {
     }
 
     public FlagRef getFlagRef() {
-        if(flagRef == null) {
+        if (flagRef == null) {
             flagRef = config.getBoolean(path);
         }
         return flagRef;
     }
 
-    public boolean getActiveState(){
+    public boolean getActiveState() {
         FlagRef flagRef = getFlagRef();
         return flagRef != null && flagRef.get();
     }
 
-    public MutableText getDisplay(){
+    public MutableText getDisplay() {
         return Text.translatableWithFallback(this.translationKey, this.translationKey);
     }
 
-    public MutableText getMetaData(){
+    public MutableText getMetaData() {
         return null;
     }
 }

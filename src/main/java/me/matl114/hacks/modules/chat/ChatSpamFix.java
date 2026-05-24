@@ -23,12 +23,13 @@ public class ChatSpamFix extends BaseModule {
 
     public final FlagRef enable = flagBuilder(chatSpamFix.add("enable")).build();
 
-    public final NBTRef<RegexList> regexList =
-            builder(chatSpamFix.add("regex-list"), NBTType.<RegexList>parameter(RegexList.class))
-                    .defaultValue(new RegexList(List.of()))
-                    .build();
+    public final NBTRef<RegexList> regexList = builder(
+                    chatSpamFix.add("regex-list"), NBTType.<RegexList>parameter(RegexList.class))
+            .defaultValue(new RegexList(List.of()))
+            .build();
 
-    public final FlagRef logHidden = flagBuilder(chatSpamFix.add("log-hidden-messages")).build();
+    public final FlagRef logHidden =
+            flagBuilder(chatSpamFix.add("log-hidden-messages")).build();
 
     @Override
     public void registerAll() {

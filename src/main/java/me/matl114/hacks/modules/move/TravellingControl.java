@@ -49,8 +49,9 @@ public class TravellingControl extends BaseModule {
 
     //    public FlagRef enable = flagBuilder(travellingControl.add("enable")).build();
 
-    public EnumRef<TravelControlType> controlType = builder(travellingControl.add("control-type"), TravelControlType.class)
-            .defaultValue(TravelControlType.MOV_VOID)
+    public EnumRef<Type> controlType = builder(
+                    travellingControl.add("control-type"), Type.class)
+            .defaultValue(Type.MOV_VOID)
             .build();
 
     public DoubleRef speed = builder(travellingControl.add("speed"), DoubleRef.TYPE)
@@ -74,8 +75,8 @@ public class TravellingControl extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public FlagRef pitch40SafeHeight = flagBuilder(travellingControl.add("pitch-40-end-safety"))
-            .build();
+    public FlagRef pitch40SafeHeight =
+            flagBuilder(travellingControl.add("pitch-40-end-safety")).build();
 
     public IntRef pitch40Pitch = builder(travellingControl.add("pitch-40-pitch-positive"), IntRef.TYPE)
             .defaultValue(15)
@@ -94,7 +95,7 @@ public class TravellingControl extends BaseModule {
     private boolean doingTp = false;
     private boolean exempt = false;
 
-    public static enum TravelControlType implements ConfigEnum {
+    public static enum Type implements ConfigEnum {
         ELYTRASKY, // 原 ELYTRA
         ELYTRA_PITCH40,
         ELYTRA_GRIM_FLY40,
@@ -104,9 +105,8 @@ public class TravellingControl extends BaseModule {
         TEST;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable(
-                    "configenum.travel-control-type." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "travel_control_type";
         }
     }
 
@@ -171,7 +171,7 @@ public class TravellingControl extends BaseModule {
         }
         if (travelTask == null) {
             if (parsedCoord == null) return;
-            TravelControlType type = controlType.get();
+            Type type = controlType.get();
             Debug.chat("当前运动类型: " + type.getDisplay().getString());
             TravelInfo info = new TravelInfo();
             info.pos0 = parsedCoord;
@@ -189,25 +189,25 @@ public class TravellingControl extends BaseModule {
             } else {
                 info.state = TravelState.STABLE;
             }
-            if (type == TravelControlType.ELYTRASKY) {
+            if (type == Type.ELYTRASKY) {
                 Debug.chat("注意: Elytra_sky 模式需要配合启用鞘翅飞行控制才能正常 travel");
                 Tasks.scheduleRepeated(this::onTravelTickElytra, 20, 2);
-            } else if (type == TravelControlType.MOV_VOID) {
+            } else if (type == Type.MOV_VOID) {
                 Tasks.scheduleRepeated(this::onTravelTickMovVoid, 20, 2);
-            } else if (type == TravelControlType.MOV_VOID_2) {
+            } else if (type == Type.MOV_VOID_2) {
                 catchResyncPackets = false;
                 Listener.addPostPacketCatcher(new PacketCatcherImpl<>(PlayerPositionLookS2CPacket.class, (event -> {
                     catchResyncPackets = true;
                     return travelTask != info || info.stop;
                 })));
                 Tasks.scheduleRepeated(this::onTravelTickMovVoid2, 20, 2);
-            } else if (type == TravelControlType.ELYTRA_PITCH40) {
+            } else if (type == Type.ELYTRA_PITCH40) {
                 ClientPlayerAccess.of(mc.player)
                         .getLegalMovementManager()
                         .addMovementModifier(this.createTravelPitch40Controller(info));
                 // fuck...
                 Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
-            } else if (type == TravelControlType.ELYTRA_GRIM_FLY40) {
+            } else if (type == Type.ELYTRA_GRIM_FLY40) {
                 ClientPlayerAccess.of(mc.player)
                         .getLegalMovementManager()
                         .addMovementModifier(this.createTravelGrimFly40Controller(info));
@@ -832,7 +832,7 @@ public class TravellingControl extends BaseModule {
             return;
         }
         EventContainer<FlightVelocity> eventContainer = event.context();
-        if(eventContainer.getValue().mode() != FlightVelocity.Mode.ELYTRA_FLIGHT)return;
+        if (eventContainer.getValue().mode() != FlightVelocity.Mode.ELYTRA_FLIGHT) return;
         FlightVelocity velocity = eventContainer.getValue();
         Vec3d towards = elytraPos.subtract(mc.player.getPos()).normalize().multiply(speed.get());
         velocity.x(towards.x).y(towards.y).z(towards.z);

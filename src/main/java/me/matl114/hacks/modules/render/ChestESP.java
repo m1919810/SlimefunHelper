@@ -44,22 +44,19 @@ public class ChestESP extends BaseModule {
 
     public ChestESP() {}
 
-    public final FlagRef enable =
-            flagBuilder(chestEsp.add("enable")).build();
+    public final FlagRef enable = flagBuilder(chestEsp.add("enable")).build();
 
     public final NBTRef<RegistryRegex<BlockEntityType<?>>> typeFilter = builder(
                     chestEsp.add("enable-types"), RegistryRegex.<BlockEntityType<?>>parameter())
             .defaultValue(new RegistryRegex<>(new Regex("^(.*chest|barrel|.*box)$"), Registries.BLOCK_ENTITY_TYPE))
             .build();
 
-    public final NBTRef<TracingOption> enableLines = builder(
-                    chestEsp.add("esp-trace-options"), TracingOption.class)
+    public final NBTRef<TracingOption> enableLines = builder(chestEsp.add("esp-trace-options"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
 
     public final NBTRef<EntryPrimitiveMap<BlockEntityType<?>, TextColor>> colorMap = builder(
-                    chestEsp.add("color-map"),
-                    EntryPrimitiveMap.<BlockEntityType<?>, TextColor>parameter())
+                    chestEsp.add("color-map"), EntryPrimitiveMap.<BlockEntityType<?>, TextColor>parameter())
             .defaultValue(new EntryPrimitiveMap<>(
                     Registries.BLOCK_ENTITY_TYPE,
                     NBTTypes.COLOR_TYPE,

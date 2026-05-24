@@ -1,11 +1,8 @@
 package com.viaversion.viaversion.api.protocol.version;
 
-import com.google.common.base.Preconditions;
-import org.jspecify.annotations.Nullable;
-
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 public class ProtocolVersion {
     public int getVersion() {
@@ -87,5 +84,4 @@ public class ProtocolVersion {
     public int compareTo(ProtocolVersion other) {
         return 0;
     }
-
 }

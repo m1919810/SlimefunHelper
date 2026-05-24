@@ -7,12 +7,14 @@ import net.minecraft.text.Text;
 public class ModulePath {
     @Getter
     Config config;
+
     String[] splits;
 
     public ModulePath(Config config, String[] splits) {
         this.config = config;
         this.splits = splits;
     }
+
     public ModulePath add(String path) {
         String[] newSplits = new String[splits.length + 1];
         System.arraycopy(splits, 0, newSplits, 0, splits.length);
@@ -20,26 +22,23 @@ public class ModulePath {
         return new ModulePath(this.config, newSplits);
     }
 
-    public ModulePath addEnable(){
+    public ModulePath addEnable() {
         return add("enable");
     }
 
-    public ModulePath addHotkey(){
+    public ModulePath addHotkey() {
         return add("hotkey");
     }
 
-    public String[] toPath(){
+    public String[] toPath() {
         return splits;
-
     }
 
-    public String asString(){
+    public String asString() {
         return String.join(".", splits);
     }
 
-    public Text toTranslationKey(){
+    public Text toTranslationKey() {
         return Text.translatable(asString());
     }
-
-
 }

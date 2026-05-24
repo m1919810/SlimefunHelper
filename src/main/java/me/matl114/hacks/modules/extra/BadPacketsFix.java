@@ -1,23 +1,19 @@
 package me.matl114.hacks.modules.extra;
 
 import java.util.Objects;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
-import net.minecraft.util.math.Vec2f;
 
 public class BadPacketsFix extends BaseModule {
     public final ModulePath badPackets = makePath(Configs.TEST_CONFIG, "bad-packets");
@@ -60,7 +56,7 @@ public class BadPacketsFix extends BaseModule {
 
     boolean serverSprint = false;
     // removed due to protocol change
-    //boolean serverSneak = false;
+    // boolean serverSneak = false;
     boolean serverCanFly = false;
     PlayerInputUtils.Input serverInput = PlayerInputUtils.EMPTY;
     float serverPitch;
@@ -78,7 +74,7 @@ public class BadPacketsFix extends BaseModule {
     public void onPlayerInitialize(Event<ClientPlayerEntity> event) {
         ClientPlayerEntity entity = event.context();
         serverSprint = entity.isSprinting();
-        //serverSneak = entity.isSneaking();
+        // serverSneak = entity.isSneaking();
         serverInput = PlayerInputUtils.EMPTY;
         serverCanFly = entity.getAbilities().allowFlying;
         serverPitch = entity.getPitch();
@@ -159,15 +155,19 @@ public class BadPacketsFix extends BaseModule {
         if (serverPitch == this.serverPitch && serverYaw == this.serverYaw) {
             if (packet.changesLook() && enableRot.get()) {
                 if (packet instanceof PlayerMoveC2SPacket.Full full) {
-                    packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(VPacket.newPositionAndOnGround(
-                            packet.getX(mc.player.getX()),
-                            packet.getY(mc.player.getY()),
-                            packet.getZ(mc.player.getX()),
-                            packet.isOnGround(),
-                            VPacket.getCollisionFlag(full)), full));
+                    packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(
+                            VPacket.newPositionAndOnGround(
+                                    packet.getX(mc.player.getX()),
+                                    packet.getY(mc.player.getY()),
+                                    packet.getZ(mc.player.getX()),
+                                    packet.isOnGround(),
+                                    VPacket.getCollisionFlag(full)),
+                            full));
                 } else if (packet instanceof PlayerMoveC2SPacket.LookAndOnGround lookAndOnGround) {
-                    packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(VPacket.newOnGroundOnly(
-                            lookAndOnGround.isOnGround(), VPacket.getCollisionFlag(lookAndOnGround)), lookAndOnGround));
+                    packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(
+                            VPacket.newOnGroundOnly(
+                                    lookAndOnGround.isOnGround(), VPacket.getCollisionFlag(lookAndOnGround)),
+                            lookAndOnGround));
                 }
             }
         } else {

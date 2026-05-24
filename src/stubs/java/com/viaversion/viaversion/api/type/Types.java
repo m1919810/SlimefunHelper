@@ -1,4 +1,3 @@
 package com.viaversion.viaversion.api.type;
 
-public class Types {
-}
+public class Types {}

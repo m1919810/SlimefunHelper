@@ -37,9 +37,8 @@ public class Blink extends BaseModule {
 
     public final FlagRef enable = flagBuilder(blink.add("enable")).build();
 
-    public final KeyBindRef hotkey =
-            moduleEntry(blink.add("hotkey"), new MultiKeyBind(), blink.add("enable"))
-                    .build();
+    public final KeyBindRef hotkey = moduleEntry(blink.add("hotkey"), new MultiKeyBind(), blink.add("enable"))
+            .build();
 
     public final KeyBindRef revert = hotkey(blink.add("revert"))
             .defaultValue(new MultiKeyBind())
@@ -50,27 +49,29 @@ public class Blink extends BaseModule {
 
     public final FlagRef autoClose = flagBuilder(blink.add("close-on-delay")).build();
 
-    public final IntRef closeDelay = intBuilder(blink.add("close-delay"))
-            .defaultValue(50)
-            .build();
+    public final IntRef closeDelay =
+            intBuilder(blink.add("close-delay")).defaultValue(50).build();
 
     public final FlagRef autoFlush = flagBuilder(blink.add("auto-flush")).build();
 
-    public final IntRef autoFlushDelay = intBuilder(blink.add("auto-flush-period"))
-            .defaultValue(20)
-            .build();
+    public final IntRef autoFlushDelay =
+            intBuilder(blink.add("auto-flush-period")).defaultValue(20).build();
 
-    public final FlagRef flushOnAttack = flagBuilder(blink.add("flush-on-attack")).build();
+    public final FlagRef flushOnAttack =
+            flagBuilder(blink.add("flush-on-attack")).build();
 
-    public final FlagRef closeOnAttack = flagBuilder(blink.add("close-on-attack")).build();
+    public final FlagRef closeOnAttack =
+            flagBuilder(blink.add("close-on-attack")).build();
 
     public final FlagRef flushOnHurt = flagBuilder(blink.add("flush-on-hurt")).build();
 
     public final FlagRef closeOnHurt = flagBuilder(blink.add("close-on-hurt")).build();
 
-    public final FlagRef flushOnVelocity = flagBuilder(blink.add("flush-on-velocity")).build();
+    public final FlagRef flushOnVelocity =
+            flagBuilder(blink.add("flush-on-velocity")).build();
 
-    public final FlagRef closeOnVelocity = flagBuilder(blink.add("close-on-velocity")).build();
+    public final FlagRef closeOnVelocity =
+            flagBuilder(blink.add("close-on-velocity")).build();
 
     @Override
     public void registerAll() {

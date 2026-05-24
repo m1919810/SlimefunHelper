@@ -43,13 +43,12 @@ public class AutoResync extends BaseModule {
     public final FlagRef autoResyncPos =
             flagBuilder(moveSafety.add("auto-resync-pos")).build();
 
-    public final DoubleRef autoResyncPosDistance = builder(
-                    moveSafety.add("auto-resync-distance"), DoubleRef.TYPE)
+    public final DoubleRef autoResyncPosDistance = builder(moveSafety.add("auto-resync-distance"), DoubleRef.TYPE)
             .defaultValue(10.0D)
             .build();
 
-    public final FlagRef logAutoResync = flagBuilder(moveSafety.add("log-auto-resync-request"))
-            .build();
+    public final FlagRef logAutoResync =
+            flagBuilder(moveSafety.add("log-auto-resync-request")).build();
 
     public final IntRef expireTick = builder(moveSafety.add("auto-resync-request-expire-tick"), IntRef.TYPE)
             .defaultValue(10)

@@ -53,15 +53,16 @@ public class BowEnhance extends BaseModule {
 
     public FlagRef enable = flagBuilder(bowAtt.add("bow-enhance")).build();
 
-    public KeyBindRef hotkey =
-            moduleEntry(bowAtt.add("bow-enhance-hotkey"), new MultiKeyBind(), bowAtt.add("bow-enhance"))
-                    .build();
+    public KeyBindRef hotkey = moduleEntry(
+                    bowAtt.add("bow-enhance-hotkey"), new MultiKeyBind(), bowAtt.add("bow-enhance"))
+            .build();
 
     public FlagRef enableAim = flagBuilder(bowAtt.add("aim-enable")).build();
 
     public FlagRef enableTp = flagBuilder(bowAtt.add("tp-enable")).build();
 
-    public EnumRef<Configs.LegalInteractMode> mode = builder(bowAtt.add("targeting-mode"), Configs.LegalInteractMode.class)
+    public EnumRef<Configs.LegalInteractMode> mode = builder(
+                    bowAtt.add("targeting-mode"), Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
@@ -71,7 +72,8 @@ public class BowEnhance extends BaseModule {
 
     public FlagRef enhanceTp = flagBuilder(bowAtt.add("tp-accelerate-exact-tp")).build();
     // todo: use onGround Packets to reduce low version problems
-    public FlagRef lowVersion = flagBuilder(bowAtt.add("version-lower-than-121")).build();
+    public FlagRef lowVersion =
+            flagBuilder(bowAtt.add("version-lower-than-121")).build();
 
     public FlagRef renderTarget = flagBuilder(bowAtt.add("render-target")).build();
 
@@ -316,7 +318,7 @@ public class BowEnhance extends BaseModule {
             if (Float.isNaN(red.x) || Float.isInfinite(red.x) || Float.isNaN(red.y) || Float.isInfinite(red.y)) {
                 Debug.chat("[Bow Aim] Arrow failed to reach the target");
             } else {
-                //todo: may reset speed
+                // todo: may reset speed
                 LegacySnapRotManager.INSTANCE.snapAt(red.x, red.y, false);
             }
         }
@@ -538,7 +540,7 @@ public class BowEnhance extends BaseModule {
                 }
             }
         }
-        switch (preset){
+        switch (preset) {
             case HACKING, VANILLA -> {
                 mode.set(Configs.LegalInteractMode.NONE);
             }

@@ -14,30 +14,22 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
-import me.matl114.managers.config.ConfigEnum;
-import me.matl114.managers.config.DoubleRef;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.Debug;
+import me.matl114.managers.config.*;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
-import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.damage.DamageType;
 import net.minecraft.network.OffThreadException;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -49,35 +41,34 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public final FlagRef enable = flagBuilder(antiKb.addEnable()).build();
 
-    public final DoubleRef minHorizontalVelocity = builder(antiKb.add("horizontal-threshold"), DoubleRef.TYPE)
-        .defaultValue(0.01)
+    public final KeyBindRef hotkey = moduleEntry(antiKb.addHotkey(), new MultiKeyBind(), antiKb.addEnable(), moduleMeta(()-> this.mode))
         .build();
+
+    public final DoubleRef minHorizontalVelocity = builder(antiKb.add("horizontal-threshold"), DoubleRef.TYPE)
+            .defaultValue(0.01)
+            .build();
 
     public final DoubleRef minVerticalVelocity = builder(antiKb.add("vertical-threshold"), DoubleRef.TYPE)
-        .defaultValue(0.05)
-        .build();
-
-    public final EnumRef<Mode> mode = builder(antiKb.add("mode"), Mode.class)
-            .defaultValue(Mode.NONE)
+            .defaultValue(0.05)
             .build();
 
-    public final FlagRef explosions = flagBuilder(antiKb.add("bypass-explosions"))
-            .build();
+    public final EnumRef<Mode> mode =
+            builder(antiKb.add("mode"), Mode.class).defaultValue(Mode.NONE).build();
 
-    public final FlagRef onGroundOnly = flagBuilder(antiKb.add("on-ground-only"))
-            .build();
+    public final FlagRef explosions =
+            flagBuilder(antiKb.add("bypass-explosions")).build();
 
-    public final FlagRef notInWater = flagBuilder(antiKb.add("not-in-water"))
-        .build();
+    public final FlagRef onGroundOnly =
+            flagBuilder(antiKb.add("on-ground-only")).build();
 
-    public final FlagRef inWall = flagBuilder(antiKb.add("execute-in-wall"))
-            .build();
+    public final FlagRef notInWater = flagBuilder(antiKb.add("not-in-water")).build();
 
-    public final FlagRef noBlock = flagBuilder(antiKb.add("no-block-push"))
-            .build();
+    public final FlagRef inWall = flagBuilder(antiKb.add("execute-in-wall")).build();
 
-    public final FlagRef noEntityPush = flagBuilder(antiKb.add("no-entity-push"))
-            .build();
+    public final FlagRef noBlock = flagBuilder(antiKb.add("no-block-push")).build();
+
+    public final FlagRef noEntityPush =
+            flagBuilder(antiKb.add("no-entity-push")).build();
 
     public static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -109,7 +100,8 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                 this::onPlayerVelocityQueue);
         registerListener(PacketManager.getPacketQueueEvent().getPacketReceiveChannel(), this::onPacketQueue);
         registerListener(Listener.getPreGameTick(), this::onPreTick);
-        registerListener(Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
         registerListener(Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class), this::onExplosion);
     }
 
@@ -192,7 +184,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
             var type = damage.context.sourceType();
             // ignore no knockback types
-            if(!type.isIn(DamageTypeTags.NO_KNOCKBACK)){
+            if (!type.isIn(DamageTypeTags.NO_KNOCKBACK)) {
                 canCancel = true;
                 lastHurtTick = Tasks.getTick();
             }
@@ -203,17 +195,22 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     long lastSetBackNS = 0;
     long lastVelocityNS = 0;
     long lastCancelVelocityNS = 0;
-    int lastCancelVelocityTick =0;
+    int lastCancelVelocityTick = 0;
     Vec3d lastVelocity = Vec3d.ZERO;
     Vec3d lastCancelledVelocity = Vec3d.ZERO;
-    public void markForCancelVelocity(){
+
+    public void markForCancelVelocity() {
         lastCancelVelocityNS = System.nanoTime();
         lastCancelVelocityTick = Tasks.getTick();
         lastCancelledVelocity = lastVelocity;
-       // Debug.chat("Cancel vc", lastCancelledVelocity.length());
+        // Debug.chat("Cancel vc", lastCancelledVelocity.length());
     }
-    public void onExplosion(Event<ExplosionS2CPacket> eventExplosion){
-        if (enable.get() && explosions.get() && mc.player != null && eventExplosion.context.playerKnockback().isPresent()){
+
+    public void onExplosion(Event<ExplosionS2CPacket> eventExplosion) {
+        if (enable.get()
+                && explosions.get()
+                && mc.player != null
+                && eventExplosion.context.playerKnockback().isPresent()) {
             canCancel = true;
         }
     }
@@ -228,7 +225,8 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                     markForCancelVelocity();
                     event.cancel();
                 }
-            } else if(lastVelocity.horizontalLength() >= minHorizontalVelocity.get() || Math.abs(lastVelocity.y) >= minVerticalVelocity.get()){
+            } else if (lastVelocity.horizontalLength() >= minHorizontalVelocity.get()
+                    || Math.abs(lastVelocity.y) >= minVerticalVelocity.get()) {
                 if (canCancel) {
                     if (mc.player.isFallFlying() && MovTasks.getElytraExtra().canFireworkControlMotion()) {
                         canCancel = false;
@@ -236,31 +234,38 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                         event.cancel();
                         return;
                     }
-//                    if (MovTasks.getFloatingUtils().workGrimFloatingThisTick()) {
-//                        canCancel = false;
-//                        markForCancelVelocity();
-//                        event.cancel();
-//                        return;
-//                    }
+                    //                    if (MovTasks.getFloatingUtils().workGrimFloatingThisTick()) {
+                    //                        canCancel = false;
+                    //                        markForCancelVelocity();
+                    //                        event.cancel();
+                    //                        return;
+                    //                    }
                 }
-                if((mc.player.isTouchingWater() || mc.player.isSubmergedInWater() || mc.player.isInLava()) && notInWater.get()){
+                if ((mc.player.isTouchingWater() || mc.player.isSubmergedInWater() || mc.player.isInLava())
+                        && notInWater.get()) {
                     return;
                 }
-                //todo: make this inside wall
-                if(inWall.get() && mc.player.isInsideWall()){
+                // todo: make this inside wall
+                if (inWall.get() && mc.player.isInsideWall()) {
                     return;
                 }
-                if (canCancel && !mc.player.isFallFlying() && mc.player.isOnGround() && mode.get() == Mode.GRIM_LEGACY_GROUND) {
+                if (canCancel
+                        && !mc.player.isFallFlying()
+                        && mc.player.isOnGround()
+                        && mode.get() == Mode.GRIM_LEGACY_GROUND) {
                     canCancel = false;
                     handleVelocityGrimLegacy(event);
                     return;
                 }
-                if (canCancel && !mc.player.isFallFlying() && mc.player.isOnGround() && mode.get() == Mode.GRIM_NEW_GROUND) {
+                if (canCancel
+                        && !mc.player.isFallFlying()
+                        && mc.player.isOnGround()
+                        && mode.get() == Mode.GRIM_NEW_GROUND) {
                     canCancel = false;
                     handleVelocityGrimNew(event);
                     return;
                 }
-                if(!mc.player.isOnGround() && onGroundOnly.get()){
+                if (!mc.player.isOnGround() && onGroundOnly.get()) {
                     return;
                 }
                 // todo: copy from what
@@ -268,48 +273,62 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             canCancel = false;
         }
     }
+
     boolean flagLegacy = false;
+
     public void handleVelocityGrimLegacy(Event<Vec3d> eventVc) {
-        if(lastSetBackNS > System.nanoTime() - 100 * 1_000_000){
+        if (lastSetBackNS > System.nanoTime() - 100 * 1_000_000) {
             return;
         }
         eventVc.cancel();
         markForCancelVelocity();
         flagLegacy = true;
-        mc.getNetworkHandler().sendPacket(VPacket.newLookAndOnGround(mc.player.getYaw(), mc.player.getPitch(), mc.player.isOnGround(), mc.player.horizontalCollision));
+        mc.getNetworkHandler()
+                .sendPacket(VPacket.newLookAndOnGround(
+                        mc.player.getYaw(),
+                        mc.player.getPitch(),
+                        mc.player.isOnGround(),
+                        mc.player.horizontalCollision));
     }
 
-    public void handleVelocityGrimNew(Event<Vec3d> eventVc) {
+    public void handleVelocityGrimNew(Event<Vec3d> eventVc) {}
 
-    }
-
-    public void onPreTick(Event<ClientPlayerEntity> eventPreTick){
-        if(!enable.get()){
+    public void onPreTick(Event<ClientPlayerEntity> eventPreTick) {
+        if (!enable.get()) {
             return;
         }
-        if(flagLegacy){
-            mc.interactionManager.sendSequencedPacket(mc.world, (seq)->new PlayerActionC2SPacket(
-                PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, mc.player.isCrawling() ? mc.player.getBlockPos() : mc.player.getBlockPos().up(), Direction.DOWN, seq
-            ));
-//            BlockPos pos = (mc.player.isCrawling() ? mc.player.getBlockPos() : mc.player.getBlockPos().up()).down();
-//            mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, new BlockHitResult(pos.toBottomCenterPos(), Direction.DOWN, pos, false ), seq));
-            if(lastCancelVelocityTick + 3 <= Tasks.getTick()){
+        if (flagLegacy) {
+            mc.interactionManager.sendSequencedPacket(
+                    mc.world,
+                    (seq) -> new PlayerActionC2SPacket(
+                            PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
+                            mc.player.isCrawling()
+                                    ? mc.player.getBlockPos()
+                                    : mc.player.getBlockPos().up(),
+                            Direction.DOWN,
+                            seq));
+            //            BlockPos pos = (mc.player.isCrawling() ? mc.player.getBlockPos() :
+            // mc.player.getBlockPos().up()).down();
+            //            mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new
+            // PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, new BlockHitResult(pos.toBottomCenterPos(), Direction.DOWN,
+            // pos, false ), seq));
+            if (lastCancelVelocityTick + 3 <= Tasks.getTick()) {
                 flagLegacy = false;
-                //mc.player.setVelocity(Vec3d.ZERO);
-            }else{
-               MovTasks.getFloatingUtils().setGrimFloatingTick(true);
+                // mc.player.setVelocity(Vec3d.ZERO);
+            } else {
+                MovTasks.getFloatingUtils().setGrimFloatingTick(true);
             }
         }
     }
 
-    public void onBlockUpdate(Event<BlockUpdateS2CPacket> eventBlockUpdate){
-//        if(enable.get()){
-//            BlockPos pos = eventBlockUpdate.context.getPos();
-//            if(pos.getSquaredDistance(mc.player.getPos()) < 10){
-//                Debug.chat("Update blockstate", pos);
-//            }
-//
-//        }
+    public void onBlockUpdate(Event<BlockUpdateS2CPacket> eventBlockUpdate) {
+        //        if(enable.get()){
+        //            BlockPos pos = eventBlockUpdate.context.getPos();
+        //            if(pos.getSquaredDistance(mc.player.getPos()) < 10){
+        //                Debug.chat("Update blockstate", pos);
+        //            }
+        //
+        //        }
     }
 
     Deque<Packet> packets = new ArrayDeque<>();
@@ -393,8 +412,8 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         switch (event.context.getValue()) {
-            case AC_GRIM_LEGACY -> mode.set(Mode.GRIM_LEGACY_GROUND);
-            case AC_GRIM, AC_MATRIX -> mode.set(Mode.GRIM_NEW_GROUND);
+            case AC_GRIM_LEGACY, AC_GRIM -> mode.set(Mode.GRIM_LEGACY_GROUND);
+            case AC_MATRIX -> mode.set(Mode.GRIM_NEW_GROUND);
             default -> mode.set(Mode.NONE);
         }
     }
@@ -404,10 +423,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         GRIM_LEGACY_GROUND,
         GRIM_NEW_GROUND;
 
-        @Override
-        public Text getDisplay() {
-            return Text.literal(name());
-        }
 
         @Override
         public String getConfigEnumType() {

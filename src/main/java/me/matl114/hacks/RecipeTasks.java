@@ -72,7 +72,7 @@ public class RecipeTasks {
     }
 
     private static void resetCache() {
-        synchronized (RecipeTasks.class){
+        synchronized (RecipeTasks.class) {
             if (CACHE != null) {
                 CACHE.clear();
             }

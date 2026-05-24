@@ -21,6 +21,7 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
+import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.versioned.api.VRender;
@@ -44,9 +45,11 @@ public class PrinterRewrite extends BaseModule {
         bindFlag(enable);
     }
 
-    public final FlagRef enable = flagBuilder(litematicaPrinterRewrite.add("enable")).build();
+    public final FlagRef enable =
+            flagBuilder(litematicaPrinterRewrite.add("enable")).build();
 
-    public final KeyBindRef hotkey = moduleEntry(litematicaPrinterRewrite.add("hotkey"), new MultiKeyBind(), litematicaPrinterRewrite.add("enable"))
+    public final KeyBindRef hotkey = moduleEntry(
+                    litematicaPrinterRewrite.add("hotkey"), new MultiKeyBind(), litematicaPrinterRewrite.add("enable"))
             .build();
 
     public final EnumRef<Configs.LegalInteractMode> mode = builder(
@@ -88,7 +91,8 @@ public class PrinterRewrite extends BaseModule {
             .updateListener(this::updateBlocks)
             .build();
 
-    public final FlagRef render = flagBuilder(litematicaPrinterRewrite.add("render")).build();
+    public final FlagRef render =
+            flagBuilder(litematicaPrinterRewrite.add("render")).build();
 
     @Override
     public void registerAll() {
@@ -114,8 +118,7 @@ public class PrinterRewrite extends BaseModule {
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
             BlockPos posStanding = mc.player.getSteppingPos();
             BlockPos posCenter = posStanding.add(0, 1, 0);
-            int multiply = (mode.get().canMultiRotPlace()
-                            || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
+            int multiply = (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
                     ? mul.get()
                     : 1;
             int placeCount = 0;
@@ -166,7 +169,8 @@ public class PrinterRewrite extends BaseModule {
         }
         BlockHitResult result =
                 BlockRotate.createHitResultRelatived(mc.player.getFacing(), pos, targetState, useAirPlace, useAirPlace);
-        if (result != null) {
+        // add placement collision check
+        if (result != null && InteractUtils.getBlockPlacement(needBlock, mc.player, mc.world, result) != null) {
             FlagRef enableRotateFix = InteractionTasks.getBlockRotate().enable2;
             FlagRef enableLegalLook = InteractionTasks.getBlockRotate().legal;
             boolean state = enableRotateFix.get();

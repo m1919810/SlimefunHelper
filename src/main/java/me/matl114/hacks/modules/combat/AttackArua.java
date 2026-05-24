@@ -26,9 +26,9 @@ public class AttackArua extends BaseModule {
 
     public final FlagRef enable = flagBuilder(attBot.add("auto-att")).build();
 
-    public final KeyBindRef hotkey =
-            moduleEntry(attBot.add("auto-att-hotkey"), new MultiKeyBind(), attBot.add("auto-att"))
-                    .build();
+    public final KeyBindRef hotkey = moduleEntry(
+                    attBot.add("auto-att-hotkey"), new MultiKeyBind(), attBot.add("auto-att"))
+            .build();
 
     public final IntRef maxTargetPerTick = intBuilder(attBot.add("max-at-once"))
             .defaultValue(1)
@@ -48,8 +48,8 @@ public class AttackArua extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final FlagRef doNotAttackWhenEat = flagBuilder(attBot.add("stop-attack-when-eat"))
-        .build();
+    public final FlagRef doNotAttackWhenEat =
+            flagBuilder(attBot.add("stop-attack-when-eat")).build();
 
     @Override
     public void registerAll() {
@@ -69,7 +69,9 @@ public class AttackArua extends BaseModule {
             interval += 1;
             int custom = customRate.get();
             if (custom <= interval) {
-                if(doNotAttackWhenEat.get() && mc.player.isUsingItem() && VItem.getInstance().isEatable(mc.player.getActiveItem())){
+                if (doNotAttackWhenEat.get()
+                        && mc.player.isUsingItem()
+                        && VItem.getInstance().isEatable(mc.player.getActiveItem())) {
                     return;
                 }
                 if (attack.legalMode.get()

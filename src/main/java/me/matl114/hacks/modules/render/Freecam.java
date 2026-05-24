@@ -44,7 +44,10 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     public final FlagRef enable = flagBuilder(freecam.add("enable")).build();
 
     public final KeyBindRef keyBind = moduleEntry(
-                    Configs.RENDER_CONFIG, freecam.add("enable-hotkey").toPath(), new MultiKeyBind(KeyCode.KEY_U), freecam.add("enable").toPath())
+                    Configs.RENDER_CONFIG,
+                    freecam.add("enable-hotkey").toPath(),
+                    new MultiKeyBind(KeyCode.KEY_U),
+                    freecam.add("enable").toPath())
             .build();
 
     public final DoubleRef speed = builder(freecam.add("speed"), DoubleRef.TYPE)

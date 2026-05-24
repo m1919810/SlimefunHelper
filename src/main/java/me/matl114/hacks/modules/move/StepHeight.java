@@ -31,8 +31,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
         bindFlag(enable);
     }
 
-    public final FlagRef enable =
-            flagBuilder(stepHeight).build();
+    public final FlagRef enable = flagBuilder(stepHeight).build();
 
     @Override
     public void onEnableModule() {

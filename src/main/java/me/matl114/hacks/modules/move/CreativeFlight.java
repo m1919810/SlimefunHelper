@@ -50,24 +50,23 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     public final KeyBindRef keybind = moduleEntry(
                     flight.add("flight-enable-hotkey"),
                     new MultiKeyBind(),
-                    flight.add("flight-enable"), ()-> this.flightMode.get().getDisplay())
+                    flight.add("flight-enable"),
+        moduleMeta(()-> this.flightMode))
             .build();
 
-    public final EnumRef<FlightMode> flightMode = builder(flight.add("flight-mode"), FlightMode.class)
-            .defaultValue(FlightMode.CREATIVE)
+    public final EnumRef<Mode> flightMode = builder(flight.add("flight-mode"), Mode.class)
+            .defaultValue(Mode.CREATIVE)
             .build();
 
     public final KeyBindRef switchMode = hotkey(flight.add("flight-mode-switch-hotkey"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleMode))
             .build();
 
-    public final FlagRef doAntiKick = builder(flight.add("antikick"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final FlagRef doAntiKick =
+            builder(flight.add("antikick"), Boolean.class).defaultValue(true).build();
 
-    public final IntRef antiKickPeriod = intBuilder(flight.add("antikick-period"))
-            .defaultValue(60)
-            .build();
+    public final IntRef antiKickPeriod =
+            intBuilder(flight.add("antikick-period")).defaultValue(60).build();
     public final FlagRef overrideFlySpeed = builder(moveSpeed.add("fly-speed-override"), Boolean.class)
             .defaultValue(false)
             .build();
@@ -76,9 +75,8 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
             .defaultValue(0.8)
             .build();
 
-    public final DoubleRef overrideFlySpeedSurvival = builder(moveSpeed.add("fly-speed"), Double.class)
-            .defaultValue(0.4)
-            .build();
+    public final DoubleRef overrideFlySpeedSurvival =
+            builder(moveSpeed.add("fly-speed"), Double.class).defaultValue(0.4).build();
 
     public final KeyBindRef overridingSpeedKeybind = hotkey(moveSpeed.add("toggle-flight-speed"))
             .defaultValue(new MultiKeyBind())
@@ -191,10 +189,10 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
     }
 
     public void toggleMode() {
-        FlightMode mode = flightMode.get();
+        Mode mode = flightMode.get();
         int ordinal = mode.ordinal() + 1;
-        FlightMode[] flightModes = FlightMode.values();
-        FlightMode newMode = flightModes[ordinal % flightModes.length];
+        Mode[] flightModes = Mode.values();
+        Mode newMode = flightModes[ordinal % flightModes.length];
         flightMode.set(newMode);
         Debug.chat("toggle flight mode to", newMode.getDisplay());
     }
@@ -235,8 +233,10 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
                             player.setVelocity(velocity);
                             velocity = dispatchAntiKickMotion(velocity);
                             // set FlightVelocity Event
-                            FlightVelocity flightVelocity = new FlightVelocity(velocity, 5 * getOverridingFlySpeed(), FlightVelocity.Mode.MOTION_FLIGHT);
-                            Listener.getCustomListener().broadcast(new EventContainer<>(FlightVelocity.class, flightVelocity));
+                            FlightVelocity flightVelocity = new FlightVelocity(
+                                    velocity, 5 * getOverridingFlySpeed(), FlightVelocity.Mode.MOTION_FLIGHT);
+                            Listener.getCustomListener()
+                                    .broadcast(new EventContainer<>(FlightVelocity.class, flightVelocity));
                             velocity = flightVelocity.toVelocity();
                             player.setVelocity(velocity);
                             yield true;
@@ -505,14 +505,14 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
         }
     }
 
-    public enum FlightMode implements ConfigEnum {
+    public enum Mode implements ConfigEnum {
         CREATIVE,
         MOTION,
         JETPACK;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.flight-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "flight_mode";
         }
     }
 }

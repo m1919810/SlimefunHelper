@@ -18,6 +18,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -47,14 +48,12 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import org.jetbrains.annotations.ApiStatus;
 
 public class Attack extends BaseModule {
     public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "att-bot");
-
 
     public Attack() {
         bindFlag(enable);
@@ -63,32 +62,24 @@ public class Attack extends BaseModule {
     public final FlagRef enable = flagBuilder(attack.add("always-att")).build();
 
     public final KeyBindRef hotkey = moduleEntry(
-                    attack.add("always-att-hotkey"),
-                    new MultiKeyBind(),
-                    attack.add("always-att")
-    )
+                    attack.add("always-att-hotkey"), new MultiKeyBind(), attack.add("always-att"))
             .build();
 
-    public final FlagRef legalMode =
-            flagBuilder(attack.add("legal-mode")).build();
+    public final FlagRef legalMode = flagBuilder(attack.add("legal-mode")).build();
 
-    public final FlagRef enableTp =
-            flagBuilder(attack.add("tp-enable")).build();
+    public final FlagRef enableTp = flagBuilder(attack.add("tp-enable")).build();
 
-    public final DoubleRef tpRange = doubleBuilder(attack.add("tp-reach"))
-            .defaultValue(0.0D)
-            .build();
+    public final DoubleRef tpRange =
+            doubleBuilder(attack.add("tp-reach")).defaultValue(0.0D).build();
 
-    public final FlagRef enableMace =
-            flagBuilder(attack.add("mace-enable")).build();
+    public final FlagRef enableMace = flagBuilder(attack.add("mace-enable")).build();
 
     public final DoubleRef maceHeight = doubleBuilder(attack.add("mace-height-multiply"))
             .defaultValue(30.0D)
             .validator(Configs.doubleRange(-200.0D, 200.0D))
             .build();
 
-    public final FlagRef exactAttack =
-            flagBuilder(attack.add("exact-tp")).build();
+    public final FlagRef exactAttack = flagBuilder(attack.add("exact-tp")).build();
 
     public final EnumRef<Configs.LegalTargetingMode> legalTargetingMode = builder(
                     attack.add("legal-targeting"), Configs.LegalTargetingMode.class)
@@ -96,25 +87,23 @@ public class Attack extends BaseModule {
             .build();
 
     public final FlagRef autoAntiShield =
-            flagBuilder(attack.add( "auto-anti-shield")).build();
+            flagBuilder(attack.add("auto-anti-shield")).build();
 
-    public final FlagRef autoSwap = flagBuilder(attack.add("attack-inv-swap"))
-            .build();
+    public final FlagRef autoSwap = flagBuilder(attack.add("attack-inv-swap")).build();
 
-    public final FlagRef autoSelect = flagBuilder(attack.add("attack-select-best-weapon"))
-        .build();
+    public final FlagRef autoSelect =
+            flagBuilder(attack.add("attack-select-best-weapon")).build();
     //
-        public final FlagRef autoRelease = flagBuilder(attack.add("auto-handle-use-when-attack"))
-            .build();
+    public final FlagRef autoRelease =
+            flagBuilder(attack.add("auto-handle-use-when-attack")).build();
 
     @ApiStatus.Experimental
-    public final FlagRef autoMaceSwap =
-            flagBuilder(attack.add("mace-swap")).build();
+    public final FlagRef autoMaceSwap = flagBuilder(attack.add("mace-swap")).build();
 
     // todo: ghosthand mace enchantment
 
     public final FlagRef renderAttackTarget =
-            flagBuilder(attack.add( "render-target")).build();
+            flagBuilder(attack.add("render-target")).build();
 
     private final Random attackOffsetRand = new Random();
 
@@ -266,17 +255,22 @@ public class Attack extends BaseModule {
                                 false))
                         != null) {
             callback = InvTasks.getInvExtra().swapInventoryIndexToHand(invResult.index());
-        } else if(attackSettings.selectWeapon() && !mc.player.getStackInHand(Hand.MAIN_HAND).isEmpty() && target instanceof LivingEntity && (
-                invResult = InventoryUtils.findBestPlayerItem(
-                    (ex)->{
-                        if(ex.isOf(mc.player.getStackInHand(Hand.MAIN_HAND).getItem())){
-                            return DamageUtils.getAttackDamage(player, target, ex)
-                                * DamageUtils.getAttackSpeed(player, ex);
-                        }
-                        return null;
-                    }, false, false
-                )
-            ) != null){
+        } else if (attackSettings.selectWeapon()
+                && !mc.player.getStackInHand(Hand.MAIN_HAND).isEmpty()
+                && target instanceof LivingEntity
+                && (invResult = InventoryUtils.findBestPlayerItem(
+                                (ex) -> {
+                                    if (ex.isOf(mc.player
+                                            .getStackInHand(Hand.MAIN_HAND)
+                                            .getItem())) {
+                                        return DamageUtils.getAttackDamage(player, target, ex)
+                                                * DamageUtils.getAttackSpeed(player, ex);
+                                    }
+                                    return null;
+                                },
+                                false,
+                                false))
+                        != null) {
             callback = InvTasks.getInvExtra().swapInventoryIndexToHand(invResult.index());
         }
         attackWithCritic(player, target, attackSettings.criticalSprint());
@@ -294,7 +288,6 @@ public class Attack extends BaseModule {
         mc.interactionManager.attackEntity(mc.player, target);
         mc.player.swingHand(Hand.MAIN_HAND);
         // we use event to handle shield predict
-        // handleShieldPredict(mc.player.getPitch(), mc.player.getYaw());
         if (criticSprint) {
             ClientPlayerAccess.of(mc.player).resyncSprint();
         }
@@ -321,8 +314,7 @@ public class Attack extends BaseModule {
     private boolean processLegalAttack(Entity target, AttackSettings settings) {
         var player = mc.player;
         if (player == null) return false;
-        //todo: pitch yaw fix;
-        Vec3d vec3d = mc.player.getPos();
+        // todo: pitch yaw fix;
         // do not add mace or tp attack in legal mode
 
         // mace attack, use item attack, need, delay
@@ -336,9 +328,10 @@ public class Attack extends BaseModule {
         ElytraExtra elytraExtra = MovTasks.getElytraExtra();
         final double attackRange = CombatTasks.getCombatExtra().getAttackRange();
         boolean useMaceAttack = elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack();
-        if (settings.isNoDelay()
-                && mc.crosshairTarget instanceof EntityHitResult entity
-                && entity.getEntity() == target) {
+        // remove crosshairTarget judge, use
+        boolean canDirectlyHit = RaycastUtils.canRaycastHit(
+                mc.player, PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw, target);
+        if (settings.isNoDelay() && canDirectlyHit) {
             // already actioned in caller
             // may not actioned in caller, fix it
             attackWithSettings(mc.player, target, settings);
@@ -558,9 +551,9 @@ public class Attack extends BaseModule {
     private boolean processLegacySnapAttack(Entity target, AttackSettings settings) {
         ElytraExtra elytraExtra = MovTasks.getElytraExtra();
         boolean useMaceAttack = false && elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack();
-        if (settings.isNoDelay()
-                && mc.crosshairTarget instanceof EntityHitResult entity
-                && entity.getEntity() == target) {
+        boolean canDirectlyHit = RaycastUtils.canRaycastHit(
+                mc.player, PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw, target);
+        if (settings.isNoDelay() && canDirectlyHit) {
             // already actioned in caller
             // may not actioned in caller, fix it
             attackWithSettings(mc.player, target, settings);
@@ -619,7 +612,8 @@ public class Attack extends BaseModule {
         var player = mc.player;
         if (player == null) return false;
         final double attackRange = CombatTasks.getCombatExtra().getAttackRange();
-        boolean alreadyAtTarget = mc.crosshairTarget instanceof EntityHitResult entity && entity.getEntity() == target;
+        boolean alreadyAtTarget = RaycastUtils.canRaycastHit(
+                mc.player, PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw, target);
         // rewrite tp system
         Deque<MovTasks.MovInfo> movementStack = new ArrayDeque<>();
         Deque<MovTasks.MovInfo> shouldMoveBackStack = new ArrayDeque<>();

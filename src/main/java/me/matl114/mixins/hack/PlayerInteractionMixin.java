@@ -342,7 +342,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             // shit, it crash with AirLiquidBreak.
                             // shit, player has to choose in hand
                             if (mineExtra.fastBreakBypassMode.get()
-                                            == MineExtra.FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS
+                                            == MineExtra.Mode.BYPASS_GRIM_BAD_PACKETS
                                     && mineExtra.grimBadPacketFix1.get()) {
                                 this.sendSequencedPacket(
                                         MinecraftClient.getInstance().world,

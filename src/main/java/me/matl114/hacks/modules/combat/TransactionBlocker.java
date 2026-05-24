@@ -24,7 +24,8 @@ public class TransactionBlocker extends BaseModule {
 
     public final FlagRef enable = flagBuilder(transactionBlocker.add("enable")).build();
 
-    public final FlagRef enableC = flagBuilder(transactionBlocker.add("bw-test-1")).build();
+    public final FlagRef enableC =
+            flagBuilder(transactionBlocker.add("bw-test-1")).build();
 
     @Override
     public void registerAll() {

@@ -77,7 +77,8 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             .defaultValue(100.0D)
             .build();
 
-    public final FlagRef spearRender = flagBuilder(spearModule.add("render-target")).build();
+    public final FlagRef spearRender =
+            flagBuilder(spearModule.add("render-target")).build();
 
     public final IntRef delay = intBuilder(spearModule.add("spear-server-tick-delay"))
             .defaultValue(2)

@@ -16,6 +16,7 @@ import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
@@ -54,19 +55,19 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         bindFlag(noFall);
     }
 
+    public final FlagRef noFall = flagBuilder(noFallPath.add("toggle")).build();
 
-    public final FlagRef noFall = flagBuilder(noFallPath.add("toggle"))
-            .build();
-    public final EnumRef<NofallBypassMode> noFallModel = builder(noFallPath.add("bypass-mode"), NofallBypassMode.class)
-            .defaultValue(NofallBypassMode.NO_BYPASS)
-            .build();
+    public final KeyBindRef hotkey = moduleEntry(noFallPath.addHotkey(), new MultiKeyBind(), noFallPath.add("toggle"), moduleMeta(()-> this.noFallModel))
+        .build();
 
-    public final IntRef noFallSafeDistance = intBuilder(noFallPath.add("safe-distance-modify"))
-            .defaultValue(0)
+    public final EnumRef<Mode> noFallModel = builder(noFallPath.add("bypass-mode"), Mode.class)
+            .defaultValue(Mode.NO_BYPASS)
             .build();
 
-    public final NBTRef<Regex> equipmentIdBypass = builder(
-                    noFallPath.add("equipment-id-bypass-nofall"), Regex.class)
+    public final IntRef noFallSafeDistance =
+            intBuilder(noFallPath.add("safe-distance-modify")).defaultValue(0).build();
+
+    public final NBTRef<Regex> equipmentIdBypass = builder(noFallPath.add("equipment-id-bypass-nofall"), Regex.class)
             .defaultValue(new Regex("^(SLIME.*_BOOTS)$"))
             .build();
 
@@ -93,14 +94,14 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
     private void initDelegate() {
         delegateMap.clear();
-        delegateMap.put(NofallBypassMode.NO_BYPASS, new NoFallNoBypass(this));
-        delegateMap.put(NofallBypassMode.LAZY_MODE, new NoFallLazy(this));
-        delegateMap.put(NofallBypassMode.BYPASS_GRIM, new NoFallBypassGrim(this));
-        delegateMap.put(NofallBypassMode.LAZY_BYPASS_GRIM, new NoFallLazyBypassGrim(this));
-        delegateMap.put(NofallBypassMode.LAZY_GRIM_PLUS, new NoFallGrimLazyPlus(this));
-        delegateMap.put(NofallBypassMode.LAZY_GRIM_PLUS_2, new NoFallFuckGrimLazyPlusV2(this));
-        delegateMap.put(NofallBypassMode.TEST, new NoFallFuckGrimTest(this));
-        delegateMap.put(NofallBypassMode.TEST2, new NoFallFuckGrimTest2(this));
+        delegateMap.put(Mode.NO_BYPASS, new NoFallNoBypass(this));
+        delegateMap.put(Mode.LAZY_MODE, new NoFallLazy(this));
+        delegateMap.put(Mode.BYPASS_GRIM, new NoFallBypassGrim(this));
+        delegateMap.put(Mode.LAZY_BYPASS_GRIM, new NoFallLazyBypassGrim(this));
+        delegateMap.put(Mode.LAZY_GRIM_PLUS, new NoFallGrimLazyPlus(this));
+        delegateMap.put(Mode.LAZY_GRIM_PLUS_2, new NoFallFuckGrimLazyPlusV2(this));
+        delegateMap.put(Mode.TEST, new NoFallFuckGrimTest(this));
+        delegateMap.put(Mode.TEST2, new NoFallFuckGrimTest2(this));
     }
 
     private void initArguments() {
@@ -157,7 +158,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
     protected <T extends NoFallDelegate> T getDelegate() {
         var re = delegateMap.get(noFallModel.get());
-        return (T) (re == null ? delegateMap.get(NofallBypassMode.LAZY_MODE) : re);
+        return (T) (re == null ? delegateMap.get(Mode.LAZY_MODE) : re);
     }
     // global status
     @Setter
@@ -176,8 +177,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     double safeDistance = 0;
     NoFallDelegate runningDelegate = null;
     // delegate map
-    EnumMap<NofallBypassMode, LegalMovementManager.MovementModifier> delegateMap =
-            new EnumMap<>(NofallBypassMode.class);
+    EnumMap<Mode, LegalMovementManager.MovementModifier> delegateMap =
+            new EnumMap<>(Mode.class);
 
     private boolean unsafeFallDistance() {
         return lastHeight <= lastOnGroundHeight - safeDistance;
@@ -1905,7 +1906,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         return new HorizontalCollision(forwardCollide, backwardCollide, leftCollide, rightCollide);
     }
 
-    public static enum NofallBypassMode implements ConfigEnum {
+    public static enum Mode implements ConfigEnum {
         NO_BYPASS,
         LAZY_MODE,
         BYPASS_GRIM,
@@ -1917,9 +1918,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         TEST2;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable(
-                    "configenum.nofall-bypass-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "no_fall_bypass_mode";
         }
     }
 
@@ -1927,15 +1927,15 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {
             case AC_GRIM, AC_GRIM_LEGACY -> {
-                if (noFallModel.get() != NofallBypassMode.LAZY_GRIM_PLUS) {
-                    noFallModel.set(NofallBypassMode.LAZY_GRIM_PLUS);
+                if (noFallModel.get() != Mode.LAZY_GRIM_PLUS) {
+                    noFallModel.set(Mode.LAZY_GRIM_PLUS);
                     //                    if (noFall.get()) {
                     //                        Debug.chat("正在切换到GrimNoFall模式, 该功能可能在最新版本失效, 若失效请手动切换LazyGrim模式");
                     //                    }
                 }
             }
             default -> {
-                noFallModel.set(NofallBypassMode.LAZY_MODE);
+                noFallModel.set(Mode.LAZY_MODE);
             }
         }
     }

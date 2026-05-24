@@ -8,13 +8,11 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
-import org.jetbrains.annotations.ApiStatus;
 
 public class ForwardTp extends BaseModule {
     public final ModulePath quickMove = makePath(Configs.MOV_CONFIG, "quick-move");

@@ -12,7 +12,7 @@ public class SupportVersion {
         String[] versions = version.split("\\.");
         try {
             return new SupportVersion(
-                Integer.parseInt(versions[versions.length - 2]), Integer.parseInt(versions[versions.length - 1]));
+                    Integer.parseInt(versions[versions.length - 2]), Integer.parseInt(versions[versions.length - 1]));
         } catch (Throwable e) {
             return new SupportVersion(21, 1);
         }
@@ -59,5 +59,10 @@ public class SupportVersion {
     @Override
     public String toString() {
         return major > 25 ? major + "." + minor : "1." + major + "." + minor;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof SupportVersion support && (support.getMajor() == major && support.getMinor() == minor);
     }
 }

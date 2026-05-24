@@ -16,9 +16,8 @@ public class InteractExtra extends BaseModule {
     public final FlagRef noCooldown =
             flagBuilder(interactFix.add("no-cool-down")).build();
 
-    public final IntRef noCooldownValue = intBuilder(interactFix.add("cool-down-rewrite"))
-            .defaultValue(4)
-            .build();
+    public final IntRef noCooldownValue =
+            intBuilder(interactFix.add("cool-down-rewrite")).defaultValue(4).build();
 
     public final FlagRef rideUse = builder(interactFix.add("allow-ride-interact"), FlagRef.TYPE)
             .defaultValue(true)
@@ -28,9 +27,8 @@ public class InteractExtra extends BaseModule {
             .defaultValue(false)
             .build();
 
-    public final IntRef holdUseStartTick = intBuilder(interactFix.add("hold-use-start-tick"))
-            .defaultValue(4)
-            .build();
+    public final IntRef holdUseStartTick =
+            intBuilder(interactFix.add("hold-use-start-tick")).defaultValue(4).build();
 
     @Override
     public void registerAll() {
