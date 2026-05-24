@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.move;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -37,7 +36,6 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
@@ -49,8 +47,7 @@ public class TravellingControl extends BaseModule {
 
     //    public FlagRef enable = flagBuilder(travellingControl.add("enable")).build();
 
-    public EnumRef<Type> controlType = builder(
-                    travellingControl.add("control-type"), Type.class)
+    public EnumRef<Type> controlType = builder(travellingControl.add("control-type"), Type.class)
             .defaultValue(Type.MOV_VOID)
             .build();
 

@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.move;
 
 import java.util.EnumMap;
-import java.util.Locale;
 import java.util.function.Predicate;
 import lombok.Setter;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -33,6 +32,8 @@ import net.minecraft.item.MaceItem;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.registry.Registries;
+import net.minecraft.util.PlayerInput;
+import net.minecraft.util.math.Direction;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
@@ -55,8 +56,12 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
     public final FlagRef noFall = flagBuilder(noFallPath.add("toggle")).build();
 
-    public final KeyBindRef hotkey = moduleEntry(noFallPath.addHotkey(), new MultiKeyBind(), noFallPath.add("toggle"), moduleMeta(()-> this.noFallModel))
-        .build();
+    public final KeyBindRef hotkey = moduleEntry(
+                    noFallPath.addHotkey(),
+                    new MultiKeyBind(),
+                    noFallPath.add("toggle"),
+                    moduleMeta(() -> this.noFallModel))
+            .build();
 
     public final EnumRef<Mode> noFallModel = builder(noFallPath.add("bypass-mode"), Mode.class)
             .defaultValue(Mode.NO_BYPASS)
@@ -175,8 +180,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     double safeDistance = 0;
     NoFallDelegate runningDelegate = null;
     // delegate map
-    EnumMap<Mode, LegalMovementManager.MovementModifier> delegateMap =
-            new EnumMap<>(Mode.class);
+    EnumMap<Mode, LegalMovementManager.MovementModifier> delegateMap = new EnumMap<>(Mode.class);
 
     private boolean unsafeFallDistance() {
         return lastHeight <= lastOnGroundHeight - safeDistance;

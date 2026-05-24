@@ -36,8 +36,9 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public final FlagRef autoSprintLegal =
             flagBuilder(sprint.add("legal-auto-sprint")).build();
 
-    public final KeyBindRef hotkey = moduleEntry(sprint.add("legal-auto-sprint-hotkey"), new MultiKeyBind(), sprint.add("legal-auto-sprint"))
-        .build();
+    public final KeyBindRef hotkey = moduleEntry(
+                    sprint.add("legal-auto-sprint-hotkey"), new MultiKeyBind(), sprint.add("legal-auto-sprint"))
+            .build();
 
     // todo: attack entity cause fake sprint, keep the state, do not send any other packets, try later
     public final FlagRef fakeSprint = flagBuilder(sprint.add("fake-sprint")).build();

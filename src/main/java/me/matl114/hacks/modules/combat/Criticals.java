@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.combat;
 
-import java.util.Locale;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
@@ -30,7 +29,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -47,9 +45,8 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                             .getDisplay())
             .build();
 
-    public final EnumRef<Mode> mode = builder(criticals.add("mode"), Mode.class)
-            .defaultValue(Mode.PACKET)
-            .build();
+    public final EnumRef<Mode> mode =
+            builder(criticals.add("mode"), Mode.class).defaultValue(Mode.PACKET).build();
 
     public final FlagRef groundOnly = flagBuilder(criticals.add("ground-only")).build();
 
@@ -372,6 +369,5 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         public String getConfigEnumType() {
             return "critical_mode";
         }
-
     }
 }
