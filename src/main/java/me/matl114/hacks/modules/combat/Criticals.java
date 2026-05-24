@@ -40,9 +40,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     public final FlagRef enable = flagBuilder(criticals.add("enable")).build();
 
     public final KeyBindRef hotkey = moduleEntry(
-                    criticals.add("hotkey"), new MultiKeyBind(), criticals.add("enable"), () -> this.mode
-                            .get()
-                            .getDisplay())
+                    criticals.add("hotkey"), new MultiKeyBind(), criticals.add("enable"), moduleMeta(() -> this.mode))
             .build();
 
     public final EnumRef<Mode> mode =

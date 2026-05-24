@@ -866,9 +866,9 @@
 	"configenum.setback-trigger-type.simulation": "模拟移动",
 	"configenum.setback-trigger-type.crash-packets": "非法发包",
 	
-	"configenum.critlcal-mode.packet": "Packet",
-	"configenum.critlcal-mode.freeze": "Freeze",
-	"configenum.critlcal-mode.grim_ground_simulation": "Grim平地",
+	"configenum.critical-mode.packet": "Packet",
+	"configenum.critical-mode.freeze": "Freeze",
+	"configenum.critical-mode.grim_ground_simulation": "Grim平地",
 	"configenum.elytra-bot-mode.follow": "Follow",
 	"configenum.elytra-bot-mode.mace_arua": "Mace",
 	"configenum.elytra-bot-mode.spear_arua": "Spear",
@@ -1031,7 +1031,10 @@
 	"module-meta.flight-mode.creative": "创造",
 	"module-meta.flight-mode.jetpack": "JET",
 	"module-meta.flight-mode.motion": "动量",
-	"module-meta.velocity_bypass_mode.none": "",
-	"module-meta.velocity_bypass_mode.grim_legacy_ground": "Grim",
-	"module-meta.velocity_bypass_mode.grim_new_ground": "Test"
+	"module-meta.velocity-bypass-mode.none": "",
+	"module-meta.velocity-bypass-mode.grim_legacy_ground": "Grim",
+	"module-meta.velocity-bypass-mode.grim_new_ground": "Test",
+	"module-meta.critical-mode.packet": "Packet",
+	"module-meta.critical-mode.freeze": "Freeze",
+	"module-meta.critical-mode.grim_ground_simulation": "Grim平地"
 }
