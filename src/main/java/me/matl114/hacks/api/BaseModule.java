@@ -350,21 +350,24 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
     @Override
     public void saveGui(SubScreenWidget gui) {}
 
-    public static Text getModuleMeta(Enum<?> enumReff){
+    public static Text getModuleMeta(Enum<?> enumReff) {
         ConfigEnum configEnum = (ConfigEnum) enumReff;
-        return Text.translatable("module-meta." + configEnum.getConfigEnumType().replace("_", "-") + "." + enumReff.name().toLowerCase(Locale.ROOT));
+        return Text.translatable("module-meta." + configEnum.getConfigEnumType().replace("_", "-") + "."
+                + enumReff.name().toLowerCase(Locale.ROOT));
     }
 
-    public static Supplier<Text> moduleMeta(Supplier<EnumRef<?>> enumReff){
+    public static Supplier<Text> moduleMeta(Supplier<EnumRef<?>> enumReff) {
         return new Supplier<Text>() {
             String suffix;
+
             @Override
             public Text get() {
-                if(suffix == null){
+                if (suffix == null) {
                     ConfigEnum configEnum = enumReff.get().get();
                     suffix = "module-meta." + configEnum.getConfigEnumType().replace("_", "-") + ".";
                 }
-                return Text.translatable(suffix + enumReff.get().get().cast().name().toLowerCase(Locale.ROOT));
+                return Text.translatable(
+                        suffix + enumReff.get().get().cast().name().toLowerCase(Locale.ROOT));
             }
         };
     }

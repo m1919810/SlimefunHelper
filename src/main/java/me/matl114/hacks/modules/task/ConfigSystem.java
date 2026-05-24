@@ -45,7 +45,7 @@ public class ConfigSystem extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
     }
-    //todo:
+    // todo:
     public void openConfigMenu() {
         MainTasks.openConfigNewStyleScreen();
     }

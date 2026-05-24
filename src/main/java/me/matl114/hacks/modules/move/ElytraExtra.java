@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.move;
 
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -50,7 +49,6 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -1338,7 +1336,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public static enum MotionMode implements ConfigEnum {
         VOID,
         FIRE_WORKS;
-
     }
 
     public static class FireworkTimer {
@@ -1401,6 +1398,5 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         LAZY,
         TICK_LEGACY,
         TICK;
-
     }
 }

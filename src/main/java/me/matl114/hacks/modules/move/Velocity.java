@@ -29,7 +29,6 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.tag.DamageTypeTags;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -41,8 +40,9 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public final FlagRef enable = flagBuilder(antiKb.addEnable()).build();
 
-    public final KeyBindRef hotkey = moduleEntry(antiKb.addHotkey(), new MultiKeyBind(), antiKb.addEnable(), moduleMeta(()-> this.mode))
-        .build();
+    public final KeyBindRef hotkey = moduleEntry(
+                    antiKb.addHotkey(), new MultiKeyBind(), antiKb.addEnable(), moduleMeta(() -> this.mode))
+            .build();
 
     public final DoubleRef minHorizontalVelocity = builder(antiKb.add("horizontal-threshold"), DoubleRef.TYPE)
             .defaultValue(0.01)
@@ -422,7 +422,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         NONE,
         GRIM_LEGACY_GROUND,
         GRIM_NEW_GROUND;
-
 
         @Override
         public String getConfigEnumType() {

@@ -142,7 +142,5 @@ public class PositionPredict extends BaseModule {
         public String getConfigEnumType() {
             return "predict_mode";
         }
-
-
     }
 }

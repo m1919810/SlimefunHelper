@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.combat;
 
 import java.awt.*;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -38,7 +37,6 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
@@ -51,7 +49,7 @@ public class ElytraBot extends BaseModule {
     public final FlagRef enable = flagBuilder(elytraBot.add("enable")).build();
 
     public final KeyBindRef keyBind = moduleEntry(
-                    elytraBot.add("hotkey"), new MultiKeyBind(), elytraBot.add("enable"), moduleMeta(()-> this.mode))
+                    elytraBot.add("hotkey"), new MultiKeyBind(), elytraBot.add("enable"), moduleMeta(() -> this.mode))
             .build();
 
     public final IntRef targetRange = intBuilder(elytraBot.add("range"))
@@ -810,6 +808,5 @@ public class ElytraBot extends BaseModule {
         public String getConfigEnumType() {
             return "elytra_bot_mode";
         }
-
     }
 }

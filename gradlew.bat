@@ -36,6 +36,22 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
+set WRAPPER_PROPS=%APP_HOME%\gradle\wrapper\gradle-wrapper.properties
+set LOCAL_GRADLE_ZIP=C:\gradle\gradle-9.2.0-all.zip
+set DEFAULT_GRADLE_DIST_URL=https\://services.gradle.org/distributions/gradle-9.2.0-all.zip
+set LOCAL_GRADLE_DIST_URL=file:///C:/gradle/gradle-9.2.0-all.zip
+
+if exist "%LOCAL_GRADLE_ZIP%" (
+    set GRADLE_DIST_URL=%LOCAL_GRADLE_DIST_URL%
+) else (
+    set GRADLE_DIST_URL=%DEFAULT_GRADLE_DIST_URL%
+)
+
+echo [gradlew] Using Gradle distribution URL: %GRADLE_DIST_URL%
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$props = '%WRAPPER_PROPS%'; $url = '%GRADLE_DIST_URL%'; $content = Get-Content -Raw -LiteralPath $props; $updated = [regex]::Replace($content, '(?m)^distributionUrl=.*$', ('distributionUrl=' + $url)); if ($updated -eq $content) { throw 'distributionUrl not found in gradle-wrapper.properties' }; Set-Content -LiteralPath $props -Value $updated -NoNewline"
+if %ERRORLEVEL% neq 0 goto fail
+
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
 

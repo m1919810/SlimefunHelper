@@ -36,7 +36,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -821,7 +820,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         public String getConfigEnumType() {
             return "packet_sneak_bypass_mode";
         }
-
     }
 
     public static enum UseBypassMode implements ConfigEnum {
@@ -833,6 +831,5 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         public String getConfigEnumType() {
             return "use_item_noslow_bypass";
         }
-
     }
 }

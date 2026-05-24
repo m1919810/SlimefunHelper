@@ -2,7 +2,6 @@ package me.matl114.managers;
 
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -10,7 +9,6 @@ import java.util.regex.PatternSyntaxException;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.ConfigLoader;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class Configs {
@@ -59,7 +57,6 @@ public class Configs {
             return this == LegalTargetingMode.LEGACY_SLIENT_ROT;
         }
 
-
         @Override
         public String getConfigEnumType() {
             return "legal_targeting_mode";
@@ -100,7 +97,6 @@ public class Configs {
         public String getConfigEnumType() {
             return "bypass_mode";
         }
-
     }
 
     public enum MineTargetingMode implements ConfigEnum {
@@ -112,6 +108,7 @@ public class Configs {
         public boolean hasSwing() {
             return this != NO_BYPASS;
         }
+
         @Override
         public String getConfigEnumType() {
             return "mine_targeting_mode";
@@ -121,11 +118,11 @@ public class Configs {
     public enum AutoInvMode implements ConfigEnum {
         LAZY,
         TICK;
+
         @Override
         public String getConfigEnumType() {
             return "auto_inv_mode";
         }
-
     }
 
     public enum SetBackTriggerType implements ConfigEnum {

@@ -48,7 +48,7 @@ public class MineBot extends BaseModule {
     public final FlagRef enable = flagBuilder(mineBot.addEnable()).build();
 
     public final KeyBindRef keyBind = moduleEntry(
-                    mineBot.addHotkey(), new MultiKeyBind(), mineBot.addEnable(), moduleMeta(()-> this.mineBotMode))
+                    mineBot.addHotkey(), new MultiKeyBind(), mineBot.addEnable(), moduleMeta(() -> this.mineBotMode))
             .build();
 
     public final IntRef minY = intBuilder(mineBot.add("min-dy")).defaultValue(0).build();
