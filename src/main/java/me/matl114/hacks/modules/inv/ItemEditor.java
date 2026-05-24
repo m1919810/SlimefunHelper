@@ -23,7 +23,8 @@ public class ItemEditor extends BaseModule {
 
     public ItemEditor() {}
 
-    public final KeyBindRef keyBind = hotkey(Configs.INV_CONFIG, itemEditor.add("open-editor").toPath())
+    public final KeyBindRef keyBind = hotkey(
+                    Configs.INV_CONFIG, itemEditor.add("open-editor").toPath())
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_I))
             .registerHotkey(HotKeyUtils.asHandler(this::openEditor))
             .build();

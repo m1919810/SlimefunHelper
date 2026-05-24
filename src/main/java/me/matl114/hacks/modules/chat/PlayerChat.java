@@ -67,17 +67,16 @@ public class PlayerChat extends BaseModule {
 
     public List<Pattern> compile;
 
-    public final ListRef chatMessageFormat =
-            builder(playerChat.add("game-message-as-player-message"), ListRef.TYPE)
-                    .defaultValue(List.of(
-                            "^.*\\[([^\\]\\[\\s]+)\\]\\s*[:➟→»》]\\s*(.*)$",
-                            "^.*\\[[^\\]\\[]+\\].* ([^\\]\\[\\s]+)\\s*[:➟→»》]\\s*(.*)$",
-                            "^.*<([^><\\s]+)>\\s*[:➟→»》]\\s*(.*)$",
-                            "^.*《([^》《\\s]+)》\\s*[:➟→»》]\\s*(.*)$",
-                            "^.*«([^»«\\s]+)»\\s+(.*)$"))
-                    .listValidator(Configs.REGEX_VALIDATOR)
-                    .updateListener(s -> compile = s.stream().map(Pattern::compile).toList())
-                    .build();
+    public final ListRef chatMessageFormat = builder(playerChat.add("game-message-as-player-message"), ListRef.TYPE)
+            .defaultValue(List.of(
+                    "^.*\\[([^\\]\\[\\s]+)\\]\\s*[:➟→»》]\\s*(.*)$",
+                    "^.*\\[[^\\]\\[]+\\].* ([^\\]\\[\\s]+)\\s*[:➟→»》]\\s*(.*)$",
+                    "^.*<([^><\\s]+)>\\s*[:➟→»》]\\s*(.*)$",
+                    "^.*《([^》《\\s]+)》\\s*[:➟→»》]\\s*(.*)$",
+                    "^.*«([^»«\\s]+)»\\s+(.*)$"))
+            .listValidator(Configs.REGEX_VALIDATOR)
+            .updateListener(s -> compile = s.stream().map(Pattern::compile).toList())
+            .build();
 
     public final FlagRef detectPlayerName =
             flagBuilder(playerChat.add("detect-all-message-with-player-names")).build();
@@ -95,11 +94,11 @@ public class PlayerChat extends BaseModule {
             flagBuilder(playerChat.add("decrypt-message-in")).build();
     boolean dirty = true;
 
-    public final EnumRef<EncryptAlgorithm> algorithm =
-            builder(playerChat.add("encrypt-algorithm"), EncryptAlgorithm.class)
-                    .defaultValue(EncryptAlgorithm.NONE)
-                    .updateListener(s -> dirty = true)
-                    .build();
+    public final EnumRef<EncryptAlgorithm> algorithm = builder(
+                    playerChat.add("encrypt-algorithm"), EncryptAlgorithm.class)
+            .defaultValue(EncryptAlgorithm.NONE)
+            .updateListener(s -> dirty = true)
+            .build();
 
     public final NBTRef<EncryptionKey> key = builder(playerChat.add("encrypt-key"), EncryptionKey.class)
             .defaultValue(EncryptionKey.EMPTY)
@@ -581,12 +580,6 @@ public class PlayerChat extends BaseModule {
 
         EncryptAlgorithm(Encryption encryption) {
             this.encryption = encryption;
-        }
-
-        @Override
-        public Text getDisplay() {
-            return Text.translatable(
-                    "configenum.encrypt-algorithm." + this.name().toLowerCase(Locale.ROOT));
         }
     }
 

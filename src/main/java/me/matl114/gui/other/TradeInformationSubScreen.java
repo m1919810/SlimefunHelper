@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import me.matl114.accessors.access.MerchantScreenAccess;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.InvTasks;
-import me.matl114.hacks.modules.inv.FastCraft;
 import me.matl114.managers.task.ToggleManager;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ScreenUtils;

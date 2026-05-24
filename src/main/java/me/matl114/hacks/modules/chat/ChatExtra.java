@@ -49,16 +49,14 @@ public class ChatExtra extends BaseModule {
     public final FlagRef checkMessageLength =
             flagBuilder(chat.add("check-chat-len")).build();
 
-    public final IntRef messageLengthLimit = intBuilder(chat.add("chat-len-limit"))
-            .defaultValue(256)
-            .build();
+    public final IntRef messageLengthLimit =
+            intBuilder(chat.add("chat-len-limit")).defaultValue(256).build();
 
     public final FlagRef checkCommandLength =
             flagBuilder(chat.add("check-command-len")).build();
 
-    public final IntRef commandLengthLimit = intBuilder(chat.add("command-len-limit"))
-            .defaultValue(32760)
-            .build();
+    public final IntRef commandLengthLimit =
+            intBuilder(chat.add("command-len-limit")).defaultValue(32760).build();
 
     public final StringRef warnFormat = builder(chat.add("limit-warn-format"), String.class)
             .defaultValue("&c你的输入内容太长了! %d / %d")

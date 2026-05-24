@@ -28,7 +28,9 @@ public class CopyId extends BaseModule {
 
     public CopyId() {}
 
-    public KeyBindRef keyBind = hotkey(Configs.SLIMEFUN_CONFIG, slimefunSettings.add("slimefunid-copy").toPath())
+    public KeyBindRef keyBind = hotkey(
+                    Configs.SLIMEFUN_CONFIG,
+                    slimefunSettings.add("slimefunid-copy").toPath())
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_C, KeyCode.MOUSE_BUTTON_1))
             .registerHotkey(HotKeyUtils.asHandler(this::copySfIdInHand))
             .build();

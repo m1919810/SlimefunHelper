@@ -14,6 +14,7 @@ import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 
 public class PostManager extends BaseModule {
     public static PostManager INSTANCE;
+
     public PostManager() {
         INSTANCE = this;
     }

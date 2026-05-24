@@ -19,11 +19,10 @@ import net.minecraft.text.Text;
 public class AutoReconnect extends BaseModule {
     public final ModulePath autoReconnect = makePath(Configs.TEST_CONFIG, "other.auto-reconnect");
 
-    public final FlagRef enable = flagBuilder(autoReconnect.add("enable"))
-            .build();
+    public final FlagRef enable = flagBuilder(autoReconnect.add("enable")).build();
 
-    public final FlagRef enableB = flagBuilder(autoReconnect.add("enable-buttons"))
-            .build();
+    public final FlagRef enableB =
+            flagBuilder(autoReconnect.add("enable-buttons")).build();
 
     public final IntRef delay = intBuilder(autoReconnect.add("delay"))
             .defaultValue(5)

@@ -10,6 +10,8 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
@@ -33,9 +35,12 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
     public final FlagRef autoSprintLegal =
             flagBuilder(sprint.add("legal-auto-sprint")).build();
+
+    public final KeyBindRef hotkey = moduleEntry(sprint.add("legal-auto-sprint-hotkey"), new MultiKeyBind(), sprint.add("legal-auto-sprint"))
+        .build();
+
     // todo: attack entity cause fake sprint, keep the state, do not send any other packets, try later
-    public final FlagRef fakeSprint =
-            flagBuilder(sprint.add("fake-sprint")).build();
+    public final FlagRef fakeSprint = flagBuilder(sprint.add("fake-sprint")).build();
 
     public final EnumRef<Configs.BypassMode> fakeSprintMode = builder(
                     sprint.add("fake-sprint-mode"), Configs.BypassMode.class)

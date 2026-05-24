@@ -61,14 +61,16 @@ public class RenderOptimize extends BaseModule {
     public final FlagRef enableLabelRenderOpt =
             flagBuilder(renderOptimize.add("optimize-entity-label-render")).build();
 
-    public final DoubleRef cullingDistanceEntityLabel = builder(renderOptimize.add("entity-label-render-culling-distance"), DoubleRef.TYPE)
+    public final DoubleRef cullingDistanceEntityLabel = builder(
+                    renderOptimize.add("entity-label-render-culling-distance"), DoubleRef.TYPE)
             .defaultValue(64.0D)
             .build();
 
     public final FlagRef enableBlockLabelRenderOpt =
             flagBuilder(renderOptimize.add("optimize-block-label-render")).build();
 
-    public final DoubleRef cullingDistanceBlockLabel = builder(renderOptimize.add("block-label-render-culling-distance"), DoubleRef.TYPE)
+    public final DoubleRef cullingDistanceBlockLabel = builder(
+                    renderOptimize.add("block-label-render-culling-distance"), DoubleRef.TYPE)
             .defaultValue(20.0D)
             .build();
 
@@ -76,7 +78,10 @@ public class RenderOptimize extends BaseModule {
             flagBuilder(renderOptimize.add("optimize-culling-enable")).build();
 
     public final KeyBindRef keyBindRef = toggleHotkey(
-                    Configs.RENDER_CONFIG, renderOptimize.add("optimize-culling-enable-hotkey"), new MultiKeyBind(), renderOptimize.add("optimize-culling-enable"))
+                    Configs.RENDER_CONFIG,
+                    renderOptimize.add("optimize-culling-enable-hotkey"),
+                    new MultiKeyBind(),
+                    renderOptimize.add("optimize-culling-enable"))
             .build();
 
     public final NBTRef<RegistryRegex<EntityType<?>>> cullingTypes = builder(

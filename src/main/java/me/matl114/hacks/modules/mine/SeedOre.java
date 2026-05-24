@@ -95,19 +95,17 @@ public class SeedOre extends BaseModule {
         super();
         bindFlag(enable);
     }
+
     public final ModulePath seed = makePath(Configs.MINE_CONFIG, "aaxray.seed-ore");
 
-    public final FlagRef enable = flagBuilder(seed.addEnable())
-        .build();
-
+    public final FlagRef enable = flagBuilder(seed.addEnable()).build();
 
     public final IntRef chunkRadius = builder(seed.add("chunk-radius"), IntRef.TYPE)
             .defaultValue(6)
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef enableRender = flagBuilder(seed.add("render-ore"))
-        .build();
+    public final FlagRef enableRender = flagBuilder(seed.add("render-ore")).build();
 
     boolean fakeOre = false;
     public final FlagRef enableFakeOres = flagBuilder(seed.add("enable-fake-ore"))

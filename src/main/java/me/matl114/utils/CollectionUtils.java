@@ -116,5 +116,4 @@ public class CollectionUtils {
         }
         return list;
     }
-
 }

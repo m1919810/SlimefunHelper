@@ -20,15 +20,15 @@ public class SetBackLog extends BaseModule {
 
     public SetBackLog() {}
 
-    public final FlagRef logResync = flagBuilder(moveSafety.add("log-resync-packets"))
-            .build();
+    public final FlagRef logResync =
+            flagBuilder(moveSafety.add("log-resync-packets")).build();
 
     public final StringRef logResyncFormat = builder(moveSafety.add("log-resync-format"), String.class)
             .defaultValue("&fPos Resync &a[%.2f,%.2f,%.2f]")
             .build();
 
-    public final FlagRef logAc = flagBuilder(moveSafety.add("check-setback-packets"))
-            .build();
+    public final FlagRef logAc =
+            flagBuilder(moveSafety.add("check-setback-packets")).build();
 
     public final StringRef logAcFormat = builder(moveSafety.add("log-ac-format"), String.class)
             .defaultValue("&c[AC] 反作弊回弹! tp号:%d")

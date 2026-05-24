@@ -32,23 +32,18 @@ public class MineArua extends BaseModule {
 
     private BlockPos cachePosition;
     private int lastRefreshTick;
-    public final ModulePath mineArua = makePath(Configs.MINE_CONFIG,"mine-arua");
+    public final ModulePath mineArua = makePath(Configs.MINE_CONFIG, "mine-arua");
 
     public final FlagRef enable = flagBuilder(mineArua.addEnable()).build();
-    public KeyBindRef keyBind = moduleEntry(
-                    mineArua.addHotkey(),
-                    new MultiKeyBind(),
-                    mineArua.addEnable())
+    public KeyBindRef keyBind = moduleEntry(mineArua.addHotkey(), new MultiKeyBind(), mineArua.addEnable())
             .build();
 
     public NBTRef<RegistryRegex<Block>> whiteListRegex = builder(
-                    mineArua.add("block-whitelist"),
-                    NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
+                    mineArua.add("block-whitelist"), NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(.*bed)$"), Registries.BLOCK))
             .build();
 
-    public FlagRef autoBreak = flagBuilder(mineArua.add("auto-break"))
-        .build();
+    public FlagRef autoBreak = flagBuilder(mineArua.add("auto-break")).build();
 
     @Override
     public void registerAll() {
@@ -64,11 +59,11 @@ public class MineArua extends BaseModule {
     }
 
     public void onMineBlockAction(Event<HitResult> event) {
-        //todo: sb, rewrite pls sb sb sb sb
-        if(false && isActive()){
+        // todo: sb, rewrite pls sb sb sb sb
+        if (false && isActive()) {
             BlockPos pos = refreshMineAruaTarget();
-            if(pos != this.cachePosition){
-                //mc.interactionManager.sendSequencedPacket(mc.world, );
+            if (pos != this.cachePosition) {
+                // mc.interactionManager.sendSequencedPacket(mc.world, );
             }
         }
         if (mc.player != null && isActive()) {

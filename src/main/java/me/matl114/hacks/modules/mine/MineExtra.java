@@ -33,7 +33,6 @@ import org.spongepowered.asm.mixin.Unique;
 
 public class MineExtra extends BaseModule {
 
-
     public MineExtra() {}
 
     public List<Vec3i> blocksAround = new ArrayList<>();
@@ -84,25 +83,21 @@ public class MineExtra extends BaseModule {
             }
         }
     }
+
     public final ModulePath fastbreak = makePath(Configs.MINE_CONFIG, "fast-break");
 
-    public final FlagRef quickMine =
-            flagBuilder(fastbreak.addEnable()).build();
+    public final FlagRef quickMine = flagBuilder(fastbreak.addEnable()).build();
 
     public final KeyBindRef quickMineKeyBind = toggleHotkey(
-                    Configs.MINE_CONFIG,
-                    fastbreak.addHotkey(),
-                    new MultiKeyBind(),
-                    fastbreak.addEnable())
+                    Configs.MINE_CONFIG, fastbreak.addHotkey(), new MultiKeyBind(), fastbreak.addEnable())
             .build();
 
-    public final FlagRef fakeInstaBreak = flagBuilder(fastbreak.add("use-fake-instant-break"))
-        .build();
+    public final FlagRef fakeInstaBreak =
+            flagBuilder(fastbreak.add("use-fake-instant-break")).build();
 
-
-    public final EnumRef<FastBreakBypassMode> fastBreakBypassMode = builder(
-                    fastbreak.add("bypass-mode"), FastBreakBypassMode.class)
-            .defaultValue(FastBreakBypassMode.NO_BYPASS)
+    public final EnumRef<Mode> fastBreakBypassMode = builder(
+                    fastbreak.add("bypass-mode"), Mode.class)
+            .defaultValue(Mode.NO_BYPASS)
             .build();
 
     public final IntRef grimAcCounterThreshold = builder(fastbreak.add("grim-punishment-threshold"), Integer.class)
@@ -129,20 +124,20 @@ public class MineExtra extends BaseModule {
             .defaultValue(0.0)
             .build();
 
-    public final FlagRef doubleBreak = flagBuilder(fastbreak.add("double-break"))
-            .build();
+    public final FlagRef doubleBreak =
+            flagBuilder(fastbreak.add("double-break")).build();
 
-    public final FlagRef optimizeOneBlock = flagBuilder(fastbreak.add("same-block-optimize"))
-            .build();
+    public final FlagRef optimizeOneBlock =
+            flagBuilder(fastbreak.add("same-block-optimize")).build();
 
     public final FlagRef swingFix =
             flagBuilder(fastbreak.add("fix-swing-packet")).build();
 
-    public final FlagRef mineRender = flagBuilder(fastbreak.add("render-current-break-pos"))
-            .build();
+    public final FlagRef mineRender =
+            flagBuilder(fastbreak.add("render-current-break-pos")).build();
 
-    public final FlagRef grimBadPacketFix1 = flagBuilder(fastbreak.add("grim-badpackets-1"))
-            .build();
+    public final FlagRef grimBadPacketFix1 =
+            flagBuilder(fastbreak.add("grim-badpackets-1")).build();
 
     public double getReachDistance() {
         return mc.player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE) + reachDistance.get();
@@ -215,7 +210,7 @@ public class MineExtra extends BaseModule {
 
     public void onGrimSBFastBreakExplode(Event<PlayerActionC2SPacket> event) {
         if (quickMine.get()
-                && fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS
+                && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS
                 && mc.player != null) {
             var packet = event.context();
             if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
@@ -250,7 +245,7 @@ public class MineExtra extends BaseModule {
     }
 
     public void onGrimCooldownResetPackets(Event<ClientPlayerEntity> tickEvent) {
-        if (quickMine.get() && fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS) {
+        if (quickMine.get() && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS) {
             // exact tick we send,
             if (lastBreak != null && Tasks.getTick() - lastFinishBreakingTick == 6) {
                 do {
@@ -308,11 +303,11 @@ public class MineExtra extends BaseModule {
                 if (false && doubleBreak.get()) {
                     return 5;
                 }
-                if (fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_LEGIT) {
+                if (fastBreakBypassMode.get() == Mode.BYPASS_GRIM_LEGIT) {
                     if (gainedAdvantageCooldown > grimAcCounterThreshold.get()) {
                         return 5;
                     }
-                } else if (fastBreakBypassMode.get() == FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS) {
+                } else if (fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS) {
                     // still magic numbers...
                     if (doubleBreak.get()) {
                         if (gainedAdvantageCooldown > 100) {
@@ -352,7 +347,7 @@ public class MineExtra extends BaseModule {
         // we will deal the cooldown shit of bad packets mode in the duplication count of bad packets
         if (gainedAdvantageCooldown > threshold
                 && canResetThisTime
-                && mineExtra.fastBreakBypassMode.getValue() == FastBreakBypassMode.BYPASS_GRIM_LEGIT) {
+                && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT) {
             // reset
             gainedAdvantageCooldown = 150;
             ClientPlayerEntity player = MinecraftClient.getInstance().player;
@@ -372,13 +367,13 @@ public class MineExtra extends BaseModule {
         MineExtra mineExtra = MineTasks.getMineExtra();
         int threshold = mineExtra.grimAcCounterThreshold.get();
         ignoreNextFastBreakStatus = 0;
-        if (mineExtra.fastBreakBypassMode.getValue() == FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS) {
+        if (mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_BAD_PACKETS) {
             // badpackets, no punishment, 桀桀桀
             gainedAdvantageMining = 0;
         } else {
             gainedAdvantageMining = (int) (gainedAdvantageMining * 0.9);
             if (gainedAdvantageMining > threshold
-                    && mineExtra.fastBreakBypassMode.getValue() == FastBreakBypassMode.BYPASS_GRIM_LEGIT) {
+                    && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT) {
                 gainedAdvantageMining = 150;
                 ClientPlayerEntity player = MinecraftClient.getInstance().player;
                 Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
@@ -407,7 +402,7 @@ public class MineExtra extends BaseModule {
         int threshold = mineExtra.grimAcCounterThreshold.get();
         gainedAdvantageMining = MathHelper.clamp(gainedAdvantageMining, -1000, 1000);
         if (gainedAdvantageMining > threshold
-                && mineExtra.fastBreakBypassMode.getValue() == FastBreakBypassMode.BYPASS_GRIM_LEGIT) {
+                && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT) {
             // only when starting bypass will we do
             // trigger a common mine
             ignoreNextFastBreakStatus = 2;
@@ -526,15 +521,15 @@ public class MineExtra extends BaseModule {
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {
             case AC_GRIM, AC_GRIM_LEGACY -> {
-                fastBreakBypassMode.set(FastBreakBypassMode.BYPASS_GRIM_BAD_PACKETS);
+                fastBreakBypassMode.set(Mode.BYPASS_GRIM_BAD_PACKETS);
             }
             default -> {
-                fastBreakBypassMode.set(FastBreakBypassMode.NO_BYPASS);
+                fastBreakBypassMode.set(Mode.NO_BYPASS);
             }
         }
     }
 
-    public static enum FastBreakBypassMode implements ConfigEnum {
+    public static enum Mode implements ConfigEnum {
         NO_BYPASS,
         BYPASS_GRIM_LEGIT,
         BYPASS_GRIM_BAD_PACKETS;
@@ -544,9 +539,10 @@ public class MineExtra extends BaseModule {
         }
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable(
-                    "configenum.fast-break-bypass-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "fast_break_bypass_mode";
         }
+
+
     }
 }

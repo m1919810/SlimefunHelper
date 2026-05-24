@@ -2,6 +2,7 @@ package me.matl114.events;
 
 import java.util.*;
 import lombok.Getter;
+import lombok.Setter;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.annotations.Cancelable;
 import me.matl114.events.annotations.ExtraArgs;
@@ -26,6 +27,7 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashException;
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 public class RenderListener {
@@ -197,4 +199,16 @@ public class RenderListener {
     @Getter
     @Cancelable
     private static final EventChannel<Particle> particleRenderListener = new EventChannel<>();
+
+    @Getter
+    @Setter
+    private static Matrix4f worldModelViewMatrix = new Matrix4f().identity();
+
+    @Getter
+    @Setter
+    private static Matrix4f worldBasicProjectionMatrix = new Matrix4f().identity();
+
+    @Getter
+    @Setter
+    private static Matrix4f worldProjectionMatrix = new Matrix4f().identity();
 }

@@ -29,20 +29,23 @@ public class FastInv extends BaseModule {
 
     public final FlagRef enable = flagBuilder(fastInv.add("fast-inv")).build();
 
-    public final FlagRef enableLeftOne =
-            flagBuilder(fastInv.add("left-one")).build();
+    public final FlagRef enableLeftOne = flagBuilder(fastInv.add("left-one")).build();
 
     public final FlagRef enableDrop = flagBuilder(fastInv.add("apply-drop")).build();
 
     public final FlagRef enableShift = flagBuilder(fastInv.add("apply-shift")).build();
 
     public final KeyBindRef shiftAction = hotkey(
-                    Configs.INV_CONFIG, fastInv.add("fast-mov").toPath(), new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.MOUSE_BUTTON_1))
+                    Configs.INV_CONFIG,
+                    fastInv.add("fast-mov").toPath(),
+                    new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.MOUSE_BUTTON_1))
             .registerHotkey(HotKeyUtils.asHandler(this::onShiftAction))
             .build();
 
     public final KeyBindRef dropAction = hotkey(
-                    Configs.INV_CONFIG, fastInv.add("fast-drop").toPath(), new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q))
+                    Configs.INV_CONFIG,
+                    fastInv.add("fast-drop").toPath(),
+                    new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q))
             .registerHotkey(HotKeyUtils.asHandler(this::onDropAction))
             .build();
 

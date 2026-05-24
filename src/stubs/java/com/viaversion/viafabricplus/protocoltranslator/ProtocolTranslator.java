@@ -1,36 +1,20 @@
 package com.viaversion.viafabricplus.protocoltranslator;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import io.netty.channel.*;
 import io.netty.util.AttributeKey;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.network.codec.PacketCodec;
-
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 
 public final class ProtocolTranslator {
-    public static AttributeKey CLIENT_CONNECTION_ATTRIBUTE_KEY ;
-    public static AttributeKey<ProtocolVersion> TARGET_VERSION_ATTRIBUTE_KEY ;
+    public static AttributeKey CLIENT_CONNECTION_ATTRIBUTE_KEY;
+    public static AttributeKey<ProtocolVersion> TARGET_VERSION_ATTRIBUTE_KEY;
     public static ProtocolVersion NATIVE_VERSION;
     public static String VIA_FLOW_CONTROL = "via-flow-control";
     public static ProtocolVersion AUTO_DETECT_PROTOCOL;
     private static ProtocolVersion targetVersion;
     private static ProtocolVersion previousVersion;
 
-    public ProtocolTranslator() {
-    }
-
+    public ProtocolTranslator() {}
 
     public static void reorderPipeline(ChannelPipeline pipeline) {
         int decoderIndex = pipeline.names().indexOf("decompress");
@@ -43,7 +27,6 @@ public final class ProtocolTranslator {
                 pipeline.addAfter("decompress", "via-decoder", decoderHandler);
                 pipeline.addAfter("compress", "via-encoder", encoderHandler);
             }
-
         }
     }
 
@@ -55,7 +38,7 @@ public final class ProtocolTranslator {
         if (!channel.hasAttr(TARGET_VERSION_ATTRIBUTE_KEY)) {
             throw new IllegalStateException("ViaFabricPlus has not injected into that channel yet!");
         } else {
-            return (ProtocolVersion)channel.attr(TARGET_VERSION_ATTRIBUTE_KEY).get();
+            return (ProtocolVersion) channel.attr(TARGET_VERSION_ATTRIBUTE_KEY).get();
         }
     }
 
@@ -63,9 +46,7 @@ public final class ProtocolTranslator {
         setTargetVersion(newVersion, false);
     }
 
-    public static void setTargetVersion(ProtocolVersion newVersion, boolean revertOnDisconnect) {
-
-    }
+    public static void setTargetVersion(ProtocolVersion newVersion, boolean revertOnDisconnect) {}
 
     public static void injectPreviousVersionReset(Channel channel) {
         if (previousVersion != null) {
@@ -76,7 +57,8 @@ public final class ProtocolTranslator {
         }
     }
 
-    public static UserConnection createDummyUserConnection(ProtocolVersion clientVersion, ProtocolVersion serverVersion) {
+    public static UserConnection createDummyUserConnection(
+            ProtocolVersion clientVersion, ProtocolVersion serverVersion) {
         return null;
     }
 

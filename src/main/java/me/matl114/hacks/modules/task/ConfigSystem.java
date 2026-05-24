@@ -28,12 +28,14 @@ public class ConfigSystem extends BaseModule {
 
     public ConfigSystem() {}
 
-    public final KeyBindRef keyBind = hotkey(Configs.HOTKEY_CONFIG, hotkeys.add("open-menu").toPath())
+    public final KeyBindRef keyBind = hotkey(
+                    Configs.HOTKEY_CONFIG, hotkeys.add("open-menu").toPath())
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_G))
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::openConfigMenu))
             .build();
 
-    public final KeyBindRef optionsKeyBind = hotkey(Configs.HOTKEY_CONFIG, hotkeys.add("open-options-menu").toPath())
+    public final KeyBindRef optionsKeyBind = hotkey(
+                    Configs.HOTKEY_CONFIG, hotkeys.add("open-options-menu").toPath())
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::openGameOptionsMenu))
             .build();
@@ -43,7 +45,7 @@ public class ConfigSystem extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
     }
-
+    //todo:
     public void openConfigMenu() {
         MainTasks.openConfigNewStyleScreen();
     }

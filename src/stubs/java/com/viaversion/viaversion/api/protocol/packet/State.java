@@ -7,6 +7,5 @@ public enum State {
     CONFIGURATION,
     PLAY;
 
-    private State() {
-    }
+    private State() {}
 }

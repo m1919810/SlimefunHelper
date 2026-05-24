@@ -10,6 +10,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
@@ -336,5 +337,17 @@ public class RaycastUtils {
         } else {
             return Double.POSITIVE_INFINITY;
         }
+    }
+
+    public static boolean canRaycastHit(PlayerEntity player, float pitch, float yaw, Entity target) {
+        return canRaycastHit(player, pitch, yaw, target, player.getEntityInteractionRange());
+    }
+
+    public static boolean canRaycastHit(PlayerEntity player, float pitch, float yaw, Entity target, double distance) {
+        Vec3d vec3d = player.getEyePos();
+        Vec3d look = EntityUtils.pitchYawToRotation(pitch, yaw);
+        Vec3d raycast = look.normalize().multiply(distance);
+        Box targetBox = target.getBoundingBox();
+        return targetBox.raycast(vec3d, vec3d.add(raycast)).isPresent();
     }
 }

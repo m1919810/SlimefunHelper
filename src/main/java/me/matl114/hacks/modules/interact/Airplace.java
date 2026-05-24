@@ -37,8 +37,7 @@ public class Airplace extends BaseModule {
 
     public Airplace() {}
 
-    public final FlagRef enable =
-            flagBuilder(airPlace.add("enable")).build();
+    public final FlagRef enable = flagBuilder(airPlace.add("enable")).build();
 
     public final KeyBindRef hotkey = moduleEntry(airPlace.add("hotkey"), new MultiKeyBind(), airPlace.add("enable"))
             .build();
@@ -48,11 +47,10 @@ public class Airplace extends BaseModule {
             .validator(Configs.doubleRange(0, 10000))
             .build();
 
-    public final FlagRef render =
-            flagBuilder(airPlace.add("render")).build();
+    public final FlagRef render = flagBuilder(airPlace.add("render")).build();
     // todo: add to switch mode
-    public final EnumRef<AirPlaceMode> enableAirWall = builder(airPlace.add("mode"), AirPlaceMode.class)
-            .defaultValue(AirPlaceMode.VANILLA)
+    public final EnumRef<Mode> enableAirWall = builder(airPlace.add("mode"), Mode.class)
+            .defaultValue(Mode.VANILLA)
             .updateListener(s -> {
                 onSwitch();
             })
@@ -226,13 +224,14 @@ public class Airplace extends BaseModule {
         return mc.player;
     }
 
-    public static enum AirPlaceMode implements ConfigEnum {
+    public static enum Mode implements ConfigEnum {
         VANILLA,
         GRIM_GHOST_BLOCK_WALL;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.air-place-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "air_place_mode";
         }
+
     }
 }

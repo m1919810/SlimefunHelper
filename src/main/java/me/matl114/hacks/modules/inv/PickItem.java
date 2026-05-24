@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.inv;
 
+import java.util.Locale;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -19,8 +20,6 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.slot.Slot;
-
-import java.util.Locale;
 
 public class PickItem extends BaseModule {
     public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
@@ -44,15 +43,20 @@ public class PickItem extends BaseModule {
                     if (slot.getIndex() >= 36) {
                         Debug.chat("Invalid slot for player Inventory", slot.getIndex());
                     } else {
-                        if(ViaFabricPlusHooks.getInstance().isEnabled() && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 3)){
+                        if (ViaFabricPlusHooks.getInstance().isEnabled()
+                                && ViaFabricPlusHooks.getInstance()
+                                        .getCurrentVersion()
+                                        .isLowerOrEqualTo(21, 3)) {
                             // use via shit to send pickup packet
                             var wrapper = ViaFabricPlusHooks.getInstance().createViaPacket();
-                            wrapper.writePacketType(ViaProtocols.V1_21_2_TO_1_21_4, "pick_item".toUpperCase(Locale.ROOT));
+                            wrapper.writePacketType(
+                                    ViaProtocols.V1_21_2_TO_1_21_4, "pick_item".toUpperCase(Locale.ROOT));
                             wrapper.write("VAR_INT", slot.getIndex());
                             wrapper.scheduleSendToServer(ViaProtocols.V1_21_2_TO_1_21_4, true);
                             Debug.chat("run pickup");
-                        }else{
-                            Debug.chat("No Longer support this feat in version " + ViaFabricPlusHooks.getInstance().getCurrentVersion());
+                        } else {
+                            Debug.chat("No Longer support this feat in version "
+                                    + ViaFabricPlusHooks.getInstance().getCurrentVersion());
                         }
                         // mc.interactionManager.pickFromInventory(slot.getIndex());
                     }

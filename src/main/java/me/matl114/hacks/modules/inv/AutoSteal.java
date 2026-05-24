@@ -71,10 +71,9 @@ public class AutoSteal extends BaseModule {
             .build();
 
     // 标题正则（NBTRef 类型，存储正则表达式）
-    public final NBTRef<Regex> titleRegex =
-            builder(steal.add("title-regex"), NBTType.<Regex>parameter(Regex.class))
-                    .defaultValue(new Regex(".*")) // 默认匹配所有标题
-                    .build();
+    public final NBTRef<Regex> titleRegex = builder(steal.add("title-regex"), NBTType.<Regex>parameter(Regex.class))
+            .defaultValue(new Regex(".*")) // 默认匹配所有标题
+            .build();
 
     // 物品过滤器（RegistryRegex 类型，基于物品注册表过滤）
     public final NBTRef<RegistryRegex<Item>> itemFilter = builder(
@@ -83,7 +82,8 @@ public class AutoSteal extends BaseModule {
             .build();
 
     // 自动潜影盒子功能开关
-    public final FlagRef autoShulker = flagBuilder(autoShulkerPath.add("enable")).build();
+    public final FlagRef autoShulker =
+            flagBuilder(autoShulkerPath.add("enable")).build();
 
     // 自动潜影盒切换快捷键
     public final KeyBindRef autoShulkerToggleKey = moduleEntry(
@@ -94,7 +94,8 @@ public class AutoSteal extends BaseModule {
             .build();
 
     // 0 Tick 偷取开关（潜影盒专用）
-    public final FlagRef autoShulker0TickSteal = flagBuilder(autoShulkerPath.add("0tick-steal")).build();
+    public final FlagRef autoShulker0TickSteal =
+            flagBuilder(autoShulkerPath.add("0tick-steal")).build();
 
     public AutoSteal() {}
 

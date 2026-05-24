@@ -39,30 +39,25 @@ public class RenderExtra extends BaseModule {
     public final FlagRef enableRejectResourcePack =
             flagBuilder(serverResource.add("ignore-server-request")).build();
 
-    public final FlagRef nightVision = builder(render.add("nightvision"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final FlagRef nightVision =
+            builder(render.add("nightvision"), Boolean.class).defaultValue(true).build();
 
-    public final FlagRef noEffect = builder(render.add("no-effect"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final FlagRef noEffect =
+            builder(render.add("no-effect"), Boolean.class).defaultValue(true).build();
 
-    public final FlagRef noNausea = builder(render.add("no-nausea"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final FlagRef noNausea =
+            builder(render.add("no-nausea"), Boolean.class).defaultValue(true).build();
 
     public final FlagRef noEffectForce =
             flagBuilder(effectSetting.add("force-no")).build();
 
-    public final FlagRef noOverlay =
-            flagBuilder(render.add("no-overlay")).build();
+    public final FlagRef noOverlay = flagBuilder(render.add("no-overlay")).build();
 
-    public final FlagRef noFireOverlay = flagBuilder(render.add("no-fire-overlay"))
-            .build();
+    public final FlagRef noFireOverlay =
+            flagBuilder(render.add("no-fire-overlay")).build();
 
     public final NBTRef<RegistryRegex<StatusEffect>> noEffectTypes = builder(
-                    effectSetting.add("types"),
-                    NBTType.<RegistryRegex<StatusEffect>>parameter(RegistryRegex.class))
+                    effectSetting.add("types"), NBTType.<RegistryRegex<StatusEffect>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(blindness|darkness|nausea)$"), Registries.STATUS_EFFECT))
             .build();
 

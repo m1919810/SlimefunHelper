@@ -20,7 +20,6 @@ import me.matl114.gui.presets.choices.ColorSelectIcon;
 import me.matl114.gui.presets.lists.NBTBoundedListScreen;
 import me.matl114.gui.presets.lists.NBTListModifyScreen;
 import me.matl114.managers.config.NBTType;
-import me.matl114.utils.CollectionUtils;
 import me.matl114.utils.collections.InitializationTask;
 import me.matl114.utils.config.*;
 import me.matl114.utils.config.kv.AttrKeyValues;
@@ -405,20 +404,33 @@ public interface NBTTypes {
     }
 
     public static <T, W> DrawableWidget generateBoundedListModifyButton(
-        AttrKeyValue<Map<T, W>> keyValue,
-        List<T> keyBound,
-        NBTType<W> valueType,WidgetFactory<T> keyWidget,
-        int x, int y, int dx, int dy, int keyLabelWidth, int listWidth, int listHeight
-    ){
+            AttrKeyValue<Map<T, W>> keyValue,
+            List<T> keyBound,
+            NBTType<W> valueType,
+            WidgetFactory<T> keyWidget,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int keyLabelWidth,
+            int listWidth,
+            int listHeight) {
         return new SubScreenWidget(x, y, dx, dy)
-            .addDrawableChild(new ExecutableWidget(dy, 0, dx - dy, dy)
-                .setElementHandler(new ButtonElement(
-                    TextProvider.of(Constants.OPEN_LIST_EDIT_TEXT), ButtonAction.run(() -> {
-                    openBoundedListModifyScreen(keyValue, keyBound, valueType, keyWidget, keyLabelWidth, listWidth, listHeight);
-                }))
-                    .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))))
-            .addDrawableChild(DisplayWidget.instance(0, 0, dy - 1, dy)
-                .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
+                .addDrawableChild(new ExecutableWidget(dy, 0, dx - dy, dy)
+                        .setElementHandler(new ButtonElement(
+                                        TextProvider.of(Constants.OPEN_LIST_EDIT_TEXT), ButtonAction.run(() -> {
+                                            openBoundedListModifyScreen(
+                                                    keyValue,
+                                                    keyBound,
+                                                    valueType,
+                                                    keyWidget,
+                                                    keyLabelWidth,
+                                                    listWidth,
+                                                    listHeight);
+                                        }))
+                                .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))))
+                .addDrawableChild(DisplayWidget.instance(0, 0, dy - 1, dy)
+                        .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
     }
 
     public static <W> void openListModifyScreen(
@@ -434,23 +446,33 @@ public interface NBTTypes {
     }
 
     public static <T, W> void openBoundedListModifyScreen(
-        AttrKeyValue<Map<T, W>> keyValue, List<T> bound, NBTType<W> type, WidgetFactory<T> keyWidget, int keyLabelWidth, int listWidth, int listHeight
-    ){
+            AttrKeyValue<Map<T, W>> keyValue,
+            List<T> bound,
+            NBTType<W> type,
+            WidgetFactory<T> keyWidget,
+            int keyLabelWidth,
+            int listWidth,
+            int listHeight) {
         Map<T, W> twMap = keyValue.getOriginValue();
         boolean add = false;
-        for (var re : bound){
-            if(!twMap.containsKey(re)){
+        for (var re : bound) {
+            if (!twMap.containsKey(re)) {
                 add = true;
                 twMap = new LinkedHashMap<>(twMap);
                 twMap.put(re, type.createEmpty());
             }
         }
-        if(add){
+        if (add) {
             keyValue.valueChangeInternal(null, twMap);
         }
         NBTBoundedListScreen<T, W> listModifyScreenImmutable = new NBTBoundedListScreen<>(
-            keyValue, type, keyWidget, (map)-> keyValue.valueChangeInternal(null, map), keyLabelWidth, listWidth, listHeight
-        );
+                keyValue,
+                type,
+                keyWidget,
+                (map) -> keyValue.valueChangeInternal(null, map),
+                keyLabelWidth,
+                listWidth,
+                listHeight);
         ScreenAccess.of(listModifyScreenImmutable).openFromCurrent();
     }
 

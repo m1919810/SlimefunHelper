@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import me.matl114.api.Displayable;
+import net.minecraft.text.Text;
 import net.minecraft.util.StringIdentifiable;
 
 public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegisterType {
@@ -58,5 +59,9 @@ public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegiste
         if (ConfigEnum.class.isAssignableFrom(clazz) && Enum.class.isAssignableFrom(clazz)) {
             ConfigEnum.ensureRegistered((Class<? extends Enum>) clazz);
         }
+    }
+
+    default Text getDisplay(){
+        return Text.translatable("configenum." + this.getConfigEnumType().replace("_", "-") + "." + cast().name().toLowerCase(Locale.ROOT));
     }
 }

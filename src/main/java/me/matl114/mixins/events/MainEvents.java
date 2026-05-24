@@ -18,7 +18,7 @@ public abstract class MainEvents {
     private static void onMain(String[] args, CallbackInfo ci) {
         // handled crash in the printCrashReportMixin\\
         // printCrashReport will call System.exit, if we see a crashReport here then it is cancelled in the event here
-        if(MinecraftClient.getInstance() == null){
+        if (MinecraftClient.getInstance() == null) {
             return;
         }
         if (GlobalEventVars.crashReport != null) {
@@ -27,24 +27,24 @@ public abstract class MainEvents {
             mainLoop(MinecraftClient.getInstance());
         } else {
             // not a crash
-            if(GlobalEventVars.crashReportEvent == null){
+            if (GlobalEventVars.crashReportEvent == null) {
                 MinecraftClient mc = MinecraftClient.getInstance();
                 GlobalEventVars.crashReportEvent = new Event<>(mc, mc.isRunning(), false);
                 if (!Listener.getClientMainExit().isEmpty()) {
                     Listener.getClientMainExit().handleValue(GlobalEventVars.crashReportEvent);
                 }
             }
-            if(MinecraftClient.getInstance().isRunning()){
-                if(GlobalEventVars.crashReportEvent.isCancelled()){
+            if (MinecraftClient.getInstance().isRunning()) {
+                if (GlobalEventVars.crashReportEvent.isCancelled()) {
                     GlobalEventVars.crashReportEvent = null;
                     GlobalEventVars.crashReport = null;
                     mainLoop(MinecraftClient.getInstance());
-                }else {
+                } else {
                     GlobalEventVars.crashReportEvent = null;
                     GlobalEventVars.crashReport = null;
                     return;
                 }
-            }else {
+            } else {
                 GlobalEventVars.crashReportEvent = null;
             }
         }

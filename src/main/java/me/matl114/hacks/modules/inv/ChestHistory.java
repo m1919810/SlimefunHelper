@@ -59,9 +59,8 @@ public class ChestHistory extends BaseModule {
             .defaultValue(new Regex("^(Slimefun 指南.*|菜单)$"))
             .build();
 
-    public final FlagRef enableTitle = flagBuilder(invCache.add("show-title"))
-            .defaultValue(false)
-            .build();
+    public final FlagRef enableTitle =
+            flagBuilder(invCache.add("show-title")).defaultValue(false).build();
 
     public List<HandledScreen<?>> getCachedInventories() {
         return (List) Stream.concat(screens.values().stream().map(MutableEntry::getValue), virtualScreens.stream())

@@ -26,15 +26,13 @@ public class AntiAXray extends BaseModule {
         bindFlag(enable);
     }
 
+    public final ModulePath simple = makePath(Configs.MINE_CONFIG, "aaxray.simple");
 
-    public final ModulePath simple = makePath(Configs.MINE_CONFIG,"aaxray.simple");
-
-    public final FlagRef enable = flagBuilder(simple.add("enable"))
-            .defaultValue(false)
-            .build();
+    public final FlagRef enable =
+            flagBuilder(simple.add("enable")).defaultValue(false).build();
 
     public final KeyBindRef hotkey = moduleEntry(simple.add("hotkey"), new MultiKeyBind(), simple.add("enable"))
-        .build();
+            .build();
 
     public final IntRef limitation = builder(simple.add("packet-limit"), IntRef.TYPE)
             .defaultValue(30)

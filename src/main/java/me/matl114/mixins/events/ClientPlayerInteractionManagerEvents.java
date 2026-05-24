@@ -2,6 +2,7 @@ package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
+import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -9,6 +10,11 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.client.network.SequencedPacketCreator;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.NetworkRecipeId;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -79,5 +85,22 @@ public abstract class ClientPlayerInteractionManagerEvents {
             }
             return packet;
         };
+    }
+
+    @Inject(method = "clickSlot", at = @At("HEAD"), cancellable = true)
+    public void onClickSlot(
+            int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
+        Event<SlotActionType> eventClickSlot = new Event<>(actionType, true, false, slotId, slotId, button);
+        Listener.getPreClickSlot().handleValue(eventClickSlot);
+        if (eventClickSlot.isCancelled()) {
+            ci.cancel();
+            return;
+        }
+    }
+
+    @Inject(method = "clickSlot", at = @At("RETURN"))
+    public void onClickSlotPost(
+            int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
+        Listener.getPostClickSlot().broadcast(actionType, syncId, slotId, button);
     }
 }

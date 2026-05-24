@@ -2,14 +2,11 @@ package me.matl114.gui.presets.lists;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.config.ListModifyWidget;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
@@ -29,14 +26,23 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
     ListEntryWidgetController fuckController;
     // modifiable
     public NBTListModifyScreen(
-        AttrKeyValue<List<T>> attrKeyValue,
-        NBTType<T> type,
-        Supplier<T> newElement,
-        Consumer<List<T>> callback,
-        int dx,
-        int dy){
-        this(attrKeyValue.getOriginValue(), attrKeyValue::isValueValid, type::createAttrKeyValue, type::generateValueWidget, newElement, callback, dx, dy);
+            AttrKeyValue<List<T>> attrKeyValue,
+            NBTType<T> type,
+            Supplier<T> newElement,
+            Consumer<List<T>> callback,
+            int dx,
+            int dy) {
+        this(
+                attrKeyValue.getOriginValue(),
+                attrKeyValue::isValueValid,
+                type::createAttrKeyValue,
+                type::generateValueWidget,
+                newElement,
+                callback,
+                dx,
+                dy);
     }
+
     public NBTListModifyScreen(
             List<T> list,
             Predicate<List<T>> listValidator,
@@ -49,9 +55,7 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
         super(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
         validator = listValidator;
         this.attrFactory = attrElementFactory;
-        this.list = list.stream()
-                .map(s -> attrFactory.apply("", s))
-                .collect(Collectors.toCollection(ArrayList::new));
+        this.list = list.stream().map(s -> attrFactory.apply("", s)).collect(Collectors.toCollection(ArrayList::new));
         this.callback = callback;
 
         this.widgetDx = dx;
@@ -59,34 +63,33 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
         this.fuckController = ListEntryWidgetController.mutable(
                 this.list,
                 () -> attrFactory.apply("", newElement.get()),
-                (w) -> customWidgetFactory.generateWidget( w, 0, 0, widgetDx, widgetDy),
+                (w) -> customWidgetFactory.generateWidget(w, 0, 0, widgetDx, widgetDy),
                 widgetDy,
                 widgetDx);
     }
 
-
-//    //immutable
-//    public NBTListModifyScreen(
-//        List<T> list,
-//        Predicate<List<T>> listValidator,
-//        BiFunction<String, T, AttrKeyValue<T>> attrElementFactory,
-//        WidgetFactory<AttrKeyValue<T>> customWidgetFactory,
-//        Consumer<List<T>> callback,
-//        int dx,
-//        int dy){
-//        super(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
-//        validator = listValidator;
-//        this.attrFactory = attrElementFactory;
-//        this.list = list.stream()
-//            .map(s -> attrFactory.apply("", s))
-//            .collect(Collectors.toCollection(ArrayList::new));
-//        this.callback = callback;
-//        this.fuckController = ListEntryWidgetController.immutable(
-//            this.list,
-//            (w) -> customWidgetFactory.generateWidget(w, 0, 0, widgetDx, widgetDy),
-//            widgetDy,
-//            widgetDx);
-//    }
+    //    //immutable
+    //    public NBTListModifyScreen(
+    //        List<T> list,
+    //        Predicate<List<T>> listValidator,
+    //        BiFunction<String, T, AttrKeyValue<T>> attrElementFactory,
+    //        WidgetFactory<AttrKeyValue<T>> customWidgetFactory,
+    //        Consumer<List<T>> callback,
+    //        int dx,
+    //        int dy){
+    //        super(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
+    //        validator = listValidator;
+    //        this.attrFactory = attrElementFactory;
+    //        this.list = list.stream()
+    //            .map(s -> attrFactory.apply("", s))
+    //            .collect(Collectors.toCollection(ArrayList::new));
+    //        this.callback = callback;
+    //        this.fuckController = ListEntryWidgetController.immutable(
+    //            this.list,
+    //            (w) -> customWidgetFactory.generateWidget(w, 0, 0, widgetDx, widgetDy),
+    //            widgetDy,
+    //            widgetDx);
+    //    }
 
     @Override
     protected void init() {

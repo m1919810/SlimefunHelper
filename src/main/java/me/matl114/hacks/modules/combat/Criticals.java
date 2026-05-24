@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.combat;
 
+import java.util.Locale;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
@@ -10,6 +11,7 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
@@ -18,6 +20,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.InventoryUtils;
+import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
@@ -29,8 +32,6 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
@@ -40,17 +41,20 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
     public final FlagRef enable = flagBuilder(criticals.add("enable")).build();
 
-    public final KeyBindRef hotkey =
-            moduleEntry(criticals.add("hotkey"), new MultiKeyBind(), criticals.add("enable"))
-                    .build();
+    public final KeyBindRef hotkey = moduleEntry(
+                    criticals.add("hotkey"), new MultiKeyBind(), criticals.add("enable"), () -> this.mode
+                            .get()
+                            .getDisplay())
+            .build();
 
-    public final EnumRef<CriticalMode> mode = builder(criticals.add("mode"), CriticalMode.class)
-            .defaultValue(CriticalMode.PACKET)
+    public final EnumRef<Mode> mode = builder(criticals.add("mode"), Mode.class)
+            .defaultValue(Mode.PACKET)
             .build();
 
     public final FlagRef groundOnly = flagBuilder(criticals.add("ground-only")).build();
 
-    public final FlagRef targetAround = flagBuilder(criticals.add("target-only")).build();
+    public final FlagRef targetAround =
+            flagBuilder(criticals.add("target-only")).build();
 
     public final FlagRef movementOk = flagBuilder(criticals.add("movement-ok")).build();
 
@@ -62,10 +66,10 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             .defaultValue(true)
             .build();
 
-    public final EnumRef<Configs.SetBackTriggerType> setBackType =
-            builder(criticals.add("set-back-mode"), Configs.SetBackTriggerType.class)
-                    .defaultValue(Configs.SetBackTriggerType.SIMULATION)
-                    .build();
+    public final EnumRef<Configs.SetBackTriggerType> setBackType = builder(
+                    criticals.add("set-back-mode"), Configs.SetBackTriggerType.class)
+            .defaultValue(Configs.SetBackTriggerType.SIMULATION)
+            .build();
 
     static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -165,12 +169,16 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     switch (setBackType.get()) {
                         case CRASH_PACKETS -> {
                             mc.getNetworkHandler()
-                                    .sendPacket(VPacket.newPositionAndOnGround(
-                                            x, Double.POSITIVE_INFINITY, z, false, false));
+                                    .sendPacket(PlayerMoveC2SPacketAccess.setCause(
+                                            VPacket.newPositionAndOnGround(
+                                                    x, Double.POSITIVE_INFINITY, z, false, false),
+                                            PlayerMoveC2SPacketAccess.Cause.TRIGGER_SIMULATION));
                         }
                         case SIMULATION -> {
                             mc.getNetworkHandler()
-                                    .sendPacket(VPacket.newPositionAndOnGround(x, y + 1, z, false, false));
+                                    .sendPacket(PlayerMoveC2SPacketAccess.setCause(
+                                            VPacket.newPositionAndOnGround(x, y + 1, z, false, false),
+                                            PlayerMoveC2SPacketAccess.Cause.TRIGGER_SIMULATION));
                         }
                     }
                     event.cancel();
@@ -208,10 +216,15 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             setbackFlag = 1;
             Entity entity = mc.world.getEntityById(
                     PlayerInteractEntityC2SPacketAccess.of(cache).getEntityId());
+            var pkt0 = event.context;
             if (entity != null) {
-
-                if (mc.crosshairTarget.getType() == HitResult.Type.ENTITY
-                        && ((EntityHitResult) mc.crosshairTarget).getEntity() == entity) {
+                boolean canDirectlyHit = RaycastUtils.canRaycastHit(
+                        mc.player,
+                        pkt0.getPitch(PlayerStateManager.INSTANCE.lastPitch),
+                        pkt0.getYaw(PlayerStateManager.INSTANCE.lastYaw),
+                        entity);
+                if (canDirectlyHit) {
+                    // escape rot
                 } else {
                     Vec3d predictedEyePos = mc.player.getEyePos();
                     Vec3d eyePos = entity.getEyePos();
@@ -249,15 +262,14 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     int fakeTicks = 0;
     // grim ground critical optimize
 
-    public boolean shouldApplyCriticalConditionCheck(){
-        return hasNoMovement()
-            && hasTargetNear();
+    public boolean shouldApplyCriticalConditionCheck() {
+        return hasNoMovement() && hasTargetNear();
     }
 
-    public boolean shouldApplyGrimGroundSimulationAutoFakeGround(){
+    public boolean shouldApplyGrimGroundSimulationAutoFakeGround() {
         return (autoFakeGround.get() || nextAttackIsKillarua)
-            && mc.player.isOnGround()
-            && shouldApplyCriticalConditionCheck();
+                && mc.player.isOnGround()
+                && shouldApplyCriticalConditionCheck();
     }
 
     @Override
@@ -265,7 +277,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
         boolean lastLastOnGround = lastOnGroundT;
         lastOnGroundT = mc.player.isOnGround() && !movementManagerEvent.context.playerStatus.onGround;
-        if (enable.get() && mode.get() == CriticalMode.FREEZE && shouldApplyCriticalConditionCheck()) {
+        if (enable.get() && mode.get() == Mode.FREEZE && shouldApplyCriticalConditionCheck()) {
             boolean shouldApplyFreeze = false;
             if (groundOnly.get()) {
                 shouldApplyFreeze = lastLastOnGround || lastOnGroundT;
@@ -286,7 +298,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             setbackFlag -= 1;
         }
         if (enable.get()
-                && mode.get() == CriticalMode.GRIM_GROUND_SIMULATION
+                && mode.get() == Mode.GRIM_GROUND_SIMULATION
                 && shouldApplyGrimGroundSimulationAutoFakeGround()) {
             double yLevel = mc.player.getY();
 
@@ -329,7 +341,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        if (setbackFlag > 0 && mode.get() == CriticalMode.GRIM_GROUND_SIMULATION && autoWalk.get()) {
+        if (setbackFlag > 0 && mode.get() == Mode.GRIM_GROUND_SIMULATION && autoWalk.get()) {
             PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
             if (!input.hasWASDMovement()) {
                 walkCnt += 1;
@@ -349,7 +361,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         return true;
     }
 
-    public static enum CriticalMode implements ConfigEnum {
+    public static enum Mode implements ConfigEnum {
         PACKET,
         FREEZE,
         //        OLD_GRIM_V2,
@@ -357,8 +369,9 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         GRIM_GROUND_SIMULATION;
 
         @Override
-        public Text getDisplay() {
-            return Text.literal(name());
+        public String getConfigEnumType() {
+            return "critical_mode";
         }
+
     }
 }

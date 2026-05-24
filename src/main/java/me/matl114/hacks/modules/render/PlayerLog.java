@@ -16,8 +16,7 @@ public class PlayerLog extends BaseModule {
 
     public PlayerLog() {}
 
-    public final FlagRef enable =
-            flagBuilder(playerIo.add("log-player-io")).build();
+    public final FlagRef enable = flagBuilder(playerIo.add("log-player-io")).build();
 
     public final StringRef logFormatIn = builder(playerIo.add("log-player-in-format"), StringRef.TYPE)
             .defaultValue("&7&l[&a&l+&7&l] &f%s")

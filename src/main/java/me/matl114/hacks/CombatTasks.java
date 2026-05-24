@@ -197,6 +197,9 @@ public class CombatTasks {
     public static CombatExtra combatExtra;
 
     @Getter
+    public static DamageManager damageManager;
+
+    @Getter
     public static TargetSelector targetSelector;
 
     @Getter
@@ -219,6 +222,9 @@ public class CombatTasks {
 
     @Getter
     public static BowTp bowTp;
+
+    @Getter
+    public static CombatLog combatLog;
 
     @Getter
     public static AutoTotem autoTotem;
@@ -257,6 +263,7 @@ public class CombatTasks {
     // todo: crystal
     private static void initModules(ModuleManager m) {
         combatExtra = new CombatExtra().register(m);
+        damageManager = new DamageManager().register(m);
         targetSelector = new TargetSelector().register(m);
         positionPredict = new PositionPredict().register(m);
         attack = new Attack().register(m);
@@ -265,6 +272,7 @@ public class CombatTasks {
         bowEnhance = new BowEnhance().register(m);
         bowTp = new BowTp().register(m);
         projectileEnhance = new ProjectileEnhance().register(m);
+        combatLog = new CombatLog().register(m);
         autoTotem = new AutoTotem().register(m);
         totemLog = new TotemLog().register(m);
         autoLogout = new AutoLogout().register(m);

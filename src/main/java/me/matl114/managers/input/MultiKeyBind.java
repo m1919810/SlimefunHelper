@@ -44,7 +44,7 @@ public class MultiKeyBind {
         validateKeys();
     }
 
-    public MultiKeyBind(){
+    public MultiKeyBind() {
         this(new int[0]);
     }
 

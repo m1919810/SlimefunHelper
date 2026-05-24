@@ -198,7 +198,7 @@ public class DisablerManager extends BaseModule {
 
         @Override
         public String getConfigEnumType() {
-            return "support-disabler-ac";
+            return "support_disabler_ac";
         }
 
         @Override

@@ -2,7 +2,6 @@ package me.matl114.utils.entity;
 
 import lombok.*;
 import lombok.experimental.Accessors;
-import me.matl114.hacks.modules.extra.BadPacketsFix;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.utils.EntityUtils;
@@ -127,14 +126,16 @@ public class PlayerInputUtils {
 
         public void sendPlayerSneakUpdatePacket() {
             sendPlayerInputPacket();
-            if(ViaFabricPlusHooks.getInstance().isEnabled() && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)){
-                //send sneak packet
-                ViaFabricPlusHooks.ViaPacketWrapper wrapper = ViaFabricPlusHooks.getInstance().createViaPacket();
+            if (ViaFabricPlusHooks.getInstance().isEnabled()
+                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)) {
+                // send sneak packet
+                ViaFabricPlusHooks.ViaPacketWrapper wrapper =
+                        ViaFabricPlusHooks.getInstance().createViaPacket();
                 wrapper.writePacketType(ViaProtocols.V1_21_4_TO_1_21_5, PlayPackets.PLAYER_COMMAND);
                 wrapper.write("VAR_INT", MinecraftClient.getInstance().player.getId());
                 wrapper.write("VAR_INT", this.sneak ? 0 : 1);
                 wrapper.write("VAR_INT", 0);
-                //todo why doesn't work
+                // todo why doesn't work
                 wrapper.scheduleSendToServer(ViaProtocols.V1_21_5_TO_1_21_6, true);
             }
         }

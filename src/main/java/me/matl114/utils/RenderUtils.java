@@ -3,6 +3,7 @@ package me.matl114.utils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.*;
 import java.util.List;
+import java.util.function.Function;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
 import me.matl114.utils.world.RegionPos;
@@ -17,6 +18,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import org.joml.*;
 import org.joml.Quaternionf;
 import org.joml.Vector3fc;
 import org.lwjgl.opengl.GL11;
@@ -315,5 +317,46 @@ public class RenderUtils {
                     normalY,
                     normalZ);
         }
+    }
+
+    public static Vector2d translate3DTo2D(Matrix4f cameraMatrix, Matrix4f projectionMatrix, Vec3d camera, Vec3d pos) {
+        Vector4f vec =
+                new Vector4f((float) (pos.x - camera.x), (float) (pos.y - camera.y), (float) (pos.z - camera.z), 1.0f);
+        vec.mul(cameraMatrix);
+        vec.mul(projectionMatrix);
+        if (vec.w <= 0) {
+            return null; // 在屏幕后面
+        }
+        // 透视除法
+        float ndcX = vec.x / vec.w;
+        float ndcY = vec.y / vec.w;
+
+        double windowWidth = mc.getWindow().getWidth();
+        double windowHeight = mc.getWindow().getHeight();
+        double screenX = (ndcX * 0.5 + 0.5) * windowWidth;
+        double screenY = (1.0 - (ndcY * 0.5 + 0.5)) * windowHeight; // Y翻转
+
+        double windowScale = mc.getWindow().getScaleFactor();
+        double guiX = screenX / windowScale;
+        double guiY = screenY / windowScale; // 由于 screenY 已经是向下，直接除以缩放即可？
+
+        // 检查是否在屏幕外（可选）
+        if (Double.isInfinite(guiX) || Double.isInfinite(guiY)) return null;
+
+        return new Vector2d(guiX, guiY);
+    }
+
+    public static Function<Vec3d, Vector2d> createProjector(Matrix4f cam, Matrix4f proj) {
+        Vec3d cameraPos = getCameraPos();
+        return (v) -> translate3DTo2D(cam, proj, cameraPos, v);
+    }
+
+    public static Vector2d translate2D(Vec3d pos, float tickProgress) {
+        Quaternionf rotation = mc.gameRenderer.getCamera().getRotation().conjugate(new Quaternionf());
+        Matrix4f modelView = new Matrix4f().rotation(rotation);
+        float g = mc.gameRenderer.getFov(mc.gameRenderer.getCamera(), tickProgress, true);
+        Matrix4f projView = mc.gameRenderer.getBasicProjectionMatrix(g);
+        Vec3d camera = getCameraPos();
+        return translate3DTo2D(modelView, projView, camera, pos);
     }
 }
