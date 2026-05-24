@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.interact;
 
 import java.awt.*;
-import java.util.Locale;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
@@ -25,7 +24,6 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
-import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -232,6 +230,5 @@ public class Airplace extends BaseModule {
         public String getConfigEnumType() {
             return "air_place_mode";
         }
-
     }
 }

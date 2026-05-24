@@ -377,7 +377,8 @@ public class Hud extends BaseModule {
 
             if (!Objects.equals(lastMeta, moduleEntry.getMetaData())) {
                 lastMeta = moduleEntry.getMetaData();
-                lastDisplay = ((lastMeta != null && mc.textRenderer.getTextHandler().getWidth(lastMeta) > 0.0F)
+                lastDisplay = ((lastMeta != null
+                                        && mc.textRenderer.getTextHandler().getWidth(lastMeta) > 0.0F)
                                 ? (moduleEntry
                                         .getDisplay()
                                         .append(Text.literal("["))

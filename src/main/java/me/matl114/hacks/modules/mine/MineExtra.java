@@ -24,7 +24,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
@@ -95,8 +94,7 @@ public class MineExtra extends BaseModule {
     public final FlagRef fakeInstaBreak =
             flagBuilder(fastbreak.add("use-fake-instant-break")).build();
 
-    public final EnumRef<Mode> fastBreakBypassMode = builder(
-                    fastbreak.add("bypass-mode"), Mode.class)
+    public final EnumRef<Mode> fastBreakBypassMode = builder(fastbreak.add("bypass-mode"), Mode.class)
             .defaultValue(Mode.NO_BYPASS)
             .build();
 
@@ -209,9 +207,7 @@ public class MineExtra extends BaseModule {
     }
 
     public void onGrimSBFastBreakExplode(Event<PlayerActionC2SPacket> event) {
-        if (quickMine.get()
-                && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS
-                && mc.player != null) {
+        if (quickMine.get() && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS && mc.player != null) {
             var packet = event.context();
             if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
                     && packet.getPos().getY() < 1145) {
@@ -401,8 +397,7 @@ public class MineExtra extends BaseModule {
         gainedAdvantageMining += (diff + 1) * 50;
         int threshold = mineExtra.grimAcCounterThreshold.get();
         gainedAdvantageMining = MathHelper.clamp(gainedAdvantageMining, -1000, 1000);
-        if (gainedAdvantageMining > threshold
-                && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT) {
+        if (gainedAdvantageMining > threshold && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT) {
             // only when starting bypass will we do
             // trigger a common mine
             ignoreNextFastBreakStatus = 2;
@@ -542,7 +537,5 @@ public class MineExtra extends BaseModule {
         public String getConfigEnumType() {
             return "fast_break_bypass_mode";
         }
-
-
     }
 }

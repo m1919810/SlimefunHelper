@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.move;
 
-import java.util.Locale;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -16,7 +15,6 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
@@ -278,6 +276,5 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         public String getConfigEnumType() {
             return "elytramode";
         }
-
     }
 }

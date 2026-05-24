@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.move;
 
-import java.util.Locale;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
@@ -26,7 +25,6 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 
 public class CreativeFlight extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -51,7 +49,7 @@ public class CreativeFlight extends BaseModule implements LegalMovementManager.M
                     flight.add("flight-enable-hotkey"),
                     new MultiKeyBind(),
                     flight.add("flight-enable"),
-        moduleMeta(()-> this.flightMode))
+                    moduleMeta(() -> this.flightMode))
             .build();
 
     public final EnumRef<Mode> flightMode = builder(flight.add("flight-mode"), Mode.class)
