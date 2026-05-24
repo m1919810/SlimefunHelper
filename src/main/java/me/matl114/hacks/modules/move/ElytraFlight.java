@@ -25,7 +25,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public final ModulePath simpleFlightControl = elytra.add("simple-flight-control");
     public final ModulePath customFireworks = elytra.add("custom-fireworks");
 
-    public FlagRef enable = flagBuilder(simpleFlightControl.add("enable-control")).build();
+    public FlagRef enable =
+            flagBuilder(simpleFlightControl.add("enable-control")).build();
 
     public KeyBindRef hotkey = moduleEntry(
                     simpleFlightControl.add("enable-control-hotkey"),
@@ -38,13 +39,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             .validator(Configs.doubleRange(0.0, 10000.0))
             .build();
 
-    public final EnumRef<ElytraExtra.MotionMode> motionMode =
-            builder(simpleFlightControl.add("motion-mode"), ElytraExtra.MotionMode.class)
-                    .defaultValue(ElytraExtra.MotionMode.VOID)
-                    .build();
+    public final EnumRef<ElytraExtra.MotionMode> motionMode = builder(
+                    simpleFlightControl.add("motion-mode"), ElytraExtra.MotionMode.class)
+            .defaultValue(ElytraExtra.MotionMode.VOID)
+            .build();
 
-    public final EnumRef<ElytraMode> controlMode = builder(simpleFlightControl.add("flight-mode"), ElytraMode.class)
-            .defaultValue(ElytraMode.CONTROL)
+    public final EnumRef<Mode> controlMode = builder(simpleFlightControl.add("flight-mode"), Mode.class)
+            .defaultValue(Mode.CONTROL)
             .build();
 
     public final FlagRef motionAdjust = builder(simpleFlightControl.add("motion-adjust"), FlagRef.TYPE)
@@ -268,14 +269,15 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         }
     }
 
-    public enum ElytraMode implements ConfigEnum {
+    public enum Mode implements ConfigEnum {
         CONTROL,
         ROTATION,
         SIMPLE;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.elytra-fly-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "elytramode";
         }
+
     }
 }

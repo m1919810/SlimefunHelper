@@ -53,14 +53,12 @@ public class BlockRotate extends BaseModule {
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
-    public final FlagRef enable2 =
-            flagBuilder(litematicaFix.add("enable")).build();
+    public final FlagRef enable2 = flagBuilder(litematicaFix.add("enable")).build();
 
-    public final FlagRef legal =
-            flagBuilder(litematicaFix.add("legal-look")).build();
+    public final FlagRef legal = flagBuilder(litematicaFix.add("legal-look")).build();
 
-    public final FlagRef enable3 = flagBuilder(litematicaFix.add("enable-easyplace-post-fix"))
-            .build();
+    public final FlagRef enable3 =
+            flagBuilder(litematicaFix.add("enable-easyplace-post-fix")).build();
 
     @Override
     public void registerAll() {

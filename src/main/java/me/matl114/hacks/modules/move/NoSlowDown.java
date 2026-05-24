@@ -80,11 +80,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         // ? ClientTickEndC2SPacket.class : PlayerMoveC2SPacket.class), this::onSendMovePostNoSlowUse);
     }
 
-    public final FlagRef sneak =
-            flagBuilder(noSlowdown.add("when-sneak")).build();
+    public final FlagRef sneak = flagBuilder(noSlowdown.add("when-sneak")).build();
 
-    public final FlagRef useItem =
-            flagBuilder(noSlowdown.add("when-use-item")).build();
+    public final FlagRef useItem = flagBuilder(noSlowdown.add("when-use-item")).build();
 
     public final FlagRef blockSlow =
             flagBuilder(noSlowdown.add("when-with-block")).build();
@@ -92,8 +90,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public final FlagRef blockFrac =
             flagBuilder(noSlowdown.add("when-on-block")).build();
 
-    public final FlagRef blockIn =
-            flagBuilder(noSlowdown.add("when-in-block")).build();
+    public final FlagRef blockIn = flagBuilder(noSlowdown.add("when-in-block")).build();
 
     public final FlagRef blockSpecial =
             flagBuilder(noSlowdown.add("when-special-block")).build();
@@ -105,8 +102,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                     noSlowdown.add("fake-sneak-hotkey"), new MultiKeyBind(), noSlowdown.add("fake-sneak"))
             .build();
 
-    public final EnumRef<UseBypassMode> useItemBypass = builder(
-                    noSlowdown.add("use-item-bypass"), UseBypassMode.class)
+    public final EnumRef<UseBypassMode> useItemBypass = builder(noSlowdown.add("use-item-bypass"), UseBypassMode.class)
             .defaultValue(UseBypassMode.NO_BYPASS)
             .build();
 
@@ -115,8 +111,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
-    public final FlagRef blockInKeepYVelocity = flagBuilder(noSlowdown.add("block-in-keep-y"))
-        .build();
+    public final FlagRef blockInKeepYVelocity =
+            flagBuilder(noSlowdown.add("block-in-keep-y")).build();
 
     public final EnumRef<Configs.BypassMode> fakeSneakBypass = builder(
                     noSlowdown.add("fake-sneak-mode"), Configs.BypassMode.class)
@@ -183,29 +179,32 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             BlockPos pos = slowMovement.getArgs(0);
             switch (blockInBypass.get()) {
                 case BYPASS_GRIM -> {
-                    if(blockInKeepYVelocity.get()){
+                    if (blockInKeepYVelocity.get()) {
                         slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y, 1.0F));
                     }
-                    //todo: why
+                    // todo: why
                     var input = PlayerInputUtils.of(mc.player.input);
-//                    if(blockInKeepYVelocity.get() && mc.player.isOnGround() && input.jump()){
-////                        mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP, seq));
-//                        mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP, seq));
-//                        //mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
-//                        slowMovement.cancel();
-//                        return;
-//                        //slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y, 1.0F));
-//                    }
-                    if(mc.player.isFallFlying()){
+                    //                    if(blockInKeepYVelocity.get() && mc.player.isOnGround() && input.jump()){
+                    ////                        mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new
+                    // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP, seq));
+                    //                        mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new
+                    // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP, seq));
+                    //                        //mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
+                    //                        slowMovement.cancel();
+                    //                        return;
+                    //                        //slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y,
+                    // 1.0F));
+                    //                    }
+                    if (mc.player.isFallFlying()) {
                         return;
                     }
                     if (input.hasMovement()
-                    //PlayerInputUtils.of(mc.player.input).hasMovement()
+                    // PlayerInputUtils.of(mc.player.input).hasMovement()
                     ) {
-//                        Vec3d magicVec = mc.player.getVelocity();
+                        //                        Vec3d magicVec = mc.player.getVelocity();
                         mc.player.setVelocity(EntityUtils.withStrafe(mc.player.getVelocity(), 0.64));
-//                        Vec3d magicVec2 = mc.player.getVelocity();
-                       // Debug.chat("Magic", magicVec.length(), magicVec2.length());
+                        //                        Vec3d magicVec2 = mc.player.getVelocity();
+                        // Debug.chat("Magic", magicVec.length(), magicVec2.length());
                     }
                     return;
                 }
@@ -250,11 +249,11 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             clone.sneak(true).sendPlayerSneakUpdatePacket();
             clone.sneak(false).sendPlayerSneakUpdatePacket();
             clone.applyInput(mc.player.input);
-            //clone.sneak(lastInput.sneak()).sendPlayerSneakUpdatePacket();
+            // clone.sneak(lastInput.sneak()).sendPlayerSneakUpdatePacket();
             Debug.chat("[NoSlow] 取消当前伪造潜行状态");
         } else {
             PacketSneakMode mode = fakeStatusBypass.get();
-            if(mc.player.isSneaking()){
+            if (mc.player.isSneaking()) {
                 var re = PlayerInputUtils.of(mc.player.input).sneak(false);
                 re.sendPlayerSneakUpdatePacket();
                 re.applyInput(mc.player.input);
@@ -266,14 +265,15 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                     // to trigger plugin events
                     input.sneak(true).sendPlayerSneakUpdatePacket();
                     input.sneak(false).sendPlayerSneakUpdatePacket();
-                    if(!mc.player.isOnGround()  && ViaFabricPlusHooks.isSupportEndTick()) {
+                    if (!mc.player.isOnGround() && ViaFabricPlusHooks.isSupportEndTick()) {
                         input.jump(true).sendPlayerInputPacket();
                         input.applyInput(mc.player.input);
                     }
-                    mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    mc.getNetworkHandler()
+                            .sendPacket(new ClientCommandC2SPacket(
+                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
                     sneakStatus = true;
                     Debug.chat("[NoSlow] 成功伪造状态");
-
                 }
                 case BAD_PACKET, INTERACT -> {
                     Entity entity;
@@ -306,84 +306,84 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                         input.sneak(false).sendPlayerSneakUpdatePacket();
                         mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
                             return new PlayerInteractEntityC2SPacket(
-                                id,
-                                true,
-                                new PlayerInteractEntityC2SPacket.InteractAtHandler(Hand.MAIN_HAND, mc.player.getPos()));
+                                    id,
+                                    true,
+                                    new PlayerInteractEntityC2SPacket.InteractAtHandler(
+                                            Hand.MAIN_HAND, mc.player.getPos()));
                         });
                         sneakStatus = true;
                         Debug.chat("[NoSlow] 成功伪造状态");
                     } else {
                         // out of interact range
                         if (entity == null
-                            || entity.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
-                            > MathUtils.s2(mc.player.getEntityInteractionRange() + 0.5)) {
+                                || entity.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
+                                        > MathUtils.s2(mc.player.getEntityInteractionRange() + 0.5)) {
                             Debug.chat("[NoSlow] 当前模式下需要一个实体以交互");
                             return;
                         }
                         Entity target = Objects.requireNonNull(entity);
                         ClientPlayerAccess.of(mc.player)
-                            .getLegalMovementManager()
-                            .addMovementModifier(new LegalMovementManager.MovementModifier() {
-                                Vec3d velocity;
+                                .getLegalMovementManager()
+                                .addMovementModifier(new LegalMovementManager.MovementModifier() {
+                                    Vec3d velocity;
 
-                                @Override
-                                public int priority() {
-                                    return PRIORITY_LOW;
-                                }
+                                    @Override
+                                    public int priority() {
+                                        return PRIORITY_LOW;
+                                    }
 
-                                @Override
-                                public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                                    ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-                                    // step back our position
-                                    velocity = args.getVelocity();
+                                    @Override
+                                    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+                                        ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+                                        // step back our position
+                                        velocity = args.getVelocity();
 
-                                    Vec3d eyePos = target.getEyePos();
-                                    Vec3d targetPos = target.getPos();
-                                    Vec3d attackOffsetted =
-                                        targetPos.add(eyePos.subtract(targetPos).multiply(0.8));
-                                    Vec3d cacheDirection = attackOffsetted
-                                        .subtract(args.getEyePos())
-                                        .normalize();
-                                    movementManagerEvent.context.pushImportantRotation(true, true);
-                                    EntityUtils.setEntityRotationSafe(args, cacheDirection);
-                                    // restore velocity after collide
-                                    args.setVelocity(velocity);
-                                    movementManagerEvent.context.markForResetRot();
-                                }
+                                        Vec3d eyePos = target.getEyePos();
+                                        Vec3d targetPos = target.getPos();
+                                        Vec3d attackOffsetted = targetPos.add(
+                                                eyePos.subtract(targetPos).multiply(0.8));
+                                        Vec3d cacheDirection = attackOffsetted
+                                                .subtract(args.getEyePos())
+                                                .normalize();
+                                        movementManagerEvent.context.pushImportantRotation(true, true);
+                                        EntityUtils.setEntityRotationSafe(args, cacheDirection);
+                                        // restore velocity after collide
+                                        args.setVelocity(velocity);
+                                        movementManagerEvent.context.markForResetRot();
+                                    }
 
-                                @Override
-                                public boolean postModify(
-                                    Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                                    if (!enabledThisTick) {
-                                        // rare,,, maybe
+                                    @Override
+                                    public boolean postModify(
+                                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+                                        if (!enabledThisTick) {
+                                            // rare,,, maybe
+                                            return false;
+                                        }
+                                        PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
+
+                                        ACTasks.addPostTransactionAction(han -> {
+                                            // to trigger plugin events
+                                            input.sneak(true).sendPlayerSneakUpdatePacket();
+                                            input.sneak(false).sendPlayerSneakUpdatePacket();
+                                            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                                            mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
+                                                return new PlayerInteractEntityC2SPacket(
+                                                        target.getId(),
+                                                        true,
+                                                        new PlayerInteractEntityC2SPacket.InteractAtHandler(
+                                                                Hand.MAIN_HAND, mc.player.getPos()));
+                                            });
+                                            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                                            Debug.chat("[NoSlow] 成功伪造状态");
+                                            sneakStatus = true;
+                                        });
+                                        // return do not kept
                                         return false;
                                     }
-                                    PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
-
-                                    ACTasks.addPostTransactionAction(han -> {
-                                        // to trigger plugin events
-                                        input.sneak(true).sendPlayerSneakUpdatePacket();
-                                        input.sneak(false).sendPlayerSneakUpdatePacket();
-                                        mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                                        mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
-                                            return new PlayerInteractEntityC2SPacket(
-                                                target.getId(),
-                                                true,
-                                                new PlayerInteractEntityC2SPacket.InteractAtHandler(
-                                                    Hand.MAIN_HAND, mc.player.getPos()));
-                                        });
-                                        mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                                        Debug.chat("[NoSlow] 成功伪造状态");
-                                        sneakStatus = true;
-                                    });
-                                    // return do not kept
-                                    return false;
-                                }
-                            });
+                                });
                     }
                 }
             }
-
         }
     }
 
@@ -519,7 +519,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             // may use MultiActionsC to resync inventory, wierd
             // MovTasks.getMovExtra().sendInputPacketsForInventoryAction();
             if (postSlot2 != -1) {
-
                 mc.interactionManager.clickSlot(handler.syncId, postSlot2, postHotbar2, SlotActionType.SWAP, mc.player);
             } else {
                 int selectedIdx;
@@ -813,7 +812,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         return true;
     }
 
-    public static enum PacketSneakMode implements ConfigEnum{
+    public static enum PacketSneakMode implements ConfigEnum {
         BAD_PACKET,
         INTERACT,
         GRIM_FALLFLYING;
@@ -823,10 +822,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             return "packet_sneak_bypass_mode";
         }
 
-        @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.packet-sneak-bypass-mode." + name().toLowerCase(Locale.ROOT));
-        }
     }
 
     public static enum UseBypassMode implements ConfigEnum {
@@ -839,9 +834,5 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             return "use_item_noslow_bypass";
         }
 
-        @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.use-item-noslow-bypass." + name().toLowerCase(Locale.ROOT));
-        }
     }
 }

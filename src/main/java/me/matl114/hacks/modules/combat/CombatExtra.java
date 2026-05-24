@@ -24,21 +24,17 @@ public class CombatExtra extends BaseModule {
 
     public final ModulePath combat = makePath(Configs.COMBAT_CONFIG, "attack");
 
-    public final DoubleRef range = doubleBuilder(combat.add("att-range"))
-            .defaultValue(0.0D)
-            .build();
+    public final DoubleRef range =
+            doubleBuilder(combat.add("att-range")).defaultValue(0.0D).build();
 
-    public final FlagRef shieldPredict = flagBuilder(combat.add("shielding-setback-log"))
-            .build();
+    public final FlagRef shieldPredict =
+            flagBuilder(combat.add("shielding-setback-log")).build();
 
-    public final FlagRef useAttack =
-            flagBuilder(combat.add( "shielding-attack")).build();
+    public final FlagRef useAttack = flagBuilder(combat.add("shielding-attack")).build();
 
-    public final FlagRef rideAttack =
-            flagBuilder(combat.add("riding-attack")).build();
+    public final FlagRef rideAttack = flagBuilder(combat.add("riding-attack")).build();
 
-    public final FlagRef noCooldown =
-            flagBuilder(combat.add("cancel-interval")).build();
+    public final FlagRef noCooldown = flagBuilder(combat.add("cancel-interval")).build();
 
     public final IntRef fallFlyVcMultiply = intBuilder(combat.add("att-ticks-predict-fallflying"))
             .defaultValue(2)

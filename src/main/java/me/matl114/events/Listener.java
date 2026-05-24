@@ -10,10 +10,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.function.*;
 import lombok.Getter;
 import me.matl114.accessors.events.ClientConnectionAccess;
 import me.matl114.events.annotations.*;
@@ -67,6 +64,7 @@ import net.minecraft.network.packet.s2c.play.ChunkSentS2CPacket;
 import net.minecraft.network.packet.s2c.play.StartChunkSendS2CPacket;
 import net.minecraft.network.packet.s2c.query.PingResultS2CPacket;
 import net.minecraft.recipe.NetworkRecipeId;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -215,13 +213,12 @@ public class Listener {
             Class<T> clazz, BiPredicate<ClientConnection, T> predicate) {
         getPacketListenerPoint(clazz).registerHandler(wrapListener(predicate));
     }
+
     @Getter
     public static ClientConnection clientConnection;
 
-
     public static ClientConnectionAccess getConnectionAccess() {
-        return ClientConnectionAccess.of(
-                clientConnection);
+        return ClientConnectionAccess.of(clientConnection);
     }
 
     public static Packet<?> acceptS2CPacket(ClientConnection connection, Packet<?> packet) {
@@ -382,6 +379,18 @@ public class Listener {
     @Broadcast
     @ExtraArgs({RecipeBookWidget.class, ButtonWidget.class})
     private static final EventChannel<RecipeBookProvider> postToggleRecipeBook = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    @ExtraArgs({int.class, int.class, int.class})
+    private static final EventChannelDispatcher<SlotActionType> preClickSlot =
+            new EventChannelDispatcher<>(Function.identity());
+
+    @Getter
+    @Broadcast
+    @ExtraArgs({int.class, int.class, int.class})
+    private static final EventChannelDispatcher<SlotActionType> postClickSlot =
+            new EventChannelDispatcher<>(Function.identity());
 
     @Getter
     @Broadcast
@@ -849,21 +858,25 @@ public class Listener {
         postPlayerUseItemAtBlock.handleValue(event);
     }
 
-    public static void onClientConnectionEstablish(Event<ClientConnection> event){
-        if(event.getArgs(0) == NetworkSide.CLIENTBOUND && event.getArgs(1) instanceof ClientCookieRequestPacketListener){
+    public static void onClientConnectionEstablish(Event<ClientConnection> event) {
+        if (event.getArgs(0) == NetworkSide.CLIENTBOUND
+                && event.getArgs(1) instanceof ClientCookieRequestPacketListener) {
             clientConnection = event.context;
-            Tasks.scheduleRepeated(()->{
-                // after the connection
-                if(clientConnection != null && clientConnection.isChannelAbsent() && !clientConnection.isOpen()){
-                    clientConnection = null;
-                    return true;
-                }
-                return false;
-            }, 20, 20);
+            Tasks.scheduleRepeated(
+                    () -> {
+                        // after the connection
+                        if (clientConnection != null
+                                && clientConnection.isChannelAbsent()
+                                && !clientConnection.isOpen()) {
+                            clientConnection = null;
+                            return true;
+                        }
+                        return false;
+                    },
+                    20,
+                    20);
         }
     }
-
-
 
     static {
         Listener.getPacketPreHandlePoint()
@@ -875,8 +888,8 @@ public class Listener {
                 .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
         Listener.getPacketPostSendPoint()
                 .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
-        Listener.getConnectionEstablish().registerHandler((Consumer<Event<ClientConnection>>) Listener::onClientConnectionEstablish);
-
+        Listener.getConnectionEstablish()
+                .registerHandler((Consumer<Event<ClientConnection>>) Listener::onClientConnectionEstablish);
     }
 
     public static boolean handleException(Throwable e, ExceptionType type, Object... objects) {

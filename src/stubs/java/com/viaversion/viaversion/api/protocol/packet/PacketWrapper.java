@@ -9,11 +9,15 @@ import org.jspecify.annotations.Nullable;
 public interface PacketWrapper {
     int PASSTHROUGH_ID = 1000;
 
-    static PacketWrapper create(com.viaversion.viaversion.api.protocol.packet.PacketType packetType, UserConnection connection) {
+    static PacketWrapper create(
+            com.viaversion.viaversion.api.protocol.packet.PacketType packetType, UserConnection connection) {
         return null;
     }
 
-    static PacketWrapper create(com.viaversion.viaversion.api.protocol.packet.PacketType packetType, @Nullable ByteBuf inputBuffer, UserConnection connection) {
+    static PacketWrapper create(
+            com.viaversion.viaversion.api.protocol.packet.PacketType packetType,
+            @Nullable ByteBuf inputBuffer,
+            UserConnection connection) {
         return null;
     }
 
@@ -23,7 +27,7 @@ public interface PacketWrapper {
         return null;
     }
 
-    <T> T get(Type<T> var1, int var2) ;
+    <T> T get(Type<T> var1, int var2);
 
     /** @deprecated */
     @Deprecated
@@ -31,44 +35,43 @@ public interface PacketWrapper {
 
     boolean isReadable(Type var1, int var2);
 
-    <T> void set(Type<T> var1, int var2, @Nullable T var3) ;
+    <T> void set(Type<T> var1, int var2, @Nullable T var3);
 
-    <T> T read(Type<T> var1) ;
+    <T> T read(Type<T> var1);
 
     <T> void write(Type<T> var1, @Nullable T var2);
 
-    <T> T passthrough(Type<T> var1) ;
+    <T> T passthrough(Type<T> var1);
 
-    <T> T passthroughAndMap(Type<?> var1, Type<T> var2) ;
+    <T> T passthroughAndMap(Type<?> var1, Type<T> var2);
 
-    void passthroughAll() ;
+    void passthroughAll();
 
-    void writeToBuffer(ByteBuf var1) ;
+    void writeToBuffer(ByteBuf var1);
 
     void clearInputBuffer();
 
     void clearPacket();
 
-    default void send(Class protocol)  {
+    default void send(Class protocol) {
         this.send(protocol, true);
     }
 
-    void send(Class var1, boolean var2) ;
+    void send(Class var1, boolean var2);
 
-    default void scheduleSend(Class protocol)  {
+    default void scheduleSend(Class protocol) {
         this.scheduleSend(protocol, true);
     }
 
-    void scheduleSend(Class var1, boolean var2) ;
+    void scheduleSend(Class var1, boolean var2);
 
-    ChannelFuture sendFuture(Class var1) ;
+    ChannelFuture sendFuture(Class var1);
 
-    void sendRaw() ;
+    void sendRaw();
 
-    ChannelFuture sendFutureRaw() ;
+    ChannelFuture sendFutureRaw();
 
-    void scheduleSendRaw() ;
-
+    void scheduleSendRaw();
 
     boolean isCancelled();
 
@@ -82,21 +85,21 @@ public interface PacketWrapper {
 
     void resetReader();
 
-    void sendToServerRaw() ;
+    void sendToServerRaw();
 
-    void scheduleSendToServerRaw() ;
+    void scheduleSendToServerRaw();
 
-    default void sendToServer(Class protocol)  {
+    default void sendToServer(Class protocol) {
         this.sendToServer(protocol, true);
     }
 
-    void sendToServer(Class var1, boolean var2) ;
+    void sendToServer(Class var1, boolean var2);
 
-    default void scheduleSendToServer(Class protocol)  {
+    default void scheduleSendToServer(Class protocol) {
         this.scheduleSendToServer(protocol, true);
     }
 
-    void scheduleSendToServer(Class var1, boolean var2) ;
+    void scheduleSendToServer(Class var1, boolean var2);
 
     @Nullable
     PacketType getPacketType();
@@ -109,4 +112,3 @@ public interface PacketWrapper {
     @Deprecated
     void setId(int var1);
 }
-

@@ -53,28 +53,29 @@ public class TargetSelector extends BaseModule {
             .validator(Configs.REGEX_VALIDATOR)
             .build();
 
-    public final FlagRef attackNamedEntity = builder(attack.add("att-named"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final FlagRef attackNamedEntity =
+            builder(attack.add("att-named"), Boolean.class).defaultValue(true).build();
 
     @ApiStatus.Experimental
     public final FlagRef teamMate = builder(attack.add("att-teammate"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef hostile = builder(attack.add("att-hostile"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final FlagRef hostile =
+            builder(attack.add("att-hostile"), Boolean.class).defaultValue(true).build();
 
-    public final FlagRef invulnerable = flagBuilder(attack.add("att-invulnerable")).build();
+    public final FlagRef invulnerable =
+            flagBuilder(attack.add("att-invulnerable")).build();
 
-    public final FlagRef multiplyBackward = flagBuilder(attack.add("opposite-attack-multiply")).build();
+    public final FlagRef multiplyBackward =
+            flagBuilder(attack.add("opposite-attack-multiply")).build();
 
     public final DoubleRef multiplyPlayer = builder(attack.add("player-attack-multiply"), DoubleRef.TYPE)
             .defaultValue(0.0D)
             .build();
 
-    public final FlagRef fakePlayerDetect = flagBuilder(attack.add("fake-player-and-npc-detect")).build();
+    public final FlagRef fakePlayerDetect =
+            flagBuilder(attack.add("fake-player-and-npc-detect")).build();
 
     {
         if (Configs.COMBAT_CONFIG.get("att-bot", "whitelist") instanceof StringRef stringRef

@@ -47,7 +47,8 @@ public class BowTp extends BaseModule {
     }
 
     public final FlagRef enable = flagBuilder(bowAtt.add("bowtp-enable")).build();
-    public KeyBindRef keyBind = moduleEntry(bowAtt.add("bowtp-enable-hotkey"), new MultiKeyBind(), bowAtt.add("bowtp-enable"))
+    public KeyBindRef keyBind = moduleEntry(
+                    bowAtt.add("bowtp-enable-hotkey"), new MultiKeyBind(), bowAtt.add("bowtp-enable"))
             .build();
 
     public DoubleRef tpDistance = builder(bowAtt.add("bowtp-distance"), DoubleRef.TYPE)

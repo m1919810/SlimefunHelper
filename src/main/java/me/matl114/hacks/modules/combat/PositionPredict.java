@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.combat;
 
-import java.util.Locale;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -17,7 +16,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ShieldItem;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -28,16 +26,15 @@ public class PositionPredict extends BaseModule {
 
     public PositionPredict() {}
 
-    public final IntRef attackPredictTick = intBuilder(attack.add("pos-predict-tick"))
-            .defaultValue(2)
-            .build();
+    public final IntRef attackPredictTick =
+            intBuilder(attack.add("pos-predict-tick")).defaultValue(2).build();
 
     public final FlagRef enableNoShield = builder(attBot.add("exact-tp-anti-shield"), Boolean.class)
             .defaultValue(false)
             .build();
 
-    public final EnumRef<PredictMode> predictMode = builder(attack.add("pos-predict-mode"), PredictMode.class)
-            .defaultValue(PredictMode.QUADRATIC)
+    public final EnumRef<Mode> predictMode = builder(attack.add("pos-predict-mode"), Mode.class)
+            .defaultValue(Mode.QUADRATIC)
             .build();
 
     @Override
@@ -135,15 +132,17 @@ public class PositionPredict extends BaseModule {
         }
     }
 
-    public enum PredictMode implements ConfigEnum {
+    public enum Mode implements ConfigEnum {
         NO_PREDICT,
         LINEAR,
         QUADRATIC,
         PREDICTOR_NV;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.predict-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "predict_mode";
         }
+
+
     }
 }

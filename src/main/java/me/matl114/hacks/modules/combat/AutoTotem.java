@@ -21,10 +21,12 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -44,16 +46,19 @@ public class AutoTotem extends BaseModule {
 
     public final FlagRef smartTotem = flagBuilder(totem.add("smart-auto-totem")).build();
 
-    public final NBTRef<RegistryRegex<Item>> enableHandItems =
-            builder(totem.add("enable-hand-items"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
-                    .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.ITEM))
-                    .build();
+    public final NBTRef<RegistryRegex<Item>> enableHandItems = builder(
+                    totem.add("enable-hand-items"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
+            .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.ITEM))
+            .build();
+
+    public final FlagRef antiMiss = flagBuilder(totem.add("anti-miss")).build();
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+        registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotem);
     }
 
     private boolean canBeAccepted(ItemStack ex) {
@@ -121,6 +126,31 @@ public class AutoTotem extends BaseModule {
                 int random = totemList.getInt(inventorRandom.nextInt(totemList.size()));
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 InvTasks.clickSlotAsync(random, 40, SlotActionType.SWAP);
+            }
+        }
+    }
+
+    public void onTotem(Event<EntityStatusS2CPacket> eventTotem) {
+        if (checkNull()) return;
+        if (enable.get()
+                && antiMiss.get()
+                && eventTotem.context.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING
+                && eventTotem.context.getEntity(mc.world) == mc.player) {
+            ItemStack stackInMainHand = mc.player.getMainHandStack();
+            ItemStack stackInOffHand = mc.player.getOffHandStack();
+            int consumeSlot = stackInMainHand.getItem() == Items.TOTEM_OF_UNDYING
+                    ? mc.player.getInventory().getSelectedSlot()
+                    : 40;
+            ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+            List<Slot> slots = handled.slots;
+            for (var i = 0; i < slots.size(); ++i) {
+                if (i != consumeSlot
+                        && slots.get(i).inventory instanceof PlayerInventory
+                        && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
+                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                    InvTasks.clickSlotAsync(i, consumeSlot, SlotActionType.SWAP);
+                    return;
+                }
             }
         }
     }

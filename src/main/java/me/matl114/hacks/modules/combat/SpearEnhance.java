@@ -20,7 +20,8 @@ public class SpearEnhance extends BaseModule {
 
     public SpearEnhance() {}
 
-    public final FlagRef spearAutoRestart = flagBuilder(spearModule.add("spear-auto-restart")).build();
+    public final FlagRef spearAutoRestart =
+            flagBuilder(spearModule.add("spear-auto-restart")).build();
 
     @Override
     public void registerAll() {

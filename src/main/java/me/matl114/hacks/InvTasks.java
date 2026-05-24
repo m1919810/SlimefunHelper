@@ -20,7 +20,6 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.inv.*;
 import me.matl114.hacks.utils.ItemCache;
 import me.matl114.managers.*;
-import me.matl114.managers.config.IntRef;
 import me.matl114.utils.*;
 import me.matl114.utils.inventory.ItemStackSample;
 import me.matl114.utils.itemdb.ItemStackData;
@@ -47,7 +46,6 @@ import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
@@ -937,9 +935,6 @@ public class InvTasks {
         return;
     }
 
-
-
-
     // track tileEntity screen,
     private static BlockHitResult lastInteract = null;
     private static int lastInteractTimestamp = -1;
@@ -973,38 +968,44 @@ public class InvTasks {
 
     public static void onOpenScreen(Event<OpenScreenS2CPacket> packet) {
         LAST_SYNC_ID = packet.context.getSyncId();
-
     }
 
-    public static void onOpenScreenCreate(Event<HandledScreen<?>> eventScreen){
-        if(eventScreen.context != null && eventScreen.context.getScreenHandler() != null){
+    public static void onOpenScreenCreate(Event<HandledScreen<?>> eventScreen) {
+        if (eventScreen.context != null && eventScreen.context.getScreenHandler() != null) {
             historyScreens.addLast(eventScreen.context.getScreenHandler());
         }
-        while (historyScreens.size() > MAX_DEQUE_SIZE){
+        while (historyScreens.size() > MAX_DEQUE_SIZE) {
             historyScreens.removeFirst();
         }
     }
 
-    public static void onInventoryOld(Event<ScreenHandlerSlotUpdateS2CPacket> invS2CPacket){
+    public static void onInventoryOld(Event<ScreenHandlerSlotUpdateS2CPacket> invS2CPacket) {
         int syncId = invS2CPacket.context.getSyncId();
-        if(mc.interactionManager.getCurrentGameMode().isSurvivalLike() && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId != syncId && mc.player.currentScreenHandler.syncId != syncId && syncId != 0){
+        if (mc.interactionManager.getCurrentGameMode().isSurvivalLike()
+                && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId != syncId
+                && mc.player.currentScreenHandler.syncId != syncId
+                && syncId != 0) {
             // maybe we click too fast that we miss something
             var pkt = invS2CPacket.context;
-            for (var handler : historyScreens){
-                if(handler.syncId == syncId){
+            for (var handler : historyScreens) {
+                if (handler.syncId == syncId) {
                     handler.setStackInSlot(pkt.getSlot(), pkt.getRevision(), pkt.getStack());
                     return;
                 }
             }
         }
     }
-    public static void onInventoryOld2(Event<InventoryS2CPacket> eventInv){
+
+    public static void onInventoryOld2(Event<InventoryS2CPacket> eventInv) {
         int syncId = eventInv.context.syncId();
-        if(mc.interactionManager.getCurrentGameMode().isSurvivalLike() && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId != syncId && mc.player.currentScreenHandler.syncId != syncId && syncId != 0){
+        if (mc.interactionManager.getCurrentGameMode().isSurvivalLike()
+                && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId != syncId
+                && mc.player.currentScreenHandler.syncId != syncId
+                && syncId != 0) {
             // maybe we click too fast that we miss something
             var pkt = eventInv.context;
-            for (var handler : historyScreens){
-                if(handler.syncId == syncId){
+            for (var handler : historyScreens) {
+                if (handler.syncId == syncId) {
                     handler.updateSlotStacks(pkt.revision(), pkt.contents(), pkt.cursorStack());
                     return;
                 }
@@ -1114,8 +1115,12 @@ public class InvTasks {
         Listener.getPacketPoint().getChannel(OpenScreenS2CPacket.class).registerHandler(InvTasks::onOpenScreen);
         Listener.getGameJoinPoint().registerHandler(InvTasks::onGameJoin);
         Listener.getPostOpenHandledScreen().registerHandler(InvTasks::onOpenScreenCreate);
-        Listener.getPacketPostHandlePoint().getChannel(ScreenHandlerSlotUpdateS2CPacket.class).registerHandler(InvTasks::onInventoryOld);
-        Listener.getPacketPostHandlePoint().getChannel(InventoryS2CPacket.class).registerHandler(InvTasks::onInventoryOld2);
+        Listener.getPacketPostHandlePoint()
+                .getChannel(ScreenHandlerSlotUpdateS2CPacket.class)
+                .registerHandler(InvTasks::onInventoryOld);
+        Listener.getPacketPostHandlePoint()
+                .getChannel(InventoryS2CPacket.class)
+                .registerHandler(InvTasks::onInventoryOld2);
         moduleManager.registerFactories(InvTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
         clickExecutor = new LimitedSpeedExecutor(invExtra.inventoryClickLimit);

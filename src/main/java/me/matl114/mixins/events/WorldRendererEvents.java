@@ -39,6 +39,9 @@ public abstract class WorldRendererEvents {
             Vector4f fogColor,
             boolean renderSky,
             CallbackInfo ci) {
+        RenderListener.setWorldModelViewMatrix(new Matrix4f(positionMatrix));
+        RenderListener.setWorldBasicProjectionMatrix(new Matrix4f(basicProjectionMatrix));
+        RenderListener.setWorldProjectionMatrix(new Matrix4f(projectionMatrix));
         MatrixStack matrixStack = new MatrixStack();
         matrixStack.multiplyPositionMatrix(positionMatrix);
         RenderListener.renderWorldTasks(matrixStack, tickCounter.getTickProgress(false));

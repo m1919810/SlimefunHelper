@@ -59,10 +59,10 @@ public class Configs {
             return this == LegalTargetingMode.LEGACY_SLIENT_ROT;
         }
 
+
         @Override
-        public Text getDisplay() {
-            return Text.translatable(
-                    "configenum.legal-targeting-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "legal_targeting_mode";
         }
     }
 
@@ -75,9 +75,8 @@ public class Configs {
         ;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable(
-                    "configenum.legal-interact-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "legal_interact_mode";
         }
 
         public boolean isLegal() {
@@ -98,9 +97,10 @@ public class Configs {
         }
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.bypass-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "bypass_mode";
         }
+
     }
 
     public enum MineTargetingMode implements ConfigEnum {
@@ -112,21 +112,20 @@ public class Configs {
         public boolean hasSwing() {
             return this != NO_BYPASS;
         }
-
         @Override
-        public Text getDisplay() {
-            return Text.translatable(
-                    "configenum.mine-targeting-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "mine_targeting_mode";
         }
     }
 
     public enum AutoInvMode implements ConfigEnum {
         LAZY,
         TICK;
-
-        public Text getDisplay() {
-            return Text.translatable("configenum.auto-inv-mode." + this.name().toLowerCase(Locale.ROOT));
+        @Override
+        public String getConfigEnumType() {
+            return "auto_inv_mode";
         }
+
     }
 
     public enum SetBackTriggerType implements ConfigEnum {
@@ -134,9 +133,8 @@ public class Configs {
         CRASH_PACKETS;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable(
-                    "configenum.setback-trigger-type." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "setback_trigger_type";
         }
     }
 

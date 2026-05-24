@@ -1,9 +1,8 @@
 package me.matl114.hacks.modules;
 
+import java.util.Collection;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.utils.ApiMethod;
-
-import java.util.Collection;
 
 @ApiMethod
 public class HackModules {
@@ -18,7 +17,7 @@ public class HackModules {
         return main.moduleGroups.get(name);
     }
 
-    public static Collection<ModuleGroup> getModuleGroups(){
+    public static Collection<ModuleGroup> getModuleGroups() {
         return main.moduleGroups.values();
     }
 

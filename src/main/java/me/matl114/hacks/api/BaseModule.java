@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -140,10 +139,10 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
     }
     // this is also for convenience
     private final Set<ListenerPoint<?>> registeredPoints = new LinkedHashSet<>();
-    //todo; make this hand-register
+    // todo; make this hand-register
     private final List<ModuleEntry> registeredModuleEntry = new ArrayList<>();
 
-    public Stream<ModuleEntry> getModuleEntries(){
+    public Stream<ModuleEntry> getModuleEntries() {
         return registeredModuleEntry.stream();
     }
 
@@ -221,11 +220,11 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
         return flagBuilder(path.getConfig(), path.toPath());
     }
 
-    public WrapperSettingBuilder<Integer> intBuilder(ModulePath path){
+    public WrapperSettingBuilder<Integer> intBuilder(ModulePath path) {
         return builder(path.getConfig(), path.toPath(), IntRef.TYPE);
     }
 
-    public WrapperSettingBuilder<Double> doubleBuilder(ModulePath path){
+    public WrapperSettingBuilder<Double> doubleBuilder(ModulePath path) {
         return builder(path.getConfig(), path.toPath(), DoubleRef.TYPE);
     }
 
@@ -259,40 +258,45 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
     }
 
     public WrapperSettingBuilder<MultiKeyBind> moduleEntry(
-        ModulePath hotkeyPath, MultiKeyBind defaultValue, ModulePath togglePath, Supplier<Text> descriptor) {
+            ModulePath hotkeyPath, MultiKeyBind defaultValue, ModulePath togglePath, Supplier<Text> descriptor) {
         return moduleEntry(hotkeyPath.getConfig(), hotkeyPath.toPath(), defaultValue, togglePath.toPath(), descriptor);
     }
 
     public WrapperSettingBuilder<MultiKeyBind> moduleEntry(
-        Config config, String[] hotkeyPath, MultiKeyBind defaultValue, String[] togglePath) {
-        return new WrapperModuleSettingBuilder(config.asRef(), config,this,new ModuleEntry(config, togglePath , hotkeyPath))
-            .defaultValue(defaultValue)
-            .registerHotkey(TaskManagers.getToggleHandler(config, togglePath))
-            .registerModuleEntry()
-            ;
+            Config config, String[] hotkeyPath, MultiKeyBind defaultValue, String[] togglePath) {
+        return new WrapperModuleSettingBuilder(
+                        config.asRef(), config, this, new ModuleEntry(config, togglePath, hotkeyPath))
+                .defaultValue(defaultValue)
+                .registerHotkey(TaskManagers.getToggleHandler(config, togglePath))
+                .registerModuleEntry();
     }
-
 
     public WrapperSettingBuilder<MultiKeyBind> moduleEntry(
-        Config config, String[] hotkeyPath, MultiKeyBind defaultValue, String[] togglePath, Supplier<Text> descriptor) {
-        return new WrapperModuleSettingBuilder(config.asRef(), config,this,new MetaDataModuleEntry(config, togglePath , hotkeyPath, descriptor))
-            .defaultValue(defaultValue)
-            .registerHotkey(TaskManagers.getToggleHandler(config, togglePath))
-            .registerModuleEntry()
-            ;
+            Config config,
+            String[] hotkeyPath,
+            MultiKeyBind defaultValue,
+            String[] togglePath,
+            Supplier<Text> descriptor) {
+        return new WrapperModuleSettingBuilder(
+                        config.asRef(),
+                        config,
+                        this,
+                        new MetaDataModuleEntry(config, togglePath, hotkeyPath, descriptor))
+                .defaultValue(defaultValue)
+                .registerHotkey(TaskManagers.getToggleHandler(config, togglePath))
+                .registerModuleEntry();
     }
 
     public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(
-        Config config, String[] path, MultiKeyBind defaultValue, String[] togglePath){
-        return new WrapperSettingBuilder<>(config.asRef(), config,KeyBindRef.TYPE, this)
-            .path(path)
-            .defaultValue(defaultValue)
-            .registerHotkey(TaskManagers.getToggleHandler(config, togglePath))
-            ;
+            Config config, String[] path, MultiKeyBind defaultValue, String[] togglePath) {
+        return new WrapperSettingBuilder<>(config.asRef(), config, KeyBindRef.TYPE, this)
+                .path(path)
+                .defaultValue(defaultValue)
+                .registerHotkey(TaskManagers.getToggleHandler(config, togglePath));
     }
 
     public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(
-        Config config, ModulePath path, MultiKeyBind defaultValue, ModulePath togglePath) {
+            Config config, ModulePath path, MultiKeyBind defaultValue, ModulePath togglePath) {
         return toggleHotkey(config, path.toPath(), defaultValue, togglePath.toPath());
     }
 
@@ -345,6 +349,25 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
 
     @Override
     public void saveGui(SubScreenWidget gui) {}
+
+    public static Text getModuleMeta(Enum<?> enumReff){
+        ConfigEnum configEnum = (ConfigEnum) enumReff;
+        return Text.translatable("module-meta." + configEnum.getConfigEnumType().replace("_", "-") + "." + enumReff.name().toLowerCase(Locale.ROOT));
+    }
+
+    public static Supplier<Text> moduleMeta(Supplier<EnumRef<?>> enumReff){
+        return new Supplier<Text>() {
+            String suffix;
+            @Override
+            public Text get() {
+                if(suffix == null){
+                    ConfigEnum configEnum = enumReff.get().get();
+                    suffix = "module-meta." + configEnum.getConfigEnumType().replace("_", "-") + ".";
+                }
+                return Text.translatable(suffix + enumReff.get().get().cast().name().toLowerCase(Locale.ROOT));
+            }
+        };
+    }
 
     // named consumer to mark who's owner
     @Getter
@@ -428,7 +451,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
             return this;
         }
 
-        public WrapperSettingBuilder<W> registerModuleEntry(){
+        public WrapperSettingBuilder<W> registerModuleEntry() {
             throw new UnsupportedOperationException();
         }
         //
@@ -446,24 +469,26 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
 
     public static class WrapperModuleSettingBuilder extends WrapperSettingBuilder<MultiKeyBind> {
         ModuleEntry moduleEntry;
+
         public WrapperModuleSettingBuilder(MapRef ref, Config rootConfig, BaseModule module, ModuleEntry moduleEntry) {
             super(ref, rootConfig, KeyBindRef.TYPE, module);
             this.moduleEntry = moduleEntry;
             this.path(moduleEntry.hotkeyPath);
         }
+
         boolean registered = false;
 
-        public WrapperSettingBuilder<MultiKeyBind> registerModuleEntry(){
+        public WrapperSettingBuilder<MultiKeyBind> registerModuleEntry() {
             registered = true;
             return this;
         }
 
-        public <W2 extends Ref<MultiKeyBind>> W2 build(){
-             W2 val = super.build();
-             if(registered){
-                 this.module.registeredModuleEntry.add(this.moduleEntry);
-             }
-             return val;
+        public <W2 extends Ref<MultiKeyBind>> W2 build() {
+            W2 val = super.build();
+            if (registered) {
+                this.module.registeredModuleEntry.add(this.moduleEntry);
+            }
+            return val;
         }
     }
 
@@ -492,5 +517,4 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
             return registerReason;
         }
     }
-
 }

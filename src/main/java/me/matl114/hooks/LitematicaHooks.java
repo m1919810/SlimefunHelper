@@ -6,7 +6,6 @@ import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
-import lombok.Getter;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.world.World;
@@ -23,9 +22,9 @@ public abstract class LitematicaHooks implements IHooks {
 
     public static LitematicaHooks getInstance() {
         if (instance == null) {
-            try{
+            try {
                 instance = new Impl();
-            }catch (Throwable e){
+            } catch (Throwable e) {
                 instance = new Default();
             }
         }
@@ -34,25 +33,26 @@ public abstract class LitematicaHooks implements IHooks {
 
     public static class Impl extends LitematicaHooks {
         public static final MethodHandle easyPlaceHandle;
+
         static {
             try {
                 var lookup = MethodHandles.privateLookupIn(EasyPlaceUtils.class, MethodHandles.lookup());
                 Method method = EasyPlaceUtils.class.getDeclaredMethod(
-                    "getClickPosition", BlockHitResult.class, BlockState.class, BlockState.class);
+                        "getClickPosition", BlockHitResult.class, BlockState.class, BlockState.class);
                 method.setAccessible(true);
                 easyPlaceHandle = lookup.unreflect(method);
             } catch (Throwable e) {
                 throw new RuntimeException(e);
             }
         }
+
         public Impl() {
             Class<?> clazz = SchematicWorldHandler.class;
         }
 
-
         @Override
         public BlockHitResult getEasyPlaceClickedPosition(
-            BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
+                BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
             try {
                 return (BlockHitResult) easyPlaceHandle.invokeExact(blockHitResult, blockState, blockState2);
             } catch (Throwable e) {
@@ -84,7 +84,8 @@ public abstract class LitematicaHooks implements IHooks {
         }
 
         @Override
-        public BlockHitResult getEasyPlaceClickedPosition(BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
+        public BlockHitResult getEasyPlaceClickedPosition(
+                BlockHitResult blockHitResult, BlockState blockState, BlockState blockState2) {
             return null;
         }
 

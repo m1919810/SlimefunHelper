@@ -478,6 +478,9 @@ public class RenderTasks {
     public static EntityESP entityESP;
 
     @Getter
+    public static NameTag nameTag;
+
+    @Getter
     public static ItemESP itemESP;
 
     @Getter
@@ -511,6 +514,7 @@ public class RenderTasks {
         renderExtra = new RenderExtra().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);
+        nameTag = new NameTag().register(m);
         chestESP = new ChestESP().register(m);
         itemESP = new ItemESP().register(m);
         worldScanner = new WorldScanner().register(m);

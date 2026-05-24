@@ -48,23 +48,15 @@ public class MineBot extends BaseModule {
     public final FlagRef enable = flagBuilder(mineBot.addEnable()).build();
 
     public final KeyBindRef keyBind = moduleEntry(
-                    mineBot.addHotkey(),
-                    new MultiKeyBind(),
-                    mineBot.addEnable(), ()-> this.mineBotMode.get().getDisplay()
-        )
+                    mineBot.addHotkey(), new MultiKeyBind(), mineBot.addEnable(), moduleMeta(()-> this.mineBotMode))
             .build();
 
-    public final IntRef minY = intBuilder(mineBot.add("min-dy"))
-            .defaultValue(0)
-            .build();
+    public final IntRef minY = intBuilder(mineBot.add("min-dy")).defaultValue(0).build();
 
-    public final IntRef maxY = intBuilder(mineBot.add("max-dy"))
-            .defaultValue(6)
-            .build();
+    public final IntRef maxY = intBuilder(mineBot.add("max-dy")).defaultValue(6).build();
 
     public final NBTRef<RegistryRegex<Block>> whiteListBlockRegex = builder(
-                    mineBot.add("whitelist"),
-                    NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
+                    mineBot.add("whitelist"), NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(cobblestone|stone|.*ore)$"), Registries.BLOCK))
             .build();
 
@@ -77,10 +69,8 @@ public class MineBot extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final IntRef maxInstaMine = intBuilder(mineBot.add("max-instant-mine"))
-
-            .defaultValue(30)
-            .build();
+    public final IntRef maxInstaMine =
+            intBuilder(mineBot.add("max-instant-mine")).defaultValue(30).build();
 
     public final IntRef multiplePackets = intBuilder(mineBot.add("multiple-packets"))
             .defaultValue(1)
@@ -96,8 +86,8 @@ public class MineBot extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public final FlagRef rightClickMode = flagBuilder(mineBot.add("right-click"))
-            .build();
+    public final FlagRef rightClickMode =
+            flagBuilder(mineBot.add("right-click")).build();
 
     private boolean isMineable(BlockState state) {
         if (state != null && !state.isAir() && !state.isLiquid()) {
@@ -337,8 +327,8 @@ public class MineBot extends BaseModule {
         AUTO_TOOL;
 
         @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.mine-bot-mode." + this.name().toLowerCase(Locale.ROOT));
+        public String getConfigEnumType() {
+            return "mine_bot_mode";
         }
     }
 

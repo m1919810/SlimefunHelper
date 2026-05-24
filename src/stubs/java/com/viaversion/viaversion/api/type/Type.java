@@ -1,4 +1,3 @@
 package com.viaversion.viaversion.api.type;
 
-public class Type<T>{
-}
+public class Type<T> {}

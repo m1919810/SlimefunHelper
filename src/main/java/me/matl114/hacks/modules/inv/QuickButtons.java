@@ -24,7 +24,8 @@ import net.minecraft.text.Text;
 
 public class QuickButtons extends BaseModule {
     public final ModulePath quickButtons = makePath(Configs.INV_CONFIG, "quick-buttons");
-    public final FlagRef enable = flagBuilder(quickButtons.add("enable-buttons")).build();
+    public final FlagRef enable =
+            flagBuilder(quickButtons.add("enable-buttons")).build();
 
     public QuickButtons() {
         bindFlag(enable);

@@ -28,52 +28,47 @@ public class AutoLogout extends BaseModule {
     }
 
     // 总开关
-    public final FlagRef enable =
-            flagBuilder(autoLogout.add("enable")).build();
+    public final FlagRef enable = flagBuilder(autoLogout.add("enable")).build();
 
     public final KeyBindRef keyBindRef = moduleEntry(
-                    autoLogout.add("hotkey"),
-                    new MultiKeyBind(),
-                    autoLogout.add("enable"))
+                    autoLogout.add("hotkey"), new MultiKeyBind(), autoLogout.add("enable"))
             .build();
 
     // 1. 血量相关
-    public final FlagRef healthEnable = flagBuilder(autoLogout.add("health").add("enable"))
-            .build();
-    public final IntRef healthThreshold = builder(
-                    autoLogout.add("health").add("threshold"), IntRef.TYPE)
+    public final FlagRef healthEnable =
+            flagBuilder(autoLogout.add("health").add("enable")).build();
+    public final IntRef healthThreshold = builder(autoLogout.add("health").add("threshold"), IntRef.TYPE)
             .defaultValue(4)
             .build();
 
     // 2. 不死图腾剩余数量相关
-    public final FlagRef totemLeftEnable = flagBuilder(autoLogout.add("totem-left").add("enable"))
-            .build();
+    public final FlagRef totemLeftEnable =
+            flagBuilder(autoLogout.add("totem-left").add("enable")).build();
     public final IntRef totemLeftThreshold = builder(
                     autoLogout.add("totem-left").add("threshold"), IntRef.TYPE)
             .defaultValue(1)
             .build();
 
     // 3. 图腾触发时自动退出
-    public final FlagRef totemTriggerEnable = flagBuilder(
-                    autoLogout.add("totem-trigger").add("enable"))
-            .build();
+    public final FlagRef totemTriggerEnable =
+            flagBuilder(autoLogout.add("totem-trigger").add("enable")).build();
 
-    public final IntRef totemTriggerCheckLeftTotem = builder(autoLogout.add("totem-trigger").add("threshold"), IntRef.TYPE)
-        .defaultValue(99)
-        .build();
+    public final IntRef totemTriggerCheckLeftTotem = builder(
+                    autoLogout.add("totem-trigger").add("threshold"), IntRef.TYPE)
+            .defaultValue(99)
+            .build();
 
     // 4. 最低高度相关
-    public final FlagRef minHeightEnable = flagBuilder(autoLogout.add("min-height").add("enable"))
-            .build();
+    public final FlagRef minHeightEnable =
+            flagBuilder(autoLogout.add("min-height").add("enable")).build();
     public final IntRef minHeightThreshold = builder(
                     autoLogout.add("min-height").add("threshold"), IntRef.TYPE)
             .defaultValue(256)
             .build();
 
     // 5. 陌生玩家出现
-    public final FlagRef strangerPlayerEnable = flagBuilder(
-                    autoLogout.add("stranger-player").add("enable"))
-            .build();
+    public final FlagRef strangerPlayerEnable =
+            flagBuilder(autoLogout.add("stranger-player").add("enable")).build();
 
     @Override
     public void registerAll() {
@@ -92,7 +87,8 @@ public class AutoLogout extends BaseModule {
                 return;
             }
             if (totemLeftEnable.get()) {
-                double cnt = InventoryUtils.computeInventory((v)-> v.getItem() == Items.TOTEM_OF_UNDYING ? (double)v.getCount() : null, false);
+                double cnt = InventoryUtils.computeInventory(
+                        (v) -> v.getItem() == Items.TOTEM_OF_UNDYING ? (double) v.getCount() : null, false);
                 if (cnt <= totemLeftThreshold.get()) {
                     MainTasks.scheduleDisconnect();
                     return;
@@ -115,8 +111,9 @@ public class AutoLogout extends BaseModule {
             Entity entity = statusS2CPacket.getEntity(mc.world);
             if (entity != null && entity.getId() == mc.player.getId()) {
                 int leftTotem = totemTriggerCheckLeftTotem.get();
-                double cnt = InventoryUtils.computeInventory((v)-> v.getItem() == Items.TOTEM_OF_UNDYING ? (double)v.getCount() : null, false);
-                if(cnt <= leftTotem) {
+                double cnt = InventoryUtils.computeInventory(
+                        (v) -> v.getItem() == Items.TOTEM_OF_UNDYING ? (double) v.getCount() : null, false);
+                if (cnt <= leftTotem) {
                     MainTasks.scheduleDisconnect();
                     return;
                 }

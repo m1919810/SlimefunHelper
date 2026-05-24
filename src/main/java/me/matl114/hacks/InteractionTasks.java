@@ -165,13 +165,12 @@ public class InteractionTasks {
                     }
                     var hand = pair.getRight();
                     var result = pair.getLeft();
-                    LegacySnapRotManager.INSTANCE
-                            .snapAt(
-                                    result.getBlockPos()
-                                            .toCenterPos()
-                                            .subtract(mc.player.getEyePos())
-                                            .normalize(),
-                                    false);
+                    LegacySnapRotManager.INSTANCE.snapAt(
+                            result.getBlockPos()
+                                    .toCenterPos()
+                                    .subtract(mc.player.getEyePos())
+                                    .normalize(),
+                            false);
                     InteractionTasks.placeBlock(hand, result);
                 }
             }
@@ -187,11 +186,28 @@ public class InteractionTasks {
 
     public static BlockHitResult getPlaceSupportingResult(
             BlockPos blockPos, boolean enableAirPlace, boolean enablePositionPlace) {
-        return getPlaceSupportingResult(blockPos, mc.player.getFacing(), enableAirPlace, enablePositionPlace);
+        return getPlaceSupportingResult(
+                mc.player.getEyePos(), blockPos, mc.player.getFacing(), enableAirPlace, enablePositionPlace);
     }
 
     public static BlockHitResult getPlaceSupportingResult(
             BlockPos blockPos, Direction preferredDirection, boolean enableAirPlace, boolean enablePositionPlace) {
+        return getPlaceSupportingResult(
+                mc.player.getEyePos(), blockPos, preferredDirection, enableAirPlace, enablePositionPlace);
+    }
+
+    public static BlockHitResult getPlaceSupportingResult(
+            Vec3d predictEyePos, BlockPos blockPos, boolean enableAirPlace, boolean enablePositionPlace) {
+        return getPlaceSupportingResult(
+                predictEyePos, blockPos, mc.player.getFacing(), enableAirPlace, enablePositionPlace);
+    }
+
+    public static BlockHitResult getPlaceSupportingResult(
+            Vec3d predictEyePos,
+            BlockPos blockPos,
+            Direction preferredDirection,
+            boolean enableAirPlace,
+            boolean enablePositionPlace) {
         Direction dir = preferredDirection;
         List<Direction> order = new ArrayList<>();
         order.add(dir);
@@ -211,7 +227,6 @@ public class InteractionTasks {
             Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
             return new BlockHitResult(plateCenter, availableDirection.getOpposite(), blockPos, false);
         } else {
-            Vec3d eyePos = mc.player.getEyePos();
             for (var direction : order) {
                 Vec3d plateCenter = centerPos.offset(direction, 0.5);
                 Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
@@ -220,11 +235,11 @@ public class InteractionTasks {
                 if ((interactState.isAir() || interactState.isLiquid())) {
                     continue;
                 }
-                if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
+                if (Box.from(Vec3d.of(targetPos)).contains(predictEyePos)) {
                     // ?
                     return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true);
                 } else {
-                    Vec3d iSeeVect = eyePos.subtract(plateCenter);
+                    Vec3d iSeeVect = predictEyePos.subtract(plateCenter);
                     Vec3d plateLLL = direction.getDoubleVector();
                     if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                         return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false);

@@ -17,8 +17,8 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.BlockItem;
@@ -59,6 +59,7 @@ public class Scaffold extends BaseModule {
         searchOffsets.sort(Comparator.comparingInt(
                 v -> (int) Math.max(Math.max(Math.abs(v.getX()), Math.abs(v.getY())), Math.abs(v.getZ()))));
     }
+
     final ModulePath scaffold = makePath(Configs.INTERACT_CONFIG, "interact-scaffold");
 
     public final FlagRef enable = flagBuilder(scaffold.addEnable()).build();
@@ -70,15 +71,13 @@ public class Scaffold extends BaseModule {
     //            flagBuilder(Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_LEGAL).build();
 
     public final EnumRef<Configs.LegalInteractMode> legalMode = builder(
-                   scaffold.add("legal-targeting"), Configs.LegalInteractMode.class)
+                    scaffold.add("legal-targeting"), Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
-    public final FlagRef swapHand = flagBuilder(scaffold.add("swap-hand"))
-            .build();
+    public final FlagRef swapHand = flagBuilder(scaffold.add("swap-hand")).build();
 
-    public final IntRef expandYDepth = builder(
-                    scaffold.add("expand-interact-y-depth"), IntRef.TYPE)
+    public final IntRef expandYDepth = builder(scaffold.add("expand-interact-y-depth"), IntRef.TYPE)
             .defaultValue(0)
             .validator(Configs.intRange(0, 3))
             .build();
@@ -168,9 +167,7 @@ public class Scaffold extends BaseModule {
             // test if the supporting block can support player
             if (!blockState.isAir()
                     && !MoonriseBlockStateBaseAccess.of(blockState).isConstantCollisionShapeEmpty()) {
-                // if player is on a slab or something
-                //  Debug.chat("has");
-                //  Debug.chat("ret 1");
+
                 return;
             }
 
@@ -185,8 +182,6 @@ public class Scaffold extends BaseModule {
                     return;
                 }
             }
-            // Debug.chat("nothing");
-
         }
     }
 
@@ -200,61 +195,40 @@ public class Scaffold extends BaseModule {
     //        }
     //    }
 
-    public BlockHitResult guessTheBestPlacePositionForTargetingBlock(Vec3d predictedPos, BlockPos pos) {
+    public BlockHitResult guessTheBestPlacePositionForTargetingBlock(Vec3d predictedEyePos, BlockPos pos) {
         if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.BLOCK) {
             BlockHitResult hitResult = ((BlockHitResult) mc.crosshairTarget);
             BlockPos targetPos = hitResult.getBlockPos();
             Direction dir = hitResult.getSide();
             BlockPos estimatePlacingPos = targetPos.offset(dir);
             // use vanilla
-            if (Objects.equals(estimatePlacingPos, pos)) {
+            if (InteractUtils.canCubePlace(mc.player, estimatePlacingPos) && Objects.equals(estimatePlacingPos, pos)) {
                 return hitResult;
             }
         }
-        BlockHitResult hitResult = createHitNormal(predictedPos, pos);
-        if (hitResult != null) return hitResult;
-        if (!legalMode.get().isLegal()) {
-            // not legal, we can airplace
-            return RaycastUtils.createHitResult(pos.offset(Direction.DOWN), Direction.UP);
+        BlockHitResult hitResult;
+        boolean enableAirPlace = !legalMode.get().isLegal();
+        BlockState state = mc.world.getBlockState(pos);
+        if (state.isReplaceable() && InteractUtils.canCubePlace(mc.player, pos)) {
+            hitResult = InteractionTasks.getPlaceSupportingResult(predictedEyePos, pos, enableAirPlace, enableAirPlace);
+            if (hitResult != null) return hitResult;
         }
-        // todo find better block to place,
-        // todo copy copy
-        //
-        //
-        //
+
         for (var vec3d : searchOffsets) {
             if (vec3d.getY() >= -expandYDepth.get()) {
                 BlockPos checkPos = pos.add(vec3d);
-                BlockState state = mc.world.getBlockState(checkPos);
+                state = mc.world.getBlockState(checkPos);
                 // filter can place blocks
-                if (state.isReplaceable()) {
-                    //                    RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-                    //                        2, new RenderTasks.BoxObject(Vec3d.of(checkPos),
-                    // Vec3d.of(checkPos).add(1,1,1), Color.MAGENTA)));
-
-                    hitResult = createHitNormal(predictedPos, checkPos);
+                if (state.isReplaceable() && InteractUtils.canCubePlace(mc.player, checkPos)) {
+                    hitResult = InteractionTasks.getPlaceSupportingResult(
+                            checkPos,
+                            !legalMode.get().isLegal(),
+                            !legalMode.get().isLegal());
                     if (hitResult != null) return hitResult;
                 }
             }
         }
 
-        return null;
-    }
-
-    public BlockHitResult createHitNormal(Vec3d predictedPos, BlockPos pos) {
-        for (Direction direction : Direction.values()) {
-            BlockPos testPos = pos.offset(direction);
-            BlockState state = mc.world.getBlockState(testPos);
-            // fixme donot place on liquid,
-            // air liquidplace
-            if (!state.isAir() && !state.isLiquid()) {
-                Vec3d targetSeePos = pos.toCenterPos().offset(direction, 0.5);
-                Vec3d iSee = mc.player.getEyePos().subtract(targetSeePos);
-                if (iSee.dotProduct(direction.getDoubleVector()) < 0.0) {
-                    return RaycastUtils.createHitResult(testPos, direction.getOpposite());
-                }
-            }
-        }
         return null;
     }
 

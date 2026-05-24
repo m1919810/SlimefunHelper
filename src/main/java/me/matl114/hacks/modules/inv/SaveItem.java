@@ -18,7 +18,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigLoader;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.HotKeyUtils;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;

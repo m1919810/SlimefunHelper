@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.move;
 
 import java.util.Random;
+import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
@@ -13,6 +14,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.util.math.Vec3d;
@@ -34,13 +36,14 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
 
     public final FlagRef enable = flagBuilder(grimAccelerate.add("enable")).build();
 
-    public final KeyBindRef hotkey =
-            moduleEntry(grimAccelerate.add("hotkey"), new MultiKeyBind(), grimAccelerate.add("enable")).build();
+    public final KeyBindRef hotkey = moduleEntry(
+                    grimAccelerate.add("hotkey"), new MultiKeyBind(), grimAccelerate.add("enable"))
+            .build();
 
-    public final EnumRef<Configs.SetBackTriggerType> mode =
-            builder(grimAccelerate.add("set-back-mode"), Configs.SetBackTriggerType.class)
-                    .defaultValue(Configs.SetBackTriggerType.SIMULATION)
-                    .build();
+    public final EnumRef<Configs.SetBackTriggerType> mode = builder(
+                    grimAccelerate.add("set-back-mode"), Configs.SetBackTriggerType.class)
+            .defaultValue(Configs.SetBackTriggerType.SIMULATION)
+            .build();
 
     public final DoubleRef maxVelocityAccept = builder(grimAccelerate.add("max-accelerate-velocity"), Double.class)
             .defaultValue(4.0D)
@@ -186,6 +189,8 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                                 mc.player.horizontalCollision);
                     }
                 }
+                PlayerMoveC2SPacketAccess.setCause(
+                        (PlayerMoveC2SPacket) storedPacket, PlayerMoveC2SPacketAccess.Cause.TRIGGER_SIMULATION);
             }
         }
     }

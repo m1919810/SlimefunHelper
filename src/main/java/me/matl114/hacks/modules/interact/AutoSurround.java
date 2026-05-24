@@ -20,7 +20,6 @@ import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
@@ -46,53 +45,41 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     public final ModulePath autoSurround = makePath(Configs.INTERACT_CONFIG, "place-utils.auto-surround");
 
-
     @Override
     public int priority() {
         return PRIORITY_MONITOR;
     }
 
-    public final FlagRef enable = flagBuilder(autoSurround.addEnable())
+    public final FlagRef enable = flagBuilder(autoSurround.addEnable()).build();
+
+    public final KeyBindRef hotkey = moduleEntry(autoSurround.addHotkey(), new MultiKeyBind(), autoSurround.addEnable())
             .build();
 
-    public final KeyBindRef hotkey = moduleEntry(
-                    autoSurround.addHotkey(),
-                    new MultiKeyBind(),
-                    autoSurround.addEnable())
-            .build();
-
-    public final IntRef delay = builder(
-                    autoSurround.add("delay"), IntRef.TYPE)
+    public final IntRef delay = builder(autoSurround.add("delay"), IntRef.TYPE)
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final IntRef multiply = builder(
-                    autoSurround.add("multiply"), IntRef.TYPE)
+    public final IntRef multiply = builder(autoSurround.add("multiply"), IntRef.TYPE)
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final EnumRef<Configs.LegalInteractMode> mode = builder(
-                    autoSurround.add("mode"),
-                    Configs.LegalInteractMode.class)
+                    autoSurround.add("mode"), Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.DELAY_MOVEMENT)
             .build();
 
-    public final FlagRef placeUpper = flagBuilder(autoSurround.add("upper"))
-            .build();
+    public final FlagRef placeUpper = flagBuilder(autoSurround.add("upper")).build();
 
-    public final FlagRef autoAttackCrystals = flagBuilder(
-                    autoSurround.add("auto-attack-crystal"))
-            .build();
+    public final FlagRef autoAttackCrystals =
+            flagBuilder(autoSurround.add("auto-attack-crystal")).build();
 
-    public final FlagRef onlyGround = flagBuilder(
-                    autoSurround.add("only-ground"))
-            .build();
+    public final FlagRef onlyGround =
+            flagBuilder(autoSurround.add("only-ground")).build();
 
-    public final FlagRef autoCenter = flagBuilder(
-                    autoSurround.add("auto-center"))
-            .build();
+    public final FlagRef autoCenter =
+            flagBuilder(autoSurround.add("auto-center")).build();
 
     @Override
     public void registerAll() {
@@ -139,10 +126,9 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         }
         boolean legal = mode.get().isLegal();
         Box playerBox = mc.player.getBoundingBox();
-        int mul =
-                (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
-                        ? multiply.get()
-                        : 1;
+        int mul = (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
+                ? multiply.get()
+                : 1;
         int minY = ((int) playerBox.getMin(Direction.Axis.Y)) - 1;
         int maxY = ((int) playerBox.getMax(Direction.Axis.Y)) + 1;
         int placeCnt = 0;
@@ -157,35 +143,31 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
             for (int y = minY; y <= coordYMax; ++y) {
                 BlockPos test = testPos.withY(y);
                 BlockState state = mc.world.getBlockState(test);
-                if (state.isAir() || state.isReplaceable()) {
+                if ((state.isAir() || state.isReplaceable())) {
                     BlockHitResult hitResult = InteractionTasks.getPlaceSupportingResult(test, !legal, !legal);
                     boolean canPlace = hitResult != null;
-                    List<Entity> collideEntities = mc.world.getOtherEntities(null, MathUtils.getBlockBox(test));
 
-                    boolean hasCollision = !collideEntities.isEmpty();
-                    if (hasCollision) {
-                        for (var entity : collideEntities) {
-                            if (entity instanceof EndCrystalEntity end) {
-                                entities.add(end);
+                    if (canPlace) {
+                        if (InteractUtils.canCubePlace(mc.player, test)) {
+                            if (placeCnt == 0) {
+                                var re = supplyBlocks();
+                                if (re == null) {
+                                    break place;
+                                }
+                                mul = Math.min(mul, re.val().getCount());
+                                invCallback = InvTasks.getInvExtra().swapInventoryIndexToHand(re.index());
+                            } else {
+                                InteractionTasks.flushACPlaceQueue();
                             }
-                        }
-                    }
-                    hasCollision = collideEntities.stream().anyMatch(e -> e instanceof LivingEntity || e instanceof EndCrystalEntity);
-                    if (canPlace && !hasCollision) {
-                        if (placeCnt == 0) {
-                            var re = supplyBlocks();
-                            if (re == null) {
+                            InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND);
+                            placeCnt += 1;
+                            if (placeCnt >= mul) {
                                 break place;
                             }
-                            mul = Math.min(mul, re.val().getCount());
-                            invCallback = InvTasks.getInvExtra().swapInventoryIndexToHand(re.index());
                         } else {
-                            InteractionTasks.flushACPlaceQueue();
-                        }
-                        InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND);
-                        placeCnt += 1;
-                        if (placeCnt >= mul) {
-                            break place;
+                            // can not place
+                            entities.addAll(mc.world.getOtherEntities(
+                                    null, MathUtils.getBlockBox(test), (e) -> e instanceof EndCrystalEntity));
                         }
                     }
                 }

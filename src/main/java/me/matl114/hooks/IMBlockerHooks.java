@@ -6,6 +6,7 @@ import lombok.Getter;
 public class IMBlockerHooks implements IHooks {
     @Getter
     boolean enabled = false;
+
     public IMBlockerHooks() {
         try {
             Class<?> clazz = FocusableObject.class;

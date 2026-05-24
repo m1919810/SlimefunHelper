@@ -37,33 +37,36 @@ public class ProjectileEnhance extends BaseModule {
 
     public ProjectileEnhance() {}
 
-
     public FlagRef enable = flagBuilder(projectile.add("projectile-enhance")).build();
 
-    public KeyBindRef hotkey =
-            moduleEntry(projectile.add("projectile-enhance-hotkey"), new MultiKeyBind(), projectile.add("projectile-enhance"))
-                    .build();
+    public KeyBindRef hotkey = moduleEntry(
+                    projectile.add("projectile-enhance-hotkey"),
+                    new MultiKeyBind(),
+                    projectile.add("projectile-enhance"))
+            .build();
 
     public FlagRef enableAim = flagBuilder(projectile.add("aim-enable")).build();
 
     public FlagRef enableTp = flagBuilder(projectile.add("tp-enable")).build();
 
-    public EnumRef<Configs.LegalInteractMode> mode =
-            builder(projectile.add("targeting-mode"), Configs.LegalInteractMode.class)
-                    .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
-                    .build();
+    public EnumRef<Configs.LegalInteractMode> mode = builder(
+                    projectile.add("targeting-mode"), Configs.LegalInteractMode.class)
+            .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
+            .build();
 
     public DoubleRef tpDistance = builder(projectile.add("tp-accelerate"), DoubleRef.TYPE)
             .defaultValue(150.0D)
             .build();
 
-    public FlagRef enhanceTp = flagBuilder(projectile.add("tp-accelerate-exact-tp")).build();
+    public FlagRef enhanceTp =
+            flagBuilder(projectile.add("tp-accelerate-exact-tp")).build();
 
     public NBTRef<Regex> useItemId = builder(projectile.add("tp-accelerate-exact-tp"), Regex.class)
             .defaultValue(new Regex("^(LOGITECH_LASER_GUN)$"))
             .build();
 
-    public FlagRef tridentDupe = flagBuilder(projectile.add("trident-auto-dupe")).build();
+    public FlagRef tridentDupe =
+            flagBuilder(projectile.add("trident-auto-dupe")).build();
 
     @Override
     public void registerAll() {

@@ -102,6 +102,6 @@ public class SlimefunHelper implements ModInitializer {
     // todo: generalize sf id to some nbt path -> id
     // todo: add JsonMapRef , store data as json string
 
-    //todo: 重构旧的配置路径
+    // todo: 重构旧的配置路径
 
 }

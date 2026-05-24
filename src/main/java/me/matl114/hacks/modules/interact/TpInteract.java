@@ -38,8 +38,7 @@ public class TpInteract extends BaseModule {
 
     public TpInteract() {}
 
-    public final FlagRef enable =
-            flagBuilder(tpInteract.add("enable")).build();
+    public final FlagRef enable = flagBuilder(tpInteract.add("enable")).build();
 
     public final KeyBindRef keyBindRef = moduleEntry(
                     tpInteract.add("enable-hotkey"), new MultiKeyBind(), tpInteract.add("enable"))
@@ -48,7 +47,9 @@ public class TpInteract extends BaseModule {
     public final FlagRef useFallMine =
             flagBuilder(tpInteract.add("mine-interact-use-fail-mine")).build();
 
-    public final KeyBindRef tryTpSteal = hotkey(Configs.INTERACT_CONFIG, tpInteract.add("try-tp-steal-chest-key").toPath())
+    public final KeyBindRef tryTpSteal = hotkey(
+                    Configs.INTERACT_CONFIG,
+                    tpInteract.add("try-tp-steal-chest-key").toPath())
             .defaultValue(new MultiKeyBind())
             .build();
 

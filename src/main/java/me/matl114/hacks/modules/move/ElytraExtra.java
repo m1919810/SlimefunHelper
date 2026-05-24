@@ -76,16 +76,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final FlagRef fuckGrimAC = MovTasks.getMovExtra().fuckGrimAC;
 
-    public final FlagRef noKinetic =
-            flagBuilder(elytraTweaks.add("no-kinetic")).build();
+    public final FlagRef noKinetic = flagBuilder(elytraTweaks.add("no-kinetic")).build();
 
     public final EnumRef<Configs.BypassMode> noKineticMode = builder(
                     elytraTweaks.add("no-kinetic-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
-    public final FlagRef maceFix =
-            flagBuilder(elytraTweaks.add("mace-hit-fix")).build();
+    public final FlagRef maceFix = flagBuilder(elytraTweaks.add("mace-hit-fix")).build();
     // todo: remove this shit,
     public final EnumRef<Configs.BypassMode> maceFixMode = builder(
                     elytraTweaks.add("mace-hit-fix-mode"), Configs.BypassMode.class)
@@ -115,15 +113,15 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef armorFly =
-            flagBuilder(armorFlyPath.add("enable")).updateListener(this::onToggleArmorFly).build();
+    public final FlagRef armorFly = flagBuilder(armorFlyPath.add("enable"))
+            .updateListener(this::onToggleArmorFly)
+            .build();
 
     public final KeyBindRef keyBind = moduleEntry(
                     armorFlyPath.add("enable-hotkey"), new MultiKeyBind(), armorFlyPath.add("enable"))
             .build();
 
-    public final EnumRef<ArmorFlyMode> armorMode = builder(
-                    armorFlyPath.add("armor-mode"), ArmorFlyMode.class)
+    public final EnumRef<ArmorFlyMode> armorMode = builder(armorFlyPath.add("armor-mode"), ArmorFlyMode.class)
             .defaultValue(ArmorFlyMode.LAZY)
             .build();
 
@@ -131,11 +129,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .defaultValue(true)
             .build();
 
-    public final FlagRef poseFix =
-            flagBuilder(armorFlyPath.add("pose-fix")).build();
+    public final FlagRef poseFix = flagBuilder(armorFlyPath.add("pose-fix")).build();
 
-    public final FlagRef renderFix = flagBuilder(armorFlyPath.add("render-fix"))
-        .build();
+    public final FlagRef renderFix = flagBuilder(armorFlyPath.add("render-fix")).build();
 
     public final NBTRef<Regex> customFireworks = builder(customFireworksPath.add("firework-item-id"), Regex.class)
             .defaultValue(new Regex("^(.*?_MULTI_TOOL|STAFF_ELEMENTAL_WIND)$"))
@@ -163,12 +159,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final FlagRef rocketBoost = flagBuilder(
-                    customFireworksPath.add("firework-boost-enable"))
-            .build();
+    public final FlagRef rocketBoost =
+            flagBuilder(customFireworksPath.add("firework-boost-enable")).build();
 
-    public final DoubleRef rocketBoostSpeed = doubleBuilder(
-                    customFireworksPath.add("firework-boost-speed"))
+    public final DoubleRef rocketBoostSpeed = doubleBuilder(customFireworksPath.add("firework-boost-speed"))
             .defaultValue(1.7D)
             .validator(Configs.doubleRange(0.0d, 10000.0D))
             .build();
@@ -265,7 +259,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     private boolean nextTimeLaunchElytraUnbreakable = false;
     public int elytraUnbreakableSwitchSlot = -1;
 
-    public boolean isCurrentArmorGliding(){
+    public boolean isCurrentArmorGliding() {
         return armorFly.get() && thisFallFlyingIsArmorFly != -1;
     }
 
@@ -332,7 +326,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             if (canContinueGliding() && hasGlidingEquipments()) {
                                 MovTasks.getMovExtra().sendPacketsForPreStartFallFlying();
                                 mc.getNetworkHandler()
-                                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                                        .sendPacket(new ClientCommandC2SPacket(
+                                                mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
                                 MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
                                 serializedEntryUpdateEvent.context(
                                         new DataTracker.SerializedEntry(val.id(), val.handler(), (byte)
@@ -783,17 +778,17 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    public void onToggleArmorFly(boolean armorFly){
-        if(mc.player != null && mc.player.isFallFlying()){
-            if(!armorFly){
-                if(thisFallFlyingIsArmorFly != -1){
-                    //current ArmoFly
+    public void onToggleArmorFly(boolean armorFly) {
+        if (mc.player != null && mc.player.isFallFlying()) {
+            if (!armorFly) {
+                if (thisFallFlyingIsArmorFly != -1) {
+                    // current ArmoFly
                     // switch Elytra on
                     switchSlotToArmor(thisFallFlyingIsArmorFly);
                     nextPacketResetFallFlying = true;
                     thisFallFlyingIsArmorFly = -1;
                 }
-            }else{
+            } else {
                 thisFallFlyingIsArmorFly = -1;
             }
         }
@@ -852,18 +847,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     if (findResult != null) {
                         if (findResult.index() == mc.player.getInventory().getSelectedSlot()) {
                             Listener.sendPacketNoEvents(new PlayerInteractItemC2SPacket(
-                                    Hand.MAIN_HAND,
-                                    NetworkUtils.generateNextSequence(),
-                                    lastYaw ,
-                                    lastPitch));
+                                    Hand.MAIN_HAND, NetworkUtils.generateNextSequence(), lastYaw, lastPitch));
                         } else {
                             callback = InvTasks.getInvExtra().swapInventoryIndexToOffhand(findResult.index());
                             if (callback != null) {
                                 Listener.sendPacketNoEvents(new PlayerInteractItemC2SPacket(
-                                        Hand.OFF_HAND,
-                                        NetworkUtils.generateNextSequence(),
-                                        lastYaw,
-                                        lastPitch));
+                                        Hand.OFF_HAND, NetworkUtils.generateNextSequence(), lastYaw, lastPitch));
                                 callback.run();
                             }
                         }
@@ -913,10 +902,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && antiKick.get()) {
             switch (armorMode.get()) {
                 case LAZY -> {
-                    return !VItem.getInstance().canGlide(mc.player.getEquippedStack(EquipmentSlot.CHEST));
+                    return !canContinueGliding();
                 }
                 default -> {
-                    return false;
+                    return !canContinueGliding();
                 }
             }
         }
@@ -1185,8 +1174,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (lastFireworkRocket != null) {
             if (lastFireworkRocket.isAlive()) {
                 return false;
-            } else if (Tasks.getTick()
-                    < lastFireworkRocketTick + lastFireworkThresholdTime + Math.max(0, rocketBuffer.get() - 2)) {
+            } else if (Tasks.getTick() < lastFireworkRocketTick + lastFireworkThresholdTime + 1) {
                 return false;
             } else {
                 return true;
@@ -1210,10 +1198,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 if (autoFirework) {
                     if (lastFireworkRocket.isAlive()) {
                         return;
-                    } else if (Tasks.getTick()
-                            >= lastFireworkRocketTick
-                                    + lastFireworkThresholdTime
-                                    + (rocketBuffer.get() - FIREWORK_DELTA / 2)) {
+                    } else if (Tasks.getTick() > lastFireworkRocketTick + lastFireworkThresholdTime + 1) {
                         // time limit, do not double
                         use = true;
                         // use = true;
@@ -1354,10 +1339,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         VOID,
         FIRE_WORKS;
 
-        @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.motion-mode." + this.name().toLowerCase(Locale.ROOT));
-        }
     }
 
     public static class FireworkTimer {
@@ -1421,9 +1402,5 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         TICK_LEGACY,
         TICK;
 
-        @Override
-        public Text getDisplay() {
-            return Text.translatable("configenum.armor-fly-mode." + this.name().toLowerCase(Locale.ROOT));
-        }
     }
 }

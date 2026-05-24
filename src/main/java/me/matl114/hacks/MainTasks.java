@@ -3,7 +3,6 @@ package me.matl114.hacks;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Listener;
@@ -83,11 +82,11 @@ public class MainTasks {
 
     public static void clientCrash(String[] args) {
         Tasks.scheduleDelayed(
-            () -> {
-                mc.world = null;
-                throw new CrashException(new CrashReport("test crash", new NullPointerException()));
-            },
-            1);
+                () -> {
+                    mc.world = null;
+                    throw new CrashException(new CrashReport("test crash", new NullPointerException()));
+                },
+                1);
     }
 
     public static void clientLiteCrash(String[] args) {
@@ -122,7 +121,8 @@ public class MainTasks {
                     if (mc.world != null && mc.player != null) {
                         mc.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
                     }
-                    if(Listener.getClientConnection() != null && Listener.getClientConnection().isOpen()){
+                    if (Listener.getClientConnection() != null
+                            && Listener.getClientConnection().isOpen()) {
                         Listener.getClientConnection().disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
                     }
                 },
@@ -130,9 +130,10 @@ public class MainTasks {
     }
 
     @ApiMethod
-    public static void disconnectImmediately(){
+    public static void disconnectImmediately() {
         mc.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
-        if(Listener.getClientConnection() != null && Listener.getClientConnection().isOpen()){
+        if (Listener.getClientConnection() != null
+                && Listener.getClientConnection().isOpen()) {
             Listener.getClientConnection().disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
         }
     }

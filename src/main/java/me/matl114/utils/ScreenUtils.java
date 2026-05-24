@@ -130,33 +130,32 @@ public class ScreenUtils {
     }
 
     public static final Map<ScreenHandlerType<?>, Integer> nonPlayerSlots = Map.ofEntries(
-        Map.entry(ScreenHandlerType.GENERIC_9X1, 9),
-        Map.entry(ScreenHandlerType.GENERIC_9X2, 18),
-        Map.entry(ScreenHandlerType.GENERIC_9X3, 27),
-        Map.entry(ScreenHandlerType.GENERIC_9X4, 36),
-        Map.entry(ScreenHandlerType.GENERIC_9X5, 45),
-        Map.entry(ScreenHandlerType.GENERIC_9X6, 54),
-        Map.entry(ScreenHandlerType.GENERIC_3X3, 9),
-        Map.entry(ScreenHandlerType.CRAFTER_3X3, 9),
-        Map.entry(ScreenHandlerType.ANVIL, 3),
-        Map.entry(ScreenHandlerType.BEACON, 1),
-        Map.entry(ScreenHandlerType.BLAST_FURNACE, 3),
-        Map.entry(ScreenHandlerType.BREWING_STAND, 5),
-        Map.entry(ScreenHandlerType.CRAFTING, 10),
-        Map.entry(ScreenHandlerType.ENCHANTMENT, 2),
-        Map.entry(ScreenHandlerType.FURNACE, 3),
-        Map.entry(ScreenHandlerType.GRINDSTONE, 3),
-        Map.entry(ScreenHandlerType.HOPPER, 5),
-        Map.entry(ScreenHandlerType.LOOM, 4),
-        Map.entry(ScreenHandlerType.MERCHANT, 3),
-        Map.entry(ScreenHandlerType.SHULKER_BOX, 27),
-        Map.entry(ScreenHandlerType.SMITHING, 4), // 1.20+ 锻造台
-        Map.entry(ScreenHandlerType.SMOKER, 3),
-        Map.entry(ScreenHandlerType.CARTOGRAPHY_TABLE, 3),
-        Map.entry(ScreenHandlerType.STONECUTTER, 2)
-    );
+            Map.entry(ScreenHandlerType.GENERIC_9X1, 9),
+            Map.entry(ScreenHandlerType.GENERIC_9X2, 18),
+            Map.entry(ScreenHandlerType.GENERIC_9X3, 27),
+            Map.entry(ScreenHandlerType.GENERIC_9X4, 36),
+            Map.entry(ScreenHandlerType.GENERIC_9X5, 45),
+            Map.entry(ScreenHandlerType.GENERIC_9X6, 54),
+            Map.entry(ScreenHandlerType.GENERIC_3X3, 9),
+            Map.entry(ScreenHandlerType.CRAFTER_3X3, 9),
+            Map.entry(ScreenHandlerType.ANVIL, 3),
+            Map.entry(ScreenHandlerType.BEACON, 1),
+            Map.entry(ScreenHandlerType.BLAST_FURNACE, 3),
+            Map.entry(ScreenHandlerType.BREWING_STAND, 5),
+            Map.entry(ScreenHandlerType.CRAFTING, 10),
+            Map.entry(ScreenHandlerType.ENCHANTMENT, 2),
+            Map.entry(ScreenHandlerType.FURNACE, 3),
+            Map.entry(ScreenHandlerType.GRINDSTONE, 3),
+            Map.entry(ScreenHandlerType.HOPPER, 5),
+            Map.entry(ScreenHandlerType.LOOM, 4),
+            Map.entry(ScreenHandlerType.MERCHANT, 3),
+            Map.entry(ScreenHandlerType.SHULKER_BOX, 27),
+            Map.entry(ScreenHandlerType.SMITHING, 4), // 1.20+ 锻造台
+            Map.entry(ScreenHandlerType.SMOKER, 3),
+            Map.entry(ScreenHandlerType.CARTOGRAPHY_TABLE, 3),
+            Map.entry(ScreenHandlerType.STONECUTTER, 2));
 
-    public static Integer getUpperInventorySize(ScreenHandlerType<?> type){
+    public static Integer getUpperInventorySize(ScreenHandlerType<?> type) {
         return nonPlayerSlots.get(type);
     }
 

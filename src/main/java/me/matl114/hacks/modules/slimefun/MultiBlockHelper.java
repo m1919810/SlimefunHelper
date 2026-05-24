@@ -13,7 +13,6 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;

@@ -40,7 +40,10 @@ public class ChatTools extends BaseModule {
         bindFlag(enableChatScreenTools);
     }
 
-    public final KeyBindRef removeCmdKey = hotkey(Configs.CHAT_CONFIG, chatTools.add("remove-command-prefix-hotkey").toPath(), new MultiKeyBind())
+    public final KeyBindRef removeCmdKey = hotkey(
+                    Configs.CHAT_CONFIG,
+                    chatTools.add("remove-command-prefix-hotkey").toPath(),
+                    new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::onRemoveCommandPrefix))
             .build();
 
@@ -53,28 +56,27 @@ public class ChatTools extends BaseModule {
             .build();
 
     public final StringRef specialChars = builder(chatTools.add("quick-chars"), String.class)
-            .defaultValue(
-                    "😡🤓🥵😭🤡😋🤤😊😄🥲😁👉👆🤔😎🐍😅♂♀")
+            .defaultValue("😡🤓🥵😭🤡😋🤤😊😄🥲😁👉👆🤔😎🐍😅♂♀")
             .updateListener(this::refreshSpecialChars)
             .build();
 
     public final StringRef chatCache =
             builder(chatTools.add("cached"), String.class).defaultValue("").build();
 
-    public final FlagRef autoSend = toggle(Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath()).build();
+    public final FlagRef autoSend =
+            toggle(Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath()).build();
 
-    public final IntRef period = intBuilder(chatTools.add("auto-chat-period"))
-            .defaultValue(21)
-            .build();
+    public final IntRef period =
+            intBuilder(chatTools.add("auto-chat-period")).defaultValue(21).build();
 
-    public final IntRef multiple = intBuilder(chatTools.add("auto-chat-multiple"))
-            .defaultValue(1)
-            .build();
+    public final IntRef multiple =
+            intBuilder(chatTools.add("auto-chat-multiple")).defaultValue(1).build();
 
     public final FlagRef keepChatInv =
             toggle(Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath()).build();
 
-    public final FlagRef obfLogin = flagBuilder(chatTools.add("obf-login-message")).build();
+    public final FlagRef obfLogin =
+            flagBuilder(chatTools.add("obf-login-message")).build();
 
     @Override
     public void onDisableModule() {
@@ -197,7 +199,8 @@ public class ChatTools extends BaseModule {
                         .withTooltips(TooltipHandler.of(TOOLTIPS_SEND_CACHE)))
                 .addToSub(basicSubScreenWidget);
 
-        Runnable toggle = TaskManagers.getToggleTask(Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath());
+        Runnable toggle = TaskManagers.getToggleTask(
+                Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath());
         ExecutableWidget.instance(180, 48, 50, 20)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("auto-send")), ButtonAction.run(toggle))
@@ -205,7 +208,8 @@ public class ChatTools extends BaseModule {
                                 .withTooltips(TooltipHandler.of(TOOLTIPS_AUTO_SEND)))
                 .addToSub(basicSubScreenWidget);
 
-        Runnable toggle2 = TaskManagers.getToggleTask(Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath());
+        Runnable toggle2 = TaskManagers.getToggleTask(
+                Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath());
         ExecutableWidget.instance(180, 24, 70, 20)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("keep-chat-inv")), ButtonAction.run(toggle2))

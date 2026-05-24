@@ -9,15 +9,16 @@ import net.minecraft.client.render.entity.BipedEntityRenderer;
 import net.minecraft.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 
 @Mixin(BipedEntityRenderer.class)
 public abstract class EntityRenderStateMixin {
-    @ModifyExpressionValue(method = "updateBipedRenderState", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isFallFlying()Z"))
+    @ModifyExpressionValue(
+            method = "updateBipedRenderState",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isFallFlying()Z"))
     private static boolean updateBipedRenderState(boolean original, @Local(argsOnly = true) LivingEntity livingEntity) {
-        if(livingEntity.isFallFlying() && livingEntity == MinecraftClient.getInstance().player){
+        if (livingEntity.isFallFlying() && livingEntity == MinecraftClient.getInstance().player) {
             ElytraExtra elytraExtra = MovTasks.getElytraExtra();
-            if(elytraExtra.renderFix.get() && elytraExtra.isCurrentArmorGliding()){
+            if (elytraExtra.renderFix.get() && elytraExtra.isCurrentArmorGliding()) {
                 return false;
             }
         }

@@ -17,8 +17,7 @@ import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 public class InGuiChatBox extends BaseModule {
     public final ModulePath chat = makePath(Configs.CHAT_CONFIG, "chat-helper");
 
-    public final FlagRef enable =
-            flagBuilder(chat.add("chat-box-in-gui")).build();
+    public final FlagRef enable = flagBuilder(chat.add("chat-box-in-gui")).build();
 
     public InGuiChatBox() {
         bindFlag(enable);

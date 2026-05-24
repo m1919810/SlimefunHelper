@@ -14,6 +14,7 @@ public class FlightVelocity {
     double x, y, z;
     final double maxVelocity;
     final Mode mode;
+
     public FlightVelocity(double x, double y, double z, double maxVelocity, Mode mode) {
         this.x = x;
         this.y = y;
@@ -36,7 +37,7 @@ public class FlightVelocity {
         return new Vec3d(x, y, z);
     }
 
-    public enum Mode{
+    public enum Mode {
         ELYTRA_FLIGHT,
         MOTION_FLIGHT;
     }

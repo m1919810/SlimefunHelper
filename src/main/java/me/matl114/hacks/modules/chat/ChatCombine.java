@@ -28,8 +28,7 @@ public class ChatCombine extends BaseModule {
         bindFlag(enable);
     }
 
-    public final FlagRef enable =
-            flagBuilder(chatCombine.add("enable")).build();
+    public final FlagRef enable = flagBuilder(chatCombine.add("enable")).build();
 
     @Override
     public void registerAll() {
