@@ -37,9 +37,19 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
 set WRAPPER_PROPS=%APP_HOME%\gradle\wrapper\gradle-wrapper.properties
-set LOCAL_GRADLE_ZIP=C:\gradle\gradle-9.2.0-all.zip
-set DEFAULT_GRADLE_DIST_URL=https\://services.gradle.org/distributions/gradle-9.2.0-all.zip
-set LOCAL_GRADLE_DIST_URL=file:///C:/gradle/gradle-9.2.0-all.zip
+set GRADLE_PROPERTIES=%APP_HOME%\gradle.properties
+set LOCAL_GRADLE_ZIP=
+set DEFAULT_GRADLE_DIST_URL=
+
+if exist "%GRADLE_PROPERTIES%" (
+    for /f "usebackq tokens=1,* delims==" %%a in ("%GRADLE_PROPERTIES%") do (
+        if /i "%%a"=="local_gradle_zip" set LOCAL_GRADLE_ZIP=%%b
+        if /i "%%a"=="default_gradle_dist_url" set DEFAULT_GRADLE_DIST_URL=%%b
+    )
+)
+
+for %%i in ("%LOCAL_GRADLE_ZIP%") do set LOCAL_GRADLE_ZIP=%%~fi
+set LOCAL_GRADLE_DIST_URL=file:///%LOCAL_GRADLE_ZIP:\=/%
 
 if exist "%LOCAL_GRADLE_ZIP%" (
     set GRADLE_DIST_URL=%LOCAL_GRADLE_DIST_URL%
@@ -47,6 +57,8 @@ if exist "%LOCAL_GRADLE_ZIP%" (
     set GRADLE_DIST_URL=%DEFAULT_GRADLE_DIST_URL%
 )
 
+echo [gradlew] Using LOCAL_GRADLE_ZIP: %LOCAL_GRADLE_ZIP%
+echo [gradlew] Using DEFAULT_GRADLE_DIST_URL: %DEFAULT_GRADLE_DIST_URL%
 echo [gradlew] Using Gradle distribution URL: %GRADLE_DIST_URL%
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$props = '%WRAPPER_PROPS%'; $url = '%GRADLE_DIST_URL%'; $content = Get-Content -Raw -LiteralPath $props; $updated = [regex]::Replace($content, '(?m)^distributionUrl=.*$', ('distributionUrl=' + $url)); if ($updated -eq $content) { throw 'distributionUrl not found in gradle-wrapper.properties' }; Set-Content -LiteralPath $props -Value $updated -NoNewline"
