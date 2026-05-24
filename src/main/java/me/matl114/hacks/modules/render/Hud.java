@@ -23,6 +23,7 @@ import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -59,7 +60,7 @@ public class Hud extends BaseModule {
             .build();
 
     public NBTRef<WrapColor> color = builder(hud.add("color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .defaultValue(new WrapColor(TextColor.parse("#F05BDA").getOrThrow()))
             .build();
 
     @Override
