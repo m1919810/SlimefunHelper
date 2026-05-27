@@ -204,6 +204,7 @@ public class ChatTasks {
                 case "invcache" -> Tasks.scheduleDelayed(InvTasks::openInventoryCacheScreen, 1);
                 case "config" -> Tasks.scheduleDelayed(MainTasks::openConfigNewStyleScreen, 1);
                 case "scanner" -> Tasks.scheduleDelayed(ExtraTasks.getServerScanner()::openScannerScreen, 1);
+                case "clickgui" -> Tasks.scheduleDelayed(MainTasks.getClickGui()::openClickGui, 1);
                 default -> Tasks.scheduleDelayed(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu, 1);
             }
             Debug.chat(Text.literal("成功打开界面").formatted(Formatting.GREEN));

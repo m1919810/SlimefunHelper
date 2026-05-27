@@ -172,7 +172,7 @@ public class ClickGui extends BaseModule {
     public static final int DEFAULT_GAP = 5;
     public static final int DEFAULT_Y = 40;
 
-    private void openClickGui() {
+    public void openClickGui() {
         List<String> modules = getModules();
         ClickGuiMetaData meta = getClickGuiMetadata();
         Map<String, Supplier<DrawableWidget>> selections = new LinkedHashMap<>();
