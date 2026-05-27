@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.render;
 
 import java.util.*;
-import javax.swing.*;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -41,11 +40,10 @@ public class ItemESP extends BaseModule {
     public final ModulePath detectEntity = makePath(Configs.RENDER_CONFIG, "detect-entity");
     public final ModulePath itemEsp = detectEntity.add("item-esp");
 
-    public ItemESP() {}
-
-    public boolean enable() {
-        return enableItem.get() || enableFrame.get();
+    public ItemESP() {
+        bindFlag(enable);
     }
+
     // 启用开关
 
     boolean pendingUpdateEntities = false;
@@ -69,12 +67,26 @@ public class ItemESP extends BaseModule {
         }
     }
 
-    public FlagRef enableItem = flagBuilder(itemEsp.add("enable-item"))
+    public FlagRef enable = flagBuilder(itemEsp.addEnable()).build();
+
+    public FlagRef enableSimple = flagBuilder(itemEsp.add("enable-simple")).build();
+
+    public FlagRef enableSpecial = flagBuilder(itemEsp.add("enable-item"))
             .updateListener(s -> launchDelayUpdateTask())
             .build();
     public FlagRef enableFrame = flagBuilder(itemEsp.add("enable-frame"))
             .updateListener(s -> launchDelayUpdateTask())
             .build();
+
+    // 颜色（使用 WrapColor，默认绿色）
+    public NBTRef<WrapColor> color = builder(itemEsp.add("color"), WrapColor.class)
+            .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
+            .build();
+
+    public NBTRef<TracingOption> option = builder(itemEsp.add("options"), TracingOption.class)
+            .defaultValue(new TracingOption(true, false))
+            .build();
+
     // NBT 谓词（字符串格式，默认为空）
     public NBTRef<PrimitiveList<NbtCompound>> nbtPredicate = builder(
                     itemEsp.add("nbt-predicate"), PrimitiveList.<NbtCompound>parameter())
@@ -89,12 +101,12 @@ public class ItemESP extends BaseModule {
             .build();
 
     // 颜色（使用 WrapColor，默认绿色）
-    public NBTRef<WrapColor> color = builder(itemEsp.add("color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
+    public NBTRef<WrapColor> specialColor = builder(itemEsp.add("special-color"), WrapColor.class)
+            .defaultValue(new WrapColor(ColorUtils.color("#ED0355")))
             .build();
 
-    public NBTRef<TracingOption> option = builder(itemEsp.add("options"), TracingOption.class)
-            .defaultValue(new TracingOption(true, false))
+    public NBTRef<TracingOption> specialOptions = builder(itemEsp.add("special-options"), TracingOption.class)
+            .defaultValue(new TracingOption(true, true))
             .build();
 
     // 可选：热键（若需要可取消注释，并实现对应的 KeyBindRef）
@@ -116,6 +128,7 @@ public class ItemESP extends BaseModule {
         registerListener(
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.GLOW_ITEM_FRAME),
                 this::handleItemFrameItemData);
+        registerListener(Listener.getPostTick(), this::onUpdate);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRenderEntity);
     }
 
@@ -162,9 +175,9 @@ public class ItemESP extends BaseModule {
                             if (!checkNull()
                                     && (mc.currentScreen == null || mc.currentScreen instanceof HandledScreen<?>)) {
                                 pendingUpdateEntities = false;
-                                if (enable()) {
+                                if (enableSpecial.get()) {
                                     for (var entity : mc.world.getEntities()) {
-                                        if (entity instanceof ItemEntity item && enableItem.get()) {
+                                        if (entity instanceof ItemEntity item) {
                                             onItemEntity(item, item.getStack());
                                         } else if (entity instanceof ItemFrameEntity frame && enableFrame.get()) {
                                             onItemEntity(frame, frame.getHeldItemStack());
@@ -192,7 +205,7 @@ public class ItemESP extends BaseModule {
     }
 
     public void handleItemEntityItemData(Event<DataTracker.SerializedEntry<?>> entryUpdateEvent) {
-        if (enableItem.get()) {
+        if (enableSpecial.get()) {
             var entry = entryUpdateEvent.context();
             if (entry.id() == VDataFlag.ID_ITEM_ITEMSTACK
                     && (entry.value()) instanceof ItemStack stack
@@ -203,7 +216,7 @@ public class ItemESP extends BaseModule {
     }
 
     public void handleItemFrameItemData(Event<DataTracker.SerializedEntry<?>> entryUpdateEvent) {
-        if (enableFrame.get()) {
+        if (enableSpecial.get() && enableFrame.get()) {
             var entry = entryUpdateEvent.context();
             if (entry.id() == VDataFlag.ID_ITEM_FRAME_ITEMSTACK
                     && entry.value() instanceof ItemStack stack
@@ -213,51 +226,95 @@ public class ItemESP extends BaseModule {
         }
     }
 
+    List<Box> simpleBoxes;
+    List<Box> specialBoxes;
+
+    public void onUpdate(Event<Void> eventVoid) {
+        if (checkNull()) {
+            simpleBoxes = null;
+            specialBoxes = null;
+            return;
+        }
+        if (enable.get()) {
+            boolean special = enableSpecial.get();
+            boolean common = enableSimple.get();
+
+            if (special || common) {
+                if (special) {
+                    specialBoxes = new ArrayList<>();
+                }
+                if (common) {
+                    simpleBoxes = new ArrayList<>();
+                }
+                for (var entity : mc.world.getEntities()) {
+                    if ((entity instanceof ItemEntity i || (enableFrame.get() && entity instanceof ItemFrameEntity))) {
+                        if (special
+                                && entity instanceof EntityAccess<?> access
+                                && !access.isMetaEmpty()
+                                && access.getMetadata().get(this, ITEM_ESP_METADATA_KEY) != null) {
+                            specialBoxes.add(entity.getBoundingBox());
+                            continue;
+                        }
+                        if (common) {
+                            simpleBoxes.add(entity.getBoundingBox());
+                        }
+                    }
+                }
+            }
+        } else {
+            specialBoxes = null;
+            simpleBoxes = null;
+        }
+    }
+
     public void onRenderEntity(Event<MatrixStack> event) {
-        if (enable()) {
+        if (enable.get()) {
             MatrixStack stack = event.context();
-            List<Box> boxes = new ArrayList<>();
-            Vec3d cameraPos = RenderUtils.getCameraPos().negate();
-            for (var entity : mc.world.getEntities()) {
-                if ((entity instanceof ItemEntity i || entity instanceof ItemFrameEntity)
-                        && entity instanceof EntityAccess<?> access
-                        && !access.isMetaEmpty()
-                        && access.getMetadata().get(this, ITEM_ESP_METADATA_KEY) != null) {
-                    boxes.add(entity.getBoundingBox().offset(cameraPos));
-                }
+            if (simpleBoxes != null && !simpleBoxes.isEmpty()) {
+                TracingOption op = option.get();
+                int color = this.color.get().asRGB();
+                drawBoxes(stack, simpleBoxes, op, color);
             }
-            TracingOption op = option.get();
-            int color = this.color.get().asRGB();
-            if (!boxes.isEmpty()) {
-                RenderUtils.startDrawVirtual(stack);
-                try {
-                    VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
-                        if (op.box()) {
-                            for (var box2 : boxes) {
-                                operation.drawOutlinedBox(
-                                        stack,
-                                        vertexConsumer,
-                                        box2.getMinPos(),
-                                        box2.getMaxPos(),
-                                        ColorUtils.withAlphaInt(color, 1.0F));
-                            }
-                        }
-                        if (op.line()) {
-                            Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
-                            for (var box : boxes) {
-                                operation.drawLine(
-                                        stack,
-                                        vertexConsumer,
-                                        traceOrigin,
-                                        box.getCenter(),
-                                        ColorUtils.withAlphaInt(color, 1.0F));
-                            }
-                        }
-                    }));
-                } finally {
-                    RenderUtils.stopDrawVirtual(stack);
-                }
+            if (specialBoxes != null && !specialBoxes.isEmpty()) {
+                TracingOption op = specialOptions.get();
+                int color = this.specialColor.get().asRGB();
+                drawBoxes(stack, specialBoxes, op, color);
             }
+        }
+    }
+
+    private void drawBoxes(MatrixStack stack, List<Box> boxes, TracingOption op, int color) {
+        if (op.isEmpty()) return;
+        Vec3d cameraPos = RenderUtils.getCameraPos().negate();
+        RenderUtils.startDrawVirtual(stack);
+        try {
+            VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
+                if (op.box()) {
+                    for (var box2 : boxes) {
+                        box2 = box2.offset(cameraPos);
+                        operation.drawOutlinedBox(
+                                stack,
+                                vertexConsumer,
+                                box2.getMinPos(),
+                                box2.getMaxPos(),
+                                ColorUtils.withAlphaInt(color, 1.0F));
+                    }
+                }
+                if (op.line()) {
+                    Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
+                    for (var box : boxes) {
+                        box = box.offset(cameraPos);
+                        operation.drawLine(
+                                stack,
+                                vertexConsumer,
+                                traceOrigin,
+                                box.getCenter(),
+                                ColorUtils.withAlphaInt(color, 1.0F));
+                    }
+                }
+            }));
+        } finally {
+            RenderUtils.stopDrawVirtual(stack);
         }
     }
 }

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ElementHandler;
-import me.matl114.gui.config.ListModifyWidget;
+import me.matl114.gui.complex.config.ListModifyWidget;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.kv.ListAttrKeyValue;

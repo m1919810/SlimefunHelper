@@ -1,6 +1,8 @@
 package me.matl114.hacks.api;
 
+import com.mojang.datafixers.util.Pair;
 import java.util.*;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -11,7 +13,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.channels.ListenerPoint;
-import me.matl114.gui.basic.SubScreenWidget;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.utils.Named;
 import me.matl114.hacks.utils.NamedConsumer;
 import me.matl114.hacks.utils.NamedPredicate;
@@ -22,13 +24,17 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
+import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
+import org.jetbrains.annotations.Nullable;
 
-public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, ModuleListProvider {
+public abstract class BaseModule implements ModuleListProvider {
     protected static final MinecraftClient mc = MinecraftClient.getInstance();
-    public String name;
+
+    @Getter
+    protected String name;
 
     public BaseModule() {
         this.name = this.getClass().getSimpleName();
@@ -41,6 +47,15 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
     protected boolean lastActiveFlag = false;
     protected boolean removed = false;
 
+    public final boolean hasBindFlag() {
+        return bindedFlag != null;
+    }
+
+    @Nullable
+    public final FlagRef getBindFlag() {
+        return bindedFlag;
+    }
+
     public boolean isActive() {
         return lastActiveFlag;
     }
@@ -49,7 +64,7 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
         return removed;
     }
 
-    protected FlagRef bindedFlag = null;
+    private FlagRef bindedFlag = null;
     protected static final String REASON_BIND = "module binding";
     protected static final String REASON_LISTENER = "event listener";
     protected static final String REASON_VALIDATOR = "config validator";
@@ -123,13 +138,21 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
         removeBindFlag();
         removeBindHotkey();
         unregisterAll();
+        manager = null;
         removed = true;
+    }
+
+    private ModuleManager manager;
+
+    public ModuleManager getModuleManager() {
+        return manager;
     }
 
     // this is for convenience
     @MustBeInvokedByOverriders
     public final <T extends BaseModule> T register(ModuleManager manager) {
         manager.registerModule(this);
+        this.manager = manager;
         return (T) this;
     }
 
@@ -197,6 +220,20 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
     }
 
     private final Set<WrapperConfigRef<?>> registeredConfigRefs = new LinkedHashSet<>();
+
+    public final List<Pair<BooleanSupplier, AttrKeyValue<?>>> getEditableConfig() {
+        List<Pair<BooleanSupplier, AttrKeyValue<?>>> lst = new ArrayList<>();
+        for (var re : registeredConfigRefs) {
+            if (re.isEditable()) {
+                lst.add(Pair.of(re.showPredicate(), re.ref.createKeyValue(String.join(".", re.path))));
+            }
+        }
+        return lst;
+    }
+
+    public boolean hasEditableConfig() {
+        return !registeredConfigRefs.isEmpty() && registeredConfigRefs.stream().anyMatch(WrapperConfigRef::isEditable);
+    }
 
     private final Set<IHotKey> registeredHotkeys = new LinkedHashSet<>();
 
@@ -296,25 +333,20 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
     }
 
     public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(
-            Config config, ModulePath path, MultiKeyBind defaultValue, ModulePath togglePath) {
-        return toggleHotkey(config, path.toPath(), defaultValue, togglePath.toPath());
-    }
-
-    public WrapperSettingBuilder<Boolean> toggle(Config config, String... path) {
-        // automatically hide toggle flags because they are always internal,
-        return builder(config, Boolean.class).path(path).defaultValue(false).hideConfig();
+            ModulePath path, MultiKeyBind defaultValue, ModulePath togglePath) {
+        return toggleHotkey(path.getConfig(), path.toPath(), defaultValue, togglePath.toPath());
     }
 
     public IHotKey getHotkey(String... path) {
         return SimpleInputManager.getInstance().getHotkey(String.join(".", path));
     }
 
-    public <T extends Ref<?>> T registerConfig(T ref) {
-        registerConfigWrapper(new WrapperConfigRef(ref));
-        return ref;
-    }
+    //    public <T extends Ref<?>> T registerConfig(T ref, String[] path) {
+    //        registerConfigWrapper(new WrapperConfigRef(ref, path));
+    //        return ref;
+    //    }
 
-    public <T> void registerConfigWrapper(WrapperConfigRef<T> ref) {
+    private <T> void registerConfigWrapper(WrapperConfigRef<T> ref) {
         registeredConfigRefs.add(ref);
     }
 
@@ -342,13 +374,8 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
     }
 
     // todo: remake config screen
-    @Override
-    public SubScreenWidget createGui(int x, int y, int dx, int dy) {
-        return null;
-    }
 
-    @Override
-    public void saveGui(SubScreenWidget gui) {}
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor) {}
 
     public static Text getModuleMeta(Enum<?> enumReff) {
         ConfigEnum configEnum = (ConfigEnum) enumReff;
@@ -378,10 +405,42 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
     @Accessors(fluent = true)
     public static class WrapperConfigRef<T> {
         Ref<T> ref;
-        boolean hideInConfig = false;
+        static BooleanSupplier ALWAYS_TRUE = () -> true;
+        static BooleanSupplier ALWAYS_FALSE = () -> false;
+        BooleanSupplier showPredicate = ALWAYS_TRUE;
+        Config config;
+        String[] path;
 
-        public WrapperConfigRef(Ref<T> ref) {
+        public WrapperConfigRef(Ref<T> ref, Config config, String[] path) {
             this.ref = ref;
+            this.path = path;
+            this.config = config;
+        }
+
+        public boolean shouldShow() {
+            return showPredicate.getAsBoolean();
+        }
+
+        public void hideConfig() {
+            showPredicate = ALWAYS_FALSE;
+        }
+
+        public void showConfig() {
+            showPredicate = ALWAYS_TRUE;
+        }
+
+        public void addShowPredicate(BooleanSupplier supplier) {
+            if (showPredicate == ALWAYS_TRUE) {
+                showPredicate = supplier;
+            } else if (showPredicate == ALWAYS_FALSE) {
+                return;
+            } else {
+                showPredicate = () -> showPredicate.getAsBoolean() && supplier.getAsBoolean();
+            }
+        }
+
+        public boolean isEditable() {
+            return this.config.getRegistryKey() != null;
         }
     }
 
@@ -390,9 +449,9 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
         WrapperConfigRef<W> wrapperConfig;
         IHotKey hotkey;
 
-        public WrapperConfigRef<W> getWrapper() {
+        private WrapperConfigRef<W> getWrapper() {
             if (wrapperConfig == null) {
-                wrapperConfig = new WrapperConfigRef<>(getRef());
+                wrapperConfig = new WrapperConfigRef<>(getRef(), this.rootConfig, this.path);
             }
             return wrapperConfig;
         }
@@ -445,12 +504,17 @@ public abstract class BaseModule implements ModuleGuiProvider<SubScreenWidget>, 
         // for gui building
         // todo: create it later
         public WrapperSettingBuilder<W> hideConfig() {
-            getWrapper().hideInConfig = true;
+            getWrapper().hideConfig();
             return this;
         }
 
         public WrapperSettingBuilder<W> showConfig() {
-            getWrapper().hideInConfig = false;
+            getWrapper().showConfig();
+            return this;
+        }
+
+        public WrapperSettingBuilder<W> show(BooleanSupplier supplier) {
+            getWrapper().addShowPredicate(supplier);
             return this;
         }
 

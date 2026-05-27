@@ -70,7 +70,6 @@ public class ClientExtra extends BaseModule {
 
     public final StringRef clientBrandName = builder(other.add("client-brand-name"), StringRef.TYPE)
             .defaultValue("")
-            .hideConfig()
             .build();
 
     public final KeyBindRef cursorSwitchKey = hotkey(

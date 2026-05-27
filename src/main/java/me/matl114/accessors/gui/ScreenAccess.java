@@ -1,5 +1,6 @@
 package me.matl114.accessors.gui;
 
+import java.util.function.Consumer;
 import me.matl114.accessors.events.MetadataHolder;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
@@ -28,4 +29,8 @@ public interface ScreenAccess extends MetadataHolder {
     public void switchToScreen(Screen anotherScreen);
 
     public void switchFromCurrent();
+
+    public void addInitTask(Consumer<Screen> runnable);
+
+    public void addCloseFuture(Runnable runnable);
 }

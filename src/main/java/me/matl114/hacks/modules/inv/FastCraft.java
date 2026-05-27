@@ -5,7 +5,8 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.other.TradeInformationSubScreen;
+import me.matl114.gui.complex.other.TradeInformationSubScreen;
+import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RecipeTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -35,7 +36,9 @@ import org.spongepowered.asm.mixin.Unique;
 public class FastCraft extends BaseModule {
     public final ModulePath fastCraft = makePath(Configs.INV_CONFIG, "fast-craft");
 
-    public FastCraft() {}
+    public FastCraft() {
+        bindFlag(enable);
+    }
 
     public final FlagRef enable =
             flagBuilder(fastCraft.add("enable-fastcraft-buttons")).build();
@@ -45,7 +48,8 @@ public class FastCraft extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostInitializeScreen(), this::onCraftScreenInitialize);
+        registerListener(
+                Listener.getPostInitializeScreen().getChannel(HandledScreen.class), this::onCraftScreenInitialize);
         registerListener(Listener.getPostToggleRecipeBook(), this::onRecipeBookToggle);
         registerListener(Listener.getClickCraftingRecipe(), this::onRecipeClicked);
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "drop-craft", dropCraft);

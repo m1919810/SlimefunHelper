@@ -9,13 +9,12 @@ import net.minecraft.util.Colors;
 
 @Accessors(chain = true)
 public class RawTextElement extends AbstractElement {
-    final TextProvider text;
+    protected final TextProvider text;
+
+    protected final ColorSampler color;
 
     @Setter
-    int color;
-
-    @Setter
-    int alignment;
+    protected int alignment;
 
     public static RawTextElement instance(Text text) {
         return new RawTextElement(text, Colors.WHITE);
@@ -34,6 +33,10 @@ public class RawTextElement extends AbstractElement {
     }
 
     public RawTextElement(TextProvider provider, int color, int alignment) {
+        this(provider, ColorSampler.of(color), alignment);
+    }
+
+    public RawTextElement(TextProvider provider, ColorSampler color, int alignment) {
         this.text = provider;
         this.color = color;
 
@@ -59,7 +62,7 @@ public class RawTextElement extends AbstractElement {
                     0,
                     element.getTextureWidth(),
                     element.getTextureHeight(),
-                    color,
+                    color.getColorInt(),
                     alignment);
         }
     }

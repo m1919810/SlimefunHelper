@@ -6,6 +6,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleEntry;
 import me.matl114.hacks.api.ModulePath;
@@ -13,6 +14,7 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.BoundedPrimitiveMap;
 import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -32,15 +34,13 @@ public class Hud extends BaseModule {
     public final ModulePath hudRoot = makePath(Configs.RENDER_CONFIG, "in-game-hud");
     public final ModulePath hud = hudRoot.add("hud");
 
-    public Hud() {}
+    public Hud() {
+        bindFlag(enable);
+    }
 
     public FlagRef enable = flagBuilder(hud.add("enable")).build();
 
-    public KeyBindRef keyBind = toggleHotkey(
-                    Configs.RENDER_CONFIG,
-                    hud.add("hotkey").toPath(),
-                    new MultiKeyBind(),
-                    hud.add("enable").toPath())
+    public KeyBindRef keyBind = toggleHotkey(hud.add("hotkey"), new MultiKeyBind(), hud.add("enable"))
             .build();
 
     public FlagRef right = flagBuilder(hud.add("right")).build();
@@ -49,14 +49,9 @@ public class Hud extends BaseModule {
             .defaultValue(new HudElementSelectSet())
             .build();
 
-    public DoubleRef xpos = builder(hud.add("x-pos"), DoubleRef.TYPE)
-            .defaultValue(0.0D)
-            .validator(Configs.doubleRange(0.0D, 1.0D))
-            .build();
-
-    public DoubleRef ypos = builder(hud.add("y-pos"), DoubleRef.TYPE)
-            .defaultValue(0.0D)
-            .validator(Configs.doubleRange(0.0D, 1.0D))
+    public NBTRef<Vec2> pos = builder(hud.add("pos"), Vec2.class)
+            .defaultValue(new Vec2(0.0D, 0.0D))
+            .validator((v) -> v.x() >= 0.0D && v.y() >= 0.0D && v.x() <= 1.0D && v.y() <= 1.0D)
             .build();
 
     public NBTRef<WrapColor> color = builder(hud.add("color"), WrapColor.class)
@@ -174,8 +169,9 @@ public class Hud extends BaseModule {
         //        vdraw.drawTexturedQuad(Identifier.tryParse("slimefunhelper:textures/custom/genshin_impact.png"), sizeX
         // - 30,sizeX, sizeY - 20, sizeY, 0, 0,1,0 , 1);
         //        vdraw.popMatrix();
-        double xPer = xpos.get();
-        double yPer = ypos.get();
+        var pp = pos.get();
+        double xPer = pp.x();
+        double yPer = pp.y();
         int startX = (int) (right.get() ? (sizeX - xPer * sizeX) : xPer * sizeX);
         int startY = (int) (yPer * sizeY);
         vdraw.getMatrices().translate(startX, startY);
@@ -230,14 +226,13 @@ public class Hud extends BaseModule {
         // tps, fps, version
         SupportVersion currentVersion = ViaFabricPlusHooks.getInstance().getCurrentVersion();
         Text text = ChatUtils.stringToText("&a&lMCv" + currentVersion
-                + (Objects.equals(currentVersion, SupportVersion.CURRENT)
-                        ? ""
-                        : "(Via)" + " Fps:" + mc.getCurrentFps()));
+                + ((Objects.equals(currentVersion, SupportVersion.CURRENT) ? "" : "(Via)") + " Fps:"
+                        + mc.getCurrentFps()));
         drawText(vdraw, text.asOrderedText());
     }
 
     public void handleConnectionInfo(VDrawContext vdraw) {
-        String serverName = "Ip:%s, %s";
+        String serverName = "ip:%s, %s";
         drawText(vdraw, serverName.formatted(CommonUtils.getServerName(), mc.player.getNameForScoreboard()));
     }
 

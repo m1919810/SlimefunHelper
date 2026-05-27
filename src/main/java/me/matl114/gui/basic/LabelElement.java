@@ -61,7 +61,7 @@ public class LabelElement extends RawTextElement {
                     0,
                     element.getTextureWidth(),
                     element.getTextureHeight(),
-                    color,
+                    color.getColorInt(),
                     alignment);
         }
     }

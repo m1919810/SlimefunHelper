@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.extra;
 
 import com.google.gson.*;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import java.lang.ref.WeakReference;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.List;
@@ -15,10 +16,14 @@ import me.matl114.events.Listener;
 import me.matl114.gui.GenericScreen;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.config.KeyValueInputWidget;
-import me.matl114.gui.config.ListModifyWidget;
+import me.matl114.gui.complex.config.KeyValueInputWidget;
+import me.matl114.gui.complex.config.ListModifyWidget;
+import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.elements.MultiLineTextElement;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -43,14 +48,21 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 public class ServerScanner extends BaseModule {
-    public ServerScanner() {}
+    public ServerScanner() {
+        bindFlag(enable);
+    }
 
+    public final ModulePath scanner = makePath(Configs.TEST_CONFIG, "other.server-scanner");
+    public final FlagRef enable =
+            builder(scanner.addEnable(), FlagRef.TYPE).defaultValue(true).build();
     public static final String[] SCANNER_SAVE = {"server-scanner", "save-list"};
 
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostInitializeScreen(), this::onButtonAddWhenInitialize);
+        registerListener(
+                Listener.getPostInitializeScreen().getChannel(MultiplayerScreen.class),
+                this::onButtonAddWhenInitialize);
     }
 
     public void unregisterAll() {
@@ -58,19 +70,25 @@ public class ServerScanner extends BaseModule {
         running.set(false);
     }
 
-    private final ContentDelegateWidget<ExecutableWidget> delegateWidget = new ContentDelegateWidget<>(0, 5, 50, 20);
+    private WeakReference<ContentDelegateWidget<ExecutableWidget>> delegateWidget;
 
-    public void onButtonAddWhenInitialize(Event<Screen> screenEvent) {
-        if (screenEvent.context() instanceof MultiplayerScreen mp) {
+    public void onButtonAddWhenInitialize(Event<MultiplayerScreen> screenEvent) {
+        if (enable.get()) {
+            var mp = screenEvent.context();
+            if (delegateWidget != null && delegateWidget.get() != null) {
+                ScreenAccess.of(mp).removeChildFrom(delegateWidget.get());
+            }
+            delegateWidget = null;
+            ContentDelegateWidget<ExecutableWidget> widget = new ContentDelegateWidget<>(0, 5, 50, 20);
             ExecutableWidget executableWidget = ExecutableWidget.instance(0, 0, 50, 20)
                     .setElementHandler(new ButtonElement(
                             TextProvider.of(Text.literal("Scanner")), ButtonAction.run(this::openScannerScreen)));
-            delegateWidget.setContentDelegate(executableWidget);
-            ScreenAccess.of(mp).removeChildFrom(delegateWidget);
-            delegateWidget.addTo(mp);
+            widget.setContentDelegate(executableWidget);
+            widget.addTo(mp);
+            delegateWidget = new WeakReference<>(widget);
         }
     }
-
+    // todo: optimize
     private ListEntryWidgetController listEntryController;
     private final StringRef ipField = new StringRef("");
     private final IntRef portRange1 = new IntRef(0);

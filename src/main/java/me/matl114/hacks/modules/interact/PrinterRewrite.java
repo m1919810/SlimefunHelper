@@ -8,11 +8,11 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.InteractionTasks;
-import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
@@ -42,6 +42,7 @@ public class PrinterRewrite extends BaseModule {
     public final ModulePath litematicaPrinterRewrite = blockRotate.add("litematica-printer-rewrite");
 
     public PrinterRewrite() {
+        super("Printer");
         bindFlag(enable);
     }
 
@@ -183,7 +184,7 @@ public class PrinterRewrite extends BaseModule {
                 enableLegalLook.set(false);
             }
             try {
-                Runnable callback = InvTasks.getInvExtra().swapInventoryIndexToHand(idx);
+                Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(idx);
                 if (callback == null) {
                     putCanNotPlace(pos);
                     return false;

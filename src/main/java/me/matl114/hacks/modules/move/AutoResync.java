@@ -23,6 +23,7 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 @SuppressWarnings("all")
@@ -88,6 +89,10 @@ public class AutoResync extends BaseModule {
         if (worldSwitchTick + 100 > Tasks.getTick()) return;
         if (mc.player.getPos().equals(Vec3d.ZERO)) {
             // ignoring first spawn packets
+            return;
+        }
+        if (mc.interactionManager.getCurrentGameMode() == GameMode.SPECTATOR) {
+            // do not modify spectator tp
             return;
         }
         boolean currentOnGround = mc.player.isOnGround();

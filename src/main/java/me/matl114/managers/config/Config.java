@@ -45,6 +45,8 @@ public class Config implements RefMap {
     public static final SimpleRegistry<Config> REGISTRY = new SimpleRegistry<>(
             RegistryKey.ofRegistry(Identifier.of("slimefunhelper", "configs")), Lifecycle.stable());
     private static final Set<Config> allConfigInternal = new LinkedHashSet<>();
+
+    @Getter
     RegistryKey<Config> registryKey;
 
     public void registerGlobal() {
@@ -426,8 +428,8 @@ public class Config implements RefMap {
     }
 
     public static class SettingBuilder<T> {
-        final RefMap root;
-        final Config rootConfig;
+        protected final RefMap root;
+        protected final Config rootConfig;
 
         public SettingBuilder(MapRef ref, Config rootConfig, Class<T> clazz) {
             this.root = ref;

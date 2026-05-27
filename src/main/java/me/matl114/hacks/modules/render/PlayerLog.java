@@ -14,7 +14,9 @@ import net.minecraft.client.network.PlayerListEntry;
 public class PlayerLog extends BaseModule {
     public final ModulePath playerIo = makePath(Configs.RENDER_CONFIG, "player-io");
 
-    public PlayerLog() {}
+    public PlayerLog() {
+        bindFlag(enable);
+    }
 
     public final FlagRef enable = flagBuilder(playerIo.add("log-player-io")).build();
 

@@ -1,30 +1,25 @@
 package me.matl114.hacks.modules.move;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 
 public class FloatingUtils extends BaseModule implements LegalMovementManager.MovementModifier {
     static LegalMovementManager.DelegateMovementModifier instance;
     public final ModulePath velocityManagement = makePath(Configs.MOV_CONFIG, "velocity-management");
     public final ModulePath floatingUtils = velocityManagement.add("floating-utils");
     public final ModulePath grimFloating = floatingUtils.add("grim-floating");
-    public final ModulePath elytraSlowFalling = floatingUtils.add("elytra-slow-falling");
+    public static FloatingUtils INSTANCE;
 
     public FloatingUtils() {
         if (instance == null) {
@@ -32,40 +27,15 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
+        bindFlag(enableGrim);
+        INSTANCE = this;
     }
 
-    public final FlagRef enableGrim = flagBuilder(grimFloating.addEnable())
-            .updateListener(this::onToggleGrimFloat)
-            .build();
+    public final FlagRef enableGrim = flagBuilder(grimFloating.addEnable()).build();
 
     public final KeyBindRef hotkeyGrim = moduleEntry(
                     grimFloating.addHotkey(), new MultiKeyBind(), grimFloating.addEnable())
             .build();
-
-    public final FlagRef enableElytraSlowFall =
-            flagBuilder(elytraSlowFalling.addEnable()).build();
-
-    public final KeyBindRef hotkeySlowFall = moduleEntry(
-                    elytraSlowFalling.addHotkey(), new MultiKeyBind(), elytraSlowFalling.addEnable())
-            .build();
-
-    public Deque<Packet<?>> delayedPackets = new ArrayDeque<>();
-
-    public void onToggleGrimFloat(boolean val) {
-        if (val) {
-            delayedPackets.clear();
-        } else {
-            // false
-            if (!delayedPackets.isEmpty()) {
-                for (var packet : delayedPackets) {
-                    try {
-                        ((Packet) packet).apply(mc.getNetworkHandler());
-                    } catch (Exception gi) {
-                    }
-                }
-            }
-        }
-    }
 
     boolean forceFloatingThisTick = false;
 
@@ -76,7 +46,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onTransactionPacket);
+
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMoveNoPosition);
     }
 
@@ -95,13 +65,6 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         }
     }
 
-    public void onTransactionPacket(Event<CommonPingS2CPacket> packet) {
-        if (false && enableGrim.get()) {
-            delayedPackets.add(packet.context());
-            packet.cancel();
-        }
-    }
-
     public boolean workGrimFloatingThisTick() {
         return (enableGrim.get() // && !mc.player.isOnGround()
                 )
@@ -109,19 +72,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     }
 
     @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-        if (enableElytraSlowFall.get()) {
-            if (mc.player.isFallFlying() && !mc.player.isOnGround()) {
-                boolean rotateYaw = Tasks.getTick() % 2 == 0;
-                movementManagerEvent.context.pushImportantRotation(true, rotateYaw);
-                EntityUtils.setEntityPitchSafe(mc.player, 0);
-                if (rotateYaw) {
-                    EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
-                }
-                movementManagerEvent.context.markForResetRot();
-            }
-        }
-    }
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {

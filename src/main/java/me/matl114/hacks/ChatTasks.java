@@ -14,7 +14,7 @@ import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
-import me.matl114.gui.invcache.InventoryViewScreen;
+import me.matl114.gui.complex.invcache.InventoryViewScreen;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.api.ModulePreset;
@@ -159,6 +159,25 @@ public class ChatTasks {
                 default -> Debug.chat("不支持的参数类型: " + re);
             }
             return true;
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                    .name("reset")
+                    .helper("<what> 重置内容")
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("what")
+                            .select(List.of("clickgui"))
+                            .build())
+                    .post(e -> e.executor(CommandContext.run(this::onReset)))
+                    .complete();
+        }
+
+        public void onReset(ArgumentInputStream args) {
+            var re = args.nextNonnullString();
+            switch (re) {
+                case "clickgui" -> Tasks.scheduleDelayed(MainTasks.getClickGui()::resetGui, 1);
+            }
         }
 
         List<String> pageType =

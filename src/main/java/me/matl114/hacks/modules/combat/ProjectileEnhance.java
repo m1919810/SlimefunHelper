@@ -35,7 +35,9 @@ import net.minecraft.util.math.Vec3d;
 public class ProjectileEnhance extends BaseModule {
     public final ModulePath projectile = makePath(Configs.COMBAT_CONFIG, "projectile");
 
-    public ProjectileEnhance() {}
+    public ProjectileEnhance() {
+        bindFlag(enable);
+    }
 
     public FlagRef enable = flagBuilder(projectile.add("projectile-enhance")).build();
 
@@ -56,10 +58,12 @@ public class ProjectileEnhance extends BaseModule {
 
     public DoubleRef tpDistance = builder(projectile.add("tp-accelerate"), DoubleRef.TYPE)
             .defaultValue(150.0D)
+            .show(enableTp::get)
             .build();
 
-    public FlagRef enhanceTp =
-            flagBuilder(projectile.add("tp-accelerate-exact-tp")).build();
+    public FlagRef enhanceTp = flagBuilder(projectile.add("tp-accelerate-exact-tp"))
+            .show(enableTp::get)
+            .build();
 
     public NBTRef<Regex> useItemId = builder(projectile.add("tp-accelerate-exact-tp"), Regex.class)
             .defaultValue(new Regex("^(LOGITECH_LASER_GUN)$"))

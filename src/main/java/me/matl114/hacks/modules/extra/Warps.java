@@ -40,7 +40,7 @@ public class Warps extends BaseModule {
     private final ListRef saveMap = builder(Configs.INTERNAL_CONFIG, SAVE_PATH, ListRef.TYPE)
             .defaultValue(List.of())
             .build();
-
+    // todo: add render settings, add auto create settings
     public final List<String> cachedString = new ArrayList<>();
     public final Map<String, Map<String, Map<String, Vec3d>>> parseVec3ds = new LinkedHashMap<>();
 

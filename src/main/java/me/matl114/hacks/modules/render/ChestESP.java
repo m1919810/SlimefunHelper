@@ -42,7 +42,9 @@ public class ChestESP extends BaseModule {
     public final ModulePath detectBlock = makePath(Configs.RENDER_CONFIG, "detect-block");
     public final ModulePath chestEsp = detectBlock.add("chest-esp");
 
-    public ChestESP() {}
+    public ChestESP() {
+        bindFlag(enable);
+    }
 
     public final FlagRef enable = flagBuilder(chestEsp.add("enable")).build();
 

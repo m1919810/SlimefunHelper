@@ -1668,7 +1668,7 @@ public class MovTasks {
 
     public static boolean seenAsFloating(boolean fakeGilding) {
         // add serverPacket result, if toggle flight at server, stop seen as floating, no need to antiKick
-        return !creativeFlight.serverSideCanFly
+        return !flight.serverSideCanFly
                 && mc.player.getVelocity().y >= -0.03125D
                 && mc.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR
                 && !mc.player.hasStatusEffect(StatusEffects.LEVITATION)
@@ -2212,7 +2212,7 @@ public class MovTasks {
     public static AutoResync autoResync;
 
     @Getter
-    public static CreativeFlight creativeFlight;
+    public static Flight flight;
 
     @Getter
     public static Sprint sprint;
@@ -2229,8 +2229,8 @@ public class MovTasks {
     @Getter
     public static ElytraFlight elytraFlight;
 
-    @Getter
-    public static ElytraFlightLegit elytraFlightLegit;
+    //    @Getter
+    //    public static ElytraFlightLegit elytraFlightLegit;
 
     @Getter
     public static ElytraGrimAccelerate elytraGrimAccelerate;
@@ -2240,6 +2240,9 @@ public class MovTasks {
 
     @Getter
     public static FloatingUtils floatingUtils;
+
+    @Getter
+    public static ElytraSlowFall elytraSlowFall;
 
     @Getter
     public static MovTest movTest;
@@ -2252,6 +2255,9 @@ public class MovTasks {
 
     @Getter
     public static TravellingControl travellingControl;
+
+    @Getter
+    public static BaritoneFix baritoneFix;
 
     @ApiStatus.Experimental
     @Getter
@@ -2269,7 +2275,7 @@ public class MovTasks {
 
         setBackLog = new SetBackLog().register(m);
         autoResync = new AutoResync().register(m);
-        creativeFlight = new CreativeFlight().register(m);
+        flight = new Flight().register(m);
         sprint = new Sprint().register(m);
         moveTimer = new MoveTimer().register(m);
         stepHeight = new StepHeight().register(m);
@@ -2280,10 +2286,12 @@ public class MovTasks {
         // elytraFlightLegit = new ElytraFlightLegit().register(m);
         velocity = new Velocity().register(m);
         floatingUtils = new FloatingUtils().register(m);
+        elytraSlowFall = new ElytraSlowFall().register(m);
         movTest = new MovTest().register(m);
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);
         travellingControl = new TravellingControl().register(m);
+        baritoneFix = new BaritoneFix().register(m);
         elytraFinder = new ElytraFinder().register(m);
     }
 

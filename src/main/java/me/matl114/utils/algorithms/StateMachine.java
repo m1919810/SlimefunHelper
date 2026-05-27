@@ -3,10 +3,13 @@ package me.matl114.utils.algorithms;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 import me.matl114.utils.collections.IndexEntry;
 
 public class StateMachine {
+    @Getter
     int state;
+
     final int initState;
     boolean currentEnd = false;
     final StateAction[] actions;

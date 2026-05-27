@@ -15,8 +15,8 @@ public class PlayerAbilityMixin {
 
     @Inject(method = "getFlySpeed", at = @At("HEAD"), cancellable = true)
     public void getFlySpeed(CallbackInfoReturnable<Float> cir) {
-        if (MovTasks.getCreativeFlight().overrideFlySpeed.get()) {
-            cir.setReturnValue((float) MovTasks.getCreativeFlight().getOverridingFlySpeed());
+        if (MovTasks.getFlight().overrideFlySpeed.get()) {
+            cir.setReturnValue((float) MovTasks.getFlight().getOverridingFlySpeed());
         }
     }
 }

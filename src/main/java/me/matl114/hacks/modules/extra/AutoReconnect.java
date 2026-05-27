@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.extra;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -38,8 +39,10 @@ public class AutoReconnect extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
-        registerListener(Listener.getPostSetScreen(), this::onServerDisconnectScreenSetup);
+        registerListener(
+                Listener.getPostInitializeScreen().getChannel(DisconnectedScreen.class), this::onScreenInitialize);
+        registerListener(
+                Listener.getPostSetScreen().getChannel(DisconnectedScreen.class), this::onServerDisconnectScreenSetup);
         registerListener(Listener.getServerPreConnectPoint(), this::onServerConnect);
     }
 
@@ -51,8 +54,9 @@ public class AutoReconnect extends BaseModule {
 
     ServerInfo lastServer;
 
-    public void onScreenInitialize(Event<Screen> event) {
-        if (enableB.get() && event.context instanceof DisconnectedScreen disconnected) {
+    public void onScreenInitialize(Event<DisconnectedScreen> event) {
+        if (enableB.get()) {
+            var disconnected = event.context;
             SubScreenWidget widget = new SubScreenWidget(0, 0, 200, 50);
             widget.addDrawableChild(ExecutableWidget.instance(0, 25, 200, 20)
                     .setElementHandler(new ButtonElement(
@@ -76,8 +80,9 @@ public class AutoReconnect extends BaseModule {
         }
     }
 
-    public void onServerDisconnectScreenSetup(Event<Screen> event) {
-        if (enable.get() && event.context instanceof DisconnectedScreen disconnected) {
+    public void onServerDisconnectScreenSetup(Event<DisconnectedScreen> event) {
+        if (enable.get()) {
+            var disconnected = event.context;
             counter = delay.get() * 20;
             Tasks.scheduleRepeated(
                     () -> {

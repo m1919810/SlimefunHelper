@@ -68,9 +68,12 @@ public class BowEnhance extends BaseModule {
 
     public DoubleRef tpDistance = builder(bowAtt.add("tp-accelerate"), DoubleRef.TYPE)
             .defaultValue(150.0D)
+            .show(enableTp::get)
             .build();
 
-    public FlagRef enhanceTp = flagBuilder(bowAtt.add("tp-accelerate-exact-tp")).build();
+    public FlagRef enhanceTp = flagBuilder(bowAtt.add("tp-accelerate-exact-tp"))
+            .show(enableTp::get)
+            .build();
     // todo: use onGround Packets to reduce low version problems
     public FlagRef lowVersion =
             flagBuilder(bowAtt.add("version-lower-than-121")).build();

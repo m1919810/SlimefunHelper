@@ -1,5 +1,6 @@
 package me.matl114.versioned.api;
 
+import java.awt.*;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -25,7 +26,13 @@ public interface VDrawContext {
 
     public DrawContext popMatrix();
 
+    public void pushLayer(int depth);
+
+    public void popLayer();
+
     public MatrixStack getMatrices();
+
+    public void setShaderColor(int rgba);
 
     public void setShaderColor(final float red, final float green, final float blue, final float alpha);
 
@@ -156,20 +163,23 @@ public interface VDrawContext {
     public void drawTexturedQuad(
             Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2);
 
-    default void drawGuiTextureQuad(
-            Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
-        float baseSpriteWidth = 256f;
-        int ui1 = (int) (u1 * baseSpriteWidth);
-        int vi1 = (int) (v1 * baseSpriteWidth);
-        int width = x2 - x1;
-        int height = y2 - y1;
-        // 要求 u1  + (width / textureWidth) = u2
-        // u1 * base + (width * base  / textureWidth ) = u2 * base
-        //
-        float textureWidth = (width / (u2 - u1)) * baseSpriteWidth;
-        float textureHeight = (height / (v2 - v1)) * baseSpriteWidth;
-        drawGuiTexture(texture, (int) textureWidth, (int) textureHeight, ui1, vi1, x1, y1, z, width, height);
-    }
+    public void drawGuiTextureQuad(
+            Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2);
+    //    {
+    //        float baseSpriteWidth = 256f;
+    //        int ui1 = (int) (u1 * baseSpriteWidth);
+    //        int vi1 = (int) (v1 * baseSpriteWidth);
+    //        int width = x2 - x1;
+    //        int height = y2 - y1;
+    //        // 要求 u1  + (width / textureWidth) = u2
+    //        // u1 * base + (width * base  / textureWidth ) = u2 * base
+    //        //
+    //        float textureWidth = (width / (u2 - u1)) * baseSpriteWidth;
+    //        float textureHeight = (height / (v2 - v1)) * baseSpriteWidth;
+    //        drawGuiTexture(texture, (int) textureWidth, (int) textureHeight, ui1, vi1, x1, y1, z, width, height);
+    //    }
+
+    public Sprite getGuiSprite(Identifier i);
 
     default void drawCenteredTextWithShadow(
             TextRenderer textRenderer, OrderedText text, int centerX, int y, int color) {

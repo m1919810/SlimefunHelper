@@ -18,7 +18,9 @@ import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
 public class BadPacketsFix extends BaseModule {
     public final ModulePath badPackets = makePath(Configs.TEST_CONFIG, "bad-packets");
 
-    public BadPacketsFix() {}
+    public BadPacketsFix() {
+        super("BadPackets");
+    }
 
     public final FlagRef enableSprint = builder(badPackets.add("fix-dup-sprint"), Boolean.class)
             .defaultValue(true)

@@ -18,7 +18,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
@@ -27,13 +26,6 @@ public abstract class PlayerEntityMixin extends LivingEntity
         implements LivingEntityAccess<PlayerEntity>, EntityInternalAccess<PlayerEntity> {
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
-    }
-
-    @Redirect(
-            method = "tick",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setPosition(DDD)V"))
-    private void removePositionXZLimit(PlayerEntity instance, double v, double v2, double v3) {
-        // do not set
     }
 
     @ModifyExpressionValue(

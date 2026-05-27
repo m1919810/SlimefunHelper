@@ -188,7 +188,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             // add custom elytra event for bot to control elytra
             boolean fakeGlideNoFall = MovTasks.getElytraExtra().shouldExcuteAntiKick();
             if (fakeGlideNoFall) {
-                realVector = MovTasks.getCreativeFlight().processAntiKickMotion(realVector, true);
+                realVector = MovTasks.getFlight().processAntiKickMotion(realVector, true);
             }
             FlightVelocity velocity = new FlightVelocity(realVector, motionAmount, FlightVelocity.Mode.ELYTRA_FLIGHT);
             Listener.getCustomListener().broadcast(new EventContainer<>(FlightVelocity.class, velocity));

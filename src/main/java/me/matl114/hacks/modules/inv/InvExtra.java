@@ -15,6 +15,7 @@ import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.screen.slot.SlotActionType;
 
 public class InvExtra extends BaseModule {
+    public static InvExtra INSTANCE;
     public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
     public InvExtra() {}
@@ -31,6 +32,7 @@ public class InvExtra extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(ClickSlotC2SPacket.class), this::onClickSlot);
+        INSTANCE = this;
     }
 
     public void onClickSlot(Event<ClickSlotC2SPacket> event) {

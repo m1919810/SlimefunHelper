@@ -3,6 +3,7 @@ package me.matl114.hacks.utils.config;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.config.PairLikeFactory;
@@ -40,5 +41,9 @@ public record TracingOption(boolean box, boolean line) implements NBTParsable<Tr
     @Override
     public NBTType<TracingOption> type() {
         return TYPE;
+    }
+
+    public boolean isEmpty() {
+        return !box && !line;
     }
 }

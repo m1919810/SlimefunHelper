@@ -1,11 +1,14 @@
 package me.matl114.hacks.api;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class ModuleManager extends AbstractGuiManager<BaseModule> {
+public abstract class ModuleManager extends AbstractManager<BaseModule> {
+    public abstract String getName();
+
     public List<Consumer<ModuleManager>> registeringFunctions = new ArrayList<>();
 
     public void registerFactories(Consumer<ModuleManager> function) {
@@ -33,8 +36,12 @@ public class ModuleManager extends AbstractGuiManager<BaseModule> {
 
     public BaseModule getModule(String name) {
         return registered.stream()
-                .filter(s -> name.equalsIgnoreCase(s.name))
+                .filter(s -> name.equalsIgnoreCase(s.getName()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    public List<BaseModule> getModules() {
+        return Collections.unmodifiableList(registered);
     }
 }

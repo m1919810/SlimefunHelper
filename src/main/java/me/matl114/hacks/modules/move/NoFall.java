@@ -12,6 +12,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -60,10 +61,10 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     noFallPath.addHotkey(),
                     new MultiKeyBind(),
                     noFallPath.add("toggle"),
-                    moduleMeta(() -> this.noFallModel))
+                    moduleMeta(() -> this.noFallMode))
             .build();
 
-    public final EnumRef<Mode> noFallModel = builder(noFallPath.add("bypass-mode"), Mode.class)
+    public final EnumRef<Mode> noFallMode = builder(noFallPath.add("bypass-mode"), Mode.class)
             .defaultValue(Mode.NO_BYPASS)
             .build();
 
@@ -103,6 +104,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         delegateMap.put(Mode.LAZY_BYPASS_GRIM, new NoFallLazyBypassGrim(this));
         delegateMap.put(Mode.LAZY_GRIM_PLUS, new NoFallGrimLazyPlus(this));
         delegateMap.put(Mode.LAZY_GRIM_PLUS_2, new NoFallFuckGrimLazyPlusV2(this));
+        delegateMap.put(Mode.DUP_FULL_FAKE_GROUND, new NoFallDupFullFakeGround(this));
         delegateMap.put(Mode.TEST, new NoFallFuckGrimTest(this));
         delegateMap.put(Mode.TEST2, new NoFallFuckGrimTest2(this));
     }
@@ -160,7 +162,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     }
 
     protected <T extends NoFallDelegate> T getDelegate() {
-        var re = delegateMap.get(noFallModel.get());
+        var re = delegateMap.get(noFallMode.get());
         return (T) (re == null ? delegateMap.get(Mode.LAZY_MODE) : re);
     }
     // global status
@@ -218,7 +220,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         // filter creative playerGaming
 
         if (args.getAbilities().invulnerable
-                || (disableFlyNoFall.get() && MovTasks.getCreativeFlight().serverSideCanFly)
+                || (disableFlyNoFall.get() && MovTasks.getFlight().serverSideCanFly)
                 || checkInvulnerableEquipment()) {
             entityStage = ENTITY_STAGE_INVULNERABLE;
             return;
@@ -654,8 +656,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             }
         }
 
-        public void onPlayerVelocityTick(Event<Vec3d> pv) {}
-
         @Override
         public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
             ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
@@ -726,14 +726,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // Debug.info("should check : " + shouldCheck);
                 if (shouldCheck) {
                     if (!runningThisTick) {
-                        // apply only once
-                        //                        if(Tasks.getTick() > lastResyncTime + 5 && Tasks.getTick() >
-                        // lastNoFall + 5){
-                        //                            // if not a  ac resync,
-                        //                            // just do not check to avoid byd packet flood
-                        //                            afterSetbackFlag = false;
-                        //                        }
-                        // check
                         if (!shouldCheckHard) {
                             afterSetbackFlag = false;
                         }
@@ -762,6 +754,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
                             // Debug.info("update 4");
                             module.lastOnGroundHeight = entity.pos.getY();
+                            // todo: shit, can we just abort current movements and up
                             mc.getNetworkHandler()
                                     .sendPacket(VPacket.newPositionAndOnGround(
                                             entity.pos.getX(),
@@ -1441,6 +1434,94 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
     }
 
+    public static class NoFallDupFullFakeGround extends NoFallDelegate {
+
+        public NoFallDupFullFakeGround(NoFall module) {
+            super(module);
+        }
+
+        public void checkVersion() {
+            if (!ViaFabricPlusHooks.isSupportDupRot()) {
+                Debug.chat("[NoFall] 该模式需要via切换至1.20.6以下,已自动切换至其他模式");
+                this.module.noFallMode.set(Mode.LAZY_GRIM_PLUS);
+            }
+        }
+
+        @Override
+        public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+            checkVersion();
+            ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+            boolean forceNoFall = ClientPlayerAccess.of(args).isForceNoFall();
+            if (forceNoFall) {
+                runningThisTick = true;
+                // LAZY MODE: only if we trigger not onground -> onground should we reset
+                counter = 0;
+                module.lastOnGroundHeight = module.lastServerY;
+
+                mc.getNetworkHandler()
+                        .sendPacket(VPacket.newPositionAndOnGround(
+                                args.getX(),
+                                module.lastServerY + DELTA_Y,
+                                args.getZ(),
+                                false,
+                                args.horizontalCollision));
+                noFallSetbackResponse = true;
+                ClientPlayerAccess.of(args).setForceNoFall(false);
+            } else if (module.isActive()) {
+                counter += 1;
+            }
+            if (last) {
+                mc.player.setOnGround(true);
+                Vec3d look = args.getRotationVector();
+                Debug.chat("Snap");
+                LegacySnapRotManager.INSTANCE.snapAt(look, true);
+                mc.player.setOnGround(false);
+                last = false;
+            }
+        }
+
+        @Override
+        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+            super.onSetback(setBack);
+            if (nextTickReset) {
+                nextTickReset = false;
+                // setBack.context(setBack.context().withOGroundOverride(Boolean.TRUE));
+                last = true;
+            }
+        }
+
+        boolean nextTickReset = false;
+        boolean last = false;
+
+        @Override
+        public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+            ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+            boolean needOnGround = args.getY() <= module.lastOnGroundHeight - module.safeDistance;
+            if (mc.player.isOnGround()) {
+                nextTickReset = false;
+            }
+            if (needOnGround && !args.isOnGround()) {
+                movementManagerEvent.context.playerStatus.restorePos();
+                nextTickReset = true;
+                module.lastOnGroundHeight = args.getY();
+                Vec3d look = args.getRotationVector();
+                mc.player.setOnGround(true);
+                mc.player.setPosition(mc.player.getPos().add(0, 9E-8, 0));
+                LegacySnapRotManager.INSTANCE.snapAt(look, true);
+                movementManagerEvent.cancel();
+            }
+
+            if (nextTickReset) {
+                mc.player.setOnGround(true);
+            }
+        }
+
+        @Override
+        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            return true;
+        }
+    }
+
     public static class NoFallFuckGrimTest extends NoFallDelegate {
         int lastStartWaitResyncTick = 0;
         Vec3d lastStartWaitPos = null;
@@ -1898,6 +1979,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         LAZY_BYPASS_GRIM,
         LAZY_GRIM_PLUS,
         LAZY_GRIM_PLUS_2,
+        DUP_FULL_FAKE_GROUND,
         TEST,
         TEST2;
 
@@ -1911,15 +1993,15 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {
             case AC_GRIM, AC_GRIM_LEGACY -> {
-                if (noFallModel.get() != Mode.LAZY_GRIM_PLUS) {
-                    noFallModel.set(Mode.LAZY_GRIM_PLUS);
+                if (noFallMode.get() != Mode.LAZY_GRIM_PLUS) {
+                    noFallMode.set(Mode.LAZY_GRIM_PLUS);
                     //                    if (noFall.get()) {
                     //                        Debug.chat("正在切换到GrimNoFall模式, 该功能可能在最新版本失效, 若失效请手动切换LazyGrim模式");
                     //                    }
                 }
             }
             default -> {
-                noFallModel.set(Mode.LAZY_MODE);
+                noFallMode.set(Mode.LAZY_MODE);
             }
         }
     }

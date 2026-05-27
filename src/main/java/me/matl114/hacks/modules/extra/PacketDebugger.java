@@ -11,7 +11,9 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
@@ -23,7 +25,9 @@ import net.minecraft.util.math.Vec3d;
 public class PacketDebugger extends BaseModule {
     public final ModulePath packetDebugger = makePath(Configs.TEST_CONFIG, "packet-debugger");
 
-    public PacketDebugger() {}
+    public PacketDebugger() {
+        super("PacketDebug");
+    }
 
     private Set<PacketType<?>> typesDebug = new HashSet<>();
 
@@ -44,6 +48,10 @@ public class PacketDebugger extends BaseModule {
 
     public final FlagRef debugOut =
             flagBuilder(packetDebugger.add("debug-packet-out")).build();
+
+    public final KeyBindRef enablePressShow = hotkey(packetDebugger.add("optional-press-enable"))
+            .defaultValue(new MultiKeyBind())
+            .build();
 
     public final StringRef debugPacketType = builder(packetDebugger.add("debug-packet-type"), StringRef.TYPE)
             .defaultValue("^(move_player_.*)$")
@@ -74,9 +82,15 @@ public class PacketDebugger extends BaseModule {
         } else return id.toString();
     }
 
+    private boolean handleKey() {
+        MultiKeyBind keyBind = enablePressShow.get();
+        if (keyBind.isEmpty()) return true;
+        else return keyBind.isAllPressed();
+    }
+
     public void onPacketHandle(Event<Packet<?>> packetEvent) {
         if (packetEvent.isCancelled()) return;
-        if (debugIn.get()) {
+        if (debugIn.get() && handleKey()) {
             Packet<?> type = packetEvent.context();
             if (typesDebug.contains(type.getPacketId())) {
                 if (type instanceof PlayerPositionLookS2CPacket positionLookS2CPacket) {
@@ -101,7 +115,7 @@ public class PacketDebugger extends BaseModule {
 
     public void onPacketSend(Event<Packet<?>> packetEvent) {
         if (packetEvent.isCancelled()) return;
-        if (debugOut.get()) {
+        if (debugOut.get() && handleKey()) {
             Packet<?> type = packetEvent.context();
             if (typesDebug.contains(type.getPacketId())) {
                 if (type instanceof PlayerMoveC2SPacket moveC2SPacket) {

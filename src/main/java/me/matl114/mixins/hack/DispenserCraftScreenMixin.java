@@ -1,7 +1,7 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.accessors.access.TileInventoryScreen;
-import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
+import me.matl114.gui.complex.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.InvTasks;
 import me.matl114.utils.world.ContainerPosition;
 import net.minecraft.block.Block;

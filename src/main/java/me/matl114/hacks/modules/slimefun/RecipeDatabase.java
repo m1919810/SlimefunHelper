@@ -26,6 +26,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.catchers.TimedPacketCatcherImpl;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
@@ -61,35 +62,31 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 
 public class RecipeDatabase extends BaseModule {
-    public static final String[] SLIMEFUN_RECIPE_TITLE = {"recipe-record", "rp-title"};
-    public static final String[] SLIMEFUN_MULTIBLOCK_MATCHER = {"recipe-record", "multiblock-pattern"};
-    public static final String[] SLIMEFUN_RECIPE_RECORD = {"recipe-record", "enable"};
-    public static final String[] SLIMEFUN_RECIPE_LOCKED = {"recipe-record", "lock-current-data"};
-    public static final String[] SLIMEFUN_RECIPE_SAVE = {"recipe-record", "save-data"};
-    public static final String[] SLIMEFUN_LOCK_EXISTING = {"recipe-record", "lock-existing"};
 
-    public RecipeDatabase() {}
+    public final ModulePath recipeRecord = makePath(Configs.SLIMEFUN_CONFIG, "recipe-record");
 
-    public final FlagRef enable =
-            flagBuilder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_RECIPE_RECORD).build();
+    public RecipeDatabase() {
+        bindFlag(enable);
+    }
 
-    public final FlagRef saveData = builder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_RECIPE_SAVE, FlagRef.TYPE)
+    public final FlagRef enable = flagBuilder(recipeRecord.addEnable()).build();
+
+    public final FlagRef saveData = builder(recipeRecord.add("save-data"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
 
     public final FlagRef lockExistingData =
-            flagBuilder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_LOCK_EXISTING).build();
+            flagBuilder(recipeRecord.add("lock-existing")).build();
 
     public final FlagRef lockCurrentData =
-            flagBuilder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_RECIPE_LOCKED).build();
+            flagBuilder(recipeRecord.add("lock-current-data")).build();
 
-    public final StringRef multiBlockRecipeType = builder(
-                    Configs.SLIMEFUN_CONFIG, SLIMEFUN_MULTIBLOCK_MATCHER, StringRef.TYPE)
+    public final StringRef multiBlockRecipeType = builder(recipeRecord.add("multiblock-pattern"), StringRef.TYPE)
             .defaultValue("^(多方块结构|MultiBlock)$")
             .validator(Configs.REGEX_VALIDATOR)
             .build();
 
-    public final NBTRef<Regex> slimefunBookTitle = builder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_RECIPE_TITLE, Regex.class)
+    public final NBTRef<Regex> slimefunBookTitle = builder(recipeRecord.add("rp-title"), Regex.class)
             .defaultValue(new Regex("^(Slimefun 指南.*)$"))
             .build();
 

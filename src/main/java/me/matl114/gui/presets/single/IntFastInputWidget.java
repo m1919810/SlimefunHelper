@@ -5,6 +5,8 @@ import java.util.function.Consumer;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.kv.AttrKeyValues;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -190,7 +192,7 @@ public class IntFastInputWidget extends SubScreenWidget {
     }
 
     protected void init() {
-        setBasicDepth(1);
+        setPriority(1);
         initConfirmButton();
         initBackgroundAndText();
         initFastButtons();

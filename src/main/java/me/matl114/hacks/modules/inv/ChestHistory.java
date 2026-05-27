@@ -10,7 +10,7 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
-import me.matl114.gui.invcache.InventorySelectScreen;
+import me.matl114.gui.complex.invcache.InventorySelectScreen;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;

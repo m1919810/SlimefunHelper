@@ -82,6 +82,10 @@ public class MultiKeyBind {
         return keyCodes[keyCodes.length - 1];
     }
 
+    public boolean isEmpty() {
+        return keyCodes.length == 0;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;

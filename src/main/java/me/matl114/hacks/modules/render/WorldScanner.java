@@ -15,10 +15,13 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
+import me.matl114.utils.Debug;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VRender;
@@ -41,8 +44,13 @@ public class WorldScanner extends BaseModule {
     public final ModulePath worldScanner = detectBlock.add("search");
 
     public WorldScanner() {
+        super("BlockESP");
         bindFlag(enable);
     }
+
+    public Set<Block> currentSearchingSet = new HashSet<>();
+    boolean pendingRefreshWhenInGame = true;
+    public Map<ChunkPos, Map<BlockPos, BlockState>> currentSearchingResult = new ConcurrentHashMap<>();
 
     public FlagRef enable = flagBuilder(worldScanner.add("enable")).build();
 
@@ -105,10 +113,6 @@ public class WorldScanner extends BaseModule {
     public void onDisableModule() {
         super.onDisableModule();
     }
-
-    boolean pendingRefreshWhenInGame = true;
-    public Set<Block> currentSearchingSet = new HashSet<>();
-    public Map<ChunkPos, Map<BlockPos, BlockState>> currentSearchingResult = new ConcurrentHashMap<>();
 
     public void onResetWorldScanner(Event<Void> event) {
         currentSearchingResult.clear();
@@ -189,6 +193,8 @@ public class WorldScanner extends BaseModule {
 
     int resultUpdate = 0;
     List<IndexEntry<Box>> boxes = new ArrayList<>();
+    int lastLogTick = 0;
+    final int MAX_RENDER_BLOCKS = 10_000;
 
     public void onTick(Event<ClientPlayerEntity> event) {
         if (!checkNull()
@@ -214,6 +220,7 @@ public class WorldScanner extends BaseModule {
                     int radius = distanceChunk.get();
                     ChunkPos chunkPos = mc.player.getChunkPos();
                     Set<ChunkPos> chunkKeys = new HashSet<>(currentSearchingResult.keySet());
+                    int cnt = 0;
                     for (ChunkPos chunkKey : chunkKeys) {
                         if (Math.abs(chunkPos.x - chunkKey.x) <= radius
                                 && Math.abs(chunkPos.z - chunkKey.z) <= radius) {
@@ -225,10 +232,22 @@ public class WorldScanner extends BaseModule {
                                     VoxelShape shape = entry.getValue().getOutlineShape(mc.world, entry.getKey());
                                     if (!shape.isEmpty()) {
                                         Box box = shape.getBoundingBox();
-                                        boxes.add(new IndexEntry<>(color.getRgb(), box.offset(entry.getKey())));
+                                        if (cnt < MAX_RENDER_BLOCKS) {
+                                            boxes.add(new IndexEntry<>(color.getRgb(), box.offset(entry.getKey())));
+                                        }
+                                        cnt += 1;
                                     }
                                 }
                             }
+                        }
+                    }
+                    if (cnt > MAX_RENDER_BLOCKS) {
+                        // 10 s one warn
+                        if (lastLogTick < Tasks.getTick() - 10 * 20) {
+                            lastLogTick = Tasks.getTick();
+                            Debug.chat(ChatUtils.stringToText(
+                                    "&c[WorldScanner] &ffind too many target blocks: %d, Only render first %d blocks"
+                                            .formatted(cnt, MAX_RENDER_BLOCKS)));
                         }
                     }
                 }

@@ -7,10 +7,10 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InteractionTasks;
-import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
@@ -32,13 +32,13 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.EmptyBlockView;
 
 public class Scaffold extends BaseModule {
-    public static final String[] ENABLE = {"interact-scaffold", "scaffold"};
-    public static final String[] ENABLE_HOTKEY = {"interact-scaffold", "scaffold-hotkey"};
-    public static final String[] INTERACT_SCAFFOLD_LEGAL = {"interact-scaffold", "legal-mode"};
-    public static final String[] INTERACT_SCAFFOLD_TARGET_MODE = {"interact-scaffold", "legal-targeting"};
-    public static final String[] INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE = {
-        "interact-scaffold", "scaffold-cooldown-override"
-    };
+    //    public static final String[] ENABLE = {"interact-scaffold", "scaffold"};
+    //    public static final String[] ENABLE_HOTKEY = {"interact-scaffold", "scaffold-hotkey"};
+    //    public static final String[] INTERACT_SCAFFOLD_LEGAL = {"interact-scaffold", "legal-mode"};
+    //    public static final String[] INTERACT_SCAFFOLD_TARGET_MODE = {"interact-scaffold", "legal-targeting"};
+    //    public static final String[] INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE = {
+    //        "interact-scaffold", "scaffold-cooldown-override"
+    //    };
 
     public Scaffold() {
         bindFlag(enable);
@@ -82,6 +82,18 @@ public class Scaffold extends BaseModule {
             .validator(Configs.intRange(0, 3))
             .build();
 
+    public final IntRef expandInteractRange = builder(
+                    Configs.INTERACT_CONFIG, makePath("interact-scaffold.expand-interact-range"), IntRef.TYPE)
+            .defaultValue(1)
+            .updateListener(this::updateSearchRange)
+            .validator(Configs.intRange(0, 3))
+            .build();
+
+    //    public final IntRef cooldownOverride = builder(
+    //                    Configs.INTERACT_CONFIG, INTERACT_SCAFFOLD_COOLDOWN_OVERRIDE, IntRef.TYPE)
+    //            .defaultValue(-1)
+    //            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -91,8 +103,8 @@ public class Scaffold extends BaseModule {
 
     private void placeBlockLegally(int hand, BlockHitResult result) {
         Runnable callback = swapHand.get()
-                ? InvTasks.getInvExtra().switchOrSwapInventoryIndexToHand(hand)
-                : InvTasks.getInvExtra().swapInventoryIndexToHand(hand);
+                ? InvExtra.INSTANCE.switchOrSwapInventoryIndexToHand(hand)
+                : InvExtra.INSTANCE.swapInventoryIndexToHand(hand);
         if (callback == null) {
             return;
         }

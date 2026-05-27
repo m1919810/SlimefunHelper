@@ -39,7 +39,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -215,6 +214,9 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         if (attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED
                 && MovTasks.getCreativeFlight().overrideWalkSpeed.get()) {
             return MovTasks.getCreativeFlight().getOverridingWalkSpeed();
+        if (attribute == EntityAttributes.MOVEMENT_SPEED
+                && MovTasks.getFlight().overrideWalkSpeed.get()) {
+            return MovTasks.getFlight().getOverridingWalkSpeed();
         }
         return super.getAttributeValue(attribute);
     }
@@ -407,14 +409,14 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     //        this.lastOnGround = this.isOnGround();
     //    }
 
-    @Redirect(
+    @WrapOperation(
             method = "tickMovement",
             at =
                     @At(
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;jump()V",
                             ordinal = 0))
-    public void onCancelJumpAfterToggle(ClientPlayerEntity instance) {}
+    public void onCancelJumpAfterToggle(ClientPlayerEntity instance, Operation<Void> original) {}
 
     // multiply movements timer
     // todo: speeding up with more packets, not big speed (timer speedup
