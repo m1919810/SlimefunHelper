@@ -2,12 +2,15 @@ package me.matl114.utils.config.kv;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import lombok.Getter;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
@@ -91,7 +94,11 @@ public interface AttrKeyValues {
                 throw WrapperFactory.PARSE_FAILURE;
             },
             val -> val == null ? "" : VNbt.getInstance().writeNbt(val));
+
     static final Gson gson = new Gson();
+
+    public static final WrapperFactory<String, JsonElement> JSON_ELEMENT_FACTORY =
+            WrapperFactory.of((str) -> gson.fromJson(str, JsonElement.class), gson::toJson);
 
     static final Type LIST_TYPE = new TypeToken<List<String>>() {}.getType();
     public static final WrapperFactory<String, List<String>> STR_LIST_FACTORY =

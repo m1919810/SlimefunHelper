@@ -110,8 +110,13 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             .defaultValue(Configs.BypassMode.NO_BYPASS)
             .build();
 
-    public final FlagRef blockInKeepYVelocity =
-            flagBuilder(noSlowdown.add("block-in-keep-y")).build();
+    public final FlagRef blockInKeepYVelocity = flagBuilder(noSlowdown.add("block-in-keep-y"))
+            .show(() -> blockInBypass.get().isIn(Configs.BypassMode.BYPASS_GRIM))
+            .build();
+
+    public final FlagRef blockInMineWhenJump = flagBuilder(noSlowdown.add("block-in-mine-when-jump"))
+            .show(() -> blockInBypass.get().isIn(Configs.BypassMode.BYPASS_GRIM))
+            .build();
 
     public final EnumRef<Configs.BypassMode> fakeSneakBypass = builder(
                     noSlowdown.add("fake-sneak-mode"), Configs.BypassMode.class)
@@ -183,17 +188,22 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                     }
                     // todo: why
                     var input = PlayerInputUtils.of(mc.player.input);
-                    //                    if(blockInKeepYVelocity.get() && mc.player.isOnGround() && input.jump()){
-                    ////                        mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new
-                    // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP, seq));
-                    //                        mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new
-                    // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP, seq));
-                    //                        //mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
-                    //                        slowMovement.cancel();
-                    //                        return;
-                    //                        //slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y,
-                    // 1.0F));
-                    //                    }
+                    if (blockInMineWhenJump.get()
+                            && !mc.player.isFallFlying()
+                            && (mc.player.getVelocity().y >= 0 || mc.player.isOnGround())
+                            && input.jump()) {
+                        mc.interactionManager.sendSequencedPacket(
+                                mc.world,
+                                (seq) -> new PlayerActionC2SPacket(
+                                        PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP, seq));
+                        mc.interactionManager.sendSequencedPacket(
+                                mc.world,
+                                (seq) -> new PlayerActionC2SPacket(
+                                        PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP, seq));
+                        // mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
+                        slowMovement.cancel();
+                        return;
+                    }
                     if (mc.player.isFallFlying()) {
                         return;
                     }

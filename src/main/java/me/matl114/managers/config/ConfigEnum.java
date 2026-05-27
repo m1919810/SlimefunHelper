@@ -65,4 +65,18 @@ public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegiste
         return Text.translatable("configenum." + this.getConfigEnumType().replace("_", "-") + "."
                 + cast().name().toLowerCase(Locale.ROOT));
     }
+
+    default boolean isIn(ConfigEnum... e) {
+        for (var re : e) {
+            if (re == this) return true;
+        }
+        return false;
+    }
+
+    default boolean isNotIn(ConfigEnum... e) {
+        for (var re : e) {
+            if (re == this) return false;
+        }
+        return true;
+    }
 }

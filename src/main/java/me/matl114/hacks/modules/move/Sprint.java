@@ -40,6 +40,8 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     sprint.add("legal-auto-sprint-hotkey"), new MultiKeyBind(), sprint.add("legal-auto-sprint"))
             .build();
 
+    public final FlagRef logSprint = flagBuilder(sprint.add("log-auto-sprint")).build();
+
     // todo: attack entity cause fake sprint, keep the state, do not send any other packets, try later
     public final FlagRef fakeSprint = flagBuilder(sprint.add("fake-sprint")).build();
 
@@ -82,7 +84,9 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public void onTick(Event<ClientPlayerEntity> event) {
         if (autoSprintLegal.get() && mc.currentScreen == null) {
             if (!mc.options.sprintKey.isPressed()) {
-                Debug.chat("[Sprint] toggle sprint on");
+                if (logSprint.get()) {
+                    Debug.chat("[Sprint] toggle sprint on");
+                }
                 mc.options.sprintKey.setPressed(true);
             }
         }

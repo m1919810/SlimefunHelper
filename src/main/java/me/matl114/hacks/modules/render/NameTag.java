@@ -43,7 +43,7 @@ public class NameTag extends BaseModule {
     public final FlagRef enable = flagBuilder(nameTag.addEnable()).build();
 
     public final DoubleRef height =
-            doubleBuilder(nameTag.add("extra-height")).defaultValue(8.0D).build();
+            doubleBuilder(nameTag.add("extra-height")).defaultValue(1.0D).build();
 
     public final DoubleRef size =
             doubleBuilder(nameTag.add("size")).defaultValue(1.0D).build();
@@ -237,6 +237,7 @@ public class NameTag extends BaseModule {
             vdraw.getMatrices().scale(0.75F, 0.75F);
             for (var i = 0; i < stacks.length; ++i) {
                 vdraw.drawItem(stacks[i], startX + i * 18, -17, 999, 0);
+                vdraw.drawItemInSlot(mc.textRenderer, stacks[i], startX + i * 18, -17, null);
             }
             vdraw.getMatrices().popMatrix();
             vdraw.getMatrices().translate(0, -HEIGHT * 1.5F);

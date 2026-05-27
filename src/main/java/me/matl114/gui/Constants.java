@@ -25,4 +25,7 @@ public interface Constants {
     public static final List<Text> OPEN_LIST_EDIT_TOOLTIPS = List.of(Text.literal("点击打开 列表编辑界面"));
 
     public static final List<Text> OPEN_LIST_PREVIEW_TOOLTIPS = List.of(Text.literal("点击打开 列表预览"));
+
+    public static final Identifier EXPAND_GUI_ON_SPRITE = new Identifier("slimefunhelper", "gui/triangle");
+    public static final Identifier EXPAND_GUI_OFF_SPRITE = new Identifier("slimefunhelper", "gui/triangle_90");
 }

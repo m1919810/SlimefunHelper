@@ -59,7 +59,7 @@ dependencies {
 	mappings files("mapping/yarn-1.21.11+build-special-v5.local-v2.jar")
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
+	modCompileOnly files("libs/baritone-meteor-1.21.11.jar")
 	// bridge
 	compileOnly sourceSets.stubs.output
 

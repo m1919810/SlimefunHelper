@@ -65,7 +65,7 @@ import net.minecraft.world.gen.placementmodifier.PlacementModifier;
 import net.minecraft.world.gen.placementmodifier.RarityFilterPlacementModifier;
 
 public class SeedOre extends BaseModule {
-
+    public static SeedOre INSTANCE;
     public static final String[] SEED_MAP = new String[] {"seed", "seed-cache"};
     public final Object2LongMap<String> seedMap = new Object2LongOpenHashMap<>();
     // how to do cache: chunkUnload
@@ -94,6 +94,7 @@ public class SeedOre extends BaseModule {
     public SeedOre() {
         super();
         bindFlag(enable);
+        INSTANCE = this;
     }
 
     public final ModulePath seed = makePath(Configs.MINE_CONFIG, "aaxray.seed-ore");
@@ -263,6 +264,11 @@ public class SeedOre extends BaseModule {
         }
     }
 
+    public static boolean isSeedValid(long seed) {
+        long hashed = mc.world.getBiomeAccess().seed;
+        return BiomeAccess.hashSeed(seed) == hashed;
+    }
+
     public void validateCurrentSeed() {
         if (!checkCurrentSeedExistence()) return;
         long value = seedMap.getLong(CommonUtils.getWorldName());
@@ -271,7 +277,7 @@ public class SeedOre extends BaseModule {
                 Text.literal("[世界种子] 输入的种子: ").formatted(Formatting.GREEN).append(ChatUtils.getDisplayedLong(value)));
         long hashed = mc.world.getBiomeAccess().seed;
         Debug.chat(Text.literal("[世界种子] 服务器加密种子: ").append(ChatUtils.getDisplayedLong(hashed)));
-        if (BiomeAccess.hashSeed(value) == hashed) {
+        if (isSeedValid(value)) {
             Debug.chat(Text.literal("[世界种子] 验证通过").formatted(Formatting.GREEN));
         } else {
             Debug.chat(Text.literal("[世界种子] 验证失败").formatted(Formatting.RED));

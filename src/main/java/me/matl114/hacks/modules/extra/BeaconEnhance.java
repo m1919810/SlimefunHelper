@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.gui.other.BeaconEffectSelectButton;
+import me.matl114.gui.complex.other.BeaconEffectSelectButton;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -14,6 +14,7 @@ import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.BeaconScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.network.packet.c2s.play.UpdateBeaconC2SPacket;
@@ -23,6 +24,7 @@ public class BeaconEnhance extends BaseModule {
     public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
 
     public BeaconEnhance() {
+        super("BeaconPlus");
         bindFlag(enable);
     }
 
@@ -32,7 +34,7 @@ public class BeaconEnhance extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
+        registerListener(Listener.getPostInitializeScreen().getChannel(HandledScreen.class), this::onScreenInitialize);
     }
 
     public void onScreenInitialize(Event<Screen> e) {

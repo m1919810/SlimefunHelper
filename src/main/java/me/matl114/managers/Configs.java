@@ -2,6 +2,7 @@ package me.matl114.managers;
 
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import java.io.File;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -9,6 +10,7 @@ import java.util.regex.PatternSyntaxException;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.ConfigLoader;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Identifier;
 
 public class Configs {
@@ -238,8 +240,22 @@ public class Configs {
     public static final String[] HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN =
             new String[] {"hotkey-settings", "only-works-if-no-screen"};
 
+    static {
+        final File cfgFile = FabricLoader.getInstance()
+                .getConfigDir()
+                .resolve("sfhelper-configs/hotkeys.yml")
+                .toFile();
+        File tgtFile = FabricLoader.getInstance()
+                .getConfigDir()
+                .resolve("sfhelper-configs/misc.yml")
+                .toFile();
+        if (cfgFile.exists() && !tgtFile.exists()) {
+            cfgFile.renameTo(tgtFile);
+        }
+    }
+
     public static final Config HOTKEY_CONFIG = ConfigLoader.loadExternalConfig(
-                    "sfhelper-configs/hotkeys.yml", "hotkey settings")
+                    "sfhelper-configs/misc.yml", "misc settings")
             .markForSave();
 
     static {

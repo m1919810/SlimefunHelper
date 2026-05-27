@@ -6,6 +6,7 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.presets.lists.StringListModifyScreen;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;

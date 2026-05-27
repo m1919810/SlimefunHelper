@@ -63,10 +63,6 @@ public class ElytraBot extends BaseModule {
     public final FlagRef autoFly =
             flagBuilder(elytraBot.add("auto-start-fallflying")).build();
 
-    public final DoubleRef maceHeight = builder(elytraBot.add("mace-height"), DoubleRef.TYPE)
-            .defaultValue(3.0D)
-            .build();
-
     public final FlagRef playerOnly = builder(elytraBot.add("player-only"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
@@ -74,21 +70,29 @@ public class ElytraBot extends BaseModule {
     public final FlagRef onlyWhenNoWASD =
             flagBuilder(elytraBot.add("only-when-no-wasd")).build();
 
-    public final DoubleRef followOnGroundHeight = builder(elytraBot.add("follow-on-ground-height-extra"), Double.class)
-            .defaultValue(0.5D)
-            .validator(Configs.doubleRange(0.0D, 10.0D))
-            .build();
-
-    public final DoubleRef minimalAttackRange = builder(elytraBot.add("min-attack-range"), Double.class)
-            .defaultValue(2.0D)
-            .build();
-
     public final DoubleRef combatRange = builder(elytraBot.add("combat-range"), DoubleRef.TYPE)
             .defaultValue(3.5D)
             .build();
 
+    public final DoubleRef followOnGroundHeight = builder(elytraBot.add("follow-on-ground-height-extra"), Double.class)
+            .defaultValue(0.5D)
+            .validator(Configs.doubleRange(0.0D, 10.0D))
+            .show(() -> mode.get().isNotIn(Mode.SPEAR_ARUA))
+            .build();
+
+    public final DoubleRef maceHeight = builder(elytraBot.add("mace-height"), DoubleRef.TYPE)
+            .defaultValue(3.0D)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
+    public final DoubleRef minimalAttackRange = builder(elytraBot.add("min-attack-range"), Double.class)
+            .defaultValue(2.0D)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
     public final IntRef maceRemainPullUpTick = builder(elytraBot.add("mace-max-extra-pull-up-tick"), IntRef.TYPE)
             .defaultValue(20)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final FlagRef render = flagBuilder(elytraBot.add("render")).build();

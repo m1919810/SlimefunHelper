@@ -29,7 +29,9 @@ public class EntityESP extends BaseModule {
     public final ModulePath entityRoot = makePath(Configs.RENDER_CONFIG, "detect-entity");
     public final ModulePath entityEsp = entityRoot.add("entity-esp");
 
-    public EntityESP() {}
+    public EntityESP() {
+        bindFlag(enable);
+    }
 
     public final FlagRef enable = flagBuilder(entityEsp.add("enable")).build();
 

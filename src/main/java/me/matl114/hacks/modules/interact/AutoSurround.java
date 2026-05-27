@@ -8,6 +8,7 @@ import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.ac.DisablerManager;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
@@ -155,7 +156,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                                     break place;
                                 }
                                 mul = Math.min(mul, re.val().getCount());
-                                invCallback = InvTasks.getInvExtra().swapInventoryIndexToHand(re.index());
+                                invCallback = InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
                             } else {
                                 InteractionTasks.flushACPlaceQueue();
                             }

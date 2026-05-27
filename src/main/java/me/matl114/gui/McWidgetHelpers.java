@@ -2,7 +2,6 @@ package me.matl114.gui;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntSupplier;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ContentDelegateWidget;
@@ -12,8 +11,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.EditBoxWidget;
@@ -148,37 +145,25 @@ public class McWidgetHelpers {
         return new TextContentDelegateWidget<>(0, 0, widget);
     }
 
-    public static <T extends Element & Drawable & Selectable> ContentDelegateWidget<T> createDynamicDelegateWidget(
-            IntSupplier xS, IntSupplier yS, int dx, int dy) {
-        return new ContentDelegateWidget<>(0, 0, dx, dy) {
-            @Override
-            public int getX() {
-                return xS.getAsInt();
-            }
-
-            public int getY() {
-                return yS.getAsInt();
-            }
-        };
-    }
-
     public static class TextContentDelegateWidget<T extends ClickableWidget> extends ContentDelegateWidget<T> {
 
         public TextContentDelegateWidget(int x, int y, T widget) {
             super(x, y, 0, 0);
-            this.delegate = widget;
+            this.setContentDelegate(widget);
         }
 
         boolean startDrag = false;
 
         @Override
         public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-            if (this.startDrag && this.delegate != null) {
+            if (this.startDrag && this.getDelegate() != null) {
+                var delegate = this.getDelegate();
                 // 设置cursor位置
-                TextFieldAccess.of(this.delegate)
+                float textureScale = getTextureScale();
+                TextFieldAccess.of(delegate)
                         .dragSelect(
-                                (int) ((mouseX - this.getX() - this.delegate.getX()) / this.textureScale),
-                                (int) ((mouseY - this.getY() - this.delegate.getY()) / this.textureScale),
+                                (int) ((mouseX - this.getX() - delegate.getX()) / textureScale),
+                                (int) ((mouseY - this.getY() - delegate.getY()) / textureScale),
                                 true);
             }
             return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
@@ -186,8 +171,8 @@ public class McWidgetHelpers {
 
         @Override
         public boolean startDrag(Screen screen, double mouseX, double mouseY) {
-            if (this.delegate != null
-                    && TextFieldAccess.of(this.delegate).canStartDrag(mouseX - this.getX(), mouseY - this.getY())) {
+            if (getDelegate() != null
+                    && TextFieldAccess.of(getDelegate()).canStartDrag(mouseX - this.getX(), mouseY - this.getY())) {
                 this.startDrag = true;
                 return true;
             }
@@ -196,7 +181,7 @@ public class McWidgetHelpers {
 
         @Override
         public boolean isDragging() {
-            return this.delegate != null && this.startDrag;
+            return this.getDelegate() != null && this.startDrag;
         }
 
         @Override

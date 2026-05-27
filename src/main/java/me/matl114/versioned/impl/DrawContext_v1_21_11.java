@@ -1,19 +1,23 @@
 package me.matl114.versioned.impl;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import java.util.Arrays;
+import java.awt.*;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
+import me.matl114.accessors.gui.GuiRendererStateAccess;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.ScreenRect;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.render.state.SimpleGuiElementRenderState;
 import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
 import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.TextureSetup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
@@ -53,6 +57,13 @@ public class DrawContext_v1_21_11 implements VDrawContext {
         return this.matrixStack;
     }
 
+    public void setShaderColor(int rgba) {
+        cachedShaderColor[0] = ColorHelper.getRed(rgba);
+        cachedShaderColor[1] = ColorHelper.getGreen(rgba);
+        cachedShaderColor[2] = ColorHelper.getBlue(rgba);
+        cachedShaderColor[3] = ColorHelper.getAlpha(rgba);
+    }
+
     @Override
     public void setShaderColor(float red, float green, float blue, float alpha) {
         cachedShaderColor[0] = ColorHelper.channelFromFloat(red);
@@ -83,24 +94,92 @@ public class DrawContext_v1_21_11 implements VDrawContext {
         return ColorHelper.mix(getShaderRGB(), a);
     }
 
+    public static int getCurrentDepthLevel() {
+        return depthDeque.isEmpty() ? 0 : depthDeque.peekLast().index();
+    }
+
+    private static final ArrayDeque<IndexEntry<LayerSnapshot>> depthDeque = new ArrayDeque<>(4);
+
+    private record LayerSnapshot(GuiRenderState.Layer layer, @Nullable ScreenRect bounds) {}
+
+    public void pushLayer(int depth) {
+        int level = getCurrentDepthLevel();
+        LayerSnapshot snapshot =
+                new LayerSnapshot(drawContext.state.currentLayer, drawContext.state.currentLayerBounds);
+        depthDeque.addLast(new IndexEntry<>(depth + level, snapshot));
+        GuiRendererStateAccess.of(drawContext.state).setLayerToDepth();
+        drawContext.state.currentLayerBounds = null;
+    }
+
+    public void popLayer() {
+        var idx = depthDeque.removeLast();
+        drawContext.state.currentLayer = idx.val().layer();
+        drawContext.state.currentLayerBounds = idx.val().bounds();
+    }
+
     @Override
     public void drawGuiTexture(Identifier texture, int x, int y, int z, int width, int height) {
-
-        this.drawContext.drawGuiTexture(RenderPipelines.GUI_TEXTURED, texture, x, y, width, height, getShaderRGB());
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+            this.drawContext.drawGuiTexture(RenderPipelines.GUI_TEXTURED, texture, x, y, width, height, getShaderRGB());
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
     }
 
     @Override
     public void drawGuiTexture(
             Identifier texture, int i, int j, int k, int l, int x, int y, int z, int width, int height) {
-        this.drawContext.drawGuiTexture(
-                RenderPipelines.GUI_TEXTURED, texture, i, j, k, l, x, y, width, height, getShaderRGB());
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+            this.drawContext.drawGuiTexture(
+                    RenderPipelines.GUI_TEXTURED, texture, i, j, k, l, x, y, width, height, getShaderRGB());
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
+    }
+
+    public void drawGuiTextureQuad(
+            Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
+        Sprite sprite = getGuiSprite(texture);
+        float sMinU = sprite.getMinU();
+        float sMaxU = sprite.getMaxU();
+        float sMinV = sprite.getMinV();
+        float sMaxV = sprite.getMaxV();
+        // 映射：u 从 [0,1] 映射到 [sMinU, sMaxU]，v 同理
+        float finalU1 = sMinU + u1 * (sMaxU - sMinU);
+        float finalU2 = sMinU + u2 * (sMaxU - sMinU);
+        float finalV1 = sMinV + v1 * (sMaxV - sMinV);
+        float finalV2 = sMinV + v2 * (sMaxV - sMinV);
+        this.drawTexturedQuad(sprite.getAtlasId(), x1, x2, y1, y2, z, finalU1, finalU2, finalV1, finalV2);
+    }
+
+    public Sprite getGuiSprite(Identifier id) {
+        return this.drawContext.spriteAtlasTexture.getSprite(id);
     }
 
     @Override
     public void drawTexturedQuad(
             Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
-        this.drawContext.drawTexturedQuad(
-                RenderPipelines.GUI_TEXTURED, texture, x1, x2, y1, y2, u1, u2, v1, v2, getShaderRGB());
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+            this.drawContext.drawTexturedQuad(
+                    RenderPipelines.GUI_TEXTURED, texture, x1, x2, y1, y2, u1, u2, v1, v2, getShaderRGB());
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
     }
 
     @Override
@@ -128,25 +207,43 @@ public class DrawContext_v1_21_11 implements VDrawContext {
 
     @Override
     public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth) {
-        this.drawContext.fillGradient(x1, y1, x2, y2, getShaderRGB(color1), getShaderRGB(color2));
+        if (depth != 0) {
+            pushLayer(depth);
+        }
+        try {
+            this.drawContext.fillGradient(x1, y1, x2, y2, getShaderRGB(color1), getShaderRGB(color2));
+        } finally {
+            if (depth != 0) {
+                popLayer();
+            }
+        }
     }
 
     @Override
     public void fillGuiGradient(
             int x1, int y1, int x2, int y2, int color1, int color2, int color3, int color4, int depth) {
-        this.drawContext.state.addSimpleElement(new ColoredQuad2DGuiElementRenderState(
-                RenderPipelines.GUI,
-                TextureSetup.empty(),
-                new Matrix3x2f(this.drawContext.getMatrices()),
-                x1,
-                y1,
-                x2,
-                y2,
-                color1,
-                color2,
-                color3,
-                color4,
-                this.drawContext.scissorStack.peekLast()));
+        if (depth != 0) {
+            pushLayer(depth);
+        }
+        try {
+            this.drawContext.state.addSimpleElement(new ColoredQuad2DGuiElementRenderState(
+                    RenderPipelines.GUI,
+                    TextureSetup.empty(),
+                    new Matrix3x2f(this.drawContext.getMatrices()),
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    color1,
+                    color2,
+                    color3,
+                    color4,
+                    this.drawContext.scissorStack.peekLast()));
+        } finally {
+            if (depth != 0) {
+                popLayer();
+            }
+        }
     }
 
     public static record ColoredQuad2DGuiElementRenderState(
@@ -215,7 +312,16 @@ public class DrawContext_v1_21_11 implements VDrawContext {
 
     @Override
     public void fill(int x1, int y1, int x2, int y2, int z, int color) {
-        this.drawContext.fill(x1, y1, x2, y2, getShaderRGB(color));
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+            this.drawContext.fill(x1, y1, x2, y2, getShaderRGB(color));
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
     }
 
     private void addInternal(Runnable runnable) {
@@ -250,7 +356,16 @@ public class DrawContext_v1_21_11 implements VDrawContext {
 
     @Override
     public void drawItem(ItemStack stack, int x, int y, int seed, int z) {
-        this.drawContext.drawItem(stack, x, y, seed);
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+            this.drawContext.drawItem(stack, x, y, seed);
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
     }
 
     @Override

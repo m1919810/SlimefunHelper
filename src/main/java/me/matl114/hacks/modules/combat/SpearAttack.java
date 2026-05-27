@@ -36,9 +36,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
 
 public class SpearAttack extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -51,7 +49,6 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> INSTANCE);
         }
         INSTANCE.setDelegate(this::cast);
-        BaseModule.makePath("111");
         bindFlag(enable);
     }
 

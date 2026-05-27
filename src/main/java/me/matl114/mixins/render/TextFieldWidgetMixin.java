@@ -1,5 +1,7 @@
 package me.matl114.mixins.render;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import java.util.function.Consumer;
 import me.matl114.accessors.gui.TextFieldAccess;
@@ -22,7 +24,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -95,7 +96,7 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
         super(x, y, width, height, message);
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "renderWidget",
             at =
                     @At(
@@ -103,13 +104,20 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
                             target =
                                     "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIII)V"))
     public void redirectBorderBoxRender(
-            DrawContext instance, RenderPipeline pipeline, Identifier sprite, int x, int y, int width, int height) {
+            DrawContext instance,
+            RenderPipeline pipeline,
+            Identifier sprite,
+            int x,
+            int y,
+            int width,
+            int height,
+            Operation<Void> original) {
         if (boxColorProvider != null) {
             // use custom color provided
             McWidgetHelpers.drawTextWidgetBox(
                     this, instance, x, y, width, height, this.isFocused(), this.boxColorProvider);
         } else {
-            instance.drawGuiTexture(pipeline, sprite, x, y, width, height);
+            original.call(instance, pipeline, sprite, x, y, width, height);
         }
     }
 

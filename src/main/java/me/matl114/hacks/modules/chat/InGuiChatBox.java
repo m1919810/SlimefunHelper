@@ -5,14 +5,14 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.SubScreenWidget;
-import me.matl114.gui.other.ChatLikeInputSubScreen;
+import me.matl114.gui.complex.other.ChatLikeInputSubScreen;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
 public class InGuiChatBox extends BaseModule {
     public final ModulePath chat = makePath(Configs.CHAT_CONFIG, "chat-helper");
@@ -26,10 +26,10 @@ public class InGuiChatBox extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
+        registerListener(Listener.getPostInitializeScreen().getChannel(HandledScreen.class), this::onScreenInitialize);
     }
 
-    public void onScreenInitialize(Event<Screen> event) {
+    public void onScreenInitialize(Event<HandledScreen<?>> event) {
         if (event.context instanceof HandledScreenAccess access && enable.get()) {
             SubScreenWidget newChat = new ChatLikeInputSubScreen(
                     access.getScreenX() + 2,

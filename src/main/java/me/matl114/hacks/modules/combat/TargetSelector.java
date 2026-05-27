@@ -2,16 +2,24 @@ package me.matl114.hacks.modules.combat;
 
 import com.google.common.collect.ImmutableList;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import me.matl114.commands.MainCommand;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.DoubleRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.StringRef;
+import me.matl114.managers.config.*;
+import me.matl114.managers.input.HotKeyUtils;
+import me.matl114.managers.input.KeyCode;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
+import me.matl114.utils.commands.commandGroup.CommandContext;
+import me.matl114.utils.commands.commandGroup.SubCommand;
+import me.matl114.utils.commands.commandGroup.TreeSubCommand;
+import me.matl114.utils.commands.params.ArgumentInputStream;
+import me.matl114.utils.commands.params.SimpleCommandArgs;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -24,6 +32,8 @@ import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Team;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
@@ -52,6 +62,18 @@ public class TargetSelector extends BaseModule {
             .defaultValue("^(.*NPC.*|matl114)$")
             .validator(Configs.REGEX_VALIDATOR)
             .build();
+
+    public final ListRef friendList = builder(attack.add("friend-list"), ListRef.TYPE)
+            .defaultValue(List.of())
+            .build();
+
+    public final KeyBindRef addFriend = hotkey(attack.add("add-friend-hotkey"))
+            .defaultValue(new MultiKeyBind(KeyCode.MOUSE_BUTTON_3))
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::onAddFriend))
+            .build();
+
+    public final FlagRef attackFriend =
+            builder(attack.add("att-friend"), FlagRef.TYPE).defaultValue(true).build();
 
     public final FlagRef attackNamedEntity =
             builder(attack.add("att-named"), Boolean.class).defaultValue(true).build();
@@ -86,6 +108,45 @@ public class TargetSelector extends BaseModule {
         if (Configs.COMBAT_CONFIG.get("att-bot", "friends") instanceof StringRef stringRef && stringRef.get() != null) {
             friendNameRegex.set(stringRef.get());
             Configs.COMBAT_CONFIG.setValueNoNew(null, "att-bot", "friends");
+        }
+        // todo: move whitelist
+    }
+
+    @Override
+    public void registerAll() {
+        super.registerAll();
+        registerCommandBootstrap(this::onFriendCommandBootstrap);
+    }
+
+    public void onAddFriend() {
+        if (mc.crosshairTarget.getType() == HitResult.Type.ENTITY
+                && ((EntityHitResult) mc.crosshairTarget).getEntity() instanceof PlayerEntity player
+                && player != mc.player) {
+            addFriend(player.getNameForScoreboard());
+        }
+    }
+
+    public void addFriend(String friends) {
+        List<String> friendList = this.friendList.get();
+        if (friendList.contains(friends)) {
+            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你已经添加了 %s 为好友".formatted(friends)));
+        } else {
+            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功添加了 %s 为好友".formatted(friends)));
+            friendList = new ArrayList<>(friendList);
+            friendList.add(friends);
+            this.friendList.set(friendList);
+        }
+    }
+
+    public void removeFriend(String friend) {
+        List<String> friendList = this.friendList.get();
+        if (friendList.contains(friend)) {
+            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功添移除了 %s 好友".formatted(friend)));
+            friendList = new ArrayList<>(friendList);
+            friendList.remove(friend);
+            this.friendList.set(friendList);
+        } else {
+            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你暂未添加 %s 为好友".formatted(friend)));
         }
     }
 
@@ -128,6 +189,12 @@ public class TargetSelector extends BaseModule {
             if (regex != null && Pattern.matches(regex, name)) {
                 // friend
                 return false;
+            }
+            if (!attackFriend.get()) {
+                List<String> list = friendList.get();
+                if (list != null && list.contains(name)) {
+                    return false;
+                }
             }
             return true;
         } else {
@@ -378,5 +445,45 @@ public class TargetSelector extends BaseModule {
         // 横向距离小于300
         return entity.getPos().subtract(mc.player.getPos()).horizontalLengthSquared() < 90000
                 && !RaycastUtils.raycastAnySolidBlock(mc.player, mc.player.getEyePos(), entity.getEyePos());
+    }
+
+    private void onFriendCommandBootstrap(MainCommand mainCommand) {
+        TreeSubCommand main = mainCommand.mainBuilder().name("friends_command").build();
+        {
+            main.subBuilder(SubCommand.treeBuilder())
+                    .name("friends")
+                    .post(m -> m.subBuilder(SubCommand.taskBuilder())
+                            .name("list")
+                            .helper("显示好友列表")
+                            .post(e -> e.executor(CommandContext.run(() -> {
+                                Debug.chat(Text.literal("== 当前好友列表 ==").formatted(Formatting.GREEN));
+                                for (var re : this.friendList.get()) {
+                                    Debug.chat(re);
+                                }
+                            })))
+                            .complete()
+                            .subBuilder(SubCommand.taskBuilder())
+                            .name("add")
+                            .helper("添加好友")
+                            .arg(me.matl114.utils.commands.params.SimpleCommandArgs.argumentBuilder()
+                                    .name("name")
+                                    .tabSupplier(WorldUtils::getPlayerListNames)
+                                    .build())
+                            .post(e -> e.executor(CommandContext.run(
+                                    (Consumer<ArgumentInputStream>) (arg) -> this.addFriend(arg.nextNonnullString()))))
+                            .complete()
+                            .subBuilder(SubCommand.taskBuilder())
+                            .name("remove")
+                            .helper("移除好友")
+                            .arg(SimpleCommandArgs.argumentBuilder()
+                                    .name("name")
+                                    .tabSupplier(() -> this.friendList.get().stream())
+                                    .build())
+                            .post(e -> e.executor(CommandContext.run((arg) -> {
+                                this.removeFriend(arg.nextNonnullString());
+                            })))
+                            .complete())
+                    .complete();
+        }
     }
 }

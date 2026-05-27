@@ -6,10 +6,11 @@ import java.util.Optional;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Listener;
-import me.matl114.gui.config.ConfigurateNewStyleScreen;
+import me.matl114.gui.complex.config.ConfigurateNewStyleScreen;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
+import me.matl114.hacks.modules.task.ClickGui;
 import me.matl114.hacks.modules.task.ConfigSystem;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.Config;
@@ -144,8 +145,12 @@ public class MainTasks {
     @Getter
     public static ConfigSystem configSystem;
 
+    @Getter
+    public static ClickGui clickGui;
+
     private static void initModule(ModuleManager m) {
         configSystem = new ConfigSystem().register(m);
+        clickGui = new ClickGui().register(m);
     }
 
     // TODO: add entity inspect in info command

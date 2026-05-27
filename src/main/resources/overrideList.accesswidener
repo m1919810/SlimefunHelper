@@ -87,3 +87,8 @@ accessible field net/minecraft/client/gui/screen/DisconnectedScreen grid Lnet/mi
 accessible field net/minecraft/client/network/PendingUpdateManager sequence I
 accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraft/client/render/Camera;FZ)F
 accessible method net/minecraft/item/BlockItem getPlacementState (Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/block/BlockState;
+accessible field net/minecraft/client/gui/DrawContext spriteAtlasTexture Lnet/minecraft/client/texture/SpriteAtlasTexture;
+accessible class net/minecraft/client/gui/render/state/GuiRenderState$Layer
+accessible field net/minecraft/client/gui/render/state/GuiRenderState currentLayer Lnet/minecraft/client/gui/render/state/GuiRenderState$Layer;
+accessible field net/minecraft/client/gui/render/state/GuiRenderState currentLayerBounds Lnet/minecraft/client/gui/ScreenRect;
+accessible method net/minecraft/client/network/ClientPlayNetworkHandler setPosition (Lnet/minecraft/entity/EntityPosition;Ljava/util/Set;Lnet/minecraft/entity/Entity;Z)Z

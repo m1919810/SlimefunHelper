@@ -11,6 +11,10 @@ public class SupportVersion {
     public static SupportVersion parse(String version) {
         String[] versions = version.split("\\.");
         try {
+            if (versions.length == 2 && versions[0].equals("1")) {
+                // 1.x <- 1.x.1
+                return new SupportVersion(Integer.parseInt(versions[1]), 1);
+            }
             return new SupportVersion(
                     Integer.parseInt(versions[versions.length - 2]), Integer.parseInt(versions[versions.length - 1]));
         } catch (Throwable e) {

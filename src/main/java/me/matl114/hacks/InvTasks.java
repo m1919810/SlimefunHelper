@@ -25,16 +25,19 @@ import me.matl114.utils.inventory.ItemStackSample;
 import me.matl114.utils.itemdb.ItemStackData;
 import me.matl114.utils.itemdb.ItemStackDataWithAmount;
 import me.matl114.utils.tasks.LimitedSpeedExecutor;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.*;
+import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.ComponentType;
+import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -44,6 +47,7 @@ import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.registry.Registries;
+import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -54,6 +58,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 
 public class InvTasks {
     public static void init() {}
@@ -1036,6 +1042,52 @@ public class InvTasks {
         };
     }
 
+    private static boolean canShulkerOpen(BlockPos pos, BlockState state) {
+        Box box = ShulkerEntity.calculateBoundingBox(
+                        1.0F, (Direction) state.get(ShulkerBoxBlock.FACING), 0.0F, 0.5F, pos.toBottomCenterPos())
+                .contract(1.0E-6);
+        return mc.world.isSpaceEmpty(box);
+    }
+
+    public static int predictOpenVanillaContainerSize(BlockPos blockPos) {
+        if (mc.world.getBlockEntity(blockPos) instanceof Inventory inventory) {
+            int size = inventory.size();
+            if (inventory instanceof ChestBlockEntity chest) {
+                BlockState state = chest.getCachedState();
+                if (state.getBlock() instanceof ChestBlock chestBlock) {
+                    if (ChestBlock.isChestBlocked(mc.world, blockPos)) {
+                        size = 0;
+                    } else if (ChestBlock.getDoubleBlockType(state) != DoubleBlockProperties.Type.SINGLE) {
+                        size = 54;
+                    }
+                }
+            }
+            if (inventory instanceof ShulkerBoxBlockEntity shulker) {
+                BlockState state = shulker.getCachedState();
+                if (shulker.getAnimationStage() == ShulkerBoxBlockEntity.AnimationStage.CLOSED
+                        && !canShulkerOpen(blockPos, state)) {
+                    size = 0;
+                }
+            }
+            return size;
+        }
+        return 0;
+    }
+
+    public static void executePredictInventoryAction(Consumer<ScreenHandler> callback) {
+        // todo fix prediction initialization
+        int nextPredictedIndex = (InvTasks.LAST_SYNC_ID % 100) + 1;
+        ScreenHandler fakeScreenHandler =
+                GenericContainerScreenHandler.createGeneric9x6(nextPredictedIndex, mc.player.getInventory());
+        ScreenHandler handler = mc.player.currentScreenHandler;
+        try {
+            mc.player.currentScreenHandler = fakeScreenHandler;
+            callback.accept(fakeScreenHandler);
+        } finally {
+            mc.player.currentScreenHandler = handler;
+        }
+    }
+
     @Getter
     @ApiMethod
     public static final ModuleGroup moduleManager = new ModuleGroup("Inv");
@@ -1062,6 +1114,9 @@ public class InvTasks {
     public static AutoSteal autoSteal;
 
     @Getter
+    public static AutoShulker autoShulker;
+
+    @Getter
     public static ChestHistory chestHistory;
 
     @Getter
@@ -1071,7 +1126,7 @@ public class InvTasks {
     public static PickItem pickItem;
 
     @Getter
-    public static QuickButtons quickButtons;
+    public static QuickButton quickButton;
 
     @Getter
     public static SaveItem saveItem;
@@ -1099,10 +1154,11 @@ public class InvTasks {
         fastChest = new FastChest().register(m);
         autoStore = new AutoStore().register(m);
         autoSteal = new AutoSteal().register(m);
+        autoShulker = new AutoShulker().register(m);
         chestHistory = new ChestHistory().register(m);
         itemEditor = new ItemEditor().register(m);
         pickItem = new PickItem().register(m);
-        quickButtons = new QuickButtons().register(m);
+        quickButton = new QuickButton().register(m);
         saveItem = new SaveItem().register(m);
         nbtTooltips = new NbtTooltips().register(m);
     }

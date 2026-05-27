@@ -74,6 +74,7 @@
 		"hack.ClientMixin",
 		"hack.ClientPacketListenerMixin",
 		"hack.ClientPlayerMixin",
+		"hack.CobwebBlockMixin",
 		"hack.DarknessEffectFogModifierMixin",
 		"hack.DispenserCraftScreenMixin",
 		"hack.EntityMixin",
@@ -94,6 +95,8 @@
 		"hack.VillagerTradeScreenMixin",
 		"hack.WorldRenderMixin",
 		"render.EditBoxWidgetMixin",
+		"render.GuiRenderStateLayerMixin",
+		"render.GuiRenderStateMixin",
 		"render.ResourcePackPositionMixin",
 		"render.ScreenMixin",
 		"render.ScrollableWidgetMixin",
@@ -107,7 +110,6 @@
 		"fix.DecoderByteBufExceptionFixMixin",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
-		"fix.ScreenHandlerFixMixin",
-		"hack.CobwebBlockMixin"
+		"fix.ScreenHandlerFixMixin"
 	]
 }

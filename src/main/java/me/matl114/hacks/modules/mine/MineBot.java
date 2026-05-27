@@ -51,10 +51,6 @@ public class MineBot extends BaseModule {
                     mineBot.addHotkey(), new MultiKeyBind(), mineBot.addEnable(), moduleMeta(() -> this.mineBotMode))
             .build();
 
-    public final IntRef minY = intBuilder(mineBot.add("min-dy")).defaultValue(0).build();
-
-    public final IntRef maxY = intBuilder(mineBot.add("max-dy")).defaultValue(6).build();
-
     public final NBTRef<RegistryRegex<Block>> whiteListBlockRegex = builder(
                     mineBot.add("whitelist"), NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(cobblestone|stone|.*ore)$"), Registries.BLOCK))
@@ -64,8 +60,25 @@ public class MineBot extends BaseModule {
             .defaultValue(MineBotMode.SPHERICAL)
             .build();
 
+    public final EnumRef<Configs.MineTargetingMode> legalMode = builder(
+                    mineBot.add("legal-mode"), Configs.MineTargetingMode.class)
+            .defaultValue(Configs.MineTargetingMode.NO_BYPASS)
+            .show(() -> this.mineBotMode.get().isNotIn(MineBotMode.AUTO_TOOL))
+            .build();
+
+    public final IntRef minY = intBuilder(mineBot.add("min-dy"))
+            .defaultValue(0)
+            .show(() -> this.mineBotMode.get().isNotIn(MineBotMode.AUTO_TOOL))
+            .build();
+
+    public final IntRef maxY = intBuilder(mineBot.add("max-dy"))
+            .defaultValue(6)
+            .show(() -> this.mineBotMode.get() != MineBotMode.AUTO_TOOL)
+            .build();
+
     public final IntRef width = intBuilder(mineBot.add("max-width"))
             .defaultValue(1)
+            .show(() -> this.mineBotMode.get().isIn(MineBotMode.SQUARE, MineBotMode.TUNNEL))
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
@@ -77,17 +90,12 @@ public class MineBot extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final EnumRef<Configs.MineTargetingMode> legalMode = builder(
-                    mineBot.add("legal-mode"), Configs.MineTargetingMode.class)
-            .defaultValue(Configs.MineTargetingMode.NO_BYPASS)
-            .build();
-
     public final FlagRef toolProtect = builder(mineBot.add("durability-protect"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef rightClickMode =
-            flagBuilder(mineBot.add("right-click")).build();
+    //    public final FlagRef rightClickMode =
+    //            flagBuilder(mineBot.add("right-click")).build();
 
     private boolean isMineable(BlockState state) {
         if (state != null && !state.isAir() && !state.isLiquid()) {
@@ -114,6 +122,7 @@ public class MineBot extends BaseModule {
             onMineBotTick();
         }
     }
+    // todo: add cooldown
 
     @Override
     public void onDisableModule() {
@@ -196,7 +205,7 @@ public class MineBot extends BaseModule {
             if (lastMinePos == null) {
                 break;
             }
-            if (rightClickMode.get()) {
+            if (false) { // rightClickMode.get()) {
                 Vec3d facingTarget = lastMinePos.toCenterPos().subtract(mc.player.getEyePos());
                 Vec2f vc2f = EntityUtils.rotationToPitchYaw(facingTarget.normalize());
                 mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {

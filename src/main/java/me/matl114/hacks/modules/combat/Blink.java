@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.combat;
 
 import java.awt.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -26,6 +25,7 @@ import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.util.math.Box;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class Blink extends BaseModule {
     public final ModulePath lagUtils = makePath(Configs.COMBAT_CONFIG, "lag-utils");
@@ -141,19 +141,19 @@ public class Blink extends BaseModule {
         if (enable.get() && startPlayerPos != null) {
             Debug.chat("[Blink] Start revert");
             try {
-                AtomicBoolean afterTeleportExcept = new AtomicBoolean(false);
+                MutableBoolean afterTeleportExcept = new MutableBoolean(false);
                 lastAutoDumpTick = Tasks.getTick();
                 PacketManager.flushOutBound(packets -> {
                     var packet = packets.packet();
                     if (packet instanceof PlayerMoveC2SPacket move) {
-                        if (afterTeleportExcept.get()) {
+                        if (afterTeleportExcept.booleanValue()) {
                             return PacketManager.FlushAction.FLUSH;
                         }
                         return PacketManager.FlushAction.DROP;
                     } else if (packet instanceof PlayerInputC2SPacket inputC2SPacket) {
                         return PacketManager.FlushAction.DROP;
                     } else if (packet instanceof TeleportConfirmC2SPacket tp) {
-                        afterTeleportExcept.set(true);
+                        afterTeleportExcept.setTrue();
                         return PacketManager.FlushAction.FLUSH;
                     } else return PacketManager.FlushAction.FLUSH;
                 });

@@ -17,7 +17,7 @@ public interface MatrixStack {
 
     public void translate(float x, float y);
 
-    public void translateZ(float z);
+    // public void translateZ(float z);
 
     public void scale(float x, float y);
 

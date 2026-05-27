@@ -37,14 +37,13 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
 set WRAPPER_PROPS=%APP_HOME%\gradle\wrapper\gradle-wrapper.properties
-set GRADLE_PROPERTIES=%APP_HOME%\gradle.properties
 set LOCAL_GRADLE_ZIP=
 set DEFAULT_GRADLE_DIST_URL=
 
-if exist "%GRADLE_PROPERTIES%" (
-    for /f "usebackq tokens=1,* delims==" %%a in ("%GRADLE_PROPERTIES%") do (
-        if /i "%%a"=="local_gradle_zip" set LOCAL_GRADLE_ZIP=%%b
-        if /i "%%a"=="default_gradle_dist_url" set DEFAULT_GRADLE_DIST_URL=%%b
+if exist "%WRAPPER_PROPS%" (
+    for /f "usebackq tokens=1,* delims==" %%a in ("%WRAPPER_PROPS%") do (
+        if /i "%%a"=="localDistributionUrl" set LOCAL_GRADLE_ZIP=%%b
+        if /i "%%a"=="distributionUrl" set DEFAULT_GRADLE_DIST_URL=%%b
     )
 )
 

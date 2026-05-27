@@ -3,7 +3,6 @@ package me.matl114.hacks.utils.config;
 import static me.matl114.utils.config.BaseAttrKeyValue.*;
 import static me.matl114.utils.config.kv.AttrKeyValues.*;
 
-import com.mojang.datafixers.kinds.K2;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -16,6 +15,8 @@ import java.util.regex.Pattern;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.presets.choices.ColorSelectIcon;
 import me.matl114.gui.presets.lists.NBTBoundedListScreen;
 import me.matl114.gui.presets.lists.NBTListModifyScreen;

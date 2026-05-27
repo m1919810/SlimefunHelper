@@ -5,9 +5,9 @@ import java.util.OptionalInt;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -86,7 +86,7 @@ public class PacketMine extends BaseModule {
                             int selectedSlot = mc.player.getInventory().getSelectedSlot();
                             Runnable callback = null;
                             if (currentItemSlot.isPresent() && currentToolSlot != null) {
-                                callback = InvTasks.getInvExtra().swapInventoryIndexToHand(currentToolSlot.getIndex());
+                                callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentToolSlot.getIndex());
                             }
                             Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
                             Direction dir = Direction.getFacing(shouldFacing).getOpposite();

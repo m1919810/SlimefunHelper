@@ -21,6 +21,7 @@ public class ConnectionProxy extends BaseModule {
     public final ModulePath proxyServer = makePath(Configs.HTTP_CONFIG, "proxy-server");
 
     public ConnectionProxy() {
+        super("Proxy");
         bindFlag(enable);
     }
 

@@ -17,6 +17,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraGrimAccelerate extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -26,6 +27,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     public final ModulePath grimAccelerate = elytraFlightLegit.add("grim-accelerate");
 
     public ElytraGrimAccelerate() {
+        super("ElytraGrimAcc");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
@@ -63,6 +65,9 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
         registerListener(
                 Listener.getPacketPostSendPoint().getChannel(TeleportConfirmC2SPacket.class), this::onSetBackReceive);
         registerListener(Listener.getPacketPoint().getChannel(EntityVelocityUpdateS2CPacket.class), this::onVcUpdate);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class),
+                this::onTeleportConfirm);
     }
 
     @Override
@@ -82,7 +87,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
 
     public void onVcUpdate(Event<EntityVelocityUpdateS2CPacket> event) {
         Vec3d velocity = event.context.getVelocity();
-        if (mc.player != null && event.context.getEntityId() == mc.player.getId()) {
+        if (false && mc.player != null && event.context.getEntityId() == mc.player.getId()) {
 
             if ((enable.get() && mc.player.isFallFlying()) || lastWorkingTick + 10 > Tasks.getTick()) {
                 if (mc.player.isFallFlying()) {
@@ -133,9 +138,69 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     boolean currentTryWorking = false;
     boolean currentWorking = false;
 
+    public void onTeleportConfirm(Event<PlayerPositionLookS2CPacket> event) {
+        // grim setback
+        if (mc.player != null
+                && currentWorking
+                && event.context.teleportId() < 0
+                && mc.player.isFallFlying()
+                && !mc.player.isRiding()
+                && false) {
+            //            var pp = event.context;
+            //            ClientPlayNetworkHandler.setPosition(pp.change(), pp.relatives(), mc.player, false);
+            //            event.cancel();
+            //            mc.getNetworkHandler()
+            //                .sendPacket(new TeleportConfirmC2SPacket(pp.teleportId()));
+            //            mc.getNetworkHandler()
+            //                .sendPacket(PlayerMoveC2SPacketAccess.setCause(
+            //                    new PlayerMoveC2SPacket.Full(
+            //                        mc.player.getX(),
+            //                        mc.player.getY(),
+            //                        mc.player.getZ(),
+            //                        mc.player.getYaw(),
+            //                        mc.player.getPitch(),
+            //                        false,
+            //                        false),
+            //                    PlayerMoveC2SPacketAccess.Cause.SET_BACK));
+            createStorePacket();
+            if (storedPacket != null) {
+                // mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(-rand.nextInt(0, Integer.MAX_VALUE -
+                // 1)));
+                mc.getNetworkHandler().sendPacket(storedPacket);
+            }
+        }
+    }
+
+    private void createStorePacket() {
+        switch (mode.get()) {
+            case SIMULATION -> {
+                storedPacket = VPacket.newFull(
+                        mc.player.getX(),
+                        mc.player.getY() + 2.5 * ((Tasks.getTick() % 3) + 1), // - 20 * ((Tasks.getTick() % 2) +1 ),
+                        mc.player.getZ(),
+                        mc.player.getYaw(),
+                        mc.player.getPitch(),
+                        mc.player.isOnGround(),
+                        mc.player.horizontalCollision);
+            }
+            case CRASH_PACKETS -> {
+                storedPacket = VPacket.newFull(
+                        3.9999999E7D,
+                        mc.player.getY() + 2.5 * ((Tasks.getTick() % 3) + 1), // - 20 * ((Tasks.getTick() % 2) +1 ),
+                        Double.NEGATIVE_INFINITY,
+                        mc.player.getYaw(),
+                        mc.player.getPitch(),
+                        true,
+                        mc.player.horizontalCollision);
+            }
+        }
+        PlayerMoveC2SPacketAccess.setCause(
+                (PlayerMoveC2SPacket) storedPacket, PlayerMoveC2SPacketAccess.Cause.TRIGGER_SIMULATION);
+    }
+
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> preTickEvent) {
-        currentTryWorking |= enable.get()
+        currentTryWorking = (enable.get() || currentTryWorking)
                 && mc.player.isFallFlying()
                 && !mc.player.isOnGround()
                 && !MovTasks.getElytraExtra().canFireworkControlMotion();
@@ -147,7 +212,6 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> sendMovementPacketEvent) {
         if (currentTryWorking) {
-
             Vec3d velocity = mc.player.getVelocity();
             double speed = velocity.horizontalLength();
             if (currentWorking) {
@@ -162,36 +226,15 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
             if (currentWorking) {
                 sendMovementPacketEvent.context().playerStatus.restorePos();
                 sendMovementPacketEvent.cancel();
-                boolean timeout = setBack + 20 < Tasks.getTick();
-                // mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player,
-                // ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                switch (mode.get()) {
-                    case SIMULATION -> {
-                        storedPacket = VPacket.newFull(
-                                sendMovementPacketEvent.context.playerStatus.pos.x,
-                                sendMovementPacketEvent.context.playerStatus.pos.y
-                                        + 2.5 * ((Tasks.getTick() % 3) + 1), // - 20 * ((Tasks.getTick() % 2) +1 ),
-                                sendMovementPacketEvent.context.playerStatus.pos.z,
-                                mc.player.getYaw(),
-                                mc.player.getPitch(),
-                                mc.player.isOnGround(),
-                                mc.player.horizontalCollision);
-                    }
-                    case CRASH_PACKETS -> {
-                        storedPacket = VPacket.newFull(
-                                3.9999999E7D,
-                                sendMovementPacketEvent.context.playerStatus.pos.y
-                                        + 2.5 * ((Tasks.getTick() % 3) + 1), // - 20 * ((Tasks.getTick() % 2) +1 ),
-                                Double.NEGATIVE_INFINITY,
-                                mc.player.getYaw(),
-                                mc.player.getPitch(),
-                                true,
-                                mc.player.horizontalCollision);
-                    }
+                if (storedPacket != null) {
+                    storedPacket = null;
+                    return;
                 }
-                PlayerMoveC2SPacketAccess.setCause(
-                        (PlayerMoveC2SPacket) storedPacket, PlayerMoveC2SPacketAccess.Cause.TRIGGER_SIMULATION);
+                // if no setback within a tick, then create one
+                createStorePacket();
             }
+        } else {
+            currentWorking = false;
         }
     }
 

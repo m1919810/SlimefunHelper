@@ -1,7 +1,7 @@
 package me.matl114.gui;
 
 import me.matl114.gui.basic.*;
-import me.matl114.gui.slimefun.SlimefunScreen;
+import me.matl114.gui.complex.slimefun.SlimefunScreen;
 import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.text.Text;
 

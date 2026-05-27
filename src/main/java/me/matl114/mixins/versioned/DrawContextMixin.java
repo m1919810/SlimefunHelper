@@ -51,9 +51,6 @@ public abstract class DrawContextMixin implements MatrixStack {
     }
 
     @Override
-    public void translateZ(float z) {}
-
-    @Override
     public void scale(float x, float y) {
         this.matrices.scale(x, y);
     }

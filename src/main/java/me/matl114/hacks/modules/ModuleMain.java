@@ -2,12 +2,13 @@ package me.matl114.hacks.modules;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import me.matl114.gui.basic.SubScreenWidget;
-import me.matl114.hacks.api.AbstractGuiManager;
+import lombok.Getter;
+import me.matl114.hacks.api.AbstractManager;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.utils.Debug;
 
-public class ModuleMain extends AbstractGuiManager<ModuleGroup> {
+public class ModuleMain extends AbstractManager<ModuleGroup> {
+    @Getter
     Map<String, ModuleGroup> moduleGroups = new LinkedHashMap<>();
 
     public ModuleMain() {}
@@ -24,15 +25,6 @@ public class ModuleMain extends AbstractGuiManager<ModuleGroup> {
         super.unregisterModule(module);
         moduleGroups.remove(module.getName());
     }
-
-    // todo:
-    @Override
-    public SubScreenWidget createGui(int x, int y, int dx, int dy) {
-        return null;
-    }
-
-    @Override
-    public void saveGui(SubScreenWidget gui) {}
 
     @Override
     public void unloadModules() {
