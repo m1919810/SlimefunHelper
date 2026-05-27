@@ -1,20 +1,26 @@
 package me.matl114.utils.config.kv;
 
+import com.google.common.base.Suppliers;
 import com.mojang.datafixers.util.Pair;
-import java.util.HashMap;
+import java.awt.*;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import lombok.experimental.Accessors;
-import lombok.val;
 import me.matl114.api.Displayable;
+import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.ColorBoxElement;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
 import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
 import org.apache.commons.lang3.function.Consumers;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
 @Accessors(chain = true)
 public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
@@ -55,79 +61,98 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
         }
     };
 
-    public ExecutableWidget generateSwitchingButton(
+    public DrawableWidget generateSwitchingButton(
             int x, int y, int dx, int dy, Consumer<EnumAttrKeyValue<T>> changelistener) {
+        List<Pair<String, Supplier<Text>>> flattenMap;
         if (Displayable.class.isAssignableFrom(identifier)) {
             Map<String, Displayable> valueMap = (Map<String, Displayable>) (this).getValueMap();
-            List<Pair<String, Displayable>> flattenMap = valueMap.entrySet().stream()
-                    .map((entry) -> new Pair<>(entry.getKey(), entry.getValue()))
+            flattenMap = valueMap.entrySet().stream()
+                    .map((entry) -> new Pair<>(entry.getKey(), (Supplier<Text>) entry.getValue()::getDisplay))
                     .toList();
-            int choices = flattenMap.size();
-            if (choices > 0) {
-                String val = this.getValue();
-                int index = -1;
-                for (int i = 0; i < choices; ++i) {
-                    if (Objects.equals(val, flattenMap.get(i).getFirst())) {
-                        index = i;
-                        break;
-                    }
-                }
-                if (index == -1) {
-                    this.valueChange(this, flattenMap.get(0).getFirst());
-                    index = 0;
-                }
-                AtomicInteger integer = new AtomicInteger();
-                integer.set(index);
-                return ExecutableWidget.instance(x + 1, y + 1, dx - 2, dy - 2)
-                        .setElementHandler(new ButtonElement(
-                                        (ign) -> flattenMap
-                                                .get(integer.get())
-                                                .getSecond()
-                                                .getDisplay(),
-                                        ButtonAction.run(() -> {
-                                            int index0 = integer.get();
-                                            index0 = (index0 + 1) % choices;
-                                            integer.set(index0);
-                                            this.valueChange(
-                                                    this, flattenMap.get(index0).getFirst());
-                                            changelistener.accept(this);
-                                        }))
-                                .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName())))));
-            } else {
-                // no choice
-                return ExecutableWidget.instance(x + 1, y + 1, dx - 2, dy - 2)
-                        .setElementHandler(new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
-                                .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName())))));
-            }
-
-            // .addToSub(this);
         } else {
-            List<String> flattenMap =
-                    ((EnumAttrKeyValue<T>) this).getValueMap().keySet().stream().toList();
-            int choices = flattenMap.size();
-            if (choices > 0) {
-                int index = flattenMap.indexOf(this.getValue());
-                if (index == -1) {
-                    this.valueChange(this, flattenMap.get(0));
-                    index = 0;
+            flattenMap = ((EnumAttrKeyValue<T>) this)
+                    .getValueMap().keySet().stream()
+                            .map(v -> new Pair<>(v, (Supplier<Text>) () -> Text.literal(v)))
+                            .toList();
+        }
+        int choices = flattenMap.size();
+        if (choices > 0) {
+            String val = this.getValue();
+            int index = -1;
+            for (int i = 0; i < choices; ++i) {
+                if (Objects.equals(val, flattenMap.get(i).getFirst())) {
+                    index = i;
+                    break;
                 }
-                AtomicInteger integer = new AtomicInteger();
-                integer.set(index);
-                return ExecutableWidget.instance(x + 1, y + 1, dx - 2, dy - 2)
-                        .setElementHandler(new ButtonElement(
-                                        (ign) -> Text.literal(flattenMap.get(integer.get())), ButtonAction.run(() -> {
-                                            int index0 = integer.get();
-                                            index0 = (index0 + 1) % choices;
-                                            integer.set(index0);
-                                            this.valueChange(this, flattenMap.get(index0));
-                                            changelistener.accept(this);
-                                        }))
-                                .withTooltips(TooltipHandler.of(List.of(Text.literal(this.getKeyName())))));
-            } else {
-                return ExecutableWidget.instance(x + 1, y + 1, dx - 2, dy - 2)
-                        .setElementHandler(new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
-                                .withTooltips(TooltipHandler.of(List.of(Text.literal(this.getKeyName())))));
             }
+            if (index == -1) {
+                this.valueChange(this, flattenMap.get(0).getFirst());
+                index = 0;
+            }
+            AtomicInteger integer = new AtomicInteger();
+            integer.set(index);
+            SubScreenWidget subScreen = new SubScreenWidget(x, y, dx, dy);
+            Runnable indexUpdater = () -> {
+                this.valueChange(this, flattenMap.get(integer.get()).getFirst());
+                changelistener.accept(this);
+            };
+            subScreen.addDrawableChild(ExecutableWidget.instance(1, 1, dx - dy - 2, dy - 2)
+                    .setElementHandler(new ButtonElement(
+                                    (ign) -> flattenMap
+                                            .get(integer.get())
+                                            .getSecond()
+                                            .get(),
+                                    ButtonAction.run(() -> {
+                                        int index0 = integer.get();
+                                        index0 = (index0 + 1) % choices;
+                                        integer.set(index0);
+                                        indexUpdater.run();
+                                    }))
+                            .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName()))))));
+            MutableBoolean show = new MutableBoolean(false);
+            subScreen.addDrawableChild(ExecutableWidget.instance(dx - dy + 2, 2, dy - 4, dy - 4)
+                    .setElementHandler(IconElement.statedGuiPredicate(
+                            Constants.EXPAND_GUI_ON_SPRITE,
+                            Constants.EXPAND_GUI_OFF_SPRITE,
+                            ButtonAction.run(() -> show.setValue(!show.booleanValue())),
+                            (eee) -> show.get())));
+            Supplier<SubScreenWidget> subScreenSupplier = Suppliers.memoize(() -> {
+                SubScreenWidget selectors = new SubScreenWidget(0, 0, 0, 0).setPriority(1);
+                int height = 0;
+                for (int i = 0; i < choices; ++i) {
+                    var section = flattenMap.get(i);
+                    var supplier = section.getSecond();
+                    final int finalI = i;
+                    selectors.addDrawableChild(ExecutableWidget.instance(0, height, dx - dy - 4, dy)
+                            .setElementHandler(new ColorBoxElement(
+                                    ButtonAction.run(() -> {
+                                        integer.set(finalI);
+                                        indexUpdater.run();
+                                        show.setValue(false);
+                                    }),
+                                    (el) -> supplier.get(),
+                                    ColorSampler.of(Color.GRAY.getRGB()),
+                                    ColorSampler.WHITE,
+                                    (el, rb) -> {
+                                        if (integer.get() == finalI) {
+                                            return Colors.GREEN;
+                                        } else if (rb) {
+                                            return Colors.WHITE;
+                                        } else return null;
+                                    })));
+                    height += dy;
+                }
+                return selectors;
+            });
+            ContentDelegateWidget<SubScreenWidget> dynamicDelegate =
+                    new DynamicContentWidget<>(() -> show.get() ? subScreenSupplier.get() : null, 2, dy);
+            subScreen.addDrawableChild(dynamicDelegate);
+            return subScreen;
+        } else {
+            // no choice
+            return ExecutableWidget.instance(x + 1, y + 1, dx - 2, dy - 2)
+                    .setElementHandler(new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
+                            .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName())))));
         }
     }
 }

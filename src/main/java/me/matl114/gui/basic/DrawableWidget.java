@@ -42,7 +42,7 @@ public abstract class DrawableWidget
         this.textureHeight = (int) (dy / this.textureScale);
     }
 
-    protected float textureScale = 1.0f;
+    private float textureScale = 1.0f;
     private float alpha = 1.0f;
     private boolean subWidget = false;
     private RenderHandler renderHandler;
@@ -81,7 +81,7 @@ public abstract class DrawableWidget
         return selected;
     }
     // this should be set before they join any delegates or something, as they often causes problem
-    private final <T extends DrawableWidget> T setPriority(int depth) {
+    public final <T extends DrawableWidget> T setPriority(int depth) {
         this.priority = depth;
         return (T) this;
     }
@@ -147,12 +147,16 @@ public abstract class DrawableWidget
         context.getMatrices().translate(getX(), getY());
         // compat low version
         if (priority != 0) {
-            context.getMatrices().translateZ(priority);
+            context.pushLayer(priority);
         }
+        float textureScale = getTextureScale();
         if (textureScale != 1.0f) {
             context.getMatrices().scale(textureScale, textureScale);
         }
         renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
+        if (priority != 0) {
+            context.popLayer();
+        }
         context.getMatrices().popMatrix();
         renderAbsolute(context, mouseX, mouseY, delta, disableSelect);
     }
@@ -233,13 +237,12 @@ public abstract class DrawableWidget
     }
 
     public <T extends DrawableWidget> T addToSub(SubScreenWidget screen) {
-        setPriority(screen.getBasicDepth());
         addInternal(screen);
         return (T) this;
     }
 
     public <T extends DrawableWidget> T addToSub(SubScreenWidget screen, int priority) {
-        setPriority(priority + screen.getBasicDepth());
+        setPriority(priority);
         addInternal(screen);
         return (T) this;
     }

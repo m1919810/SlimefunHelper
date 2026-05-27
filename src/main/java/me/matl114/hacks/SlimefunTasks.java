@@ -6,8 +6,8 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.commands.MainCommand;
-import me.matl114.gui.slimefun.SlimefunChoiceScreen;
-import me.matl114.gui.slimefun.SlimefunEntryListScreen;
+import me.matl114.gui.complex.slimefun.SlimefunChoiceScreen;
+import me.matl114.gui.complex.slimefun.SlimefunEntryListScreen;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
@@ -417,7 +417,7 @@ public class SlimefunTasks {
     }
 
     @Getter
-    public static final ModuleGroup moduleManager = new ModuleGroup("Slimfun");
+    public static final ModuleGroup moduleManager = new ModuleGroup("Slimefun");
 
     @Getter
     public static SlimefunExtra slimefunExtra;

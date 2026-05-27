@@ -2,13 +2,13 @@ package me.matl114.hacks.utils.config;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import java.awt.*;
 import java.util.Set;
 import java.util.function.Predicate;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.presets.choices.RegistryChooseScreen;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;

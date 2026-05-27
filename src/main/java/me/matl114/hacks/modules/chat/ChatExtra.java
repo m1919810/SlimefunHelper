@@ -25,6 +25,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.AnvilScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.StringHelper;
@@ -83,8 +84,11 @@ public class ChatExtra extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getChatSend(), this::onChatScreenSendMessage, Integer.MAX_VALUE - 1);
-        registerListener(Listener.getPostInitializeScreen(), this::onChatScreenInitialized);
-        registerListener(Listener.getPostCloseScreen(), this::onChatScreenClose);
+        registerListener(
+                Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::onChatScreenInitialized);
+        registerListener(
+                Listener.getPostInitializeScreen().getChannel(HandledScreen.class), this::onChatScreenInitialized);
+        registerListener(Listener.getPostCloseScreen().getChannel(ChatScreen.class), this::onChatScreenClose);
         registerListener(Listener.getChatSend(), this::onChatPasswordEncrypt, -999);
         registerListener(Listener.getChatSend(), this::onStringReplace, Integer.MAX_VALUE - 10);
     }
@@ -164,15 +168,14 @@ public class ChatExtra extends BaseModule {
         }
     }
 
-    public void onChatScreenClose(Event<Screen> chatScreenSave) {
-        if (chatScreenSave.context() instanceof ChatScreen chat) {
-            if (addToHistoryWhenClose.get()) {
-                String chatInput = ChatScreenAccess.of(chat).getInputWidget().getText();
-                // ignore two default input
-                if (!chatInput.isEmpty() && !Objects.equals("/", chatInput)) {
-                    if (mc.inGameHud != null) {
-                        mc.inGameHud.getChatHud().addToMessageHistory(chatInput);
-                    }
+    public void onChatScreenClose(Event<ChatScreen> chatScreenSave) {
+        var chat = chatScreenSave.context();
+        if (addToHistoryWhenClose.get()) {
+            String chatInput = ChatScreenAccess.of(chat).getInputWidget().getText();
+            // ignore two default input
+            if (!chatInput.isEmpty() && !Objects.equals("/", chatInput)) {
+                if (mc.inGameHud != null) {
+                    mc.inGameHud.getChatHud().addToMessageHistory(chatInput);
                 }
             }
         }

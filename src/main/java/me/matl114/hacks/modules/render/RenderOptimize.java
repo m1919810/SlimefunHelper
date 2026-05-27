@@ -43,7 +43,9 @@ import org.apache.commons.lang3.function.BooleanConsumer;
 public class RenderOptimize extends BaseModule {
     public final ModulePath renderOptimize = makePath(Configs.RENDER_CONFIG, "render-optimize");
 
-    public RenderOptimize() {}
+    public RenderOptimize() {
+        super("Optimize");
+    }
 
     public final FlagRef enableItemTickOpt =
             flagBuilder(renderOptimize.add("optimize-item-tick")).build();
@@ -78,7 +80,6 @@ public class RenderOptimize extends BaseModule {
             flagBuilder(renderOptimize.add("optimize-culling-enable")).build();
 
     public final KeyBindRef keyBindRef = toggleHotkey(
-                    Configs.RENDER_CONFIG,
                     renderOptimize.add("optimize-culling-enable-hotkey"),
                     new MultiKeyBind(),
                     renderOptimize.add("optimize-culling-enable"))

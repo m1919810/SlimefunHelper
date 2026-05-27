@@ -30,8 +30,9 @@ public class TaskManagers {
             ClientPlayerEntity player = m.getClient().player;
             if (player != null && HotKeyUtils.isValidState()) {
                 toggleTask.run();
+                return true;
             }
-            return true;
+            return false;
         };
     }
 
@@ -44,8 +45,9 @@ public class TaskManagers {
                 ClientPlayerEntity player = m.getClient().player;
                 if (player != null && HotKeyUtils.isValidState()) {
                     toggleTask.run();
+                    return true;
                 }
-                return true;
+                return false;
             };
         } else {
             throw new IllegalArgumentException("No Flag for " + commonPath);
@@ -69,8 +71,9 @@ public class TaskManagers {
                     ClientPlayerEntity player = manager.getClient().player;
                     if (player != null && HotKeyUtils.isValidState()) {
                         toggleTask.run();
+                        return true;
                     }
-                    return true;
+                    return false;
                 }
                 return false;
             }

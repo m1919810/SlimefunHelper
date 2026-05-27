@@ -1,15 +1,16 @@
 package me.matl114.hacks.modules.combat;
 
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.hacks.CombatTasks;
-import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
@@ -46,24 +47,32 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     public final EnumRef<Mode> mode =
             builder(criticals.add("mode"), Mode.class).defaultValue(Mode.PACKET).build();
 
-    public final FlagRef groundOnly = flagBuilder(criticals.add("ground-only")).build();
+    public final FlagRef groundOnly = flagBuilder(criticals.add("ground-only"))
+            .show(() -> mode.get().isIn(Mode.FREEZE, Mode.GRIM_GROUND_SIMULATION))
+            .build();
 
-    public final FlagRef targetAround =
-            flagBuilder(criticals.add("target-only")).build();
+    public final FlagRef targetAround = flagBuilder(criticals.add("target-only"))
+            .show(() -> mode.get().isIn(Mode.FREEZE, Mode.GRIM_GROUND_SIMULATION))
+            .build();
 
-    public final FlagRef movementOk = flagBuilder(criticals.add("movement-ok")).build();
+    public final FlagRef movementOk = flagBuilder(criticals.add("movement-ok"))
+            .show(() -> mode.get().isIn(Mode.FREEZE, Mode.GRIM_GROUND_SIMULATION))
+            .build();
 
     public final FlagRef autoFakeGround = builder(criticals.add("auto-fake-ground-height"), Boolean.class)
             .defaultValue(true)
+            .show(() -> mode.get().isIn(Mode.GRIM_GROUND_SIMULATION))
             .build();
 
     public final FlagRef autoWalk = builder(criticals.add("auto-walk-resync"), Boolean.class)
             .defaultValue(true)
+            .show(() -> mode.get().isIn(Mode.GRIM_GROUND_SIMULATION))
             .build();
 
     public final EnumRef<Configs.SetBackTriggerType> setBackType = builder(
                     criticals.add("set-back-mode"), Configs.SetBackTriggerType.class)
             .defaultValue(Configs.SetBackTriggerType.SIMULATION)
+            .show(() -> mode.get().isIn(Mode.GRIM_GROUND_SIMULATION))
             .build();
 
     static LegalMovementManager.DelegateMovementModifier instance;
@@ -74,6 +83,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
+        bindFlag(enable);
     }
 
     // todo: wall critical
@@ -182,6 +192,20 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     fakeMovementThisTick = true;
                 }
             }
+            case GRIM_NEW -> {
+                if (mc.player.isOnGround()) {
+                    //
+                    // mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y, z, true,
+                    //                     false));
+                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 0.0625, z, false, false));
+                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 0.04535, z, false, false));
+                    ClientPlayerAccess.of(mc.player).resyncRot();
+                    event.cancel();
+                    cache = event.context;
+                    cachedHandStack = mc.player.getStackInHand(Hand.MAIN_HAND).copy();
+                    fakeMovementThisTick = true;
+                }
+            }
         }
     }
 
@@ -238,7 +262,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     var res = InventoryUtils.findPlayerItem(
                             it -> ItemStack.areItemsAndComponentsEqual(it, stack), true, false);
                     if (res != null) {
-                        callback = InvTasks.getInvExtra().swapInventoryIndexToHand(res.index());
+                        callback = InvExtra.INSTANCE.swapInventoryIndexToHand(res.index());
                     }
                 }
                 Listener.sendPacketNoEvents(pkt);
@@ -361,7 +385,9 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         FREEZE,
         //        OLD_GRIM_V2,
         //        OLD_GRIM_V3,
-        GRIM_GROUND_SIMULATION;
+        GRIM_GROUND_SIMULATION,
+        GRIM_NEW,
+        TEST;
 
         @Override
         public String getConfigEnumType() {

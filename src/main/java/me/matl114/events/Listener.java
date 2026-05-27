@@ -69,6 +69,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
+import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -275,6 +276,15 @@ public class Listener {
         }
     }
 
+    private static final Function<Class<? extends Screen>, Class<? extends Screen>> screenClassIdentifierMapper =
+            Util.memoize((clz -> {
+                Class<?> clzz = clz;
+                while (clzz != Screen.class && clzz.getSuperclass() != Screen.class) {
+                    clzz = clzz.getSuperclass();
+                }
+                return (Class<? extends Screen>) clzz;
+            }));
+
     // basic events
     @Getter
     @Broadcast
@@ -355,25 +365,30 @@ public class Listener {
     // screen events
     @Getter
     @Broadcast
-    private static final EventChannel<Screen> postCloseScreen = new EventChannel<>();
+    private static final EventChannelDispatcher<Screen> postCloseScreen = new EventChannelDispatcher<>(
+            screen -> screen == null ? Screen.class : screenClassIdentifierMapper.apply(screen.getClass()));
 
     @Getter
     @Cancelable
     @Modifiable
-    private static final EventChannel<Screen> preSetScreen = new EventChannel<>();
+    private static final EventChannelDispatcher<Screen> preSetScreen = new EventChannelDispatcher<>(
+            screen -> screen == null ? Screen.class : screenClassIdentifierMapper.apply(screen.getClass()));
 
     @Getter
     @Cancelable // note: this cancels post operations of setting a screen , like cursor lock, render refresh and title
     // update
-    private static final EventChannel<Screen> postSetScreen = new EventChannel<>();
+    private static final EventChannelDispatcher<Screen> postSetScreen = new EventChannelDispatcher<>(
+            screen -> screen == null ? Screen.class : screenClassIdentifierMapper.apply(screen.getClass()));
 
     @Getter
     @Broadcast
     private static final EventChannel<HandledScreen<?>> postOpenHandledScreen = new EventChannel<>();
 
     @Getter
-    @Broadcast
-    private static final EventChannel<Screen> postInitializeScreen = new EventChannel<>();
+    @Broadcast //  note: this is called when a screen open for the first time, or change its size. most screen clear
+    // their children after change, but not all of them
+    private static final EventChannelDispatcher<Screen> postInitializeScreen = new EventChannelDispatcher<>(
+            screen -> screen == null ? Screen.class : screenClassIdentifierMapper.apply(screen.getClass()));
 
     @Getter // stores argument of the RecipeBook
     @Broadcast

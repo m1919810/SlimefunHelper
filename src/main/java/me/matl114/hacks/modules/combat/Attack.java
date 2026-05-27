@@ -16,6 +16,7 @@ import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
@@ -69,21 +70,28 @@ public class Attack extends BaseModule {
 
     public final FlagRef enableTp = flagBuilder(attack.add("tp-enable")).build();
 
-    public final DoubleRef tpRange =
-            doubleBuilder(attack.add("tp-reach")).defaultValue(0.0D).build();
+    public final DoubleRef tpRange = doubleBuilder(attack.add("tp-reach"))
+            .defaultValue(0.0D)
+            .show(enableTp::get)
+            .build();
 
-    public final FlagRef enableMace = flagBuilder(attack.add("mace-enable")).build();
+    public final FlagRef enableMace =
+            flagBuilder(attack.add("mace-enable")).show(() -> !legalMode.get()).build();
 
     public final DoubleRef maceHeight = doubleBuilder(attack.add("mace-height-multiply"))
             .defaultValue(30.0D)
             .validator(Configs.doubleRange(-200.0D, 200.0D))
+            .show(() -> !legalMode.get() && enableMace.get())
             .build();
 
-    public final FlagRef exactAttack = flagBuilder(attack.add("exact-tp")).build();
+    public final FlagRef exactAttack = flagBuilder(attack.add("exact-tp"))
+            .show(() -> !legalMode.get() && enableTp.get())
+            .build();
 
     public final EnumRef<Configs.LegalTargetingMode> legalTargetingMode = builder(
                     attack.add("legal-targeting"), Configs.LegalTargetingMode.class)
             .defaultValue(Configs.LegalTargetingMode.DELAY_MOVEMENT)
+            .show(legalMode::get)
             .build();
 
     public final FlagRef autoAntiShield =
@@ -205,9 +213,10 @@ public class Attack extends BaseModule {
         boolean selectWeapon = autoSelect.get();
         boolean antiShield = autoAntiShield.get();
         boolean useAttack = autoRelease.get() && mc.player.isUsingItem();
-        boolean elytraSwitch = MovTasks.getElytraExtra().shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack();
+        boolean elytraSwitch =
+                MovTasks.getElytraExtra().shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(maceSwap);
         boolean criticalSprint = !legalMode.get() && mc.player.isSprinting();
-        boolean maceVClip = useTp && !legalMode.get() && maceHeight.get() > 1E-7;
+        boolean maceVClip = canUseMaceTp() && !legalMode.get();
         return new AttackSettings(
                 useTp, maceSwap, invSwap, selectWeapon, antiShield, useAttack, elytraSwitch, criticalSprint, maceVClip);
     }
@@ -223,7 +232,7 @@ public class Attack extends BaseModule {
                 && (invResult = InventoryUtils.findPlayerItem(
                                 (ex) -> VItem.getInstance().isAxe(ex), false, false))
                         != null) {
-            callback = InvTasks.getInvExtra().swapInventoryIndexToHand(invResult.index());
+            callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
         } else if (attackSettings.invSwap()
                 && !VItem.getInstance().isWeapon(mc.player.getStackInHand(Hand.MAIN_HAND))
                 && target instanceof LivingEntity lv
@@ -241,7 +250,7 @@ public class Attack extends BaseModule {
                                 false,
                                 false))
                         != null) {
-            callback = InvTasks.getInvExtra().swapInventoryIndexToHand(invResult.index());
+            callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
         } else if (attackSettings.maceSwap()
                 && target instanceof LivingEntity lv
                 && (invResult = InventoryUtils.findBestPlayerItem(
@@ -254,7 +263,7 @@ public class Attack extends BaseModule {
                                 false,
                                 false))
                         != null) {
-            callback = InvTasks.getInvExtra().swapInventoryIndexToHand(invResult.index());
+            callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
         } else if (attackSettings.selectWeapon()
                 && !mc.player.getStackInHand(Hand.MAIN_HAND).isEmpty()
                 && target instanceof LivingEntity
@@ -271,7 +280,7 @@ public class Attack extends BaseModule {
                                 false,
                                 false))
                         != null) {
-            callback = InvTasks.getInvExtra().swapInventoryIndexToHand(invResult.index());
+            callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
         }
         attackWithCritic(player, target, attackSettings.criticalSprint());
         if (callback != null) {
@@ -305,9 +314,9 @@ public class Attack extends BaseModule {
         }
     }
 
-    private boolean willUseMaceAttack() {
+    private boolean willUseMaceAttack(boolean autoMace) {
         return mc.player.getMainHandStack().getItem() instanceof MaceItem mace
-                || (autoMaceSwap.get()
+                || (autoMace
                         && InventoryUtils.findPlayerItem((ex) -> ex.getItem() == Items.MACE, false, false) != null);
     }
 
@@ -327,7 +336,8 @@ public class Attack extends BaseModule {
     private boolean processDelayMovementAttack(Entity target, AttackSettings settings) {
         ElytraExtra elytraExtra = MovTasks.getElytraExtra();
         final double attackRange = CombatTasks.getCombatExtra().getAttackRange();
-        boolean useMaceAttack = elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack();
+        boolean useMaceAttack =
+                elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(settings.maceSwap());
         // remove crosshairTarget judge, use
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                 mc.player, PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw, target);
@@ -550,7 +560,8 @@ public class Attack extends BaseModule {
 
     private boolean processLegacySnapAttack(Entity target, AttackSettings settings) {
         ElytraExtra elytraExtra = MovTasks.getElytraExtra();
-        boolean useMaceAttack = false && elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack();
+        boolean useMaceAttack =
+                false && elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(settings.maceSwap());
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                 mc.player, PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw, target);
         if (settings.isNoDelay() && canDirectlyHit) {
@@ -623,7 +634,8 @@ public class Attack extends BaseModule {
         boolean alreadyInRange = alreadyAtTarget
                 || target.getBoundingBox().squaredMagnitude(player.getEyePos()) < MathUtils.s2(attackRange);
         // mace hack、
-        boolean useExactAttack = exactAttack.get()
+        boolean useExactAttack = settings.useTp()
+                && exactAttack.get()
                 && (!alreadyInRange || CombatTasks.getPositionPredict().considerAntiShield(target));
         boolean shouldResetFallDamage = false;
         boolean currentSuccessful = true;
@@ -639,20 +651,21 @@ public class Attack extends BaseModule {
         if (currentSuccessful) {
             // exact attack
             if (useExactAttack) {
-                if (processExactAttack(player, target, movementStack, shouldMoveBackStack, vanillaSuccessful)) {
+                if (processExactAttack(
+                        player, target, movementStack, shouldMoveBackStack, vanillaSuccessful, settings)) {
                     exactSuccessful = true;
                 }
             }
         }
         if (currentSuccessful) {
             if (!exactSuccessful && !vanillaSuccessful) {
-                currentSuccessful &=
-                        processCommonTpAttack(player, target, movementStack, shouldMoveBackStack, alreadyAtTarget);
+                currentSuccessful &= processCommonTpAttack(
+                        player, target, movementStack, shouldMoveBackStack, alreadyAtTarget, settings);
             }
         }
         boolean maceAttack = false;
         if (currentSuccessful) {
-            if (processMaceAttack(player, target, movementStack, shouldMoveBackStack)) {
+            if (processMaceAttack(player, target, movementStack, shouldMoveBackStack, settings)) {
                 maceAttack = true;
                 int maceThreshold = (useExactAttack ? 100 : 140);
                 if (maceHeight.get() > maceThreshold) {
@@ -710,7 +723,8 @@ public class Attack extends BaseModule {
             //                );
 
             // force resync position to origin
-            if (!shouldMoveBackStack.isEmpty() || !movementStack.isEmpty()) {
+            if ((settings.useTp() || settings.maceVClip())
+                    && (!shouldMoveBackStack.isEmpty() || !movementStack.isEmpty())) {
                 mc.player.setPosition(currentStartPos);
                 // feature
                 MovTasks.setupAutoResync();
@@ -761,7 +775,8 @@ public class Attack extends BaseModule {
             PlayerEntity player,
             Entity target,
             Deque<MovTasks.MovInfo> movementStack,
-            Deque<MovTasks.MovInfo> shouldMoveBackStack) {
+            Deque<MovTasks.MovInfo> shouldMoveBackStack,
+            AttackSettings attackSettings) {
         //        if(maceHack.get() > 0.0D && player.getMainHandStack().getItem() instanceof MaceItem mace){
         //            //dupe fall distance
         //            double maxMace = maceHack.get();
@@ -787,7 +802,7 @@ public class Attack extends BaseModule {
         //            }
         //
         //        }
-        if (canUseMaceTp() && player.getMainHandStack().getItem() instanceof MaceItem mace) {
+        if (attackSettings.maceVClip() && willUseMaceAttack(attackSettings.maceSwap())) {
             double maxMace = maceHeight.get();
             player.setOnGround(false);
             Vec3d playerPos = movementStack.peekLast().vec3d();
@@ -850,7 +865,8 @@ public class Attack extends BaseModule {
             Entity target,
             Deque<MovTasks.MovInfo> movementStack,
             Deque<MovTasks.MovInfo> shouldMoveBackStack,
-            boolean vanillaSuccess) {
+            boolean vanillaSuccess,
+            AttackSettings settings) {
         // how to manage exact attack and mace hack
         // fixed : can not tp to shulker inside
         // should teleport the player to the pos of target entity
@@ -860,7 +876,7 @@ public class Attack extends BaseModule {
                 return true;
             }
         }
-        if (!canUseTp()) {
+        if (!settings.useTp()) {
             return false;
         }
         double range = getTpSelectRange();
@@ -914,7 +930,8 @@ public class Attack extends BaseModule {
             Entity target,
             Deque<MovTasks.MovInfo> movementStack,
             Deque<MovTasks.MovInfo> shouldMoveBackStack,
-            boolean alreadyAtTarget) {
+            boolean alreadyAtTarget,
+            AttackSettings settings) {
         final Vec3d vec3d = movementStack.peekLast().vec3d();
         double commonAttackRange = CombatTasks.getCombatExtra().getAttackRange();
         if (alreadyAtTarget) {
@@ -923,7 +940,7 @@ public class Attack extends BaseModule {
         }
         // todo: get this better
 
-        else if (canUseTp()
+        else if (settings.useTp()
                 && target.getBoundingBox().squaredMagnitude(vec3d.add(0, mc.player.getStandingEyeHeight(), 0))
                         > MathUtils.s2(commonAttackRange)) {
 

@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import com.mojang.serialization.JsonOps;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -16,6 +15,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;
 import net.minecraft.util.Unit;
 import net.minecraft.util.math.Vec3d;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -498,7 +498,7 @@ public class ChatUtils {
     public static String translatedTextToLegacyString(Text component) {
         if (component == null) return "";
         StringBuilder out = new StringBuilder();
-        final AtomicBoolean hadFormat = new AtomicBoolean(false);
+        final MutableBoolean hadFormat = new MutableBoolean(false);
         component.visit(
                 (StringVisitable.StyledVisitor<? extends Object>) (style, str) -> {
                     Style modi = style;
@@ -516,31 +516,31 @@ public class ChatUtils {
                                     out.append('§').append(magic);
                                 }
                             }
-                            hadFormat.set(true); // = true;
-                        } else if (hadFormat.get()) {
+                            hadFormat.setValue(true); // = true;
+                        } else if (hadFormat.booleanValue()) {
                             out.append("§r");
-                            hadFormat.set(false); // = false;
+                            hadFormat.setValue(false); // = false;
                         }
                     }
                     if (modi.isBold()) {
                         out.append(Formatting.BOLD);
-                        hadFormat.set(true); // = true;
+                        hadFormat.setValue(true); // = true;
                     }
                     if (modi.isItalic()) {
                         out.append(Formatting.ITALIC);
-                        hadFormat.set(true);
+                        hadFormat.setValue(true);
                     }
                     if (modi.isUnderlined()) {
                         out.append(Formatting.UNDERLINE);
-                        hadFormat.set(true);
+                        hadFormat.setValue(true);
                     }
                     if (modi.isStrikethrough()) {
                         out.append(Formatting.STRIKETHROUGH);
-                        hadFormat.set(true);
+                        hadFormat.setValue(true);
                     }
                     if (modi.isObfuscated()) {
                         out.append(Formatting.OBFUSCATED);
-                        hadFormat.set(true);
+                        hadFormat.setValue(true);
                     }
                     out.append(str);
                     return Optional.empty();
@@ -559,7 +559,7 @@ public class ChatUtils {
         if (text == null) return "";
         StringBuilder out = new StringBuilder();
         MutableObject<Style> currentStyle = new MutableObject<>(null);
-        final AtomicBoolean hadFormat = new AtomicBoolean(false);
+        final MutableBoolean hadFormat = new MutableBoolean(false);
         for (var txt : text) {
             txt.accept(((index, style, codePoint) -> {
                 if (!Objects.equals(style, currentStyle.getValue())) {
@@ -578,31 +578,31 @@ public class ChatUtils {
                                 out.append('§').append(magic);
                             }
                         }
-                        hadFormat.set(true); // = true;
-                    } else if (hadFormat.get()) {
+                        hadFormat.setValue(true); // = true;
+                    } else if (hadFormat.booleanValue()) {
                         out.append("§r");
-                        hadFormat.set(false); // = false;
+                        hadFormat.setValue(false); // = false;
                     }
 
                     if (modi.isBold()) {
                         out.append(Formatting.BOLD);
-                        hadFormat.set(true); // = true;
+                        hadFormat.setValue(true); // = true;
                     }
                     if (modi.isItalic()) {
                         out.append(Formatting.ITALIC);
-                        hadFormat.set(true);
+                        hadFormat.setValue(true);
                     }
                     if (modi.isUnderlined()) {
                         out.append(Formatting.UNDERLINE);
-                        hadFormat.set(true);
+                        hadFormat.setValue(true);
                     }
                     if (modi.isStrikethrough()) {
                         out.append(Formatting.STRIKETHROUGH);
-                        hadFormat.set(true);
+                        hadFormat.setValue(true);
                     }
                     if (modi.isObfuscated()) {
                         out.append(Formatting.OBFUSCATED);
-                        hadFormat.set(true);
+                        hadFormat.setValue(true);
                     }
                 }
 
@@ -761,6 +761,7 @@ public class ChatUtils {
     @ApiMethod
     public static List<Text> parseTooltipsTranslation(String key, String defaultVal) {
         String tooltipValue = Language.getInstance().get(key, defaultVal);
+        if (tooltipValue == null || tooltipValue.isEmpty()) return List.of();
         String[] splites = tooltipValue.split("\n");
         return Arrays.stream(splites).map(Text::literal).map(Text.class::cast).toList();
     }

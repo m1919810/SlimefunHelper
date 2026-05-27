@@ -26,7 +26,9 @@ public class AutoStore extends BaseModule {
     public final ModulePath autoInv = makePath(Configs.INV_CONFIG, "auto-inv");
     public final ModulePath autoStore = autoInv.add("auto-store");
 
-    public AutoStore() {}
+    public AutoStore() {
+        bindFlag(enable);
+    }
 
     public final FlagRef enable = flagBuilder(autoStore.add("enable")).build();
 

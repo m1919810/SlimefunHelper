@@ -14,7 +14,6 @@ import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.inv.AutoSteal;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -36,7 +35,9 @@ import net.minecraft.util.math.Vec3d;
 public class TpInteract extends BaseModule {
     public final ModulePath tpInteract = makePath(Configs.INTERACT_CONFIG, "tp-interact");
 
-    public TpInteract() {}
+    public TpInteract() {
+        bindFlag(enable);
+    }
 
     public final FlagRef enable = flagBuilder(tpInteract.add("enable")).build();
 
@@ -75,7 +76,7 @@ public class TpInteract extends BaseModule {
             double distance = MineTasks.getMineExtra().getReachDistance() + ENABLE_NO_TP_DISTANCE;
             if (new Box(blockPos).squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(distance)) {
                 if (!mc.player.isSneaking() && tryTpSteal.get().isAllPressed()) {
-                    int size = AutoSteal.predictOpenVanillaContainerSize(blockPos);
+                    int size = InvTasks.predictOpenVanillaContainerSize(blockPos);
                     if (size != 0) {
 
                         if (tpToBlock(
@@ -83,7 +84,7 @@ public class TpInteract extends BaseModule {
                                 (sel) -> executeTp(sel, () -> {
                                     Debug.chat("[TpInteract] 尝试和物品栏交互");
                                     Listener.sendPacketNoEvents(packetToSend);
-                                    AutoSteal.executePredictInventoryAction((handler) -> {
+                                    InvTasks.executePredictInventoryAction((handler) -> {
                                         for (var i = 0; i < size; ++i) {
                                             mc.interactionManager.clickSlot(
                                                     handler.syncId, i, 0, SlotActionType.QUICK_MOVE, mc.player);

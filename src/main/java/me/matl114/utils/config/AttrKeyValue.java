@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.config.KeyValueInputWidget;
+import me.matl114.gui.complex.config.KeyValueInputWidget;
 import me.matl114.utils.ReflectUtils;
 import me.matl114.utils.config.kv.EnumAttrKeyValue;
 import me.matl114.utils.config.kv.RegistryAttrKeyValue;

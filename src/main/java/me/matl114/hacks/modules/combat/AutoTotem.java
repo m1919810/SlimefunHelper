@@ -36,7 +36,9 @@ public class AutoTotem extends BaseModule {
     private final Random inventorRandom = new Random();
     public final ModulePath totem = makePath(Configs.COMBAT_CONFIG, "totem");
 
-    public AutoTotem() {}
+    public AutoTotem() {
+        bindFlag(enable);
+    }
 
     public final FlagRef enable = flagBuilder(totem.add("auto-totem")).build();
 

@@ -2,9 +2,8 @@ package me.matl114.hacks.modules.render;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.util.*;
-import java.util.List;
-import java.util.Set;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
@@ -16,10 +15,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.Debug;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.GameMenuScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket;
@@ -69,16 +64,12 @@ public class RenderExtra extends BaseModule {
     public final FlagRef enhancedDebugHud =
             flagBuilder(render.add("enhanced-debug-hud")).build();
 
-    public final FlagRef optimizeGameMenu = builder(render.add("optimize-game-menu"), FlagRef.TYPE)
-            .defaultValue(true)
-            .build();
-
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(
                 Listener.getPacketPoint().getChannel(ResourcePackSendS2CPacket.class), this::onResourceRequest);
-        registerListener(Listener.getPostInitializeScreen(), this::onGameMenuScreenRelocateWurstButton);
+
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusEffectS2CPacket.class), this::doCancelEffect);
     }
 
@@ -103,58 +94,6 @@ public class RenderExtra extends BaseModule {
                                     new ClickEvent(ClickEvent.Action.OPEN_URL, sendPacket.url())))
                             .formatted(Formatting.YELLOW));
             resourceEvent.cancel();
-        }
-    }
-
-    private static final Set<Text> VANILLA_BUTTON_TEXT;
-
-    static {
-        Set<Text> texts = new LinkedHashSet<>();
-        Field[] fields = GameMenuScreen.class.getDeclaredFields();
-        for (var re : fields) {
-            try {
-                if (Modifier.isStatic(re.getModifiers()) && Text.class.isAssignableFrom(re.getType())) {
-                    re.setAccessible(true);
-                    Text text = (Text) re.get(null);
-                    if (text instanceof MutableText text0
-                            && text0.getContent() instanceof TranslatableTextContent translate) {
-                        texts.add(text);
-                    }
-                }
-            } catch (Throwable e) {
-            }
-        }
-
-        VANILLA_BUTTON_TEXT = texts;
-    }
-
-    public void onGameMenuScreenRelocateWurstButton(Event<Screen> screenEvent) {
-        if (screenEvent.context() instanceof GameMenuScreen screen && optimizeGameMenu.get()) {
-            List<? extends Element> elements = screen.children();
-            int extraButtons = 0;
-            int lastLineY = 0;
-            List<ButtonWidget> extraElements = new ArrayList<>();
-            for (var el : elements) {
-                if (el instanceof ButtonWidget button) {
-                    Text text = button.getMessage();
-                    if (VANILLA_BUTTON_TEXT.contains(text)) {
-                        if (!button.visible) {
-                            button.visible = true;
-                        }
-                        lastLineY = Math.max(lastLineY, button.getY());
-                    } else {
-                        extraElements.add(button);
-                    }
-                }
-            }
-            if (lastLineY > 0 && !extraElements.isEmpty()) {
-                for (var entry : extraElements) {
-                    if (entry.getWidth() > 100) {
-                        extraButtons += 1;
-                        entry.setY(lastLineY + 24 * extraButtons);
-                    }
-                }
-            }
         }
     }
 

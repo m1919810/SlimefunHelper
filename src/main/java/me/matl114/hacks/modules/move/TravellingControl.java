@@ -43,7 +43,9 @@ import org.joml.Vector3d;
 public class TravellingControl extends BaseModule {
     public final ModulePath travellingControl = makePath(Configs.MOV_CONFIG, "travelling-control");
 
-    public TravellingControl() {}
+    public TravellingControl() {
+        super("Travel");
+    }
 
     //    public FlagRef enable = flagBuilder(travellingControl.add("enable")).build();
 
@@ -52,11 +54,13 @@ public class TravellingControl extends BaseModule {
             .build();
 
     public DoubleRef speed = builder(travellingControl.add("speed"), DoubleRef.TYPE)
+            .show(() -> controlType.get().isIn(Type.MOV_VOID, Type.MOV_VOID_2))
             .defaultValue(9.9D)
             .build();
 
     public DoubleRef elytraSpeed = builder(travellingControl.add("elytra-speed"), DoubleRef.TYPE)
             .defaultValue(1.7D)
+            .show(() -> controlType.get().isIn(Type.ELYTRASKY))
             .build();
 
     public IntRef minHeight = builder(travellingControl.add("min-height"), IntRef.TYPE)
@@ -70,23 +74,28 @@ public class TravellingControl extends BaseModule {
     public IntRef void2Arg = builder(travellingControl.add("void-2-dup-packet"), IntRef.TYPE)
             .defaultValue(4)
             .validator(Configs.INT_POSITIVE)
+            .show(() -> controlType.get().isIn(Type.MOV_VOID_2))
             .build();
 
-    public FlagRef pitch40SafeHeight =
-            flagBuilder(travellingControl.add("pitch-40-end-safety")).build();
+    public FlagRef pitch40SafeHeight = flagBuilder(travellingControl.add("pitch-40-end-safety"))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
+            .build();
 
     public IntRef pitch40Pitch = builder(travellingControl.add("pitch-40-pitch-positive"), IntRef.TYPE)
             .defaultValue(15)
             .validator(Configs.INT_POSITIVE)
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
     public IntRef pitch40Negative = builder(travellingControl.add("pitch-40-pitch-negative"), IntRef.TYPE)
             .defaultValue(60)
             .validator(Configs.INT_POSITIVE)
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
 
     public DoubleRef negativeArgument = builder(travellingControl.add("pitch-40-negative-delta"), DoubleRef.TYPE)
             .defaultValue(0.0)
             .validator(Configs.doubleRange(0, 90))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
 
     private boolean doingTp = false;

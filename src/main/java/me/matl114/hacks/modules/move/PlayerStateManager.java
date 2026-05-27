@@ -19,6 +19,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -370,7 +371,9 @@ public class PlayerStateManager extends BaseModule {
     public void onTotemPop(Event<EntityStatusS2CPacket> event) {
         if (checkNull()) return;
         EntityStatusS2CPacket packet = event.context;
-        if (packet.getEntity(mc.world) instanceof PlayerEntity player && player instanceof MetadataHolder holder) {
+        if (packet.getEntity(mc.world) instanceof PlayerEntity player
+                && packet.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING
+                && player instanceof MetadataHolder holder) {
             MetaData data = holder.getMetadata();
             PlayerStatus status = data.getOrPut(this, KEY_RENDER_CONTROL, PlayerStatus::new);
             status.popCount++;

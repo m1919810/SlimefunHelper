@@ -57,4 +57,8 @@ public class ColorUtils {
     public static TextColor color(Color color) {
         return TextColor.fromRgb(color.getRGB());
     }
+
+    public static TextColor color(String str) {
+        return TextColor.parse(str).getOrThrow();
+    }
 }

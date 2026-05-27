@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import me.matl114.gui.basic.ElementHandler;
-import me.matl114.gui.config.ListModifyWidget;
+import me.matl114.gui.complex.config.ListModifyWidget;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.config.AttrKeyValue;

@@ -19,7 +19,9 @@ import net.minecraft.util.Nullables;
 public class ChatSpamFix extends BaseModule {
     public final ModulePath chatSpamFix = makePath(Configs.CHAT_CONFIG, "chat-spam-fix");
 
-    public ChatSpamFix() {}
+    public ChatSpamFix() {
+        bindFlag(enable);
+    }
 
     public final FlagRef enable = flagBuilder(chatSpamFix.add("enable")).build();
 

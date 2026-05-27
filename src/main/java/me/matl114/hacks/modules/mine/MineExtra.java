@@ -88,7 +88,7 @@ public class MineExtra extends BaseModule {
     public final FlagRef quickMine = flagBuilder(fastbreak.addEnable()).build();
 
     public final KeyBindRef quickMineKeyBind = toggleHotkey(
-                    Configs.MINE_CONFIG, fastbreak.addHotkey(), new MultiKeyBind(), fastbreak.addEnable())
+                    fastbreak.addHotkey(), new MultiKeyBind(), fastbreak.addEnable())
             .build();
 
     public final FlagRef fakeInstaBreak =
@@ -100,6 +100,7 @@ public class MineExtra extends BaseModule {
 
     public final IntRef grimAcCounterThreshold = builder(fastbreak.add("grim-punishment-threshold"), Integer.class)
             .defaultValue(500)
+            .show(() -> fastBreakBypassMode.get() == Mode.BYPASS_GRIM_LEGIT)
             .build();
 
     public final DoubleRef breakThreshold = builder(fastbreak.add("break-threshold"), Double.class)
@@ -134,8 +135,9 @@ public class MineExtra extends BaseModule {
     public final FlagRef mineRender =
             flagBuilder(fastbreak.add("render-current-break-pos")).build();
 
-    public final FlagRef grimBadPacketFix1 =
-            flagBuilder(fastbreak.add("grim-badpackets-1")).build();
+    public final FlagRef grimBadPacketFix1 = flagBuilder(fastbreak.add("grim-badpackets-1"))
+            .show(() -> fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS)
+            .build();
 
     public double getReachDistance() {
         return mc.player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE) + reachDistance.get();

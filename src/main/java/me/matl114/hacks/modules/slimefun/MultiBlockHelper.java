@@ -12,9 +12,10 @@ import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.ContentDelegateWidget;
-import me.matl114.gui.slimefun.SlimefunDispensorSuggestBookWidget;
+import me.matl114.gui.complex.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.managers.Configs;
@@ -31,6 +32,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.Generic3x3ContainerScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerInventory;
@@ -45,23 +47,21 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 
 public class MultiBlockHelper extends BaseModule {
-    public static final String[] SLIMEFUN_MULTIBLOCK_CLICKER = {"multi-block-clicker", "enable"};
-    public static final String[] SLIMEFUN_MB_RATE = {"multi-block-clicker", "rate"};
-    public static final String[] SLIMEFUN_MB_LEGAL = {"multi-block-clicker", "bypass-anticheat"};
-    public static final String[] SLIMEFUN_MB_LEGAL_MODE = {"multi-block-clicker", "bypass-targeting-mode"};
+    public MultiBlockHelper() {
+        bindFlag(enableClicker);
+    }
 
-    public MultiBlockHelper() {}
+    public final ModulePath multiblock = makePath(Configs.SLIMEFUN_CONFIG, "multi-block-clicker");
 
-    public final FlagRef enableClicker =
-            flagBuilder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_MULTIBLOCK_CLICKER).build();
+    public final FlagRef enableClicker = flagBuilder(multiblock.addEnable()).build();
 
-    public final IntRef rate = builder(Configs.SLIMEFUN_CONFIG, SLIMEFUN_MB_RATE, IntRef.TYPE)
+    public final IntRef rate = builder(multiblock.add("rate"), IntRef.TYPE)
             .defaultValue(9)
             .validator(Configs.INT_POSITIVE)
             .build();
 
     public final EnumRef<Configs.LegalInteractMode> legalMode = builder(
-                    Configs.SLIMEFUN_CONFIG, SLIMEFUN_MB_LEGAL_MODE, Configs.LegalInteractMode.class)
+                    multiblock.add("bypass-targeting-mode"), Configs.LegalInteractMode.class)
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
@@ -71,7 +71,7 @@ public class MultiBlockHelper extends BaseModule {
         registerListener(Listener.getPostPlayerUseItemAtBlock(), this::onBlockClick);
         registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getServerLeavePoint(), this::onExit);
-        registerListener(Listener.getPostInitializeScreen(), this::onScreenInit);
+        registerListener(Listener.getPostInitializeScreen().getChannel(HandledScreen.class), this::onScreenInit);
     }
 
     private int lastChatTimestamp = 0;
@@ -122,7 +122,7 @@ public class MultiBlockHelper extends BaseModule {
     private static final String KEY_BOOK_WIDGET = "slimefunhelper:multiblock_suggestion_book_widget";
     private static final int[] AVAILABLE_SLOTS = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
-    private void onScreenInit(Event<Screen> event) {
+    private void onScreenInit(Event<HandledScreen<?>> event) {
         if (event.context() instanceof TileInventoryScreen screen
                 && event.context() instanceof Generic3x3ContainerScreen containerScreen) {
             HandledScreenAccess screenAccess = HandledScreenAccess.of(containerScreen);

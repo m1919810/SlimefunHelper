@@ -9,6 +9,10 @@ public class ScheduleService {
     private static final ConcurrentHashMap<String, ScheduledFuture<?>> runningTasks = new ConcurrentHashMap<>();
     private static final AtomicInteger taskIdGenerator = new AtomicInteger(0);
 
+    public static ScheduledExecutorService getSingleThreadScheduler() {
+        return scheduler;
+    }
+
     public static String launchAsyncRepeatTask(Runnable task, long initialDelay, long repeat) {
         String taskId = "repeat-" + taskIdGenerator.incrementAndGet();
 

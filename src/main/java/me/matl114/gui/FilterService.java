@@ -7,6 +7,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;

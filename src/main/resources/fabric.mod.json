@@ -22,7 +22,8 @@
 		]
 	},
 	"mixins": [
-		"slimefunhelper.mixins.json"
+		"slimefunhelper.mixins.json",
+		"slimefunhelper.mixins.hooks.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.15.1",

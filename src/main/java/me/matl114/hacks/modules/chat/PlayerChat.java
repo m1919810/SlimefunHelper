@@ -103,6 +103,7 @@ public class PlayerChat extends BaseModule {
     public final NBTRef<EncryptionKey> key = builder(playerChat.add("encrypt-key"), EncryptionKey.class)
             .defaultValue(EncryptionKey.EMPTY)
             .updateListener(s -> dirty = true)
+            .show(() -> this.algorithm.get().isNotIn(EncryptAlgorithm.NONE))
             .build();
 
     public final StringRef prefixEncrypt = builder(playerChat.add("encrypt-prefix"), StringRef.TYPE)

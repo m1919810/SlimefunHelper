@@ -29,6 +29,11 @@ import net.minecraft.util.Formatting;
 
 public class EntityLog extends BaseModule {
     public final ModulePath entityLog = makePath(Configs.RENDER_CONFIG, "detect-entity.entity-log");
+
+    public EntityLog() {
+        bindFlag(enable);
+    }
+
     public final FlagRef enable = flagBuilder(entityLog.add("enable")).build();
     public final KeyBindRef hotkeyToggle = toggleHotkey(
                     Configs.RENDER_CONFIG,

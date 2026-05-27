@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "me.matl114.hooks.mixin",
+	"plugin": "me.matl114.hooks.HooksMixinPlugin",
+	"compatibilityLevel": "JAVA_17",
+	"client": [
+		"baritone.ElytraBehaviourMixin",
+		"baritone.ElytraCommandMixin",
+		"baritone.ElytraProcessMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

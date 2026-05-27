@@ -1,7 +1,7 @@
 package me.matl114.managers.input;
 
 import java.util.function.BooleanSupplier;
-import me.matl114.gui.config.ConfigurateNewStyleScreen;
+import me.matl114.gui.complex.config.ConfigurateNewStyleScreen;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import net.minecraft.client.MinecraftClient;

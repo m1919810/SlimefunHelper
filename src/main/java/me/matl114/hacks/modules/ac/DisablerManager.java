@@ -6,6 +6,7 @@ import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
@@ -25,32 +26,31 @@ import net.minecraft.util.math.Vec3d;
 
 public class DisablerManager extends BaseModule {
     public static DisablerManager INSTANCE;
-    public final EnumRef<SupportAC> currentAC = builder(
-                    Configs.TEST_CONFIG, makePath("disablers.current-ac"), SupportAC.class)
+
+    public final ModulePath disablers = makePath(Configs.TEST_CONFIG, "disablers");
+
+    public final EnumRef<SupportAC> currentAC = builder(disablers.add("current-ac"), SupportAC.class)
             .defaultValue(SupportAC.NONE)
             .build();
 
-    public final FlagRef grimFastBreak = builder(
-                    Configs.TEST_CONFIG, makePath("disablers.grim-fast-break"), Boolean.class)
+    public final FlagRef grimFastBreak = builder(disablers.add("grim-fast-break"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef grimSelfCheck = builder(
-                    Configs.TEST_CONFIG, makePath("disablers.grim-self-check"), Boolean.class)
+    public final FlagRef grimSelfCheck = builder(disablers.add("grim-self-check"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef grimMultiplace = builder(
-                    Configs.TEST_CONFIG, makePath("disablers.grim-multi-place"), Boolean.class)
+    public final FlagRef grimMultiplace = builder(disablers.add("grim-multi-place"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef autoFlushPlaceQueue = builder(
-                    Configs.TEST_CONFIG, makePath("disablers.auto-flush-multi-place-queue"), Boolean.class)
+    public final FlagRef autoFlushPlaceQueue = builder(disablers.add("auto-flush-multi-place-queue"), Boolean.class)
             .defaultValue(true)
             .build();
 
     public DisablerManager() {
+        super("Disabler");
         INSTANCE = this;
     }
 
@@ -107,7 +107,7 @@ public class DisablerManager extends BaseModule {
     }
 
     public boolean isGrimMultiPlaceDisabled() {
-        return currentAC.get() == SupportAC.GRIM && (grimMultiplace.get() || grimSelfCheckDisabler);
+        return currentAC.get() == SupportAC.GRIM && (grimMultiplace.get());
     }
 
     public void onDisconnect(Event<Void> eventDisconnect) {
@@ -147,13 +147,11 @@ public class DisablerManager extends BaseModule {
             if (direction != lastDirection
                     || !Objects.equals(cursor, lastCursor)
                     || !Objects.equals(blockPos, lastPos)) {
-                if (isGrimSelfCheckDisabled()) {
-                    PlayerInteractBlockC2SPacket pkt = blockPlace.context;
-                    PacketManager.schedulePostCallback(pkt, () -> {
-                        Listener.sendPacketNoEvents(new PlayerInteractBlockC2SPacket(
-                                pkt.getHand(), pkt.getBlockHitResult(), NetworkUtils.generateNextSequence()));
-                    });
-                }
+                PlayerInteractBlockC2SPacket pkt = blockPlace.context;
+                PacketManager.schedulePostCallback(pkt, () -> {
+                    Listener.sendPacketNoEvents(new PlayerInteractBlockC2SPacket(
+                            pkt.getHand(), pkt.getBlockHitResult(), NetworkUtils.generateNextSequence()));
+                });
             }
         }
         lastDirection = direction;

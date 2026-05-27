@@ -3,11 +3,16 @@ package me.matl114.gui;
 import java.util.Iterator;
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
+import net.minecraft.client.gui.Click;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 
-public class GenericScreen extends Screen {
+public class GenericScreen extends Screen implements Selectable, Draggable {
     protected int backgroundWidth;
     protected int backgroundDefaultHeight;
     protected int backgroundHeight;
@@ -74,8 +79,7 @@ public class GenericScreen extends Screen {
     public final boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (button == 0 && draggingElement != null) {
             // stop dragging here
-            draggingElement.releaseDrag(this, mouseX, mouseY);
-            draggingElement = null;
+            releaseDrag(this, click.x(), click.y());
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -94,14 +98,8 @@ public class GenericScreen extends Screen {
                 break;
             }
         }
-        if (button == 0) {
-            for (var iter : this.children()) {
-                if (iter instanceof Draggable drag && drag.startDrag(this, mouseX, mouseY)) {
-                    // start drag this element
-                    draggingElement = drag;
-                    break;
-                }
-            }
+        if (click.button() == 0) {
+            startDrag(this, click.x(), click.y());
         }
         return val;
     }
@@ -126,9 +124,44 @@ public class GenericScreen extends Screen {
         return true;
     }
 
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+        if (client.world == null) {
+            super.renderBackground(context, mouseX, mouseY, deltaTicks);
+        }
+    }
+
     public void resetScreen() {
         // schedule refresh
         this.clearAndInit();
         // mc.executeSync(()->this.init(mc,mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight()));
+    }
+
+    @Override
+    public void appendNarrations(NarrationMessageBuilder builder) {}
+
+    @Override
+    public SelectionType getType() {
+        return this.isFocused() ? Selectable.SelectionType.FOCUSED : Selectable.SelectionType.NONE;
+    }
+    // implement our shit interface for dragging
+    @Override
+    public void releaseDrag(Screen screen, double mouseX, double mouseY) {
+        if (draggingElement != null) {
+            // stop dragging here
+            draggingElement.releaseDrag(this, mouseX, mouseY);
+            draggingElement = null;
+        }
+    }
+
+    @Override
+    public boolean startDrag(Screen screen, double mouseX, double mouseY) {
+        for (var iter : this.children()) {
+            if (iter instanceof Draggable drag && drag.startDrag(this, mouseX, mouseY)) {
+                // start drag this element
+                draggingElement = drag;
+                return true;
+            }
+        }
+        return false;
     }
 }

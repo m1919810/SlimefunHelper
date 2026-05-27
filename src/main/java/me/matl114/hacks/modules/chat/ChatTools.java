@@ -8,6 +8,8 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -24,7 +26,6 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Style;
@@ -39,13 +40,6 @@ public class ChatTools extends BaseModule {
     public ChatTools() {
         bindFlag(enableChatScreenTools);
     }
-
-    public final KeyBindRef removeCmdKey = hotkey(
-                    Configs.CHAT_CONFIG,
-                    chatTools.add("remove-command-prefix-hotkey").toPath(),
-                    new MultiKeyBind())
-            .registerHotkey(HotKeyUtils.asHandler(this::onRemoveCommandPrefix))
-            .build();
 
     public final FlagRef enableChatScreenTools = flagBuilder(chatTools.add("enable-tools"))
             .updateListener(this::toggleBasicToolScreen)
@@ -63,8 +57,9 @@ public class ChatTools extends BaseModule {
     public final StringRef chatCache =
             builder(chatTools.add("cached"), String.class).defaultValue("").build();
 
-    public final FlagRef autoSend =
-            toggle(Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath()).build();
+    public final FlagRef autoSend = flagBuilder(
+                    Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath())
+            .build();
 
     public final IntRef period =
             intBuilder(chatTools.add("auto-chat-period")).defaultValue(21).build();
@@ -72,11 +67,19 @@ public class ChatTools extends BaseModule {
     public final IntRef multiple =
             intBuilder(chatTools.add("auto-chat-multiple")).defaultValue(1).build();
 
-    public final FlagRef keepChatInv =
-            toggle(Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath()).build();
+    public final FlagRef keepChatInv = flagBuilder(
+                    Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath())
+            .build();
 
     public final FlagRef obfLogin =
             flagBuilder(chatTools.add("obf-login-message")).build();
+
+    public final KeyBindRef removeCmdKey = hotkey(
+                    Configs.CHAT_CONFIG,
+                    chatTools.add("remove-command-prefix-hotkey").toPath(),
+                    new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.asHandler(this::onRemoveCommandPrefix))
+            .build();
 
     @Override
     public void onDisableModule() {
@@ -88,9 +91,9 @@ public class ChatTools extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostGameTick(), this::onTick);
-        registerListener(Listener.getPostInitializeScreen(), this::onChatScreenInitialize);
-        registerListener(Listener.getPreSetScreen(), this::onCloseChatScreen);
-        registerListener(Listener.getPostInitializeScreen(), this::fixIMBlockerStateError);
+        registerListener(Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::onChatScreenInitialize);
+        registerListener(Listener.getPreSetScreen().getChannel(ChatScreen.class), this::onCloseChatScreen);
+        registerListener(Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::fixIMBlockerStateError);
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "auto-chat", autoSend);
         TaskManagers.getToggleManager()
                 .register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-chat-inv", keepChatInv);
@@ -350,33 +353,32 @@ public class ChatTools extends BaseModule {
         }
     }
 
-    public void onChatScreenInitialize(Event<Screen> event) {
-        if (event.context() instanceof ChatScreen chat0) {
-            if (basicSubScreenWidget == null) {
-                initToolWidget();
-            }
-            ExecutableWidget.instance(chat0.width - 20, chat0.height - 56, 20, 20)
-                    .setElementHandler(new ButtonElement(
-                            (el) -> enableChatScreenTools.get() ? ENABLE_STATE : DISABLE_STATE,
-                            ButtonAction.run(enableChatScreenTools::toggle)))
-                    .addTo(chat0);
-            var content = new ContentDelegateWidget<ContentDelegateWidget<SubScreenWidget>>(
-                    chat0.width, chat0.height - 36, 0, 0);
-            content.setContentDelegate(this.delegateToolScreen);
-            content.addTo(chat0);
-            var access = ScreenAccess.of(chat0);
-            cacheWidget.setX(chat0.width - 250);
-            cacheWidget.setY(chat0.height - 56);
-            int2CharInputField.setX(chat0.width - 210);
-            int2CharInputField.setY(chat0.height - 104 + 24);
-            if (enableChatScreenTools.get()) {
-                access.addDrawableChildTo(cacheWidget);
-                access.addDrawableChildTo(int2CharInputField);
-            }
+    public void onChatScreenInitialize(Event<ChatScreen> event) {
+        var chat0 = event.context;
+        if (basicSubScreenWidget == null) {
+            initToolWidget();
+        }
+        ExecutableWidget.instance(chat0.width - 20, chat0.height - 56, 20, 20)
+                .setElementHandler(new ButtonElement(
+                        (el) -> enableChatScreenTools.get() ? ENABLE_STATE : DISABLE_STATE,
+                        ButtonAction.run(enableChatScreenTools::toggle)))
+                .addTo(chat0);
+        var content =
+                new ContentDelegateWidget<ContentDelegateWidget<SubScreenWidget>>(chat0.width, chat0.height - 36, 0, 0);
+        content.setContentDelegate(this.delegateToolScreen);
+        content.addTo(chat0);
+        var access = ScreenAccess.of(chat0);
+        cacheWidget.setX(chat0.width - 250);
+        cacheWidget.setY(chat0.height - 56);
+        int2CharInputField.setX(chat0.width - 210);
+        int2CharInputField.setY(chat0.height - 104 + 24);
+        if (enableChatScreenTools.get()) {
+            access.addDrawableChildTo(cacheWidget);
+            access.addDrawableChildTo(int2CharInputField);
         }
     }
 
-    public void onCloseChatScreen(Event<Screen> event) {
+    public void onCloseChatScreen(Event<ChatScreen> event) {
         // do not consider subClasses
         if (keepChatInv.get()
                 && mc.player != null
@@ -390,10 +392,10 @@ public class ChatTools extends BaseModule {
         }
     }
 
-    public void fixIMBlockerStateError(Event<Screen> event) {
-        if (event.context instanceof ChatScreen chat
-                && IMBlockerHooks.getInstance().isEnabled()
-                && chat.getFocused() instanceof FocusableObject focusableObject) {
+    public void fixIMBlockerStateError(Event<ChatScreen> event) {
+        if (IMBlockerHooks.getInstance().isEnabled()
+                && event.context.getFocused() instanceof FocusableObject focusableObject) {
+            var chat = event.context;
             ScheduleService.launchAsyncDelayedTask(
                     () -> {
                         if (chat.getFocused() == focusableObject) {

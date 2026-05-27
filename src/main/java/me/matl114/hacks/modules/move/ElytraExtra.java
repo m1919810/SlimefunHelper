@@ -13,11 +13,11 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ACTasks;
-import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -56,6 +56,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class ElytraExtra extends BaseModule implements LegalMovementManager.MovementModifier {
+    public static ElytraExtra INSTANCE;
     private static LegalMovementManager.DelegateMovementModifier instance;
 
     public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
@@ -70,6 +71,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
+        INSTANCE = this;
     }
 
     public final FlagRef fuckGrimAC = MovTasks.getMovExtra().fuckGrimAC;
@@ -153,7 +155,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             flagBuilder(customFireworksPath.add("firework-auto-use-vanilla")).build();
 
     public final IntRef rocketBuffer = intBuilder(customFireworksPath.add("firework-effect-remain-ticks"))
-            .defaultValue(7)
+            .defaultValue(3)
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
@@ -163,6 +165,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final DoubleRef rocketBoostSpeed = doubleBuilder(customFireworksPath.add("firework-boost-speed"))
             .defaultValue(1.7D)
             .validator(Configs.doubleRange(0.0d, 10000.0D))
+            .build();
+
+    public final KeyBindRef clickRocket = hotkey(customFireworksPath.add("click-firework-use"))
+            .defaultValue(new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::clickRocket))
             .build();
 
     // public final FlagRef useFireworks =
@@ -252,6 +259,15 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             Debug.chat("[Elytra] 你不在滑翔");
         }
     }
+
+    public boolean clickRocket() {
+        if (mc.player.isFallFlying()) {
+            sendCustomUseFireworkPacket(mc.player.getPitch(), mc.player.getYaw());
+            return true;
+        }
+        return false;
+    }
+
     // elytra unbreakable?
 
     private boolean nextTimeLaunchElytraUnbreakable = false;
@@ -284,7 +300,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && mc.player.isFallFlying()) {
             elytraUnbreakableSwitchSlot = findElytraUnbreakableSwitchSlot();
             if (elytraUnbreakableSwitchSlot == -1) {
-
                 mc.getNetworkHandler()
                         .sendPacket(
                                 new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
@@ -598,6 +613,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
+    public void sendCustomUseFireworkPacket() {
+        sendCustomUseFireworkPacket(mc.player.getPitch(), mc.player.getYaw());
+    }
+
     public void sendCustomUseFireworkPacket(float pitch, float yaw) {
         if (thisFallFlyingIsArmorFly != -1 || elytraUnbreakableSwitchSlot != -1) {
             delayQueue.add(ItemStack.EMPTY);
@@ -656,7 +675,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 // check hotbars
                 var findResult = InventoryUtils.findPlayerItem(this::canBeUsedAsFireworks, false, false);
                 if (findResult != null) {
-                    Runnable callback = InvTasks.invExtra.swapInventoryIndexToOffhand(findResult.index());
+                    Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToOffhand(findResult.index());
                     if (callback != null) {
                         mc.interactionManager.sendSequencedPacket(
                                 mc.world, s -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, yaw, pitch));
@@ -690,15 +709,15 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    public boolean checkLiquid() {
-        if (liquidFix.get()) {
+    private static boolean checkLiquid() {
+        if (INSTANCE.liquidFix.get()) {
             return !mc.player.isInLava() && !mc.player.isTouchingWater();
         } else {
             return !mc.player.isTouchingWater();
         }
     }
 
-    public boolean canContinueGliding() {
+    public static boolean canContinueGliding() {
         return checkLiquid()
                 && !mc.player.getAbilities().flying
                 && !mc.player.isOnGround()
@@ -706,7 +725,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && !mc.player.hasStatusEffect(StatusEffects.LEVITATION);
     }
 
-    public boolean hasGlidingEquipments() {
+    public static boolean hasGlidingEquipments() {
         Iterator var1 = EquipmentSlot.VALUES.iterator();
 
         EquipmentSlot equipmentSlot;
@@ -847,7 +866,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             Listener.sendPacketNoEvents(new PlayerInteractItemC2SPacket(
                                     Hand.MAIN_HAND, NetworkUtils.generateNextSequence(), lastYaw, lastPitch));
                         } else {
-                            callback = InvTasks.getInvExtra().swapInventoryIndexToOffhand(findResult.index());
+                            callback = InvExtra.INSTANCE.swapInventoryIndexToOffhand(findResult.index());
                             if (callback != null) {
                                 Listener.sendPacketNoEvents(new PlayerInteractItemC2SPacket(
                                         Hand.OFF_HAND, NetworkUtils.generateNextSequence(), lastYaw, lastPitch));
