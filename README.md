@@ -17,8 +17,7 @@
 
 启动成功后,可以在多人游戏菜单的右上角，
 
-或者在游戏中使用ctrl+G或者使用指令打开配置菜单
-
+或者在游戏中使用右侧Alt或者使用指令!!openmenu clickgui打开ClickGui
 
 其中可以配置所有快捷键和参数
 
@@ -27,6 +26,18 @@
 该模组最新版1.21.11已经不和锂冲突
 
 **但是旧版本仍旧可能冲突**
+
+## 依赖相关
+
+该模组**不需要**除了FabricAPI以外的任何模组依赖
+
+但是该模组与以下模组均有关联,推荐同时安装
+
+- ViaFabricPlus
+- Litematica
+- JsMacros
+- Baritone
+- IMBlocker
 
 ## 功能列表
 
@@ -98,7 +109,7 @@
 
 目前还在开发中
 
-## 模组支持
+## JsMacros与脚本
 slimefunHelper目前对jsMacros提供了拓展支持
 slimefunHelper对jsMacros的脚本运行环境注入了部分lib和utils,同时提供了有用的工具
 目前的提供的工具lib列表
