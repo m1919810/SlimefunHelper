@@ -9,11 +9,16 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.EntityTypeTags;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 
 public class DamageUtils {
     public static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -22,9 +27,30 @@ public class DamageUtils {
         double speed = player.getAttributeBaseValue(EntityAttributes.ATTACK_SPEED);
         AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers != null && !modifiers.modifiers().isEmpty()) {
-            speed = modifiers.applyOperations(EntityAttributes.ATTACK_SPEED, speed, EquipmentSlot.MAINHAND);
+            speed = applyOperations(modifiers.modifiers(), EntityAttributes.ATTACK_SPEED, speed, EquipmentSlot.MAINHAND);
         }
         return speed;
+    }
+    public static double applyOperations(List<AttributeModifiersComponent.Entry> modifiers, RegistryEntry<EntityAttribute> entityAttribute, double base, EquipmentSlot slot) {
+        double d = base;
+        Iterator var6 = modifiers.iterator();
+
+        while(var6.hasNext()) {
+            AttributeModifiersComponent.Entry entry = (AttributeModifiersComponent.Entry)var6.next();
+            if (entry.slot().matches(slot) && Objects.equals(entityAttribute, entry.attribute())) {
+                double e = entry.modifier().value();
+                double var10001;
+                switch (entry.modifier().operation()) {
+                    case ADD_VALUE -> var10001 = e;
+                    case ADD_MULTIPLIED_BASE -> var10001 = e * base;
+                    case ADD_MULTIPLIED_TOTAL -> var10001 = e * d;
+                    default -> throw new MatchException((String)null, (Throwable)null);
+                }
+
+                d += var10001;
+            }
+        }
+        return d;
     }
 
     public static double getEnchantmentBonus(PlayerEntity player, Entity target, ItemStack stack) {

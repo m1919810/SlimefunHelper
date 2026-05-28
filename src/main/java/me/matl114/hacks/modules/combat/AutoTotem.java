@@ -20,6 +20,7 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
+import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.player.PlayerInventory;
@@ -95,7 +96,7 @@ public class AutoTotem extends BaseModule {
             int toSlot = (smartTotem.get()
                             && mc.player.getMainHandStack().isEmpty()
                             && !mc.player.getOffHandStack().isEmpty())
-                    ? mc.player.getInventory().getSelectedSlot()
+                    ? InventoryUtils.getSelectedSlot()
                     : 40;
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;
@@ -141,7 +142,7 @@ public class AutoTotem extends BaseModule {
             ItemStack stackInMainHand = mc.player.getMainHandStack();
             ItemStack stackInOffHand = mc.player.getOffHandStack();
             int consumeSlot = stackInMainHand.getItem() == Items.TOTEM_OF_UNDYING
-                    ? mc.player.getInventory().getSelectedSlot()
+                    ? InventoryUtils.getSelectedSlot()
                     : 40;
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;

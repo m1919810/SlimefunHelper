@@ -11,6 +11,7 @@ import com.mojang.authlib.properties.PropertyMap;
 import javax.annotation.Nonnull;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -78,7 +79,7 @@ public class BukkitItemStackUtils {
     }
 
     public static String getHashFromProfile(ProfileComponent profileComponent) {
-        var pps = profileComponent.getGameProfile().properties().get("textures");
+        var pps =  VRecord.getProperties(profileComponent.getGameProfile()).get("textures");
         if (pps == null || pps.isEmpty()) return null;
         Property ppt = Iterables.getFirst(pps, null);
         if (ppt == null) return null;

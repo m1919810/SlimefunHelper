@@ -851,7 +851,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public void flushRockets() {
         flushing = true;
-        int selected = mc.player.getInventory().getSelectedSlot();
+        int selected = InventoryUtils.getSelectedSlot();
         Runnable callback = null;
         try {
             float lastYaw = PlayerStateManager.INSTANCE.lastYaw;
@@ -862,7 +862,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     var findResult = InventoryUtils.findPlayerItem(
                             (it) -> ItemStack.areItemsAndComponentsEqual(packetEntry, it), false, false);
                     if (findResult != null) {
-                        if (findResult.index() == mc.player.getInventory().getSelectedSlot()) {
+                        if (findResult.index() == InventoryUtils.getSelectedSlot()) {
                             Listener.sendPacketNoEvents(new PlayerInteractItemC2SPacket(
                                     Hand.MAIN_HAND, NetworkUtils.generateNextSequence(), lastYaw, lastPitch));
                         } else {

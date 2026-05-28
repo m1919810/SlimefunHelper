@@ -63,7 +63,6 @@
 		"fix.ParticleTickFix",
 		"fix.SignBlockEntityRendererFixMixin",
 		"fix.StringHelperFixMixin",
-		"fix.WorldRendererFixMixin",
 		"hack.AtmosphereFogModifierMixin",
 		"hack.BlindnessEffectFogModifierMixin",
 		"hack.ChatHudMixin",

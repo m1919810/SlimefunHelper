@@ -16,6 +16,7 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ChargedProjectilesComponent;
@@ -95,14 +96,14 @@ public class ProjectileEnhance extends BaseModule {
             mc.interactionManager.clickSlot(
                     mc.player.currentScreenHandler.syncId,
                     3,
-                    mc.player.getInventory().getSelectedSlot(),
+                    InventoryUtils.getSelectedSlot(),
                     SlotActionType.SWAP,
                     mc.player);
             Tasks.scheduleDelayed(
                     () -> mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId,
                             3,
-                            mc.player.getInventory().getSelectedSlot(),
+                            InventoryUtils.getSelectedSlot(),
                             SlotActionType.SWAP,
                             mc.player),
                     1);

@@ -11,8 +11,10 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.WorldUtils;
+import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -24,6 +26,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+
+import javax.annotation.Nonnull;
 
 public class PacketMine extends BaseModule {
     public PacketMine() {
@@ -75,19 +79,12 @@ public class PacketMine extends BaseModule {
                     if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
 
                         BlockState blockState = mc.world.getBlockState(pos);
-                        OptionalInt currentItemSlot = getCurrentUsableTool(blockState);
-                        Slot currentToolSlot = currentItemSlot.isPresent()
-                                ? mc.player.currentScreenHandler.getSlot(currentItemSlot.getAsInt())
-                                : null;
-                        ItemStack currentTool = currentToolSlot == null
-                                ? mc.player.getStackInHand(Hand.MAIN_HAND)
-                                : currentToolSlot.getStack();
+                        IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
+
+                        ItemStack currentTool = currentItemSlot.val();
                         if (canMine(blockState, currentTool)) {
-                            int selectedSlot = mc.player.getInventory().getSelectedSlot();
-                            Runnable callback = null;
-                            if (currentItemSlot.isPresent() && currentToolSlot != null) {
-                                callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentToolSlot.getIndex());
-                            }
+                            Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
+
                             Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
                             Direction dir = Direction.getFacing(shouldFacing).getOpposite();
                             if (considerAirState.get()
@@ -111,30 +108,18 @@ public class PacketMine extends BaseModule {
             }
         }
     }
-
-    public OptionalInt getCurrentUsableTool(BlockState currentState) {
-        PlayerInventory inv = mc.player.getInventory();
+    @Nonnull
+    public IndexEntry<ItemStack> getCurrentUsableTool(BlockState currentState) {
         if (autoTool.get()) {
-            ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
-            double bestMiningSpeed =
-                    WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, currentState, stack);
-            int bestMiningIndex = inv.getSelectedSlot();
-            for (var i = 0; i < inv.size(); ++i) {
-                ItemStack stackInventory = inv.getStack(i);
-                if (!stackInventory.isEmpty()) {
-                    double mul = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                            mc.player, currentState, stackInventory);
-                    if (mul > bestMiningSpeed) {
-                        bestMiningIndex = i;
-                        bestMiningSpeed = mul;
-                    }
-                }
+            var re =  InventoryUtils.findBestPlayerItem(item -> {
+                return (double)WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, currentState, item);
+            }, true, true);
+            if(re != null){
+                return re;
             }
-            if (bestMiningIndex != -1) {
-                return mc.player.currentScreenHandler.getSlotIndex(inv, bestMiningIndex);
-            }
+
         }
-        return mc.player.currentScreenHandler.getSlotIndex(inv, inv.getSelectedSlot());
+        return InventoryUtils.getSelectedItem();
     }
 
     public boolean canMine(BlockState state, ItemStack tool) {

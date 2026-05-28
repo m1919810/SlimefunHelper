@@ -258,8 +258,8 @@ public class DrawContext_v1_21_11 implements VDrawContext {
             int col2,
             int col3,
             int col4,
-            @org.jspecify.annotations.Nullable ScreenRect scissorArea,
-            @org.jspecify.annotations.Nullable ScreenRect bounds)
+            @Nullable ScreenRect scissorArea,
+            @Nullable ScreenRect bounds)
             implements SimpleGuiElementRenderState {
         public ColoredQuad2DGuiElementRenderState(
                 RenderPipeline pipeline,
@@ -273,7 +273,7 @@ public class DrawContext_v1_21_11 implements VDrawContext {
                 int col2,
                 int col3,
                 int col4,
-                @org.jspecify.annotations.Nullable ScreenRect scissorArea) {
+                @Nullable ScreenRect scissorArea) {
             this(
                     pipeline,
                     textureSetup,
@@ -298,13 +298,8 @@ public class DrawContext_v1_21_11 implements VDrawContext {
             vertices.vertex(this.pose(), (float) this.x1(), (float) this.y0()).color(this.col4());
         }
 
-        private static @org.jspecify.annotations.Nullable ScreenRect createBounds(
-                int x0,
-                int y0,
-                int x1,
-                int y1,
-                Matrix3x2fc pose,
-                @org.jspecify.annotations.Nullable ScreenRect scissorArea) {
+        private static @Nullable ScreenRect createBounds(
+                int x0, int y0, int x1, int y1, Matrix3x2fc pose, @Nullable ScreenRect scissorArea) {
             ScreenRect screenRect = (new ScreenRect(x0, y0, x1 - x0, y1 - y0)).transformEachVertex(pose);
             return scissorArea != null ? scissorArea.intersection(screenRect) : screenRect;
         }

@@ -45,6 +45,7 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.PairLikeFactory;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.gui.hud.MessageIndicator;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.component.type.ProfileComponent;
@@ -198,14 +199,14 @@ public class PlayerChat extends BaseModule {
                     if (lastAcceptUUID != null) {
                         PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(lastAcceptUUID);
                         if (entry != null) {
-                            caughtName = entry.getProfile().name();
+                            caughtName = VRecord.getName(entry.getProfile());
                         }
                     }
                     // do not use
                     if (caughtName == null && detectPlayerName.get()) {
                         String findingMsg = text;
                         for (var playerListEntry : mc.getNetworkHandler().getPlayerList()) {
-                            String playerName = playerListEntry.getProfile().name();
+                            String playerName = VRecord.getName(playerListEntry.getProfile());
                             int index = findingMsg.indexOf(playerName);
                             if (index != -1) {
 
@@ -219,7 +220,7 @@ public class PlayerChat extends BaseModule {
                                 int idx = findingMsg.indexOf(displayName2);
                                 if (idx != -1) {
                                     findingMsg = findingMsg.substring(0, idx);
-                                    caughtName = playerListEntry.getProfile().name();
+                                    caughtName = VRecord.getName(playerListEntry.getProfile());
                                 }
                             }
                             if (findingMsg.isEmpty()) {
@@ -302,7 +303,7 @@ public class PlayerChat extends BaseModule {
                                 Text.literal("玩家:"
                                         + (entry == null
                                                 ? "未知"
-                                                : entry.getProfile().name())),
+                                                : VRecord.getName(entry.getProfile()))),
                                 Text.literal("玩家UUID:" + lastAcceptUUID))))
                         .withContent(content)
                         .withStyle(Style.EMPTY);

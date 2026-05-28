@@ -4,6 +4,8 @@ import me.matl114.versioned.impl.Packet_v1_21_11;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
+import net.minecraft.util.math.Vec3d;
 
 public interface VPacket {
     /**
@@ -65,6 +67,10 @@ public interface VPacket {
 
     public static boolean getCollisionFlag(PlayerMoveC2SPacket packet) {
         return packet.horizontalCollision();
+    }
+
+    public static Vec3d getVelocity(EntityVelocityUpdateS2CPacket entityVelocityUpdateS2CPacket){
+        return entityVelocityUpdateS2CPacket.getVelocity();
     }
 
     /**

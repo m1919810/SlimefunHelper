@@ -1001,10 +1001,6 @@ public class ChatUtils {
             return withStyle(style.withShadowColor(shadowColor));
         }
 
-        public TextBuilder withoutShadow() {
-            return withStyle(style.withoutShadow());
-        }
-
         public TextBuilder withBold(@Nullable Boolean bold) {
             return withStyle(style.withBold(bold));
         }
@@ -1035,10 +1031,6 @@ public class ChatUtils {
 
         public TextBuilder withInsertion(@Nullable String insertion) {
             return withStyle(style.withInsertion(insertion));
-        }
-
-        public TextBuilder withFont(@Nullable StyleSpriteSource font) {
-            return withStyle(style.withFont(font));
         }
 
         public TextBuilder withFormatting(Formatting formatting) {
