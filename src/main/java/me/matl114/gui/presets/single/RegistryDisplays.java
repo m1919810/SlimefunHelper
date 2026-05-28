@@ -161,9 +161,13 @@ public class RegistryDisplays {
                     context, mc.textRenderer, Text.literal(identifier.toString()), 20, 10, 200, 19, -16711936, -1);
         }
     }
+
     public static Identifier getEffectTexture(RegistryEntry<StatusEffect> effect) {
-        return (Identifier)effect.getKey().map(RegistryKey::getValue).map((id) -> {
-            return id.withPrefixedPath("mob_effect/");
-        }).orElseGet(MissingSprite::getMissingSpriteId);
+        return (Identifier) effect.getKey()
+                .map(RegistryKey::getValue)
+                .map((id) -> {
+                    return id.withPrefixedPath("mob_effect/");
+                })
+                .orElseGet(MissingSprite::getMissingSpriteId);
     }
 }

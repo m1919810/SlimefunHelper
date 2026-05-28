@@ -644,8 +644,8 @@ public class ChatTasks {
                     mc.getNetworkHandler().getPlayerList().stream()
                             .sorted(Comparator.comparing(e -> VRecord.getName(e.getProfile())))
                             .map(entry -> {
-                                var val = Text.literal("%-16s (Display: "
-                                                .formatted(VRecord.getName(entry.getProfile())))
+                                var val = Text.literal(
+                                                "%-16s (Display: ".formatted(VRecord.getName(entry.getProfile())))
                                         .append(
                                                 entry.getDisplayName() == null
                                                         ? Text.literal("null")
@@ -700,19 +700,18 @@ public class ChatTasks {
                     if (entry != null) {
                         Debug.chat("查询到PlayerEntry");
                         Debug.chat(
-                                Text.literal("名字: ").formatted(Formatting.GRAY),
-                            VRecord.getName(entry.getProfile()));
+                                Text.literal("名字: ").formatted(Formatting.GRAY), VRecord.getName(entry.getProfile()));
                         Debug.chat(
                                 Text.literal("UUID: ").formatted(Formatting.GRAY),
-                                ChatUtils.getClickCopyTargetText(
-                                               VRecord.getId( entry.getProfile()).toString())
+                                ChatUtils.getClickCopyTargetText(VRecord.getId(entry.getProfile())
+                                                .toString())
                                         .formatted(Formatting.GREEN));
                         Debug.chat(
                                 Text.literal("Property: ").formatted(Formatting.GRAY),
                                 ChatUtils.getHoverShowText(
                                         "[点击查看具体数据]",
-                                        List.of(Text.literal(
-                                               VRecord.getProperties(entry.getProfile()).toString()))));
+                                        List.of(Text.literal(VRecord.getProperties(entry.getProfile())
+                                                .toString()))));
                         Debug.chat(
                                 Text.literal("GameMode: ").formatted(Formatting.GRAY),
                                 entry.getGameMode().name());
@@ -745,7 +744,7 @@ public class ChatTasks {
                     Predicate<WorldUtils.Waypoint> filter;
                     if ((entry = mc.getNetworkHandler().getPlayerListEntry(user)) != null) {
                         final String lookup;
-                        lookup = VRecord.getId( entry.getProfile()).toString();
+                        lookup = VRecord.getId(entry.getProfile()).toString();
                         filter = s -> lookup.equalsIgnoreCase(s.getSource().map(UUID::toString, Function.identity()));
                     } else {
                         filter = Predicates.alwaysTrue();
@@ -759,8 +758,8 @@ public class ChatTasks {
                                                 mc.getNetworkHandler().getPlayerListEntry(t)),
                                         t -> Optional.ofNullable(
                                                 mc.getNetworkHandler().getPlayerListEntry(t)));
-                        optionalEntry.ifPresent(playerListEntry -> Debug.chat("Potential Owner: "
-                                + VRecord.getName(playerListEntry.getProfile())));
+                        optionalEntry.ifPresent(playerListEntry ->
+                                Debug.chat("Potential Owner: " + VRecord.getName(playerListEntry.getProfile())));
 
                         Debug.chat("config: ");
 

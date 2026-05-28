@@ -1,7 +1,7 @@
 package me.matl114.hacks.modules.mine;
 
 import java.util.Objects;
-import java.util.OptionalInt;
+import javax.annotation.Nonnull;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -17,17 +17,13 @@ import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-
-import javax.annotation.Nonnull;
 
 public class PacketMine extends BaseModule {
     public PacketMine() {
@@ -108,16 +104,20 @@ public class PacketMine extends BaseModule {
             }
         }
     }
+
     @Nonnull
     public IndexEntry<ItemStack> getCurrentUsableTool(BlockState currentState) {
         if (autoTool.get()) {
-            var re =  InventoryUtils.findBestPlayerItem(item -> {
-                return (double)WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, currentState, item);
-            }, true, true);
-            if(re != null){
+            var re = InventoryUtils.findBestPlayerItem(
+                    item -> {
+                        return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                                mc.player, currentState, item);
+                    },
+                    true,
+                    true);
+            if (re != null) {
                 return re;
             }
-
         }
         return InventoryUtils.getSelectedItem();
     }

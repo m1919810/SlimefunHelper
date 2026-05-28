@@ -2,7 +2,6 @@ package me.matl114.versioned.api;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
-
 import java.util.UUID;
 
 public interface VRecord {
@@ -10,11 +9,11 @@ public interface VRecord {
         return profile.id();
     }
 
-    public static String getName(GameProfile profile){
+    public static String getName(GameProfile profile) {
         return profile.name();
     }
 
-    public static PropertyMap getProperties(GameProfile profile){
+    public static PropertyMap getProperties(GameProfile profile) {
         return profile.properties();
     }
 }

@@ -300,10 +300,7 @@ public class PlayerChat extends BaseModule {
             entry = mc.getNetworkHandler().getPlayerListEntry(lastAcceptUUID);
             return (builder) -> {
                 builder.withHoverEvent(ChatUtils.getHoverShowText(List.of(
-                                Text.literal("玩家:"
-                                        + (entry == null
-                                                ? "未知"
-                                                : VRecord.getName(entry.getProfile()))),
+                                Text.literal("玩家:" + (entry == null ? "未知" : VRecord.getName(entry.getProfile()))),
                                 Text.literal("玩家UUID:" + lastAcceptUUID))))
                         .withContent(content)
                         .withStyle(Style.EMPTY);

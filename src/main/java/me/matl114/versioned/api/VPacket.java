@@ -69,7 +69,7 @@ public interface VPacket {
         return packet.horizontalCollision();
     }
 
-    public static Vec3d getVelocity(EntityVelocityUpdateS2CPacket entityVelocityUpdateS2CPacket){
+    public static Vec3d getVelocity(EntityVelocityUpdateS2CPacket entityVelocityUpdateS2CPacket) {
         return entityVelocityUpdateS2CPacket.getVelocity();
     }
 
