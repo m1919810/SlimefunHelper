@@ -44,6 +44,8 @@ public interface VItem {
 
     public boolean isEatable(ItemStack stack);
 
+    public Integer getAttackDurabilityCost(ItemStack stack);
+
     public ItemStack fromNbt(NbtCompound tag);
     // now we save DataVersion field
     public NbtCompound toNbt(ItemStack tag);
