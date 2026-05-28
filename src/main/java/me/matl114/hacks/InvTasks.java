@@ -1096,6 +1096,9 @@ public class InvTasks {
     public static InvExtra invExtra;
 
     @Getter
+    public static GuiMove guiMove;
+
+    @Getter
     public static FastInv fastInv;
 
     @Getter
@@ -1148,8 +1151,9 @@ public class InvTasks {
 
     private static void initModules(ModuleManager m) {
         invExtra = new InvExtra().register(m);
-        fastInv = new FastInv().register(m);
+        guiMove = new GuiMove().register(m);
         keepInv = new KeepInv().register(m);
+        fastInv = new FastInv().register(m);
         fastCraft = new FastCraft().register(m);
         fastChest = new FastChest().register(m);
         autoStore = new AutoStore().register(m);

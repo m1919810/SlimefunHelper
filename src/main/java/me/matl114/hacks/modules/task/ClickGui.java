@@ -529,7 +529,8 @@ public class ClickGui extends BaseModule {
                                     element.getTextureHeight() - 4,
                                     element.getTextureHeight() - 4);
                             context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-                        })));
+                        }))
+                        .withTooltips(TooltipHandler.of(List.of(Text.literal("拖动或鼠标滚轮以修改位置")))));
     }
 
     private DrawableWidget createTest(ClickGuiMetaData meta) {

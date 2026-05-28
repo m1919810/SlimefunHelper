@@ -56,6 +56,9 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     public final KeyBindRef hotkey = moduleEntry(autoSurround.addHotkey(), new MultiKeyBind(), autoSurround.addEnable())
             .build();
 
+    public final FlagRef offhand =
+            flagBuilder(autoSurround.add("offhand-enable")).build();
+
     public final IntRef delay = builder(autoSurround.add("delay"), IntRef.TYPE)
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
@@ -135,6 +138,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         int placeCnt = 0;
         Runnable invCallback = null;
         List<Entity> entities = new ArrayList<>();
+        boolean offhandOk = offhand.get();
         place:
         for (int direction = 0; direction < 4 + (placeUpper.get() ? 1 : 0); ++direction) {
             Direction dir = dd[direction];
@@ -156,11 +160,14 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                                     break place;
                                 }
                                 mul = Math.min(mul, re.val().getCount());
-                                invCallback = InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
+                                invCallback = offhandOk
+                                        ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(re.index())
+                                        : InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
                             } else {
                                 InteractionTasks.flushACPlaceQueue();
                             }
-                            InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND);
+                            InteractionTasks.handlePlaceMode(
+                                    mode.get(), hitResult, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND);
                             placeCnt += 1;
                             if (placeCnt >= mul) {
                                 break place;
