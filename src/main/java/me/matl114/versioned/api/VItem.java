@@ -9,7 +9,7 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
-import me.matl114.versioned.impl.ItemUtils_v1_21_1;
+import me.matl114.versioned.impl.ItemUtils_v1_21_4;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.type.CustomModelDataComponent;
@@ -22,7 +22,7 @@ import net.minecraft.util.Unit;
 import org.jetbrains.annotations.Nullable;
 
 public interface VItem {
-    public static final VItem INSTANCE = new ItemUtils_v1_21_1();
+    public static final VItem INSTANCE = new ItemUtils_v1_21_4();
 
     public static VItem getInstance() {
         return INSTANCE;

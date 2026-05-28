@@ -8,12 +8,16 @@ import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
 public class DrawContext_v1_21_1 implements VDrawContext {
@@ -41,8 +45,24 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     }
 
     @Override
+    public void pushLayer(int depth) {
+        this.matrixStack.pushMatrix();
+        this.drawContext.getMatrices().translate(0,0,depth);
+    }
+
+    @Override
+    public void popLayer() {
+        this.matrixStack.popMatrix();
+    }
+
+    @Override
     public MatrixStack getMatrices() {
         return this.matrixStack;
+    }
+
+    @Override
+    public void setShaderColor(int rgba) {
+        RenderSystem.setShaderColor(ColorHelper.getRedFloat(rgba), ColorHelper.getGreenFloat(rgba), ColorHelper.getBlueFloat(rgba), ColorHelper.getAlphaFloat(rgba));
     }
 
     @Override
@@ -70,6 +90,26 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     public void drawTexturedQuad(
             Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
         this.drawContext.drawTexturedQuad(RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u1, u2, v1, v2, -1);
+    }
+
+    @Override
+    public void drawGuiTextureQuad(Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
+        Sprite sprite = getGuiSprite(texture);
+        float sMinU = sprite.getMinU();
+        float sMaxU = sprite.getMaxU();
+        float sMinV = sprite.getMinV();
+        float sMaxV = sprite.getMaxV();
+        // 映射：u 从 [0,1] 映射到 [sMinU, sMaxU]，v 同理
+        float finalU1 = sMinU + u1 * (sMaxU - sMinU);
+        float finalU2 = sMinU + u2 * (sMaxU - sMinU);
+        float finalV1 = sMinV + v1 * (sMaxV - sMinV);
+        float finalV2 = sMinV + v2 * (sMaxV - sMinV);
+        this.drawTexturedQuad(sprite.getAtlasId(), x1, x2, y1, y2, z, finalU1, finalU2, finalV1, finalV2);
+    }
+
+    @Override
+    public Sprite getGuiSprite(Identifier i) {
+        return this.drawContext.guiAtlasManager.getSprite(i);
     }
 
     @Override
@@ -103,7 +143,17 @@ public class DrawContext_v1_21_1 implements VDrawContext {
 
     @Override
     public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth) {
-        this.drawContext.fillGradient(RenderLayer.getGuiOverlay(), x1, y1, x2, y2, color1, color2, depth);
+        this.drawContext.fillGradient(RenderLayer.getGui(), x1, y1, x2, y2, color1, color2, depth);
+    }
+
+    @Override
+    public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int color3, int color4, int depth) {
+        VertexConsumer vertexConsumer = this.drawContext.vertexConsumers.getBuffer(RenderLayer.getGui());
+        Matrix4f matrix4f = this.drawContext.getMatrices().peek().getPositionMatrix();
+        vertexConsumer.vertex(matrix4f, (float)x1, (float)y1, (float)depth).color(color1);
+        vertexConsumer.vertex(matrix4f, (float)x1, (float)y2, (float)depth).color(color2);
+        vertexConsumer.vertex(matrix4f, (float)x2, (float)y2, (float)depth).color(color3);
+        vertexConsumer.vertex(matrix4f, (float)x2, (float)y1, (float)depth).color(color4);
     }
 
     @Override

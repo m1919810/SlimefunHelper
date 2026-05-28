@@ -557,14 +557,13 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 if (hash != null && !hash.isEmpty()) {
                     if (lastComponent != null) {
                         PropertyMap map = BukkitItemStackUtils.buildPropertyMap(
-                                VRecord.getProperties(lastComponent.getGameProfile()), hash);
+                                VRecord.getGameProfileProperties(lastComponent), hash);
                         ItemStackUtils.setOrRemoveChange(
                                 stackTemplate,
                                 PROFILE,
-                                ProfileComponent.ofStatic(new GameProfile(
-                                        VRecord.getId(lastComponent.getGameProfile()),
-                                        VRecord.getName(lastComponent.getGameProfile()),
-                                        map)));
+                                VRecord.withProperty(
+                                        lastComponent,
+                                        map));
                     } else {
                         // generate empty
                         ItemStackUtils.setOrRemoveChange(
@@ -576,10 +575,11 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         ItemStackUtils.setOrRemoveChange(
                                 stackTemplate,
                                 PROFILE,
-                                ProfileComponent.ofStatic(new GameProfile(
-                                        VRecord.getId(lastComponent.getGameProfile()),
-                                        VRecord.getName(lastComponent.getGameProfile()),
-                                        new PropertyMap(LinkedHashMultimap.create()))));
+                                VRecord.withProperty(
+                                    lastComponent,
+                                    new PropertyMap()
+                                )
+                        );
                     } else {
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, null);
                     }
@@ -843,7 +843,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                         .map(ItemAttributeModifierEntry::value)
                                         .filter(Objects::nonNull)
                                         .toList()
-                                //    , this.showInTooltips
+                                    , this.showInTooltips
                                 ));
             }
 

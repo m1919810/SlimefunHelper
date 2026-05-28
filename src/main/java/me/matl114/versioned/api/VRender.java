@@ -209,9 +209,9 @@ public interface VRender {
         public void drawSolidBoxQuad(
                 MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor);
 
-        @LimitOperation(format = "PositionColor", layer = "Rect")
-        public void drawSolidBoxTriangle(
-                MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor);
+//        @LimitOperation(format = "PositionColor", layer = "Rect")
+//        public void drawSolidBoxTriangle(
+//                MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor);
 
         @LimitOperation(format = "PositionColor")
         public void drawQuad(MatrixStack matrixStack, VertexConsumer bufferBuilder, Quad uv, ColorQuad color);

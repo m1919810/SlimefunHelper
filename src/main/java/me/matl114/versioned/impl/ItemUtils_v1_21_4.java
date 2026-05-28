@@ -10,12 +10,16 @@ import me.matl114.versioned.api.VItem;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.CustomModelDataComponent;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.UnbreakableComponent;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtInt;
+import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.text.Text;
 import net.minecraft.util.Unit;
 
-public class ItemUtils_v1_21_1 implements VItem {
+public class ItemUtils_v1_21_4 implements VItem {
     @Override
     public boolean canGlide(ItemStack stack) {
         return stack.contains(DataComponentTypes.GLIDER);
@@ -23,6 +27,23 @@ public class ItemUtils_v1_21_1 implements VItem {
 
     @Override
     public boolean isSpear(ItemStack stack) {
+        // 1.21.11 Netherite Spear
+        Item item = stack.getItem();
+        if (item.getRegistryEntry().isIn(ItemTags.SWORDS)) {
+            Integer viaId = getOptionalViaItemId(stack);
+            // wooden spear id in 1.21.11 is 1296
+            if (viaId != null && viaId >= 1296) {
+                return true;
+            }
+            Text name = stack.getCustomName();
+            if (name != null) {
+                String str = name.getString();
+                if (str.contains("1.21.11") && str.contains("Spear")) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
@@ -57,6 +78,26 @@ public class ItemUtils_v1_21_1 implements VItem {
     @Override
     public boolean isShield(ItemStack stack) {
         return stack.getItem() instanceof ShieldItem;
+    }
+
+    @Override
+    public boolean isAxe(ItemStack stack) {
+        return stack.getItem() instanceof AxeItem;
+    }
+
+    @Override
+    public boolean isEatable(ItemStack stack) {
+        return stack.contains(DataComponentTypes.CONSUMABLE);
+    }
+
+    @Override
+    public Integer getAttackDurabilityCost(ItemStack stack) {
+        Item item = stack.getItem();
+        if(item instanceof MiningToolItem){
+            return 2;
+        }else if(item instanceof SwordItem || item instanceof MaceItem || item instanceof TridentItem ){
+            return 1;
+        }else return null;
     }
 
     @Override
@@ -101,6 +142,20 @@ public class ItemUtils_v1_21_1 implements VItem {
                         Unit.CODEC.xmap(s -> new UnbreakableComponent(true), b -> Unit.INSTANCE)));
         VERSIONED = builder.build();
     }
+
+    public Integer getOptionalViaItemId(ItemStack stack) {
+        NbtComponent component = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (component != null) {
+            var nbt = component.getNbt();
+            if (nbt != null
+                && nbt.get("VV|original_hashes") instanceof NbtCompound original
+                && original.get("id") instanceof NbtInt intValue) {
+                return intValue.intValue();
+            }
+        }
+        return null;
+    }
+
 
     @Override
     public Map<ComponentType<?>, Codec<?>> getVersionCompatCodecs() {

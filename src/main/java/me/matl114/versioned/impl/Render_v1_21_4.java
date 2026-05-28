@@ -24,7 +24,7 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Vector3f;
 
-public class Render_v1_21_4 implements VRender {
+public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     // mapping MultiBufferSource - VertexConsumerProvider
@@ -89,6 +89,34 @@ public class Render_v1_21_4 implements VRender {
                     .lineWidth(new RenderPhase.LineWidth(OptionalDouble.of(2)))
                     .build(false));
 
+    public static final RenderLayer RECTS = RenderLayer.of(
+        "slimefunhelper:debug_rects",
+        VertexFormats.POSITION_COLOR,
+        VertexFormat.DrawMode.TRIANGLES,
+        1536,
+        false,
+        true,
+        RenderLayer.MultiPhaseParameters.builder()
+            .program(RenderLayer.POSITION_COLOR_PROGRAM)
+            .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+            .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
+            .build(false)
+    );
+
+    public static final RenderLayer RECTS_STRIP = RenderLayer.of(
+        "slimefunhelper:debug_rects",
+        VertexFormats.POSITION_COLOR,
+        VertexFormat.DrawMode.TRIANGLE_STRIP,
+        1536,
+        false,
+        true,
+        RenderLayer.MultiPhaseParameters.builder()
+            .program(RenderLayer.POSITION_COLOR_PROGRAM)
+            .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+            .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
+            .build(false)
+    );
+
     public static final RenderLayer QUADS = RenderLayer.of(
             "slimefunhelper:debug_quads",
             VertexFormats.POSITION_COLOR,
@@ -144,56 +172,105 @@ public class Render_v1_21_4 implements VRender {
                         .build(false));
     });
 
-    @Override
-    public void drawStripLineVirtualCameraCoord(MatrixStack matrixStack, List<Vec3d> points, Color color) {
-        if (points.size() < 2) return;
+    private void createLayer(RenderLayer layer, RenderCallback callback) {
         VertexConsumerProvider.Immediate vcp = getVCP();
-        VertexConsumer consumer = vcp.getBuffer(LINES);
-        MatrixStack.Entry entry = matrixStack.peek();
-        for (var i = 1; i < points.size(); i++) {
-            Vector3f prev = points.get(i - 1).toVector3f();
-            Vector3f next = points.get(i).toVector3f();
-            Vector3f normal = new Vector3f(next).sub(prev).normalize();
-            consumer.vertex(entry, prev)
-                    .color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                    .normal(entry, normal);
-            consumer.vertex(entry, next)
-                    .color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                    .normal(entry, normal);
+        VertexConsumer consumer = vcp.getBuffer(layer);
+        callback.draw(this, consumer);
+        vcp.draw(layer);
+    }
+
+    public void createLinesLayer(RenderCallback callback) {
+        createLayer(LINES, callback);
+    }
+
+    @Override
+    public void createLineStripLayer(RenderCallback callback) {
+        createLayer(LINES_STRIP, callback);
+    }
+
+    public void createQuadsLayer(RenderCallback callback, boolean hasCulling) {
+        createLayer(hasCulling ? QUADS : QUADS_NO_CULL, callback);
+    }
+
+    public void createTrianglesLayer(RenderCallback callback, boolean hasCulling) {
+        createLayer(RECTS, callback);
+    }
+
+    @Override
+    public void createTriangleStripLayer(RenderCallback callback, boolean hasCulling) {
+        createLayer(RECTS_STRIP, callback);
+    }
+
+    public void createGuiTexturedLayer(Identifier path, RenderCallback callback) {
+        createLayer(GUI_TEXTURE_3D_FACTORY.apply(path), callback);
+    }
+
+    public void createSpriteTexturedLayer(Sprite sprite, RenderCallback callback) {
+        VertexConsumerProvider.Immediate vcp = getVCP();
+        var layer = GUI_TEXTURE_3D_FACTORY.apply(sprite.getAtlasId());
+        VertexConsumer consumer = vcp.getBuffer(layer);
+        consumer = RenderUtils.getSpriteVertexConsumer(consumer, sprite);
+        callback.draw(this, consumer);
+        vcp.draw(layer);
+    }
+
+    public void createGuiLayer(RenderCallback callback) {
+        createLayer(GUI_3D, callback);
+    }
+
+    private static final float TEXT_HEIGHT = 9.0f;
+
+    @Override
+    public void drawTextCameraCoord(
+            OrderedText orderedText,
+            MatrixStack stack,
+            Vec3d vec3d,
+            int displayPositionFlag,
+            Color color,
+            TextDisplay displayInfo) {
+        int xAlign = displayPositionFlag % 3;
+        int yAlign = displayPositionFlag / 3;
+        int width = mc.textRenderer.getWidth(orderedText);
+        float xStart = -((width * xAlign) / 2.0F);
+        float yStart = -((TEXT_HEIGHT * yAlign) / 2.0F);
+        stack.push();
+        stack.translate(vec3d.x, vec3d.y, vec3d.z);
+        stack.scale(1, -1, 1);
+        stack.translate(xStart, yStart, 0);
+        mc.textRenderer.draw(
+                orderedText,
+                0,
+                0,
+                color.getRGB(),
+                displayInfo.shadow(),
+                stack.peek().getPositionMatrix(),
+                getVCP(),
+                displayInfo.layerType(),
+                displayInfo.backgroundColor(),
+                displayInfo.light());
+        getVCP().draw();
+        stack.pop();
+    }
+
+    @Override
+    public void drawItemCameraCoord(
+            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ItemDisplayContext context, ItemDisplay displayInfo) {
+        boolean bl = Vec3d.ZERO.equals(vec3d);
+        if (!bl) {
+            stack.translate(vec3d.x, vec3d.y, vec3d.z);
         }
-        vcp.draw(LINES);
-    }
+        ItemRenderState state = new ItemRenderState();
+        mc.getItemModelManager().update(state, itemStack, context, false, mc.world, null, -999);
+        state.render(stack, getVCP(), displayInfo.light(), displayInfo.overlay());
 
-    @Override
-    public void drawLineVirtualCameraCoord(MatrixStack matrixStack, List<Vec3d> points, Color color) {
-        if (points.size() < 2) return;
-        VertexConsumerProvider.Immediate vcp = getVCP();
-        VertexConsumer consumer = vcp.getBuffer(LINES);
-        MatrixStack.Entry entry = matrixStack.peek();
-        for (var i = 1; i < points.size(); i += 2) {
-            Vector3f prev = points.get(i - 1).toVector3f();
-            Vector3f next = points.get(i).toVector3f();
-            Vector3f normal = new Vector3f(next).sub(prev).normalize();
-            consumer.vertex(entry, prev)
-                    .color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                    .normal(entry, normal);
-            consumer.vertex(entry, next)
-                    .color(color.getRed(), color.getGreen(), color.getBlue(), 255)
-                    .normal(entry, normal);
+        if (!bl) {
+            stack.translate(-vec3d.x, -vec3d.y, -vec3d.z);
         }
-        vcp.draw(LINES);
     }
 
     @Override
-    public void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
-        VertexConsumerProvider.Immediate vcp = getVCP();
-        VertexConsumer consumer = vcp.getBuffer(LINES);
-        drawOutlinedBox(matrix.peek(), consumer, from, to, color.getRGB());
-        vcp.draw(LINES);
-    }
-
-    public void drawOutlinedBox(
-            MatrixStack.Entry matrix4f, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+    public void drawOutlinedBox(MatrixStack matrix4fs, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+        var matrix4f = matrix4fs.peek();
         float minX = (float) from.getX();
         float minY = (float) from.getY();
         float minZ = (float) from.getZ();
@@ -202,124 +279,117 @@ public class Render_v1_21_4 implements VRender {
         float maxZ = (float) to.getZ();
 
         bufferBuilder
-                .vertex(matrix4f, minX, minY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 1, 0, 0);
+            .vertex(matrix4f, minX, minY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 1, 0, 0);
         bufferBuilder
-                .vertex(matrix4f, maxX, minY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 1, 0, 0);
+            .vertex(matrix4f, maxX, minY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 1, 0, 0);
 
         bufferBuilder
-                .vertex(matrix4f, maxX, minY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 0, 1);
+            .vertex(matrix4f, maxX, minY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 0, 1);
         bufferBuilder
-                .vertex(matrix4f, maxX, minY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 0, 1);
+            .vertex(matrix4f, maxX, minY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 0, 1);
 
         bufferBuilder
-                .vertex(matrix4f, minX, minY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 1, 0, 0);
+            .vertex(matrix4f, minX, minY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 1, 0, 0);
         bufferBuilder
-                .vertex(matrix4f, maxX, minY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 1, 0, 0);
+            .vertex(matrix4f, maxX, minY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 1, 0, 0);
 
         bufferBuilder
-                .vertex(matrix4f, minX, minY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 0, 1);
+            .vertex(matrix4f, minX, minY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 0, 1);
         bufferBuilder
-                .vertex(matrix4f, minX, minY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 0, 1);
+            .vertex(matrix4f, minX, minY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 0, 1);
 
         bufferBuilder
-                .vertex(matrix4f, minX, minY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 1, 0);
+            .vertex(matrix4f, minX, minY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 1, 0);
         bufferBuilder
-                .vertex(matrix4f, minX, maxY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 1, 0);
+            .vertex(matrix4f, minX, maxY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 1, 0);
 
         bufferBuilder
-                .vertex(matrix4f, maxX, minY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 1, 0);
+            .vertex(matrix4f, maxX, minY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 1, 0);
         bufferBuilder
-                .vertex(matrix4f, maxX, maxY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 1, 0);
+            .vertex(matrix4f, maxX, maxY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 1, 0);
 
         bufferBuilder
-                .vertex(matrix4f, maxX, minY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 1, 0);
+            .vertex(matrix4f, maxX, minY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 1, 0);
         bufferBuilder
-                .vertex(matrix4f, maxX, maxY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 1, 0);
+            .vertex(matrix4f, maxX, maxY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 1, 0);
 
         bufferBuilder
-                .vertex(matrix4f, minX, minY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 1, 0);
+            .vertex(matrix4f, minX, minY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 1, 0);
         bufferBuilder
-                .vertex(matrix4f, minX, maxY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 1, 0);
+            .vertex(matrix4f, minX, maxY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 1, 0);
 
         bufferBuilder
-                .vertex(matrix4f, minX, maxY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 1, 0, 0);
+            .vertex(matrix4f, minX, maxY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 1, 0, 0);
         bufferBuilder
-                .vertex(matrix4f, maxX, maxY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 1, 0, 0);
+            .vertex(matrix4f, maxX, maxY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 1, 0, 0);
 
         bufferBuilder
-                .vertex(matrix4f, maxX, maxY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 0, 1);
+            .vertex(matrix4f, maxX, maxY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 0, 1);
         bufferBuilder
-                .vertex(matrix4f, maxX, maxY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 0, 1);
+            .vertex(matrix4f, maxX, maxY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 0, 1);
 
         bufferBuilder
-                .vertex(matrix4f, minX, maxY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 1, 0, 0);
+            .vertex(matrix4f, minX, maxY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 1, 0, 0);
         bufferBuilder
-                .vertex(matrix4f, maxX, maxY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 1, 0, 0);
+            .vertex(matrix4f, maxX, maxY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 1, 0, 0);
 
         bufferBuilder
-                .vertex(matrix4f, minX, maxY, minZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 0, 1);
+            .vertex(matrix4f, minX, maxY, minZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 0, 1);
         bufferBuilder
-                .vertex(matrix4f, minX, maxY, maxZ)
-                .color(cachedRenderColor)
-                .normal(matrix4f, 0, 0, 1);
+            .vertex(matrix4f, minX, maxY, maxZ)
+            .color(cachedRenderColor)
+            .normal(matrix4f, 0, 0, 1);
     }
 
     @Override
-    public void drawSolidBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
-        VertexConsumerProvider.Immediate vcp = getVCP();
-        VertexConsumer consumer = vcp.getBuffer(QUADS);
-        drawSolidBox(matrix.peek(), consumer, from, to, color.getRGB());
-        vcp.draw(QUADS);
-    }
-
-    public void drawSolidBox(
-            MatrixStack.Entry matrix, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+    public void drawSolidBoxQuad(MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+        var matrix = matrixStack.peek();
         float minX = (float) from.x;
         float minY = (float) from.y;
         float minZ = (float) from.z;
@@ -358,60 +428,47 @@ public class Render_v1_21_4 implements VRender {
         bufferBuilder.vertex(matrix, minX, maxY, minZ).color(cachedRenderColor);
     }
 
+//    @Override
+//    public void drawSolidBoxTriangle(MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+//
+//    }
+
     @Override
-    public void drawQuadCameraCoord(MatrixStack matrix4f, Quad quad, ColorQuad colorQuad) {
-        VertexConsumerProvider.Immediate vcp = getVCP();
-        VertexConsumer bufferBuilder = vcp.getBuffer(QUADS_NO_CULL);
+    public void drawQuad(MatrixStack matrix4f, VertexConsumer bufferBuilder, Quad uv, ColorQuad colorQuad) {
         var matrix4 = matrix4f.peek();
         for (int idx = 0; idx < 4; idx++) {
-            var vec3d = quad.get(idx);
+            var vec3d = uv.get(idx);
             int color = colorQuad.get(idx);
             bufferBuilder
-                    .vertex(matrix4, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                    .color(color);
+                .vertex(matrix4, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
+                .color(color);
         }
-        vcp.draw(QUADS);
-    }
-
-    private static final float TEXT_HEIGHT = 9.0f;
-
-    @Override
-    public void drawTextCameraCoord(
-            OrderedText orderedText,
-            MatrixStack stack,
-            Vec3d vec3d,
-            int displayPositionFlag,
-            Color color,
-            TextDisplay displayInfo) {
-        int xAlign = displayPositionFlag % 3;
-        int yAlign = displayPositionFlag / 3;
-        int width = mc.textRenderer.getWidth(orderedText);
-        float xStart = -((width * xAlign) / 2.0F);
-        float yStart = -((TEXT_HEIGHT * yAlign) / 2.0F);
-        stack.push();
-        stack.translate(vec3d.x, vec3d.y, vec3d.z);
-        stack.scale(1, -1, 1);
-        stack.translate(xStart, yStart, 0);
-        mc.textRenderer.draw(
-                orderedText,
-                0,
-                0,
-                color.getRGB(),
-                displayInfo.shadow(),
-                stack.peek().getPositionMatrix(),
-                getVCP(),
-                displayInfo.layerType(),
-                displayInfo.backgroundColor(),
-                displayInfo.light());
-        getVCP().draw();
-        stack.pop();
     }
 
     @Override
-    public void drawTexturedQuadCameraCoord(Identifier path, MatrixStack stack, Quad quad, UV uv, ColorQuad colorQuad) {
-        var vcp = getVCP();
-        var layer = GUI_TEXTURE_3D_FACTORY.apply(path);
-        var vertex = vcp.getBuffer(layer);
+    public void drawLines(MatrixStack matrixStack, VertexConsumer consumer, List<Vec3d> points, int color) {
+        MatrixStack.Entry entry = matrixStack.peek();
+        for (var i = 1; i < points.size(); i++) {
+            Vector3f prev = points.get(i - 1).toVector3f();
+            Vector3f next = points.get(i).toVector3f();
+            Vector3f normal = new Vector3f(next).sub(prev).normalize();
+            consumer.vertex(entry, prev).color(color).normal(entry, normal);
+            consumer.vertex(entry, next).color(color).normal(entry, normal);
+        }
+    }
+
+    @Override
+    public void drawLine(MatrixStack matrixStack, VertexConsumer consumer, Vec3d prevV, Vec3d nextV, int color) {
+        Vector3f prev = prevV.toVector3f();
+        Vector3f next = nextV.toVector3f();
+        MatrixStack.Entry entry = matrixStack.peek();
+        Vector3f normal = new Vector3f(next).sub(prev).normalize();
+        consumer.vertex(entry, prev).color(color).normal(entry, normal);
+        consumer.vertex(entry, next).color(color).normal(entry, normal);
+    }
+
+    @Override
+    public void drawTexturedQuad(MatrixStack stack, VertexConsumer vertex, Quad quad, UV uv, ColorQuad colorQuad) {
         var entry = stack.peek();
         for (var i = 0; i < 4; ++i) {
             Vec3d vec3d = quad.get(i);
@@ -419,57 +476,8 @@ public class Render_v1_21_4 implements VRender {
             float v = uv.getV(i);
             int color = colorQuad.get(i);
             vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                    .texture(u, v)
-                    .color(color);
-        }
-        vcp.draw(layer);
-    }
-
-    @Override
-    public void drawSpriteQuadCameraCoord(Sprite sprite, MatrixStack stack, Quad quad, UV uv, ColorQuad colorQuad) {
-        var vcp = getVCP();
-        var layer = GUI_TEXTURE_3D_FACTORY.apply(sprite.getAtlasId());
-        var vertex = RenderUtils.getSpriteVertexConsumer(vcp.getBuffer(layer), sprite);
-        var entry = stack.peek();
-        for (var i = 0; i < 4; ++i) {
-            Vec3d vec3d = quad.get(i);
-            float u = uv.getU(i);
-            float v = uv.getV(i);
-            int color = colorQuad.get(i);
-            vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                    .texture(u, v)
-                    .color(color);
-        }
-        vcp.draw(layer);
-    }
-
-    @Override
-    public void drawGuiQuadCameraCoord(MatrixStack stack, Quad quad, ColorQuad colorQuad) {
-        var vcp = getVCP();
-        var vertex = vcp.getBuffer(GUI_3D);
-        var entry = stack.peek();
-        for (var i = 0; i < 4; ++i) {
-            Vec3d vec3d = quad.get(i);
-            int color = colorQuad.get(i);
-            vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                    .color(color);
-        }
-        vcp.draw(GUI_3D);
-    }
-
-    @Override
-    public void drawItemCameraCoord(
-            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ItemDisplayContext context, ItemDisplay displayInfo) {
-        boolean bl = Vec3d.ZERO.equals(vec3d);
-        if (!bl) {
-            stack.translate(vec3d.x, vec3d.y, vec3d.z);
-        }
-        ItemRenderState state = new ItemRenderState();
-        mc.getItemModelManager().update(state, itemStack, context, false, mc.world, null, -999);
-        state.render(stack, getVCP(), displayInfo.light(), displayInfo.overlay());
-
-        if (!bl) {
-            stack.translate(-vec3d.x, -vec3d.y, -vec3d.z);
+                .texture(u, v)
+                .color(color);
         }
     }
 }
