@@ -11,6 +11,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
+import me.matl114.utils.InventoryUtils;
 import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.slot.SlotActionType;
@@ -57,7 +58,7 @@ public class InvExtra extends BaseModule {
     }
 
     public Runnable switchOrSwapInventoryIndexToHand(int hand) {
-        int selected = mc.player.getInventory().selectedSlot;
+        int selected = InventoryUtils.getSelectedSlot();
         if (selected != hand) {
             if (hand < 9) {
                 PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
@@ -96,7 +97,7 @@ public class InvExtra extends BaseModule {
     }
 
     public Runnable swapInventoryIndexToHand(int hand) {
-        int selected = mc.player.getInventory().selectedSlot;
+        int selected = InventoryUtils.getSelectedSlot();
         if (selected != hand) {
             //            if (hand < 9) {
             //                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);

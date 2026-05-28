@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
@@ -52,7 +53,7 @@ public class WorldUtils {
     public static Stream<String> getPlayerListNames() {
         return mc.getNetworkHandler().getPlayerList().stream()
                 .map(PlayerListEntry::getProfile)
-                .map(GameProfile::getName);
+                .map(VRecord::getName);
     }
 
     public static Stream<String> getWaypointNames() {
@@ -95,7 +96,7 @@ public class WorldUtils {
         String optionalUid;
         PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(lookup);
         if (entry != null) {
-            optionalUid = entry.getProfile().getId().toString();
+            optionalUid = VRecord.getId(entry.getProfile()).toString();
         } else {
             optionalUid = null;
         }

@@ -72,14 +72,14 @@ public class CombatLog extends BaseModule {
 
     public void logDamage(String from, String to, RegistryKey<DamageType> source) {
         if (enableSmash.get()) {
-            if (Objects.equals(source, DamageTypes.MACE_SMASH)) {
+            if ("mace_smash".equals(source.getValue().getPath())) {
                 // we trigger a mace smash
                 Debug.chat(ChatUtils.stringToText(logSmashFormat.get().formatted(from, to)));
                 return;
             }
         }
         if (enableKinetic.get()) {
-            if (Objects.equals(source, DamageTypes.SPEAR)) {
+            if ("spear".equals(source.getValue().getPath())) {
                 // we trigger a mace smash
                 Debug.chat(ChatUtils.stringToText(logKineticFormat.get().formatted(from, to)));
                 return;

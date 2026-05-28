@@ -1,6 +1,6 @@
 package me.matl114.versioned.api;
 
-import me.matl114.versioned.impl.Packet_v1_21_4;
+import me.matl114.versioned.impl.Packet_v1_21_11;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
@@ -69,10 +69,10 @@ public interface VPacket {
         return packet.horizontalCollision();
     }
 
-
     public static Vec3d getVelocity(EntityVelocityUpdateS2CPacket entityVelocityUpdateS2CPacket){
-        return new Vec3d(entityVelocityUpdateS2CPacket.getVelocityX(), entityVelocityUpdateS2CPacket.getVelocityY(), entityVelocityUpdateS2CPacket.getVelocityZ());
+        return entityVelocityUpdateS2CPacket.getVelocity();
     }
+
     /**
      * 实例方法 - 创建 OnGroundOnly 数据包
      */
@@ -102,6 +102,6 @@ public interface VPacket {
     private static VPacket getInstance() {
         // 这里应该根据实际版本检测逻辑来返回正确的实现
         // 暂时返回 1.21.1 的实现
-        return new Packet_v1_21_4();
+        return new Packet_v1_21_11();
     }
 }

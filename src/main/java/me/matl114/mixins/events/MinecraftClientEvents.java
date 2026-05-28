@@ -52,6 +52,7 @@ public abstract class MinecraftClientEvents {
     public abstract void tick();
 
     @Shadow
+    @Nullable
     public ClientPlayerEntity player;
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)

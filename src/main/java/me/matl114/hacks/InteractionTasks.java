@@ -14,6 +14,7 @@ import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.managers.Configs;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.EntityUtils;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -129,7 +130,7 @@ public class InteractionTasks {
                     var hand = pair.getRight();
                     var result = pair.getLeft();
                     if (selectedSlot == -1) {
-                        selectedSlot = mc.player.getInventory().selectedSlot;
+                        selectedSlot = InventoryUtils.getSelectedSlot();
                         mc.interactionManager.sendSequencedPacket(
                                 mc.world,
                                 (i) -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, i, rotation.y, rotation.x));
@@ -143,7 +144,7 @@ public class InteractionTasks {
                 int selectedSlot = -1;
                 for (Pair<BlockHitResult, Hand> pair : resultList) {
                     if (selectedSlot == -1) {
-                        selectedSlot = mc.player.getInventory().selectedSlot;
+                        selectedSlot = InventoryUtils.getSelectedSlot();
                     } else {
                         // for flush places
                         flushACPlaceQueue();
@@ -158,7 +159,7 @@ public class InteractionTasks {
                 int selectedSlot = -1;
                 for (Pair<BlockHitResult, Hand> pair : resultList) {
                     if (selectedSlot == -1) {
-                        selectedSlot = mc.player.getInventory().selectedSlot;
+                        selectedSlot = InventoryUtils.getSelectedSlot();
                     } else {
                         // for flush places
                         flushACPlaceQueue();

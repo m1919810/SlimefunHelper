@@ -16,10 +16,12 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.Config;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.Debug;
+import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
+import net.minecraft.text.Text;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 
@@ -66,7 +68,7 @@ public class MainTasks {
                 String generatedContent = "§b§k" + ("1a锕β".repeat(250));
                 mc.getNetworkHandler()
                         .sendPacket(new BookUpdateC2SPacket(
-                                mc.player.getInventory().selectedSlot,
+                                InventoryUtils.getSelectedSlot(),
                                 Collections.nCopies(100, generatedContent),
                                 args.length > 0 ? Optional.of(String.join("\n", args)) : Optional.empty()));
             } else {
@@ -114,17 +116,17 @@ public class MainTasks {
         newStyleScreen.setGlobal(config);
         ScreenAccess.of(newStyleScreen).openFromCurrent();
     }
-
+    public static final Text QUITTING_MULTIPLAYER_TEXT = Text.translatable("multiplayer.status.quitting");
     @ApiMethod
     public static void scheduleDisconnect() {
         Tasks.scheduleDelayed(
                 () -> {
                     if (mc.world != null && mc.player != null) {
-                        mc.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
+                        mc.disconnect(QUITTING_MULTIPLAYER_TEXT);
                     }
                     if (Listener.getClientConnection() != null
                             && Listener.getClientConnection().isOpen()) {
-                        Listener.getClientConnection().disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
+                        Listener.getClientConnection().disconnect(QUITTING_MULTIPLAYER_TEXT);
                     }
                 },
                 0);
@@ -132,10 +134,10 @@ public class MainTasks {
 
     @ApiMethod
     public static void disconnectImmediately() {
-        mc.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
+        mc.disconnect(QUITTING_MULTIPLAYER_TEXT);
         if (Listener.getClientConnection() != null
                 && Listener.getClientConnection().isOpen()) {
-            Listener.getClientConnection().disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
+            Listener.getClientConnection().disconnect(QUITTING_MULTIPLAYER_TEXT);
         }
     }
 

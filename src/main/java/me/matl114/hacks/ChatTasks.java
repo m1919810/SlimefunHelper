@@ -33,6 +33,7 @@ import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.tasks.LimitedSpeedExecutor;
 import me.matl114.versioned.api.VEntity;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.player.PlayerEntity;
@@ -47,11 +48,9 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 public class ChatTasks {
     public static void init() {}
@@ -583,13 +582,12 @@ public class ChatTasks {
                 }
                 case "spawn" -> {
                     Debug.chat("当前世界的出生点:");
-                    BlockPos pos1 = mc.world.getSpawnPos();
-                    World world = mc.world;
+                    GlobalPos pos = mc.world.getSpawnPoint().globalPos();
                     Debug.chat(
                             "World Spawn Point [World:",
-                            world.getRegistryKey().getValue(),
+                            pos.dimension().getValue(),
                             ",Pos:",
-                            ChatUtils.getDisplayedLocationDouble(Vec3d.of(pos1)),
+                            ChatUtils.getDisplayedLocationDouble(Vec3d.of(pos.pos())),
                             "]");
                     //                        if(entity != null){
                     //                           // mc.player.spawn
@@ -644,10 +642,10 @@ public class ChatTasks {
                 case "plist" -> {
                     Debug.chat(Text.literal("当前可视的玩家列表").formatted(Formatting.GREEN));
                     mc.getNetworkHandler().getPlayerList().stream()
-                            .sorted(Comparator.comparing(e -> e.getProfile().getName()))
+                            .sorted(Comparator.comparing(e -> VRecord.getName(e.getProfile())))
                             .map(entry -> {
                                 var val = Text.literal("%-16s (Display: "
-                                                .formatted(entry.getProfile().getName()))
+                                                .formatted(VRecord.getName(entry.getProfile())))
                                         .append(
                                                 entry.getDisplayName() == null
                                                         ? Text.literal("null")
@@ -703,18 +701,18 @@ public class ChatTasks {
                         Debug.chat("查询到PlayerEntry");
                         Debug.chat(
                                 Text.literal("名字: ").formatted(Formatting.GRAY),
-                                entry.getProfile().getName());
+                            VRecord.getName(entry.getProfile()));
                         Debug.chat(
                                 Text.literal("UUID: ").formatted(Formatting.GRAY),
                                 ChatUtils.getClickCopyTargetText(
-                                                entry.getProfile().getId().toString())
+                                               VRecord.getId( entry.getProfile()).toString())
                                         .formatted(Formatting.GREEN));
                         Debug.chat(
                                 Text.literal("Property: ").formatted(Formatting.GRAY),
                                 ChatUtils.getHoverShowText(
                                         "[点击查看具体数据]",
                                         List.of(Text.literal(
-                                                entry.getProfile().getProperties().toString()))));
+                                               VRecord.getProperties(entry.getProfile()).toString()))));
                         Debug.chat(
                                 Text.literal("GameMode: ").formatted(Formatting.GRAY),
                                 entry.getGameMode().name());
@@ -747,7 +745,7 @@ public class ChatTasks {
                     Predicate<WorldUtils.Waypoint> filter;
                     if ((entry = mc.getNetworkHandler().getPlayerListEntry(user)) != null) {
                         final String lookup;
-                        lookup = entry.getProfile().getId().toString();
+                        lookup = VRecord.getId( entry.getProfile()).toString();
                         filter = s -> lookup.equalsIgnoreCase(s.getSource().map(UUID::toString, Function.identity()));
                     } else {
                         filter = Predicates.alwaysTrue();
@@ -762,7 +760,7 @@ public class ChatTasks {
                                         t -> Optional.ofNullable(
                                                 mc.getNetworkHandler().getPlayerListEntry(t)));
                         optionalEntry.ifPresent(playerListEntry -> Debug.chat("Potential Owner: "
-                                + playerListEntry.getProfile().getName()));
+                                + VRecord.getName(playerListEntry.getProfile())));
 
                         Debug.chat("config: ");
 

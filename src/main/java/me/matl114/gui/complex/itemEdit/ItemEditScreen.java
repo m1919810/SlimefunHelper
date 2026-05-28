@@ -3,6 +3,8 @@ package me.matl114.gui.complex.itemEdit;
 import static net.minecraft.component.DataComponentTypes.*;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.LinkedHashMultimap;
+import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
@@ -32,6 +34,7 @@ import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.kv.NbtAttrKeyValue;
 import me.matl114.versioned.api.VItem;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.component.ComponentChanges;
@@ -122,8 +125,9 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
     public void applyChangeToInventory() {
         if (mc.player != null) {
-            if (mc.interactionManager != null && mc.interactionManager.hasCreativeInventory()) {
-                int slot = mc.player.getInventory().selectedSlot;
+            if (mc.interactionManager != null
+                    && mc.interactionManager.getCurrentGameMode().isCreative()) {
+                int slot = InventoryUtils.getSelectedSlot();
                 InvTasks.setCreativeInventory(this.itemStack, slot);
             } else {
                 Debug.chat(Text.literal("并非创造模式,无法实施物品改变;正在尝试使用give指令").formatted(Formatting.YELLOW));
@@ -552,11 +556,15 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 String hash = this.skullHashProfile.getOriginValue();
                 if (hash != null && !hash.isEmpty()) {
                     if (lastComponent != null) {
-                        PropertyMap map = BukkitItemStackUtils.buildPropertyMap(lastComponent.properties(), hash);
+                        PropertyMap map = BukkitItemStackUtils.buildPropertyMap(
+                                VRecord.getProperties( lastComponent.getGameProfile()), hash);
                         ItemStackUtils.setOrRemoveChange(
                                 stackTemplate,
                                 PROFILE,
-                                new ProfileComponent(lastComponent.name(), lastComponent.id(), map));
+                                ProfileComponent.ofStatic(new GameProfile(
+                                       VRecord.getId( lastComponent.getGameProfile()),
+                                    VRecord.getName( lastComponent.getGameProfile()),
+                                        map)));
                     } else {
                         // generate empty
                         ItemStackUtils.setOrRemoveChange(
@@ -568,7 +576,10 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         ItemStackUtils.setOrRemoveChange(
                                 stackTemplate,
                                 PROFILE,
-                                new ProfileComponent(lastComponent.name(), lastComponent.id(), new PropertyMap()));
+                                ProfileComponent.ofStatic(new GameProfile(
+                                        VRecord.getId(lastComponent.getGameProfile()),
+                                        VRecord.getName(lastComponent.getGameProfile()),
+                                        new PropertyMap(LinkedHashMultimap.create()))));
                     } else {
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, null);
                     }
@@ -688,7 +699,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     enchantList.add(new ItemEnchantAttrGroup(
                             ItemStackUtils.solveDynamic(var.getKey()).toString(), var.getIntValue()));
                 });
-                this.showInTooltips = component.showInTooltip;
+                // this.showInTooltips = component.showInTooltip;
                 new ListModifyWidget(
                                 ListEntryWidgetController.mutable(
                                         enchantList,
@@ -705,8 +716,9 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
             @Override
             protected void saveChanges() {
-                ItemEnchantmentsComponent.Builder builder = new ItemEnchantmentsComponent.Builder(
-                        ItemEnchantmentsComponent.DEFAULT.withShowInTooltip(this.showInTooltips));
+                ItemEnchantmentsComponent.Builder builder =
+                        new ItemEnchantmentsComponent.Builder(ItemEnchantmentsComponent.DEFAULT);
+                // .withShowInTooltip(this.showInTooltips));
                 for (var ench : enchantList) {
                     var re = ench.entryValue();
                     if (re.getFirst() != null) {
@@ -803,7 +815,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             protected void init() {
                 this.modifierEntries = new ArrayList<>();
                 AttributeModifiersComponent modifiers = ItemStackUtils.getEntityModifier(stackTemplate);
-                this.showInTooltips = modifiers.showInTooltip();
+                // this.showInTooltips = modifiers.showInTooltip();
                 modifiers.modifiers().forEach(var -> {
                     this.modifierEntries.add(new ItemAttributeModifierEntry(
                             ItemStackUtils.solveDynamic(var.attribute()).toString(), var.modifier(), var.slot()));
@@ -830,8 +842,9 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                 this.modifierEntries.stream()
                                         .map(ItemAttributeModifierEntry::value)
                                         .filter(Objects::nonNull)
-                                        .toList(),
-                                this.showInTooltips));
+                                        .toList()
+                                //    , this.showInTooltips
+                                ));
             }
 
             @Override

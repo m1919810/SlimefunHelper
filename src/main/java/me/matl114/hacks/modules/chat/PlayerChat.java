@@ -45,15 +45,18 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.PairLikeFactory;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.gui.hud.MessageIndicator;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
+import net.minecraft.text.ObjectTextContent;
 import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.object.PlayerTextObjectContents;
 import net.minecraft.util.Formatting;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -196,14 +199,14 @@ public class PlayerChat extends BaseModule {
                     if (lastAcceptUUID != null) {
                         PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(lastAcceptUUID);
                         if (entry != null) {
-                            caughtName = entry.getProfile().getName();
+                            caughtName = VRecord.getName(entry.getProfile());
                         }
                     }
                     // do not use
                     if (caughtName == null && detectPlayerName.get()) {
                         String findingMsg = text;
                         for (var playerListEntry : mc.getNetworkHandler().getPlayerList()) {
-                            String playerName = playerListEntry.getProfile().getName();
+                            String playerName = VRecord.getName(playerListEntry.getProfile());
                             int index = findingMsg.indexOf(playerName);
                             if (index != -1) {
 
@@ -217,7 +220,7 @@ public class PlayerChat extends BaseModule {
                                 int idx = findingMsg.indexOf(displayName2);
                                 if (idx != -1) {
                                     findingMsg = findingMsg.substring(0, idx);
-                                    caughtName = playerListEntry.getProfile().getName();
+                                    caughtName = VRecord.getName(playerListEntry.getProfile());
                                 }
                             }
                             if (findingMsg.isEmpty()) {
@@ -287,37 +290,36 @@ public class PlayerChat extends BaseModule {
     public Pattern pattern = Pattern.compile("^(?!_)(?![0-9]+$)[a-zA-Z0-9_]{3,16}$");
 
     public Consumer<ChatUtils.TextBuilder> handleChatHead(String playerName, MutableBoolean mutableBoolean) {
-        // version not support, use ChatHead pls, Im lazy
-//        if (!playerHead.get()) return null;
-//        PlayerListEntry entry;
-//        if (lastAcceptUUID != null) {
-//
-//            ObjectTextContent content = new ObjectTextContent(
-//                    new PlayerTextObjectContents(ProfileComponent.ofDynamic(lastAcceptUUID), false));
-//            mutableBoolean.setTrue();
-//            entry = mc.getNetworkHandler().getPlayerListEntry(lastAcceptUUID);
-//            return (builder) -> {
-//                builder.withHoverEvent(ChatUtils.getHoverShowText(List.of(
-//                                Text.literal("玩家:"
-//                                        + (entry == null
-//                                                ? "未知"
-//                                                : entry.getProfile().name())),
-//                                Text.literal("玩家UUID:" + lastAcceptUUID))))
-//                        .withContent(content)
-//                        .withStyle(Style.EMPTY);
-//            };
-//        }
-//        if (playerName != null && pattern.matcher(playerName).matches()) {
-//
-//            ObjectTextContent content =
-//                    new ObjectTextContent(new PlayerTextObjectContents(ProfileComponent.ofDynamic(playerName), false));
-//            mutableBoolean.setTrue();
-//            return (builder) -> {
-//                builder.withHoverEvent(ChatUtils.getHoverShowText(List.of(Text.literal("玩家:" + playerName))))
-//                        .withContent(content)
-//                        .withStyle(Style.EMPTY);
-//            };
-//        }
+        if (!playerHead.get()) return null;
+        PlayerListEntry entry;
+        if (lastAcceptUUID != null) {
+
+            ObjectTextContent content = new ObjectTextContent(
+                    new PlayerTextObjectContents(ProfileComponent.ofDynamic(lastAcceptUUID), false));
+            mutableBoolean.setTrue();
+            entry = mc.getNetworkHandler().getPlayerListEntry(lastAcceptUUID);
+            return (builder) -> {
+                builder.withHoverEvent(ChatUtils.getHoverShowText(List.of(
+                                Text.literal("玩家:"
+                                        + (entry == null
+                                                ? "未知"
+                                                : VRecord.getName(entry.getProfile()))),
+                                Text.literal("玩家UUID:" + lastAcceptUUID))))
+                        .withContent(content)
+                        .withStyle(Style.EMPTY);
+            };
+        }
+        if (playerName != null && pattern.matcher(playerName).matches()) {
+
+            ObjectTextContent content =
+                    new ObjectTextContent(new PlayerTextObjectContents(ProfileComponent.ofDynamic(playerName), false));
+            mutableBoolean.setTrue();
+            return (builder) -> {
+                builder.withHoverEvent(ChatUtils.getHoverShowText(List.of(Text.literal("玩家:" + playerName))))
+                        .withContent(content)
+                        .withStyle(Style.EMPTY);
+            };
+        }
         return null;
     }
 

@@ -15,6 +15,7 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
@@ -69,7 +70,7 @@ public class EntityLog extends BaseModule {
                                 .getNetworkHandler()
                                 .getPlayerListEntry(packet.getUuid());
                         if (entry != null) {
-                            text = Text.literal(entry.getProfile().getName()).formatted(Formatting.GREEN);
+                            text = Text.literal(VRecord.getName(entry.getProfile())).formatted(Formatting.GREEN);
                         }
                     }
 

@@ -12,6 +12,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.NetworkUtils;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
@@ -123,7 +124,7 @@ public class DisablerManager extends BaseModule {
                 // see GrimAC handleQueuedPlaces()
                 if (hasAnyPlaceActionGrimQueue) {
                     Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(
-                            mc.player.getInventory().selectedSlot));
+                            InventoryUtils.getSelectedSlot()));
                 }
                 hasAnyPlaceActionGrimQueue = false;
             }
