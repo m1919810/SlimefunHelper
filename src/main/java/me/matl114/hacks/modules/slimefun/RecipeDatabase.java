@@ -137,7 +137,6 @@ public class RecipeDatabase extends BaseModule {
 
     public void onLoad() {
         loaded = true;
-        Debug.chat("载入粘液物品记录中...");
         try {
             id2CraftType.clear();
             String craftTypeId = ConfigLoader.loadExternalJson(RECIPE_TYPE_FILE);

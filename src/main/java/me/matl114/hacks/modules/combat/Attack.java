@@ -35,8 +35,6 @@ import me.matl114.versioned.api.VItem;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.WeaponComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
@@ -239,11 +237,12 @@ public class Attack extends BaseModule {
                 && (invResult = InventoryUtils.findBestPlayerItem(
                                 (ex) -> {
                                     if (VItem.getInstance().isWeapon(ex)) {
-                                        WeaponComponent weapon = ex.get(DataComponentTypes.WEAPON);
-                                        // sword first, then consider dps
-                                        return -((double) weapon.itemDamagePerAttack() * 1E8)
-                                                + DamageUtils.getAttackDamage(player, lv, ex)
-                                                        * DamageUtils.getAttackSpeed(player, ex);
+                                        Integer damageCost = VItem.getInstance().getAttackDurabilityCost(ex);
+                                        return damageCost == null
+                                                ? null
+                                                : -((double) damageCost * 1E8)
+                                                        + DamageUtils.getAttackDamage(player, lv, ex)
+                                                                * DamageUtils.getAttackSpeed(player, ex);
                                     }
                                     return null;
                                 },

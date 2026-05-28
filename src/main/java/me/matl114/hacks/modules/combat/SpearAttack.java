@@ -6,7 +6,6 @@ import it.unimi.dsi.fastutil.doubles.DoubleList;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
@@ -26,11 +25,8 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.LegalMovementManager;
-import me.matl114.versioned.api.VItem;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.component.type.AttackRangeComponent;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -111,10 +107,8 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             currentWaitBackTick = 0;
             return false;
         }
-        AttackRangeComponent attackRange = mc.player.getAttackRange();
-        Entity target = CombatTasks.getTargetSelector()
-                .searchAttackEntity(
-                        spearDistance.get() + attackRange.getEffectiveMaxRange(mc.player), true, this::isSpearable);
+        Entity target =
+                CombatTasks.getTargetSelector().searchAttackEntity(spearDistance.get(), true, this::isSpearable);
         if (target == null) {
             currentWaitBackTick = 0;
             return false;
@@ -205,23 +199,23 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         return Pair.of(listTo, back);
     }
 
-    public void onSpearAttackRender(Event<MatrixStack> event) {
-        MatrixStack stack = event.context();
-        {
-            RenderUtils.startDrawVirtual(stack);
-            try {
-                for (var entity : mc.world.getEntities()) {
-                    if (entity instanceof LivingEntity livingEntity
-                            && livingEntity.isUsingItem()
-                            && VItem.getInstance().isSpear(livingEntity.getActiveItem())) {
-                        drawPlayerUseSpearTick(livingEntity, stack);
-                    }
-                }
-            } finally {
-                RenderUtils.stopDrawVirtual(stack);
-            }
-        }
-    }
+    //    public void onSpearAttackRender(Event<MatrixStack> event) {
+    //        MatrixStack stack = event.context();
+    //        {
+    //            RenderUtils.startDrawVirtual(stack);
+    //            try {
+    //                for (var entity : mc.world.getEntities()) {
+    //                    if (entity instanceof LivingEntity livingEntity
+    //                            && livingEntity.isUsingItem()
+    //                            && VItem.getInstance().isSpear(livingEntity.getActiveItem())) {
+    //                        drawPlayerUseSpearTick(livingEntity, stack);
+    //                    }
+    //                }
+    //            } finally {
+    //                RenderUtils.stopDrawVirtual(stack);
+    //            }
+    //        }
+    //    }
     // > 1 : no TickEnd, no move
     // == 1 : make noFall for next tick, can TickEnd, can not start next Spear
     // == 0 can move, can Start next Spear
@@ -229,21 +223,17 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
 
     private void renderPlayerSpearTarget(Event<MatrixStack> event) {
         if (!enable.get()) return;
-        if (RenderTasks.DEBUG_RENDER_SPEAR) {
-            onSpearAttackRender(event);
-        }
+        //        if (RenderTasks.DEBUG_RENDER_SPEAR) {
+        //            onSpearAttackRender(event);
+        //        }
         MatrixStack stack = event.context();
         float tickDelta = event.getArgs(0);
         if (spearRender.get()) {
             RenderUtils.startDrawVirtual(stack);
             try {
                 if (canSpearAttack()) {
-                    AttackRangeComponent attackRange = mc.player.getAttackRange();
                     Entity spearEntity = CombatTasks.getTargetSelector()
-                            .searchAttackEntity(
-                                    spearDistance.get() + attackRange.getEffectiveMaxRange(mc.player),
-                                    false,
-                                    this::isSpearable);
+                            .searchAttackEntity(spearDistance.get(), false, this::isSpearable);
                     if (spearEntity != null) {
                         float dist = spearEntity.distanceTo(mc.player);
                         float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
@@ -258,54 +248,54 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    private void drawPlayerUseSpearTick(LivingEntity entity, MatrixStack stack) {
-        AttackRangeComponent attackRange = entity.getAttackRange();
-        Vec3d startEye = entity.getEyePos();
-        Vec3d direction = entity.getHeadRotationVector();
-        double minRange = attackRange.getEffectiveMinRange(entity);
-        double maxRange = attackRange.getEffectiveMaxRange(entity);
-        double speedBonus = Math.max(0, entity.getMovement().dotProduct(direction));
-        double finalMaxRange = maxRange + speedBonus;
-
-        Vec3d startPoint = startEye.add(direction.multiply(minRange));
-        Vec3d endPoint = startEye.add(direction.multiply(finalMaxRange));
-        float hitboxMargin = attackRange.hitboxMargin();
-        Box box = Box.of(startPoint, (double) hitboxMargin, (double) hitboxMargin, (double) hitboxMargin)
-                .stretch(endPoint.subtract(startPoint))
-                .expand(1.0);
-        stack.push();
-        RenderUtils.drawOutlinedBox(stack, box.getMinPos(), box.getMaxPos(), Color.MAGENTA);
-        RenderUtils.drawLineVirtual(stack, startPoint, endPoint, Color.MAGENTA);
-        float max = Math.max(0, hitboxMargin);
-        for (var e : mc.world.getOtherEntities(entity, box)) {
-            if (e instanceof LivingEntity livingEntity) {
-                if (livingEntity.getBoundingBox().raycast(startPoint, endPoint).isPresent()) {
-                    RenderUtils.drawSolidBox(
-                            stack,
-                            livingEntity.getBoundingBox().getMinPos(),
-                            livingEntity.getBoundingBox().getMaxPos(),
-                            ColorUtils.withAlpha(Color.BLUE, 0.25F));
-                } else if (max > 0) {
-                    var box2 = livingEntity.getBoundingBox().expand(hitboxMargin);
-                    var re = box2.raycast(startPoint, endPoint);
-                    if (re.isPresent()) {
-                        Vec3d vec3d = re.get();
-                        Vec3d vec3d2 = box2.getCenter();
-                        Optional<Vec3d> optional3 =
-                                livingEntity.getBoundingBox().raycast(vec3d, vec3d2);
-                        if (optional3.isPresent()) {
-                            RenderUtils.drawSolidBox(
-                                    stack,
-                                    livingEntity.getBoundingBox().getMinPos(),
-                                    livingEntity.getBoundingBox().getMaxPos(),
-                                    ColorUtils.withAlpha(Color.BLUE, 0.25F));
-                        }
-                    }
-                }
-            }
-        }
-        stack.pop();
-    }
+    //    private void drawPlayerUseSpearTick(LivingEntity entity, MatrixStack stack) {
+    //        AttackRangeComponent attackRange = entity.getAttackRange();
+    //        Vec3d startEye = entity.getEyePos();
+    //        Vec3d direction = entity.getHeadRotationVector();
+    //        double minRange = attackRange.getEffectiveMinRange(entity);
+    //        double maxRange = attackRange.getEffectiveMaxRange(entity);
+    //        double speedBonus = Math.max(0, entity.getMovement().dotProduct(direction));
+    //        double finalMaxRange = maxRange + speedBonus;
+    //
+    //        Vec3d startPoint = startEye.add(direction.multiply(minRange));
+    //        Vec3d endPoint = startEye.add(direction.multiply(finalMaxRange));
+    //        float hitboxMargin = attackRange.hitboxMargin();
+    //        Box box = Box.of(startPoint, (double) hitboxMargin, (double) hitboxMargin, (double) hitboxMargin)
+    //                .stretch(endPoint.subtract(startPoint))
+    //                .expand(1.0);
+    //        stack.push();
+    //        RenderUtils.drawOutlinedBox(stack, box.getMinPos(), box.getMaxPos(), Color.MAGENTA);
+    //        RenderUtils.drawLineVirtual(stack, startPoint, endPoint, Color.MAGENTA);
+    //        float max = Math.max(0, hitboxMargin);
+    //        for (var e : mc.world.getOtherEntities(entity, box)) {
+    //            if (e instanceof LivingEntity livingEntity) {
+    //                if (livingEntity.getBoundingBox().raycast(startPoint, endPoint).isPresent()) {
+    //                    RenderUtils.drawSolidBox(
+    //                            stack,
+    //                            livingEntity.getBoundingBox().getMinPos(),
+    //                            livingEntity.getBoundingBox().getMaxPos(),
+    //                            ColorUtils.withAlpha(Color.BLUE, 0.25F));
+    //                } else if (max > 0) {
+    //                    var box2 = livingEntity.getBoundingBox().expand(hitboxMargin);
+    //                    var re = box2.raycast(startPoint, endPoint);
+    //                    if (re.isPresent()) {
+    //                        Vec3d vec3d = re.get();
+    //                        Vec3d vec3d2 = box2.getCenter();
+    //                        Optional<Vec3d> optional3 =
+    //                                livingEntity.getBoundingBox().raycast(vec3d, vec3d2);
+    //                        if (optional3.isPresent()) {
+    //                            RenderUtils.drawSolidBox(
+    //                                    stack,
+    //                                    livingEntity.getBoundingBox().getMinPos(),
+    //                                    livingEntity.getBoundingBox().getMaxPos(),
+    //                                    ColorUtils.withAlpha(Color.BLUE, 0.25F));
+    //                        }
+    //                    }
+    //                }
+    //            }
+    //        }
+    //        stack.pop();
+    //    }
 
     private boolean isSpearable(Entity entity) {
         // Vec3d pos = mc.player.getEyePos();
