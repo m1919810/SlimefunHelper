@@ -687,6 +687,7 @@
 	"recipe-record.lock-existing.tooltips": "防止via或者其他插件对已有配方造成数据污染\n但是可以读入新的数据",
 	"multi-block-clicker.enable": "多方块点击器:启用",
 	"multi-block-clicker.enable.tooltips": "当点击方块时\n自动判定该方块是否是多方块机器的触发方块\n如果是则进行快速点击",
+	"multi-block-clicker.enable-crafter-gui": "多方块点击器:配方补全书",
 	"multi-block-clicker.rate": "多方块点击器:速率",
 	"multi-block-clicker.rate.tooltips": "服务端默认限速: 300ms内不得超过9次use发包\n建议速率不要超过9",
 	"multi-block-clicker.bypass-anticheat": "多方块点击器:绕过反作弊",

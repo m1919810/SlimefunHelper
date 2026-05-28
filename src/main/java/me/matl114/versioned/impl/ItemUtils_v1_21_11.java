@@ -17,6 +17,7 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.*;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtInt;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryOps;
 import net.minecraft.registry.tag.ItemTags;
@@ -38,6 +39,11 @@ public class ItemUtils_v1_21_11 implements VItem {
             // 1.21.11 Netherite Spear
             Item item = stack.getItem();
             if (item.getRegistryEntry().isIn(ItemTags.SWORDS)) {
+                Integer viaId = getOptionalViaItemId(stack);
+                // wooden spear id in 1.21.11 is 1296
+                if (viaId != null && viaId >= 1296) {
+                    return true;
+                }
                 Text name = stack.getCustomName();
                 if (name != null) {
                     String str = name.getString();
@@ -121,6 +127,11 @@ public class ItemUtils_v1_21_11 implements VItem {
     @Override
     public CustomModelDataComponent createModelData(int cmd) {
         return new CustomModelDataComponent(List.of((float) cmd), List.of(), List.of(), List.of());
+    }
+
+    public Integer getAttackDurabilityCost(ItemStack stack) {
+        WeaponComponent weapon = stack.get(DataComponentTypes.WEAPON);
+        return weapon != null ? weapon.itemDamagePerAttack() : null;
     }
 
     private final Map<ComponentType<?>, Codec<?>> versionCompatCodecs;
@@ -224,6 +235,19 @@ public class ItemUtils_v1_21_11 implements VItem {
                 Codec.withAlternative(
                         attributeCodec, attributeCodec.fieldOf("modifiers").codec()));
         versionCompatCodecs = builder.build();
+    }
+
+    public Integer getOptionalViaItemId(ItemStack stack) {
+        NbtComponent component = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (component != null) {
+            var nbt = component.nbt;
+            if (nbt != null
+                    && nbt.get("VV|original_hashes") instanceof NbtCompound original
+                    && original.get("id") instanceof NbtInt intValue) {
+                return intValue.intValue();
+            }
+        }
+        return null;
     }
 
     @Override

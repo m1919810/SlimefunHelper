@@ -12,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import me.matl114.versioned.SupportVersion;
+import net.minecraft.client.network.ServerInfo;
 
 public abstract class ViaFabricPlusHooks implements IHooks {
     public static ViaFabricPlusHooks instance;
@@ -29,9 +30,16 @@ public abstract class ViaFabricPlusHooks implements IHooks {
 
     public abstract SupportVersion getCurrentVersion();
 
+    public abstract SupportVersion getServerVersion(ServerInfo server);
+
     public static class Default extends ViaFabricPlusHooks {
         @Override
         public SupportVersion getCurrentVersion() {
+            return SupportVersion.CURRENT;
+        }
+
+        @Override
+        public SupportVersion getServerVersion(ServerInfo server) {
             return SupportVersion.CURRENT;
         }
 
@@ -49,6 +57,8 @@ public abstract class ViaFabricPlusHooks implements IHooks {
     public static class Impl extends ViaFabricPlusHooks {
         ProtocolVersion lastProtocol = null;
         SupportVersion lastVersion = null;
+        ProtocolVersion lastServerProtocol = null;
+        SupportVersion lastServerVersion = null;
 
         @Override
         public SupportVersion getCurrentVersion() {
@@ -67,6 +77,23 @@ public abstract class ViaFabricPlusHooks implements IHooks {
                 }
             }
             return lastVersion;
+        }
+
+        @Override
+        public SupportVersion getServerVersion(ServerInfo server) {
+            ProtocolVersion currentProtocol = base.getServerVersion(server);
+            if (!Objects.equals(currentProtocol, lastServerProtocol) || lastServerVersion == null) {
+                try {
+                    lastServerVersion = SupportVersion.parse(currentProtocol.getIncludedVersions().stream()
+                            .findFirst()
+                            .orElseThrow());
+                    lastServerProtocol = currentProtocol;
+                } catch (Throwable e) {
+                    lastServerVersion = SupportVersion.CURRENT;
+                    lastServerProtocol = currentProtocol;
+                }
+            }
+            return lastServerVersion;
         }
 
         @Override

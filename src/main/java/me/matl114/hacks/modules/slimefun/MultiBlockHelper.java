@@ -55,6 +55,9 @@ public class MultiBlockHelper extends BaseModule {
 
     public final FlagRef enableClicker = flagBuilder(multiblock.addEnable()).build();
 
+    public final FlagRef enableCrafterGui =
+            flagBuilder(multiblock.add("enable-crafter-gui")).build();
+
     public final IntRef rate = builder(multiblock.add("rate"), IntRef.TYPE)
             .defaultValue(9)
             .validator(Configs.INT_POSITIVE)
@@ -123,7 +126,8 @@ public class MultiBlockHelper extends BaseModule {
     private static final int[] AVAILABLE_SLOTS = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
     private void onScreenInit(Event<HandledScreen<?>> event) {
-        if (event.context() instanceof TileInventoryScreen screen
+        if (enableCrafterGui.get()
+                && event.context() instanceof TileInventoryScreen screen
                 && event.context() instanceof Generic3x3ContainerScreen containerScreen) {
             HandledScreenAccess screenAccess = HandledScreenAccess.of(containerScreen);
             MetaData holder = screenAccess.getMetadata();
