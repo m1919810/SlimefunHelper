@@ -4,11 +4,11 @@ import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import io.netty.channel.Channel;
 import java.nio.file.Path;
+import javax.annotation.Nullable;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.ClientConnection;
-import org.jspecify.annotations.Nullable;
 
 public interface ViaFabricPlusBase {
     default int apiVersion() {

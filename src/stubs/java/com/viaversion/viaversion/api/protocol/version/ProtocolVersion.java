@@ -2,7 +2,7 @@ package com.viaversion.viaversion.api.protocol.version;
 
 import java.util.Comparator;
 import java.util.Set;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 public class ProtocolVersion {
     public int getVersion() {
