@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.inventory.ImmutableInventory;
@@ -17,8 +18,6 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
-
-import javax.annotation.Nonnull;
 
 @ApiMethod
 public class InventoryUtils {
@@ -237,11 +236,13 @@ public class InventoryUtils {
         return sum;
     }
 
-    public static int getSelectedSlot(){
+    public static int getSelectedSlot() {
         return mc.player.getInventory().getSelectedSlot();
     }
+
     @Nonnull
-    public static IndexEntry<ItemStack> getSelectedItem(){
-        return new IndexEntry<>(InventoryUtils.getSelectedSlot(), mc.player.getInventory().getSelectedStack());
+    public static IndexEntry<ItemStack> getSelectedItem() {
+        return new IndexEntry<>(
+                InventoryUtils.getSelectedSlot(), mc.player.getInventory().getSelectedStack());
     }
 }

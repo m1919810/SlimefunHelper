@@ -1,5 +1,8 @@
 package me.matl114.utils;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttributeModifiersComponent;
@@ -16,10 +19,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.EntityTypeTags;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-
 public class DamageUtils {
     public static final MinecraftClient mc = MinecraftClient.getInstance();
 
@@ -27,16 +26,22 @@ public class DamageUtils {
         double speed = player.getAttributeBaseValue(EntityAttributes.ATTACK_SPEED);
         AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers != null && !modifiers.modifiers().isEmpty()) {
-            speed = applyOperations(modifiers.modifiers(), EntityAttributes.ATTACK_SPEED, speed, EquipmentSlot.MAINHAND);
+            speed = applyOperations(
+                    modifiers.modifiers(), EntityAttributes.ATTACK_SPEED, speed, EquipmentSlot.MAINHAND);
         }
         return speed;
     }
-    public static double applyOperations(List<AttributeModifiersComponent.Entry> modifiers, RegistryEntry<EntityAttribute> entityAttribute, double base, EquipmentSlot slot) {
+
+    public static double applyOperations(
+            List<AttributeModifiersComponent.Entry> modifiers,
+            RegistryEntry<EntityAttribute> entityAttribute,
+            double base,
+            EquipmentSlot slot) {
         double d = base;
         Iterator var6 = modifiers.iterator();
 
-        while(var6.hasNext()) {
-            AttributeModifiersComponent.Entry entry = (AttributeModifiersComponent.Entry)var6.next();
+        while (var6.hasNext()) {
+            AttributeModifiersComponent.Entry entry = (AttributeModifiersComponent.Entry) var6.next();
             if (entry.slot().matches(slot) && Objects.equals(entityAttribute, entry.attribute())) {
                 double e = entry.modifier().value();
                 double var10001;
@@ -44,7 +49,7 @@ public class DamageUtils {
                     case ADD_VALUE -> var10001 = e;
                     case ADD_MULTIPLIED_BASE -> var10001 = e * base;
                     case ADD_MULTIPLIED_TOTAL -> var10001 = e * d;
-                    default -> throw new MatchException((String)null, (Throwable)null);
+                    default -> throw new MatchException((String) null, (Throwable) null);
                 }
 
                 d += var10001;

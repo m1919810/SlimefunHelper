@@ -70,7 +70,8 @@ public class EntityLog extends BaseModule {
                                 .getNetworkHandler()
                                 .getPlayerListEntry(packet.getUuid());
                         if (entry != null) {
-                            text = Text.literal(VRecord.getName(entry.getProfile())).formatted(Formatting.GREEN);
+                            text = Text.literal(VRecord.getName(entry.getProfile()))
+                                    .formatted(Formatting.GREEN);
                         }
                     }
 
