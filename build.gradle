@@ -62,6 +62,7 @@ dependencies {
 	modCompileOnly files("libs/baritone-meteor-1.21.11.jar")
 	// bridge
 	compileOnly sourceSets.stubs.output
+	stubsCompileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
 	// api
 	api 'com.github.houbb:pinyin:0.4.0'  // 拼音

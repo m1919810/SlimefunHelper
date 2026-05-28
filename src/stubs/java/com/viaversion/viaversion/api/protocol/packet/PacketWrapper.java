@@ -4,7 +4,7 @@ import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.type.Type;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 public interface PacketWrapper {
     int PASSTHROUGH_ID = 1000;

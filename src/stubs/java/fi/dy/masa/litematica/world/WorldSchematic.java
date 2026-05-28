@@ -2,6 +2,7 @@ package fi.dy.masa.litematica.world;
 
 import java.util.Collection;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.component.type.MapIdComponent;
@@ -40,7 +41,6 @@ import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.explosion.ExplosionBehavior;
 import net.minecraft.world.tick.QueryableTickScheduler;
 import net.minecraft.world.tick.TickManager;
-import org.jspecify.annotations.Nullable;
 
 public class WorldSchematic extends World {
     protected WorldSchematic(
