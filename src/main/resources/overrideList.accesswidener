@@ -92,3 +92,4 @@ accessible class net/minecraft/client/gui/render/state/GuiRenderState$Layer
 accessible field net/minecraft/client/gui/render/state/GuiRenderState currentLayer Lnet/minecraft/client/gui/render/state/GuiRenderState$Layer;
 accessible field net/minecraft/client/gui/render/state/GuiRenderState currentLayerBounds Lnet/minecraft/client/gui/ScreenRect;
 accessible method net/minecraft/client/network/ClientPlayNetworkHandler setPosition (Lnet/minecraft/entity/EntityPosition;Ljava/util/Set;Lnet/minecraft/entity/Entity;Z)Z
+accessible field net/minecraft/client/option/KeyBinding boundKey Lnet/minecraft/client/util/InputUtil$Key;

@@ -55,7 +55,11 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             .show(() -> mode.get().isIn(Mode.FREEZE, Mode.GRIM_GROUND_SIMULATION))
             .build();
 
-    public final FlagRef movementOk = flagBuilder(criticals.add("movement-ok"))
+    public final FlagRef movementOkFreeze = flagBuilder(criticals.add("movement-ok-freeze"))
+            .show(() -> mode.get().isIn(Mode.FREEZE, Mode.GRIM_GROUND_SIMULATION))
+            .build();
+
+    public final FlagRef movementOkGround = flagBuilder(criticals.add("movement-ok-ground"))
             .show(() -> mode.get().isIn(Mode.FREEZE, Mode.GRIM_GROUND_SIMULATION))
             .build();
 
@@ -72,6 +76,10 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     public final EnumRef<Configs.SetBackTriggerType> setBackType = builder(
                     criticals.add("set-back-mode"), Configs.SetBackTriggerType.class)
             .defaultValue(Configs.SetBackTriggerType.SIMULATION)
+            .show(() -> mode.get().isIn(Mode.GRIM_GROUND_SIMULATION))
+            .build();
+
+    public final FlagRef delaySwap = flagBuilder(criticals.add("delay-swap"))
             .show(() -> mode.get().isIn(Mode.GRIM_GROUND_SIMULATION))
             .build();
 
@@ -258,7 +266,10 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             PacketManager.schedulePostCallback(event.context, () -> {
                 var weapon = mc.player.getStackInHand(Hand.MAIN_HAND);
                 Runnable callback = null;
-                if (stack != null && !stack.isEmpty() && !ItemStack.areItemsAndComponentsEqual(weapon, stack)) {
+                if (delaySwap.get()
+                        && stack != null
+                        && !stack.isEmpty()
+                        && !ItemStack.areItemsAndComponentsEqual(weapon, stack)) {
                     var res = InventoryUtils.findPlayerItem(
                             it -> ItemStack.areItemsAndComponentsEqual(it, stack), true, false);
                     if (res != null) {
@@ -344,9 +355,17 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         return true;
     }
 
+    public boolean movementOk() {
+        return switch (mode.get()) {
+            case FREEZE -> movementOkFreeze.get();
+            case GRIM_GROUND_SIMULATION -> movementOkGround.get();
+            default -> false;
+        };
+    }
+
     public boolean hasNoMovement() {
         var re = PlayerInputUtils.of(mc.options);
-        if (movementOk.get()) {
+        if (movementOk()) {
             return !re.jump() && !re.sneak();
         } else {
             return !re.hasMovement() && !re.sneak();
