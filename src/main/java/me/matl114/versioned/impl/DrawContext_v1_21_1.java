@@ -47,7 +47,7 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     @Override
     public void pushLayer(int depth) {
         this.matrixStack.pushMatrix();
-        this.drawContext.getMatrices().translate(0,0,depth);
+        this.drawContext.getMatrices().translate(0, 0, depth);
     }
 
     @Override
@@ -62,7 +62,11 @@ public class DrawContext_v1_21_1 implements VDrawContext {
 
     @Override
     public void setShaderColor(int rgba) {
-        RenderSystem.setShaderColor(ColorHelper.getRedFloat(rgba), ColorHelper.getGreenFloat(rgba), ColorHelper.getBlueFloat(rgba), ColorHelper.getAlphaFloat(rgba));
+        RenderSystem.setShaderColor(
+                ColorHelper.getRedFloat(rgba),
+                ColorHelper.getGreenFloat(rgba),
+                ColorHelper.getBlueFloat(rgba),
+                ColorHelper.getAlphaFloat(rgba));
     }
 
     @Override
@@ -93,7 +97,8 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     }
 
     @Override
-    public void drawGuiTextureQuad(Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
+    public void drawGuiTextureQuad(
+            Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
         Sprite sprite = getGuiSprite(texture);
         float sMinU = sprite.getMinU();
         float sMaxU = sprite.getMaxU();
@@ -147,13 +152,14 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     }
 
     @Override
-    public void fillGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int color3, int color4, int depth) {
+    public void fillGuiGradient(
+            int x1, int y1, int x2, int y2, int color1, int color2, int color3, int color4, int depth) {
         VertexConsumer vertexConsumer = this.drawContext.vertexConsumers.getBuffer(RenderLayer.getGui());
         Matrix4f matrix4f = this.drawContext.getMatrices().peek().getPositionMatrix();
-        vertexConsumer.vertex(matrix4f, (float)x1, (float)y1, (float)depth).color(color1);
-        vertexConsumer.vertex(matrix4f, (float)x1, (float)y2, (float)depth).color(color2);
-        vertexConsumer.vertex(matrix4f, (float)x2, (float)y2, (float)depth).color(color3);
-        vertexConsumer.vertex(matrix4f, (float)x2, (float)y1, (float)depth).color(color4);
+        vertexConsumer.vertex(matrix4f, (float) x1, (float) y1, (float) depth).color(color1);
+        vertexConsumer.vertex(matrix4f, (float) x1, (float) y2, (float) depth).color(color2);
+        vertexConsumer.vertex(matrix4f, (float) x2, (float) y2, (float) depth).color(color3);
+        vertexConsumer.vertex(matrix4f, (float) x2, (float) y1, (float) depth).color(color4);
     }
 
     @Override

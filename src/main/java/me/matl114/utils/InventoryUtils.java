@@ -243,7 +243,6 @@ public class InventoryUtils {
     @Nonnull
     public static IndexEntry<ItemStack> getSelectedItem() {
         int idx = InventoryUtils.getSelectedSlot();
-        return new IndexEntry<>(
-                idx, mc.player.getInventory().main.get(idx));
+        return new IndexEntry<>(idx, mc.player.getInventory().main.get(idx));
     }
 }

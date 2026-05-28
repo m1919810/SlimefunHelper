@@ -20,9 +20,22 @@ public abstract class SignBlockEntityRendererFixMixin {
     @WrapWithCondition(
             method =
                     "render(Lnet/minecraft/block/entity/SignBlockEntity;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/block/BlockState;Lnet/minecraft/block/AbstractSignBlock;Lnet/minecraft/block/WoodType;Lnet/minecraft/client/model/Model;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/block/entity/AbstractSignBlockEntityRenderer;renderText(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/entity/SignText;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IIIZ)V"))
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/block/entity/AbstractSignBlockEntityRenderer;renderText(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/entity/SignText;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IIIZ)V"))
     public boolean onSignBlockEntityStateUpdate(
-        AbstractSignBlockEntityRenderer instance, BlockPos pos, SignText text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int textLineHeight, int maxTextWidth, boolean front, @Local(argsOnly = true) SignBlockEntity entity) {
+            AbstractSignBlockEntityRenderer instance,
+            BlockPos pos,
+            SignText text,
+            MatrixStack matrices,
+            VertexConsumerProvider vertexConsumers,
+            int light,
+            int textLineHeight,
+            int maxTextWidth,
+            boolean front,
+            @Local(argsOnly = true) SignBlockEntity entity) {
         RenderOptimize optimize = RenderTasks.getRenderOptimize();
         if (optimize.enableBlockLabelRenderOpt.get()
                 && entity instanceof MetadataHolder holder
@@ -32,7 +45,7 @@ public abstract class SignBlockEntityRendererFixMixin {
                 return false;
             }
             if (controller.hideLabelFront() && front) {
-               return false;
+                return false;
             }
         }
         return true;

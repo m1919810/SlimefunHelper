@@ -23,8 +23,7 @@ public abstract class DecoderByteBufExceptionFixMixin {
         try {
             return original.call(instance, object);
         } catch (DecoderException exception) {
-            if (ExtraTasks.getClientExtra().noDecodeException.get()
-                    && object instanceof ByteBuf buf) {
+            if (ExtraTasks.getClientExtra().noDecodeException.get() && object instanceof ByteBuf buf) {
                 buf.skipBytes(buf.readableBytes());
             }
             throw exception;

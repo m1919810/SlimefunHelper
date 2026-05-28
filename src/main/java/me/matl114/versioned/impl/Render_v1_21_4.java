@@ -90,32 +90,30 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
                     .build(false));
 
     public static final RenderLayer RECTS = RenderLayer.of(
-        "slimefunhelper:debug_rects",
-        VertexFormats.POSITION_COLOR,
-        VertexFormat.DrawMode.TRIANGLES,
-        1536,
-        false,
-        true,
-        RenderLayer.MultiPhaseParameters.builder()
-            .program(RenderLayer.POSITION_COLOR_PROGRAM)
-            .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
-            .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
-            .build(false)
-    );
+            "slimefunhelper:debug_rects",
+            VertexFormats.POSITION_COLOR,
+            VertexFormat.DrawMode.TRIANGLES,
+            1536,
+            false,
+            true,
+            RenderLayer.MultiPhaseParameters.builder()
+                    .program(RenderLayer.POSITION_COLOR_PROGRAM)
+                    .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                    .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
+                    .build(false));
 
     public static final RenderLayer RECTS_STRIP = RenderLayer.of(
-        "slimefunhelper:debug_rects",
-        VertexFormats.POSITION_COLOR,
-        VertexFormat.DrawMode.TRIANGLE_STRIP,
-        1536,
-        false,
-        true,
-        RenderLayer.MultiPhaseParameters.builder()
-            .program(RenderLayer.POSITION_COLOR_PROGRAM)
-            .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
-            .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
-            .build(false)
-    );
+            "slimefunhelper:debug_rects",
+            VertexFormats.POSITION_COLOR,
+            VertexFormat.DrawMode.TRIANGLE_STRIP,
+            1536,
+            false,
+            true,
+            RenderLayer.MultiPhaseParameters.builder()
+                    .program(RenderLayer.POSITION_COLOR_PROGRAM)
+                    .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                    .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
+                    .build(false));
 
     public static final RenderLayer QUADS = RenderLayer.of(
             "slimefunhelper:debug_quads",
@@ -269,7 +267,8 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
     }
 
     @Override
-    public void drawOutlinedBox(MatrixStack matrix4fs, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+    public void drawOutlinedBox(
+            MatrixStack matrix4fs, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
         var matrix4f = matrix4fs.peek();
         float minX = (float) from.getX();
         float minY = (float) from.getY();
@@ -279,116 +278,117 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
         float maxZ = (float) to.getZ();
 
         bufferBuilder
-            .vertex(matrix4f, minX, minY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 1, 0, 0);
+                .vertex(matrix4f, minX, minY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 1, 0, 0);
         bufferBuilder
-            .vertex(matrix4f, maxX, minY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 1, 0, 0);
+                .vertex(matrix4f, maxX, minY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 1, 0, 0);
 
         bufferBuilder
-            .vertex(matrix4f, maxX, minY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 0, 1);
+                .vertex(matrix4f, maxX, minY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 0, 1);
         bufferBuilder
-            .vertex(matrix4f, maxX, minY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 0, 1);
+                .vertex(matrix4f, maxX, minY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 0, 1);
 
         bufferBuilder
-            .vertex(matrix4f, minX, minY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 1, 0, 0);
+                .vertex(matrix4f, minX, minY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 1, 0, 0);
         bufferBuilder
-            .vertex(matrix4f, maxX, minY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 1, 0, 0);
+                .vertex(matrix4f, maxX, minY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 1, 0, 0);
 
         bufferBuilder
-            .vertex(matrix4f, minX, minY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 0, 1);
+                .vertex(matrix4f, minX, minY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 0, 1);
         bufferBuilder
-            .vertex(matrix4f, minX, minY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 0, 1);
+                .vertex(matrix4f, minX, minY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 0, 1);
 
         bufferBuilder
-            .vertex(matrix4f, minX, minY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 1, 0);
+                .vertex(matrix4f, minX, minY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 1, 0);
         bufferBuilder
-            .vertex(matrix4f, minX, maxY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 1, 0);
+                .vertex(matrix4f, minX, maxY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 1, 0);
 
         bufferBuilder
-            .vertex(matrix4f, maxX, minY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 1, 0);
+                .vertex(matrix4f, maxX, minY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 1, 0);
         bufferBuilder
-            .vertex(matrix4f, maxX, maxY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 1, 0);
+                .vertex(matrix4f, maxX, maxY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 1, 0);
 
         bufferBuilder
-            .vertex(matrix4f, maxX, minY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 1, 0);
+                .vertex(matrix4f, maxX, minY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 1, 0);
         bufferBuilder
-            .vertex(matrix4f, maxX, maxY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 1, 0);
+                .vertex(matrix4f, maxX, maxY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 1, 0);
 
         bufferBuilder
-            .vertex(matrix4f, minX, minY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 1, 0);
+                .vertex(matrix4f, minX, minY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 1, 0);
         bufferBuilder
-            .vertex(matrix4f, minX, maxY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 1, 0);
+                .vertex(matrix4f, minX, maxY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 1, 0);
 
         bufferBuilder
-            .vertex(matrix4f, minX, maxY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 1, 0, 0);
+                .vertex(matrix4f, minX, maxY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 1, 0, 0);
         bufferBuilder
-            .vertex(matrix4f, maxX, maxY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 1, 0, 0);
+                .vertex(matrix4f, maxX, maxY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 1, 0, 0);
 
         bufferBuilder
-            .vertex(matrix4f, maxX, maxY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 0, 1);
+                .vertex(matrix4f, maxX, maxY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 0, 1);
         bufferBuilder
-            .vertex(matrix4f, maxX, maxY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 0, 1);
+                .vertex(matrix4f, maxX, maxY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 0, 1);
 
         bufferBuilder
-            .vertex(matrix4f, minX, maxY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 1, 0, 0);
+                .vertex(matrix4f, minX, maxY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 1, 0, 0);
         bufferBuilder
-            .vertex(matrix4f, maxX, maxY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 1, 0, 0);
+                .vertex(matrix4f, maxX, maxY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 1, 0, 0);
 
         bufferBuilder
-            .vertex(matrix4f, minX, maxY, minZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 0, 1);
+                .vertex(matrix4f, minX, maxY, minZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 0, 1);
         bufferBuilder
-            .vertex(matrix4f, minX, maxY, maxZ)
-            .color(cachedRenderColor)
-            .normal(matrix4f, 0, 0, 1);
+                .vertex(matrix4f, minX, maxY, maxZ)
+                .color(cachedRenderColor)
+                .normal(matrix4f, 0, 0, 1);
     }
 
     @Override
-    public void drawSolidBoxQuad(MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+    public void drawSolidBoxQuad(
+            MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
         var matrix = matrixStack.peek();
         float minX = (float) from.x;
         float minY = (float) from.y;
@@ -428,10 +428,11 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
         bufferBuilder.vertex(matrix, minX, maxY, minZ).color(cachedRenderColor);
     }
 
-//    @Override
-//    public void drawSolidBoxTriangle(MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
-//
-//    }
+    //    @Override
+    //    public void drawSolidBoxTriangle(MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to,
+    // int cachedRenderColor) {
+    //
+    //    }
 
     @Override
     public void drawQuad(MatrixStack matrix4f, VertexConsumer bufferBuilder, Quad uv, ColorQuad colorQuad) {
@@ -440,8 +441,8 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             var vec3d = uv.get(idx);
             int color = colorQuad.get(idx);
             bufferBuilder
-                .vertex(matrix4, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                .color(color);
+                    .vertex(matrix4, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
+                    .color(color);
         }
     }
 
@@ -476,8 +477,8 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             float v = uv.getV(i);
             int color = colorQuad.get(i);
             vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                .texture(u, v)
-                .color(color);
+                    .texture(u, v)
+                    .color(color);
         }
     }
 }

@@ -50,7 +50,11 @@ public abstract class HandledScreenEvents extends Screen {
     // fix mouse scroll dispatch
     @Inject(method = "mouseScrolled", at = @At("RETURN"), cancellable = true)
     public void onMouseScrolled(
-        double mouseX, double mouseY, double horizontalAmount, double verticalAmount, CallbackInfoReturnable<Boolean> cir) {
+            double mouseX,
+            double mouseY,
+            double horizontalAmount,
+            double verticalAmount,
+            CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValueZ()) {
             return;
         }

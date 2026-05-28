@@ -25,7 +25,6 @@ import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -413,10 +412,11 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     private float getActiveItemSpeedMultiplier() {
-//        ItemStack stack = mc.player.getActiveItem();
-//        //        if(VItem.getInstance().isSpear(stack))return 1.0F;
-//        return ((UseEffectsComponent) stack.getOrDefault(DataComponentTypes.USE_EFFECTS, UseEffectsComponent.DEFAULT))
-//                .speedMultiplier();
+        //        ItemStack stack = mc.player.getActiveItem();
+        //        //        if(VItem.getInstance().isSpear(stack))return 1.0F;
+        //        return ((UseEffectsComponent) stack.getOrDefault(DataComponentTypes.USE_EFFECTS,
+        // UseEffectsComponent.DEFAULT))
+        //                .speedMultiplier();
         return 0.2F;
     }
 

@@ -10,7 +10,6 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registry;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.chunk.ReadableContainer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -35,7 +34,7 @@ public abstract class MoonriseChunkBlockCountingMixin implements MoonriseChunkBl
     }
 
     @Inject(method = "<init>(Lnet/minecraft/registry/Registry;)V", at = @At("RETURN"))
-    private void calculateBlockCount1(Registry biomeRegistry, CallbackInfo ci){
+    private void calculateBlockCount1(Registry biomeRegistry, CallbackInfo ci) {
         calculateCounts();
     }
 

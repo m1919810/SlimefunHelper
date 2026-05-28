@@ -31,7 +31,13 @@ public abstract class CobwebBlockMixin {
                             shift = At.Shift.BEFORE),
             cancellable = true)
     public void onEntityCollision(
-        BlockState state, World world, BlockPos pos, Entity entity, CallbackInfo ci, @Local Vec3d vec3d, @Local LocalRef<Vec3d> vec3dLocalRef) {
+            BlockState state,
+            World world,
+            BlockPos pos,
+            Entity entity,
+            CallbackInfo ci,
+            @Local Vec3d vec3d,
+            @Local LocalRef<Vec3d> vec3dLocalRef) {
         if (entity == MinecraftClient.getInstance().player) {
             Event<Vec3d> slowMovement = new Event<>(vec3d, true, true, pos);
             Listener.getPlayerWebSlowPoint().handleValue(slowMovement);

@@ -2,8 +2,6 @@ package me.matl114.versioned.api;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
-import net.minecraft.component.type.ProfileComponent;
-
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.component.type.ProfileComponent;
@@ -41,6 +39,4 @@ public interface VRecord {
     public static ProfileComponent withProperty(ProfileComponent component, PropertyMap properties) {
         return new ProfileComponent(component.name(), component.id(), properties);
     }
-
-
 }

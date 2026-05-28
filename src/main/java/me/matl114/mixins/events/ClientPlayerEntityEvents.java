@@ -45,7 +45,6 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Unique
     private boolean resyncLastInput = false;
 
-
     @Shadow
     public Input input;
 
@@ -68,15 +67,20 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Shadow
     private int ticksSinceLastPositionPacketSent;
 
-    @Shadow private double lastX;
+    @Shadow
+    private double lastX;
 
-    @Shadow private double lastZ;
+    @Shadow
+    private double lastZ;
 
-    @Shadow private double lastBaseY;
+    @Shadow
+    private double lastBaseY;
 
-    @Shadow private float lastPitch;
+    @Shadow
+    private float lastPitch;
 
-    @Shadow private float lastYaw;
+    @Shadow
+    private float lastYaw;
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -126,7 +130,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     public void resyncRot() {
-        this.lastPitch= 0;
+        this.lastPitch = 0;
         this.lastYaw = 0;
     }
 

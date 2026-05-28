@@ -12,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import me.matl114.versioned.SupportVersion;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ServerInfo;
 
 public abstract class ViaFabricPlusHooks implements IHooks {
@@ -29,6 +30,10 @@ public abstract class ViaFabricPlusHooks implements IHooks {
     }
 
     public abstract SupportVersion getCurrentVersion();
+
+    public SupportVersion getServerVersion() {
+        return getServerVersion(MinecraftClient.getInstance().getCurrentServerEntry());
+    }
 
     public abstract SupportVersion getServerVersion(ServerInfo server);
 

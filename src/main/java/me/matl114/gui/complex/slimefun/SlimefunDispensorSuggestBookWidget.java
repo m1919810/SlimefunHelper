@@ -1,5 +1,6 @@
 package me.matl114.gui.complex.slimefun;
 
+import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -7,8 +8,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
-
-import com.google.common.collect.Streams;
 import lombok.Getter;
 import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.gui.FilterService;

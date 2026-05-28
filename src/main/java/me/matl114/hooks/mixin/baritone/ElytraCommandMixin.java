@@ -31,11 +31,11 @@ public abstract class ElytraCommandMixin extends Command {
     }
 
     @ModifyExpressionValue(
-        method = "execute",
-        at =
-        @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/registry/RegistryKey;"))
+            method = "execute",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/registry/RegistryKey;"))
     private RegistryKey<World> onExecuteNetherSupport(RegistryKey<World> original) {
         if (BaritoneFix.INSTANCE.enableDimensionFix.get() && original != World.NETHER) {
             Debug.chat(ChatUtils.stringToText(

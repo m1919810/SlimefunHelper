@@ -26,7 +26,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ItemModelManager.class)
 public abstract class ItemModelManagerEvents {
 
-    @Shadow public abstract void update(ItemRenderState renderState, ItemStack stack, ItemDisplayContext transformationMode, boolean leftHand, @Nullable World world, @Nullable LivingEntity entity, int seed);
+    @Shadow
+    public abstract void update(
+            ItemRenderState renderState,
+            ItemStack stack,
+            ItemDisplayContext transformationMode,
+            boolean leftHand,
+            @Nullable World world,
+            @Nullable LivingEntity entity,
+            int seed);
 
     @Inject(
             method =

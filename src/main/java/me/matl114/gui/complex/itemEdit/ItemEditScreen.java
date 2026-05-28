@@ -3,7 +3,6 @@ package me.matl114.gui.complex.itemEdit;
 import static net.minecraft.component.DataComponentTypes.*;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.LinkedHashMultimap;
 import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
@@ -568,9 +567,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     // empty hash remove
                     if (lastComponent != null) {
                         ItemStackUtils.setOrRemoveChange(
-                                stackTemplate,
-                                PROFILE,
-                                VRecord.withProperty(lastComponent, new PropertyMap(LinkedHashMultimap.create())));
+                                stackTemplate, PROFILE, VRecord.withProperty(lastComponent, new PropertyMap()));
                     } else {
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, null);
                     }
@@ -833,9 +830,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                 this.modifierEntries.stream()
                                         .map(ItemAttributeModifierEntry::value)
                                         .filter(Objects::nonNull)
-                                        .toList()
-                                    , this.showInTooltips
-                                ));
+                                        .toList(),
+                                this.showInTooltips));
             }
 
             @Override

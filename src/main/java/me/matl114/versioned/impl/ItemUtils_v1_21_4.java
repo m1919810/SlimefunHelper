@@ -93,11 +93,11 @@ public class ItemUtils_v1_21_4 implements VItem {
     @Override
     public Integer getAttackDurabilityCost(ItemStack stack) {
         Item item = stack.getItem();
-        if(item instanceof MiningToolItem){
+        if (item instanceof MiningToolItem) {
             return 2;
-        }else if(item instanceof SwordItem || item instanceof MaceItem || item instanceof TridentItem ){
+        } else if (item instanceof SwordItem || item instanceof MaceItem || item instanceof TridentItem) {
             return 1;
-        }else return null;
+        } else return null;
     }
 
     @Override
@@ -148,14 +148,13 @@ public class ItemUtils_v1_21_4 implements VItem {
         if (component != null) {
             var nbt = component.getNbt();
             if (nbt != null
-                && nbt.get("VV|original_hashes") instanceof NbtCompound original
-                && original.get("id") instanceof NbtInt intValue) {
+                    && nbt.get("VV|original_hashes") instanceof NbtCompound original
+                    && original.get("id") instanceof NbtInt intValue) {
                 return intValue.intValue();
             }
         }
         return null;
     }
-
 
     @Override
     public Map<ComponentType<?>, Codec<?>> getVersionCompatCodecs() {

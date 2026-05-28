@@ -3,7 +3,6 @@ package me.matl114.bukkit;
 import static me.matl114.utils.ItemStackUtils.*;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.authlib.properties.Property;

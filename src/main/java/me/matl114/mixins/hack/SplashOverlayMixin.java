@@ -49,7 +49,17 @@ public abstract class SplashOverlayMixin {
                     GL11.GL_ONE_MINUS_SRC_ALPHA // DestFactor.ONE_MINUS_SRC_ALPHA (alpha) = 771
                     );
             context.drawTexturedQuad(
-                    RenderLayer::getGuiTextured, identifier, 0, i, 0, j, 0, 1, 0, 1, ColorUtils.withAlphaInt(-1, alpha));
+                    RenderLayer::getGuiTextured,
+                    identifier,
+                    0,
+                    i,
+                    0,
+                    j,
+                    0,
+                    1,
+                    0,
+                    1,
+                    ColorUtils.withAlphaInt(-1, alpha));
         }
     }
 

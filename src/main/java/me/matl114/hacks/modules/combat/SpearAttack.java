@@ -299,8 +299,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
 
     private boolean isSpearable(Entity entity) {
         // Vec3d pos = mc.player.getEyePos();
-        if (mc.player.getEyePos().subtract(entity.getEyePos()).lengthSquared()
-                <= MathUtils.s2(2.0D)) {
+        if (mc.player.getEyePos().subtract(entity.getEyePos()).lengthSquared() <= MathUtils.s2(2.0D)) {
             return false;
         }
         BlockHitResult blockHitResult = mc.world.getCollisionsIncludingWorldBorder(new RaycastContext(
