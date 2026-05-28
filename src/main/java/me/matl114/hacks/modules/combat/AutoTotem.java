@@ -141,9 +141,8 @@ public class AutoTotem extends BaseModule {
                 && eventTotem.context.getEntity(mc.world) == mc.player) {
             ItemStack stackInMainHand = mc.player.getMainHandStack();
             ItemStack stackInOffHand = mc.player.getOffHandStack();
-            int consumeSlot = stackInMainHand.getItem() == Items.TOTEM_OF_UNDYING
-                    ? InventoryUtils.getSelectedSlot()
-                    : 40;
+            int consumeSlot =
+                    stackInMainHand.getItem() == Items.TOTEM_OF_UNDYING ? InventoryUtils.getSelectedSlot() : 40;
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;
             for (var i = 0; i < slots.size(); ++i) {

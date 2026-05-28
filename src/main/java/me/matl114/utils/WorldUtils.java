@@ -1,6 +1,5 @@
 package me.matl114.utils;
 
-import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
 import io.netty.buffer.ByteBuf;
 import java.util.*;
@@ -64,8 +63,7 @@ public class WorldUtils {
                         uid -> {
                             PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(uid);
                             if (entry != null) {
-                                return Stream.of(
-                                        uid.toString(), VRecord.getName(entry.getProfile()));
+                                return Stream.of(uid.toString(), VRecord.getName(entry.getProfile()));
                             } else {
                                 return Stream.of(uid.toString());
                             }

@@ -123,8 +123,7 @@ public class DisablerManager extends BaseModule {
                 // flush ghost blocks
                 // see GrimAC handleQueuedPlaces()
                 if (hasAnyPlaceActionGrimQueue) {
-                    Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(
-                            InventoryUtils.getSelectedSlot()));
+                    Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(InventoryUtils.getSelectedSlot()));
                 }
                 hasAnyPlaceActionGrimQueue = false;
             }

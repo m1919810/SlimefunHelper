@@ -102,8 +102,7 @@ public class PacketHelper {
 
     private static void syncHotbar() {
 
-        PlayerInteractionAccess.of(mc.interactionManager)
-                .syncSelectedHotbar(InventoryUtils.getSelectedSlot());
+        PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(InventoryUtils.getSelectedSlot());
     }
 
     public static void sendInteractBlock(int x, int y, int z, Object direction, boolean offhand) {

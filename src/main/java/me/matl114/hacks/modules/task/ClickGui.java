@@ -446,7 +446,9 @@ public class ClickGui extends BaseModule {
                         .combineRender(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                             context.setShaderColor(textColor.get().withAlpha(255));
                             context.drawGuiTexture(
-                                    showFlag.booleanValue() ? Constants.EXPAND_GUI_ON_SPRITE : Constants.EXPAND_GUI_OFF_SPRITE,
+                                    showFlag.booleanValue()
+                                            ? Constants.EXPAND_GUI_ON_SPRITE
+                                            : Constants.EXPAND_GUI_OFF_SPRITE,
                                     element.getTextureWidth() - element.getTextureHeight() + 2,
                                     2,
                                     0,
