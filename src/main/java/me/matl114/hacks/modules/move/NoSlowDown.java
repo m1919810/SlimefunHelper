@@ -461,7 +461,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         int selectedIdx;
         // todo: optimize these shit
         if (mc.player.getActiveHand() == Hand.MAIN_HAND) {
-            selectedIdx = mc.player.getInventory().getSelectedSlot();
+            selectedIdx = InventoryUtils.getSelectedSlot();
         } else {
             selectedIdx = 40;
         }
@@ -472,7 +472,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             if (mc.player.getActiveHand() == Hand.MAIN_HAND) {
                 selectedEmpty = 40;
             } else {
-                selectedEmpty = mc.player.getInventory().getSelectedSlot();
+                selectedEmpty = InventoryUtils.getSelectedSlot();
             }
         }
         ItemStack stackEmpty = mc.player.getInventory().getStack(selectedEmpty);
@@ -532,7 +532,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             } else {
                 int selectedIdx;
                 if (mc.player.getActiveHand() == Hand.MAIN_HAND) {
-                    selectedIdx = mc.player.getInventory().getSelectedSlot();
+                    selectedIdx = InventoryUtils.getSelectedSlot();
                 } else {
                     selectedIdx = 40;
                 }

@@ -15,6 +15,7 @@ import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.texture.MissingSprite;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
@@ -27,6 +28,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
@@ -93,7 +95,7 @@ public class RegistryDisplays {
             }))
             .put(StatusEffect.class, IIcon.<StatusEffect>renderSprite(effect -> {
                 RegistryEntry<StatusEffect> entry = Registries.STATUS_EFFECT.getEntry(effect);
-                return InGameHud.getEffectTexture(entry);
+                return getEffectTexture(entry);
             }))
             .build();
 
@@ -157,5 +159,10 @@ public class RegistryDisplays {
             RenderHandler.drawScaledText0(
                     context, mc.textRenderer, Text.literal(identifier.toString()), 20, 10, 200, 19, -16711936, -1);
         }
+    }
+    public static Identifier getEffectTexture(RegistryEntry<StatusEffect> effect) {
+        return (Identifier)effect.getKey().map(RegistryKey::getValue).map((id) -> {
+            return id.withPrefixedPath("mob_effect/");
+        }).orElseGet(MissingSprite::getMissingSpriteId);
     }
 }

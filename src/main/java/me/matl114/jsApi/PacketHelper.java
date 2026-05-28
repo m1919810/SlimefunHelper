@@ -7,6 +7,7 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
 import me.matl114.utils.ApiMethod;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RaycastUtils;
 import me.matl114.versioned.api.VPacket;
@@ -101,7 +102,8 @@ public class PacketHelper {
 
     private static void syncHotbar() {
 
-        PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(mc.player.getInventory().selectedSlot);
+        PlayerInteractionAccess.of(mc.interactionManager)
+                .syncSelectedHotbar(InventoryUtils.getSelectedSlot());
     }
 
     public static void sendInteractBlock(int x, int y, int z, Object direction, boolean offhand) {

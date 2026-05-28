@@ -18,6 +18,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 
+import javax.annotation.Nonnull;
+
 @ApiMethod
 public class InventoryUtils {
     public static Inventory createReadOnlyOneItemInventory(Supplier<ItemStack> itemStackSupplier) {
@@ -233,5 +235,13 @@ public class InventoryUtils {
             }
         }
         return sum;
+    }
+
+    public static int getSelectedSlot(){
+        return mc.player.getInventory().getSelectedSlot();
+    }
+    @Nonnull
+    public static IndexEntry<ItemStack> getSelectedItem(){
+        return new IndexEntry<>(InventoryUtils.getSelectedSlot(), mc.player.getInventory().getSelectedStack());
     }
 }

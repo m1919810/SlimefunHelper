@@ -254,7 +254,7 @@ public class TargetSelector extends BaseModule {
                     return false;
                 }
                 // creative players are invulnerable
-                if (pl.getGameMode() != null && pl.getGameMode().isCreative()) {
+                if (pl.isCreative()) {
                     return false;
                 }
                 // wtf

@@ -9,6 +9,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.network.PlayerListEntry;
 
 public class PlayerLog extends BaseModule {
@@ -38,14 +39,14 @@ public class PlayerLog extends BaseModule {
     public void onPlayerJoin(Event<PlayerListEntry> entry) {
         if (enable.get()) {
             Debug.chat(ChatUtils.stringToText(String.format(
-                    logFormatIn.get(), entry.context().getProfile().getName())));
+                    logFormatIn.get(), VRecord.getName(entry.context().getProfile()))));
         }
     }
 
     public void onPlayerExit(Event<PlayerListEntry> entry) {
         if (enable.get()) {
             Debug.chat(ChatUtils.stringToText(String.format(
-                    logFormatOut.get(), entry.context().getProfile().getName())));
+                    logFormatOut.get(), VRecord.getName(entry.context().getProfile()))));
         }
     }
 }

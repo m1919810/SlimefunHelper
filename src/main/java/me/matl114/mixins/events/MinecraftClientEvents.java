@@ -52,7 +52,7 @@ public abstract class MinecraftClientEvents {
     public abstract Window getWindow();
 
     @Shadow
-    @org.jspecify.annotations.Nullable
+    @Nullable
     public ClientPlayerEntity player;
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)

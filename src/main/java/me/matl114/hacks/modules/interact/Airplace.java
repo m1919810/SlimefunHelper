@@ -16,6 +16,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.algorithms.StateMachine;
@@ -293,7 +294,7 @@ public class Airplace extends BaseModule {
                         startPos,
                         usingItem.getCount(),
                         usingItem.copy(),
-                        mc.player.getInventory().getSelectedSlot(),
+                        InventoryUtils.getSelectedSlot(),
                         hand,
                         way);
                 stateMachine = createStateMachine();

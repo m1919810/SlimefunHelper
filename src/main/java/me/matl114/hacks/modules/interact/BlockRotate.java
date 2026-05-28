@@ -487,7 +487,7 @@ public class BlockRotate extends BaseModule {
             return;
         }
         if (block instanceof ChiseledBookshelfBlock) {
-            Direction facing = targetState.get(ChiseledBookshelfBlock.FACING);
+            Direction facing = targetState.get(HorizontalFacingBlock.FACING);
             yaw = EntityUtils.rotationToYaw(facing.getOpposite());
             vec2fEvent.context(new Vec2f(pitch, yaw));
             return;
@@ -548,7 +548,7 @@ public class BlockRotate extends BaseModule {
             return;
         }
         if (block instanceof DecoratedPotBlock) {
-            Direction facing = targetState.get(DecoratedPotBlock.FACING);
+            Direction facing = targetState.get(Properties.HORIZONTAL_FACING);
             yaw = EntityUtils.rotationToYaw(facing); // 无需取反
             vec2fEvent.context(new Vec2f(pitch, yaw));
             return;
