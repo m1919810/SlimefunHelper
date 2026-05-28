@@ -4,16 +4,20 @@ import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
-import me.matl114.utils.config.PropertyTracker;
+import me.matl114.gui.elements.AdvancedScrollElement;
+import me.matl114.utils.config.ValueAccessor;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.math.MathHelper;
 
 public class ScrollableListWidget extends DrawableWidget implements SubSelectable {
-    int currentPose = 0;
+    double percentage = 0.0D;
     int maxHeight;
-    ScrollElement scroll;
-    DraggableExecutableWidget scoll;
+    ExecutableWidget scoll;
+
+    public int getCurrentPose() {
+        return percentage == 0.0D ? 0 : (int) (percentage * Math.max(maxHeight - getHeight(), 0));
+    }
 
     @Getter
     protected SubScreenWidget scrollableBorder;
@@ -30,7 +34,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     protected List<DrawableWidget> widgets = new ArrayList<>();
 
     private double getPercentage() {
-        return this.scroll == null ? 0.0d : this.scroll.getPercentage();
+        return this.percentage;
     }
 
     private void resizeMaxHeight() {
@@ -47,7 +51,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     }
 
     private void resizePose(double percentage) {
-        this.currentPose = MathHelper.clamp((int) (percentage * (this.maxHeight - this.dy)), 0, this.maxHeight - dy);
+        this.percentage = MathHelper.clamp(percentage, 0.0D, 1.0D);
     }
 
     public ScrollableListWidget addScrollingWidget(DrawableWidget widget) {
@@ -64,24 +68,18 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     }
 
     private void initBorderWidgets() {
-        this.scroll = new ScrollElement(
-                        PropertyTracker.<ScrollElement, Double>event((v, b) -> {
-                            if (hasScroll()) {
-                                resizePose(b);
-                            } else {
-                                resizePose(0.0d);
-                                v.setPercentage(0.0d);
-                            }
-                        }),
-                        this::hasScroll)
-                .setDraggingY(true);
+        var scroll = new AdvancedScrollElement(
+                        ValueAccessor.ofIgnore(this::getHeight),
+                        ValueAccessor.ofIgnore(() -> maxHeight),
+                        ValueAccessor.of(this::getPercentage, this::resizePose))
+                .setBackGround(true);
 
-        this.scoll = new DraggableExecutableWidget(
+        this.scoll = new ExecutableWidget(
                         ScrollableListWidget.this.getX() + ScrollableListWidget.this.dx,
                         ScrollableListWidget.this.getY(),
-                        (int) ScrollElement.BUTTON_WIDTH,
+                        12,
                         ScrollableListWidget.this.dy)
-                .setElementHandler(this.scroll);
+                .setElementHandler(scroll);
         this.scrollableBorder = new SubScreenWidget(
                 ScrollableListWidget.this.getX(),
                 ScrollableListWidget.this.getY(),
@@ -93,10 +91,6 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         widgets.clear();
         resizeMaxHeight();
         return this;
-    }
-
-    public boolean hasScroll() {
-        return this.maxHeight > this.dy;
     }
 
     @Override
@@ -117,7 +111,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         // apply scissors, content outside the template will not be rendered
         context.enableScissor(getX(), getY(), getX() + getWidth(), getY() + getHeight());
         // apply current pose
-        context.getMatrices().translate(getX(), getY() - this.currentPose);
+        int currentPose = getCurrentPose();
+        context.getMatrices().translate(getX(), getY() - currentPose);
         if (this.priority != 0) {
             context.pushLayer(this.priority);
         }
@@ -141,12 +136,13 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         // handling mouse Coord in render should be scaled? here
         // add the current pose of the scroll
         int translatedMouseX = (mouseX - this.getX());
+        int currentPose = getCurrentPose();
         int translatedMouseY = mouseY - this.getY() + currentPose;
         boolean selected = false;
         for (var ch : widgets) {
             // 只有接触了这个界面中的子组件需要渲染
             // 通过计算高度限制这个f
-            if (ch.getY() + ch.getHeight() > this.currentPose && ch.getY() < this.currentPose + this.dy) {
+            if (ch.getY() + ch.getHeight() > currentPose && ch.getY() < currentPose + this.getHeight()) {
                 // 尝试是否要在这里进行selected计算
                 if (this.selected) {
                     boolean disable = true;
@@ -195,7 +191,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         }
         if (isMouseOver(mouseX, mouseY)) {
             double translatedMouseX = mouseX - this.getX();
-            double translatedMouseY = mouseY - this.getY() + this.currentPose;
+            int currentPose = getCurrentPose();
+            double translatedMouseY = mouseY - this.getY() + currentPose;
             for (var ch : widgets) {
                 if (ch.mouseClicked(translatedMouseX, translatedMouseY, button)) {
                     setSelected(ch);
@@ -217,7 +214,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         // force check, only if the mouse is on the template can the mouse interact with subwidgets
         if (isMouseOver(mouseX, mouseY)) {
             double translatedMouseX = mouseX - this.getX();
-            double translatedMouseY = mouseY - this.getY() + this.currentPose;
+            int currentPose = getCurrentPose();
+            double translatedMouseY = mouseY - this.getY() + currentPose;
             for (var ch : widgets) {
                 if (ch.mouseReleased(translatedMouseX, translatedMouseY, button)) {
                     return true;
@@ -232,11 +230,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 
         if (this.isMouseOver(mouseX, mouseY) || (this.scoll != null && this.scoll.isMouseOver(mouseX, mouseY))) {
-            double per = (Math.max((this.dy / 20.0d), 9) * verticalAmount) / (this.maxHeight / 5.0d);
-            // ((this.dy / 20.0d) * verticalAmount) / Math.min(100d, (this.maxHeight / 5.0d));
-            if (this.scroll != null) {
-                scroll.setPercentage(scroll.getPercentage() - per);
-            }
+            this.scoll.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
         }
         return false;
     }
@@ -248,8 +242,9 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
                 if (this.draggingElement == this.scoll) {
                     return this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
                 }
+                int currentPose = getCurrentPose();
                 return this.draggingElement.mouseDragged(
-                        mouseX - this.getX(), mouseY - this.getY() + this.currentPose, button, deltaX, deltaY);
+                        mouseX - this.getX(), mouseY - this.getY() + currentPose, button, deltaX, deltaY);
             } else {
                 return false;
             }
@@ -296,19 +291,6 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         return false;
     }
 
-    public <T extends DrawableWidget> T addTo(Screen screen) {
-        //        if(this.scoll != null)
-        //            ScreenAccess.of(screen).addDrawableChildTo(this.scoll);
-
-        return super.addTo(screen);
-    }
-
-    public <T extends DrawableWidget> T addToSub(SubScreenWidget screen) {
-        //        if(this.scoll != null)
-        //            screen.addDrawableChild(this.scoll);
-        return super.addToSub(screen);
-    }
-
     @Override
     public boolean isFocused() {
         return this.selectedElement != null && this.selectedElement.isFocused();
@@ -334,7 +316,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
                 this.draggingElement = null;
                 return;
             }
-            this.draggingElement.releaseDrag(screen, mouseX - this.getX(), mouseY - this.getY() + this.currentPose);
+            int currentPose = getCurrentPose();
+            this.draggingElement.releaseDrag(screen, mouseX - this.getX(), mouseY - this.getY() + currentPose);
             this.draggingElement = null;
         } else {
             scrollableBorder.releaseDrag(screen, mouseX, mouseY);
@@ -348,7 +331,8 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         }
         if (isMouseOver(mouseX, mouseY)) {
             double translatedMouseX = mouseX - this.getX();
-            double translatedMouseY = mouseY - this.getY() + this.currentPose;
+            int currentPose = getCurrentPose();
+            double translatedMouseY = mouseY - this.getY() + currentPose;
             for (var ch : widgets) {
                 if (ch.startDrag(screen, translatedMouseX, translatedMouseY)) {
                     draggingElement = ch;

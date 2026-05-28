@@ -12,13 +12,16 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.slot.SlotActionType;
 
 public class InvExtra extends BaseModule {
     public static InvExtra INSTANCE;
     public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
-    public InvExtra() {}
+    public InvExtra() {
+        INSTANCE = this;
+    }
 
     public final IntRef inventoryClickLimit = intBuilder(inventory.add("packet-limit"))
             .defaultValue(40)
@@ -28,11 +31,14 @@ public class InvExtra extends BaseModule {
     public final FlagRef invGrimFix =
             flagBuilder(inventory.add("move-click-grim-fix")).build();
 
+    public final FlagRef expandInventory =
+            flagBuilder(inventory.add("expand-backpack-inventory")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(ClickSlotC2SPacket.class), this::onClickSlot);
-        INSTANCE = this;
+        registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseScreen);
     }
 
     public void onClickSlot(Event<ClickSlotC2SPacket> event) {
@@ -41,6 +47,12 @@ public class InvExtra extends BaseModule {
             // just send input packets, do not change sprint status
             // do not send the fucking sprint packets, shit
             MovTasks.getMovExtra().sendInputPacketsForInventoryAction();
+        }
+    }
+
+    public void onCloseScreen(Event<CloseHandledScreenC2SPacket> closeS2C) {
+        if (expandInventory.get() && closeS2C.context.getSyncId() == mc.player.playerScreenHandler.syncId) {
+            closeS2C.cancel();
         }
     }
 

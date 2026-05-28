@@ -75,6 +75,8 @@ public class Scaffold extends BaseModule {
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
+    public final FlagRef offhand = flagBuilder(scaffold.add("offhand-enable")).build();
+
     public final FlagRef swapHand = flagBuilder(scaffold.add("swap-hand")).build();
 
     public final IntRef expandYDepth = builder(scaffold.add("expand-interact-y-depth"), IntRef.TYPE)
@@ -102,9 +104,12 @@ public class Scaffold extends BaseModule {
     }
 
     private void placeBlockLegally(int hand, BlockHitResult result) {
-        Runnable callback = swapHand.get()
-                ? InvExtra.INSTANCE.switchOrSwapInventoryIndexToHand(hand)
-                : InvExtra.INSTANCE.swapInventoryIndexToHand(hand);
+        boolean offhandOk = offhand.get();
+        Runnable callback = offhandOk
+                ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(hand)
+                : (swapHand.get()
+                        ? InvExtra.INSTANCE.switchOrSwapInventoryIndexToHand(hand)
+                        : InvExtra.INSTANCE.swapInventoryIndexToHand(hand));
         if (callback == null) {
             return;
         }
@@ -115,7 +120,7 @@ public class Scaffold extends BaseModule {
                 if (Objects.equals(result1.getBlockPos(), result.getBlockPos())
                         && Objects.equals(result1.getSide(), result.getSide())
                         && Objects.equals(result1.getType(), result.getType())) {
-                    InteractionTasks.placeBlock(Hand.MAIN_HAND, result1);
+                    InteractionTasks.placeBlock(offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, result1);
                     return;
                 }
             }
@@ -123,9 +128,9 @@ public class Scaffold extends BaseModule {
             if (legalMode.get().isLegal()) {
                 var mode = legalMode.get();
                 // todo: delay movement fix
-                InteractionTasks.handlePlaceMode(mode, result, Hand.MAIN_HAND);
+                InteractionTasks.handlePlaceMode(mode, result, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND);
             } else {
-                InteractionTasks.placeBlock(Hand.MAIN_HAND, result);
+                InteractionTasks.placeBlock(offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, result);
             }
         } finally {
             callback.run();
