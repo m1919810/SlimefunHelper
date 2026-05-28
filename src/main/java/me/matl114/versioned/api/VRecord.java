@@ -6,6 +6,7 @@ import net.minecraft.component.type.ProfileComponent;
 
 import java.util.Optional;
 import java.util.UUID;
+import net.minecraft.component.type.ProfileComponent;
 
 public interface VRecord {
     public static UUID getId(GameProfile profile) {
