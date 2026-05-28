@@ -398,7 +398,6 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
         bufferBuilder.vertex(matrix, minX, maxY, minZ).color(cachedRenderColor);
     }
 
-    @Override
     public void drawSolidBoxTriangle(
             MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
         MatrixStack.Entry matrix = matrixStack.peek();

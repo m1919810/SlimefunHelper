@@ -99,9 +99,11 @@ public interface VPacket {
     /**
      * 获取当前版本的 VPacket 实例
      */
+    public static final VPacket instance = new Packet_v1_21_11();
+
     private static VPacket getInstance() {
         // 这里应该根据实际版本检测逻辑来返回正确的实现
         // 暂时返回 1.21.1 的实现
-        return new Packet_v1_21_11();
+        return instance;
     }
 }
