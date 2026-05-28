@@ -52,7 +52,6 @@ public abstract class MinecraftClientEvents {
     public abstract void tick();
 
     @Shadow
-    @org.jspecify.annotations.Nullable
     public ClientPlayerEntity player;
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
@@ -99,9 +98,9 @@ public abstract class MinecraftClientEvents {
         }
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;ZZ)V", at = @At("HEAD"))
+    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At("HEAD"))
     public void onServerDisconnect(
-            Screen disconnectionScreen, boolean transferring, boolean stopSounds, CallbackInfo ci) {
+        Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
         // origin exit
         Listener.getServerLeavePoint().handleValue(new Event<>(null, false, false, true));
         Listener.getServerDisconnectPoint().handleValue(new Event<>(null, false, false, transferring));

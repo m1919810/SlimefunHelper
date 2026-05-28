@@ -77,7 +77,7 @@ public class InventoryUtils {
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
         // we assert player hold block while scaffold, or it will be really annoying
         // the holding block must be a full cube
-        int selecedSlot = pinv.getSelectedSlot();
+        int selecedSlot = pinv.selectedSlot;
         IndexEntry<ItemStack> result = null;
         if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
             result = new IndexEntry<>(selecedSlot, item);

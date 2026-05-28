@@ -446,7 +446,7 @@ public class ClickGui extends BaseModule {
                         .combineRender(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                             context.setShaderColor(textColor.get().withAlpha(255));
                             context.drawGuiTexture(
-                                    showFlag.get() ? Constants.EXPAND_GUI_ON_SPRITE : Constants.EXPAND_GUI_OFF_SPRITE,
+                                    showFlag.booleanValue() ? Constants.EXPAND_GUI_ON_SPRITE : Constants.EXPAND_GUI_OFF_SPRITE,
                                     element.getTextureWidth() - element.getTextureHeight() + 2,
                                     2,
                                     0,
@@ -539,7 +539,7 @@ public class ClickGui extends BaseModule {
 
     private DrawableWidget createConfig(ClickGuiMetaData meta) {
         var screen = new ConfigurateNewStyleScreen(Config.getConfigs().stream().toList());
-        screen.init(mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
+        screen.init(mc, mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
         return new ContentDelegateWidget<>(0, 0, 0, 0).setContentDelegate(screen);
     }
 

@@ -1003,7 +1003,7 @@ public class InvTasks {
     }
 
     public static void onInventoryOld2(Event<InventoryS2CPacket> eventInv) {
-        int syncId = eventInv.context.syncId();
+        int syncId = eventInv.context.getSyncId();
         if (mc.interactionManager.getCurrentGameMode().isSurvivalLike()
                 && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId != syncId
                 && mc.player.currentScreenHandler.syncId != syncId
@@ -1012,7 +1012,7 @@ public class InvTasks {
             var pkt = eventInv.context;
             for (var handler : historyScreens) {
                 if (handler.syncId == syncId) {
-                    handler.updateSlotStacks(pkt.revision(), pkt.contents(), pkt.cursorStack());
+                    handler.updateSlotStacks(pkt.getRevision(), pkt.getContents(), pkt.getCursorStack());
                     return;
                 }
             }

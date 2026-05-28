@@ -95,7 +95,7 @@ public class AutoTotem extends BaseModule {
             int toSlot = (smartTotem.get()
                             && mc.player.getMainHandStack().isEmpty()
                             && !mc.player.getOffHandStack().isEmpty())
-                    ? mc.player.getInventory().getSelectedSlot()
+                    ? mc.player.getInventory().selectedSlot
                     : 40;
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;
@@ -141,7 +141,7 @@ public class AutoTotem extends BaseModule {
             ItemStack stackInMainHand = mc.player.getMainHandStack();
             ItemStack stackInOffHand = mc.player.getOffHandStack();
             int consumeSlot = stackInMainHand.getItem() == Items.TOTEM_OF_UNDYING
-                    ? mc.player.getInventory().getSelectedSlot()
+                    ? mc.player.getInventory().selectedSlot
                     : 40;
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;

@@ -21,20 +21,20 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(ElytraBehavior.class)
+@Mixin(value = ElytraBehavior.class, remap = false)
 public abstract class ElytraBehaviourMixin {
     @WrapOperation(
-            method = {
-                "a(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;ZZ)V",
-                "tickUseFireworks(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;ZZ)V"
-            },
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lbaritone/api/utils/IPlayerController;processRightClick(Lnet/minecraft/client/network/ClientPlayerEntity;Lnet/minecraft/world/World;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/ActionResult;"),
-            expect = 1,
-            require = 1)
+        method = {
+            "a(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;ZZ)V",
+            "tickUseFireworks(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;ZZ)V"
+        },
+        at =
+        @At(
+            value = "INVOKE",
+            target =
+                "Lbaritone/api/utils/IPlayerController;processRightClick(Lnet/minecraft/client/network/ClientPlayerEntity;Lnet/minecraft/world/World;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/ActionResult;"),
+        expect = 1,
+        require = 1)
     public ActionResult onUseFireworks(
             IPlayerController instance,
             ClientPlayerEntity player,
@@ -66,14 +66,14 @@ public abstract class ElytraBehaviourMixin {
         return original.call(instance, b, predicate);
     }
 
-    @WrapOperation(
-            method = "tickUseFireworks(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;ZZ)V",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lbaritone/behavior/InventoryBehavior;throwaway(ZLjava/util/function/Predicate;)Z"),
-            require = 0)
+//    @WrapOperation(
+//        method = "tickUseFireworks(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;ZZ)V",
+//        at =
+//        @At(
+//            value = "INVOKE",
+//            target =
+//                "Lbaritone/behavior/InventoryBehavior;throwaway(ZLjava/util/function/Predicate;)Z"),
+//        require = 0)
     private boolean onCancelInventorySwap2(
             InventoryBehavior instance,
             boolean b,

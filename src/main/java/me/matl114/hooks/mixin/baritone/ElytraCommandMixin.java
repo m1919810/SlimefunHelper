@@ -24,18 +24,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(ElytraCommand.class)
+@Mixin(value = ElytraCommand.class, remap = false)
 public abstract class ElytraCommandMixin extends Command {
     public ElytraCommandMixin(IBaritone iBaritone, String... strings) {
         super(iBaritone, strings);
     }
 
     @ModifyExpressionValue(
-            method = "execute",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/registry/RegistryKey;"))
+        method = "execute",
+        at =
+        @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/registry/RegistryKey;"))
     private RegistryKey<World> onExecuteNetherSupport(RegistryKey<World> original) {
         if (BaritoneFix.INSTANCE.enableDimensionFix.get() && original != World.NETHER) {
             Debug.chat(ChatUtils.stringToText(

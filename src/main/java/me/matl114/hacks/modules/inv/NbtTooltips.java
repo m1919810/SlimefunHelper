@@ -87,7 +87,7 @@ public class NbtTooltips extends BaseModule {
             }
             return (T) list;
         } else if (nbt instanceof NbtString nbtString) {
-            String str = nbtString.value();
+            String str = nbtString.asString();
             return (T) NbtString.of(replaceMcStr(str));
         } else return nbt;
     }

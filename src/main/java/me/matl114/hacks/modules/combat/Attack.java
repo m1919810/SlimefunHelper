@@ -35,6 +35,7 @@ import me.matl114.versioned.api.VItem;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
@@ -417,10 +418,10 @@ public class Attack extends BaseModule {
                             if (useMaceAttack || args.isFallFlying()) {
                                 // fix targeting in big velocity
                                 predictedEyePos = predictedEyePos.add(
-                                        mc.player.getX() - mc.player.lastX,
-                                        mc.player.getY() - mc.player.lastY,
+                                        mc.player.getX() - mc.player.prevX,
+                                        mc.player.getY() - mc.player.prevY,
                                         mc.player.getZ()
-                                                - mc.player.lastZ); // predictedEyePos.add(mc.player.getVelocity());
+                                                - mc.player.prevZ); // predictedEyePos.add(mc.player.getVelocity());
                             }
                             Vec3d vec3d = args.getPos();
                             if (tpRange.get() > 1E-7

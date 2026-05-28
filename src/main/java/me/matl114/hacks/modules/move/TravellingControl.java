@@ -29,6 +29,7 @@ import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
@@ -686,7 +687,7 @@ public class TravellingControl extends BaseModule {
                                     AtomicDouble max = new AtomicDouble(-999);
                                     Listener.addPostPacketCatcher(new TimedPacketCatcherImpl<>(
                                             EntityVelocityUpdateS2CPacket.class, 200, (event) -> {
-                                                Vec3d velocity = event.context.getVelocity();
+                                                Vec3d velocity = VPacket.getVelocity(event.context);
                                                 //  Debug.chat("check velocity", velocity);
                                                 if (velocity.y <= max.get()
                                                         || velocity.y > 3.0F

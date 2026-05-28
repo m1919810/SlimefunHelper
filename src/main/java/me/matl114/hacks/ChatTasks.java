@@ -47,9 +47,11 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 public class ChatTasks {
     public static void init() {}
@@ -581,12 +583,13 @@ public class ChatTasks {
                 }
                 case "spawn" -> {
                     Debug.chat("当前世界的出生点:");
-                    GlobalPos pos = mc.world.getSpawnPoint().globalPos();
+                    BlockPos pos1 = mc.world.getSpawnPos();
+                    World world = mc.world;
                     Debug.chat(
                             "World Spawn Point [World:",
-                            pos.dimension().getValue(),
+                            world.getRegistryKey().getValue(),
                             ",Pos:",
-                            ChatUtils.getDisplayedLocationDouble(Vec3d.of(pos.pos())),
+                            ChatUtils.getDisplayedLocationDouble(Vec3d.of(pos1)),
                             "]");
                     //                        if(entity != null){
                     //                           // mc.player.spawn
@@ -641,10 +644,10 @@ public class ChatTasks {
                 case "plist" -> {
                     Debug.chat(Text.literal("当前可视的玩家列表").formatted(Formatting.GREEN));
                     mc.getNetworkHandler().getPlayerList().stream()
-                            .sorted(Comparator.comparing(e -> e.getProfile().name()))
+                            .sorted(Comparator.comparing(e -> e.getProfile().getName()))
                             .map(entry -> {
                                 var val = Text.literal("%-16s (Display: "
-                                                .formatted(entry.getProfile().name()))
+                                                .formatted(entry.getProfile().getName()))
                                         .append(
                                                 entry.getDisplayName() == null
                                                         ? Text.literal("null")
@@ -700,18 +703,18 @@ public class ChatTasks {
                         Debug.chat("查询到PlayerEntry");
                         Debug.chat(
                                 Text.literal("名字: ").formatted(Formatting.GRAY),
-                                entry.getProfile().name());
+                                entry.getProfile().getName());
                         Debug.chat(
                                 Text.literal("UUID: ").formatted(Formatting.GRAY),
                                 ChatUtils.getClickCopyTargetText(
-                                                entry.getProfile().id().toString())
+                                                entry.getProfile().getId().toString())
                                         .formatted(Formatting.GREEN));
                         Debug.chat(
                                 Text.literal("Property: ").formatted(Formatting.GRAY),
                                 ChatUtils.getHoverShowText(
                                         "[点击查看具体数据]",
                                         List.of(Text.literal(
-                                                entry.getProfile().properties().toString()))));
+                                                entry.getProfile().getProperties().toString()))));
                         Debug.chat(
                                 Text.literal("GameMode: ").formatted(Formatting.GRAY),
                                 entry.getGameMode().name());
@@ -744,7 +747,7 @@ public class ChatTasks {
                     Predicate<WorldUtils.Waypoint> filter;
                     if ((entry = mc.getNetworkHandler().getPlayerListEntry(user)) != null) {
                         final String lookup;
-                        lookup = entry.getProfile().id().toString();
+                        lookup = entry.getProfile().getId().toString();
                         filter = s -> lookup.equalsIgnoreCase(s.getSource().map(UUID::toString, Function.identity()));
                     } else {
                         filter = Predicates.alwaysTrue();
@@ -759,7 +762,7 @@ public class ChatTasks {
                                         t -> Optional.ofNullable(
                                                 mc.getNetworkHandler().getPlayerListEntry(t)));
                         optionalEntry.ifPresent(playerListEntry -> Debug.chat("Potential Owner: "
-                                + playerListEntry.getProfile().name()));
+                                + playerListEntry.getProfile().getName()));
 
                         Debug.chat("config: ");
 

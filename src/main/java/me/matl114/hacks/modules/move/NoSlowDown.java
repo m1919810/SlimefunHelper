@@ -26,7 +26,6 @@ import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.UseEffectsComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -414,10 +413,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     private float getActiveItemSpeedMultiplier() {
-        ItemStack stack = mc.player.getActiveItem();
-        //        if(VItem.getInstance().isSpear(stack))return 1.0F;
-        return ((UseEffectsComponent) stack.getOrDefault(DataComponentTypes.USE_EFFECTS, UseEffectsComponent.DEFAULT))
-                .speedMultiplier();
+        return 0.2F;
     }
 
     public void onInteractSend(Event<PlayerInteractEntityC2SPacket> interactPacket) {
@@ -461,7 +457,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         int selectedIdx;
         // todo: optimize these shit
         if (mc.player.getActiveHand() == Hand.MAIN_HAND) {
-            selectedIdx = mc.player.getInventory().getSelectedSlot();
+            selectedIdx = mc.player.getInventory().selectedSlot;
         } else {
             selectedIdx = 40;
         }
@@ -472,7 +468,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             if (mc.player.getActiveHand() == Hand.MAIN_HAND) {
                 selectedEmpty = 40;
             } else {
-                selectedEmpty = mc.player.getInventory().getSelectedSlot();
+                selectedEmpty = mc.player.getInventory().selectedSlot;
             }
         }
         ItemStack stackEmpty = mc.player.getInventory().getStack(selectedEmpty);
@@ -532,7 +528,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             } else {
                 int selectedIdx;
                 if (mc.player.getActiveHand() == Hand.MAIN_HAND) {
-                    selectedIdx = mc.player.getInventory().getSelectedSlot();
+                    selectedIdx = mc.player.getInventory().selectedSlot;
                 } else {
                     selectedIdx = 40;
                 }

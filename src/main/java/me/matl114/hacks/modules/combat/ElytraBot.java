@@ -301,7 +301,7 @@ public class ElytraBot extends BaseModule {
                 && mc.world != null
                 && enable.get()
                 && statusS2CPacket.getEntity(mc.world) == mc.player
-                && statusS2CPacket.getStatus() == EntityStatuses.KINETIC_ATTACK) {
+                && statusS2CPacket.getStatus() == 2) {
 
             sp.onHit(HitListener.HIT_SPEAR);
         }

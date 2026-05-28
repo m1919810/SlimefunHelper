@@ -123,7 +123,7 @@ public class DisablerManager extends BaseModule {
                 // see GrimAC handleQueuedPlaces()
                 if (hasAnyPlaceActionGrimQueue) {
                     Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(
-                            mc.player.getInventory().getSelectedSlot()));
+                            mc.player.getInventory().selectedSlot));
                 }
                 hasAnyPlaceActionGrimQueue = false;
             }

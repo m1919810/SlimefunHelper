@@ -69,7 +69,7 @@ public class EntityLog extends BaseModule {
                                 .getNetworkHandler()
                                 .getPlayerListEntry(packet.getUuid());
                         if (entry != null) {
-                            text = Text.literal(entry.getProfile().name()).formatted(Formatting.GREEN);
+                            text = Text.literal(entry.getProfile().getName()).formatted(Formatting.GREEN);
                         }
                     }
 

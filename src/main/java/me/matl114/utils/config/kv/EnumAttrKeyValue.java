@@ -115,7 +115,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                             Constants.EXPAND_GUI_ON_SPRITE,
                             Constants.EXPAND_GUI_OFF_SPRITE,
                             ButtonAction.run(() -> show.setValue(!show.booleanValue())),
-                            (eee) -> show.get())));
+                            (eee) -> show.booleanValue())));
             Supplier<SubScreenWidget> subScreenSupplier = Suppliers.memoize(() -> {
                 SubScreenWidget selectors = new SubScreenWidget(0, 0, 0, 0).setPriority(1);
                 int height = 0;
@@ -145,7 +145,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                 return selectors;
             });
             ContentDelegateWidget<SubScreenWidget> dynamicDelegate =
-                    new DynamicContentWidget<>(() -> show.get() ? subScreenSupplier.get() : null, 2, dy);
+                    new DynamicContentWidget<>(() -> show.booleanValue() ? subScreenSupplier.get() : null, 2, dy);
             subScreen.addDrawableChild(dynamicDelegate);
             return subScreen;
         } else {

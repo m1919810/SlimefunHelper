@@ -233,7 +233,7 @@ public class PacketHelper {
     public static void sendPlayerAction(Object action) {
         PlayerActionC2SPacket.Action actionPacket = JsHelper.toEnum(action, PlayerActionC2SPacket.Action.class);
         switch (actionPacket) {
-            case STAB, SWAP_ITEM_WITH_OFFHAND, DROP_ITEM, DROP_ALL_ITEMS, RELEASE_USE_ITEM -> {}
+            case SWAP_ITEM_WITH_OFFHAND, DROP_ITEM, DROP_ALL_ITEMS, RELEASE_USE_ITEM -> {}
 
             default -> throw new IllegalStateException("Unexpected value: " + actionPacket);
         }

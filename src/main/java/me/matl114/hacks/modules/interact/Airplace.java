@@ -293,7 +293,7 @@ public class Airplace extends BaseModule {
                         startPos,
                         usingItem.getCount(),
                         usingItem.copy(),
-                        mc.player.getInventory().getSelectedSlot(),
+                        mc.player.getInventory().selectedSlot,
                         hand,
                         way);
                 stateMachine = createStateMachine();

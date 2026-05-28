@@ -57,7 +57,7 @@ public class InvExtra extends BaseModule {
     }
 
     public Runnable switchOrSwapInventoryIndexToHand(int hand) {
-        int selected = mc.player.getInventory().getSelectedSlot();
+        int selected = mc.player.getInventory().selectedSlot;
         if (selected != hand) {
             if (hand < 9) {
                 PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
@@ -96,7 +96,7 @@ public class InvExtra extends BaseModule {
     }
 
     public Runnable swapInventoryIndexToHand(int hand) {
-        int selected = mc.player.getInventory().getSelectedSlot();
+        int selected = mc.player.getInventory().selectedSlot;
         if (selected != hand) {
             //            if (hand < 9) {
             //                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);

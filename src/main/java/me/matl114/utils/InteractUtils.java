@@ -38,7 +38,7 @@ public class InteractUtils {
         // cube
         World world = player.getEntityWorld();
         BlockState state = Blocks.STONE.getDefaultState();
-        return state.canPlaceAt(world, pos) && world.canPlace(state, pos, ShapeContext.ofPlacement(player));
+        return state.canPlaceAt(world, pos) && world.canPlace(state, pos, player == null ? ShapeContext.absent() : ShapeContext.of(player));
     }
 
     public static BlockPos getCurrentPlacePos(PlayerEntity player, BlockHitResult blockHitResult) {

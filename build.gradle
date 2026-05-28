@@ -61,7 +61,7 @@ dependencies {
 	}
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	modCompileOnly files("libs/baritone-meteor-1.21.11.jar")
+	modCompileOnly files("libs/baritone-meteor-1.21.4.jar")
 	// bridge
 	compileOnly sourceSets.stubs.output
 	stubsCompileOnly 'com.google.code.findbugs:jsr305:3.0.2'

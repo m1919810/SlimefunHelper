@@ -182,7 +182,7 @@ public class NameTag extends BaseModule {
             Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();
             Function<Vec3d, Vector2d> projector = RenderUtils.createProjector(cam, proj);
             for (var entity : nameTagInfos) {
-                onRenderPlayer(entity, stack, projector, (event.<RenderTickCounter>getArgs(0)).getTickProgress(false));
+                onRenderPlayer(entity, stack, projector, (event.<RenderTickCounter>getArgs(0)).getTickDelta(false));
             }
         }
     }

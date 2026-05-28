@@ -8,6 +8,7 @@ import lombok.Setter;
 import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Listener;
+import me.matl114.gui.basic.DisplayWidget;
 import me.matl114.utils.containers.MetaData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -77,7 +78,7 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
     }
 
     @Inject(
-            method = "init(II)V",
+            method = "init(Lnet/minecraft/client/MinecraftClient;II)V",
             at =
                     @At(
                             value = "INVOKE",

@@ -45,20 +45,6 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Unique
     private boolean resyncLastInput = false;
 
-    @Shadow
-    private double lastXClient;
-
-    @Shadow
-    private double lastZClient;
-
-    @Shadow
-    private double lastYClient;
-
-    @Shadow
-    private float lastPitchClient;
-
-    @Shadow
-    private float lastYawClient;
 
     @Shadow
     public Input input;
@@ -66,9 +52,6 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Shadow
     @Final
     public ClientPlayNetworkHandler networkHandler;
-
-    @Shadow
-    private PlayerInput lastPlayerInput;
 
     @Shadow
     protected abstract void sendSneakingPacket();
@@ -84,6 +67,16 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Shadow
     private int ticksSinceLastPositionPacketSent;
+
+    @Shadow private double lastX;
+
+    @Shadow private double lastZ;
+
+    @Shadow private double lastBaseY;
+
+    @Shadow private float lastPitch;
+
+    @Shadow private float lastYaw;
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -127,14 +120,14 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     public void resyncPos() {
-        this.lastXClient = 0;
-        this.lastZClient = 0;
-        this.lastYClient = 0;
+        this.lastX = 0;
+        this.lastZ = 0;
+        this.lastBaseY = 0;
     }
 
     public void resyncRot() {
-        this.lastPitchClient = 0;
-        this.lastYawClient = 0;
+        this.lastPitch= 0;
+        this.lastYaw = 0;
     }
 
     public void resyncInput() {
@@ -235,7 +228,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     @Unique
-    private void onPlayerInputPackets() {
+    public void onPlayerInputPackets() {
         this.sendSneakingPacket();
         if (!this.lastPlayerInput.equals(this.input.playerInput)) {
             this.networkHandler.sendPacket(new PlayerInputC2SPacket(this.input.playerInput));

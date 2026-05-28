@@ -17,7 +17,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
-import net.minecraft.entity.EntityPosition;
+import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
@@ -142,7 +142,7 @@ public class AutoResync extends BaseModule {
         var packet = event.context();
         Set<PositionFlag> flags = packet.relatives();
         Set<PositionFlag> newFlags = null;
-        EntityPosition pos = packet.change();
+        PlayerPosition pos = packet.change();
         Vec3d position = pos.position();
         Vec3d deltaMovement = pos.deltaMovement();
         float yaw = pos.yaw();
@@ -170,7 +170,7 @@ public class AutoResync extends BaseModule {
         }
         if (recreate && newFlags != null) {
             event.context(new PlayerPositionLookS2CPacket(
-                    packet.teleportId(), new EntityPosition(position, deltaMovement, yaw, pitch), newFlags));
+                    packet.teleportId(), new PlayerPosition(position, deltaMovement, yaw, pitch), newFlags));
         }
     }
 
@@ -189,8 +189,8 @@ public class AutoResync extends BaseModule {
     }
 
     public Vec3d getPosition(PlayerPositionLookS2CPacket packet) {
-        EntityPosition entityPosition = EntityPosition.fromEntity(mc.player);
-        EntityPosition entityPosition2 = EntityPosition.apply(entityPosition, packet.change(), packet.relatives());
+        PlayerPosition entityPosition = PlayerPosition.fromEntity(mc.player);
+        PlayerPosition entityPosition2 = PlayerPosition.apply(entityPosition, packet.change(), packet.relatives());
         return entityPosition2.position();
     }
 

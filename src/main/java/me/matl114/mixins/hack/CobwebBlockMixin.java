@@ -10,7 +10,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.CobwebBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityCollisionHandler;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -32,15 +31,7 @@ public abstract class CobwebBlockMixin {
                             shift = At.Shift.BEFORE),
             cancellable = true)
     public void onEntityCollision(
-            BlockState state,
-            World world,
-            BlockPos pos,
-            Entity entity,
-            EntityCollisionHandler handler,
-            boolean bl,
-            CallbackInfo ci,
-            @Local Vec3d vec3d,
-            @Local LocalRef<Vec3d> vec3dLocalRef) {
+        BlockState state, World world, BlockPos pos, Entity entity, CallbackInfo ci, @Local Vec3d vec3d, @Local LocalRef<Vec3d> vec3dLocalRef) {
         if (entity == MinecraftClient.getInstance().player) {
             Event<Vec3d> slowMovement = new Event<>(vec3d, true, true, pos);
             Listener.getPlayerWebSlowPoint().handleValue(slowMovement);

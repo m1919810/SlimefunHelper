@@ -129,7 +129,7 @@ public class InteractionTasks {
                     var hand = pair.getRight();
                     var result = pair.getLeft();
                     if (selectedSlot == -1) {
-                        selectedSlot = mc.player.getInventory().getSelectedSlot();
+                        selectedSlot = mc.player.getInventory().selectedSlot;
                         mc.interactionManager.sendSequencedPacket(
                                 mc.world,
                                 (i) -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, i, rotation.y, rotation.x));
@@ -143,7 +143,7 @@ public class InteractionTasks {
                 int selectedSlot = -1;
                 for (Pair<BlockHitResult, Hand> pair : resultList) {
                     if (selectedSlot == -1) {
-                        selectedSlot = mc.player.getInventory().getSelectedSlot();
+                        selectedSlot = mc.player.getInventory().selectedSlot;
                     } else {
                         // for flush places
                         flushACPlaceQueue();
@@ -158,7 +158,7 @@ public class InteractionTasks {
                 int selectedSlot = -1;
                 for (Pair<BlockHitResult, Hand> pair : resultList) {
                     if (selectedSlot == -1) {
-                        selectedSlot = mc.player.getInventory().getSelectedSlot();
+                        selectedSlot = mc.player.getInventory().selectedSlot;
                     } else {
                         // for flush places
                         flushACPlaceQueue();

@@ -1,8 +1,5 @@
 package me.matl114.hacks.modules.render;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.URI;
 import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;

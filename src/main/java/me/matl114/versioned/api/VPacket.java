@@ -4,6 +4,8 @@ import me.matl114.versioned.impl.Packet_v1_21_4;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
+import net.minecraft.util.math.Vec3d;
 
 public interface VPacket {
     /**
@@ -67,6 +69,10 @@ public interface VPacket {
         return packet.horizontalCollision();
     }
 
+
+    public static Vec3d getVelocity(EntityVelocityUpdateS2CPacket entityVelocityUpdateS2CPacket){
+        return new Vec3d(entityVelocityUpdateS2CPacket.getVelocityX(), entityVelocityUpdateS2CPacket.getVelocityY(), entityVelocityUpdateS2CPacket.getVelocityZ());
+    }
     /**
      * 实例方法 - 创建 OnGroundOnly 数据包
      */

@@ -137,6 +137,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Shadow
     private boolean usingItem;
 
+    @Shadow private boolean lastOnGround;
     @Getter
     @Unique
     public HandledScreen keepedInv = null;
@@ -229,7 +230,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     }
 
     @ModifyExpressionValue(
-            method = "isBlockedFromSprinting",
+            method = "shouldStopSprinting",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
     private boolean noSlowUsingItemDoNotBlockSprint(boolean original) {
         if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
@@ -278,25 +279,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         return original.call(instance);
     }
 
-    @WrapOperation(
-            method = "tickMovement",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSwimSprinting()Z"))
-    private boolean nnoSlowUsingItemDoNotBlockSprint3(ClientPlayerEntity instance, Operation<Boolean> original) {
-        // fix viafabric
-        if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
-            boolean v = usingItem;
-            usingItem = false;
-            try {
-                return original.call(instance);
-            } finally {
-                usingItem = v;
-            }
-        }
-        return original.call(instance);
-    }
 
     @ModifyExpressionValue(
             method = "tickMovement",

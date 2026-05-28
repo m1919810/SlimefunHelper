@@ -18,14 +18,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(ElytraProcess.class)
+@Mixin(value = ElytraProcess.class, remap = false)
 public abstract class ElytraProcessMixin {
 
     @Inject(
             method = {"a()Z", "shouldLandForSafety()Z"},
             at = @At("HEAD"),
             expect = 1,
-            require = 1,
             cancellable = true)
     private void hookShouldLandForSafety(CallbackInfoReturnable<Boolean> ci) {
         if (BaritoneFix.INSTANCE.disableInventoryCheck.get()) {

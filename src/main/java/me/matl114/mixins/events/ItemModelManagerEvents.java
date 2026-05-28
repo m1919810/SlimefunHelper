@@ -3,7 +3,6 @@ package me.matl114.mixins.events;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
-import javax.annotation.Nullable;
 import me.matl114.accessors.events.ItemRenderStateAccess;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
@@ -16,6 +15,7 @@ import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,14 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ItemModelManager.class)
 public abstract class ItemModelManagerEvents {
 
-    @Shadow
-    public abstract void update(
-            ItemRenderState renderState,
-            ItemStack stack,
-            ItemDisplayContext displayContext,
-            @Nullable World world,
-            @Nullable LivingEntity entity,
-            int seed);
+    @Shadow public abstract void update(ItemRenderState renderState, ItemStack stack, ItemDisplayContext transformationMode, boolean leftHand, @Nullable World world, @Nullable LivingEntity entity, int seed);
 
     @Inject(
             method =

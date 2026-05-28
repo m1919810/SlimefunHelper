@@ -7,6 +7,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
+
+import com.google.common.collect.Streams;
 import lombok.Getter;
 import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.gui.FilterService;
