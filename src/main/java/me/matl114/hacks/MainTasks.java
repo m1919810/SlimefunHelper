@@ -18,6 +18,10 @@ import me.matl114.utils.ApiMethod;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
+import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.realms.gui.screen.RealmsMainScreen;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
 import net.minecraft.text.Text;
@@ -122,9 +126,7 @@ public class MainTasks {
     public static void scheduleDisconnect() {
         Tasks.scheduleDelayed(
                 () -> {
-                    if (mc.world != null && mc.player != null) {
-                        mc.disconnect(QUITTING_MULTIPLAYER_TEXT);
-                    }
+                    disconnect(QUITTING_MULTIPLAYER_TEXT);
                     if (Listener.getClientConnection() != null
                             && Listener.getClientConnection().isOpen()) {
                         Listener.getClientConnection().disconnect(QUITTING_MULTIPLAYER_TEXT);
@@ -135,10 +137,33 @@ public class MainTasks {
 
     @ApiMethod
     public static void disconnectImmediately() {
-        mc.disconnect(QUITTING_MULTIPLAYER_TEXT);
+        disconnect(QUITTING_MULTIPLAYER_TEXT);
         if (Listener.getClientConnection() != null
                 && Listener.getClientConnection().isOpen()) {
             Listener.getClientConnection().disconnect(QUITTING_MULTIPLAYER_TEXT);
+        }
+    }
+
+    public static void disconnect(Text reasonText) {
+        boolean bl = mc.isInSingleplayer();
+        ServerInfo serverInfo = mc.getCurrentServerEntry();
+        if (mc.world != null) {
+            mc.world.disconnect(reasonText);
+        }
+
+        if (bl) {
+            mc.disconnectWithSavingScreen();
+        } else {
+            mc.disconnectWithProgressScreen();
+        }
+
+        TitleScreen titleScreen = new TitleScreen();
+        if (bl) {
+            mc.setScreen(titleScreen);
+        } else if (serverInfo != null && serverInfo.isRealm()) {
+            mc.setScreen(new RealmsMainScreen(titleScreen));
+        } else {
+            mc.setScreen(new MultiplayerScreen(titleScreen));
         }
     }
 

@@ -1,5 +1,6 @@
 package me.matl114.versioned.api;
 
+import me.matl114.versioned.impl.Packet_v1_21_11;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
@@ -98,9 +99,11 @@ public interface VPacket {
     /**
      * 获取当前版本的 VPacket 实例
      */
+    public static final VPacket instance = new Packet_v1_21_11();
+
     private static VPacket getInstance() {
         // 这里应该根据实际版本检测逻辑来返回正确的实现
         // 暂时返回 1.21.1 的实现
-        return new me.matl114.versioned.impl.Packet_v1_21_1();
+        return instance;
     }
 }

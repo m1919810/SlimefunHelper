@@ -119,7 +119,7 @@ public class DamageUtils {
         double att = player.getAttributeBaseValue(EntityAttributes.ATTACK_DAMAGE);
         AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers != null && !modifiers.modifiers().isEmpty()) {
-            att = modifiers.applyOperations(EntityAttributes.ATTACK_DAMAGE, att, EquipmentSlot.MAINHAND);
+            att = applyOperations(modifiers.modifiers(), EntityAttributes.ATTACK_DAMAGE, att, EquipmentSlot.MAINHAND);
         }
         att += getEnchantmentBonus(player, livingEntity, stack);
         return att;

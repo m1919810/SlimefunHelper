@@ -4,7 +4,6 @@ import static net.minecraft.component.DataComponentTypes.*;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedHashMultimap;
-import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
@@ -559,12 +558,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         PropertyMap map = BukkitItemStackUtils.buildPropertyMap(
                                 VRecord.getProperties(lastComponent.getGameProfile()), hash);
                         ItemStackUtils.setOrRemoveChange(
-                                stackTemplate,
-                                PROFILE,
-                                ProfileComponent.ofStatic(new GameProfile(
-                                        VRecord.getId(lastComponent.getGameProfile()),
-                                        VRecord.getName(lastComponent.getGameProfile()),
-                                        map)));
+                                stackTemplate, PROFILE, VRecord.withProperty(lastComponent, map));
                     } else {
                         // generate empty
                         ItemStackUtils.setOrRemoveChange(
@@ -576,10 +570,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         ItemStackUtils.setOrRemoveChange(
                                 stackTemplate,
                                 PROFILE,
-                                ProfileComponent.ofStatic(new GameProfile(
-                                        VRecord.getId(lastComponent.getGameProfile()),
-                                        VRecord.getName(lastComponent.getGameProfile()),
-                                        new PropertyMap(LinkedHashMultimap.create()))));
+                                VRecord.withProperty(lastComponent, new PropertyMap(LinkedHashMultimap.create())));
                     } else {
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, null);
                     }
