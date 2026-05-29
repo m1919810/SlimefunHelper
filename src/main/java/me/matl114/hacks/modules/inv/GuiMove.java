@@ -31,6 +31,10 @@ public class GuiMove extends BaseModule {
 
     public final FlagRef allGui = flagBuilder(path.add("all-gui-move")).build();
 
+    public final FlagRef noShiftInChest = builder(path.add("no-shift-in-chest"), FlagRef.TYPE)
+            .defaultValue(true)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -39,9 +43,10 @@ public class GuiMove extends BaseModule {
     }
 
     public KeyBinding[] inputBindings;
+    public KeyBinding[] inputBindingsNoSneak;
 
     private void initBinding() {
-        if (inputBindings == null) {
+        if (inputBindings == null || inputBindingsNoSneak == null) {
             inputBindings = new KeyBinding[] {
                 mc.options.forwardKey,
                 mc.options.backKey,
@@ -51,7 +56,22 @@ public class GuiMove extends BaseModule {
                 mc.options.sneakKey,
                 mc.options.sprintKey
             };
+            inputBindingsNoSneak = new KeyBinding[] {
+                mc.options.forwardKey,
+                mc.options.backKey,
+                mc.options.leftKey,
+                mc.options.rightKey,
+                mc.options.jumpKey,
+                mc.options.sprintKey
+            };
         }
+    }
+
+    public KeyBinding[] getBindings() {
+        initBinding();
+        return noShiftInChest.get() && mc.currentScreen instanceof HandledScreen<?>
+                ? inputBindingsNoSneak
+                : inputBindings;
     }
 
     public void onKeyInput(Event<Keyboard> eventInput) {
@@ -60,8 +80,7 @@ public class GuiMove extends BaseModule {
             if (skip()) return;
             int keyCode = eventInput.getArgs(0);
             int action = eventInput.getArgs(2);
-            initBinding();
-            for (var re : inputBindings) {
+            for (var re : getBindings()) {
                 if (handle(re, keyCode, action)) {
                     eventInput.cancel();
                 }
@@ -87,7 +106,7 @@ public class GuiMove extends BaseModule {
         if (checkNull()) return;
         if (enable.get() && event.context != null) {
             initBinding();
-            for (var re : inputBindings) {
+            for (var re : getBindings()) {
                 re.setPressed(SimpleInputManager.getInstance().isKeyPressed(re.boundKey.getCode()));
             }
         }

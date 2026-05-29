@@ -408,6 +408,7 @@
 	"inventory.gui-move.enable": "GuiMove: 启用",
 	"inventory.gui-move.hotkey": "GuiMove: 快捷键",
 	"inventory.gui-move.all-gui-move": "GuiMove: 全部界面",
+	"inventory.gui-move.no-shift-in-chest": "GuiMove: 在物品栏时无视潜行按键",
 	"inventory.packet-limit": "物品栏快捷操作发包/次",
 	"inventory.move-click-grim-fix": "Grim物品栏修复",
 	"inventory.pick-item": "执行PickItem",
