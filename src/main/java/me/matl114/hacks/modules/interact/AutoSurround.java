@@ -155,14 +155,15 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                     if (canPlace) {
                         if (InteractUtils.canCubePlace(mc.player, test)) {
                             if (placeCnt == 0) {
-                                var re = supplyBlocks();
-                                if (re == null) {
+                                var supply = supplyBlocks();
+                                if (supply == null) {
                                     break place;
                                 }
-                                mul = Math.min(mul, re.val().getCount());
+                                mul = Math.min(mul, supply.val().getCount());
+                                offhandOk |= supply.index() == 40;
                                 invCallback = offhandOk
-                                        ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(re.index())
-                                        : InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
+                                        ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(supply.index())
+                                        : InvExtra.INSTANCE.swapInventoryIndexToHand(supply.index());
                             } else {
                                 InteractionTasks.flushACPlaceQueue();
                             }

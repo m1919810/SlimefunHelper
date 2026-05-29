@@ -81,9 +81,9 @@ public abstract class MinecraftClientEvents {
                             shift = At.Shift.BEFORE),
             cancellable = true)
     public void onPostSetScreen(Screen screen, CallbackInfo ci) {
-        if (!Listener.getPostSetScreen().isEmpty()) {
+        if (!Listener.getMidSetScreen().isEmpty()) {
             Event<Screen> screenEvent = new Event<>(this.currentScreen, true, false);
-            Listener.getPostSetScreen().handleValue(screenEvent);
+            Listener.getMidSetScreen().handleValue(screenEvent);
             if (screenEvent.isCancelled()) {
                 ci.cancel();
                 // FIX: even if post set is cancelled , the screen must be initialized or exception will be thrown
@@ -94,6 +94,11 @@ public abstract class MinecraftClientEvents {
                 return;
             }
         }
+    }
+
+    @Inject(method = "setScreen", at = @At("RETURN"))
+    public void onPreSetScreen(Screen screen, CallbackInfo ci) {
+        Listener.getPostSetScreen().broadcast(this.currentScreen);
     }
 
     @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;ZZ)V", at = @At("HEAD"))

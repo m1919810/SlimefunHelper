@@ -45,11 +45,11 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             .build();
 
     public final DoubleRef minHorizontalVelocity = builder(antiKb.add("horizontal-threshold"), DoubleRef.TYPE)
-            .defaultValue(0.01)
+            .defaultValue(0.00)
             .build();
 
     public final DoubleRef minVerticalVelocity = builder(antiKb.add("vertical-threshold"), DoubleRef.TYPE)
-            .defaultValue(0.05)
+            .defaultValue(0.00)
             .build();
 
     public final EnumRef<Mode> mode =

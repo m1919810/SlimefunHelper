@@ -25,6 +25,13 @@ public abstract class LazilyRegisterTypeRef<T, W> extends ObjectRef<T> {
         tryResolve();
     }
 
+    @Override
+    public void setDefaultValue(T defaultValue) {
+        tryRegisterType(defaultValue);
+        tryResolve();
+        super.setDefaultValue(defaultValue);
+    }
+
     protected abstract void tryRegisterType(T value);
 
     protected abstract W toLazy(T val);

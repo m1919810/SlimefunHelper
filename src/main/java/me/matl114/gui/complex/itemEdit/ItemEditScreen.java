@@ -556,7 +556,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 if (hash != null && !hash.isEmpty()) {
                     if (lastComponent != null) {
                         PropertyMap map = BukkitItemStackUtils.buildPropertyMap(
-                                VRecord.getProperties(lastComponent.getGameProfile()), hash);
+                                VRecord.getGameProfileProperties(lastComponent), hash);
                         ItemStackUtils.setOrRemoveChange(
                                 stackTemplate, PROFILE, VRecord.withProperty(lastComponent, map));
                     } else {

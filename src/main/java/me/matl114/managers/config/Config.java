@@ -465,11 +465,14 @@ public class Config implements RefMap {
 
         public SettingBuilder<T> defaultValue(T val) {
             this.defaultValue = Optional.ofNullable(val);
-            var instance = Refs.wrapInstance(val);
-            ref = (Ref<T>) rootConfig.getOrCreate(instance, path);
-            if (ref == instance) {
-                rootConfig.markForSave();
+            if (ref == null) {
+                var instance = Refs.wrapInstance(val);
+                ref = (Ref<T>) rootConfig.getOrCreate(instance, path);
+                if (ref == instance) {
+                    rootConfig.markForSave();
+                }
             }
+            ref.setDefaultValue(val);
             return this;
         }
 

@@ -10,6 +10,7 @@ import me.matl114.gui.presets.index.IndexedSubScreen;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.lists.ListUnmodifiableWidget;
 import me.matl114.managers.config.Config;
+import me.matl114.managers.config.Ref;
 import me.matl114.managers.config.StringRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CollectionUtils;
@@ -21,7 +22,7 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
 public class ConfigureListWidget
-        extends IndexedSubScreen<Pair<String, Map<String, AttrKeyValue<?>>>, ListUnmodifiableWidget> {
+        extends IndexedSubScreen<Pair<String, Map<String, ConfigureListWidget.Entry<?>>>, ListUnmodifiableWidget> {
     // ...                | fliter
     // second index list  | <key> : <value> |
     // total x
@@ -89,7 +90,7 @@ public class ConfigureListWidget
     }
 
     @Override
-    protected ElementHandler createIndexHandler(Pair<String, Map<String, AttrKeyValue<?>>> str) {
+    protected ElementHandler createIndexHandler(Pair<String, Map<String, Entry<?>>> str) {
         return new ButtonElement(
                         TextProvider.of(Text.translatable("config.index." + str.getFirst())),
                         ButtonAction.run(() -> this.setGlobal(str)))
@@ -102,20 +103,29 @@ public class ConfigureListWidget
     }
 
     @Override
-    public void setGlobal(Pair<String, Map<String, AttrKeyValue<?>>> config) {
+    public void setGlobal(Pair<String, Map<String, Entry<?>>> config) {
         cachedConfigUserSelectIndex.put(this.config.getConfigName(), config.getFirst());
         this.selectIndexToDisplay(config, false);
     }
 
     @Override
-    protected ListUnmodifiableWidget createSelectingDisplayWidget(Pair<String, Map<String, AttrKeyValue<?>>> val) {
+    protected ListUnmodifiableWidget createSelectingDisplayWidget(Pair<String, Map<String, Entry<?>>> val) {
         String str = val.getFirst();
         return new ListUnmodifiableWidget(
-                ListEntryWidgetController.immutable(
+                ListEntryWidgetController.<Entry<?>, SubScreenWidget>immutable(
                         this.getFromKeyOr(str, Map.of()).getSecond().values().stream()
                                 .filter(this::applyFilter)
                                 .toList(),
-                        b -> b.generateKeyValueInput(blankDx, 0, this.buttonDx, blankDx, inputDx, this.buttonDy),
+                        b -> new RefKeyValueInputWidget(
+                                blankDx,
+                                0,
+                                this.buttonDx + blankDx + inputDx,
+                                this.buttonDy,
+                                this.buttonDx,
+                                blankDx,
+                                inputDx,
+                                b.ref(),
+                                b.keyValue()),
                         buttonDy,
                         buttonDx + blankDx + inputDx),
                 20,
@@ -125,14 +135,14 @@ public class ConfigureListWidget
                 this.dy - buttonDy);
     }
 
-    protected Pair<String, Map<String, AttrKeyValue<?>>> getFromKey(String str) {
+    protected Pair<String, Map<String, Entry<?>>> getFromKey(String str) {
         return this.list.stream()
                 .filter(s -> Objects.equals(str, s.getFirst()))
                 .findFirst()
                 .orElse(null);
     }
 
-    protected Pair<String, Map<String, AttrKeyValue<?>>> getFromKeyOr(String str, Map<String, AttrKeyValue<?>> map) {
+    protected Pair<String, Map<String, Entry<?>>> getFromKeyOr(String str, Map<String, Entry<?>> map) {
         return this.list.stream()
                 .filter(s -> Objects.equals(str, s.getFirst()))
                 .findFirst()
@@ -140,24 +150,25 @@ public class ConfigureListWidget
     }
 
     @Override
-    public Pair<String, Map<String, AttrKeyValue<?>>> getGlobal() {
+    public Pair<String, Map<String, Entry<?>>> getGlobal() {
         return getFromKey(cachedConfigUserSelectIndex.get(this.config.getConfigName()));
     }
 
-    protected static List<Pair<String, Map<String, AttrKeyValue<?>>>> getConfigIndexes(Config config) {
-        Map<String, Map<String, AttrKeyValue<?>>> originValueWithIndex = new LinkedHashMap<>();
+    protected static List<Pair<String, Map<String, Entry<?>>>> getConfigIndexes(Config config) {
+        Map<String, Map<String, Entry<?>>> originValueWithIndex = new LinkedHashMap<>();
 
         for (var path : config.getVisiblePaths()) {
             if (!ChatUtils.hasTranslation(path)) {
                 Debug.info("Missing translation key for", path);
             }
             String[] cut = Config.cutToPath(path);
-            AttrKeyValue<?> keyValue = config.get(cut).createKeyValue(path); // AttrKeyValue.ofConfigValue(path, );
+            Ref<?> ref = config.get(cut);
+            AttrKeyValue<?> keyValue = ref.createKeyValue(path); // AttrKeyValue.ofConfigValue(path, );
             // assert not empty
             String index = cut[0];
             originValueWithIndex
                     .computeIfAbsent(index, (k) -> new LinkedHashMap<>())
-                    .put(path, keyValue);
+                    .put(path, new Entry(ref, keyValue));
         }
         return originValueWithIndex.entrySet().stream()
                 .map(CollectionUtils::entryToPair)
@@ -184,21 +195,23 @@ public class ConfigureListWidget
     @Override
     public void saveSelected() {
         for (var entry : this.list) {
-            for (var value : entry.getSecond().entrySet()) {
-                config.setValueNoNew(value.getValue().getOriginValue(), Config.cutToPath(value.getKey()));
+            for (var value : entry.getSecond().values()) {
+                value.save();
             }
         }
         config.markForSave();
         Config.launchSaveTasks();
     }
 
-    protected boolean applyFilter(AttrKeyValue<?> keyValue) {
+    protected boolean applyFilter(Entry<?> keyValue) {
         String filter = filterInputWidget.getDelegate().getText();
         if (filter.isEmpty()) {
             return true;
         } else {
             return FilterService.nameMatch(
-                    Text.translatableWithFallback(keyValue.getKeyName(), keyValue.getKeyName())
+                    Text.translatableWithFallback(
+                                    keyValue.keyValue().getKeyName(),
+                                    keyValue.keyValue().getKeyName())
                             .getString(),
                     filter);
         }
@@ -216,5 +229,11 @@ public class ConfigureListWidget
 
     protected void recreateIndexWidget(String key) {
         this.cache.remove(key);
+    }
+
+    public record Entry<T>(Ref<T> ref, AttrKeyValue<T> keyValue) {
+        public void save() {
+            ref.setValue(keyValue.getOriginValue());
+        }
     }
 }
