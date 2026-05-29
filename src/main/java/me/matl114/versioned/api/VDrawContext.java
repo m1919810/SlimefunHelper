@@ -144,7 +144,7 @@ public interface VDrawContext {
             int width,
             int height);
 
-    default void drawSprite(int x, int y, int z, int width, int height, Sprite sprite) {
+    default void drawSprite(Sprite sprite, int x, int y, int z, int width, int height) {
         if (width != 0 && height != 0) {
             this.drawTexturedQuad(
                     sprite.getAtlasId(),

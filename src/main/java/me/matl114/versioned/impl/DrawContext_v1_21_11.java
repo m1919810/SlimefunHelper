@@ -162,6 +162,7 @@ public class DrawContext_v1_21_11 implements VDrawContext {
         this.drawTexturedQuad(sprite.getAtlasId(), x1, x2, y1, y2, z, finalU1, finalU2, finalV1, finalV2);
     }
 
+    @Override
     public Sprite getGuiSprite(Identifier id) {
         return this.drawContext.spriteAtlasTexture.getSprite(id);
     }
