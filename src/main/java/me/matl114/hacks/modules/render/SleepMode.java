@@ -64,7 +64,7 @@ public class SleepMode extends BaseModule {
         // todo: make them  temporary listeners
         registerListener(Listener.getGameRender(), this::onGameRender);
         registerListener(Listener.getResolutionChange(), this::onSleepingResizeScreen);
-        registerListener(Listener.getPostSetScreen(), this::interceptScreenSetup);
+        registerListener(Listener.getMidSetScreen(), this::interceptScreenSetup);
         registerListener(Listener.getKeyboardInput(), this::interceptScreenKeyboardAction);
         registerListener(Listener.getMouseButton(), this::interceptScreenMouseAction);
         registerListener(Listener.getMouseScroll(), this::interceptScreenMouseScroll);

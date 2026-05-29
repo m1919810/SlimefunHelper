@@ -927,6 +927,7 @@
 	"configenum.critical-mode.packet": "Packet",
 	"configenum.critical-mode.freeze": "Freeze",
 	"configenum.critical-mode.grim_ground_simulation": "Grim平地",
+	"configenum.critical-mode.grim_new": "Grim测试模式",
 	"configenum.critical-mode.test": "测试模式",
 	"configenum.elytra-bot-mode.follow": "Follow",
 	"configenum.elytra-bot-mode.mace_arua": "Mace",

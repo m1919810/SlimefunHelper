@@ -33,6 +33,11 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
         return this;
     }
 
+    public Text getTranslationName() {
+        String key = getKeyName();
+        return Text.translatableWithFallback(key, key);
+    }
+
     public List<Text> getTooltips() {
         if (cachedTooltips == null) {
             cachedTooltips = ChatUtils.parseTooltipsTranslation(this.keyValueHolder.getKeyName() + ".tooltips", "暂无介绍");
@@ -40,23 +45,28 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
         return cachedTooltips;
     }
 
-    DisplayWidget keyLabel;
+    DrawableWidget keyLabel;
     DrawableWidget interactPlace;
 
     protected void valueChange() {}
 
-    protected void init() {
-        String key = this.keyValueHolder.getKeyName();
-        ElementHandler button =
-                new ButtonElement(TextProvider.of(Text.translatableWithFallback(key, key)), ButtonAction.empty());
+    public String getKeyName() {
+        return keyValueHolder.getKeyName();
+    }
 
+    public DrawableWidget createKeyLabel() {
+        ElementHandler button = new ButtonElement(TextProvider.of(getTranslationName()), ButtonAction.empty());
         button = button.withTooltips(TooltipHandler.of(this::getTooltips));
-        this.keyLabel = DisplayWidget.instance(1, 1, dkey - 1, dy - 1)
+        return DisplayWidget.instance(1, 1, dkey - 1, dy - 1)
                 .setRenderHandler(
                         button
                         // LabelElement.instance(Text.literal(this.keyValueHolder.getKeyName()))
-                        )
-                .addToSub(this);
+                        );
+    }
+
+    protected void init() {
+
+        this.keyLabel = createKeyLabel().addToSub(this);
         this.interactPlace = this.keyValueHolder
                 .generateValueWidget(dkey + 1 + dblank, 1, dvalue - 2, dy - 2)
                 .addToSub(this);

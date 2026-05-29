@@ -61,7 +61,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 
@@ -83,7 +83,8 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
     public void onTick(Event<ClientPlayerEntity> event) {
         if (autoSprintLegal.get()) {
-            if (!mc.options.sprintKey.isPressed() && mc.options.forwardKey.isPressed()) {
+            if (!mc.options.sprintKey.isPressed()
+                    && PlayerInputUtils.of(mc.options).hasWASDMovement()) {
                 if (logSprint.get()) {
                     Debug.chat("[Sprint] toggle sprint on");
                 }

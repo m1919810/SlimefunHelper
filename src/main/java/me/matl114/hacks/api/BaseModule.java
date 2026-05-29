@@ -1,6 +1,5 @@
 package me.matl114.hacks.api;
 
-import com.mojang.datafixers.util.Pair;
 import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -214,25 +213,21 @@ public abstract class BaseModule implements ModuleListProvider {
             }
         });
         registeredConfigRefs.clear();
+        registeredConfigEditableRefs.clear();
         registeredHotkeys.forEach(s -> s.setInputHandler(SimpleHotKey.InputHandler.EMPTY));
         registeredHotkeys.clear();
         MainCommand.unregisterCommandBootstrap(this::isOwner);
     }
 
-    private final Set<WrapperConfigRef<?>> registeredConfigRefs = new LinkedHashSet<>();
+    private final List<WrapperConfigRef<?>> registeredConfigRefs = new ArrayList<>();
+    private final List<WrapperConfigRef<?>> registeredConfigEditableRefs = new ArrayList<>();
 
-    public final List<Pair<BooleanSupplier, AttrKeyValue<?>>> getEditableConfig() {
-        List<Pair<BooleanSupplier, AttrKeyValue<?>>> lst = new ArrayList<>();
-        for (var re : registeredConfigRefs) {
-            if (re.isEditable()) {
-                lst.add(Pair.of(re.showPredicate(), re.ref.createKeyValue(String.join(".", re.path))));
-            }
-        }
-        return lst;
+    public final List<WrapperConfigRef<?>> getEditableConfig() {
+        return Collections.unmodifiableList(registeredConfigEditableRefs);
     }
 
     public boolean hasEditableConfig() {
-        return !registeredConfigRefs.isEmpty() && registeredConfigRefs.stream().anyMatch(WrapperConfigRef::isEditable);
+        return !registeredConfigEditableRefs.isEmpty();
     }
 
     private final Set<IHotKey> registeredHotkeys = new LinkedHashSet<>();
@@ -347,7 +342,12 @@ public abstract class BaseModule implements ModuleListProvider {
     //    }
 
     private <T> void registerConfigWrapper(WrapperConfigRef<T> ref) {
+        registeredConfigRefs.removeIf(ref::isSamePath);
         registeredConfigRefs.add(ref);
+        if (ref.isEditable()) {
+            registeredConfigEditableRefs.removeIf(ref::isSamePath);
+            registeredConfigEditableRefs.add(ref);
+        }
     }
 
     public void registerHotkey(IHotKey register) {
@@ -410,11 +410,13 @@ public abstract class BaseModule implements ModuleListProvider {
         BooleanSupplier showPredicate = ALWAYS_TRUE;
         Config config;
         String[] path;
+        String keyName;
 
         public WrapperConfigRef(Ref<T> ref, Config config, String[] path) {
             this.ref = ref;
             this.path = path;
             this.config = config;
+            this.keyName = String.join(".", path);
         }
 
         public boolean shouldShow() {
@@ -441,6 +443,14 @@ public abstract class BaseModule implements ModuleListProvider {
 
         public boolean isEditable() {
             return this.config.getRegistryKey() != null;
+        }
+
+        public boolean isSamePath(WrapperConfigRef<?> ref) {
+            return config == ref.config && Arrays.equals(path, ref.path);
+        }
+
+        public AttrKeyValue<T> createKeyValue() {
+            return this.ref.createKeyValue(this.keyName);
         }
     }
 

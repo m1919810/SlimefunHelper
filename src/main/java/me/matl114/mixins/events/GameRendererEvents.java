@@ -1,5 +1,6 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -55,4 +56,24 @@ public abstract class GameRendererEvents {
         RenderListener.renderWorldTasks(matrixStack, tickCounter.getTickDelta(false));
     }
 
+
+
+    @ModifyExpressionValue(
+            method = "renderWorld",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/option/SimpleOption;getValue()Ljava/lang/Object;",
+                            ordinal = 0))
+    private Object onRenderWorld(Object original, @Local MatrixStack matrixStack) {
+        if (original instanceof Boolean bl) {
+            Event<MatrixStack> event = new Event<>(matrixStack, true, false);
+            if (!bl) {
+                event.cancel();
+            }
+            RenderListener.getApplyWorldBobView().handleValue(event);
+            return !event.isCancelled();
+        }
+        return null;
+    }
 }

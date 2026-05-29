@@ -377,6 +377,12 @@ public class Listener {
     @Getter
     @Cancelable // note: this cancels post operations of setting a screen , like cursor lock, render refresh and title
     // update
+    private static final EventChannelDispatcher<Screen> midSetScreen = new EventChannelDispatcher<>(
+            screen -> screen == null ? Screen.class : screenClassIdentifierMapper.apply(screen.getClass()));
+
+    @Getter
+    @Broadcast
+    // update
     private static final EventChannelDispatcher<Screen> postSetScreen = new EventChannelDispatcher<>(
             screen -> screen == null ? Screen.class : screenClassIdentifierMapper.apply(screen.getClass()));
 

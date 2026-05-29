@@ -29,7 +29,9 @@ import org.joml.Matrix4f;
 import org.joml.Vector2d;
 
 public class NameTag extends BaseModule {
-    public NameTag() {}
+    public NameTag() {
+        bindFlag(enable);
+    }
 
     public final ModulePath nameTag = makePath(Configs.RENDER_CONFIG, "player-info.name-tag");
 

@@ -74,6 +74,15 @@ public class InventoryUtils {
             boolean doNotFSearchWhenOpenOtherScreen,
             boolean acceptEmpty,
             boolean handPriority) {
+        return findPlayerItem(predicate, doNotFSearchWhenOpenOtherScreen, acceptEmpty, handPriority, false);
+    }
+
+    public static IndexEntry<ItemStack> findPlayerItem(
+            Predicate<ItemStack> predicate,
+            boolean doNotFSearchWhenOpenOtherScreen,
+            boolean acceptEmpty,
+            boolean handPriority,
+            boolean offHandPriority) {
         PlayerInventory pinv = mc.player.getInventory();
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
         // we assert player hold block while scaffold, or it will be really annoying
@@ -85,6 +94,15 @@ public class InventoryUtils {
         }
         if (handPriority && result != null) {
             return result;
+        }
+        if (result == null && offHandPriority) {
+            item = mc.player.getStackInHand(Hand.OFF_HAND);
+            if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
+                result = new IndexEntry<>(40, item);
+            }
+            if (result != null) {
+                return result;
+            }
         }
         // while player is open Screen
         if (doNotFSearchWhenOpenOtherScreen

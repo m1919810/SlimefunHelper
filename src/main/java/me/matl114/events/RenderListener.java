@@ -87,6 +87,10 @@ public class RenderListener {
         }
     }
 
+    @Getter
+    @Cancelable
+    private static final EventChannel<MatrixStack> applyWorldBobView = new EventChannel<>();
+
     // 在屏幕之上渲染的
     @Getter
     @Broadcast

@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.render;
 import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
@@ -12,6 +13,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.Debug;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket;
@@ -51,8 +53,8 @@ public class RenderExtra extends BaseModule {
             flagBuilder(render.add("no-fire-overlay")).build();
 
     public final FlagRef noBobWorld = builder(render.add("no-world-bob-view"), FlagRef.TYPE)
-        .defaultValue(true).build();
-
+            .defaultValue(true)
+            .build();
 
     public final NBTRef<RegistryRegex<StatusEffect>> noEffectTypes = builder(
                     effectSetting.add("types"), NBTType.<RegistryRegex<StatusEffect>>parameter(RegistryRegex.class))
@@ -73,6 +75,7 @@ public class RenderExtra extends BaseModule {
                 Listener.getPacketPoint().getChannel(ResourcePackSendS2CPacket.class), this::onResourceRequest);
 
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusEffectS2CPacket.class), this::doCancelEffect);
+        registerListener(RenderListener.getApplyWorldBobView(), this::onApplyBobView);
     }
 
     public void onResourceRequest(Event<ResourcePackSendS2CPacket> resourceEvent) {
@@ -105,6 +108,12 @@ public class RenderExtra extends BaseModule {
             if (noEffectForce.get() && noEffectTypes.get().test(reg)) {
                 packet.cancel();
             }
+        }
+    }
+
+    public void onApplyBobView(Event<MatrixStack> event) {
+        if (noBobWorld.get()) {
+            event.cancel();
         }
     }
 }

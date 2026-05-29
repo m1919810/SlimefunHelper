@@ -2,13 +2,39 @@ package me.matl114.managers.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import me.matl114.utils.config.AttrKeyValue;
 
 public abstract class Ref<T> {
 
     protected Config configReference;
+
+    @Nonnull
+    Optional<T> defaultValue = Optional.empty();
+
+    public boolean hasDefaultValue() {
+        return defaultValue.isPresent();
+    }
+
+    public boolean isValueDifferent() {
+        return defaultValue.isPresent() && !Objects.equals(defaultValue.get(), getValue());
+    }
+
+    public void resetValue() {
+        defaultValue.ifPresent(this::setValue);
+    }
+
+    public void setDefaultValue(T defaultValue) {
+        this.defaultValue = Optional.ofNullable(defaultValue);
+    }
+
+    public T getDefaultValue() {
+        return defaultValue.get();
+    }
 
     public void setConfigReference(Config ref) {
         if (ref != configReference) {

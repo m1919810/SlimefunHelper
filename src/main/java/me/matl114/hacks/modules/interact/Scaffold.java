@@ -104,7 +104,7 @@ public class Scaffold extends BaseModule {
     }
 
     private void placeBlockLegally(int hand, BlockHitResult result) {
-        boolean offhandOk = offhand.get();
+        boolean offhandOk = offhand.get() || hand == 40;
         Runnable callback = offhandOk
                 ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(hand)
                 : (swapHand.get()
@@ -154,8 +154,8 @@ public class Scaffold extends BaseModule {
             }
         }
         // do not consider offHand, because some game do not support
-        IndexEntry<ItemStack> stackEntry =
-                InventoryUtils.findPlayerItem((item) -> availableItemBlocks.contains(item.getItem()), true, false);
+        IndexEntry<ItemStack> stackEntry = InventoryUtils.findPlayerItem(
+                (item) -> availableItemBlocks.contains(item.getItem()), true, false, true, true);
         return stackEntry == null ? -1 : stackEntry.index();
 
         // search block in backpack
@@ -175,7 +175,7 @@ public class Scaffold extends BaseModule {
             // Debug.chat("tick", ClientAccess.of(mc).getCooldown());
             // check if we can have any scaffold
             // todo add lerp to config
-            Vec3d playerPos = mc.player.getPos(); // mc.player.getPos();
+            Vec3d playerPos = mc.player.getPos(); // mc.player.getLerpedPos(2.0F); // mc.player.getPos();
             // do not predict y level
             playerPos = new Vec3d(playerPos.x, mc.player.getY(), playerPos.z);
 
