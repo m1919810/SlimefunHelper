@@ -1,12 +1,9 @@
 package me.matl114.versioned.impl;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-
 import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;
@@ -66,6 +63,7 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     public MatrixStack getMatrices() {
         return this.matrixStack;
     }
+
     private static final int[] cachedShaderColor = new int[4];
 
     static {
@@ -74,10 +72,11 @@ public class DrawContext_v1_21_1 implements VDrawContext {
 
     public static int getShaderRGB() {
         return (cachedShaderColor[3] << 24)
-            | (cachedShaderColor[0] << 16)
-            | (cachedShaderColor[1] << 8)
-            | cachedShaderColor[2];
+                | (cachedShaderColor[0] << 16)
+                | (cachedShaderColor[1] << 8)
+                | cachedShaderColor[2];
     }
+
     public void setShaderColor(int rgba) {
         cachedShaderColor[0] = ColorHelper.getRed(rgba);
         cachedShaderColor[1] = ColorHelper.getGreen(rgba);
@@ -124,7 +123,7 @@ public class DrawContext_v1_21_1 implements VDrawContext {
         try {
 
             drawGuiTextureWithColorArgument(
-                RenderLayer::getGuiTextured, texture, i, j, k, l, x, y, width, height, getShaderRGB());
+                    RenderLayer::getGuiTextured, texture, i, j, k, l, x, y, width, height, getShaderRGB());
         } finally {
             if (z != 0) {
                 popLayer();
@@ -132,17 +131,29 @@ public class DrawContext_v1_21_1 implements VDrawContext {
         }
         this.drawContext.drawGuiTexture(RenderLayer::getGuiTextured, texture, i, j, k, l, x, y, width, height);
     }
-    private void drawGuiTextureWithColorArgument(Function<Identifier, RenderLayer> renderLayers, Identifier sprite, int textureWidth, int textureHeight, int u, int v, int x, int y, int width, int height, int color) {
+
+    private void drawGuiTextureWithColorArgument(
+            Function<Identifier, RenderLayer> renderLayers,
+            Identifier sprite,
+            int textureWidth,
+            int textureHeight,
+            int u,
+            int v,
+            int x,
+            int y,
+            int width,
+            int height,
+            int color) {
         Sprite sprite2 = this.drawContext.guiAtlasManager.getSprite(sprite);
         Scaling scaling = this.drawContext.guiAtlasManager.getScaling(sprite2);
         if (scaling instanceof Scaling.Stretch) {
-            this.drawContext.drawSpriteRegion(renderLayers, sprite2, textureWidth, textureHeight, u, v, x, y, width, height, color);
+            this.drawContext.drawSpriteRegion(
+                    renderLayers, sprite2, textureWidth, textureHeight, u, v, x, y, width, height, color);
         } else {
             this.drawContext.enableScissor(x, y, x + width, y + height);
             this.drawContext.drawGuiTexture(renderLayers, sprite, x - u, y - v, textureWidth, textureHeight, color);
             this.drawContext.disableScissor();
         }
-
     }
 
     @Override
@@ -153,7 +164,7 @@ public class DrawContext_v1_21_1 implements VDrawContext {
         }
         try {
             this.drawContext.drawTexturedQuad(
-                RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u1, u2, v1, v2, getShaderRGB());
+                    RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u1, u2, v1, v2, getShaderRGB());
         } finally {
             if (z != 0) {
                 popLayer();

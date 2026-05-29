@@ -1,6 +1,5 @@
 package me.matl114.gui.basic;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.util.Identifier;
 

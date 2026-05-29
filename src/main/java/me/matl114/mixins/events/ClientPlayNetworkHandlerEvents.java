@@ -234,11 +234,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
 
     @WrapOperation(
             method = "onEntityVelocityUpdate",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/entity/Entity;setVelocityClient(DDD)V"))
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setVelocityClient(DDD)V"))
     private void onEntityVelocityUpdate(Entity instance, double x, double y, double z, Operation<Void> original) {
         if (!Listener.getEntityClientVelocityUpdate().isEmpty()) {
             Event<Vec3d> vcUpdate = new Event<>(new Vec3d(x, y, z), true, true, instance);

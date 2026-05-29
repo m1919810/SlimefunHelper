@@ -67,13 +67,13 @@ public abstract class ElytraBehaviourMixin {
     }
 
     @WrapOperation(
-        method = "tickUseFireworks(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;ZZ)V",
-        at =
-        @At(
-            value = "INVOKE",
-            target =
-                "Lbaritone/behavior/InventoryBehavior;throwaway(ZLjava/util/function/Predicate;)Z"),
-        require = 0)
+            method = "tickUseFireworks(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;ZZ)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lbaritone/behavior/InventoryBehavior;throwaway(ZLjava/util/function/Predicate;)Z"),
+            require = 0)
     private boolean onCancelInventorySwap2(
             InventoryBehavior instance,
             boolean b,

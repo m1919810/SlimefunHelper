@@ -19,17 +19,13 @@ public abstract class InGameHudEvents {
     @Final
     private MinecraftClient client;
 
-    @Inject(
-            method = "render",
-            at =
-                    @At("RETURN"))
+    @Inject(method = "render", at = @At("RETURN"))
     private void renderPlayerList(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         VDrawContext vdraw = VDrawContext.of(context);
         vdraw.pushMatrix();
-        try{
-            RenderListener.getRenderGameHudTasks()
-                .broadcast(vdraw, tickCounter, client.options.hudHidden);
-        }finally {
+        try {
+            RenderListener.getRenderGameHudTasks().broadcast(vdraw, tickCounter, client.options.hudHidden);
+        } finally {
             vdraw.popMatrix();
         }
     }

@@ -1,6 +1,5 @@
 package me.matl114.gui.elements;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.*;
 import java.util.function.Predicate;
 import lombok.Getter;

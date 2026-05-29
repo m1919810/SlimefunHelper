@@ -1,11 +1,10 @@
 package me.matl114.versioned.impl;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.*;
 import java.util.List;
 import java.util.OptionalDouble;
 import java.util.function.Function;
-
-import com.mojang.blaze3d.systems.RenderSystem;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
@@ -40,7 +39,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
         return mc.getBufferBuilders().getOutlineVertexConsumers();
     }
 
-    public static final RenderPhase.DepthTest DISABLE_DEPTH_TEST = new RenderPhase.DepthTest("never", 519){
+    public static final RenderPhase.DepthTest DISABLE_DEPTH_TEST = new RenderPhase.DepthTest("never", 519) {
         @Override
         public void endDrawing() {
             RenderSystem.enableDepthTest();

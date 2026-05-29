@@ -1,6 +1,5 @@
 package me.matl114.gui.basic;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import me.matl114.versioned.api.VDrawContext;

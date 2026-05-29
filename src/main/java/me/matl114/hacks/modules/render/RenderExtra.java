@@ -61,7 +61,6 @@ public class RenderExtra extends BaseModule {
             .defaultValue(new RegistryRegex<>(new Regex("^(blindness|darkness|nausea)$"), Registries.STATUS_EFFECT))
             .build();
 
-
     public final FlagRef noWurstHud =
             flagBuilder(render.add("disable-wurst-hud")).build();
 
