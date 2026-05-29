@@ -3,12 +3,12 @@ package me.matl114.versioned.api;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
-import me.matl114.versioned.impl.Nbt_v1_21_1;
+import me.matl114.versioned.impl.Nbt_v1_21_4;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 
 public interface VNbt {
-    VNbt INSTANCE = new Nbt_v1_21_1();
+    VNbt INSTANCE = new Nbt_v1_21_4();
 
     public static VNbt getInstance() {
         return INSTANCE;

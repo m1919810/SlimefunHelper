@@ -15,7 +15,6 @@ import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.MissingSprite;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
@@ -29,7 +28,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
@@ -135,9 +133,9 @@ public class RegistryDisplays {
             return ((element, context, registerValue) -> {
                 int startIndex = (element.getTextureHeight() - 16) / 2;
                 var re = function.apply(registerValue);
-                if(re instanceof Identifier identifier){
+                if (re instanceof Identifier identifier) {
                     context.drawGuiTexture(identifier, startIndex, startIndex, 16, 16);
-                }else if(re instanceof Sprite sprite){
+                } else if (re instanceof Sprite sprite) {
                     context.drawSprite(sprite, startIndex, startIndex, 0, 16, 16);
                 }
             });
