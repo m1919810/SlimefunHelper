@@ -165,6 +165,7 @@
 	"render.eff-setting.types":"渲染:禁用药水列表",
 	"render.no-fire-overlay": "渲染:禁用火焰Overlay",
 	"render.no-overlay": "渲染: 禁用Overlay",
+	"render.no-world-bob-view": "渲染: 禁用世界视角抖动",
 	"render.wake-up-screen": "离开睡眠状态",
 	"render.wake-up-screen.tooltips": "!!sleep指令启动的睡眠状态,只能通过该按键离开",
 	"render.sleep-mode-runner-optimize": "睡眠模式: 跑图优化",

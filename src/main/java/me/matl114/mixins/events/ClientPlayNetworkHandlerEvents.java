@@ -238,19 +238,19 @@ public abstract class ClientPlayNetworkHandlerEvents {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/entity/Entity;setVelocityClient(Lnet/minecraft/util/math/Vec3d;)V"))
-    private void onEntityVelocityUpdate(Entity instance, Vec3d clientVelocity, Operation<Void> original) {
+                                    "Lnet/minecraft/entity/Entity;setVelocityClient(DDD)V"))
+    private void onEntityVelocityUpdate(Entity instance, double x, double y, double z, Operation<Void> original) {
         if (!Listener.getEntityClientVelocityUpdate().isEmpty()) {
-            Event<Vec3d> vcUpdate = new Event<>(clientVelocity, true, true, instance);
+            Event<Vec3d> vcUpdate = new Event<>(new Vec3d(x, y, z), true, true, instance);
             Listener.getEntityClientVelocityUpdate().handleValue(vcUpdate);
             if (vcUpdate.isCancelled()) {
                 return;
             } else {
                 Vec3d vec3d1 = vcUpdate.context();
-                original.call(instance, vec3d1);
+                original.call(instance, vec3d1.x, vec3d1.y, vec3d1.z);
             }
         } else {
-            original.call(instance, clientVelocity);
+            original.call(instance, x, y, z);
         }
     }
 

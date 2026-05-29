@@ -100,7 +100,7 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/gui/screen/Screen;refreshWidgetPositions()V",
                             shift = At.Shift.AFTER))
-    public void onResize(int width, int height, CallbackInfo ci) {
+    public void onResize(MinecraftClient client, int width, int height, CallbackInfo ci) {
         Listener.getPostInitializeScreen().broadcast((Screen) (AbstractParentElement) this);
         if (initializeTasks != null) {
             for (Consumer<Screen> runnable : initializeTasks) {

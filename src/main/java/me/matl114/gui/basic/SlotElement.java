@@ -72,8 +72,6 @@ public class SlotElement extends AbstractElement {
             boolean shouldHighlight) {
         // render slot here
         context.setShaderAlpha(alpha);
-        RenderSystem.enableBlend();
-        RenderSystem.enableDepthTest();
         float scalerX = (float) element.getTextureWidth() / uheight;
         float scalerY = (float) element.getTextureHeight() / vheight;
         boolean shouldPush = scalerX != 1.0F || scalerY != 1.0F;

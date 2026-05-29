@@ -150,8 +150,6 @@ public interface RenderHandler {
                     float alpha,
                     boolean shouldHighlight) {
                 context.setShaderAlpha(alpha);
-                RenderSystem.enableBlend();
-                RenderSystem.enableDepthTest();
                 context.drawTexturedQuad(
                         identifier, 0, element.getTextureWidth(), 0, element.getTextureHeight(), 0, u1, u2, v1, v2);
                 context.setShaderAlpha(1.0F);
@@ -233,8 +231,6 @@ public interface RenderHandler {
                     float alpha,
                     boolean shouldHighlight) {
                 context.setShaderAlpha(alpha);
-                RenderSystem.enableBlend();
-                RenderSystem.enableDepthTest();
                 context.drawTexturedQuad(identifier, 0, dx, 0, dy, 0, u1, u2, v1, v2);
                 context.setShaderAlpha(1.0F);
             }
@@ -264,8 +260,6 @@ public interface RenderHandler {
                     float alpha,
                     boolean shouldHighlight) {
                 context.setShaderAlpha(alpha);
-                RenderSystem.enableBlend();
-                RenderSystem.enableDepthTest();
                 context.drawTexturedQuad(identifier, x, x2, y, y2, 0, u1, u2, v1, v2);
                 context.setShaderAlpha(1.0F);
             }

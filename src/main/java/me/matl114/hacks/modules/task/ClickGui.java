@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.task;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -501,7 +502,7 @@ public class ClickGui extends BaseModule {
                                     }
                                     return true;
                                 }
-                                if (type == Type.MOUSE_RELEASE || (type == Type.MOUSE_CLICK && button != 0)) {
+                                if ((type == Type.MOUSE_RELEASE && button == 0) || (type == Type.MOUSE_CLICK && button != 0)) {
                                     if (!move) {
                                         if (element.isMouseOver(mouseX, mouseY)) {
                                             slideMeta.slidingDown = !slideMeta.slidingDown;

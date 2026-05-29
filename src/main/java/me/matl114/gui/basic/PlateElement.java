@@ -43,9 +43,6 @@ public class PlateElement extends AbstractElement {
         float green = ((color >> 8) & 0xFF) / 255f;
         float blue = (color & 0xFF) / 255f;
         context.setShaderColor(red, green, blue, alpha1);
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(770, 771, 1, 0);
-        RenderSystem.blendFunc(770, 771);
         int width = element.getTextureWidth();
         int height = element.getTextureHeight();
         context.drawTexture(TEXTURE, 0, 0, 106 + xTextureOffset, 124 + yTextureOffset, 8, 8);

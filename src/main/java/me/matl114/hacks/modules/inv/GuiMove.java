@@ -77,7 +77,7 @@ public class GuiMove extends BaseModule {
                 || mc.currentScreen instanceof CommandBlockScreen
                 || mc.currentScreen instanceof StructureBlockScreen
                 || mc.currentScreen.getFocused() instanceof TextFieldWidget) return true;
-        if (allGui.get()) return true;
-        return mc.currentScreen instanceof HandledScreen<?>;
+        if (allGui.get()) return false;
+        return !(mc.currentScreen instanceof HandledScreen<?>);
     }
 }

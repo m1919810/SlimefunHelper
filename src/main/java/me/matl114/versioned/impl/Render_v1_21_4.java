@@ -4,6 +4,8 @@ import java.awt.*;
 import java.util.List;
 import java.util.OptionalDouble;
 import java.util.function.Function;
+
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
@@ -38,6 +40,18 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
         return mc.getBufferBuilders().getOutlineVertexConsumers();
     }
 
+    public static final RenderPhase.DepthTest DISABLE_DEPTH_TEST = new RenderPhase.DepthTest("never", 519){
+        @Override
+        public void endDrawing() {
+            RenderSystem.enableDepthTest();
+        }
+
+        @Override
+        public void startDrawing() {
+            RenderSystem.disableDepthTest();
+        }
+    };
+
     //    public static final RenderLayer LINES_TEST = RenderLayer
     //        .of("wurst:lines", VertexFormats.LINES,
     //            VertexFormat.Mode.LINES, 1536, false, true,
@@ -63,7 +77,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
                     .program(RenderLayer.LINES_PROGRAM)
                     .layering(RenderPhase.Layering.VIEW_OFFSET_Z_LAYERING)
                     .target(RenderLayer.ITEM_ENTITY_TARGET)
-                    .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                    .depthTest(DISABLE_DEPTH_TEST)
                     .cull(RenderLayer.DISABLE_CULLING)
                     .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
                     .writeMaskState(RenderLayer.COLOR_MASK)
@@ -82,7 +96,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
                     .program(RenderLayer.LINES_PROGRAM)
                     .layering(RenderPhase.Layering.VIEW_OFFSET_Z_LAYERING)
                     .target(RenderLayer.ITEM_ENTITY_TARGET)
-                    .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                    .depthTest(DISABLE_DEPTH_TEST)
                     .cull(RenderLayer.DISABLE_CULLING)
                     .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
                     .writeMaskState(RenderLayer.COLOR_MASK)
@@ -98,7 +112,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             true,
             RenderLayer.MultiPhaseParameters.builder()
                     .program(RenderLayer.POSITION_COLOR_PROGRAM)
-                    .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                    .depthTest(DISABLE_DEPTH_TEST)
                     .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
                     .build(false));
 
@@ -111,7 +125,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             true,
             RenderLayer.MultiPhaseParameters.builder()
                     .program(RenderLayer.POSITION_COLOR_PROGRAM)
-                    .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                    .depthTest(DISABLE_DEPTH_TEST)
                     .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
                     .build(false));
 
@@ -125,7 +139,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             RenderLayer.MultiPhaseParameters.builder()
                     .program(RenderLayer.POSITION_COLOR_PROGRAM)
                     .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
-                    .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                    .depthTest(DISABLE_DEPTH_TEST)
                     .build(false));
 
     public static final RenderLayer QUADS_NO_CULL = RenderLayer.of(
@@ -138,7 +152,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             RenderLayer.MultiPhaseParameters.builder()
                     .program(RenderLayer.POSITION_COLOR_PROGRAM)
                     .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
-                    .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                    .depthTest(DISABLE_DEPTH_TEST)
                     .cull(RenderLayer.DISABLE_CULLING)
                     .build(false));
 
@@ -150,7 +164,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             RenderLayer.MultiPhaseParameters.builder()
                     .program(RenderLayer.GUI_PROGRAM)
                     .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
-                    .depthTest(RenderLayer.LEQUAL_DEPTH_TEST)
+                    .depthTest(DISABLE_DEPTH_TEST)
                     .cull(RenderLayer.DISABLE_CULLING)
                     .build(false));
 
@@ -164,7 +178,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
                         .texture(new RenderPhase.Texture(texture, TriState.DEFAULT, false))
                         .program(RenderLayer.POSITION_TEXTURE_COLOR_PROGRAM)
                         .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
-                        .depthTest(RenderLayer.ALWAYS_DEPTH_TEST)
+                        .depthTest(DISABLE_DEPTH_TEST)
                         .writeMaskState(RenderLayer.COLOR_MASK)
                         .cull(RenderLayer.DISABLE_CULLING)
                         .build(false));

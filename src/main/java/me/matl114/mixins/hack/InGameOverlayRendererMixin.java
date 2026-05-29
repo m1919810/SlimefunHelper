@@ -34,7 +34,7 @@ public abstract class InGameOverlayRendererMixin {
 
     @Inject(method = "renderFireOverlay", at = @At("HEAD"), cancellable = true)
     private static void onNoRender2(
-            MatrixStack matrices, VertexConsumerProvider vertexConsumers, Sprite sprite, CallbackInfo ci) {
+        MatrixStack matrices, VertexConsumerProvider vertexConsumers, CallbackInfo ci) {
         if (RenderTasks.getRenderExtra().noFireOverlay.get()) {
             ci.cancel();
         }

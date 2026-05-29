@@ -51,6 +51,7 @@
 		"events.RecipeBookScreenEvents",
 		"events.ScreenEvents",
 		"events.WorldEvents",
+		"events.WorldRendererEvents",
 		"fix.AbstractElementButtonFixMixin",
 		"fix.ClientPlayerListLookupCMEFix",
 		"fix.EntityRenderStateFixMixin",
@@ -92,7 +93,8 @@
 		"render.ResourcePackPositionMixin",
 		"render.ScreenMixin",
 		"render.ScrollableWidgetMixin",
-		"render.TextFieldWidgetMixin"
+		"render.TextFieldWidgetMixin",
+		"versioned.MatrixStackMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

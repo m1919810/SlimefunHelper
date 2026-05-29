@@ -156,8 +156,6 @@ public abstract class IconElement extends BoxElement {
                 this.shaderColor.getGreen() / 255.0f,
                 this.shaderColor.getBlue() / 255.0f,
                 alpha);
-        RenderSystem.enableBlend();
-        RenderSystem.enableDepthTest();
         renderTexture(context, element, shouldHighlight);
         context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }

@@ -50,10 +50,15 @@ public class RenderExtra extends BaseModule {
     public final FlagRef noFireOverlay =
             flagBuilder(render.add("no-fire-overlay")).build();
 
+    public final FlagRef noBobWorld = builder(render.add("no-world-bob-view"), FlagRef.TYPE)
+        .defaultValue(true).build();
+
+
     public final NBTRef<RegistryRegex<StatusEffect>> noEffectTypes = builder(
                     effectSetting.add("types"), NBTType.<RegistryRegex<StatusEffect>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(blindness|darkness|nausea)$"), Registries.STATUS_EFFECT))
             .build();
+
 
     public final FlagRef noWurstHud =
             flagBuilder(render.add("disable-wurst-hud")).build();

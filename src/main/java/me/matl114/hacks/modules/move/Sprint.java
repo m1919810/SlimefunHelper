@@ -82,8 +82,8 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     }
 
     public void onTick(Event<ClientPlayerEntity> event) {
-        if (autoSprintLegal.get() && mc.currentScreen == null) {
-            if (!mc.options.sprintKey.isPressed()) {
+        if (autoSprintLegal.get()) {
+            if (!mc.options.sprintKey.isPressed() && mc.options.forwardKey.isPressed()) {
                 if (logSprint.get()) {
                     Debug.chat("[Sprint] toggle sprint on");
                 }

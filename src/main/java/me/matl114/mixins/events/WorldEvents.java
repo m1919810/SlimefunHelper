@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class WorldEvents {
     @Shadow
     @Final
-    private boolean isClient;
+    public boolean isClient;
 
     @WrapOperation(
             method = "tickBlockEntities",

@@ -1,14 +1,19 @@
 package me.matl114.versioned.impl;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+
 import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.texture.Scaling;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
@@ -36,11 +41,13 @@ public class DrawContext_v1_21_1 implements VDrawContext {
 
     @Override
     public DrawContext pushMatrix() {
+        this.matrixStack.pushMatrix();
         return this.drawContext;
     }
 
     @Override
     public DrawContext popMatrix() {
+        this.matrixStack.popMatrix();
         return this.drawContext;
     }
 
@@ -59,41 +66,99 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     public MatrixStack getMatrices() {
         return this.matrixStack;
     }
+    private static final int[] cachedShaderColor = new int[4];
 
-    @Override
+    static {
+        Arrays.fill(cachedShaderColor, 255);
+    }
+
+    public static int getShaderRGB() {
+        return (cachedShaderColor[3] << 24)
+            | (cachedShaderColor[0] << 16)
+            | (cachedShaderColor[1] << 8)
+            | cachedShaderColor[2];
+    }
     public void setShaderColor(int rgba) {
-        RenderSystem.setShaderColor(
-                ColorHelper.getRedFloat(rgba),
-                ColorHelper.getGreenFloat(rgba),
-                ColorHelper.getBlueFloat(rgba),
-                ColorHelper.getAlphaFloat(rgba));
+        cachedShaderColor[0] = ColorHelper.getRed(rgba);
+        cachedShaderColor[1] = ColorHelper.getGreen(rgba);
+        cachedShaderColor[2] = ColorHelper.getBlue(rgba);
+        cachedShaderColor[3] = ColorHelper.getAlpha(rgba);
     }
 
     @Override
     public void setShaderColor(float red, float green, float blue, float alpha) {
-        RenderSystem.setShaderColor(red, green, blue, alpha);
+        cachedShaderColor[0] = ColorHelper.channelFromFloat(red);
+        cachedShaderColor[1] = ColorHelper.channelFromFloat(green);
+        cachedShaderColor[2] = ColorHelper.channelFromFloat(blue);
+        cachedShaderColor[3] = ColorHelper.channelFromFloat(alpha);
     }
 
-    @Override
     public void setShaderAlpha(float alpha) {
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+        cachedShaderColor[3] = ColorHelper.channelFromFloat(alpha);
     }
 
     @Override
     public void drawGuiTexture(Identifier texture, int x, int y, int z, int width, int height) {
-        this.drawContext.drawGuiTexture(RenderLayer::getGuiTextured, texture, x, y, width, height);
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+            this.drawContext.drawGuiTexture(RenderLayer::getGuiTextured, texture, x, y, width, height, getShaderRGB());
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
+    }
+
+    public static int getShaderRGB(int a) {
+        return ColorHelper.mix(getShaderRGB(), a);
     }
 
     @Override
     public void drawGuiTexture(
             Identifier texture, int i, int j, int k, int l, int x, int y, int z, int width, int height) {
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+
+            drawGuiTextureWithColorArgument(
+                RenderLayer::getGuiTextured, texture, i, j, k, l, x, y, width, height, getShaderRGB());
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
         this.drawContext.drawGuiTexture(RenderLayer::getGuiTextured, texture, i, j, k, l, x, y, width, height);
+    }
+    private void drawGuiTextureWithColorArgument(Function<Identifier, RenderLayer> renderLayers, Identifier sprite, int textureWidth, int textureHeight, int u, int v, int x, int y, int width, int height, int color) {
+        Sprite sprite2 = this.drawContext.guiAtlasManager.getSprite(sprite);
+        Scaling scaling = this.drawContext.guiAtlasManager.getScaling(sprite2);
+        if (scaling instanceof Scaling.Stretch) {
+            this.drawContext.drawSpriteRegion(renderLayers, sprite2, textureWidth, textureHeight, u, v, x, y, width, height, color);
+        } else {
+            this.drawContext.enableScissor(x, y, x + width, y + height);
+            this.drawContext.drawGuiTexture(renderLayers, sprite, x - u, y - v, textureWidth, textureHeight, color);
+            this.drawContext.disableScissor();
+        }
+
     }
 
     @Override
     public void drawTexturedQuad(
             Identifier texture, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
-        this.drawContext.drawTexturedQuad(RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u1, u2, v1, v2, -1);
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+            this.drawContext.drawTexturedQuad(
+                RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u1, u2, v1, v2, getShaderRGB());
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
     }
 
     @Override

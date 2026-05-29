@@ -175,7 +175,7 @@ public class Scaffold extends BaseModule {
             // Debug.chat("tick", ClientAccess.of(mc).getCooldown());
             // check if we can have any scaffold
             // todo add lerp to config
-            Vec3d playerPos = mc.player.getLerpedPos(2.0F); // mc.player.getPos();
+            Vec3d playerPos = mc.player.getPos(); // mc.player.getPos();
             // do not predict y level
             playerPos = new Vec3d(playerPos.x, mc.player.getY(), playerPos.z);
 

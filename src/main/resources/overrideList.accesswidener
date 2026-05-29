@@ -73,3 +73,4 @@ accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraf
 accessible method net/minecraft/item/BlockItem getPlacementState (Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/block/BlockState;
 accessible field net/minecraft/client/gui/DrawContext guiAtlasManager Lnet/minecraft/client/texture/GuiAtlasManager;
 accessible field net/minecraft/client/gui/DrawContext vertexConsumers Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;
+accessible method net/minecraft/client/gui/DrawContext drawSpriteRegion (Ljava/util/function/Function;Lnet/minecraft/client/texture/Sprite;IIIIIIIII)V
