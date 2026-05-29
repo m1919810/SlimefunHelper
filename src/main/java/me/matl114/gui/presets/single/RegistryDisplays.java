@@ -14,7 +14,9 @@ import me.matl114.utils.RegistryUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.MissingSprite;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
@@ -129,10 +131,15 @@ public class RegistryDisplays {
             });
         }
 
-        public static <T> IIcon<T> renderSprite(Function<T, Identifier> function) {
+        public static <T> IIcon<T> renderSprite(Function<T, ?> function) {
             return ((element, context, registerValue) -> {
                 int startIndex = (element.getTextureHeight() - 16) / 2;
-                context.drawGuiTexture(function.apply(registerValue), startIndex, startIndex, 16, 16);
+                var re = function.apply(registerValue);
+                if(re instanceof Identifier identifier){
+                    context.drawGuiTexture(identifier, startIndex, startIndex, 16, 16);
+                }else if(re instanceof Sprite sprite){
+                    context.drawSprite(sprite, startIndex, startIndex, 0, 16, 16);
+                }
             });
         }
     }
@@ -160,12 +167,7 @@ public class RegistryDisplays {
         }
     }
 
-    public static Identifier getEffectTexture(RegistryEntry<StatusEffect> effect) {
-        return (Identifier) effect.getKey()
-                .map(RegistryKey::getValue)
-                .map((id) -> {
-                    return id.withPrefixedPath("mob_effect/");
-                })
-                .orElseGet(MissingSprite::getMissingSpriteId);
+    public static Sprite getEffectTexture(RegistryEntry<StatusEffect> effect) {
+        return MinecraftClient.getInstance().getStatusEffectSpriteManager().getSprite(effect);
     }
 }
