@@ -19,16 +19,14 @@ public abstract class InGameHudEvents {
     @Final
     private MinecraftClient client;
 
-    @Inject(
-            method = "render",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/gui/hud/InGameHud;renderSubtitlesHud(Lnet/minecraft/client/gui/DrawContext;Z)V",
-                            shift = At.Shift.AFTER))
+    @Inject(method = "render", at = @At("RETURN"))
     private void renderPlayerList(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        RenderListener.getRenderGameHudTasks()
-                .broadcast(VDrawContext.of(context), tickCounter, client.options.hudHidden);
+        VDrawContext vdraw = VDrawContext.of(context);
+        vdraw.pushMatrix();
+        try {
+            RenderListener.getRenderGameHudTasks().broadcast(vdraw, tickCounter, client.options.hudHidden);
+        } finally {
+            vdraw.popMatrix();
+        }
     }
 }

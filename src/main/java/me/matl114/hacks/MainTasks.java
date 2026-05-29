@@ -18,10 +18,9 @@ import me.matl114.utils.ApiMethod;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.client.realms.gui.screen.RealmsMainScreen;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
 import net.minecraft.text.Text;
@@ -124,47 +123,27 @@ public class MainTasks {
 
     @ApiMethod
     public static void scheduleDisconnect() {
-        Tasks.scheduleDelayed(
-                () -> {
-                    disconnect(QUITTING_MULTIPLAYER_TEXT);
-                    if (Listener.getClientConnection() != null
-                            && Listener.getClientConnection().isOpen()) {
-                        Listener.getClientConnection().disconnect(QUITTING_MULTIPLAYER_TEXT);
-                    }
-                },
-                0);
+        Tasks.scheduleDelayed(MainTasks::disconnectImmediately, 0);
     }
 
     @ApiMethod
     public static void disconnectImmediately() {
-        disconnect(QUITTING_MULTIPLAYER_TEXT);
+        disconnect();
         if (Listener.getClientConnection() != null
                 && Listener.getClientConnection().isOpen()) {
             Listener.getClientConnection().disconnect(QUITTING_MULTIPLAYER_TEXT);
         }
     }
 
-    public static void disconnect(Text reasonText) {
-        boolean bl = mc.isInSingleplayer();
-        ServerInfo serverInfo = mc.getCurrentServerEntry();
+    @ApiMethod
+    public static void disconnect() {
         if (mc.world != null) {
-            mc.world.disconnect(reasonText);
+            mc.world.disconnect(QUITTING_MULTIPLAYER_TEXT);
         }
-
-        if (bl) {
-            mc.disconnectWithSavingScreen();
-        } else {
-            mc.disconnectWithProgressScreen();
-        }
+        mc.disconnect(new ProgressScreen(true), false);
 
         TitleScreen titleScreen = new TitleScreen();
-        if (bl) {
-            mc.setScreen(titleScreen);
-        } else if (serverInfo != null && serverInfo.isRealm()) {
-            mc.setScreen(new RealmsMainScreen(titleScreen));
-        } else {
-            mc.setScreen(new MultiplayerScreen(titleScreen));
-        }
+        mc.setScreen(new MultiplayerScreen(titleScreen));
     }
 
     @Getter

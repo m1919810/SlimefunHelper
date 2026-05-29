@@ -93,13 +93,14 @@ public class SimpleInputManager implements IInputManager {
     }
 
     public boolean onKeyInput(int keyCode, int scanCode, int modifiers, int action) {
+        // Update record key states
+        boolean stateChange = onKeyInputPre(keyCode, scanCode, modifiers, action);
+        // fire event to ask if the input is consumed
         Event<Keyboard> hardWareInput = new Event<>(mc.keyboard, true, false, keyCode, scanCode, action, modifiers);
         Listener.getKeyboardInput().handleValue(hardWareInput);
         if (hardWareInput.isCancelled()) {
             return true;
         }
-        // Update record key states, return value represents whether the state of this key change
-        boolean stateChange = onKeyInputPre(keyCode, scanCode, modifiers, action);
 
         // will trigger Click handler
         boolean isKeyClicking = action != GLFW.GLFW_RELEASE;
@@ -110,17 +111,16 @@ public class SimpleInputManager implements IInputManager {
 
     public boolean onMouseClick(int mouseX, int mouseY, int eventButton, int action, int mode) {
         boolean cancel = false;
-
-        Event<Mouse> hardWareInput = new Event<>(mc.mouse, true, false, eventButton, action, mode);
-        Listener.getMouseButton().handleValue(hardWareInput);
-        if (hardWareInput.isCancelled()) {
-            return true;
-        }
         int transferedKeyCode = KeyCode.getKeyCodeFromMouseAction(eventButton);
         if (eventButton != -1) {
             boolean isMouseClicked = action == GLFW.GLFW_PRESS;
             // Update the cached pressed keys status
             boolean stateChange = onKeyInputPre(transferedKeyCode, 0, 0, action);
+            Event<Mouse> hardWareInput = new Event<>(mc.mouse, true, false, eventButton, action, mode);
+            Listener.getMouseButton().handleValue(hardWareInput);
+            if (hardWareInput.isCancelled()) {
+                return true;
+            }
             cancel = this.checkKeyBindsForChanges(transferedKeyCode, stateChange, isMouseClicked);
         }
         return cancel;

@@ -42,7 +42,7 @@ public class AutoReconnect extends BaseModule {
         registerListener(
                 Listener.getPostInitializeScreen().getChannel(DisconnectedScreen.class), this::onScreenInitialize);
         registerListener(
-                Listener.getPostSetScreen().getChannel(DisconnectedScreen.class), this::onServerDisconnectScreenSetup);
+                Listener.getMidSetScreen().getChannel(DisconnectedScreen.class), this::onServerDisconnectScreenSetup);
         registerListener(Listener.getServerPreConnectPoint(), this::onServerConnect);
     }
 

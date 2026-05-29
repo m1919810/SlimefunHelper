@@ -56,11 +56,11 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             .build();
 
     public final FlagRef movementOkFreeze = flagBuilder(criticals.add("movement-ok-freeze"))
-            .show(() -> mode.get().isIn(Mode.FREEZE, Mode.GRIM_GROUND_SIMULATION))
+            .show(() -> mode.get().isIn(Mode.FREEZE))
             .build();
 
     public final FlagRef movementOkGround = flagBuilder(criticals.add("movement-ok-ground"))
-            .show(() -> mode.get().isIn(Mode.FREEZE, Mode.GRIM_GROUND_SIMULATION))
+            .show(() -> mode.get().isIn(Mode.GRIM_GROUND_SIMULATION))
             .build();
 
     public final FlagRef autoFakeGround = builder(criticals.add("auto-fake-ground-height"), Boolean.class)

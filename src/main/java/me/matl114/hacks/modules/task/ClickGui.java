@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.task;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import java.awt.*;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.List;
@@ -24,6 +23,7 @@ import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.clickGui.ClickGuiMainScreen;
 import me.matl114.gui.complex.config.ConfigurateNewStyleScreen;
+import me.matl114.gui.complex.config.RefKeyValueInputWidget;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.ColorBoxElement;
 import me.matl114.gui.elements.ColorLabelTextElement;
@@ -38,17 +38,13 @@ import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.ScheduleService;
-import me.matl114.managers.config.Config;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.config.NBTRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.IInputManager;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
-import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
@@ -59,6 +55,7 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.jetbrains.annotations.NotNull;
 
 public class ClickGui extends BaseModule {
     public ClickGui() {}
@@ -264,10 +261,6 @@ public class ClickGui extends BaseModule {
                 "暂无介绍");
     }
 
-    public List<Text> getSettingDescriptionTooltips(String key) {
-        return ChatUtils.parseTooltipsTranslation(key + ".tooltips", "暂无介绍");
-    }
-
     private DrawableWidget createClickableModuleWidget(BaseModule baseModule) {
         FlagRef bindFlag = baseModule.getBindFlag();
         return ExecutableWidget.instance(
@@ -314,21 +307,11 @@ public class ClickGui extends BaseModule {
         // 占位符。tmd
         for (var configWidget : baseModule.getEditableConfig()) {
             SubScreenWidget keyValue = new SubScreenWidget(0, 0, width, buttonHeight + buttonBlank);
-            keyValue.addDrawableChild(DisplayWidget.instance(0, 0, width, buttonBlank));
-            AttrKeyValue<?> holder = configWidget.getSecond();
-            Text six = Text.translatableWithFallback(holder.getKeyName(), holder.getKeyName());
             // add background placeholder , for isMouseOver()
-            keyValue.addDrawableChild(DisplayWidget.instance(0, buttonBlank, width, buttonHeight));
-            keyValue.addDrawableChild(ExecutableWidget.instance(0, buttonBlank, indexWidth, buttonHeight)
-                    .setElementHandler(new ColorLabelTextElement(
-                                    TextProvider.of(six),
-                                    () -> this.textColor.get().withAlpha(255),
-                                    () -> this.configColor.get().withAlpha(255))
-                            .withTooltips(TooltipHandler.of(getSettingDescriptionTooltips(holder.getKeyName())))));
-            DrawableWidget widget =
-                    configWidget.getSecond().generateValueWidget(indexWidth + blankWidth, 0, buttonWidth, buttonHeight);
-            keyValue.addDrawableChild(widget);
-            BooleanSupplier showCondition = configWidget.getFirst();
+            keyValue.addDrawableChild(DisplayWidget.instance(0, 0, width, buttonBlank + buttonHeight));
+            SubScreenWidget kvInputWidget = getKeyValueWidget(configWidget);
+            keyValue.addDrawableChild(kvInputWidget);
+            BooleanSupplier showCondition = configWidget.showPredicate();
             DynamicContentWidget<?> contentWidget =
                     new DynamicContentWidget<>(() -> showCondition.getAsBoolean() ? keyValue : null, 0, 0);
             listWidget.addDrawableChild(contentWidget);
@@ -337,6 +320,38 @@ public class ClickGui extends BaseModule {
         Screen screen = new CenterScreen(listWidget);
         ScreenAccess.of(screen).openFromCurrent();
         // SubScreenWidget levelSubScreen = new SubScreenWidget(0, 0, 0,0);
+    }
+
+    private @NotNull SubScreenWidget getKeyValueWidget(WrapperConfigRef<?> wrapper) {
+        int width = indexWidth + blankWidth + buttonWidth;
+        SubScreenWidget kvInputWidget =
+                new RefKeyValueInputWidget(
+                        0,
+                        buttonBlank,
+                        width,
+                        buttonHeight,
+                        indexWidth,
+                        blankWidth,
+                        buttonWidth,
+                        wrapper.ref(),
+                        wrapper.keyName()) {
+                    @Override
+                    public DrawableWidget createKeyLabel() {
+                        return ExecutableWidget.instance(0, buttonBlank, indexWidth, buttonHeight)
+                                .setElementHandler(new ColorLabelTextElement(
+                                                TextProvider.of(this.getTranslationName()),
+                                                () -> ClickGui.this
+                                                        .textColor
+                                                        .get()
+                                                        .withAlpha(255),
+                                                () -> ClickGui.this
+                                                        .configColor
+                                                        .get()
+                                                        .withAlpha(255))
+                                        .withTooltips(TooltipHandler.of(this::getTooltips)));
+                    }
+                };
+        return kvInputWidget;
     }
 
     private DrawableWidget createSearchList(ClickGuiMetaData metaData, ModuleSlideMeta slideMeta) {
@@ -379,8 +394,7 @@ public class ClickGui extends BaseModule {
                                             if (module.getEditableConfig().stream()
                                                     .anyMatch((editable) -> {
                                                         String settingsName =
-                                                                ChatUtils.parseTranslation(editable.getSecond()
-                                                                        .getKeyName());
+                                                                ChatUtils.parseTranslation(editable.keyName());
                                                         return FilterService.nameMatch(settingsName, filter);
                                                     })) {
                                                 settingsFilter.add(module);
@@ -501,7 +515,8 @@ public class ClickGui extends BaseModule {
                                     }
                                     return true;
                                 }
-                                if (type == Type.MOUSE_RELEASE || (type == Type.MOUSE_CLICK && button != 0)) {
+                                if ((type == Type.MOUSE_RELEASE && button == 0)
+                                        || (type == Type.MOUSE_CLICK && button != 0)) {
                                     if (!move) {
                                         if (element.isMouseOver(mouseX, mouseY)) {
                                             slideMeta.slidingDown = !slideMeta.slidingDown;
