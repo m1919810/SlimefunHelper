@@ -157,7 +157,6 @@ public class RecipeTasks {
         //        Listener.getServerDisconnectPoint().registerHandler((v)->{
         //            resetCache();
         //        });
-        Listener.getWorldSwitchPoint().registerHandler((v) -> {
         Listener.getServerLeavePoint().registerHandler((v) -> {
             resetCache();
         });

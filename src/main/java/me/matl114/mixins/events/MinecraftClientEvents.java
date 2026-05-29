@@ -104,9 +104,9 @@ public abstract class MinecraftClientEvents {
         Listener.getPostSetScreen().broadcast(this.currentScreen);
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;ZZ)V", at = @At("HEAD"))
+    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At("HEAD"))
     public void onServerDisconnect(
-            Screen disconnectionScreen, boolean transferring, boolean stopSounds, CallbackInfo ci) {
+        Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
         // origin exit
         Listener.getServerLeavePoint().handleValue(new Event<>(null, false, false, true));
         Listener.getServerDisconnectPoint().handleValue(new Event<>(null, false, false, transferring));
@@ -160,8 +160,7 @@ public abstract class MinecraftClientEvents {
             at =
                     @At(
                             value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/MinecraftClient;saveCrashReport(Ljava/io/File;Lnet/minecraft/util/crash/CrashReport;)I",
+                            target = "Lnet/minecraft/Bootstrap;println(Ljava/lang/String;)V",
                             shift = At.Shift.AFTER),
             cancellable = true)
     private static void onSystemExit(
@@ -346,9 +345,9 @@ public abstract class MinecraftClientEvents {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/MinecraftClient;getNetworkHandler()Lnet/minecraft/client/network/ClientPlayNetworkHandler;",
+                                    "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V",ordinal = 6,
                             shift = At.Shift.BEFORE))
-    private void onPostGameTick(CallbackInfo ci, @Local Profiler profiler) {
+    private void onPostGameTick(CallbackInfo ci) {
         if (player != null) {
             profiler.swap("post-game-tick");
             Listener.getPostGameTick().broadcast(player);

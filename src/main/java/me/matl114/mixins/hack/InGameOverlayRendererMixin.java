@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class InGameOverlayRendererMixin {
     @Inject(method = "renderInWallOverlay", at = @At("HEAD"), cancellable = true)
     private static void onNoRender0(
-            Sprite sprite, MatrixStack matrices, VertexConsumerProvider vertexConsumers, CallbackInfo ci) {
+        Sprite sprite, MatrixStack matrices, CallbackInfo ci) {
         if (RenderTasks.getRenderExtra().noOverlay.get()) {
             ci.cancel();
         }
@@ -26,7 +26,7 @@ public abstract class InGameOverlayRendererMixin {
 
     @Inject(method = "renderUnderwaterOverlay", at = @At("HEAD"), cancellable = true)
     private static void onNoRender1(
-            MinecraftClient client, MatrixStack matrices, VertexConsumerProvider vertexConsumers, CallbackInfo ci) {
+        MinecraftClient client, MatrixStack matrices, CallbackInfo ci) {
         if (RenderTasks.getRenderExtra().noOverlay.get()) {
             ci.cancel();
         }
@@ -34,7 +34,7 @@ public abstract class InGameOverlayRendererMixin {
 
     @Inject(method = "renderFireOverlay", at = @At("HEAD"), cancellable = true)
     private static void onNoRender2(
-            MatrixStack matrices, VertexConsumerProvider vertexConsumers, Sprite sprite, CallbackInfo ci) {
+        MinecraftClient client, MatrixStack matrices, CallbackInfo ci) {
         if (RenderTasks.getRenderExtra().noFireOverlay.get()) {
             ci.cancel();
         }

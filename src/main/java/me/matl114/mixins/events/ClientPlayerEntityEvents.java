@@ -32,6 +32,7 @@ import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -44,25 +45,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientPlayerEntity.class)
 public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntity implements ClientPlayerEntityAccess {
     @Shadow
-    private PlayerInput lastPlayerInput;
-
-    @Unique
-    private boolean resyncLastInput = false;
+    private double lastX;
 
     @Shadow
-    private double lastXClient;
+    private double lastZ;
 
     @Shadow
-    private double lastZClient;
+    private double lastBaseY;
 
     @Shadow
-    private double lastYClient;
+    private float lastPitch;
 
     @Shadow
-    private float lastPitchClient;
-
-    @Shadow
-    private float lastYawClient;
+    private float lastYaw;
 
     @Shadow
     public Input input;
@@ -84,6 +79,8 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Shadow
     private int ticksSinceLastPositionPacketSent;
+
+    @Shadow private boolean lastSneaking;
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -110,14 +107,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     public void setLastSneakFlag(boolean lastSprint) {
-        this.lastPlayerInput = new PlayerInput(
-                this.lastPlayerInput.forward(),
-                this.lastPlayerInput.backward(),
-                this.lastPlayerInput.left(),
-                this.lastPlayerInput.right(),
-                this.lastPlayerInput.jump(),
-                lastSprint,
-                this.lastPlayerInput.sprint());
+        this.lastSneaking = lastSprint;
     }
 
     @Unique
@@ -127,18 +117,19 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     public void resyncPos() {
-        this.lastXClient = 0;
-        this.lastZClient = 0;
-        this.lastYClient = 0;
+        this.lastX = 0;
+        this.lastBaseY = 0;
+        this.lastZ = 0;
     }
 
     public void resyncRot() {
-        this.lastPitchClient = 0;
-        this.lastYawClient = 0;
+        this.lastPitch = 0;
+        this.lastYaw = 0;
     }
 
     public void resyncInput() {
-        this.resyncLastInput = true;
+        resyncSneak();
+        resyncSprint();
     }
 
     @Unique
@@ -222,17 +213,6 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                 onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
             }
         }
-    }
-
-    @WrapOperation(
-            method = "tick",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/PlayerInput;equals(Ljava/lang/Object;)Z"))
-    private boolean onPlayerInputPackets(PlayerInput instance, Object object, Operation<Boolean> original) {
-        if (resyncLastInput) {
-            resyncLastInput = false;
-            return false;
-        }
-        return original.call(instance, object);
     }
 
     @Unique

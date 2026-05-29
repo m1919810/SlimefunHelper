@@ -8,16 +8,12 @@ import me.matl114.utils.EntityUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.network.packet.PlayPackets;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
-import net.minecraft.util.PlayerInput;
 
 public class PlayerInputUtils {
     public static Input of(net.minecraft.client.input.Input input) {
-        return new Input(input.playerInput);
-    }
-
-    public static Input of(PlayerInput input) {
-        return new Input(input);
+        return new Input(input.pressingForward, input.pressingBack, input.pressingLeft, input.pressingRight, input.jumping, input.sneaking, mc.player.isSprinting());
     }
 
     public static Input of(GameOptions options) {
@@ -28,11 +24,12 @@ public class PlayerInputUtils {
                 options.rightKey.isPressed(),
                 options.jumpKey.isPressed(),
                 options.sneakKey.isPressed(),
-                options.sprintKey.isPressed());
+                options.sprintKey.isPressed()
+            );
     }
 
     public static Input of(PlayerInputC2SPacket packet) {
-        return of(packet.input());
+        return new Input(packet.getForward() >= 0, packet.getForward() <= 0, packet.getSideways() >= 0, packet.getSideways() <= 0, packet.isJumping(), packet.isSneaking(), MinecraftClient.getInstance().options.sprintKey.isPressed());
     }
 
     public static Input tryCorrectMovementInput(Input input, float originalYaw, float currentYaw) {
@@ -80,8 +77,8 @@ public class PlayerInputUtils {
                 input.sprint());
     }
 
-    public static final Input EMPTY = new Input(false, false, false, false, false, false, false);
-
+    public static final Input EMPTY = new Input(false, false, false, false, false, false);
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
     @AllArgsConstructor
     @Accessors(fluent = true, chain = true)
     @Setter
@@ -96,47 +93,18 @@ public class PlayerInputUtils {
         boolean sneak;
         boolean sprint;
 
-        public Input(PlayerInput input) {
-            this(
-                    input.forward(),
-                    input.backward(),
-                    input.left(),
-                    input.right(),
-                    input.jump(),
-                    input.sneak(),
-                    input.sprint());
-        }
-
         public Input(boolean forward, boolean backward, boolean left, boolean right) {
             this(forward, backward, left, right, false, false, false);
         }
 
-        public PlayerInput toPlayerInput() {
-            return new PlayerInput(
-                    this.forward, this.backward, this.left, this.right, this.jump, this.sneak, this.sprint);
-        }
-
-        public PlayerInputC2SPacket toPlayerInputPacket() {
-            return new PlayerInputC2SPacket(toPlayerInput());
-        }
-
         public void sendPlayerInputPacket() {
-            MinecraftClient.getInstance().getNetworkHandler().sendPacket(toPlayerInputPacket());
         }
 
         public void sendPlayerSneakUpdatePacket() {
-            sendPlayerInputPacket();
-            if (ViaFabricPlusHooks.getInstance().isEnabled()
-                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)) {
-                // send sneak packet
-                ViaFabricPlusHooks.ViaPacketWrapper wrapper =
-                        ViaFabricPlusHooks.getInstance().createViaPacket();
-                wrapper.writePacketType(ViaProtocols.V1_21_4_TO_1_21_5, PlayPackets.PLAYER_COMMAND);
-                wrapper.write("VAR_INT", MinecraftClient.getInstance().player.getId());
-                wrapper.write("VAR_INT", this.sneak ? 0 : 1);
-                wrapper.write("VAR_INT", 0);
-                // todo why doesn't work
-                wrapper.scheduleSendToServer(ViaProtocols.V1_21_5_TO_1_21_6, true);
+            if(sneak){
+                mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
+            }else {
+                mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
             }
         }
 
@@ -153,7 +121,12 @@ public class PlayerInputUtils {
         }
 
         public void applyInput(net.minecraft.client.input.Input input) {
-            input.playerInput = toPlayerInput();
+            input.pressingForward = this.forward;
+            input.pressingBack = this.backward;
+            input.pressingLeft = this.left;
+            input.pressingRight = this.right;
+            input.jumping = this.jump;
+            input.sneaking = this.sneak;
         }
 
         public void applyInput(GameOptions options) {

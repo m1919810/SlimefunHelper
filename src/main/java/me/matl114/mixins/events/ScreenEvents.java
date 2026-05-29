@@ -78,11 +78,11 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
     }
 
     @Inject(
-            method = "init(II)V",
+            method = "init(Lnet/minecraft/client/MinecraftClient;II)V",
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/client/gui/screen/Screen;refreshWidgetPositions()V",
+                            target = "Lnet/minecraft/client/gui/screen/Screen;initTabNavigation()V",
                             shift = At.Shift.AFTER))
     public void onClearAndInit(CallbackInfo ci) {
         Listener.getPostInitializeScreen().broadcast((Screen) (AbstractParentElement) this);
@@ -98,9 +98,9 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/client/gui/screen/Screen;refreshWidgetPositions()V",
+                            target = "Lnet/minecraft/client/gui/screen/Screen;initTabNavigation()V",
                             shift = At.Shift.AFTER))
-    public void onResize(int width, int height, CallbackInfo ci) {
+    public void onResize(MinecraftClient client, int width, int height, CallbackInfo ci) {
         Listener.getPostInitializeScreen().broadcast((Screen) (AbstractParentElement) this);
         if (initializeTasks != null) {
             for (Consumer<Screen> runnable : initializeTasks) {

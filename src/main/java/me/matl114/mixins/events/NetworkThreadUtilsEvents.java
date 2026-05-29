@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.network.NetworkSide;
 import net.minecraft.network.NetworkThreadUtils;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
@@ -21,7 +22,7 @@ public abstract class NetworkThreadUtilsEvents {
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/network/packet/Packet;apply(Lnet/minecraft/network/listener/PacketListener;)V"))
-    private void wrapPacketHandle(Packet instance, PacketListener t, Operation<Void> original) {
+    private static void wrapPacketHandle(Packet instance, PacketListener t, Operation<Void> original) {
         // do not handle serverbound packet
         if (t.getSide() == NetworkSide.SERVERBOUND) {
             original.call(instance, t);
