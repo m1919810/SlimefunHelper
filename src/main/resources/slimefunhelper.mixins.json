@@ -6,6 +6,7 @@
 	"client": [
 		"access.ChunkMixin",
 		"access.ExplosiveProjectileMixin",
+		"access.FireworkRocketEntityMixin",
 		"access.HandledScreenMixin",
 		"access.HitResultMixin",
 		"access.KeyBindingMixin",
@@ -18,6 +19,7 @@
 		"access.PlayerInteractBlockC2SPacketMixin",
 		"access.PlayerInteractEntityC2SPacketMixin",
 		"access.PlayerInteractItemC2SPacketMixin",
+		"access.PlayerMoveC2SPacketMixin",
 		"events.AtlasLoaderEvents",
 		"events.BlockEntityEvents",
 		"events.BlockEntityRenderManagerEvents",
@@ -33,6 +35,7 @@
 		"events.DataTrackerEvents",
 		"events.DrawContextEvents",
 		"events.EntityEvents",
+		"events.EntityTypeEvents",
 		"events.GameRendererEvents",
 		"events.HandledScreenEvents",
 		"events.InGameHudEvents",
@@ -46,6 +49,7 @@
 		"events.MinecraftClientEvents",
 		"events.MouseEvents",
 		"events.NetworkThreadUtilsEvents",
+		"events.PlayerEntityEvents",
 		"events.ScreenEvents",
 		"events.WorldEvents",
 		"events.WorldRendererEvents",
@@ -94,16 +98,14 @@
 		"render.ScreenMixin",
 		"render.ScrollableWidgetMixin",
 		"render.TextFieldWidgetMixin",
-		"versioned.MatrixStackMixin"
+		"versioned.ClientPlayerInputTickMixin",
+		"versioned.MatrixStackMixin",
+		"versioned.PlayerInputMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
 	},
 	"mixins": [
-		"access.FireworkRocketEntityMixin",
-		"access.PlayerMoveC2SPacketMixin",
-		"events.EntityTypeEvents",
-		"events.PlayerEntityEvents",
 		"fix.DecoderByteBufExceptionFixMixin",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",

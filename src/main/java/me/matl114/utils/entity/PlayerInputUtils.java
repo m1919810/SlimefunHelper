@@ -4,8 +4,10 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
+import me.matl114.mixins.versioned.PlayerInputAccess;
 import me.matl114.utils.EntityUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.input.KeyboardInput;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.network.packet.PlayPackets;
@@ -13,8 +15,9 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 
 public class PlayerInputUtils {
-    public static Input of(net.minecraft.client.input.Input input) {
-        return new Input(input.pressingForward, input.pressingBack, input.pressingLeft, input.pressingRight, input.jumping, input.sneaking, mc.player.isSprinting());
+    public static Input of(ClientPlayerEntity pl) {
+        var input = (KeyboardInput) pl.input;
+        return new Input(input.pressingForward, input.pressingBack, input.pressingLeft, input.pressingRight, input.jumping, input.sneaking, PlayerInputAccess.of(input).isPressingSprint());
     }
 
     public static Input of(GameOptions options) {
@@ -78,7 +81,7 @@ public class PlayerInputUtils {
                 input.sprint());
     }
 
-    public static final Input EMPTY = new Input(false, false, false, false, false, false);
+    public static final Input EMPTY = new Input(false, false, false, false, false, false, false);
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     @AllArgsConstructor
     @Accessors(fluent = true, chain = true)
@@ -121,13 +124,15 @@ public class PlayerInputUtils {
             return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
         }
 
-        public void applyInput(net.minecraft.client.input.Input input) {
+        public void applyInput(ClientPlayerEntity player) {
+            var input = player.input;
             input.pressingForward = this.forward;
             input.pressingBack = this.backward;
             input.pressingLeft = this.left;
             input.pressingRight = this.right;
             input.jumping = this.jump;
             input.sneaking = this.sneak;
+            PlayerInputAccess.of((KeyboardInput) input).setPressingSprint(this.sprint);
         }
 
         public void applyInput(GameOptions options) {
