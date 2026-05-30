@@ -113,7 +113,7 @@ public class PlayerStateManager extends BaseModule {
             lastTickHasMovement = true;
         }
         // update input here
-        lastInput = PlayerInputUtils.of(mc.player.input);
+        lastInput = PlayerInputUtils.of(mc.player);
     }
 
     public void onPlayerInitialize(Event<ClientPlayerEntity> event) {

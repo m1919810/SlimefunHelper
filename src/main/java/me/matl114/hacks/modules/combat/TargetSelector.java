@@ -277,14 +277,14 @@ public class TargetSelector extends BaseModule {
     }
 
     public List<Entity> getAttackableEntities(double nearby) {
-        return getAttackableEntities(nearby, this::canAttack);
+        return getAttackableEntities(nearby, 0, this::canAttack);
     }
 
-    private List<Entity> getAttackableEntities(double nearby, Predicate<Entity> predicate) {
+    private List<Entity> getAttackableEntities(double nearby, int ticks, Predicate<Entity> predicate) {
         List<Entity> entities = new ArrayList<>();
         List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
         for (var e : et) {
-            if (isTargetInRange(e, nearby) && predicate.test(e)) {
+            if (isTargetInRange(e, nearby, ticks) && predicate.test(e)) {
                 entities.add(e);
             }
         }
@@ -311,27 +311,27 @@ public class TargetSelector extends BaseModule {
         return entities;
     }
 
-    public boolean isTargetInRange(Entity e, double nearby) {
+    public boolean isTargetInRange(Entity e, double nearby, int ticks) {
         if (mc.player == null) return false;
-        Vec3d predictionPos = mc.player
-                .getEyePos()
-                .add(mc.player
-                        .getVelocity()
-                        .multiply(
-                                mc.player.isFallFlying()
-                                        ? CombatTasks.getCombatExtra()
-                                                .fallFlyVcMultiply
-                                                .get()
-                                        : 1));
+        Vec3d predictionPos =
+                mc.player.getEyePos().add(mc.player.getVelocity().multiply(mc.player.isFallFlying() ? ticks : 0));
         double sq = e.getBoundingBox().squaredMagnitude(predictionPos);
         return sq < MathUtils.s2(nearby);
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect) {
-        return searchAttackEntity(nearby, autoSelect, null);
+        return searchAttackEntity(nearby, autoSelect, 0);
+    }
+
+    public Entity searchAttackEntity(double nearby, boolean autoSelect, int tickPredict) {
+        return searchAttackEntity(nearby, autoSelect, tickPredict, null);
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect, Predicate<Entity> predicate) {
+        return searchAttackEntity(nearby, autoSelect, 0, predicate);
+    }
+
+    public Entity searchAttackEntity(double nearby, boolean autoSelect, int tickPredict, Predicate<Entity> predicate) {
         if (mc.player == null) return null;
         // when tp reach, also attack the targeted entity first
         Predicate<Entity> combinedPredicate =
@@ -362,7 +362,7 @@ public class TargetSelector extends BaseModule {
             // stop if player only want to mine a block
             return null;
         }
-        List<Entity> targets = getAttackableEntities(nearby, combinedPredicate);
+        List<Entity> targets = getAttackableEntities(nearby, tickPredict, combinedPredicate);
         // Debug.info(pos);
         // fixed: if player is targeting a faraway entity, then it should be privileged
         // fixed: should not target entity at back of me, because some anticheat place fake players to test killarua;

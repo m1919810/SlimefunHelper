@@ -2,6 +2,7 @@ package me.matl114.hacks.utils.config;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import lombok.Getter;
@@ -109,5 +110,17 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
     @Override
     public NBTType<RegistryRegex<T>> type() {
         return (NBTType) TYPE;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof RegistryRegex<?> that)) return false;
+        return Objects.equals(registry, that.registry) && Objects.equals(parent, that.parent);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(registry, parent);
     }
 }

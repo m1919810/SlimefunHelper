@@ -85,8 +85,8 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     public void registerAll() {
         super.registerAll();
         // 在此处注册事件监听器（当前为空）
-        registerListener(
-                Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onPlayerVelocity);
+        registerListener(Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onVelocity);
+        registerListener(Listener.getPlayerExplosionVelocity(), this::onExplosion);
         registerListener(Listener.getTeleportConfirmResponsePoint(), this::onPlayerSetBack);
         registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityDamage);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onSendMove);
@@ -102,7 +102,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         registerListener(Listener.getPreGameTick(), this::onPreTick);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
-        registerListener(Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class), this::onExplosion);
+        registerListener(Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class), this::onExplosionPre);
     }
 
     public int lastHurtTick = 0;
@@ -206,20 +206,35 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         // Debug.chat("Cancel vc", lastCancelledVelocity.length());
     }
 
-    public void onExplosion(Event<ExplosionS2CPacket> eventExplosion) {
+    public void onExplosionPre(Event<ExplosionS2CPacket> eventExplosion) {
         if (enable.get()
                 && explosions.get()
                 && mc.player != null
-                && eventExplosion.context.playerKnockback().isPresent()) {
+                && (eventExplosion.context.playerKnockback().isPresent()
+                        || eventExplosion.context.center().squaredDistanceTo(mc.player.getPos()) < 9.0D)) {
             canCancel = true;
         }
     }
 
-    public void onPlayerVelocity(Event<Vec3d> event) {
-        lastVelocityNS = System.nanoTime();
-        lastVelocity = event.context;
-        if (enable.get() && mc.player != null && event.getArgs(0) == mc.player) {
+    public void onVelocity(Event<Vec3d> event) {
+        if (checkNull()) return;
+        if (event.getArgs(0) == mc.player) {
+            lastVelocityNS = System.nanoTime();
+            lastVelocity = event.context;
+            onPlayerVelocity(event);
+        }
+    }
 
+    public void onExplosion(Event<Vec3d> event) {
+        if (checkNull()) return;
+        lastVelocityNS = System.nanoTime();
+        lastVelocity = mc.player.getVelocity().add(event.context());
+        onPlayerVelocity(event);
+    }
+
+    public void onPlayerVelocity(Event<Vec3d> event) {
+
+        if (enable.get() && mc.player != null) {
             if (mode.get() == Mode.NONE) {
                 if (canCancel) {
                     markForCancelVelocity();

@@ -14,38 +14,31 @@ import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
 
 public class KeyBindConfigurateWidget extends SubScreenWidget {
-    List<String> keyCodes;
     AttrKeyValue<MultiKeyBind> multiKeyBind;
-
+    // todo: can not sync with attributeKeyValue
     private static final List<Text> KEYCODE_CONFIGURE_TOOLTIPS = List.of(
             Text.literal("使用鼠标点击以选中该构件,在该构件被选中时:"),
             Text.literal("点击键盘以追加键"),
             Text.literal("使用鼠标点击以追加鼠标键"),
             Text.literal("点击右侧D以删除末尾键"),
             Text.literal("点击右侧R以撤销本次修改"),
-            Text.literal("点击右侧U以还原为默认值"),
             Text.literal("点击空白处或者其他构件以取消选中"));
     MultiKeyBind keyBind;
     MultiKeyBind resetKeyBind;
 
-    public KeyBindConfigurateWidget(
-            int x, int y, int dx, int dy, AttrKeyValue<MultiKeyBind> config, MultiKeyBind resetKeybind) {
+    public KeyBindConfigurateWidget(int x, int y, int dx, int dy, AttrKeyValue<MultiKeyBind> config) {
         super(x, y, dx, dy);
         multiKeyBind = config;
         keyBind = multiKeyBind.getOriginValue();
-        keyCodes = new ArrayList<>();
-        keyCodes.addAll(Arrays.asList(keyBind.getKeys()));
-        resetKeyBind = resetKeybind;
         init();
     }
 
     ExecutableWidget keyInputWidget;
     ExecutableWidget deleteKeyInputWidget;
     ExecutableWidget undoKeyInputWidget;
-    ExecutableWidget resetKeyInputWidget;
 
     private void init() {
-        keyInputWidget = ExecutableWidget.instance(0, 1, dx - 3 * dy - 2, dy - 2)
+        keyInputWidget = ExecutableWidget.instance(0, 1, dx - 2 * dy - 2, dy - 2)
                 .setElementHandler(new ButtonElement(this::createKeyDisplay, ((element, widget, mouseButton) -> {
                             // select the widget for the first press, and set code for the second
                             if (this.isFocused() && widget == this.selected) {
@@ -69,7 +62,7 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                         }))
                         .withTooltips(TooltipHandler.of(KEYCODE_CONFIGURE_TOOLTIPS)))
                 .addToSub(this);
-        deleteKeyInputWidget = ExecutableWidget.instance(dx - 3 * dy - 1, 1, dy - 2, dy - 2)
+        deleteKeyInputWidget = ExecutableWidget.instance(dx - 2 * dy - 1, 1, dy - 2, dy - 2)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("D")), ((element, widget, mouseButton) -> {
                             clear();
@@ -77,18 +70,10 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                             return false;
                         })))
                 .addToSub(this);
-        undoKeyInputWidget = ExecutableWidget.instance(dx - 2 * dy - 1, 1, dy - 2, dy - 2)
+        undoKeyInputWidget = ExecutableWidget.instance(dx - dy - 1, 1, dy - 2, dy - 2)
                 .setElementHandler(
                         new ButtonElement(TextProvider.of(Text.literal("U")), ((element, widget, mouseButton) -> {
                             undo();
-                            // make it return false, do not unselect current
-                            return false;
-                        })))
-                .addToSub(this);
-        resetKeyInputWidget = ExecutableWidget.instance(dx - dy - 1, 1, dy - 2, dy - 2)
-                .setElementHandler(
-                        new ButtonElement(TextProvider.of(Text.literal("R")), ((element, widget, mouseButton) -> {
-                            reset();
                             // make it return false, do not unselect current
                             return false;
                         })))
@@ -101,7 +86,13 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
         return isMouseOver(mouseX, mouseY);
     }
 
+    private List<String> getKeys() {
+        var re = multiKeyBind.getOriginValue().getKeys();
+        return new ArrayList<>(Arrays.asList(re));
+    }
+
     private Text createKeyDisplay(DrawableWidget el) {
+        List<String> keyCodes = getKeys();
         String context = keyCodes.isEmpty() ? "None" : String.join(",", keyCodes);
 
         return (this.isFocused() && el == selected)
@@ -111,37 +102,30 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
 
     private void onAnyKeyPressed(int keyCode) {
         String keyName = KeyCode.getNameForKey(keyCode);
+        List<String> keyCodes = getKeys();
         if (keyCodes.isEmpty() || !Objects.equals(keyCodes.get(keyCodes.size() - 1), keyName)) {
             keyCodes.add(keyName);
-            ackChange();
+            ackChange(keyCodes);
         }
     }
 
     private void clear() {
+        List<String> keyCodes = getKeys();
         if (keyCodes.isEmpty()) {
             return;
         }
         keyCodes.remove(keyCodes.size() - 1);
-        ackChange();
+        ackChange(keyCodes);
     }
 
     private void undo() {
+        List<String> keyCodes;
         keyCodes = new ArrayList<>();
         keyCodes.addAll(Arrays.asList(keyBind.getKeys()));
-        ackChange();
+        ackChange(keyCodes);
     }
 
-    private void reset() {
-        keyCodes = new ArrayList<>();
-        keyCodes.addAll(Arrays.asList(resetKeyBind.getKeys()));
-        ackChange();
-    }
-
-    private void ackChange() {
-        multiKeyBind.valueChange(this, "hotkey:" + String.join(",", keyCodes));
-    }
-
-    public MultiKeyBind createKeybind() {
-        return new MultiKeyBind(String.join(",", keyCodes));
+    private void ackChange(List<String> keyCodes) {
+        multiKeyBind.valueChangeInternal(this, new MultiKeyBind(keyCodes));
     }
 }

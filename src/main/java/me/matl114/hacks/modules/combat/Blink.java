@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.combat;
 
 import java.awt.*;
+import java.util.OptionalInt;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -18,11 +19,17 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.entity.EntityMovementStatus;
+import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.EntityStatuses;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.util.math.Box;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -73,6 +80,14 @@ public class Blink extends BaseModule {
     public final FlagRef closeOnVelocity =
             flagBuilder(blink.add("close-on-velocity")).build();
 
+    public final FlagRef invHandle =
+            flagBuilder(blink.add("cache-inventory-packet")).build();
+
+    public final FlagRef elytraSupport =
+            flagBuilder(blink.add("elytra-support")).build();
+
+    public final FlagRef closeOnTotem = flagBuilder(blink.add("close-on-totem")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -84,6 +99,9 @@ public class Blink extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(EntityVelocityUpdateS2CPacket.class), this::onPacketVelocity);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(
+                Listener.getEntityTrackDataUpdate().getChannel(EntityType.FIREWORK_ROCKET), this::onFireworkOwner);
+        registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onEntityStatus);
     }
 
     @Override
@@ -189,6 +207,13 @@ public class Blink extends BaseModule {
         if (enable.get()) {
             var pkt = packet.context;
             if (PacketManager.isAsyncOrNotTransactionC2SPacket(pkt)) return;
+            if ((!(invHandle.get() || (elytraSupport.get() && mc.player.isFallFlying())))
+                    && PacketManager.isInventoryPacket(pkt)) return;
+            if (pkt instanceof PlayerInteractItemC2SPacket && mc.player.isFallFlying()) {
+                if (onFireworkUse()) {
+                    return;
+                }
+            }
             if (pkt instanceof PlayerInteractEntityC2SPacket packet1) {
                 boolean flush = false;
                 if (flushOnAttack.get()) {
@@ -221,6 +246,20 @@ public class Blink extends BaseModule {
         }
     }
 
+    public void onFireworkOwner(Event<DataTracker.SerializedEntry<?>> firework) {
+        if (enable.get()
+                && elytraSupport.get()
+                && firework.context().id() == VDataFlag.ID_FIREWORK_SHOOTER_ID
+                && firework.getArgs(0) instanceof FireworkRocketEntity fireworkEntity
+                && mc.player != null
+                && mc.player.isFallFlying()
+                && firework.context().value() instanceof OptionalInt opint
+                && opint.isPresent()
+                && opint.getAsInt() == mc.player.getId()) {
+            flush();
+        }
+    }
+
     public void onPacketHurt(Event<EntityDamageS2CPacket> damage) {
         if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
             if (flushOnHurt.get()) {
@@ -241,5 +280,24 @@ public class Blink extends BaseModule {
                 enable.set(false);
             }
         }
+    }
+
+    public void onEntityStatus(Event<EntityStatusS2CPacket> eventTotem) {
+        if (checkNull()) return;
+        if (enable.get()
+                && closeOnTotem.get()
+                && eventTotem.context.getEntity(mc.world) == mc.player
+                && eventTotem.context.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING) {
+            flush();
+            enable.set(false);
+        }
+    }
+
+    public boolean onFireworkUse() {
+        if (enable.get() && elytraSupport.get()) {
+            flush();
+            return true;
+        }
+        return false;
     }
 }

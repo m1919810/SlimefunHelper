@@ -166,7 +166,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         getLegalMovementManager().postInputTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
         // changed, update movementVector
         if (!Objects.equals(currentInput, this.input.playerInput)) {
-            PlayerInputUtils.Input i0 = PlayerInputUtils.of(this.input);
+            PlayerInputUtils.Input i0 = new PlayerInputUtils.Input(this.input.playerInput);
             this.input.movementVector = new Vec2f(i0.sidewaysSpeed(), i0.forwardSpeed()).normalize();
         }
     }
