@@ -487,7 +487,7 @@ public class EntityUtils {
      */
     public static Vec3d withStrafe(Vec3d self, double speed, double strength) {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
-        PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+        PlayerInputUtils.Input input = PlayerInputUtils.of(player);
         float yaw = getMovementDirectionOfInput(player.getYaw(), input);
         return withStrafe(self, speed, strength, input, yaw);
     }

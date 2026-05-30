@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import me.matl114.managers.config.NBTParsable;
@@ -88,5 +89,17 @@ public class PrimitiveList<W> implements NBTParsable<PrimitiveList<W>> {
     @Override
     public NBTType<PrimitiveList<W>> type() {
         return TYPE.cast();
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof PrimitiveList<?> that)) return false;
+        return Objects.equals(elementType, that.elementType) && Objects.equals(list, that.list);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(elementType, list);
     }
 }

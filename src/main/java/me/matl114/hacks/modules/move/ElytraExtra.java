@@ -13,6 +13,7 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ACTasks;
+import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -623,6 +624,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         } else {
             sendUsePacket(pitch, yaw);
         }
+        CombatTasks.getBlink().onFireworkUse();
     }
 
     public ItemStack findRocket() {
@@ -1277,7 +1279,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (thisFallFlyingIsArmorFly != -1) {
             // fix grimac multiaction c
-            PlayerInputUtils.of(player.input).sprint(false).applyInput(player.input);
+            PlayerInputUtils.of(player).sprint(false).applyInput(player);
             player.setSprinting(false);
         }
 
@@ -1299,9 +1301,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (true && player.isFallFlying()) {
             player.horizontalCollision = false;
             if (fuckGrimAC.get() && thisTickHasStartFallFly) {
-                var input = PlayerInputUtils.of(player.input);
+                var input = PlayerInputUtils.of(player);
                 input.forward(false).backward(false).left(false).right(false).jump(true);
-                input.applyInput(player.input);
+                input.applyInput(player);
             }
         }
         thisTickHasStartFallFly = false;

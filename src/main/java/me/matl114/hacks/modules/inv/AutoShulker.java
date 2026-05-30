@@ -107,7 +107,7 @@ public class AutoShulker extends BaseModule {
             } else {
                 if (hasShift) {
                     mc.player.setSneaking(false);
-                    PlayerInputUtils.of(mc.player.input).sneak(false).sendPlayerSneakUpdatePacket();
+                    PlayerInputUtils.of(mc.player).sneak(false).sendPlayerSneakUpdatePacket();
                     ClientPlayerAccess.of(mc.player).resyncSneak();
                 }
                 BlockPos placedBlock = hitResult.getBlockPos().offset(hitResult.getSide());

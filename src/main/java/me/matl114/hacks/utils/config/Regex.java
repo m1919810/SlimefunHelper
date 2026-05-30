@@ -1,5 +1,6 @@
 package me.matl114.hacks.utils.config;
 
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import lombok.Getter;
@@ -37,5 +38,17 @@ public class Regex implements NBTParsable<Regex>, Predicate<String> {
     @Override
     public NBTType<Regex> type() {
         return TYPE;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof Regex regex1)) return false;
+        return Objects.equals(regex, regex1.regex);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(regex);
     }
 }

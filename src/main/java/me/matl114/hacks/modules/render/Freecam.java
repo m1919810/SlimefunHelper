@@ -205,7 +205,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
             PlayerInputUtils.EMPTY
                     .withSneak(cachedInput.sneak())
                     .sprint(cachedInput.sprint())
-                    .applyInput(mc.player.input);
+                    .applyInput(mc.player);
             cachedInput = null;
         }
     }

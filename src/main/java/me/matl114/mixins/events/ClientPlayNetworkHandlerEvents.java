@@ -5,6 +5,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -247,6 +249,26 @@ public abstract class ClientPlayNetworkHandlerEvents {
             }
         } else {
             original.call(instance, x, y, z);
+        }
+    }
+
+    @WrapOperation(
+            method = "onExplosion",
+            at = @At(value = "INVOKE", target = "Ljava/util/Optional;ifPresent(Ljava/util/function/Consumer;)V"))
+    private void onExplosionVelocityUpdate(
+            Optional instance, Consumer<? super Vec3d> action, Operation<Void> original) {
+        if (instance.isPresent()) {
+            Vec3d vec3d = (Vec3d) instance.get();
+            Event<Vec3d> updateDeltaEvent = new Event<>(vec3d, true, true);
+            Listener.getPlayerExplosionVelocity().handleValue(updateDeltaEvent);
+            if (!updateDeltaEvent.isCancelled()) {
+                original.call(
+                        (Optional)
+                                (vec3d == updateDeltaEvent.context()
+                                        ? instance
+                                        : Optional.ofNullable(updateDeltaEvent.context())),
+                        action);
+            }
         }
     }
 

@@ -6,6 +6,7 @@ import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.utils.EntityUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;

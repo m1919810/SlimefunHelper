@@ -240,9 +240,9 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         if (triggerCenterFix && mc.player.isOnGround()) {
-            var input = PlayerInputUtils.of(mc.player.input);
+            var input = PlayerInputUtils.of(mc.player);
             if (!input.hasWASDMovement()) {
-                input.forward(true).applyInput(mc.player.input);
+                input.forward(true).applyInput(mc.player);
             }
         }
     }

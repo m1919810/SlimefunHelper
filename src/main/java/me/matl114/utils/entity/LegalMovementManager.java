@@ -132,16 +132,16 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
             hack.applyAfterInputTick(movementManagerEvent);
         }
         if (moveFix) {
-            var input = PlayerInputUtils.of(player.input);
+            var input = PlayerInputUtils.of(player);
             input = PlayerInputUtils.tryCorrectMovementInput(
                     input, movementManagerEvent.context.playerStatus.yaw, player.getYaw());
             // one cannot sprint if forward is not pressed
             if (!input.forward() && (input.sprint() || player.isSprinting())) {
                 input.sprint(false);
                 player.setSprinting(false);
-                input.applyInput(player.input);
+                input.applyInput(player);
             }
-            input.applyInput(player.input);
+            input.applyInput(player);
         }
     }
 

@@ -16,10 +16,8 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.NBTRef;
-import me.matl114.managers.config.NBTType;
+import me.matl114.managers.config.*;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityStatuses;
@@ -42,6 +40,10 @@ public class AutoTotem extends BaseModule {
     }
 
     public final FlagRef enable = flagBuilder(totem.add("auto-totem")).build();
+
+    public final KeyBindRef hotkey = moduleEntry(
+                    totem.add("auto-totem-hotkey"), new MultiKeyBind(), totem.add("auto-totem"))
+            .build();
 
     public final EnumRef<Configs.AutoInvMode> mode = builder(totem.add("auto-totem-mode"), Configs.AutoInvMode.class)
             .defaultValue(Configs.AutoInvMode.LAZY)

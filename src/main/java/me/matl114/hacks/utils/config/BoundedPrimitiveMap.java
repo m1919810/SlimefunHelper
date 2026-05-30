@@ -6,6 +6,7 @@ import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.CodecUtils;
 import me.matl114.utils.config.WidgetFactory;
@@ -66,5 +67,17 @@ public abstract class BoundedPrimitiveMap<W, T> {
                         .concat(WrapperFactory.map(keyWrapper, ptype.stringifyFactory()))
                         .concat(wrapper),
                 creator.apply(baseLookup, Map.of(), ptype));
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof BoundedPrimitiveMap<?, ?> that)) return false;
+        return Objects.equals(map, that.map);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(map);
     }
 }

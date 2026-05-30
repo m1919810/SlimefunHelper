@@ -8,7 +8,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
@@ -35,11 +34,6 @@ public class CombatExtra extends BaseModule {
     public final FlagRef rideAttack = flagBuilder(combat.add("riding-attack")).build();
 
     public final FlagRef noCooldown = flagBuilder(combat.add("cancel-interval")).build();
-
-    public final IntRef fallFlyVcMultiply = intBuilder(combat.add("att-ticks-predict-fallflying"))
-            .defaultValue(2)
-            .validator(Configs.INT_NONNEGATIVE)
-            .build();
 
     public double getAttackRange() {
         double d = range.get();

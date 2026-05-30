@@ -142,14 +142,14 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
         // Debug.info(player.input.movementForward);
         if (directionalSprint.get() && directionalSprintMode.getValue().hasAc()) {
-            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+            PlayerInputUtils.Input input = PlayerInputUtils.of(player);
             if (lastTickLandingRotateJump) {
                 input.jump(false);
             }
-            input.applyInput(player.input);
+            input.applyInput(player);
         }
         if (directionalSprint.get() && directionalSprintMode.getValue() == Configs.BypassMode.NO_BYPASS) {
-            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+            PlayerInputUtils.Input input = PlayerInputUtils.of(player);
             if (mayWorkSprint() && input.backward() && !input.forward()) {
                 // there is no rotation here
                 enableSprintDirectionalThisTick = true;
@@ -165,7 +165,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         //        if (directionalSprint.get()
         //                && (player.input.playerInput.backward() && !player.input.playerInput.forward())
         //                && player.isSprinting()) {
-        //            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+        //            PlayerInputUtils.Input input = PlayerInputUtils.of(player);
         //            if (directionalSprintMode.getValue() == Configs.BypassMode.BYPASS_GRIM) {
         //                // do not use mixin, modify the input
         //                // enableSprintDirectionalThisTick = false;
@@ -177,14 +177,14 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         //
         //                EntityUtils.setEntityYawSafe(player, player.getYaw() + 180);
         //                // rotate the input
-        //                //                    var input = PlayerInputUtils.of(player.input);
+        //                //                    var input = PlayerInputUtils.of(player);
         //                // reverse input
         //                input.clone()
         //                        .right(input.left())
         //                        .left(input.right())
         //                        .forward(input.backward())
         //                        .backward(input.forward())
-        //                        .applyInput(player.input);
+        //                        .applyInput(player);
         //            }
         //
         //            // }
@@ -195,7 +195,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                 if (!fakeSprintMode.get().hasAc()) {
                     fakeSprintThisTick = true;
                     player.setSprinting(false);
-                    PlayerInputUtils.of(player.input).sprint(false).applyInput(player.input);
+                    PlayerInputUtils.of(player).sprint(false).applyInput(player);
                 } else {
                     // NO PLAN YET
                     //                    if (player.isSprinting()) {
@@ -208,7 +208,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     //                        //                        mc.getNetworkHandler().sendPacket(new
                     // ClientCommandC2SPacket(player,
                     //                        // ClientCommandC2SPacket.Mode.START_SPRINTING));
-                    //                        PlayerInputUtils.of(player.input).sprint(false).applyInput(player.input);
+                    //                        PlayerInputUtils.of(player).sprint(false).applyInput(player);
                     //                        ClientPlayerAccess.of(player).resyncSprint();
                     //                    }
                 }

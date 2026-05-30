@@ -900,7 +900,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // do not make velocity input
                 // Debug.info("check input");
                 ClientPlayerEntity entity = movementManagerEvent.context.playerStatus.entity;
-                var input = PlayerInputUtils.of(entity.input);
+                var input = PlayerInputUtils.of(entity);
                 boolean shouldJump = true;
                 boolean shouldPress = true; // thisStepInNoInputStep;
                 if (step == Step.REAPPLY_MOVEMENT) {
@@ -932,7 +932,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     }
                 }
                 if (!entity.isFallFlying()) {
-                    input.applyInput(entity.input);
+                    input.applyInput(entity);
                 }
                 //                else {
                 //                    input.sendPlayerInputPacket();
@@ -1041,7 +1041,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                         entity.horizontalCollision);
                                 // Debug.chat("Apply");
                                 movementManagerEvent.cancel();
-                                var input = PlayerInputUtils.of(entity.entity.input);
+                                var input = PlayerInputUtils.of(entity.entity);
 
                                 if (step == Step.COMMON) {
                                     thisStepInNoInputStep =
@@ -1051,7 +1051,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                     //                                    if (thisStepInNoInputStep) {
                                     //                                        input.forward(true);
                                     //                                    }
-                                    input.jump(false).applyInput(entity.entity.input);
+                                    input.jump(false).applyInput(entity.entity);
                                     step = Step.REAPPLY_MOVEMENT;
                                 }
                                 // mc.getNetworkHandler().sendPacket(new ClientTickEndC2SPacket());
@@ -1327,7 +1327,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 //                    forThisTickInput =
                 // forThisTickInput.jump(false).forward(false).backward(false).left(false).right(false);
                 //                }
-                forThisTickInput.applyInput(movementManagerEvent.context.playerStatus.entity.input);
+                forThisTickInput.applyInput(movementManagerEvent.context.playerStatus.entity);
             }
             forThisTickInput = null;
         }
@@ -1395,13 +1395,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             step = Step.WAIT_FOR_RESYNC;
                             noFallSetbackResponse = true;
                             mc.player.setOnGround(true);
-                            lastCacheInput = PlayerInputUtils.of(mc.player.input);
+                            lastCacheInput = PlayerInputUtils.of(mc.player);
                             lastCacheInput
                                     .forward(false)
                                     .backward(false)
                                     .left(false)
                                     .right(false)
-                                    .jump(false); // .applyInput(mc.player.input);
+                                    .jump(false); // .applyInput(mc.player);
                         }
 
                     } else if (step == Step.WAIT_FOR_RESYNC) {
@@ -1750,7 +1750,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 //                    forThisTickInput =
                 // forThisTickInput.jump(false).forward(false).backward(false).left(false).right(false);
                 //                }
-                forThisTickInput.applyInput(movementManagerEvent.context.playerStatus.entity.input);
+                forThisTickInput.applyInput(movementManagerEvent.context.playerStatus.entity);
             }
             forThisTickInput = null;
         }
@@ -1818,13 +1818,13 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             step = Step.WAIT_FOR_RESYNC;
                             noFallSetbackResponse = true;
                             mc.player.setOnGround(true);
-                            lastCacheInput = PlayerInputUtils.of(mc.player.input);
+                            lastCacheInput = PlayerInputUtils.of(mc.player);
                             lastCacheInput
                                     .forward(false)
                                     .backward(false)
                                     .left(false)
                                     .right(false)
-                                    .jump(false); // .applyInput(mc.player.input);
+                                    .jump(false); // .applyInput(mc.player);
                         }
 
                     } else if (step == Step.WAIT_FOR_RESYNC) {
