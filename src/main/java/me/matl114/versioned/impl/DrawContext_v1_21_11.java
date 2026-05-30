@@ -1,11 +1,10 @@
 package me.matl114.versioned.impl;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import java.awt.*;
 import java.util.*;
 import java.util.List;
-import me.matl114.accessors.gui.GuiRendererStateAccess;
 import me.matl114.utils.collections.IndexEntry;
+import me.matl114.versioned.accessors.GuiRendererStateAccess;
 import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;

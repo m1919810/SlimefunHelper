@@ -31,7 +31,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
@@ -314,7 +313,7 @@ public class ElytraBot extends BaseModule {
                 && e.context.sourceCauseId() == mc.player.getId()
                 && mc.world.getEntityById(e.context.entityId()) instanceof PlayerEntity otherPlayer) {
             var source = e.context.sourceType().getKey().orElse(null);
-            if (Objects.equals(source, DamageTypes.MACE_SMASH)) {
+            if (DamageUtils.isType(source, "mace_smash")) {
                 // we trigger a mace smash
                 sp.onHit(HitListener.HIT_MACE);
                 return;

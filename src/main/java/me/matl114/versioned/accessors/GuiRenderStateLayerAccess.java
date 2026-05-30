@@ -1,4 +1,4 @@
-package me.matl114.accessors.gui;
+package me.matl114.versioned.accessors;
 
 import net.minecraft.client.gui.render.state.GuiRenderState;
 

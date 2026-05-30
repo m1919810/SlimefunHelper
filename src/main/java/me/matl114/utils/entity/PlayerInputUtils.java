@@ -202,7 +202,8 @@ public class PlayerInputUtils {
                     + left + ", right="
                     + right + ", jump="
                     + jump + ", sneak="
-                    + sneak + '}';
+                    + sneak + ", sprint="
+                    + sprint + '}';
         }
     }
 }

@@ -8,6 +8,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.utils.ChatUtils;
+import me.matl114.utils.DamageUtils;
 import me.matl114.utils.Debug;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.player.PlayerEntity;
@@ -70,14 +71,14 @@ public class CombatLog extends BaseModule {
 
     public void logDamage(String from, String to, RegistryKey<DamageType> source) {
         if (enableSmash.get()) {
-            if ("mace_smash".equals(source.getValue().getPath())) {
+            if (DamageUtils.isType(source, "mace_smash")) {
                 // we trigger a mace smash
                 Debug.chat(ChatUtils.stringToText(logSmashFormat.get().formatted(from, to)));
                 return;
             }
         }
         if (enableKinetic.get()) {
-            if ("spear".equals(source.getValue().getPath())) {
+            if (DamageUtils.isType(source, "spear")) {
                 // we trigger a mace smash
                 Debug.chat(ChatUtils.stringToText(logKineticFormat.get().formatted(from, to)));
                 return;

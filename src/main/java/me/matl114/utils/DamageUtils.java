@@ -14,13 +14,19 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.EntityTypeTags;
 
 public class DamageUtils {
     public static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    public static boolean isType(RegistryKey<DamageType> key, String type) {
+        return key != null && Objects.equals(key.getValue().getPath(), type);
+    }
 
     public static double getAttackSpeed(PlayerEntity player, ItemStack stack) {
         double speed = player.getAttributeBaseValue(EntityAttributes.ATTACK_SPEED);
