@@ -135,4 +135,19 @@ public class EntryPrimitiveMap<T, W> implements NBTParsable<EntryPrimitiveMap<T,
     public NBTType<EntryPrimitiveMap<T, W>> type() {
         return TYPE.cast();
     }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof EntryPrimitiveMap<?, ?> that)) return false;
+        return Objects.equals(keyType, that.keyType)
+                && Objects.equals(valueType, that.valueType)
+                && Objects.equals(defaultValue, that.defaultValue)
+                && Objects.equals(map, that.map);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(keyType, valueType, defaultValue, map);
+    }
 }

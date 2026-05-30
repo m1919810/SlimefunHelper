@@ -6,14 +6,15 @@ import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.utils.EntityUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.util.PlayerInput;
 
 public class PlayerInputUtils {
-    public static Input of(net.minecraft.client.input.Input input) {
-        return new Input(input.playerInput);
+    public static Input of(ClientPlayerEntity player) {
+        return new Input(player.input.playerInput);
     }
 
     public static Input of(PlayerInput input) {
@@ -152,7 +153,11 @@ public class PlayerInputUtils {
             return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
         }
 
-        public void applyInput(net.minecraft.client.input.Input input) {
+        public void applyInput(ClientPlayerEntity input) {
+            applyInput(input.input);
+        }
+
+        protected void applyInput(net.minecraft.client.input.Input input) {
             input.playerInput = toPlayerInput();
         }
 
@@ -197,8 +202,7 @@ public class PlayerInputUtils {
                     + left + ", right="
                     + right + ", jump="
                     + jump + ", sneak="
-                    + sneak + ", sprint="
-                    + sprint + '}';
+                    + sneak + '}';
         }
     }
 }

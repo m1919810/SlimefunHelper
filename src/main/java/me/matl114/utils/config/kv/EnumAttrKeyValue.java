@@ -77,20 +77,25 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
         }
         int choices = flattenMap.size();
         if (choices > 0) {
-            String val = this.getValue();
-            int index = -1;
-            for (int i = 0; i < choices; ++i) {
-                if (Objects.equals(val, flattenMap.get(i).getFirst())) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index == -1) {
-                this.valueChange(this, flattenMap.get(0).getFirst());
-                index = 0;
-            }
             AtomicInteger integer = new AtomicInteger();
-            integer.set(index);
+            Runnable kvUpdater = () -> {
+                String val = this.getValue();
+                int index = -1;
+                for (int i = 0; i < choices; ++i) {
+                    if (Objects.equals(val, flattenMap.get(i).getFirst())) {
+                        index = i;
+                        break;
+                    }
+                }
+                if (index == -1) {
+                    this.valueChange(this, flattenMap.get(0).getFirst());
+                    index = 0;
+                } else {
+                    this.valueChange(this, flattenMap.get(index).getFirst());
+                }
+                integer.set(index);
+            };
+            kvUpdater.run();
             SubScreenWidget subScreen = new SubScreenWidget(x, y, dx, dy);
             Runnable indexUpdater = () -> {
                 this.valueChange(this, flattenMap.get(integer.get()).getFirst());
@@ -98,11 +103,15 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
             };
             subScreen.addDrawableChild(ExecutableWidget.instance(1, 1, dx - dy - 2, dy - 2)
                     .setElementHandler(new ButtonElement(
-                                    (ign) -> flattenMap
-                                            .get(integer.get())
-                                            .getSecond()
-                                            .get(),
+                                    (ign) -> {
+                                        kvUpdater.run();
+                                        return flattenMap
+                                                .get(integer.get())
+                                                .getSecond()
+                                                .get();
+                                    },
                                     ButtonAction.run(() -> {
+                                        kvUpdater.run();
                                         int index0 = integer.get();
                                         index0 = (index0 + 1) % choices;
                                         integer.set(index0);
@@ -134,6 +143,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                                     ColorSampler.of(Color.GRAY.getRGB()),
                                     ColorSampler.WHITE,
                                     (el, rb) -> {
+                                        kvUpdater.run();
                                         if (integer.get() == finalI) {
                                             return Colors.GREEN;
                                         } else if (rb) {

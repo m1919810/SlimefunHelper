@@ -536,6 +536,11 @@ public class Listener {
     @Modifiable
     private static final EventChannel<FPoint> playerChangeLook = new EventChannel<>();
 
+    @Getter
+    @Cancelable
+    @Modifiable
+    private static final EventChannel<Vec3d> playerExplosionVelocity = new EventChannel<>();
+
     // entities
     @Getter
     @Broadcast

@@ -228,13 +228,15 @@ public class PacketManager {
 
     public static boolean isAsyncOrNotTransactionC2SPacket(Packet<?> pkt) {
         if (pkt instanceof KeepAliveC2SPacket
-                || pkt instanceof ClickSlotC2SPacket
-                || pkt instanceof CloseHandledScreenC2SPacket
                 || pkt instanceof ChatCommandSignedC2SPacket
                 || pkt instanceof ChatMessageC2SPacket
                 || pkt instanceof CommandExecutionC2SPacket
                 || pkt instanceof RequestCommandCompletionsC2SPacket) return true;
         return false;
+    }
+
+    public static boolean isInventoryPacket(Packet<?> pkt) {
+        return pkt instanceof ClickSlotC2SPacket || pkt instanceof CloseHandledScreenC2SPacket;
     }
 
     public static boolean isAsyncOrNotTransactionS2CPacket(Packet<?> pkt) {

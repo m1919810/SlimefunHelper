@@ -143,7 +143,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             }
                 //            case OLD_GRIM_V2 -> {
                 //                if (mc.player.isOnGround()
-                //                        && !PlayerInputUtils.of(mc.player.input).hasWASDMovement()) {
+                //                        && !PlayerInputUtils.of(mc.player).hasWASDMovement()) {
                 //                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 0.0625, z,
                 // false, false));
                 //                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y, z, false,
@@ -156,7 +156,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                 //            }
                 //            case OLD_GRIM_V3 -> {
                 //                if (mc.player.isOnGround()
-                //                        && !PlayerInputUtils.of(mc.player.input).hasWASDMovement()) {
+                //                        && !PlayerInputUtils.of(mc.player).hasWASDMovement()) {
                 //                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y, z, true,
                 // false));
                 //                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 0.0625, z,
@@ -380,7 +380,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         if (setbackFlag > 0 && mode.get() == Mode.GRIM_GROUND_SIMULATION && autoWalk.get()) {
-            PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
+            PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
             if (!input.hasWASDMovement()) {
                 walkCnt += 1;
                 if (walkCnt % 2 == 0) {
@@ -388,7 +388,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                 } else {
                     input.right(true);
                 }
-                input.applyInput(mc.player.input);
+                input.applyInput(mc.player);
             }
         }
         LegalMovementManager.MovementModifier.super.applyAfterInputTick(movementManagerEvent);

@@ -76,7 +76,7 @@ public class MovExtra extends BaseModule {
                 ClientPlayerAccess.of(player).resyncSprint();
             }
             if (ViaFabricPlusHooks.isSupportEndTick()) {
-                PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+                PlayerInputUtils.Input input = PlayerInputUtils.of(player);
                 input.right(false)
                         .left(false)
                         .forward(false)
@@ -92,7 +92,7 @@ public class MovExtra extends BaseModule {
     public void sendInputPacketsForInventoryAction() {
         if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
             ClientPlayerEntity player = mc.player;
-            PlayerInputUtils.Input input = PlayerInputUtils.of(player.input);
+            PlayerInputUtils.Input input = PlayerInputUtils.of(player);
             input.right(false)
                     .left(false)
                     .forward(false)
@@ -105,17 +105,17 @@ public class MovExtra extends BaseModule {
     // mostly same as InventoryAction packets
     public void sendPacketsForPreStartFallFlying() {
         if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
-            var input = PlayerInputUtils.of(mc.player.input).jump(false);
+            var input = PlayerInputUtils.of(mc.player).jump(false);
             input.sendPlayerInputPacket();
-            input.applyInput(mc.player.input);
+            input.applyInput(mc.player);
         }
     }
 
     public void sendPacketsForPostStartFallFlying() {
         if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
-            var input = PlayerInputUtils.of(mc.player.input).jump(true);
+            var input = PlayerInputUtils.of(mc.player).jump(true);
             input.sendPlayerInputPacket();
-            input.applyInput(mc.player.input);
+            input.applyInput(mc.player);
         }
     }
 

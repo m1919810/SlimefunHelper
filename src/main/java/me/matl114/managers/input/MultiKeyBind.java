@@ -2,6 +2,7 @@ package me.matl114.managers.input;
 
 import com.google.common.base.Preconditions;
 import java.util.Arrays;
+import java.util.List;
 import lombok.Getter;
 
 @Getter
@@ -23,6 +24,16 @@ public class MultiKeyBind {
                 throw new RuntimeException("Invalid key code: " + keyName);
             }
         }
+    }
+
+    public MultiKeyBind(List<String> keys) {
+        this(keys.toArray(String[]::new));
+    }
+
+    public MultiKeyBind(String[] keys) {
+        this.keys = Arrays.copyOf(keys, keys.length);
+        this.keyCodes = new int[keys.length];
+        validateKeys();
     }
 
     public MultiKeyBind(String rawStr) throws RuntimeException {

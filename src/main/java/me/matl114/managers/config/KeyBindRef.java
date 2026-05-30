@@ -1,9 +1,7 @@
 package me.matl114.managers.config;
 
 import me.matl114.gui.presets.single.KeyBindConfigurateWidget;
-import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
@@ -55,10 +53,7 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind> {
     }
 
     public static final AttrKeyValue.CustomWidgetFactory<MultiKeyBind> WIDGET_FACTORY = (s, x, y, dx, dy) -> {
-        IHotKey hotkey = SimpleInputManager.getInstance().getHotkey(s.getKeyName());
-
-        MultiKeyBind defaultHotkeys = (hotkey != null) ? hotkey.getDefaultKeyCodes() : new MultiKeyBind();
-        return new KeyBindConfigurateWidget(x, y, dx, dy, s, defaultHotkeys);
+        return new KeyBindConfigurateWidget(x, y, dx, dy, s);
     };
 
     public static final WrapperFactory<String, MultiKeyBind> FACTORY = WrapperFactory.of(

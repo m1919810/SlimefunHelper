@@ -185,7 +185,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                         slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y, 1.0F));
                     }
                     // todo: why
-                    var input = PlayerInputUtils.of(mc.player.input);
+                    var input = PlayerInputUtils.of(mc.player);
                     if (blockInMineWhenJump.get()
                             && !mc.player.isFallFlying()
                             && (mc.player.getVelocity().y >= 0 || mc.player.isOnGround())
@@ -206,7 +206,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                         return;
                     }
                     if (input.hasMovement()
-                    // PlayerInputUtils.of(mc.player.input).hasMovement()
+                    // PlayerInputUtils.of(mc.player).hasMovement()
                     ) {
                         //                        Vec3d magicVec = mc.player.getVelocity();
                         mc.player.setVelocity(EntityUtils.withStrafe(mc.player.getVelocity(), 0.64));
@@ -251,30 +251,30 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         if (sneakStatus) {
             sneakStatus = false;
             ClientPlayerAccess.of(mc.player).resyncSneak();
-            var lastInput = PlayerInputUtils.of(mc.player.input);
+            var lastInput = PlayerInputUtils.of(mc.player);
             var clone = lastInput.clone();
             clone.sneak(true).sendPlayerSneakUpdatePacket();
             clone.sneak(false).sendPlayerSneakUpdatePacket();
-            clone.applyInput(mc.player.input);
+            clone.applyInput(mc.player);
             // clone.sneak(lastInput.sneak()).sendPlayerSneakUpdatePacket();
             Debug.chat("[NoSlow] 取消当前伪造潜行状态");
         } else {
             PacketSneakMode mode = fakeStatusBypass.get();
             if (mc.player.isSneaking()) {
-                var re = PlayerInputUtils.of(mc.player.input).sneak(false);
+                var re = PlayerInputUtils.of(mc.player).sneak(false);
                 re.sendPlayerSneakUpdatePacket();
-                re.applyInput(mc.player.input);
+                re.applyInput(mc.player);
             }
             mc.options.sneakKey.setPressed(false);
             switch (mode) {
                 case GRIM_FALLFLYING -> {
-                    PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
+                    PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
                     // to trigger plugin events
                     input.sneak(true).sendPlayerSneakUpdatePacket();
                     input.sneak(false).sendPlayerSneakUpdatePacket();
                     if (!mc.player.isOnGround() && ViaFabricPlusHooks.isSupportEndTick()) {
                         input.jump(true).sendPlayerInputPacket();
-                        input.applyInput(mc.player.input);
+                        input.applyInput(mc.player);
                     }
                     mc.getNetworkHandler()
                             .sendPacket(new ClientCommandC2SPacket(
@@ -307,7 +307,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                     }
                     if (canBypass || mode == PacketSneakMode.BAD_PACKET) {
                         int id = entity == null ? mc.player.getId() - 1 : entity.getId();
-                        PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
+                        PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
                         // to trigger plugin events
                         input.sneak(true).sendPlayerSneakUpdatePacket();
                         input.sneak(false).sendPlayerSneakUpdatePacket();
@@ -366,7 +366,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                                             // rare,,, maybe
                                             return false;
                                         }
-                                        PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player.input);
+                                        PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
 
                                         ACTasks.addPostTransactionAction(han -> {
                                             // to trigger plugin events
@@ -565,7 +565,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             return switch (useItemBypass.get()) {
                 case NO_BYPASS -> false;
                 case BYPASS_GRIM_LAZY -> !mc.player.isFallFlying()
-                        && PlayerInputUtils.of(mc.player.input).hasWASDMovement()
+                        && PlayerInputUtils.of(mc.player).hasWASDMovement()
                         && getActiveItemSpeedMultiplier() < 0.99F;
                 case BYPASS_GRIM_TICK -> true;
             };
@@ -594,9 +594,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         //        }
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
         if (shouldNoSlowSneak()) {
-            PlayerInputUtils.of(args.input)
-                    .sneak(mc.options.sneakKey.isPressed())
-                    .applyInput(args.input);
+            PlayerInputUtils.of(args).sneak(mc.options.sneakKey.isPressed()).applyInput(args);
         }
     }
 
@@ -698,7 +696,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             if (!lastPredictWasSneakEdge && args.isSneaking()) {
                 // in lower version,
                 // ClientPlayerAccess.of(args).setLastSneakFlag(args.isSneaking());
-                PlayerInputUtils.of(args.input).sneak(false).applyInput(args.input);
+                PlayerInputUtils.of(args).sneak(false).applyInput(args);
             }
             if (lastPredictWasSneakEdge) {
                 ClientPlayerAccess.of(mc.player).resyncSneak();

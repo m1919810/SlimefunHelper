@@ -22,10 +22,7 @@ import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
-import me.matl114.managers.config.DoubleRef;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
@@ -92,6 +89,10 @@ public class Attack extends BaseModule {
             .show(legalMode::get)
             .build();
 
+    public final FlagRef targetPredict = flagBuilder(attack.add("use-delay-movement-pos-predict"))
+            .show(() -> legalMode.get() && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
+            .build();
+
     public final FlagRef autoAntiShield =
             flagBuilder(attack.add("auto-anti-shield")).build();
 
@@ -149,6 +150,27 @@ public class Attack extends BaseModule {
         }
     }
 
+    public int getModePredictTicks() {
+        if (targetPredict.get() && legalMode.get()) {
+            switch (legalTargetingMode.get()) {
+                case DELAY_MOVEMENT: {
+                    if (mc.player.isFallFlying()
+                            && willUseMaceAttack(autoMaceSwap.get())
+                            && ElytraExtra.INSTANCE.shouldUseDelayMovementAttackMaceFix()) {
+                        return 2;
+                    }
+                    return 1;
+                }
+                case LEGACY_SLIENT_ROT:
+                    return 0;
+                default:
+                    return 0;
+            }
+        } else {
+            return 0;
+        }
+    }
+
     public void onRenderTarget(Event<MatrixStack> stackE) {
         var stack = stackE.context;
         if (enable.get() && mc.player != null && renderAttackTarget.get()) {
@@ -189,7 +211,8 @@ public class Attack extends BaseModule {
     // the attack return value of whether it needs cooldown, for delayMovement attacking
     public boolean tryAttack(boolean auto) {
         if (mc.player == null) return false;
-        Entity entity = CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), auto);
+        Entity entity =
+                CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), auto, getModePredictTicks());
         if (entity != null) {
             return attackEntity(entity, createAttackSettings());
         }
@@ -339,7 +362,11 @@ public class Attack extends BaseModule {
                 elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(settings.maceSwap());
         // remove crosshairTarget judge, use
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
-                mc.player, PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw, target);
+                mc.player,
+                PlayerStateManager.INSTANCE.lastPitch,
+                PlayerStateManager.INSTANCE.lastYaw,
+                target,
+                attackRange);
         if (settings.isNoDelay() && canDirectlyHit) {
             // already actioned in caller
             // may not actioned in caller, fix it
@@ -417,10 +444,7 @@ public class Attack extends BaseModule {
                             if (useMaceAttack || args.isFallFlying()) {
                                 // fix targeting in big velocity
                                 predictedEyePos = predictedEyePos.add(
-                                        mc.player.getX() - mc.player.prevX,
-                                        mc.player.getY() - mc.player.prevY,
-                                        mc.player.getZ()
-                                                - mc.player.prevZ); // predictedEyePos.add(mc.player.getVelocity());
+                                        mc.player.getVelocity()); // predictedEyePos.add(mc.player.getVelocity());
                             }
                             Vec3d vec3d = args.getPos();
                             if (tpRange.get() > 1E-7
@@ -494,6 +518,12 @@ public class Attack extends BaseModule {
                         }
 
                         @Override
+                        public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+                            LegalMovementManager.MovementModifier.super.applyBeforeMovementPacketModify(
+                                    movementManagerEvent);
+                        }
+
+                        @Override
                         public boolean postModify(
                                 Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
                             if (!runThisTick) {
@@ -502,9 +532,7 @@ public class Attack extends BaseModule {
                             ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
                             if (distancePassAttack) {
                                 if (!preAttack) {
-                                    ACTasks.addPostTransactionAction((ch) -> {
-                                        attackWithSettings(mc.player, target, settings);
-                                    });
+                                    applyPostAttack(target, settings);
                                 }
                                 if (posDelta != Vec3d.ZERO) {
                                     Vec3d trueDelta = args.getPos().subtract(posDelta2); // .subtract(0, 0.2, 0);// =
@@ -557,19 +585,44 @@ public class Attack extends BaseModule {
         }
     }
 
+    private void applyPostAttack(Entity target, AttackSettings settings) {
+        //        Vec3d vec3d = mc.player.getPos();
+        //        Listener.addPostPacketCatcher(new PacketCatcherImpl<>(PlayerMoveC2SPacket.class, (packetEvent -> {
+        //            if(PlayerMoveC2SPacketAccess.of(packetEvent.context).getCause() ==
+        // PlayerMoveC2SPacketAccess.Cause.SET_BACK){
+        //                Vec3d curr = mc.player.getPos();
+        //                mc.player.setPosition(vec3d);
+        //                mc.player.setOnGround(true);
+        //                attackWithSettings(mc.player, target, settings);
+        //                LegacySnapRotManager.INSTANCE.snapAt(mc.player.getRotationVector(), true);
+        //                mc.player.setPosition(curr);
+        //                mc.player.setOnGround(false);
+        //                return true;
+        //            }
+        //            return false;
+        //        })));
+        ACTasks.addPostTransactionAction((ch) -> {
+            attackWithSettings(mc.player, target, settings);
+        });
+    }
+
     private boolean processLegacySnapAttack(Entity target, AttackSettings settings) {
         ElytraExtra elytraExtra = MovTasks.getElytraExtra();
         boolean useMaceAttack =
                 false && elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(settings.maceSwap());
+        double attackRange = CombatTasks.getCombatExtra().getAttackRange();
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
-                mc.player, PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw, target);
+                mc.player,
+                PlayerStateManager.INSTANCE.lastPitch,
+                PlayerStateManager.INSTANCE.lastYaw,
+                target,
+                attackRange);
         if (settings.isNoDelay() && canDirectlyHit) {
             // already actioned in caller
             // may not actioned in caller, fix it
             attackWithSettings(mc.player, target, settings);
             return false;
         }
-        final double attackRange = CombatTasks.getCombatExtra().getAttackRange();
         Vec3d predictedEyePos = mc.player.getEyePos();
         Vec3d vec3d = mc.player.getPos();
         boolean distancePassAttack =
