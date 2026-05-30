@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.move;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Objects;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.MetadataHolder;
@@ -11,6 +10,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Tasks;
+import me.matl114.utils.DamageUtils;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.containers.MetaData;
@@ -25,7 +25,6 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.DefaultAttributeRegistry;
-import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -229,14 +228,14 @@ public class PlayerStateManager extends BaseModule {
         if (mc.player != null && eventS2C.context.sourceCauseId() == mc.player.getId()) {
             // me attack them
             var source = eventS2C.context.sourceType().getKey().orElse(null);
-            if (Objects.equals(source, DamageTypes.MACE_SMASH)) {
+            if (DamageUtils.isType(source, "mace_smash")) {
                 // we trigger a mace smash
                 handleMaceSmash();
             }
         }
         if (mc.player != null && eventS2C.context.entityId() == mc.player.getId()) {
             var source = eventS2C.context.sourceType().getKey().orElse(null);
-            if (Objects.equals(source, DamageTypes.ENDER_PEARL)) {
+            if (DamageUtils.isType(source, "ender_pearl")) {
                 handlePearlTeleport();
             }
         }
