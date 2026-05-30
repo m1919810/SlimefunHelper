@@ -16,7 +16,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.client.util.math.MatrixStack;

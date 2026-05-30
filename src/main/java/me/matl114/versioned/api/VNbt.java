@@ -3,7 +3,6 @@ package me.matl114.versioned.api;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
-import me.matl114.versioned.impl.Nbt_v1_21_11;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 

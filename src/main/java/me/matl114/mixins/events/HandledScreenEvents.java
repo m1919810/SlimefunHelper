@@ -13,7 +13,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(HandledScreen.class)
@@ -49,16 +48,16 @@ public abstract class HandledScreenEvents extends Screen {
     }
 
     // fix mouse scroll dispatch
-//    @Inject(method = "mouseScrolled", at = @At("RETURN"), cancellable = true)
-//    public void onMouseScrolled(
-//            double mouseX,
-//            double mouseY,
-//            double horizontalAmount,
-//            double verticalAmount,
-//            CallbackInfoReturnable<Boolean> cir) {
-//        if (cir.getReturnValueZ()) {
-//            return;
-//        }
-//        cir.setReturnValue(super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount));
-//    }
+    //    @Inject(method = "mouseScrolled", at = @At("RETURN"), cancellable = true)
+    //    public void onMouseScrolled(
+    //            double mouseX,
+    //            double mouseY,
+    //            double horizontalAmount,
+    //            double verticalAmount,
+    //            CallbackInfoReturnable<Boolean> cir) {
+    //        if (cir.getReturnValueZ()) {
+    //            return;
+    //        }
+    //        cir.setReturnValue(super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount));
+    //    }
 }

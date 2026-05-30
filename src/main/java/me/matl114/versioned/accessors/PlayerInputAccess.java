@@ -1,4 +1,4 @@
-package me.matl114.mixins.versioned;
+package me.matl114.versioned.accessors;
 
 import net.minecraft.client.input.KeyboardInput;
 
@@ -7,7 +7,7 @@ public interface PlayerInputAccess {
 
     void setPressingSprint(boolean pressingSprint);
 
-    public static PlayerInputAccess of(KeyboardInput input){
+    public static PlayerInputAccess of(KeyboardInput input) {
         return (PlayerInputAccess) input;
     }
 }

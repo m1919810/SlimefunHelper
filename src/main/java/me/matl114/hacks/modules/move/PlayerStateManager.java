@@ -30,7 +30,6 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
@@ -83,7 +82,9 @@ public class PlayerStateManager extends BaseModule {
         registerListener(
                 Listener.getPacketPostSendPoint().getChannel(ClientCommandC2SPacket.class), this::onPlayerCommand);
         registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerInitialize);
-        registerListener(Listener.getPacketPostSendPoint().getChannel(ClientTickEndC2SPacket.class), this::onTickEnd);
+        //        registerListener(Listener.getPacketPostSendPoint().getChannel(ClientTickEndC2SPacket.class),
+        // this::onTickEnd);
+        registerListener(Listener.getPostGameTick(), this::onTickEnd);
         registerListener(Listener.getPreGameTick(), this::updateOtherPlayers);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotemPop);
     }
@@ -230,7 +231,7 @@ public class PlayerStateManager extends BaseModule {
             // me attack them
             var source = eventS2C.context.sourceType().getKey().orElse(null);
             if (Objects.equals(source, DamageTypes.MACE_SMASH)) {
-                // we trigger a mace smash
+                // trigger a mace smash
                 handleMaceSmash();
             }
         }
@@ -283,7 +284,7 @@ public class PlayerStateManager extends BaseModule {
         lastInput = PlayerInputUtils.EMPTY.clone();
     }
 
-    public void onTickEnd(Event<ClientTickEndC2SPacket> tickEndPacket) {
+    public void onTickEnd(Event<ClientPlayerEntity> tickEndPacket) {
         if (!lastTickHasMovement) {
             lastKnownMovementSpeed = Vec3d.ZERO;
         }

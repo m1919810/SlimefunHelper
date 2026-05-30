@@ -17,7 +17,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
-import net.minecraft.entity.EntityPosition;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
@@ -111,7 +111,7 @@ public class AutoResync extends BaseModule {
                 if (logAutoResync.get()) {
                     Debug.chat("Auto Resync triggered!");
                 }
-                mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.teleportId()));
+                mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.getTeleportId()));
                 executeResyncTo(resyncPos, resyncToPos, currentOnGround);
                 if (recursive.get()) {
                     mc.player.setPosition(resyncToPos);
@@ -130,7 +130,7 @@ public class AutoResync extends BaseModule {
                 Vec3d resyncPos = getPosition(packet1);
                 double sqDistance = resyncToPos.squaredDistanceTo(resyncPos);
                 if (autoResyncPosDistance.get() > 0 && sqDistance < MathUtils.s2(autoResyncPosDistance.get())) {
-                    mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.teleportId()));
+                    mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(packet1.getTeleportId()));
                     executeResyncTo(resyncPos, resyncToPos, currentOnGround);
                     event.cancel();
                     return;
@@ -140,13 +140,11 @@ public class AutoResync extends BaseModule {
         // remove rot
         boolean recreate = false;
         var packet = event.context();
-        Set<PositionFlag> flags = packet.relatives();
+        Set<PositionFlag> flags = packet.getFlags();
         Set<PositionFlag> newFlags = null;
-        EntityPosition pos = packet.change();
-        Vec3d position = pos.position();
-        Vec3d deltaMovement = pos.deltaMovement();
-        float yaw = pos.yaw();
-        float pitch = pos.pitch();
+        // Vec3d deltaMovement = pos.deltaMovement();
+        float yaw = packet.getYaw();
+        float pitch = packet.getPitch();
         if (autoResyncRot.get()) {
             recreate = true;
             if (newFlags == null) {
@@ -158,19 +156,13 @@ public class AutoResync extends BaseModule {
             pitch = 0;
         }
         if (noVelocitySetback.get()) {
-            recreate = true;
-            if (newFlags == null) {
-                newFlags = new HashSet<>(flags);
-            }
-            newFlags.remove(PositionFlag.ROTATE_DELTA);
-            newFlags.add(PositionFlag.DELTA_X);
-            newFlags.add(PositionFlag.DELTA_Y);
-            newFlags.add(PositionFlag.DELTA_Z);
-            deltaMovement = Vec3d.ZERO;
+            // no
         }
         if (recreate && newFlags != null) {
             event.context(new PlayerPositionLookS2CPacket(
-                    packet.teleportId(), new EntityPosition(position, deltaMovement, yaw, pitch), newFlags));
+                    packet.getX(), packet.getY(), packet.getZ(), yaw, pitch, newFlags, packet.getTeleportId()));
+            //                    packet.getTeleportId(), new EntityPosition(position, deltaMovement, yaw, pitch),
+            // newFlags));
         }
     }
 
@@ -189,9 +181,32 @@ public class AutoResync extends BaseModule {
     }
 
     public Vec3d getPosition(PlayerPositionLookS2CPacket packet) {
-        EntityPosition entityPosition = EntityPosition.fromEntity(mc.player);
-        EntityPosition entityPosition2 = EntityPosition.apply(entityPosition, packet.change(), packet.relatives());
-        return entityPosition2.position();
+        boolean bl = packet.getFlags().contains(PositionFlag.X);
+        boolean bl2 = packet.getFlags().contains(PositionFlag.Y);
+        boolean bl3 = packet.getFlags().contains(PositionFlag.Z);
+        double e;
+        ClientPlayerEntity playerEntity = mc.player;
+        if (bl) {
+            e = playerEntity.getX() + packet.getX();
+        } else {
+            e = packet.getX();
+        }
+
+        double g;
+        if (bl2) {
+            g = playerEntity.getY() + packet.getY();
+        } else {
+            g = packet.getY();
+        }
+
+        double i;
+        if (bl3) {
+            i = playerEntity.getZ() + packet.getZ();
+        } else {
+            i = packet.getZ();
+        }
+
+        return new Vec3d(e, g, i);
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {

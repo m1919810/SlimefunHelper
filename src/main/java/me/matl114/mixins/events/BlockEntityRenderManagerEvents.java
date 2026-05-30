@@ -15,16 +15,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(BlockEntityRenderDispatcher.class)
 public abstract class BlockEntityRenderManagerEvents {
     @Inject(
-            method = "render(Lnet/minecraft/client/render/block/entity/BlockEntityRenderer;Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/block/entity/BlockEntityRenderer;render(Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II)V"), cancellable = true
-                    )
+            method =
+                    "render(Lnet/minecraft/client/render/block/entity/BlockEntityRenderer;Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/block/entity/BlockEntityRenderer;render(Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II)V"),
+            cancellable = true)
     private static <T extends BlockEntity> void onRenderBlockEntity(
-        BlockEntityRenderer<T> renderer,
-        T blockEntity,
-        float tickDelta,
-        MatrixStack matrices,
-        VertexConsumerProvider vertexConsumers,
-        CallbackInfo ci) {
+            BlockEntityRenderer<T> renderer,
+            T blockEntity,
+            float tickDelta,
+            MatrixStack matrices,
+            VertexConsumerProvider vertexConsumers,
+            CallbackInfo ci) {
         if (blockEntity != null) {
             Event<BlockEntity> event = new Event<>(blockEntity, true, false);
             RenderListener.getBlockEntityRenderListener().handleValue(event);

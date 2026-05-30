@@ -2,8 +2,6 @@ package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.BidirectionalIterator;
 import java.util.Objects;
@@ -30,7 +28,6 @@ import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -64,6 +61,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Shadow
     public abstract boolean shouldSlowDown();
+
     @Shadow
     @Final
     public ClientPlayNetworkHandler networkHandler;
@@ -80,7 +78,8 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Shadow
     private int ticksSinceLastPositionPacketSent;
 
-    @Shadow private boolean lastSneaking;
+    @Shadow
+    private boolean lastSneaking;
 
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -216,8 +215,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     @Unique
-    public void onPlayerInputPackets() {
-    }
+    public void onPlayerInputPackets() {}
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))
     public void postwrapperPlayerMovementSentTick(CallbackInfo ci) {

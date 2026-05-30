@@ -1,10 +1,13 @@
 package me.matl114.mixins.hack;
 
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.hacks.MovTasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.*;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
@@ -70,5 +73,15 @@ public abstract class ClientPacketListenerMixin {
             ClientPlayerAccess access = ClientPlayerAccess.of(MinecraftClient.getInstance().player);
             access.clearKeepedInventory(false);
         }
+    }
+
+    @WrapWithCondition(
+            method = "onPlayerPositionLook",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setVelocity(DDD)V"))
+    private boolean setVelocity(PlayerEntity player, double x, double y, double z) {
+        if (MovTasks.getAutoResync().noVelocitySetback.get()) {
+            return false;
+        }
+        return true;
     }
 }

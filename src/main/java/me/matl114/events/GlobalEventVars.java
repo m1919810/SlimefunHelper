@@ -14,5 +14,6 @@ public class GlobalEventVars {
         }
         return false;
     }
+
     public static Event<MinecraftClient> crashReportEvent = null;
 }

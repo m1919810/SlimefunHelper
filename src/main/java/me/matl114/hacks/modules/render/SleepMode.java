@@ -1,8 +1,8 @@
 package me.matl114.hacks.modules.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import java.util.stream.Stream;
 import com.mojang.blaze3d.systems.VertexSorter;
+import java.util.stream.Stream;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
@@ -38,6 +38,7 @@ import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
+import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.joml.Matrix4f;
@@ -71,7 +72,6 @@ public class SleepMode extends BaseModule {
         registerListener(Listener.getCharTyped(), this::interceptCharType);
         registerListener(Listener.getMouseMove(), this::interceptMouseMove);
         registerListener(Listener.getMouseDrag(), this::interceptMouseDragged);
-        registerListener(Listener.getPreSetScreen(), this::interceptSetScreen);
         registerCommandBootstrap(this::onSleepCommandBootstrap);
         registerListener(Listener.getPacketPoint().getChannel(ChunkDataS2CPacket.class), this::onChunkData);
     }

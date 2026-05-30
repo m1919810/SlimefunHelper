@@ -1,6 +1,7 @@
 package me.matl114.mixins.versioned;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import me.matl114.versioned.accessors.PlayerInputAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.input.Input;
@@ -13,10 +14,13 @@ import org.spongepowered.asm.mixin.injection.At;
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayerEntity.class)
 public abstract class ClientPlayerInputTickMixin {
-    @Shadow public Input input;
+    @Shadow
+    public Input input;
 
-    @ModifyExpressionValue(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/KeyBinding;isPressed()Z"))
-    public boolean rewriteSprintPressWithInputFlag(boolean original){
+    @ModifyExpressionValue(
+            method = "tickMovement",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/KeyBinding;isPressed()Z"))
+    public boolean rewriteSprintPressWithInputFlag(boolean original) {
         return PlayerInputAccess.of((KeyboardInput) this.input).isPressingSprint();
     }
 }

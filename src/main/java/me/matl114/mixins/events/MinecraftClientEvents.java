@@ -105,8 +105,7 @@ public abstract class MinecraftClientEvents {
     }
 
     @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At("HEAD"))
-    public void onServerDisconnect(
-        Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
+    public void onServerDisconnect(Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
         // origin exit
         Listener.getServerLeavePoint().handleValue(new Event<>(null, false, false, true));
         Listener.getServerDisconnectPoint().handleValue(new Event<>(null, false, false, transferring));
@@ -344,8 +343,8 @@ public abstract class MinecraftClientEvents {
             at =
                     @At(
                             value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V",ordinal = 6,
+                            target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V",
+                            ordinal = 6,
                             shift = At.Shift.BEFORE))
     private void onPostGameTick(CallbackInfo ci) {
         if (player != null) {

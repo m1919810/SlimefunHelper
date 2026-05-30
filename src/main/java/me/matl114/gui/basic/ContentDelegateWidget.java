@@ -130,12 +130,9 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
                 translatedMouseX = (int) (translatedMouseX / textureScale);
                 translatedMouseY = (int) (translatedMouseY / textureScale);
             }
-            if (this.getDelegate().mouseDragged(
-                    translatedMouseX,
-                    translatedMouseY,
-                    button,
-                    deltaX * textureScale,
-                    deltaY * textureScale)) {
+            if (this.getDelegate()
+                    .mouseDragged(
+                            translatedMouseX, translatedMouseY, button, deltaX * textureScale, deltaY * textureScale)) {
                 return true;
             }
         }

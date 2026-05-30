@@ -1,8 +1,6 @@
 package me.matl114.mixins.render;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import java.util.function.Consumer;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;

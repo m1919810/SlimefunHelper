@@ -35,7 +35,6 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.waypoint.TrackedWaypoint;
 
 public class WorldUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -57,60 +56,14 @@ public class WorldUtils {
 
     public static Stream<String> getWaypointNames() {
 
-        return getWaypointInternal()
-                .map(TrackedWaypoint::getSource)
-                .flatMap(s -> s.map(
-                        uid -> {
-                            PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(uid);
-                            if (entry != null) {
-                                return Stream.of(uid.toString(), VRecord.getName(entry.getProfile()));
-                            } else {
-                                return Stream.of(uid.toString());
-                            }
-                        },
-                        name -> {
-                            PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(name);
-                            if (entry != null) {
-                                return Stream.of(name, VRecord.getName(entry.getProfile()));
-                            } else {
-                                return Stream.of(name);
-                            }
-                        }));
+        return Stream.empty();
     }
 
-    private static Stream<TrackedWaypoint> getWaypointInternal() {
-        List<TrackedWaypoint> waypoints = new ArrayList<>();
-        mc.getNetworkHandler().getWaypointHandler().forEachWaypoint(mc.player, waypoints::add);
-        return waypoints.stream();
-    }
 
     public static Stream<Waypoint> getWaypoints() {
-        return getWaypointInternal().map(WorldUtils::translate);
+        return Stream.empty();
     }
 
-    private static Waypoint translate(TrackedWaypoint s) {
-        ByteBuf buf = NetworkUtils.createBytebuf();
-        s.writeBuf(buf);
-        PacketByteBuf byteBuf = new PacketByteBuf(buf);
-        Either<UUID, String> either = byteBuf.readEither(Uuids.PACKET_CODEC, PacketByteBuf::readString);
-        net.minecraft.world.waypoint.Waypoint.Config config = (net.minecraft.world.waypoint.Waypoint.Config)
-                net.minecraft.world.waypoint.Waypoint.Config.PACKET_CODEC.decode(byteBuf);
-        var configNbt = (NbtCompound) net.minecraft.world.waypoint.Waypoint.Config.CODEC
-                .encodeStart(NbtOps.INSTANCE, config)
-                .getOrThrow();
-        int varInt = byteBuf.readVarInt();
-
-        WaypointData data =
-                switch (varInt) {
-                    case 1 -> new WaypointData.Pos(
-                            new Vec3d(byteBuf.readVarInt(), byteBuf.readVarInt(), byteBuf.readVarInt()));
-                    case 2 -> new WaypointData.Chunk(new ChunkPos(byteBuf.readVarInt(), byteBuf.readVarInt()));
-                    case 3 -> new WaypointData.Direction(byteBuf.readFloat());
-                    default -> WaypointData.EMPTY;
-                };
-        buf.release();
-        return new Waypoint(either, configNbt, data);
-    }
 
     public static Map<BlockPos, BlockState> scannChunk(Chunk chunk, BiPredicate<BlockPos, BlockState> predicate) {
         ChunkPos chunkPos = chunk.getPos();
@@ -166,7 +119,7 @@ public class WorldUtils {
                     instance.addTemporaryModifier(attr);
                 }
             });
-            f += attributeContainer.getValue(EntityAttributes.MINING_EFFICIENCY);
+            f += attributeContainer.getValue(EntityAttributes.PLAYER_MINING_EFFICIENCY);
         }
 
         if (StatusEffectUtil.hasHaste(player)) {
@@ -186,9 +139,9 @@ public class WorldUtils {
             f *= g;
         }
 
-        f *= (float) player.getAttributeValue(EntityAttributes.BLOCK_BREAK_SPEED);
+        f *= (float) player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_BREAK_SPEED);
         if (player.isSubmergedIn(FluidTags.WATER)) {
-            f *= (float) player.getAttributeInstance(EntityAttributes.SUBMERGED_MINING_SPEED)
+            f *= (float) player.getAttributeInstance(EntityAttributes.PLAYER_SUBMERGED_MINING_SPEED)
                     .getValue();
         }
 

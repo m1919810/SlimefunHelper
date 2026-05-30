@@ -3,13 +3,11 @@ package me.matl114.gui;
 import java.util.Iterator;
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 
 public class GenericScreen extends Screen implements Selectable, Draggable {
@@ -77,7 +75,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
 
     @Override
     public final boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 ) {
+        if (button == 0) {
             // stop dragging here
             releaseDrag(this, mouseX, mouseY);
         }

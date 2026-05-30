@@ -1,6 +1,6 @@
 package me.matl114.versioned.api;
 
-import me.matl114.versioned.impl.Packet_v1_21_11;
+import me.matl114.versioned.impl.Packet_v1_21_1;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
@@ -66,11 +66,11 @@ public interface VPacket {
     }
 
     public static boolean getCollisionFlag(PlayerMoveC2SPacket packet) {
-        return packet.horizontalCollision();
+        return false;
     }
 
     public static Vec3d getVelocity(EntityVelocityUpdateS2CPacket entityVelocityUpdateS2CPacket) {
-        return entityVelocityUpdateS2CPacket.getVelocity();
+        return new Vec3d(entityVelocityUpdateS2CPacket.getVelocityX(), entityVelocityUpdateS2CPacket.getVelocityY(),entityVelocityUpdateS2CPacket.getVelocityZ());
     }
 
     /**
@@ -99,7 +99,7 @@ public interface VPacket {
     /**
      * 获取当前版本的 VPacket 实例
      */
-    public static final VPacket instance = new Packet_v1_21_11();
+    public static final VPacket instance = new Packet_v1_21_1();
 
     private static VPacket getInstance() {
         // 这里应该根据实际版本检测逻辑来返回正确的实现

@@ -137,7 +137,9 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Shadow
     private boolean usingItem;
 
-    @Shadow private boolean lastOnGround;
+    @Shadow
+    private boolean lastOnGround;
+
     @Getter
     @Unique
     public HandledScreen keepedInv = null;
@@ -219,7 +221,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         return super.getAttributeValue(attribute);
     }
 
-        @ModifyExpressionValue(
+    @ModifyExpressionValue(
             method = "tickMovement",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
     private boolean noSlowUsingItem(boolean original) {
@@ -248,7 +250,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         }
         return original.call(instance);
     }
-
 
     @ModifyExpressionValue(
             method = "tickMovement",

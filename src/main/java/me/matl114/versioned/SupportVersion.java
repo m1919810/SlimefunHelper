@@ -1,7 +1,6 @@
 package me.matl114.versioned;
 
 import lombok.Getter;
-import net.minecraft.SharedConstants;
 
 @Getter
 public class SupportVersion {

@@ -1,5 +1,6 @@
 package me.matl114.mixins.versioned;
 
+import me.matl114.versioned.accessors.PlayerInputAccess;
 import net.minecraft.client.input.KeyboardInput;
 import net.minecraft.client.option.GameOptions;
 import org.spongepowered.asm.mixin.Final;
@@ -12,7 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(KeyboardInput.class)
 public abstract class PlayerInputMixin implements PlayerInputAccess {
-    @Shadow @Final private GameOptions settings;
+    @Shadow
+    @Final
+    private GameOptions settings;
+
     @Unique
     boolean pressingSprint;
 
@@ -20,12 +24,14 @@ public abstract class PlayerInputMixin implements PlayerInputAccess {
     private void onTick(CallbackInfo ci) {
         pressingSprint = this.settings.sprintKey.isPressed();
     }
+
     @Unique
-    public boolean isPressingSprint(){
+    public boolean isPressingSprint() {
         return pressingSprint;
     }
+
     @Unique
-    public void setPressingSprint(boolean pressingSprint){
+    public void setPressingSprint(boolean pressingSprint) {
         this.pressingSprint = pressingSprint;
     }
 }

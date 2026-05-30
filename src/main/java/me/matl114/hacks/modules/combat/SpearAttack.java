@@ -27,13 +27,14 @@ import me.matl114.utils.*;
 import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
+import net.minecraft.world.border.WorldBorder;
 
 public class SpearAttack extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath spearModule = makePath(Configs.COMBAT_CONFIG, "spear-module");
@@ -82,7 +83,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getRenderLayerTasks(), this::renderPlayerSpearTarget);
-        registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEnd);
+        //registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEnd);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
     //
@@ -300,10 +301,10 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     private boolean isSpearable(Entity entity) {
         // Vec3d pos = mc.player.getEyePos();
         if (mc.player.getEyePos().subtract(entity.getEyePos()).lengthSquared()
-                <= MathUtils.s2(mc.player.getAttackRange().getEffectiveMinRange(mc.player))) {
+                <= MathUtils.s2(2.0F)) {
             return false;
         }
-        BlockHitResult blockHitResult = mc.world.getCollisionsIncludingWorldBorder(new RaycastContext(
+        BlockHitResult blockHitResult = mc.world.raycast(new RaycastContext(
                 mc.player.getEyePos(),
                 entity.getEyePos(),
                 RaycastContext.ShapeType.COLLIDER,
@@ -405,11 +406,11 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         this.applyBeforeMovementPacketModify(movementManagerEvent);
     }
 
-    public void onClientTickEnd(Event<ClientTickEndC2SPacket> tickEndPacket) {
-        if (currentWaitBackTick > 1) {
-            tickEndPacket.cancel();
-        }
-    }
+//    public void onClientTickEnd(Event<ClientTickEndC2SPacket> tickEndPacket) {
+//        if (currentWaitBackTick > 1) {
+//            tickEndPacket.cancel();
+//        }
+//    }
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {

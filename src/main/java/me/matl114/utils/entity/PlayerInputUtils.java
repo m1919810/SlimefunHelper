@@ -2,22 +2,26 @@ package me.matl114.utils.entity;
 
 import lombok.*;
 import lombok.experimental.Accessors;
-import me.matl114.hooks.ViaFabricPlusHooks;
-import me.matl114.hooks.ViaProtocols;
-import me.matl114.mixins.versioned.PlayerInputAccess;
 import me.matl114.utils.EntityUtils;
+import me.matl114.versioned.accessors.PlayerInputAccess;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.input.KeyboardInput;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
-import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 
 public class PlayerInputUtils {
     public static Input of(ClientPlayerEntity pl) {
         var input = (KeyboardInput) pl.input;
-        return new Input(input.pressingForward, input.pressingBack, input.pressingLeft, input.pressingRight, input.jumping, input.sneaking, PlayerInputAccess.of(input).isPressingSprint());
+        return new Input(
+                input.pressingForward,
+                input.pressingBack,
+                input.pressingLeft,
+                input.pressingRight,
+                input.jumping,
+                input.sneaking,
+                PlayerInputAccess.of(input).isPressingSprint());
     }
 
     public static Input of(GameOptions options) {
@@ -28,12 +32,18 @@ public class PlayerInputUtils {
                 options.rightKey.isPressed(),
                 options.jumpKey.isPressed(),
                 options.sneakKey.isPressed(),
-                options.sprintKey.isPressed()
-            );
+                options.sprintKey.isPressed());
     }
 
     public static Input of(PlayerInputC2SPacket packet) {
-        return new Input(packet.getForward() >= 0, packet.getForward() <= 0, packet.getSideways() >= 0, packet.getSideways() <= 0, packet.isJumping(), packet.isSneaking(), MinecraftClient.getInstance().options.sprintKey.isPressed());
+        return new Input(
+                packet.getForward() >= 0,
+                packet.getForward() <= 0,
+                packet.getSideways() >= 0,
+                packet.getSideways() <= 0,
+                packet.isJumping(),
+                packet.isSneaking(),
+                MinecraftClient.getInstance().options.sprintKey.isPressed());
     }
 
     public static Input tryCorrectMovementInput(Input input, float originalYaw, float currentYaw) {
@@ -83,6 +93,7 @@ public class PlayerInputUtils {
 
     public static final Input EMPTY = new Input(false, false, false, false, false, false, false);
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
     @AllArgsConstructor
     @Accessors(fluent = true, chain = true)
     @Setter
@@ -101,14 +112,16 @@ public class PlayerInputUtils {
             this(forward, backward, left, right, false, false, false);
         }
 
-        public void sendPlayerInputPacket() {
-        }
+        public void sendPlayerInputPacket() {}
 
         public void sendPlayerSneakUpdatePacket() {
-            if(sneak){
-                mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
-            }else {
-                mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+            if (sneak) {
+                mc.getNetworkHandler()
+                        .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
+            } else {
+                mc.getNetworkHandler()
+                        .sendPacket(
+                                new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
             }
         }
 

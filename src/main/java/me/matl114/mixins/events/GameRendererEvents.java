@@ -7,8 +7,8 @@ import me.matl114.events.RenderListener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -38,27 +38,36 @@ public abstract class GameRendererEvents {
         }
         return null;
     }
-    @ModifyArg(method = "renderWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;setupFrustum(Lnet/minecraft/util/math/Vec3d;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V"), index = 2)
+
+    @ModifyArg(
+            method = "renderWorld",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/WorldRenderer;setupFrustum(Lnet/minecraft/util/math/Vec3d;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V"),
+            index = 2)
     private Matrix4f captureFrustum(Matrix4f matrix4f) {
         RenderListener.setWorldProjectionMatrix(new Matrix4f(matrix4f));
         return matrix4f;
     }
 
     @Inject(
-        method = "renderWorld",
-        at =
-        @At(
-            value = "INVOKE",
-            target =
-                "Lnet/minecraft/client/render/WorldRenderer;render(Lnet/minecraft/client/render/RenderTickCounter;ZLnet/minecraft/client/render/Camera;Lnet/minecraft/client/render/GameRenderer;Lnet/minecraft/client/render/LightmapTextureManager;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V"))
+            method = "renderWorld",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/WorldRenderer;render(Lnet/minecraft/client/render/RenderTickCounter;ZLnet/minecraft/client/render/Camera;Lnet/minecraft/client/render/GameRenderer;Lnet/minecraft/client/render/LightmapTextureManager;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V"))
     private void captureBasicProjectionMatrix(
-        RenderTickCounter renderTickCounter,
-        CallbackInfo ci,
-        @Local(ordinal = 1) Matrix4f positionMatrix,
-        @Local(ordinal = 0) Matrix4f basicProjection) {
+            RenderTickCounter renderTickCounter,
+            CallbackInfo ci,
+            @Local(ordinal = 1) Matrix4f positionMatrix,
+            @Local(ordinal = 0) Matrix4f basicProjection) {
         RenderListener.setWorldModelViewMatrix(new Matrix4f(positionMatrix));
         RenderListener.setWorldBasicProjectionMatrix(new Matrix4f(basicProjection));
     }
+
     @Inject(
             at =
                     @At(
