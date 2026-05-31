@@ -1,6 +1,7 @@
 package me.matl114.versioned.api;
 
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Streams;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
@@ -40,6 +41,10 @@ public interface VRecord {
 
     public static ProfileComponent dynamicProfile(String name) {
         return new ProfileComponent(Optional.ofNullable(name), Optional.empty(), createProperty());
+    }
+
+    public static ProfileComponent dynamicProfile(String name){
+        return ProfileComponent.ofDynamic(name);
     }
 
     public static ProfileComponent withProperty(ProfileComponent component, PropertyMap properties) {
