@@ -131,13 +131,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         double distance = direction.length();
         direction = direction.normalize();
         Vec3d tpDirection = direction.multiply(-1);
-        Vec3d horizontalLine = (direction.y != 0
-                        ? new Vec3d(
-                                direction.x,
-                                -(MathUtils.s2(direction.x) + MathUtils.s2(direction.z)) / direction.y,
-                                direction.z)
-                        : new Vec3d(0, 1, 0))
-                .normalize();
+        Vec3d horizontalLine = MathUtils.getVerticalWithSameXZ(direction);
 
         var re = findValidTpPosition(
                 playerPos, tpDirection, horizontalLine, spearMaxTp.get(), spearDistance.get(), distance);
@@ -303,7 +297,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
                 <= MathUtils.s2(mc.player.getAttackRange().getEffectiveMinRange(mc.player))) {
             return false;
         }
-        BlockHitResult blockHitResult = mc.world.getCollisionsIncludingWorldBorder(new RaycastContext(
+        BlockHitResult blockHitResult = mc.world.raycast(new RaycastContext(
                 mc.player.getEyePos(),
                 entity.getEyePos(),
                 RaycastContext.ShapeType.COLLIDER,

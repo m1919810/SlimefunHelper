@@ -2,7 +2,6 @@ package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
@@ -23,7 +22,6 @@ public abstract class ClientWorldEvents {
         if (entityEvent.isCancelled()) {
             return;
         } else {
-            EntityAccess.of(instance).beforeTick();
             try {
                 original.call(instance);
             } catch (Throwable e) {
@@ -35,7 +33,6 @@ public abstract class ClientWorldEvents {
                     throw e;
                 }
             } finally {
-                EntityAccess.of(instance).afterTick();
                 Listener.getEntityPostTickListener().handleValue(entityEvent);
             }
         }

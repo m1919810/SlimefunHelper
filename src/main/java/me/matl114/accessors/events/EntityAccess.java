@@ -1,6 +1,5 @@
 package me.matl114.accessors.events;
 
-import me.matl114.utils.entity.ProgressWrapper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 
@@ -16,11 +15,4 @@ public interface EntityAccess<T extends Entity> extends MetadataHolder {
     default boolean checkClientPlayer() {
         return this == MinecraftClient.getInstance().player;
     }
-
-    public void addTickWrapper(ProgressWrapper<T> wrapper);
-
-    // for access usage
-    public void beforeTick();
-
-    public void afterTick();
 }

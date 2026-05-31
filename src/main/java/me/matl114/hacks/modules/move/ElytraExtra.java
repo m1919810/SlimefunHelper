@@ -95,8 +95,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleLockRot))
             .build();
 
-    public final FlagRef liquidFix =
-            flagBuilder(elytraTweaks.add("liquid-fallflying-fix")).build();
+    public final FlagRef liquidFix = builder(elytraTweaks.add("liquid-fallflying-fix"), FlagRef.TYPE)
+            .defaultValue(true)
+            .build();
 
     public final FlagRef noFallLanding =
             flagBuilder(elytraTweaks.add("no-fall-when-landing")).build();
@@ -123,7 +124,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .build();
 
     public final EnumRef<ArmorFlyMode> armorMode = builder(armorFlyPath.add("armor-mode"), ArmorFlyMode.class)
-            .defaultValue(ArmorFlyMode.LAZY)
+            .defaultValue(ArmorFlyMode.TICK)
             .build();
 
     public final FlagRef antiKick = builder(armorFlyPath.add("antikick"), Boolean.class)
@@ -807,8 +808,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     nextPacketResetFallFlying = true;
                     thisFallFlyingIsArmorFly = -1;
                 }
-            } else {
-                thisFallFlyingIsArmorFly = -1;
             }
         }
     }

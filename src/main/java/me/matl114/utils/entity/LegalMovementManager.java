@@ -8,7 +8,7 @@ import me.matl114.utils.EntityUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
-public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity> {
+public class LegalMovementManager {
     final List<MovementModifier> hacks = new ArrayList<>();
     List<MovementModifier> currentTickEnableHacks = new ArrayList<>();
     public EntityMovementStatus<ClientPlayerEntity> playerStatus;
@@ -104,7 +104,6 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
                 > 2.0F;
     }
 
-    @Override
     public void preProgress(ClientPlayerEntity args) {
         this.playerStatus = new EntityMovementStatus<>(args);
         this.currentTickEnableHacks = new ArrayList<>();
@@ -191,7 +190,6 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
         return !movementManagerEvent.isCancelled();
     }
     // after player tick
-    @Override
     public void postProgress(ClientPlayerEntity args) {
         if (this.playerStatus == null) {
             // illegal status
@@ -219,11 +217,6 @@ public class LegalMovementManager implements ProgressWrapper<ClientPlayerEntity>
             playerStatus.restoreRotation();
         }
         return;
-    }
-
-    @Override
-    public final boolean stillWrap(ClientPlayerEntity args) {
-        return true;
     }
 
     // functions:

@@ -79,7 +79,7 @@ public class BukkitItemStackUtils {
     }
 
     public static String getHashFromProfile(ProfileComponent profileComponent) {
-        var pps = VRecord.getProperties(profileComponent.getGameProfile()).get("textures");
+        var pps = VRecord.getGameProfileProperties(profileComponent).get("textures");
         if (pps == null || pps.isEmpty()) return null;
         Property ppt = Iterables.getFirst(pps, null);
         if (ppt == null) return null;

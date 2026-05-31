@@ -280,7 +280,7 @@ public class CombatTasks {
         spearAttack = new SpearAttack().register(m);
         blink = new Blink().register(m);
         elytraBot = new ElytraBot().register(m);
-        //        transactionBlocker = new TransactionBlocker().register(m);
+        // transactionBlocker = new TransactionBlocker().register(m);
     }
 
     static {

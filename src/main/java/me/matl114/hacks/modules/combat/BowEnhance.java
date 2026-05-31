@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.combat;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
@@ -175,7 +176,7 @@ public class BowEnhance extends BaseModule {
         }
     }
 
-    public void bowActionMovement(Event<PlayerActionC2SPacket> event, Entity entity, float initialVelocity) {
+    public void bowActionMovement(Event<PlayerActionC2SPacket> event, @Nullable Entity entity, float initialVelocity) {
         Vec2f playerPitchYaw = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         var facing = entity == null
                 ? mc.player.getRotationVector().normalize()
@@ -330,11 +331,13 @@ public class BowEnhance extends BaseModule {
         mc.player.setYaw(playerPitchYaw.y);
     }
 
-    public void bowActionDelayMovement(Event<PlayerActionC2SPacket> event, Entity entity, float initialVelocity) {
+    public void bowActionDelayMovement(
+            Event<PlayerActionC2SPacket> event, @Nullable Entity entity, float initialVelocity) {
         // it is from a delayed packet, or, I can fire it without event
         if (canTp()) {
             Debug.chat("[BowEh] Arrow Velocity Simulate not enabled in Legal Mode");
         }
+        if (entity == null) return;
         event.cancel();
         PlayerActionC2SPacket delayedPacket = event.context();
         ClientPlayerAccess.of(mc.player)
@@ -385,7 +388,8 @@ public class BowEnhance extends BaseModule {
                 });
     }
 
-    public void bowActionInteractItem(Event<PlayerActionC2SPacket> event, Entity entity, float initialVelocity) {
+    public void bowActionInteractItem(
+            Event<PlayerActionC2SPacket> event, @Nullable Entity entity, float initialVelocity) {
         Vec2f playerPitchYaw = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         var facing = entity == null
                 ? mc.player.getRotationVector().normalize()
