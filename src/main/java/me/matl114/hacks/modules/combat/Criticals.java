@@ -304,7 +304,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-
+        // todo: optimize using falldistance
         boolean lastLastOnGround = lastOnGroundT;
         lastOnGroundT = mc.player.isOnGround() && !movementManagerEvent.context.playerStatus.onGround;
         if (enable.get() && mode.get() == Mode.FREEZE && shouldApplyCriticalConditionCheck()) {

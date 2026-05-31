@@ -9,6 +9,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
+import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -28,7 +29,9 @@ import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.NetworkSide;
+import net.minecraft.network.packet.PacketType;
+import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
@@ -105,7 +108,7 @@ public class Blink extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(PacketManager.getPacketQueueEvent().getPacketSendChannel(), this::onPacketQueue);
+        registerListener(PacketManager.getPacketQueueEvent().getChannel(NetworkSide.SERVERBOUND), this::onPacketQueue);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onShutdown);
         registerListener(Listener.getPostTick(), this::onTick);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnect);
@@ -176,15 +179,18 @@ public class Blink extends BaseModule {
                 MutableBoolean afterTeleportExcept = new MutableBoolean(false);
                 lastAutoDumpTick = Tasks.getTick();
                 PacketManager.flushOutBound(packets -> {
-                    var packet = packets.packet();
-                    if (packet instanceof PlayerMoveC2SPacket move) {
+                    var packet = packets.packetType();
+                    if (packet == PlayPackets.MOVE_PLAYER_POS
+                            || packet == PlayPackets.MOVE_PLAYER_ROT
+                            || packet == PlayPackets.MOVE_PLAYER_POS_ROT
+                            || packet == PlayPackets.MOVE_PLAYER_STATUS_ONLY) {
                         if (afterTeleportExcept.booleanValue()) {
                             return PacketManager.FlushAction.FLUSH;
                         }
                         return PacketManager.FlushAction.DROP;
-                    } else if (packet instanceof PlayerInputC2SPacket inputC2SPacket) {
+                    } else if (packet == PlayPackets.PLAYER_INPUT) {
                         return PacketManager.FlushAction.DROP;
-                    } else if (packet instanceof TeleportConfirmC2SPacket tp) {
+                    } else if (packet == PlayPackets.ACCEPT_TELEPORTATION) {
                         afterTeleportExcept.setTrue();
                         return PacketManager.FlushAction.FLUSH;
                     } else return PacketManager.FlushAction.FLUSH;
@@ -243,12 +249,13 @@ public class Blink extends BaseModule {
     boolean escapeSwing = false;
     boolean elytraSupportFuckStartFly = false;
 
-    public void onPacketQueue(Event<Packet<?>> packet) {
+    public void onPacketQueue(Event<PacketStorage> packet) {
         if (enable.get()) {
             var pkt = packet.context;
-            if (PacketManager.isAsyncOrNotTransactionC2SPacket(pkt)) return;
+            PacketType<?> pktType = pkt.packetType();
+            if (PacketManager.isAsyncOrNotTransactionC2SPacket(pktType)) return;
             if ((!(onInventoryBehaviour.get() == Action.NONE || (elytraSupport.get() && mc.player.isFallFlying())))
-                    && PacketManager.isInventoryPacket(pkt)) return;
+                    && PacketManager.isInventoryPacket(pktType)) return;
             // support elytra armorFly mace attack
             //            if(elytraSupport.get() && mc.player.isFallFlying() && pkt instanceof ClientCommandC2SPacket
             // cmd && cmd.getMode() == ClientCommandC2SPacket.Mode.START_FALL_FLYING) {
@@ -258,18 +265,18 @@ public class Blink extends BaseModule {
             //                    return;
             //                }
             //            }
-            if (pkt instanceof PlayerInteractItemC2SPacket && mc.player.isFallFlying()) {
+            if (pktType == PlayPackets.USE_ITEM && mc.player.isFallFlying()) {
                 if (onFireworkUse()) {
                     return;
                 }
             }
-            if (pkt instanceof PlayerInteractEntityC2SPacket packet1) {
+            if (pktType == PlayPackets.INTERACT) {
                 handleQueueAction(packet, attackBehaviour.get());
                 escapeSwing = true;
-            } else if (pkt instanceof HandSwingC2SPacket swing && escapeSwing) {
+            } else if (pktType == PlayPackets.SWING && escapeSwing) {
                 escapeSwing = false;
                 handleQueueAction(packet, attackBehaviour.get());
-            } else if (pkt instanceof TeleportConfirmC2SPacket tp) {
+            } else if (pktType == PlayPackets.ACCEPT_TELEPORTATION) {
                 flush();
             } else {
                 packet.cancel();
@@ -277,7 +284,7 @@ public class Blink extends BaseModule {
         }
     }
 
-    public void handleQueueAction(Event<Packet<?>> packet, Action action) {
+    public void handleQueueAction(Event<?> packet, Action action) {
         switch (action) {
             case FLUSH -> flush();
             case CLOSE -> enable.set(false);

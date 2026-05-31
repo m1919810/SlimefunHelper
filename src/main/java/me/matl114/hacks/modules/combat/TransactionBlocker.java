@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.combat;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
+import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -10,7 +11,10 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
+import net.minecraft.network.NetworkSide;
+import net.minecraft.network.packet.CommonPackets;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityPassengersSetS2CPacket;
@@ -37,7 +41,7 @@ public class TransactionBlocker extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(PacketManager.getPacketQueueEvent().getPacketSendChannel(), this::onPacketQueue);
+        registerListener(PacketManager.getPacketQueueEvent().getChannel(NetworkSide.SERVERBOUND), this::onPacketQueue);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onPlayerRespawnLook);
         registerListener(Listener.getPacketPoint().getChannel(EntityPassengersSetS2CPacket.class), this::onDismount);
@@ -55,7 +59,7 @@ public class TransactionBlocker extends BaseModule {
 
     public void flush() {
         PacketManager.flushOutBound((packet) -> {
-            if (isTransactionRelated(packet.packet())) {
+            if (isTransactionRelated(packet.packetType())) {
                 return PacketManager.FlushAction.DROP;
             } else {
                 return PacketManager.FlushAction.QUEUE;
@@ -67,8 +71,12 @@ public class TransactionBlocker extends BaseModule {
         return packet instanceof CommonPongC2SPacket || packet instanceof CommonPingS2CPacket;
     }
 
-    public void onPacketQueue(Event<Packet<?>> packetEvent) {
-        if (enable.get() && isTransactionRelated(packetEvent.context)) {
+    public boolean isTransactionRelated(PacketType<?> packet) {
+        return packet == CommonPackets.PING || packet == CommonPackets.PONG;
+    }
+
+    public void onPacketQueue(Event<PacketStorage> packetEvent) {
+        if (enable.get() && isTransactionRelated(packetEvent.context.packetType())) {
             packetEvent.cancel();
             Listener.sendPacketNoEvents(new CommonPongC2SPacket(0));
         }

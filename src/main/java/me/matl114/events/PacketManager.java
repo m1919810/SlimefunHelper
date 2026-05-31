@@ -1,6 +1,8 @@
 package me.matl114.events;
 
 import com.google.common.collect.Queues;
+import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
+import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.WeakHashMap;
@@ -13,12 +15,17 @@ import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.annotations.Cancelable;
 import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.channels.EventChannel;
+import me.matl114.events.channels.EventChannelDispatcher;
 import me.matl114.events.channels.ListenerPoint;
-import me.matl114.events.channels.PacketEventChannel;
+import me.matl114.events.packets.PacketStorage;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.ClientConnection;
+import net.minecraft.network.NetworkSide;
 import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.CommonPackets;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.PacketType;
+import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
@@ -63,8 +70,8 @@ public class PacketManager {
         Listener.getPacketPostSendPoint().registerHandler(PacketManager::onPostPacketSend);
     }
 
-    private static boolean startFlushIn = false;
-    private static boolean startFlushOut = false;
+    public static boolean startFlushIn = false;
+    public static boolean startFlushOut = false;
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public static boolean handleQueueInPacket(Packet<?> packet, ClientConnection connection) {
@@ -81,10 +88,11 @@ public class PacketManager {
                 // clear all
                 clearAndShutdown();
             } else {
-                Event<Packet<?>> queueEvent = new Event<>(packet, true, false, connection);
+                Event<PacketStorage> queueEvent = new Event<>(
+                        new PacketStorageImpl(packet, System.currentTimeMillis(), connection), true, false, connection);
                 packetQueueEvent.handleValue(queueEvent);
                 if (queueEvent.isCancelled()) {
-                    handleQueueIn(packet);
+                    handleQueueIn(queueEvent.context());
                     return true;
                 }
             }
@@ -106,10 +114,11 @@ public class PacketManager {
             if (packet instanceof AcknowledgeReconfigurationC2SPacket) {
                 clearAndShutdown();
             } else {
-                Event<Packet<?>> queueEvent = new Event<>(packet, true, false, connection);
+                Event<PacketStorage> queueEvent = new Event<>(
+                        new PacketStorageImpl(packet, System.currentTimeMillis(), connection), true, false, connection);
                 packetQueueEvent.handleValue(queueEvent);
                 if (queueEvent.isCancelled()) {
-                    handleQueueOut(packet);
+                    handleQueueOut(queueEvent.context());
                     return true;
                 }
             }
@@ -123,13 +132,9 @@ public class PacketManager {
                     && mc.getNetworkHandler().getConnection().isOpen()) {
                 // flush
                 startFlushIn = true;
-                ClientConnection connection = mc.getNetworkHandler().getConnection();
                 try {
                     for (var packet : packetQueueIn) {
-                        try {
-                            ClientConnectionAccess.of(connection).handlePacket(packet.packet());
-                        } catch (Throwable throwable) {
-                        }
+                        packet.handle();
                     }
                 } finally {
                     startFlushIn = false;
@@ -145,19 +150,14 @@ public class PacketManager {
                 && mc.getNetworkHandler().getConnection().isOpen()) {
             // flush
             startFlushIn = true;
-            ClientConnection connection = mc.getNetworkHandler().getConnection();
             var iter = packetQueueIn.iterator();
             try {
                 while (iter.hasNext()) {
                     var packet = iter.next();
                     switch (pdd.apply(packet)) {
                         case FLUSH -> {
-                            try {
-                                ClientConnectionAccess.of(connection).handlePacket(packet.packet());
-                            } catch (Throwable throwable) {
-                            } finally {
-                                iter.remove();
-                            }
+                            packet.handle();
+                            iter.remove();
                         }
                         case DROP -> {
                             iter.remove();
@@ -180,11 +180,7 @@ public class PacketManager {
                 startFlushOut = true;
                 try {
                     for (var packet : packetQueueOut) {
-                        try {
-                            // Listener.sendPacketNoEvents(packet);
-                            mc.getNetworkHandler().sendPacket(packet.packet());
-                        } catch (Throwable throwable) {
-                        }
+                        packet.send();
                     }
                 } finally {
                     startFlushOut = false;
@@ -206,12 +202,8 @@ public class PacketManager {
                     var packet = iter.next();
                     switch (pdd.apply(packet)) {
                         case FLUSH -> {
-                            try {
-                                mc.getNetworkHandler().sendPacket(packet.packet());
-                            } catch (Throwable throwable) {
-                            } finally {
-                                iter.remove();
-                            }
+                            packet.send();
+                            iter.remove();
                         }
                         case DROP -> {
                             iter.remove();
@@ -235,8 +227,36 @@ public class PacketManager {
         return false;
     }
 
+    private static final ReferenceSet<PacketType<?>> packetSet1 = new ReferenceArraySet<>();
+
+    static {
+        packetSet1.add(CommonPackets.KEEP_ALIVE_C2S);
+        packetSet1.add(PlayPackets.CHAT_COMMAND_SIGNED);
+        packetSet1.add(PlayPackets.CHAT_COMMAND);
+        packetSet1.add(PlayPackets.CHAT);
+        packetSet1.add(PlayPackets.COMMAND_SUGGESTION);
+    }
+
+    public static boolean isAsyncOrNotTransactionC2SPacket(PacketType<?> pkt) {
+        return pkt != null && packetSet1.contains(pkt);
+    }
+
+    private static final ReferenceSet<PacketType<?>> packetSet2 = new ReferenceArraySet<>();
+
+    static {
+        packetSet2.add(CommonPackets.KEEP_ALIVE_S2C);
+        packetSet2.add(PlayPackets.PLAYER_CHAT);
+        packetSet2.add(PlayPackets.SYSTEM_CHAT);
+        packetSet2.add(PlayPackets.CONTAINER_CLOSE_S2C);
+        packetSet2.add(PlayPackets.LEVEL_CHUNK_WITH_LIGHT);
+    }
+
     public static boolean isInventoryPacket(Packet<?> pkt) {
         return pkt instanceof ClickSlotC2SPacket || pkt instanceof CloseHandledScreenC2SPacket;
+    }
+
+    public static boolean isInventoryPacket(PacketType<?> pkt) {
+        return pkt == PlayPackets.CONTAINER_CLICK || pkt == PlayPackets.CONTAINER_CLOSE_C2S;
     }
 
     public static boolean isAsyncOrNotTransactionS2CPacket(Packet<?> pkt) {
@@ -248,18 +268,23 @@ public class PacketManager {
         return false;
     }
 
-    public static void handleQueueIn(Packet<?> packet) {
-        packetQueueIn.add(new PacketStorage(packet, System.currentTimeMillis()));
+    public static boolean isAsyncOrNotTransactionS2CPacket(PacketType<?> pkt) {
+        return pkt != null && packetSet2.contains(pkt);
     }
 
-    public static void handleQueueOut(Packet<?> packet) {
-        packetQueueOut.add(new PacketStorage(packet, System.currentTimeMillis()));
+    public static void handleQueueIn(PacketStorage packet) {
+        packetQueueIn.add(packet);
+    }
+
+    public static void handleQueueOut(PacketStorage packet) {
+        packetQueueOut.add(packet);
     }
 
     @Getter
     @Cancelable
     @ExtraArgs({ClientConnection.class})
-    public static PacketEventChannel packetQueueEvent = new PacketEventChannel();
+    public static EventChannelDispatcher<PacketStorage> packetQueueEvent =
+            new EventChannelDispatcher<>(PacketStorage::side);
 
     @Getter
     @Broadcast
@@ -288,5 +313,32 @@ public class PacketManager {
         QUEUE;
     }
 
-    public static record PacketStorage(Packet<?> packet, long timestampMS) {}
+    public static record PacketStorageImpl(Packet<?> packet, long timestampMS, ClientConnection connection)
+            implements PacketStorage {
+        @Override
+        public PacketType<?> packetType() {
+            return packet.getPacketId();
+        }
+
+        @Override
+        public NetworkSide side() {
+            return packet.getPacketId().side();
+        }
+
+        @Override
+        public void send() {
+            try {
+                connection.send(packet);
+            } catch (Throwable throwable) {
+            }
+        }
+
+        @Override
+        public void handle() {
+            try {
+                ClientConnectionAccess.of(connection).handlePacket(packet);
+            } catch (Throwable throwable) {
+            }
+        }
+    }
 }
