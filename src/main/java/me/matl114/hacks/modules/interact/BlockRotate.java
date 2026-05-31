@@ -226,7 +226,7 @@ public class BlockRotate extends BaseModule {
                     return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
                 } else {
                     Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                    Vec3d plateLLL = direction.getDoubleVector();
+                    Vec3d plateLLL = Vec3d.of(direction.getVector());
                     if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                         return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
                     }
@@ -276,7 +276,7 @@ public class BlockRotate extends BaseModule {
                     return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
                 } else {
                     Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                    Vec3d plateLLL = direction.getDoubleVector();
+                    Vec3d plateLLL = Vec3d.of(direction.getVector());
                     if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                         return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
                     }
@@ -323,7 +323,7 @@ public class BlockRotate extends BaseModule {
                     return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
                 } else {
                     Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                    Vec3d plateLLL = direction.getDoubleVector();
+                    Vec3d plateLLL = Vec3d.of(direction.getVector());
                     if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                         return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
                     }
@@ -418,7 +418,7 @@ public class BlockRotate extends BaseModule {
                         return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true);
                     } else {
                         Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                        Vec3d plateLLL = direction.getDoubleVector();
+                        Vec3d plateLLL = Vec3d.of(direction.getVector());
                         if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                             return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false);
                         }
@@ -464,17 +464,17 @@ public class BlockRotate extends BaseModule {
             switch (facing) {
                 case DOWN -> {
                     vec2fEvent.context(EntityUtils.rotationToPitchYaw(
-                            rotation.getDoubleVector().add(0, -4, 0).normalize()));
+                            Vec3d.of(rotation.getVector()).add(0, -4, 0).normalize()));
                 }
                 case UP -> {
-                    vec2fEvent.context(EntityUtils.rotationToPitchYaw(rotation.getOpposite()
-                            .getDoubleVector()
-                            .add(0, 4, 0)
-                            .normalize()));
+                    vec2fEvent.context(EntityUtils.rotationToPitchYaw(
+                            Vec3d.of(rotation.getOpposite().getVector())
+                                    .add(0, 4, 0)
+                                    .normalize()));
                 }
                 default -> {
                     vec2fEvent.context(EntityUtils.rotationToPitchYaw(
-                            facing.getOpposite().getDoubleVector().normalize()));
+                            Vec3d.of(facing.getOpposite().getVector()).normalize()));
                 }
             }
         }

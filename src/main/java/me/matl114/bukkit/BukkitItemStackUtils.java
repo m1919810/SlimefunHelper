@@ -105,11 +105,11 @@ public class BukkitItemStackUtils {
                     BukkitPlayerProfile.fromHashToUrl(hash),
                     BukkitPlayerProfile.PlayerTextures.SkinModel.CLASSIC,
                     null);
-            PropertyMap map1 = new PropertyMap();
+            LinkedHashMultimap<String, Property> map1 = LinkedHashMultimap.create();
             map1.putAll(oldMap);
             map1.removeAll("textures");
             map1.put("textures", property);
-            return map1;
+            return VRecord.createProperty(map1);
         } catch (Throwable e) {
             return oldMap;
         }

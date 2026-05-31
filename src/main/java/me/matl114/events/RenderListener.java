@@ -112,7 +112,7 @@ public class RenderListener {
 
     @Getter
     @Broadcast
-    @ExtraArgs(value = {RenderTickCounter.class, boolean.class})
+    @ExtraArgs(value = {float.class, boolean.class})
     private static final EventChannel<VDrawContext> renderGameHudTasks = new EventChannel<>();
 
     public static void renderWorldTasks(MatrixStack stack, float tickDelta) {

@@ -17,7 +17,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -186,7 +185,7 @@ public class NameTag extends BaseModule {
             Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();
             Function<Vec3d, Vector2d> projector = RenderUtils.createProjector(cam, proj);
             for (var entity : nameTagInfos) {
-                onRenderPlayer(entity, stack, projector, (event.<RenderTickCounter>getArgs(0)).getTickProgress(false));
+                onRenderPlayer(entity, stack, projector, (event.<Float>getArgs(0)));
             }
         }
     }

@@ -241,7 +241,7 @@ public class InteractionTasks {
                     return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true);
                 } else {
                     Vec3d iSeeVect = predictEyePos.subtract(plateCenter);
-                    Vec3d plateLLL = direction.getDoubleVector();
+                    Vec3d plateLLL = Vec3d.of(direction.getVector());
                     if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                         return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false);
                     }

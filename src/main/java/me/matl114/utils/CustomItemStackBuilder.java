@@ -1,13 +1,10 @@
 package me.matl114.utils;
 
-import com.mojang.authlib.properties.PropertyMap;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.versioned.api.VHideFlag;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
 import net.minecraft.component.type.ProfileComponent;
@@ -83,18 +80,15 @@ public class CustomItemStackBuilder {
         ItemStackUtils.setOrRemoveChange(
                 stack,
                 DataComponentTypes.PROFILE,
-                new ProfileComponent(
-                        Optional.of("CS-CoreLib"),
-                        Optional.of(UUID.nameUUIDFromBytes(hash.getBytes(StandardCharsets.UTF_8))),
-                        BukkitItemStackUtils.buildPropertyMap(new PropertyMap(), hash)));
+                VRecord.staticProfile(
+                        UUID.nameUUIDFromBytes(hash.getBytes(StandardCharsets.UTF_8)),
+                        "CS-CoreLib",
+                        BukkitItemStackUtils.buildPropertyMap(VRecord.createProperty(), hash)));
         return this;
     }
 
     public CustomItemStackBuilder skullOwner(String owner) {
-        ItemStackUtils.setOrRemoveChange(
-                stack,
-                DataComponentTypes.PROFILE,
-                new ProfileComponent(Optional.of(owner), Optional.empty(), new PropertyMap()));
+        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, ProfileComponent.ofDynamic(owner));
         return this;
     }
 
