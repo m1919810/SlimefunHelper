@@ -10,7 +10,6 @@ import me.matl114.managers.Tasks;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 
 public class PostManager extends BaseModule {
@@ -31,7 +30,7 @@ public class PostManager extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::peekPingPacketIn);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(CommonPingS2CPacket.class), this::postPongPacketOut);
-        registerListener(Listener.getPacketPostSendPoint().getChannel(ClientTickEndC2SPacket.class), this::postTickEnd);
+        registerListener(Listener.getPostGameTick(), this::postTickEnd);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnectReset);
         registerListener(Listener.getPostGameTick(), this::onWatchPingLongTimeNoSent);
         registerListener(Listener.getPreTick(), this::onPreTick);
@@ -88,7 +87,7 @@ public class PostManager extends BaseModule {
         //        Debug.info("in", packetPing.getPacketId(), peekPingRequest);
     }
 
-    public void postTickEnd(Event<ClientTickEndC2SPacket> event) {
+    public void postTickEnd(Event<ClientPlayerEntity> event) {
         runAllPostTickPackets(mc.getNetworkHandler());
         // flush pong packets
         //        for(var pongPacket : delayedPingPackets) {

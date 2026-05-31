@@ -583,9 +583,8 @@ public class ChatTasks {
                 }
                 case "spawn" -> {
                     Debug.chat("当前世界的出生点:");
-                    BlockPos pos = mc.world.getSpawnPoint().globalPos().pos();
-                    RegistryKey<World> key =
-                            mc.world.getSpawnPoint().globalPos().dimension();
+                    BlockPos pos = mc.world.getSpawnPos();
+                    RegistryKey<World> key = mc.world.getRegistryKey();
                     Debug.chat(
                             "World Spawn Point [World:",
                             key.getValue(),

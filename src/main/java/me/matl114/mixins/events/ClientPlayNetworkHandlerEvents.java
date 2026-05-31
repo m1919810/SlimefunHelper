@@ -5,8 +5,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Consumer;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -254,22 +252,23 @@ public abstract class ClientPlayNetworkHandlerEvents {
 
     @WrapOperation(
             method = "onExplosion",
-            at = @At(value = "INVOKE", target = "Ljava/util/Optional;ifPresent(Ljava/util/function/Consumer;)V"))
-    private void onExplosionVelocityUpdate(
-            Optional instance, Consumer<? super Vec3d> action, Operation<Void> original) {
-        if (instance.isPresent()) {
-            Vec3d vec3d = (Vec3d) instance.get();
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/util/math/Vec3d;add(DDD)Lnet/minecraft/util/math/Vec3d;"))
+    private Vec3d onExplosionVelocityUpdate(Vec3d instance, double x, double y, double z, Operation<Vec3d> original) {
+        if (x != 0 || y != 0 || z != 0) {
+            Vec3d vec3d = new Vec3d(x, y, z);
             Event<Vec3d> updateDeltaEvent = new Event<>(vec3d, true, true);
             Listener.getPlayerExplosionVelocity().handleValue(updateDeltaEvent);
             if (!updateDeltaEvent.isCancelled()) {
-                original.call(
-                        (Optional)
-                                (vec3d == updateDeltaEvent.context()
-                                        ? instance
-                                        : Optional.ofNullable(updateDeltaEvent.context())),
-                        action);
+                vec3d = updateDeltaEvent.context();
+                return original.call(instance, vec3d.x, vec3d.y, vec3d.z);
+            } else {
+                return instance;
             }
         }
+        return original.call(instance, x, y, z);
     }
 
     @Inject(

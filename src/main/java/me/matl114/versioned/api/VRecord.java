@@ -1,57 +1,62 @@
 package me.matl114.versioned.api;
 
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
+import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.component.type.ProfileComponent;
 
 public interface VRecord {
     public static UUID getId(GameProfile profile) {
-        return profile.id();
+        return profile.getId();
     }
 
     public static String getName(GameProfile profile) {
-        return profile.name();
+        return profile.getName();
     }
 
     public static PropertyMap getProperties(GameProfile profile) {
-        return profile.properties();
+        return profile.getProperties();
     }
 
     public static UUID getGameProfileId(ProfileComponent profileComponent) {
-        return profileComponent.getGameProfile().id();
+        return profileComponent.gameProfile().getId();
     }
 
     public static String getGameProfileName(ProfileComponent profileComponent) {
-        return profileComponent.getGameProfile().name();
+        return profileComponent.gameProfile().getName();
     }
 
     public static PropertyMap getGameProfileProperties(ProfileComponent profileComponent) {
-        return profileComponent.getGameProfile().properties();
+        return profileComponent.gameProfile().getProperties();
     }
 
     public static ProfileComponent staticProfile(UUID uuid, String name, PropertyMap properties) {
-
-        return ProfileComponent.ofStatic(new GameProfile(uuid, name, properties));
+        var re = (new GameProfile(uuid, name));
+        re.getProperties().putAll(properties);
+        return new ProfileComponent(re);
     }
 
     public static ProfileComponent dynamicProfile(String name) {
-        return ProfileComponent.ofDynamic(name);
+        return new ProfileComponent(Optional.of(name), Optional.empty(), createProperty());
     }
 
     public static ProfileComponent withProperty(ProfileComponent component, PropertyMap properties) {
-        return ProfileComponent.ofStatic(new GameProfile(
-                component.getGameProfile().id(), component.getGameProfile().name(), properties));
+        var profile = new GameProfile(
+                component.gameProfile().getId(), component.gameProfile().getName());
+        profile.getProperties().putAll(properties);
+        return new ProfileComponent(profile);
     }
 
     public static PropertyMap createProperty(Multimap<String, Property> ppt) {
-        return new PropertyMap(LinkedHashMultimap.create(ppt));
+        var re = new PropertyMap();
+        re.putAll(ppt);
+        return re;
     }
 
     public static PropertyMap createProperty() {
-        return new PropertyMap(LinkedHashMultimap.create());
+        return new PropertyMap();
     }
 }

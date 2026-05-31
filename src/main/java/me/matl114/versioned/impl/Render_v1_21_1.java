@@ -17,58 +17,142 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
-public class Render_v1_21_1 implements VRender {
-    @Override
-    public void drawStripLineVirtualCameraCoord(MatrixStack matrixStack, List<Vec3d> path, Color color) {
-        drawVertexFormatPositionCameraCoord(matrixStack, VertexFormat.DrawMode.DEBUG_LINE_STRIP, path, color);
-    }
+public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
 
     @Override
-    public void drawLineVirtualCameraCoord(MatrixStack matrixStack, List<Vec3d> pairs, Color color) {
-        drawVertexFormatPositionCameraCoord(matrixStack, VertexFormat.DrawMode.DEBUG_LINES, pairs, color);
-    }
-
-    @Override
-    public void drawOutlinedBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
+    public void createLinesLayer(RenderCallback callback) {
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
         BufferBuilder bufferBuilder =
                 tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
-        drawOutlinedBox(matrix.peek(), bufferBuilder, from, to, color);
-        //        Vec3d vec3d = new Vec3d(matrix.transformPosition((float) from.x, (float) from.y, (float) from.z, new
-        // Vector3f()));
-        //        Vec3d vec3d1 = new Vec3d(matrix.transformPosition((float) to.x, (float) to.y, (float) to.z, new
-        // Vector3f()));
-        //        drawOutlinedBox(bufferBuilder, vec3d, vec3d1);
-        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
+        callback.draw(this, bufferBuilder);
+        var buffer = bufferBuilder.endNullable();
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
     }
 
     @Override
-    public void drawSolidBoxCameraCoord(MatrixStack matrix, Vec3d from, Vec3d to, Color color) {
+    public void createLineStripLayer(RenderCallback callback) {
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-        drawSolidBox(matrix.peek(), bufferBuilder, from, to, color);
-        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
+        BufferBuilder bufferBuilder =
+                tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+        callback.draw(this, bufferBuilder);
+        var buffer = bufferBuilder.endNullable();
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
     }
 
     @Override
-    public void drawQuadCameraCoord(MatrixStack matrix4f, Quad quad, ColorQuad colorQuad) {
+    public void createQuadsLayer(RenderCallback callback, boolean hasCulling) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         Tessellator tessellator = RenderSystem.renderThreadTesselator();
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
         BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-        var matrix4 = matrix4f.peek();
-        for (var i = 0; i < 4; ++i) {
-            Vec3d vec3d = quad.get(i);
-            int color = colorQuad.get(i);
-            bufferBuilder
-                    .vertex(matrix4, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                    .color(color);
+        if (!hasCulling) {
+            RenderSystem.disableCull();
         }
-        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
+        callback.draw(this, bufferBuilder);
+        if (!hasCulling) {
+            RenderSystem.enableCull();
+        }
+        var buffer = bufferBuilder.endNullable();
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
+    }
+
+    @Override
+    public void createTrianglesLayer(RenderCallback callback, boolean hasCulling) {
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        Tessellator tessellator = RenderSystem.renderThreadTesselator();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
+        if (!hasCulling) {
+            RenderSystem.disableCull();
+        }
+        callback.draw(this, bufferBuilder);
+        if (!hasCulling) {
+            RenderSystem.enableCull();
+        }
+        var buffer = bufferBuilder.endNullable();
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
+    }
+
+    @Override
+    public void createTriangleStripLayer(RenderCallback callback, boolean hasCulling) {
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        Tessellator tessellator = RenderSystem.renderThreadTesselator();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        BufferBuilder bufferBuilder =
+                tessellator.begin(VertexFormat.DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
+        if (!hasCulling) {
+            RenderSystem.disableCull();
+        }
+        callback.draw(this, bufferBuilder);
+        if (!hasCulling) {
+            RenderSystem.enableCull();
+        }
+        var buffer = bufferBuilder.endNullable();
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
+    }
+
+    @Override
+    public void createGuiTexturedLayer(Identifier path, RenderCallback callback) {
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableCull();
+        Tessellator tessellator = RenderSystem.renderThreadTesselator();
+        RenderSystem.setShaderTexture(0, path);
+        RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
+        var vertex = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+        callback.draw(this, vertex);
+        var buffer = vertex.endNullable();
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
+        RenderSystem.enableCull();
+    }
+
+    @Override
+    public void createSpriteTexturedLayer(Sprite sprite, RenderCallback callback) {
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableCull();
+        Tessellator tessellator = RenderSystem.renderThreadTesselator();
+        RenderSystem.setShaderTexture(0, sprite.getAtlasId());
+        RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
+        var delegate = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+        var vertex = RenderUtils.getSpriteVertexConsumer(delegate, sprite);
+        callback.draw(this, vertex);
+        var buffer = delegate.endNullable();
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
+        RenderSystem.enableCull();
+    }
+
+    @Override
+    public void createGuiLayer(RenderCallback callback) {
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableCull();
+        Tessellator tessellator = RenderSystem.renderThreadTesselator();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        var vertex = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        callback.draw(this, vertex);
+        var buffer = vertex.endNullable();
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
+        RenderSystem.enableCull();
     }
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -112,69 +196,6 @@ public class Render_v1_21_1 implements VRender {
     }
 
     @Override
-    public void drawTexturedQuadCameraCoord(Identifier path, MatrixStack stack, Quad quad, UV uv, ColorQuad colorQuad) {
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableCull();
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShaderTexture(0, path);
-        RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
-        var vertex = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
-        var entry = stack.peek();
-        for (var i = 0; i < 4; ++i) {
-            Vec3d vec3d = quad.get(i);
-            float u = uv.getU(i);
-            float v = uv.getV(i);
-            int color = colorQuad.get(i);
-            vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                    .texture(u, v)
-                    .color(color);
-        }
-        BufferRenderer.drawWithGlobalProgram(vertex.end());
-        RenderSystem.enableCull();
-    }
-
-    @Override
-    public void drawSpriteQuadCameraCoord(Sprite sprite, MatrixStack stack, Quad quad, UV uv, ColorQuad colorQuad) {
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableCull();
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShaderTexture(0, sprite.getAtlasId());
-        RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
-        var delegate = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
-        var vertex = RenderUtils.getSpriteVertexConsumer(delegate, sprite);
-        var entry = stack.peek();
-        for (var i = 0; i < 4; ++i) {
-            Vec3d vec3d = quad.get(i);
-            float u = uv.getU(i);
-            float v = uv.getV(i);
-            int color = colorQuad.get(i);
-            vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                    .texture(u, v)
-                    .color(color);
-        }
-        BufferRenderer.drawWithGlobalProgram(delegate.end());
-        RenderSystem.enableCull();
-    }
-
-    @Override
-    public void drawGuiQuadCameraCoord(MatrixStack stack, Quad quad, ColorQuad colorQuad) {
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableCull();
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        var vertex = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-        var entry = stack.peek();
-        for (var i = 0; i < 4; ++i) {
-            Vec3d vec3d = quad.get(i);
-            int color = colorQuad.get(i);
-            vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
-                    .color(color);
-        }
-        BufferRenderer.drawWithGlobalProgram(vertex.end());
-        RenderSystem.enableCull();
-    }
-
-    @Override
     public void drawItemCameraCoord(
             ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ItemDisplayContext context, ItemDisplay displayInfo) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -197,31 +218,17 @@ public class Render_v1_21_1 implements VRender {
         }
     }
 
-    public void drawVertexFormatPositionCameraCoord(
-            MatrixStack matrixStack, VertexFormat.DrawMode mode, List<Vec3d> path, Color colorObj) {
-        if (path.isEmpty()) return;
-        Matrix4f matrix = matrixStack.peek().getPositionMatrix();
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferBuilder bufferBuilder = tessellator.begin(mode, VertexFormats.POSITION_COLOR);
-        int color = colorObj.getRGB();
-        for (Vec3d point : path) {
-            bufferBuilder
-                    .vertex(matrix, (float) point.x, (float) point.y, (float) point.z)
-                    .color(color);
-        }
-        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
-    }
-
-    public static void drawOutlinedBox(
-            MatrixStack.Entry matrix, BufferBuilder bufferBuilder, Vec3d from, Vec3d to, Color colorObj) {
+    @Override
+    public void drawOutlinedBox(
+            MatrixStack matrix4f, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+        MatrixStack.Entry matrix = matrix4f.peek();
         float minX = (float) from.getX();
         float minY = (float) from.getY();
         float minZ = (float) from.getZ();
         float maxX = (float) to.getX();
         float maxY = (float) to.getY();
         float maxZ = (float) to.getZ();
-        int color = colorObj.getRGB();
+        int color = cachedRenderColor;
         bufferBuilder.vertex(matrix, minX, minY, minZ).color(color);
         bufferBuilder.vertex(matrix, maxX, minY, minZ).color(color);
 
@@ -259,15 +266,17 @@ public class Render_v1_21_1 implements VRender {
         bufferBuilder.vertex(matrix, minX, maxY, minZ).color(color);
     }
 
-    public static void drawSolidBox(
-            MatrixStack.Entry matrix, BufferBuilder bufferBuilder, Vec3d from, Vec3d to, Color colorObj) {
+    @Override
+    public void drawSolidBoxQuad(
+            MatrixStack matrixStack, VertexConsumer bufferBuilder, Vec3d from, Vec3d to, int cachedRenderColor) {
+        var matrix = matrixStack.peek();
         float minX = (float) from.x;
         float minY = (float) from.y;
         float minZ = (float) from.z;
         float maxX = (float) to.x;
         float maxY = (float) to.y;
         float maxZ = (float) to.z;
-        int color = colorObj.getRGB();
+        int color = cachedRenderColor;
 
         bufferBuilder.vertex(matrix, minX, minY, minZ).color(color);
         bufferBuilder.vertex(matrix, maxX, minY, minZ).color(color);
@@ -298,5 +307,51 @@ public class Render_v1_21_1 implements VRender {
         bufferBuilder.vertex(matrix, minX, minY, maxZ).color(color);
         bufferBuilder.vertex(matrix, minX, maxY, maxZ).color(color);
         bufferBuilder.vertex(matrix, minX, maxY, minZ).color(color);
+    }
+
+    @Override
+    public void drawQuad(MatrixStack matrixStack, VertexConsumer bufferBuilder, Quad uv, ColorQuad colorQuad) {
+        var matrix4 = matrixStack.peek();
+        for (int idx = 0; idx < 4; idx++) {
+            var vec3d = uv.get(idx);
+            int color = colorQuad.get(idx);
+            bufferBuilder
+                    .vertex(matrix4, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
+                    .color(color);
+        }
+    }
+
+    @Override
+    public void drawLines(MatrixStack matrixStack, VertexConsumer consumer, List<Vec3d> points, int color) {
+        MatrixStack.Entry entry = matrixStack.peek();
+        for (var i = 1; i < points.size(); i++) {
+            Vector3f prev = points.get(i - 1).toVector3f();
+            Vector3f next = points.get(i).toVector3f();
+            consumer.vertex(entry, prev).color(color);
+            consumer.vertex(entry, next).color(color);
+        }
+    }
+
+    @Override
+    public void drawLine(MatrixStack matrixStack, VertexConsumer consumer, Vec3d prevV, Vec3d nextV, int color) {
+        Vector3f prev = prevV.toVector3f();
+        Vector3f next = nextV.toVector3f();
+        MatrixStack.Entry entry = matrixStack.peek();
+        consumer.vertex(entry, prev).color(color);
+        consumer.vertex(entry, next).color(color);
+    }
+
+    @Override
+    public void drawTexturedQuad(MatrixStack stack, VertexConsumer vertex, Quad quad, UV uv, ColorQuad colorQuad) {
+        var entry = stack.peek();
+        for (var i = 0; i < 4; ++i) {
+            Vec3d vec3d = quad.get(i);
+            float u = uv.getU(i);
+            float v = uv.getV(i);
+            int color = colorQuad.get(i);
+            vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
+                    .texture(u, v)
+                    .color(color);
+        }
     }
 }

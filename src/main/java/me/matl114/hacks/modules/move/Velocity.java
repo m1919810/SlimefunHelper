@@ -207,12 +207,16 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     }
 
     public void onExplosionPre(Event<ExplosionS2CPacket> eventExplosion) {
-        if (enable.get()
-                && explosions.get()
-                && mc.player != null
-                && (eventExplosion.context.playerKnockback().isPresent()
-                        || eventExplosion.context.center().squaredDistanceTo(mc.player.getPos()) < 9.0D)) {
-            canCancel += 1;
+        if (enable.get() && explosions.get() && mc.player != null) {
+            var explosion = eventExplosion.context;
+            Vec3d knockBack = new Vec3d(
+                    explosion.getPlayerVelocityX(), explosion.getPlayerVelocityY(), explosion.getPlayerVelocityZ());
+            if (knockBack.lengthSquared() > 1E-6
+                    || new Vec3d(explosion.getX(), explosion.getY(), explosion.getZ())
+                                    .squaredDistanceTo(mc.player.getPos())
+                            < 9.0D) {
+                canCancel += 1;
+            }
         }
     }
 

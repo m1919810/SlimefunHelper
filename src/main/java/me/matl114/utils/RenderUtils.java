@@ -354,7 +354,7 @@ public class RenderUtils {
     public static Vector2d translate2D(Vec3d pos, float tickProgress) {
         Quaternionf rotation = mc.gameRenderer.getCamera().getRotation().conjugate(new Quaternionf());
         Matrix4f modelView = new Matrix4f().rotation(rotation);
-        float g = mc.gameRenderer.getFov(mc.gameRenderer.getCamera(), tickProgress, true);
+        float g = (float) mc.gameRenderer.getFov(mc.gameRenderer.getCamera(), tickProgress, true);
         Matrix4f projView = mc.gameRenderer.getBasicProjectionMatrix(g);
         Vec3d camera = getCameraPos();
         return translate3DTo2D(modelView, projView, camera, pos);

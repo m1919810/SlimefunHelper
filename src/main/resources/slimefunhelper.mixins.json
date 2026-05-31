@@ -99,6 +99,7 @@
 		"render.ScrollableWidgetMixin",
 		"render.TextFieldWidgetMixin",
 		"versioned.ClientPlayerInputTickMixin",
+		"versioned.DrawContextSpriteColorMixin",
 		"versioned.MatrixStackMixin",
 		"versioned.PlayerInputMixin"
 	],
