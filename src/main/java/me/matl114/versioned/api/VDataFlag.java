@@ -1,5 +1,7 @@
 package me.matl114.versioned.api;
 
+import net.minecraft.entity.EntityStatuses;
+
 public interface VDataFlag {
     int ID_FLAGS = 0;
     int ON_FIRE_FLAG_INDEX = 0;
@@ -26,4 +28,6 @@ public interface VDataFlag {
     int ID_WALL_DECORATION_FACING = 8;
     int ID_ITEM_FRAME_ITEMSTACK = 9;
     int ID_ITEM_FRAME_ROTATION = 10;
+
+    int ENTITY_STATUS_KINETIC_ATTACK = EntityStatuses.KINETIC_ATTACK;
 }

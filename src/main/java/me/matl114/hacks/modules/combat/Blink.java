@@ -214,7 +214,7 @@ public class Blink extends BaseModule {
                 boolean find = false;
                 List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
                 Vec3d oldPos = startPlayerPos.pos;
-                Vec3d predictionPos = oldPos.add(mc.player.getEyeHeight(mc.player.getPose()));
+                Vec3d predictionPos = oldPos.add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
                 for (var e : et) {
                     if (e.getBoundingBox().squaredMagnitude(predictionPos) < MathUtils.s2(nearRange.get())
                             && TargetSelector.INSTANCE.canAttack(e)) {

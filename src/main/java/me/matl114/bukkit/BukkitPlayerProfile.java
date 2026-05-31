@@ -7,7 +7,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
@@ -22,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemStack;
@@ -150,16 +150,12 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
     }
 
     public PropertyMap createPropertyMap() {
-        PropertyMap map = new PropertyMap(LinkedHashMultimap.create());
-        map.putAll(this.properties);
-        return map;
+        return VRecord.createProperty(this.properties);
     }
 
     public ProfileComponent createGameProfile() {
-        Multimap<String, Property> properties = LinkedHashMultimap.create();
-        properties.putAll(this.properties);
-        PropertyMap map = new PropertyMap(properties);
-        return ProfileComponent.ofStatic(new GameProfile(uniqueId, name == null ? "" : name, map));
+        PropertyMap map = VRecord.createProperty(this.properties);
+        return VRecord.staticProfile(uniqueId, name == null ? "" : name, map);
     }
 
     public static Property deserializeProperty(@Nonnull Map<?, ?> map) {

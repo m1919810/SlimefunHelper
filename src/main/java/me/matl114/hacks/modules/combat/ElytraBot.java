@@ -28,9 +28,9 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.algorithms.StateMachine;
 import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
@@ -308,7 +308,7 @@ public class ElytraBot extends BaseModule {
                 && mc.world != null
                 && enable.get()
                 && statusS2CPacket.getEntity(mc.world) == mc.player
-                && statusS2CPacket.getStatus() == EntityStatuses.KINETIC_ATTACK) {
+                && statusS2CPacket.getStatus() == VDataFlag.ENTITY_STATUS_KINETIC_ATTACK) {
 
             sp.onHit(HitListener.HIT_SPEAR);
         }

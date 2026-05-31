@@ -1,12 +1,10 @@
 package me.matl114.utils;
 
-import com.google.common.collect.LinkedHashMultimap;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.PropertyMap;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.versioned.api.VHideFlag;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
 import net.minecraft.component.type.ProfileComponent;
@@ -82,10 +80,10 @@ public class CustomItemStackBuilder {
         ItemStackUtils.setOrRemoveChange(
                 stack,
                 DataComponentTypes.PROFILE,
-                ProfileComponent.ofStatic(new GameProfile(
+                VRecord.staticProfile(
                         UUID.nameUUIDFromBytes(hash.getBytes(StandardCharsets.UTF_8)),
                         "CS-CoreLib",
-                        BukkitItemStackUtils.buildPropertyMap(new PropertyMap(LinkedHashMultimap.create()), hash))));
+                        BukkitItemStackUtils.buildPropertyMap(VRecord.createProperty(), hash)));
         return this;
     }
 

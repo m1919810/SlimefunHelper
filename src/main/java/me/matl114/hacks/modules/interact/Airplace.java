@@ -106,11 +106,7 @@ public class Airplace extends BaseModule {
                         switch (enableAirWall.get()) {
                             case VANILLA -> {
                                 BlockHitResult newResult = new BlockHitResult(
-                                        block.getPos(),
-                                        block.getSide(),
-                                        block.getBlockPos(),
-                                        block.isInsideBlock(),
-                                        block.isAgainstWorldBorder());
+                                        block.getPos(), block.getSide(), block.getBlockPos(), block.isInsideBlock());
                                 event.context(newResult);
                                 return;
                             }
@@ -211,7 +207,7 @@ public class Airplace extends BaseModule {
                     mc.interactionManager.interactBlock(
                             mc.player,
                             Hand.MAIN_HAND,
-                            new BlockHitResult(ppp.toBottomCenterPos().add(0, 1, 0), Direction.UP, ppp, false, false));
+                            new BlockHitResult(ppp.toBottomCenterPos().add(0, 1, 0), Direction.UP, ppp, false));
                     mc.player.swingHand(Hand.MAIN_HAND);
                     // work by magic
                     if (!PlayerInputUtils.of(mc.options).hasWASDMovement()) {
