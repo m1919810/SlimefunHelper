@@ -88,7 +88,7 @@ public class CustomItemStackBuilder {
     }
 
     public CustomItemStackBuilder skullOwner(String owner) {
-        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, ProfileComponent.ofDynamic(owner));
+        ItemStackUtils.setOrRemoveChange(stack, DataComponentTypes.PROFILE, VRecord.dynamicProfile(owner));
         return this;
     }
 

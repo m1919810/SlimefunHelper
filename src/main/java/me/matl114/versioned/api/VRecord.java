@@ -2,6 +2,7 @@ package me.matl114.versioned.api;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Streams;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
@@ -36,6 +37,10 @@ public interface VRecord {
     public static ProfileComponent staticProfile(UUID uuid, String name, PropertyMap properties) {
 
         return ProfileComponent.ofStatic(new GameProfile(uuid, name, properties));
+    }
+
+    public static ProfileComponent dynamicProfile(String name){
+        return ProfileComponent.ofDynamic(name);
     }
 
     public static ProfileComponent withProperty(ProfileComponent component, PropertyMap properties) {
