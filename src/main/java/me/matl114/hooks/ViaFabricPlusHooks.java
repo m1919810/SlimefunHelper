@@ -8,7 +8,7 @@ import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import com.viaversion.viaversion.api.type.Type;
 import com.viaversion.viaversion.api.type.Types;
-import de.florianmichael.protocoltranslator.ProtocolTranslator;
+import de.florianmichael.viafabricplus.protocoltranslator.ProtocolTranslator;
 import de.florianmichael.viafabricplus.injection.access.IServerInfo;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -157,11 +157,11 @@ public abstract class ViaFabricPlusHooks implements IHooks {
     }
 
     public static class ImplOld extends AbstractViaFabricImpl {
-        de.florianmichael.ViaFabricPlus base;
+        de.florianmichael.viafabricplus.ViaFabricPlus base;
 
         public ImplOld() {
-            Class<?> clazz = de.florianmichael.ViaFabricPlus.class;
-            base = Objects.requireNonNull(de.florianmichael.ViaFabricPlus.global());
+            Class<?> clazz = de.florianmichael.viafabricplus.ViaFabricPlus.class;
+            base = Objects.requireNonNull(de.florianmichael.viafabricplus.ViaFabricPlus.global());
             Class<?> clazz2 = ProtocolTranslator.class;
         }
 
