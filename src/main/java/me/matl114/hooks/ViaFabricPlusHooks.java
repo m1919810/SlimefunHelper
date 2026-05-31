@@ -8,6 +8,8 @@ import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import com.viaversion.viaversion.api.type.Type;
 import com.viaversion.viaversion.api.type.Types;
+import de.florianmichael.protocoltranslator.ProtocolTranslator;
+import de.florianmichael.viafabricplus.injection.access.IServerInfo;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -23,7 +25,15 @@ public abstract class ViaFabricPlusHooks implements IHooks {
             try {
                 instance = new Impl();
             } catch (Throwable e) {
-                instance = new Default();
+                try {
+                    instance = new ImplOld();
+                } catch (Throwable e2) {
+                    try {
+                        instance = new ImplWTF();
+                    } catch (Throwable e3) {
+                        instance = new Default();
+                    }
+                }
             }
         }
         return instance;
@@ -37,6 +47,8 @@ public abstract class ViaFabricPlusHooks implements IHooks {
 
     public abstract SupportVersion getServerVersion(ServerInfo server);
 
+    public abstract boolean isViaEnabled();
+
     public static class Default extends ViaFabricPlusHooks {
         @Override
         public SupportVersion getCurrentVersion() {
@@ -46,6 +58,11 @@ public abstract class ViaFabricPlusHooks implements IHooks {
         @Override
         public SupportVersion getServerVersion(ServerInfo server) {
             return SupportVersion.CURRENT;
+        }
+
+        @Override
+        public boolean isViaEnabled() {
+            return false;
         }
 
         @Override
@@ -59,16 +76,24 @@ public abstract class ViaFabricPlusHooks implements IHooks {
         }
     }
 
-    public static class Impl extends ViaFabricPlusHooks {
+    public abstract static class AbstractViaFabricImpl extends ViaFabricPlusHooks {
+        public AbstractViaFabricImpl() {
+            Class<?> viaClass = ProtocolVersion.class;
+        }
+
         ProtocolVersion lastProtocol = null;
         SupportVersion lastVersion = null;
         ProtocolVersion lastServerProtocol = null;
         SupportVersion lastServerVersion = null;
 
+        protected abstract ProtocolVersion getTargetVersion0();
+
+        protected abstract ProtocolVersion getServerVersion0(ServerInfo serverInfo);
+
         @Override
         public SupportVersion getCurrentVersion() {
 
-            ProtocolVersion currentProtocol = base.getTargetVersion();
+            ProtocolVersion currentProtocol = getTargetVersion0();
             // lazily update protocol instance
             if (!Objects.equals(currentProtocol, lastProtocol) || lastVersion == null) {
                 try {
@@ -86,7 +111,7 @@ public abstract class ViaFabricPlusHooks implements IHooks {
 
         @Override
         public SupportVersion getServerVersion(ServerInfo server) {
-            ProtocolVersion currentProtocol = base.getServerVersion(server);
+            ProtocolVersion currentProtocol = getServerVersion0(server);
             if (!Objects.equals(currentProtocol, lastServerProtocol) || lastServerVersion == null) {
                 try {
                     lastServerVersion = SupportVersion.parse(currentProtocol.getIncludedVersions().stream()
@@ -106,6 +131,24 @@ public abstract class ViaFabricPlusHooks implements IHooks {
             return new ViaPacketWrapperImpl();
         }
 
+        @Override
+        public boolean isViaEnabled() {
+            return true;
+        }
+    }
+
+    public static class Impl extends AbstractViaFabricImpl {
+
+        @Override
+        protected ProtocolVersion getTargetVersion0() {
+            return base.getTargetVersion();
+        }
+
+        @Override
+        protected ProtocolVersion getServerVersion0(ServerInfo server) {
+            return base.getServerVersion(server);
+        }
+
         public boolean isEnabled() {
             return true;
         }
@@ -115,6 +158,58 @@ public abstract class ViaFabricPlusHooks implements IHooks {
         public Impl() {
             Class<?> clazz = ViaFabricPlus.class;
             base = Objects.requireNonNull(ViaFabricPlus.getImpl());
+        }
+    }
+
+    public static class ImplOld extends AbstractViaFabricImpl {
+        de.florianmichael.ViaFabricPlus base;
+
+        public ImplOld() {
+            Class<?> clazz = de.florianmichael.ViaFabricPlus.class;
+            base = Objects.requireNonNull(de.florianmichael.ViaFabricPlus.global());
+            Class<?> clazz2 = ProtocolTranslator.class;
+        }
+
+        @Override
+        protected ProtocolVersion getTargetVersion0() {
+            return ProtocolTranslator.getTargetVersion();
+        }
+
+        @Override
+        protected ProtocolVersion getServerVersion0(ServerInfo serverInfo) {
+            return ((IServerInfo) serverInfo).viaFabricPlus$forcedVersion();
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return true;
+        }
+    }
+
+    public static class ImplWTF extends AbstractViaFabricImpl {
+
+        @Override
+        protected ProtocolVersion getTargetVersion0() {
+            return null;
+        }
+
+        @Override
+        protected ProtocolVersion getServerVersion0(ServerInfo serverInfo) {
+            return null;
+        }
+
+        public SupportVersion getCurrentVersion() {
+            return SupportVersion.CURRENT;
+        }
+
+        @Override
+        public SupportVersion getServerVersion(ServerInfo server) {
+            return SupportVersion.CURRENT;
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return false;
         }
     }
 

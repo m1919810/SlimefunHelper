@@ -43,7 +43,7 @@ public class PickItem extends BaseModule {
                     if (slot.getIndex() >= 36) {
                         Debug.chat("Invalid slot for player Inventory", slot.getIndex());
                     } else {
-                        if (ViaFabricPlusHooks.getInstance().isEnabled()
+                        if (ViaFabricPlusHooks.getInstance().isViaEnabled()
                                 && ViaFabricPlusHooks.getInstance()
                                         .getCurrentVersion()
                                         .isLowerOrEqualTo(21, 3)) {

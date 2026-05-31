@@ -126,7 +126,7 @@ public class PlayerInputUtils {
         }
 
         public void sendPlayerInputAsRiding() {
-            if (ViaFabricPlusHooks.getInstance().isEnabled()
+            if (ViaFabricPlusHooks.getInstance().isViaEnabled()
                     && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 1)) {
                 // 1.21.1 ride packet
                 ViaFabricPlusHooks.ViaPacketWrapper wrapper =
@@ -151,7 +151,7 @@ public class PlayerInputUtils {
         }
 
         public void sendPlayerSneakUpdatePacket() {
-            if (ViaFabricPlusHooks.getInstance().isEnabled()
+            if (ViaFabricPlusHooks.getInstance().isViaEnabled()
                     && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)) {
                 // send sneak packet
                 ViaFabricPlusHooks.ViaPacketWrapper wrapper =
