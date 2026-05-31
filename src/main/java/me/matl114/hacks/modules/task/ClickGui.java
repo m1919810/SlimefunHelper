@@ -556,7 +556,7 @@ public class ClickGui extends BaseModule {
 
     private DrawableWidget createConfig(ClickGuiMetaData meta) {
         var screen = new ConfigurateNewStyleScreen(Config.getConfigs().stream().toList());
-        screen.init(mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
+        screen.init(mc, mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
         return new ContentDelegateWidget<>(0, 0, 0, 0).setContentDelegate(screen);
     }
 

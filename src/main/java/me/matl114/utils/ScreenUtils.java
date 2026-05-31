@@ -115,7 +115,7 @@ public class ScreenUtils {
     }
 
     public static boolean hasKeyPressed(int keyCode) {
-        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), keyCode);
+        return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), keyCode);
     }
 
     public static boolean isToggle(int keyCode) {

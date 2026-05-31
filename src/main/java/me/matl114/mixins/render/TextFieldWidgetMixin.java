@@ -1,5 +1,6 @@
 package me.matl114.mixins.render;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.util.function.Consumer;
 import me.matl114.accessors.gui.TextFieldAccess;
@@ -100,14 +101,15 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lnet/minecraft/util/Identifier;IIII)V"))
-    public void redirectBorderBoxRender(DrawContext instance, Identifier texture, int x, int y, int width, int height) {
+    public void redirectBorderBoxRender(
+            DrawContext instance, Identifier texture, int x, int y, int width, int height, Operation<Void> original) {
         // only override specific widget behaviour
         if (boxColorProvider != null) {
             // use custom color provided
             McWidgetHelpers.drawTextWidgetBox(
                     this, instance, x, y, width, height, this.isFocused(), this.boxColorProvider);
         } else {
-            original.call(instance, pipeline, sprite, x, y, width, height);
+            original.call(instance, texture, x, y, width, height);
         }
     }
 

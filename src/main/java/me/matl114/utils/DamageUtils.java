@@ -29,11 +29,11 @@ public class DamageUtils {
     }
 
     public static double getAttackSpeed(PlayerEntity player, ItemStack stack) {
-        double speed = player.getAttributeBaseValue(EntityAttributes.ATTACK_SPEED);
+        double speed = player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_SPEED);
         AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers != null && !modifiers.modifiers().isEmpty()) {
             speed = applyOperations(
-                    modifiers.modifiers(), EntityAttributes.ATTACK_SPEED, speed, EquipmentSlot.MAINHAND);
+                    modifiers.modifiers(), EntityAttributes.GENERIC_ATTACK_SPEED, speed, EquipmentSlot.MAINHAND);
         }
         return speed;
     }
@@ -122,10 +122,11 @@ public class DamageUtils {
     }
 
     public static double getAttackDamage(PlayerEntity player, Entity livingEntity, ItemStack stack) {
-        double att = player.getAttributeBaseValue(EntityAttributes.ATTACK_DAMAGE);
+        double att = player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers != null && !modifiers.modifiers().isEmpty()) {
-            att = applyOperations(modifiers.modifiers(), EntityAttributes.ATTACK_DAMAGE, att, EquipmentSlot.MAINHAND);
+            att = applyOperations(
+                    modifiers.modifiers(), EntityAttributes.GENERIC_ATTACK_DAMAGE, att, EquipmentSlot.MAINHAND);
         }
         att += getEnchantmentBonus(player, livingEntity, stack);
         return att;

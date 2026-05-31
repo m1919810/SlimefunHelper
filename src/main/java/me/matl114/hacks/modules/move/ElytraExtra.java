@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.move;
 
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -38,10 +37,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.MaceItem;
+import net.minecraft.item.*;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
@@ -542,8 +538,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             // check hotbar first
             var re = InventoryUtils.findPlayerItem(
                     item -> VItem.getInstance().canGlide(item)
-                            && mc.player.canEquip(item, EquipmentSlot.CHEST)
-                            && !item.willBreakNextUse(),
+                            && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST
+                            && ElytraItem.isUsable(item),
                     true,
                     false,
                     false);
@@ -562,7 +558,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
             var re = InventoryUtils.findPlayerItem(
                     item -> item.isEmpty()
-                            || (!VItem.getInstance().canGlide(item) && mc.player.canEquip(item, EquipmentSlot.CHEST)),
+                            || (!VItem.getInstance().canGlide(item)
+                                    && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST),
                     true,
                     true,
                     false);
@@ -729,17 +726,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public static boolean hasGlidingEquipments() {
-        Iterator var1 = EquipmentSlot.VALUES.iterator();
-
-        EquipmentSlot equipmentSlot;
-        do {
-            if (!var1.hasNext()) {
-                return false;
-            }
-
-            equipmentSlot = (EquipmentSlot) var1.next();
-        } while (!mc.player.canGlideWith(mc.player.getEquippedStack(equipmentSlot), equipmentSlot));
-        return true;
+        return VItem.getInstance().canGlide(mc.player.getEquippedStack(EquipmentSlot.CHEST));
     }
 
     public void onStartFallFlying(Event<Boolean> booleanEvent) {

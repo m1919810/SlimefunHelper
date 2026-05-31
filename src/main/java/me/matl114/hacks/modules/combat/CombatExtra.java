@@ -50,7 +50,7 @@ public class CombatExtra extends BaseModule {
 
     public double getAttackAtTargetRange(Entity entity) {
         double d = ridingBypass(mc.player) || ridingBypass(entity) ? boatAttackRange.get() : range.get();
-        return mc.player.getAttributeValue(EntityAttributes.ENTITY_INTERACTION_RANGE) + d;
+        return mc.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE) + d;
     }
 
     public double getAttackRange() {

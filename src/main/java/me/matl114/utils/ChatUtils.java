@@ -717,7 +717,7 @@ public class ChatUtils {
 
     @ApiMethod
     public static ClickEvent getClickCopyText(String copy) {
-        return new ClickEvent.CopyToClipboard(copy);
+        return new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, copy);
     }
 
     @ApiMethod
@@ -745,7 +745,7 @@ public class ChatUtils {
 
     @ApiMethod
     public static HoverEvent getHoverShowText(List<Text> showText) {
-        return new HoverEvent.ShowText(concatLineText(showText));
+        return new HoverEvent(HoverEvent.Action.SHOW_TEXT, concatLineText(showText));
     }
 
     @ApiMethod
@@ -1003,10 +1003,6 @@ public class ChatUtils {
 
         public TextBuilder withColor(int rgbColor) {
             return withStyle(style.withColor(rgbColor));
-        }
-
-        public TextBuilder withShadowColor(int shadowColor) {
-            return withStyle(style.withShadowColor(shadowColor));
         }
 
         public TextBuilder withBold(@Nullable Boolean bold) {

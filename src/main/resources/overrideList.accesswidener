@@ -69,3 +69,10 @@ accessible field net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPa
 accessible method net/minecraft/entity/LivingEntity getMovementSpeed (F)F
 accessible method net/minecraft/entity/LivingEntity applyClimbingSpeed (Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;
 accessible field net/minecraft/block/entity/BlockEntityType blocks Ljava/util/Set;
+accessible field net/minecraft/client/gui/screen/DisconnectedScreen grid Lnet/minecraft/client/gui/widget/DirectionalLayoutWidget;
+accessible field net/minecraft/client/gui/screen/DisconnectedScreen parent Lnet/minecraft/client/gui/screen/Screen;
+accessible field net/minecraft/client/option/KeyBinding boundKey Lnet/minecraft/client/util/InputUtil$Key;
+accessible field net/minecraft/network/packet/s2c/play/ChunkDeltaUpdateS2CPacket sectionPos Lnet/minecraft/util/math/ChunkSectionPos;
+accessible method net/minecraft/item/BlockItem getPlacementState (Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/block/BlockState;
+accessible field net/minecraft/client/network/PendingUpdateManager sequence I
+accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraft/client/render/Camera;FZ)D

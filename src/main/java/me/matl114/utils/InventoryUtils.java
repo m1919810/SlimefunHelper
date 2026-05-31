@@ -87,7 +87,7 @@ public class InventoryUtils {
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
         // we assert player hold block while scaffold, or it will be really annoying
         // the holding block must be a full cube
-        int selecedSlot = pinv.getSelectedSlot();
+        int selecedSlot = pinv.selectedSlot;
         IndexEntry<ItemStack> result = null;
         if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
             result = new IndexEntry<>(selecedSlot, item);
@@ -134,7 +134,7 @@ public class InventoryUtils {
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
         // we assert player hold block while scaffold, or it will be really annoying
         // the holding block must be a full cube
-        int selecedSlot = pinv.getSelectedSlot();
+        int selecedSlot = pinv.selectedSlot;
         if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
             return new IndexEntry<>(selecedSlot, item);
         }
@@ -171,7 +171,7 @@ public class InventoryUtils {
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
         // we assert player hold block while scaffold, or it will be really annoying
         // the holding block must be a full cube
-        int selecedSlot = pinv.getSelectedSlot();
+        int selecedSlot = pinv.selectedSlot;
         Double maxValue = null;
         IndexEntry<ItemStack> result = null;
         if ((acceptEmpty || !item.isEmpty())) {
@@ -255,12 +255,12 @@ public class InventoryUtils {
     }
 
     public static int getSelectedSlot() {
-        return mc.player.getInventory().getSelectedSlot();
+        return mc.player.getInventory().selectedSlot;
     }
 
     @Nonnull
     public static IndexEntry<ItemStack> getSelectedItem() {
-        return new IndexEntry<>(
-                InventoryUtils.getSelectedSlot(), mc.player.getInventory().getSelectedStack());
+        int idx = InventoryUtils.getSelectedSlot();
+        return new IndexEntry<>(idx, mc.player.getInventory().main.get(idx));
     }
 }

@@ -573,30 +573,30 @@ public class BlockRotate extends BaseModule {
             vec2fEvent.context(new Vec2f(pitch, yaw));
             return;
         }
-        if (block instanceof DriedGhastBlock) {
-            Direction facing = targetState.get(DriedGhastBlock.FACING);
-            yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            vec2fEvent.context(new Vec2f(pitch, yaw));
-            return;
-        }
-        if (block instanceof ShelfBlock) {
-            Direction facing = targetState.get(ShelfBlock.FACING);
-            yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            vec2fEvent.context(new Vec2f(pitch, yaw));
-            return;
-        }
+        //        if (block instanceof DriedGhastBlock) {
+        //            Direction facing = targetState.get(DriedGhastBlock.FACING);
+        //            yaw = EntityUtils.rotationToYaw(facing.getOpposite());
+        //            vec2fEvent.context(new Vec2f(pitch, yaw));
+        //            return;
+        //        }
+        //        if (block instanceof ShelfBlock) {
+        //            Direction facing = targetState.get(ShelfBlock.FACING);
+        //            yaw = EntityUtils.rotationToYaw(facing.getOpposite());
+        //            vec2fEvent.context(new Vec2f(pitch, yaw));
+        //            return;
+        //        }
         if (block instanceof LecternBlock) {
             Direction facing = targetState.get(LecternBlock.FACING);
             yaw = EntityUtils.rotationToYaw(facing.getOpposite());
             vec2fEvent.context(new Vec2f(pitch, yaw));
             return;
         }
-        if (block instanceof CopperGolemStatueBlock) {
-            Direction facing = targetState.get(CopperGolemStatueBlock.FACING);
-            yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            vec2fEvent.context(new Vec2f(pitch, yaw));
-            return;
-        }
+        //        if (block instanceof CopperGolemStatueBlock) {
+        //            Direction facing = targetState.get(CopperGolemStatueBlock.FACING);
+        //            yaw = EntityUtils.rotationToYaw(facing.getOpposite());
+        //            vec2fEvent.context(new Vec2f(pitch, yaw));
+        //            return;
+        //        }
         if (block instanceof TrapdoorBlock) {
             Direction facing = targetState.get(TrapdoorBlock.FACING);
             yaw = EntityUtils.rotationToYaw(facing.getOpposite());

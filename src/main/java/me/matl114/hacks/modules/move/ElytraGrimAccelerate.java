@@ -88,20 +88,20 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     public void onVcUpdate(Event<EntityVelocityUpdateS2CPacket> event) {
         Vec3d velocity = VPacket.getVelocity(event.context);
         if (false && mc.player != null && event.context.getEntityId() == mc.player.getId()) {
-
-            if ((enable.get() && mc.player.isFallFlying()) || lastWorkingTick + 10 > Tasks.getTick()) {
-                if (mc.player.isFallFlying()) {
-                    if (velocity.horizontalLengthSquared() < 1E-4) {
-                        event.cancel();
-                    } else {
-                        Vec3d vec3d = mc.player.getVelocity();
-                        if (vec3d.horizontalLengthSquared() > 1E-4
-                                && vec3d.getHorizontal().dotProduct(velocity.getHorizontal()) < 0.0) {
-                            event.cancel();
-                        }
-                    }
-                }
-            }
+            //
+            //            if ((enable.get() && mc.player.isFallFlying()) || lastWorkingTick + 10 > Tasks.getTick()) {
+            //                if (mc.player.isFallFlying()) {
+            //                    if (velocity.horizontalLengthSquared() < 1E-4) {
+            //                        event.cancel();
+            //                    } else {
+            //                        Vec3d vec3d = mc.player.getVelocity();
+            //                        if (vec3d.horizontalLengthSquared() > 1E-4
+            //                                && vec3d.getHorizontal().dotProduct(velocity.getHorizontal()) < 0.0) {
+            //                            event.cancel();
+            //                        }
+            //                    }
+            //                }
+            //            }
         }
 
         //        if(enable.get() && mc.player != null && event.context.getEntityId() == mc.player.getId() &&
@@ -142,7 +142,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
         // grim setback
         if (mc.player != null
                 && currentWorking
-                && event.context.teleportId() < 0
+                && event.context.getTeleportId() < 0
                 && mc.player.isFallFlying()
                 && !mc.player.hasVehicle()
                 && false) {

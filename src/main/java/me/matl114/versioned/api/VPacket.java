@@ -70,7 +70,10 @@ public interface VPacket {
     }
 
     public static Vec3d getVelocity(EntityVelocityUpdateS2CPacket entityVelocityUpdateS2CPacket) {
-        return new Vec3d(entityVelocityUpdateS2CPacket.getVelocityX(), entityVelocityUpdateS2CPacket.getVelocityY(),entityVelocityUpdateS2CPacket.getVelocityZ());
+        return new Vec3d(
+                entityVelocityUpdateS2CPacket.getVelocityX(),
+                entityVelocityUpdateS2CPacket.getVelocityY(),
+                entityVelocityUpdateS2CPacket.getVelocityZ());
     }
 
     /**

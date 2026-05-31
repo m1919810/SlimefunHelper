@@ -410,7 +410,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     private boolean checkSneakSpeed() {
-        return mc.player.getAttributeValue(EntityAttributes.SNEAKING_SPEED) < 0.9F;
+        return mc.player.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED) < 0.9F;
     }
 
     private float getActiveItemSpeedMultiplier() {

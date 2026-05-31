@@ -220,7 +220,7 @@ public class ElytraBot extends BaseModule {
                 && !Objects.equals(mc.player.getPos(), currentBehaviour.followTarget)) {
             if (mc.player.isOnGround()) {
                 mc.options.jumpKey.setPressed(true);
-            } else if (mc.player.checkGliding()) {
+            } else if (mc.player.checkFallFlying()) {
                 mc.options.jumpKey.setPressed(false);
                 mc.getNetworkHandler()
                         .sendPacket(

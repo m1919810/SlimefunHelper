@@ -7,7 +7,6 @@ import me.matl114.versioned.api.VHideFlag;
 import me.matl114.versioned.api.VRecord;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
-import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;

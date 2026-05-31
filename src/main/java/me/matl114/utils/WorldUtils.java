@@ -1,7 +1,6 @@
 package me.matl114.utils;
 
 import com.mojang.datafixers.util.Either;
-import io.netty.buffer.ByteBuf;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -25,10 +24,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.tag.FluidTags;
-import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -59,11 +55,9 @@ public class WorldUtils {
         return Stream.empty();
     }
 
-
     public static Stream<Waypoint> getWaypoints() {
         return Stream.empty();
     }
-
 
     public static Map<BlockPos, BlockState> scannChunk(Chunk chunk, BiPredicate<BlockPos, BlockState> predicate) {
         ChunkPos chunkPos = chunk.getPos();

@@ -547,7 +547,7 @@ public class TravellingControl extends BaseModule {
                             // reset fucking jump input
                             MovTasks.getMovExtra().sendPacketsForInventoryAction();
                             // launch event from this method
-                            if (mc.player.checkGliding()) {
+                            if (mc.player.checkFallFlying()) {
                                 mc.getNetworkHandler()
                                         .sendPacket(new ClientCommandC2SPacket(
                                                 mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
@@ -720,7 +720,7 @@ public class TravellingControl extends BaseModule {
                             // reset fucking jump input
                             MovTasks.getMovExtra().sendPacketsForInventoryAction();
                             // launch event from this method
-                            if (mc.player.checkGliding()) {
+                            if (mc.player.checkFallFlying()) {
                                 mc.getNetworkHandler()
                                         .sendPacket(new ClientCommandC2SPacket(
                                                 mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));

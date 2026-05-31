@@ -138,7 +138,7 @@ public class MainTasks {
     @ApiMethod
     public static void disconnect() {
         if (mc.world != null) {
-            mc.world.disconnect(QUITTING_MULTIPLAYER_TEXT);
+            mc.world.disconnect();
         }
         mc.disconnect(new ProgressScreen(true), false);
 
