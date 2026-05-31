@@ -7,7 +7,8 @@
 	"client": [
 		"baritone.ElytraBehaviourMixin",
 		"baritone.ElytraCommandMixin",
-		"baritone.ElytraProcessMixin"
+		"baritone.ElytraProcessMixin",
+		"viaversion.PacketWrapperSendEvents"
 	],
 	"injectors": {
 		"defaultRequire": 1

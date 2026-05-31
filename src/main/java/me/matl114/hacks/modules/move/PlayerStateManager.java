@@ -2,6 +2,8 @@ package me.matl114.hacks.modules.move;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.MetadataHolder;
@@ -85,6 +87,7 @@ public class PlayerStateManager extends BaseModule {
         registerListener(Listener.getPacketPostSendPoint().getChannel(ClientTickEndC2SPacket.class), this::onTickEnd);
         registerListener(Listener.getPreGameTick(), this::updateOtherPlayers);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotemPop);
+        registerListener(Listener.getServerLeavePoint(), this::onLeave);
     }
 
     public void onMove(Event<PlayerMoveC2SPacket> event) {
@@ -332,9 +335,11 @@ public class PlayerStateManager extends BaseModule {
         return re;
     }
 
+    private Map<Integer, Integer> popMap = new ConcurrentHashMap<>();
+
     public int getPlayerPopCount(PlayerEntity entity) {
-        var re = getPlayerStatus(entity);
-        return re == null ? 0 : re.popCount;
+        var re = popMap.get(entity.getId());
+        return re == null ? 0 : re;
     }
 
     public void updateOtherPlayers(Event<ClientPlayerEntity> eventUpdate) {
@@ -370,20 +375,26 @@ public class PlayerStateManager extends BaseModule {
     public void onTotemPop(Event<EntityStatusS2CPacket> event) {
         if (checkNull()) return;
         EntityStatusS2CPacket packet = event.context;
-        if (packet.getEntity(mc.world) instanceof PlayerEntity player
-                && packet.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING
-                && player instanceof MetadataHolder holder) {
-            MetaData data = holder.getMetadata();
-            PlayerStatus status = data.getOrPut(this, KEY_RENDER_CONTROL, PlayerStatus::new);
-            status.popCount++;
+        if (packet.getEntity(mc.world) instanceof PlayerEntity player) {
+            if (packet.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING) {
+                int uid = player.getId();
+                popMap.merge(uid, 1, Integer::sum);
+            } else if (packet.getStatus() == EntityStatuses.PLAY_DEATH_SOUND_OR_ADD_PROJECTILE_HIT_PARTICLES) {
+                popMap.remove(player.getId());
+            }
         }
+    }
+
+    public void onLeave(Event<Void> event) {
+        popMap.clear();
+        ;
     }
 
     public static class PlayerStatus {
 
         public int lastUpdate;
         public AttributeContainer attributeSnapShot = null;
-        public int popCount;
+        // public int popCount;
         public int protection;
         public int blastProtection;
 

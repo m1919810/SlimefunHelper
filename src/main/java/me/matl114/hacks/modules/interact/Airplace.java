@@ -7,6 +7,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
 import me.matl114.events.catchers.PacketCatcherImpl;
+import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -27,7 +28,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
@@ -83,7 +84,8 @@ public class Airplace extends BaseModule {
         registerListener(Listener.getItemUseAction(), this::onInteract);
         registerListener(Listener.getPreHandleInputEvents(), this::onInput);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRenderPos);
-        registerListener(PacketManager.getPacketQueueEvent().getPacketReceiveChannel(), this::onPacketAcceptQueue);
+        registerListener(
+                PacketManager.getPacketQueueEvent().getChannel(NetworkSide.CLIENTBOUND), this::onPacketAcceptQueue);
         registerListener(Listener.getPostTick(), this::onPostTick);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onShutdownQueue);
     }
@@ -167,11 +169,11 @@ public class Airplace extends BaseModule {
         }
     }
 
-    public void onPacketAcceptQueue(Event<Packet<?>> packet) {
+    public void onPacketAcceptQueue(Event<PacketStorage> packet) {
         if (enable.get() && targetPos != null) {
             var pkt = packet.context;
 
-            if (PacketManager.isAsyncOrNotTransactionS2CPacket(pkt)) {
+            if (PacketManager.isAsyncOrNotTransactionS2CPacket(pkt.packetType())) {
                 return;
             }
             lastDelayTick += 1;
