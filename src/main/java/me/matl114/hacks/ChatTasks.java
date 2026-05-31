@@ -50,7 +50,9 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 public class ChatTasks {
     public static void init() {}
@@ -582,10 +584,11 @@ public class ChatTasks {
                 }
                 case "spawn" -> {
                     Debug.chat("当前世界的出生点:");
-                    BlockPos pos = mc.world.getSpawnPos();
+                    BlockPos pos = mc.world.getSpawnPoint().globalPos().pos();
+                    RegistryKey<World> key = mc.world.getSpawnPoint().globalPos().dimension();
                     Debug.chat(
                             "World Spawn Point [World:",
-                            mc.world.getRegistryKey().getValue(),
+                            key.getValue(),
                             ",Pos:",
                             ChatUtils.getDisplayedLocationDouble(Vec3d.of(pos)),
                             "]");

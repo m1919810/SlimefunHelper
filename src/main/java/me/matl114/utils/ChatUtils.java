@@ -1005,10 +1005,6 @@ public class ChatUtils {
             return withStyle(style.withColor(rgbColor));
         }
 
-        public TextBuilder withShadowColor(int shadowColor) {
-            return withStyle(style.withShadowColor(shadowColor));
-        }
-
         public TextBuilder withBold(@Nullable Boolean bold) {
             return withStyle(style.withBold(bold));
         }
