@@ -80,7 +80,8 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
     @Inject(
             method = "channelRead0(Lio/netty/channel/ChannelHandlerContext;Lnet/minecraft/network/packet/Packet;)V",
             at = @At("HEAD"),
-            cancellable = true)
+            cancellable = true,
+            order = -999)
     private void acceptPacket(
             ChannelHandlerContext channelHandlerContext,
             Packet<?> packet,

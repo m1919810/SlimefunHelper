@@ -87,6 +87,9 @@ public class Listener {
     @Getter
     private static final Map<PacketType<?>, Class<? extends Packet<?>>> registeredPacketTypes = new LinkedHashMap<>();
 
+    private static final Map<Identifier, PacketType<?>> c2sPacketTypes = new HashMap<>();
+    private static final Map<Identifier, PacketType<?>> s2cPacketTypes = new HashMap<>();
+
     private static void registerPacketTypesInternal(Class<?> clazz) {
         for (var field : clazz.getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers()) && PacketType.class.isAssignableFrom(field.getType())) {
@@ -114,6 +117,13 @@ public class Listener {
         registerPacketTypesInternal(HandshakePackets.class);
         registerPacketTypesInternal(ConfigPackets.class);
         registerPacketTypesInternal(CookiePackets.class);
+        for (var packetType : registeredPacketTypes.keySet()) {
+            if (packetType.side() == NetworkSide.SERVERBOUND) {
+                c2sPacketTypes.put(packetType.id(), packetType);
+            } else {
+                s2cPacketTypes.put(packetType.id(), packetType);
+            }
+        }
     }
 
     public static Class<? extends Packet<?>> getPacketClassById(Identifier id, boolean s2c) {
@@ -123,6 +133,10 @@ public class Listener {
                 .findAny()
                 .map(Map.Entry::getValue)
                 .orElse(null);
+    }
+
+    public static PacketType<?> getPacketTypeById(Identifier id, boolean s2c) {
+        return (s2c ? s2cPacketTypes : c2sPacketTypes).get(id);
     }
 
     public static <T extends Packet<?>> EventChannel<T> getPacketListenerPoint(Class<T> clazz) {

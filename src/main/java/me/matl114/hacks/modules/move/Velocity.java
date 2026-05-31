@@ -2,12 +2,9 @@ package me.matl114.hacks.modules.move;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Objects;
-import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
-import me.matl114.events.PacketManager;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -18,7 +15,6 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.network.OffThreadException;
@@ -29,7 +25,6 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.tag.DamageTypeTags;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
@@ -93,12 +88,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetPosition);
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onPing);
-        registerListener(
-                PacketManager.getPacketQueueEvent().getChannel(EntityDamageS2CPacket.class), this::onEntityDamageQueue);
-        registerListener(
-                PacketManager.getPacketQueueEvent().getChannel(EntityVelocityUpdateS2CPacket.class),
-                this::onPlayerVelocityQueue);
-        registerListener(PacketManager.getPacketQueueEvent().getPacketReceiveChannel(), this::onPacketQueue);
         registerListener(Listener.getPreGameTick(), this::onPreTick);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
@@ -107,78 +96,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public int lastHurtTick = 0;
     public int canCancel = 0;
-    public boolean canQueue = false;
     int lastGroundTick = 0;
-
-    public void onEntityDamageQueue(Event<EntityDamageS2CPacket> damage) {
-        if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
-            canQueue = true;
-        }
-    }
-
-    long startQueuePacket = 0;
-
-    public void onPlayerVelocityQueue(Event<EntityVelocityUpdateS2CPacket> entityVelocity) {
-        if (enable.get() && mc.player != null && entityVelocity.context.getEntityId() == mc.player.getId()) {
-            //            if(mode.get() == Configs.BypassMode.BYPASS_GRIM && canQueue && mc.player.isOnGround()){
-            //                startQueuePacket = System.currentTimeMillis();
-            //                entityVelocity.cancel();
-            //                onMineSchedule();
-            //            }
-            canQueue = false;
-        }
-    }
-    // todo: get from LiquidBounce
-    // todo: try use Freeze
-
-    public void onMineSchedule() {
-        BlockPos pos = mc.player.getVelocityAffectingPos();
-        if (pos != null) {
-            PlayerInteractionAccess.of(mc.interactionManager).sendStartBreakPacket(pos, Direction.UP);
-            long endQueue = startQueuePacket;
-            Tasks.scheduleRepeatedPre(
-                    () -> {
-                        //                if(endQueue > 0 && System.currentTimeMillis() - endQueue < 200 &&
-                        // !checkNull()){
-                        BlockPos breakPos = PlayerInteractionAccess.of(mc.interactionManager)
-                                .getCurrentMiningPos();
-                        if (Objects.equals(breakPos, pos)) {
-                            PlayerInteractionAccess.of(mc.interactionManager)
-                                    .sendStopBreakPacket(breakPos, Direction.UP);
-                            mc.world.setBlockState(breakPos, Blocks.AIR.getDefaultState());
-                            return true;
-                        }
-                        return true;
-                        // }return true;
-                    },
-                    0,
-                    1);
-        }
-    }
-
-    public void flush() {
-        PacketManager.flushInBound((pkts) -> {
-            if (pkts.packet() instanceof EntityVelocityUpdateS2CPacket vc) {
-                return PacketManager.FlushAction.DROP;
-            } else {
-                return PacketManager.FlushAction.FLUSH;
-            }
-        });
-        startQueuePacket = 0;
-    }
-
-    public void onPacketQueue(Event<Packet<?>> packet) {
-        if (startQueuePacket > 0) {
-            if (PacketManager.isAsyncOrNotTransactionS2CPacket(packet.context)) return;
-            long systemMs = System.currentTimeMillis();
-            if (systemMs > startQueuePacket + 50) {
-                startQueuePacket = 0;
-                flush();
-            } else {
-                packet.cancel();
-            }
-        }
-    }
 
     public void onEntityDamage(Event<EntityDamageS2CPacket> damage) {
         if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {

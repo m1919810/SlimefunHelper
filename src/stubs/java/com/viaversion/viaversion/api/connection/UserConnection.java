@@ -1,3 +1,8 @@
 package com.viaversion.viaversion.api.connection;
 
-public class UserConnection {}
+import io.netty.channel.Channel;
+
+public interface UserConnection {
+
+    Channel getChannel();
+}
