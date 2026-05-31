@@ -207,7 +207,7 @@ public class ChestESP extends BaseModule {
                     BlockState state2 = mc.world.getBlockState(otherChest);
                     VoxelShape shape2 = state2.getOutlineShape(mc.world, otherChest);
                     if (!shape2.isEmpty()) {
-                        Box otherBox = shape2.getBoundingBox().offset(facing.getDoubleVector());
+                        Box otherBox = shape2.getBoundingBox().offset(Vec3d.of(facing.getVector()));
                         if (!shape1.isEmpty()) {
                             Box box = shape1.getBoundingBox();
                             return box.union(otherBox);

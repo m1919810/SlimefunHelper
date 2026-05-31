@@ -106,7 +106,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     }
 
     public int lastHurtTick = 0;
-    public boolean canCancel = false;
+    public int canCancel = 0;
     public boolean canQueue = false;
     int lastGroundTick = 0;
 
@@ -185,7 +185,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             var type = damage.context.sourceType();
             // ignore no knockback types
             if (!type.isIn(DamageTypeTags.NO_KNOCKBACK)) {
-                canCancel = true;
+                canCancel += 1;
                 lastHurtTick = Tasks.getTick();
             }
         }
@@ -212,7 +212,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                 && mc.player != null
                 && (eventExplosion.context.playerKnockback().isPresent()
                         || eventExplosion.context.center().squaredDistanceTo(mc.player.getPos()) < 9.0D)) {
-            canCancel = true;
+            canCancel += 1;
         }
     }
 
@@ -233,59 +233,45 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     }
 
     public void onPlayerVelocity(Event<Vec3d> event) {
-
-        if (enable.get() && mc.player != null) {
-            if (mode.get() == Mode.NONE) {
-                if (canCancel) {
+        if (canCancel > 0) {
+            canCancel -= 1;
+            if (event.isCancelled()) {
+                return;
+            }
+            if (enable.get() && mc.player != null) {
+                if (mode.get() == Mode.NONE) {
                     markForCancelVelocity();
                     event.cancel();
-                }
-            } else if (lastVelocity.horizontalLength() >= minHorizontalVelocity.get()
-                    || Math.abs(lastVelocity.y) >= minVerticalVelocity.get()) {
-                if (canCancel) {
+                    return;
+                } else if (lastVelocity.horizontalLength() >= minHorizontalVelocity.get()
+                        || Math.abs(lastVelocity.y) >= minVerticalVelocity.get()) {
                     if (mc.player.isFallFlying() && MovTasks.getElytraExtra().canFireworkControlMotion()) {
-                        canCancel = false;
                         markForCancelVelocity();
                         event.cancel();
                         return;
                     }
-                    //                    if (MovTasks.getFloatingUtils().workGrimFloatingThisTick()) {
-                    //                        canCancel = false;
-                    //                        markForCancelVelocity();
-                    //                        event.cancel();
-                    //                        return;
-                    //                    }
+                    if ((mc.player.isTouchingWater() || mc.player.isSubmergedInWater() || mc.player.isInLava())
+                            && notInWater.get()) {
+                        return;
+                    }
+                    // todo: make this inside wall
+                    if (inWall.get() && mc.player.isInsideWall()) {
+                        return;
+                    }
+                    if (!mc.player.isFallFlying() && mc.player.isOnGround() && mode.get() == Mode.GRIM_LEGACY_GROUND) {
+                        handleVelocityGrimLegacy(event);
+                        return;
+                    }
+                    if (!mc.player.isFallFlying() && mc.player.isOnGround() && mode.get() == Mode.GRIM_NEW_GROUND) {
+                        handleVelocityGrimNew(event);
+                        return;
+                    }
+                    if (!mc.player.isOnGround() && onGroundOnly.get()) {
+                        // todo ?
+                    }
+                    // todo: copy from what
                 }
-                if ((mc.player.isTouchingWater() || mc.player.isSubmergedInWater() || mc.player.isInLava())
-                        && notInWater.get()) {
-                    return;
-                }
-                // todo: make this inside wall
-                if (inWall.get() && mc.player.isInsideWall()) {
-                    return;
-                }
-                if (canCancel
-                        && !mc.player.isFallFlying()
-                        && mc.player.isOnGround()
-                        && mode.get() == Mode.GRIM_LEGACY_GROUND) {
-                    canCancel = false;
-                    handleVelocityGrimLegacy(event);
-                    return;
-                }
-                if (canCancel
-                        && !mc.player.isFallFlying()
-                        && mc.player.isOnGround()
-                        && mode.get() == Mode.GRIM_NEW_GROUND) {
-                    canCancel = false;
-                    handleVelocityGrimNew(event);
-                    return;
-                }
-                if (!mc.player.isOnGround() && onGroundOnly.get()) {
-                    return;
-                }
-                // todo: copy from what
             }
-            canCancel = false;
         }
     }
 

@@ -31,11 +31,9 @@ public class PostManager extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::peekPingPacketIn);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(CommonPingS2CPacket.class), this::postPongPacketOut);
-        registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::preTickEnd);
         registerListener(Listener.getPacketPostSendPoint().getChannel(ClientTickEndC2SPacket.class), this::postTickEnd);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnectReset);
         registerListener(Listener.getPostGameTick(), this::onWatchPingLongTimeNoSent);
-        registerListener(Listener.getPacketPoint().getChannel(CommonPongC2SPacket.class), this::prePongPacketOut);
         registerListener(Listener.getPreTick(), this::onPreTick);
     }
     // failure:
@@ -88,19 +86,6 @@ public class PostManager extends BaseModule {
         peekPingRequest += 1;
         lastPingTick = Tasks.getTick();
         //        Debug.info("in", packetPing.getPacketId(), peekPingRequest);
-    }
-
-    public void prePongPacketOut(Event<CommonPongC2SPacket> packetPong) {
-        //        if(!hasHandledPongPacket) {
-        //            hasHandledPongPacket = true;
-        //        }else{
-        //            packetPong.cancel();
-        //            delayedPingPackets.addLast(packetPong.context());
-        //        }
-    }
-
-    public void preTickEnd(Event<ClientTickEndC2SPacket> event) {
-        // runQueue(mc.getNetworkHandler(), queuePackets);
     }
 
     public void postTickEnd(Event<ClientTickEndC2SPacket> event) {
