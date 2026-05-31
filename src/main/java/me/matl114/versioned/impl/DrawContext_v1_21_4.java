@@ -129,7 +129,6 @@ public class DrawContext_v1_21_4 implements VDrawContext {
                 popLayer();
             }
         }
-        this.drawContext.drawGuiTexture(RenderLayer::getGuiTextured, texture, i, j, k, l, x, y, width, height);
     }
 
     private void drawGuiTextureWithColorArgument(
@@ -195,12 +194,12 @@ public class DrawContext_v1_21_4 implements VDrawContext {
 
     @Override
     public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) {
-        drawContext.drawText(textRenderer, text, x, y, color, shadow);
+        drawContext.drawText(textRenderer, text, x, y, getShaderRGB(color), shadow);
     }
 
     @Override
     public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow) {
-        drawContext.drawText(textRenderer, text, x, y, color, shadow);
+        drawContext.drawText(textRenderer, text, x, y, getShaderRGB(color), shadow);
     }
 
     @Override

@@ -42,10 +42,6 @@ public interface VRecord {
         return new ProfileComponent(Optional.ofNullable(name), Optional.empty(), createProperty());
     }
 
-    public static ProfileComponent dynamicProfile(String name) {
-        return ProfileComponent.ofDynamic(name);
-    }
-
     public static ProfileComponent withProperty(ProfileComponent component, PropertyMap properties) {
         return new ProfileComponent(component.name(), component.id(), properties);
     }
