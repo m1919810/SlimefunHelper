@@ -15,7 +15,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.particle.Particle;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
@@ -101,7 +100,7 @@ public class RenderListener {
 
     @Getter
     @Broadcast
-    @ExtraArgs(value = {RenderTickCounter.class, boolean.class})
+    @ExtraArgs(value = {float.class, boolean.class})
     private static final EventChannel<VDrawContext> renderGameHudTasks = new EventChannel<>();
 
     public static void renderWorldTasks(MatrixStack stack, float tickDelta) {

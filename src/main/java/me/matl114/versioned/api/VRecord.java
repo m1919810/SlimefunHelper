@@ -1,6 +1,9 @@
 package me.matl114.versioned.api;
 
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Multimap;
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,5 +41,13 @@ public interface VRecord {
 
     public static ProfileComponent withProperty(ProfileComponent component, PropertyMap properties) {
         return new ProfileComponent(component.name(), component.id(), properties);
+    }
+
+    public static PropertyMap createProperty(Multimap<String, Property> ppt) {
+        return new PropertyMap(LinkedHashMultimap.create(ppt));
+    }
+
+    public static PropertyMap createProperty() {
+        return new PropertyMap(LinkedHashMultimap.create());
     }
 }

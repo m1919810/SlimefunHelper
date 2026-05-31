@@ -3,6 +3,7 @@ package me.matl114.bukkit;
 import static me.matl114.utils.ItemStackUtils.*;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.authlib.properties.Property;
@@ -104,11 +105,11 @@ public class BukkitItemStackUtils {
                     BukkitPlayerProfile.fromHashToUrl(hash),
                     BukkitPlayerProfile.PlayerTextures.SkinModel.CLASSIC,
                     null);
-            PropertyMap map1 = new PropertyMap();
+            LinkedHashMultimap<String, Property> map1 = LinkedHashMultimap.create();
             map1.putAll(oldMap);
             map1.removeAll("textures");
             map1.put("textures", property);
-            return map1;
+            return VRecord.createProperty(map1);
         } catch (Throwable e) {
             return oldMap;
         }

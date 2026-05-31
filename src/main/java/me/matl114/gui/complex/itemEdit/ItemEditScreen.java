@@ -567,7 +567,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     // empty hash remove
                     if (lastComponent != null) {
                         ItemStackUtils.setOrRemoveChange(
-                                stackTemplate, PROFILE, VRecord.withProperty(lastComponent, new PropertyMap()));
+                                stackTemplate, PROFILE, VRecord.withProperty(lastComponent, VRecord.createProperty()));
                     } else {
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, null);
                     }
@@ -830,8 +830,9 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                 this.modifierEntries.stream()
                                         .map(ItemAttributeModifierEntry::value)
                                         .filter(Objects::nonNull)
-                                        .toList(),
-                                this.showInTooltips));
+                                        .toList()
+                                //    , this.showInTooltips
+                                ));
             }
 
             @Override

@@ -21,10 +21,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.StringHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -150,18 +150,12 @@ public class BukkitPlayerProfile implements ConfigurationSerializable {
     }
 
     public PropertyMap createPropertyMap() {
-        PropertyMap map = new PropertyMap();
-        map.putAll(this.properties);
-        return map;
+        return VRecord.createProperty(this.properties);
     }
 
     public ProfileComponent createGameProfile() {
-        PropertyMap map = new PropertyMap();
-        map.putAll(this.properties);
-        return new ProfileComponent(
-                Optional.ofNullable(StringHelper.isEmpty(this.name) ? (String) null : this.name),
-                Optional.ofNullable(this.uniqueId),
-                map);
+        PropertyMap map = VRecord.createProperty(this.properties);
+        return VRecord.staticProfile(uniqueId, name == null ? "" : name, map);
     }
 
     public static Property deserializeProperty(@Nonnull Map<?, ?> map) {
