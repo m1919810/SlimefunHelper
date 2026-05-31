@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.combat;
 
+import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +36,7 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
@@ -69,7 +71,7 @@ public class ElytraBot extends BaseModule {
             flagBuilder(elytraBot.add("only-when-no-wasd")).build();
 
     public final DoubleRef combatRange = builder(elytraBot.add("combat-range"), DoubleRef.TYPE)
-            .defaultValue(3.5D)
+            .defaultValue(3.6D)
             .build();
 
     public final DoubleRef followOnGroundHeight = builder(elytraBot.add("follow-on-ground-height-extra"), Double.class)
@@ -79,7 +81,7 @@ public class ElytraBot extends BaseModule {
             .build();
 
     public final DoubleRef maceHeight = builder(elytraBot.add("mace-height"), DoubleRef.TYPE)
-            .defaultValue(3.0D)
+            .defaultValue(10.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
@@ -90,6 +92,10 @@ public class ElytraBot extends BaseModule {
 
     public final IntRef maceRemainPullUpTick = builder(elytraBot.add("mace-max-extra-pull-up-tick"), IntRef.TYPE)
             .defaultValue(20)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
+    public final FlagRef combatSmoothFlight = flagBuilder(elytraBot.add("combat-smooth-flight"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
@@ -129,7 +135,7 @@ public class ElytraBot extends BaseModule {
     Map<Mode, AbstractBotBehaviour> behaviourMap = new HashMap<>();
 
     Entity lastTarget;
-    Vec3d lastTargetPos;
+    Box lastTargetHitBox;
     TargetAction currentAction;
     int afkTicker = 0;
     double speedMultiplier = 1.0D;
@@ -165,31 +171,33 @@ public class ElytraBot extends BaseModule {
     public void updateTargetAction() {
         if (target != lastTarget) {
             lastTarget = target;
-            lastTargetPos = null;
+            lastTargetHitBox = null;
             currentAction = null;
             afkTicker = 0;
         }
         if (target != null) {
             // initialize pos
-            if (lastTargetPos == null) {
-                lastTargetPos = target.getPos();
+            if (lastTargetHitBox == null) {
+                lastTargetHitBox = target.getBoundingBox();
                 currentAction = TargetAction.AFK;
             }
-            if (lastTargetPos.squaredDistanceTo(mc.player.getPos()) < MathUtils.s2(combatRange.get())) {
+            if (lastTargetHitBox.squaredMagnitude(mc.player.getEyePos()) < MathUtils.s2(combatRange.get())) {
                 currentAction = TargetAction.COMBATING;
             } else {
                 // speed < 1, we can easily handle this speed
-                if (lastTargetPos.squaredDistanceTo(target.getPos()) < 0.25) {
+                Vec3d lastTargetCenter = lastTargetHitBox.getCenter();
+                Vec3d targetCenter = target.getBoundingBox().getCenter();
+                if (lastTargetCenter.squaredDistanceTo(targetCenter) < 0.25) {
                     afkTicker++;
                     if (afkTicker > 20) {
                         currentAction = TargetAction.AFK;
                     }
-                } else if (lastTargetPos.squaredDistanceTo(target.getPos()) < 1) {
+                } else if (lastTargetCenter.squaredDistanceTo(targetCenter) < 1) {
                     currentAction = TargetAction.SLOW_SPEED;
                 } else {
                     // it is escaping
-                    if (lastTargetPos
-                                    .subtract(target.getPos())
+                    if (lastTargetCenter
+                                    .subtract(targetCenter)
                                     .dotProduct(target.getPos().subtract(mc.player.getPos()))
                             > 0) {
                         currentAction = TargetAction.ESCAPING;
@@ -198,7 +206,7 @@ public class ElytraBot extends BaseModule {
                     }
                 }
             }
-            lastTargetPos = target.getPos();
+            lastTargetHitBox = target.getBoundingBox();
         }
     }
 
@@ -310,7 +318,7 @@ public class ElytraBot extends BaseModule {
         if (currentBehaviour instanceof HitListener sp
                 && enable.get()
                 && e.context.sourceCauseId() == mc.player.getId()
-                && mc.world.getEntityById(e.context.entityId()) instanceof PlayerEntity otherPlayer) {
+                && mc.world.getEntityById(e.context.entityId()) == target) {
             var source = e.context.sourceType().getKey().orElse(null);
             if (DamageUtils.isType(source, "mace_smash")) {
                 // we trigger a mace smash
@@ -463,7 +471,7 @@ public class ElytraBot extends BaseModule {
                     }
                 }
                 if (mc.player.getY() < targetY) {
-                    followTarget = base.target.getPos().withAxis(Direction.Axis.Y, targetY + 0.5);
+                    setTargetToPlayerUpper();
                     machine.markForEndState();
                     return STATE_PULL_UP;
                 } else {
@@ -477,17 +485,61 @@ public class ElytraBot extends BaseModule {
                 // we trigger falldistance reset during chase
                 return STATE_PULL_UP;
             }
-            followTarget = base.target.getPos();
             // already reach the target
-            double minimalHeightLow = 1.5;
             if (base.target.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
                     < MathUtils.s2(Math.min(
                             base.minimalAttackRange.get(),
                             CombatTasks.getCombatExtra().getAttackRange()))) {
+                setTargetToPlayer(true);
                 scheduleAttack();
                 machine.markForEndState();
                 return STATE_WAIT_ATTACK;
-            } else if (base.target.isOnGround() || CollisionUtil.isEntitySupported(base.target)) {
+            } else {
+                setTargetToPlayer(false);
+            }
+
+            machine.markForEndState();
+            return STATE_FOLLOW;
+        }
+
+        private void setTargetToPlayerUpper() {
+            if (base.combatSmoothFlight.get()) {
+                double combatRange = base.combatRange.get();
+                if (base.currentAction == TargetAction.COMBATING) {
+                    //
+                    Vec3d towardsVector = mc.player.getPos().subtract(base.target.getPos());
+                    Vec3d vertical = MathUtils.getVerticalWithSameXZ(towardsVector);
+                    // ensure y > 0
+                    if (vertical.y < 0) {
+                        vertical = vertical.negate();
+                    }
+                    followTarget = mc.player.getPos().add(vertical.multiply(10));
+                    return;
+                }
+                if (base.target.getY() >= mc.player.getY()) {
+                    Vec3d center = base.target.getBoundingBox().getCenter();
+                    double radius = combatRange + (base.target.getBoundingBox().getLengthY() / 2.0D);
+                    Pair<Vec3d, Vec3d> tangents = MathUtils.getTangentWithSameXZ(center, radius, mc.player.getEyePos());
+                    Vec3d vec3d = tangents.getFirst();
+                    Vec3d vec3d2 = tangents.getSecond();
+                    Vec3d vec3d3 = vec3d.y < vec3d2.y ? vec3d2 : vec3d;
+                    if (vec3d3.y > 0) {
+                        followTarget = mc.player.getPos().add(vec3d3.multiply(10));
+                        return;
+                    }
+                }
+            }
+            followTarget = base.target
+                    .getPos()
+                    .withAxis(Direction.Axis.Y, (base.target.getY() + (2 * base.maceHeight.get()) + 0.5));
+        }
+
+        private void setTargetToPlayer(boolean waitAttack) {
+            followTarget = base.target.getPos();
+            double minimalHeightLow = waitAttack
+                    ? (CombatExtra.INSTANCE.getAttackRange() + mc.player.getEyeHeight(mc.player.getPose()))
+                    : 1.5;
+            if (base.target.isOnGround() || CollisionUtil.isEntitySupported(base.target)) {
                 // handle on ground target
                 followTarget = followTarget.add(0, base.followOnGroundHeight.get(), 0);
             } else if (base.target.getY() > mc.player.getY()
@@ -495,9 +547,6 @@ public class ElytraBot extends BaseModule {
                 // do not go up if it is just a bit higher than
                 followTarget = followTarget.withAxis(Direction.Axis.Y, mc.player.getY());
             }
-
-            machine.markForEndState();
-            return STATE_FOLLOW;
         }
         // compat delay attack shit, add cd,
         public int onStateWaitAttack(StateMachine machine) {
@@ -505,7 +554,8 @@ public class ElytraBot extends BaseModule {
                 return STATE_NONE;
             }
             machine.markForEndState();
-            followTarget = mc.player.getPos();
+            // stay!
+            setTargetToPlayer(true);
             return STATE_WAIT_ATTACK;
         }
 
@@ -520,7 +570,7 @@ public class ElytraBot extends BaseModule {
                 startDownAttackTick += 1;
                 machine.markForEndState();
                 followTarget = base.target.getPos().subtract(0, 10, 0);
-                Vec3d look = followTarget.subtract(mc.player.getPos());
+                Vec3d look = followTarget.subtract(mc.player.getPos()).normalize();
                 if (look.y < 0) {
                     // player height = 1.8
                     // 3 + 1.62 = 4.62 height
@@ -528,15 +578,17 @@ public class ElytraBot extends BaseModule {
                     // estimate 0.85
                     double lookY = -look.y;
                     // downward < 1.7 * 0.85
-                    base.speedMultiplier = Math.min(1.0D, (0.85 * 1.7) / lookY);
+                    base.speedMultiplier = Math.min(1.0D, (0.75) / lookY);
                 }
                 return STATE_DOWN_ATTACK;
             }
+
             if (base.target.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
                     < MathUtils.s2(Math.min(
                             base.minimalAttackRange.get(),
                             CombatTasks.getCombatExtra().getAttackRange()))) {
                 scheduleAttack();
+                followTarget = mc.player.getPos();
                 machine.markForEndState();
                 return STATE_WAIT_ATTACK;
             }
@@ -569,6 +621,7 @@ public class ElytraBot extends BaseModule {
             if (mc.player.isFallFlying()) {
                 maxHeightInAttack = Math.max(maxHeightInAttack, mc.player.getY());
                 stateMachine.step();
+                Debug.info("State", stateMachine.getState(), "height", PlayerStateManager.INSTANCE.fallDistance);
                 // todo: consider cooldown, do not attack too fast
                 if (attackFlag) {
                     if (base.target != null && lastAttackTick <= Tasks.getTick() - 3) {
@@ -614,18 +667,24 @@ public class ElytraBot extends BaseModule {
 
         @Override
         public void onAttack(Entity entity) {
-            if (mc.player.isFallFlying()) {
+            if (mc.player.isFallFlying()
+                    && stateMachine.getState() != STATE_PULL_UP
+                    && stateMachine.getState() != STATE_DOWN_ATTACK) {
                 stateMachine.setState(STATE_FOLLOW);
             }
         }
 
         @Override
         public void onHit(int type) {
-            if (type == HIT_MACE) {
+            if ((type == HIT_MACE || type == HIT_ATTACK)
+                    && stateMachine.getState() != STATE_PULL_UP
+                    && stateMachine.getState() != STATE_DOWN_ATTACK) {
                 stateMachine.setState(STATE_PULL_UP);
-            } else if (type == HIT_ATTACK) {
-                stateMachine.setState(STATE_FOLLOW);
             }
+            //            else if (type == HIT_ATTACK && stateMachine.getState() != STATE_PULL_UP &&
+            // stateMachine.getState() != STATE_DOWN_ATTACK) {
+            //                stateMachine.setState(STATE_FOLLOW);
+            //            }
         }
     }
 

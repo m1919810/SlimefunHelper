@@ -11,6 +11,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.network.packet.s2c.play.CooldownUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
@@ -20,11 +21,19 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 
 public class CombatExtra extends BaseModule {
+    public static CombatExtra INSTANCE;
+
+    public CombatExtra() {
+        INSTANCE = this;
+    }
 
     public final ModulePath combat = makePath(Configs.COMBAT_CONFIG, "attack");
 
     public final DoubleRef range =
             doubleBuilder(combat.add("att-range")).defaultValue(0.0D).build();
+
+    public final DoubleRef boatAttackRange =
+            doubleBuilder(combat.add("boat-reach-range")).defaultValue(0.0D).build();
 
     public final FlagRef shieldPredict =
             flagBuilder(combat.add("shielding-setback-log")).build();
@@ -35,8 +44,17 @@ public class CombatExtra extends BaseModule {
 
     public final FlagRef noCooldown = flagBuilder(combat.add("cancel-interval")).build();
 
+    private boolean ridingBypass(Entity entity) {
+        return entity.hasVehicle();
+    }
+
+    public double getAttackAtTargetRange(Entity entity) {
+        double d = ridingBypass(mc.player) || ridingBypass(entity) ? boatAttackRange.get() : range.get();
+        return mc.player.getAttributeValue(EntityAttributes.ENTITY_INTERACTION_RANGE) + d;
+    }
+
     public double getAttackRange() {
-        double d = range.get();
+        double d = ridingBypass(mc.player) ? boatAttackRange.get() : range.get();
         return mc.player.getAttributeValue(EntityAttributes.ENTITY_INTERACTION_RANGE) + d;
     }
 

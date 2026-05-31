@@ -143,13 +143,15 @@ public class NameTag extends BaseModule {
                 List<Text> subTexts = new ArrayList<>();
                 if (enchantmentSum.get()) {
                     PlayerStateManager.PlayerStatus status = PlayerStateManager.INSTANCE.getPlayerStatus(player);
-                    if (status.protection > 0) {
-                        subTexts.add(Text.literal("保护%d".formatted(status.protection))
-                                .withColor(infoColor.get().asRGB()));
-                    }
-                    if (status.blastProtection > 0) {
-                        subTexts.add(Text.literal("爆炸%d".formatted(status.blastProtection))
-                                .withColor(infoColor.get().asRGB()));
+                    if (status != null) {
+                        if (status.protection > 0) {
+                            subTexts.add(Text.literal("保护%d".formatted(status.protection))
+                                    .withColor(infoColor.get().asRGB()));
+                        }
+                        if (status.blastProtection > 0) {
+                            subTexts.add(Text.literal("爆炸%d".formatted(status.blastProtection))
+                                    .withColor(infoColor.get().asRGB()));
+                        }
                     }
                 }
                 MutableText text2;

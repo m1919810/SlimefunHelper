@@ -7,10 +7,13 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityPassengersSetS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 
@@ -24,6 +27,10 @@ public class TransactionBlocker extends BaseModule {
 
     public final FlagRef enable = flagBuilder(transactionBlocker.add("enable")).build();
 
+    public final KeyBindRef hotkey = moduleEntry(
+                    transactionBlocker.addHotkey(), new MultiKeyBind(), transactionBlocker.addEnable())
+            .build();
+
     public final FlagRef enableC =
             flagBuilder(transactionBlocker.add("bw-test-1")).build();
 
@@ -33,6 +40,7 @@ public class TransactionBlocker extends BaseModule {
         registerListener(PacketManager.getPacketQueueEvent().getPacketSendChannel(), this::onPacketQueue);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onPlayerRespawnLook);
+        registerListener(Listener.getPacketPoint().getChannel(EntityPassengersSetS2CPacket.class), this::onDismount);
     }
 
     @Override
@@ -63,6 +71,21 @@ public class TransactionBlocker extends BaseModule {
         if (enable.get() && isTransactionRelated(packetEvent.context)) {
             packetEvent.cancel();
             Listener.sendPacketNoEvents(new CommonPongC2SPacket(0));
+        }
+    }
+
+    int rideId;
+
+    public void onDismount(Event<EntityPassengersSetS2CPacket> event) {
+        var pkt = event.context;
+        for (var re : pkt.getPassengerIds()) {
+            if (re == mc.player.getId()) {
+                rideId = event.context.getEntityId();
+                return;
+            }
+        }
+        if (rideId == event.context.getEntityId()) {
+            enable.set(true);
         }
     }
 

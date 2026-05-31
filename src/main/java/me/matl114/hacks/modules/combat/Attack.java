@@ -27,6 +27,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.block.Blocks;
@@ -243,6 +244,17 @@ public class Attack extends BaseModule {
     }
 
     public static void attackWithSettings(PlayerEntity player, Entity target, AttackSettings attackSettings) {
+        PlayerInputUtils.Input input = null;
+        if (player.hasVehicle()) {
+            input = PlayerInputUtils.of(mc.player);
+            if (input.hasWASDMovement()) {
+                var re =
+                        input.clone().forward(false).backward(false).left(false).right(false);
+                re.sendPlayerInputAsRiding();
+            } else {
+                input = null;
+            }
+        }
         Runnable callback = null;
         IndexEntry<ItemStack> invResult;
         if (attackSettings.antiShieldSwap()
@@ -308,6 +320,9 @@ public class Attack extends BaseModule {
         if (callback != null) {
             callback.run();
         }
+        if (input != null) {
+            input.sendPlayerInputAsRiding();
+        }
     }
 
     @ApiMethod
@@ -357,7 +372,7 @@ public class Attack extends BaseModule {
 
     private boolean processDelayMovementAttack(Entity target, AttackSettings settings) {
         ElytraExtra elytraExtra = MovTasks.getElytraExtra();
-        final double attackRange = CombatTasks.getCombatExtra().getAttackRange();
+        final double attackRange = CombatExtra.INSTANCE.getAttackAtTargetRange(target);
         boolean useMaceAttack =
                 elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(settings.maceSwap());
         // remove crosshairTarget judge, use
@@ -518,12 +533,6 @@ public class Attack extends BaseModule {
                         }
 
                         @Override
-                        public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-                            LegalMovementManager.MovementModifier.super.applyBeforeMovementPacketModify(
-                                    movementManagerEvent);
-                        }
-
-                        @Override
                         public boolean postModify(
                                 Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
                             if (!runThisTick) {
@@ -610,7 +619,7 @@ public class Attack extends BaseModule {
         ElytraExtra elytraExtra = MovTasks.getElytraExtra();
         boolean useMaceAttack =
                 false && elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(settings.maceSwap());
-        double attackRange = CombatTasks.getCombatExtra().getAttackRange();
+        double attackRange = CombatTasks.getCombatExtra().getAttackAtTargetRange(target);
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,

@@ -102,7 +102,7 @@ public class BadPacketsFix extends BaseModule {
     public void onSendInput(Event<PlayerInputC2SPacket> inputC2SPacketEvent) {
         PlayerInputUtils.Input input = PlayerInputUtils.of(inputC2SPacketEvent.context());
         if (Objects.equals(input, serverInput)) {
-            if (!mc.player.isRiding() && shouldConsiderInputPacket && enableInput.get()) {
+            if (!mc.player.hasVehicle() && shouldConsiderInputPacket && enableInput.get()) {
                 inputC2SPacketEvent.cancel();
             }
         } else {

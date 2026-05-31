@@ -190,6 +190,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                             && !mc.player.isFallFlying()
                             && (mc.player.getVelocity().y >= 0 || mc.player.isOnGround())
                             && input.jump()) {
+                        // todo: can we fix it, it may destroy the fucking packetMine
+                        // todo: add check if blocks above is solid
                         mc.interactionManager.sendSequencedPacket(
                                 mc.world,
                                 (seq) -> new PlayerActionC2SPacket(
