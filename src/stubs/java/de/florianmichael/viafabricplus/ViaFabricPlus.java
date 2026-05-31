@@ -1,4 +1,4 @@
-package de.florianmichael;
+package de.florianmichael.viafabricplus;
 
 import java.io.File;
 import org.apache.logging.log4j.Logger;
