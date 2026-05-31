@@ -5,6 +5,7 @@ import lombok.experimental.Accessors;
 import me.matl114.utils.EntityUtils;
 import me.matl114.versioned.accessors.PlayerInputAccess;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.input.Input;
 import net.minecraft.client.input.KeyboardInput;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
@@ -13,15 +14,18 @@ import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 
 public class PlayerInputUtils {
     public static Input of(ClientPlayerEntity pl) {
-        var input = (KeyboardInput) pl.input;
+        return of(pl.input);
+    }
+
+    public static Input of(net.minecraft.client.input.Input input) {
         return new Input(
-                input.pressingForward,
-                input.pressingBack,
-                input.pressingLeft,
-                input.pressingRight,
-                input.jumping,
-                input.sneaking,
-                PlayerInputAccess.of(input).isPressingSprint());
+            input.pressingForward,
+            input.pressingBack,
+            input.pressingLeft,
+            input.pressingRight,
+            input.jumping,
+            input.sneaking,
+            PlayerInputAccess.of((KeyboardInput) input).isPressingSprint());
     }
 
     public static Input of(GameOptions options) {

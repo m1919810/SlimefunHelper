@@ -570,7 +570,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         ItemStackUtils.setOrRemoveChange(
                                 stackTemplate,
                                 PROFILE,
-                                VRecord.withProperty(lastComponent, new PropertyMap(LinkedHashMultimap.create())));
+                                VRecord.withProperty(lastComponent, new PropertyMap()));
                     } else {
                         ItemStackUtils.setOrRemoveChange(stackTemplate, PROFILE, null);
                     }
@@ -834,7 +834,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                         .map(ItemAttributeModifierEntry::value)
                                         .filter(Objects::nonNull)
                                         .toList()
-                                //    , this.showInTooltips
+                                    , this.showInTooltips
                                 ));
             }
 

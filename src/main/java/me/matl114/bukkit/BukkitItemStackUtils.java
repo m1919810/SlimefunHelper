@@ -79,7 +79,7 @@ public class BukkitItemStackUtils {
     }
 
     public static String getHashFromProfile(ProfileComponent profileComponent) {
-        var pps = VRecord.getProperties(profileComponent.getGameProfile()).get("textures");
+        var pps = VRecord.getGameProfileProperties(profileComponent).get("textures");
         if (pps == null || pps.isEmpty()) return null;
         Property ppt = Iterables.getFirst(pps, null);
         if (ppt == null) return null;
@@ -105,7 +105,7 @@ public class BukkitItemStackUtils {
                     BukkitPlayerProfile.fromHashToUrl(hash),
                     BukkitPlayerProfile.PlayerTextures.SkinModel.CLASSIC,
                     null);
-            PropertyMap map1 = new PropertyMap(LinkedHashMultimap.create());
+            PropertyMap map1 = new PropertyMap();
             map1.putAll(oldMap);
             map1.removeAll("textures");
             map1.put("textures", property);
