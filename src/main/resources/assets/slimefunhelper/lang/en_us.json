@@ -327,7 +327,7 @@
 	"att-bot.criticals.movement-ok-ground.tooltips": "在移动的时候也会尝试模拟地上高度",
 	"att-bot.criticals.auto-fake-ground-height":
 			"刀刀暴击: 自动离地",
-	"att-bot.criticals.auto-fake-ground-height.tooltips": "在GrimGround模式中,常驻高度伪造",
+	"att-bot.criticals.auto-fake-ground-height.tooltips": "在GrimGround模式中,常驻高度伪造\n1.21.2以上建议启用,1.21.2以下建议不启用",
 	"att-bot.criticals.auto-walk-resync": "刀刀暴击: 自动重置移动",
 	"att-bot.criticals.auto-walk-resync.tooltips": "在GrimGround模式中\n一直站桩攻击容易反复触发模拟\n通过自动移动消除模拟",
 	"att-bot.criticals.set-back-mode": "刀刀暴击: 拉回触发方式",
@@ -953,7 +953,7 @@
 	"configenum.elytra-bot-mode.spear_arua": "Spear",
 	"configenum.velocity-bypass-mode.none": "无绕过",
 	"configenum.velocity-bypass-mode.grim_legacy_ground": "Grim",
-	"configenum.velocity-bypass-mode.grim_new": "Test",
+	"configenum.velocity-bypass-mode.grim_new_ground": "Test",
 	"configenum.use-item-noslow-bypass.no_bypass": "无绕过",
 	"configenum.use-item-noslow-bypass.bypass_grim_lazy": "Grim物品栏切换",
 	"configenum.use-item-noslow-bypass.bypass_grim_tick": "测试模式",
