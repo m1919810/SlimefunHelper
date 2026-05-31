@@ -2,6 +2,8 @@ package me.matl114.utils.entity;
 
 import lombok.*;
 import lombok.experimental.Accessors;
+import me.matl114.hooks.ViaFabricPlusHooks;
+import me.matl114.hooks.ViaProtocols;
 import me.matl114.utils.EntityUtils;
 import me.matl114.versioned.accessors.PlayerInputAccess;
 import net.minecraft.client.MinecraftClient;
@@ -9,6 +11,7 @@ import net.minecraft.client.input.Input;
 import net.minecraft.client.input.KeyboardInput;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 
@@ -126,45 +129,10 @@ public class PlayerInputUtils {
                 mc.getNetworkHandler()
                         .sendPacket(
                                 new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
-        public void sendPlayerInputAsRiding() {
-            if (ViaFabricPlusHooks.getInstance().isEnabled()
-                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 1)) {
-                // 1.21.1 ride packet
-                ViaFabricPlusHooks.ViaPacketWrapper wrapper =
-                        ViaFabricPlusHooks.getInstance().createViaPacket();
-                wrapper.writePacketType(ViaProtocols.V1_20_3_TO_1_20_5, PlayPackets.PLAYER_INPUT);
-                wrapper.write("FLOAT", sidewaysSpeed() * 0.98F);
-                wrapper.write("FLOAT", forwardSpeed() * 0.98F);
-                byte b = 0;
-                if (this.jump()) {
-                    b = (byte) (b | 1);
-                }
-
-                if (this.sneak()) {
-                    b = (byte) (b | 2);
-                }
-
-                wrapper.write("BYTE", b);
-                wrapper.scheduleSendToServer(ViaProtocols.V1_21_TO_1_21_2, true);
-            } else {
-                sendPlayerInputPacket();
             }
         }
-
-        public void sendPlayerSneakUpdatePacket() {
-            if (ViaFabricPlusHooks.getInstance().isEnabled()
-                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)) {
-                // send sneak packet
-                ViaFabricPlusHooks.ViaPacketWrapper wrapper =
-                        ViaFabricPlusHooks.getInstance().createViaPacket();
-                wrapper.writePacketType(ViaProtocols.V1_21_4_TO_1_21_5, PlayPackets.PLAYER_COMMAND);
-                wrapper.write("VAR_INT", MinecraftClient.getInstance().player.getId());
-                wrapper.write("VAR_INT", this.sneak ? 0 : 1);
-                wrapper.write("VAR_INT", 0);
-                // todo why doesn't work
-                wrapper.sendToServer(ViaProtocols.V1_21_5_TO_1_21_6, false);
-            }
-            sendPlayerInputPacket();
+        public void sendPlayerInputAsRiding() {
+            mc.getNetworkHandler().sendPacket(new PlayerInputC2SPacket(this.sidewaysSpeed() * 0.98F, this.forwardSpeed() * 0.98F, this.jump(), this.sneak()));
         }
 
         public int forwardSpeed() {

@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(ElytraProcess.class)
+@Mixin(value = ElytraProcess.class, remap = false)
 public abstract class ElytraProcessMixin {
 
     @Inject(

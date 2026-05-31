@@ -18,7 +18,7 @@ public interface ClientPlayerEntityAccess extends LivingEntityAccess<ClientPlaye
     public void setLastSprintFlag(boolean lastSprint);
 
     default void resyncSneak() {
-        setLastSneakFlag(!((ClientPlayerEntity) this).input.playerInput.sneak());
+        setLastSneakFlag(!((Entity) this).isSneaking());
     }
 
     public void setLastSneakFlag(boolean lastSprint);

@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(ElytraCommand.class)
+@Mixin(value = ElytraCommand.class, remap = false)
 public abstract class ElytraCommandMixin extends Command {
     public ElytraCommandMixin(IBaritone iBaritone, String... strings) {
         super(iBaritone, strings);
