@@ -48,7 +48,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
             .build();
 
     public final DoubleRef maxVelocityAccept = builder(grimAccelerate.add("max-accelerate-velocity"), Double.class)
-            .defaultValue(4.0D)
+            .defaultValue(6.0D)
             .validator(Configs.doubleRange(0.0D, 100.0D))
             .build();
 
