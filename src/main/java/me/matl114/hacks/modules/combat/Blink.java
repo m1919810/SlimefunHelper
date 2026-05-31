@@ -1,6 +1,8 @@
 package me.matl114.hacks.modules.combat;
 
+import com.google.common.collect.ImmutableList;
 import java.awt.*;
+import java.util.List;
 import java.util.OptionalInt;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
@@ -11,17 +13,17 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
+import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
@@ -32,6 +34,7 @@ import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class Blink extends BaseModule {
@@ -64,29 +67,40 @@ public class Blink extends BaseModule {
     public final IntRef autoFlushDelay =
             intBuilder(blink.add("auto-flush-period")).defaultValue(20).build();
 
-    public final FlagRef flushOnAttack =
-            flagBuilder(blink.add("flush-on-attack")).build();
+    public final EnumRef<Action> attackBehaviour = builder(blink.add("attack-behaviour"), Action.class)
+            .defaultValue(Action.FLUSH)
+            .build();
 
-    public final FlagRef closeOnAttack =
-            flagBuilder(blink.add("close-on-attack")).build();
+    public final EnumRef<Action> onHurtBehaviour = builder(blink.add("on-hurt-behaviour"), Action.class)
+            .defaultValue(Action.NONE)
+            .build();
 
-    public final FlagRef flushOnHurt = flagBuilder(blink.add("flush-on-hurt")).build();
+    public final EnumRef<Action> onVelocityBehaviour = builder(blink.add("on-velocity-behaviour"), Action.class)
+            .defaultValue(Action.NONE)
+            .build();
 
-    public final FlagRef closeOnHurt = flagBuilder(blink.add("close-on-hurt")).build();
+    public final EnumRef<Action> onInventoryBehaviour = builder(blink.add("on-inventory-behaviour"), Action.class)
+            .defaultValue(Action.NONE)
+            .build();
 
-    public final FlagRef flushOnVelocity =
-            flagBuilder(blink.add("flush-on-velocity")).build();
+    public final EnumRef<Action> onTotemBehaviour = builder(blink.add("on-totem-behaviour"), Action.class)
+            .defaultValue(Action.NONE)
+            .build();
 
-    public final FlagRef closeOnVelocity =
-            flagBuilder(blink.add("close-on-velocity")).build();
+    public final EnumRef<Action> onEnermyNearBehaviour = builder(blink.add("on-enermy-near"), Action.class)
+            .defaultValue(Action.NONE)
+            .build();
 
-    public final FlagRef invHandle =
-            flagBuilder(blink.add("cache-inventory-packet")).build();
+    public final DoubleRef nearRange = builder(blink.add("enermy-near-range"), DoubleRef.TYPE)
+            .defaultValue(3.5D)
+            .build();
+
+    public final EnumRef<Action> nearTargetAction = builder(blink.add("on-near-target"), Action.class)
+            .defaultValue(Action.NONE)
+            .build();
 
     public final FlagRef elytraSupport =
             flagBuilder(blink.add("elytra-support")).build();
-
-    public final FlagRef closeOnTotem = flagBuilder(blink.add("close-on-totem")).build();
 
     @Override
     public void registerAll() {
@@ -194,6 +208,31 @@ public class Blink extends BaseModule {
             if (autoClose.get() && Tasks.getTick() > startTick + closeDelay.get()) {
                 enable.set(false);
             }
+
+            if (onEnermyNearBehaviour.get() != Action.NONE && startPlayerPos != null) {
+                // check if any enermy
+                boolean find = false;
+                List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
+                Vec3d oldPos = startPlayerPos.pos;
+                Vec3d predictionPos = oldPos.add(mc.player.getEyeHeight(mc.player.getPose()));
+                for (var e : et) {
+                    if (e.getBoundingBox().squaredMagnitude(predictionPos) < MathUtils.s2(nearRange.get())
+                            && TargetSelector.INSTANCE.canAttack(e)) {
+                        find = true;
+                        break;
+                    }
+                }
+                if (find) {
+                    handleAction(onEnermyNearBehaviour.get());
+                }
+            }
+            if (nearTargetAction.get() != Action.NONE) {
+                Entity target =
+                        TargetSelector.INSTANCE.searchAttackEntity(CombatExtra.INSTANCE.getAttackRange(), true, 1);
+                if (target != null) {
+                    handleAction(nearTargetAction.get());
+                }
+            }
         }
     }
 
@@ -202,47 +241,54 @@ public class Blink extends BaseModule {
     }
 
     boolean escapeSwing = false;
+    boolean elytraSupportFuckStartFly = false;
 
     public void onPacketQueue(Event<Packet<?>> packet) {
         if (enable.get()) {
             var pkt = packet.context;
             if (PacketManager.isAsyncOrNotTransactionC2SPacket(pkt)) return;
-            if ((!(invHandle.get() || (elytraSupport.get() && mc.player.isFallFlying())))
+            if ((!(onInventoryBehaviour.get() == Action.NONE || (elytraSupport.get() && mc.player.isFallFlying())))
                     && PacketManager.isInventoryPacket(pkt)) return;
+            // support elytra armorFly mace attack
+            //            if(elytraSupport.get() && mc.player.isFallFlying() && pkt instanceof ClientCommandC2SPacket
+            // cmd && cmd.getMode() == ClientCommandC2SPacket.Mode.START_FALL_FLYING) {
+            //                if(elytraSupportFuckStartFly){
+            //                    flush();
+            //                    elytraSupportFuckStartFly = false;
+            //                    return;
+            //                }
+            //            }
             if (pkt instanceof PlayerInteractItemC2SPacket && mc.player.isFallFlying()) {
                 if (onFireworkUse()) {
                     return;
                 }
             }
             if (pkt instanceof PlayerInteractEntityC2SPacket packet1) {
-                boolean flush = false;
-                if (flushOnAttack.get()) {
-                    flush();
-                    flush = true;
-                }
-                if (closeOnAttack.get()) {
-                    enable.set(false);
-                    flush = true;
-                }
-                if (!flush) {
-                    packet.cancel();
-                }
+                handleQueueAction(packet, attackBehaviour.get());
                 escapeSwing = true;
             } else if (pkt instanceof HandSwingC2SPacket swing && escapeSwing) {
                 escapeSwing = false;
-                boolean flush = false;
-                if (flushOnAttack.get()) {
-                    flush();
-                    flush = true;
-                }
-                if (!flush) {
-                    packet.cancel();
-                }
+                handleQueueAction(packet, attackBehaviour.get());
             } else if (pkt instanceof TeleportConfirmC2SPacket tp) {
                 flush();
             } else {
                 packet.cancel();
             }
+        }
+    }
+
+    public void handleQueueAction(Event<Packet<?>> packet, Action action) {
+        switch (action) {
+            case FLUSH -> flush();
+            case CLOSE -> enable.set(false);
+            default -> packet.cancel();
+        }
+    }
+
+    public void handleAction(Action action) {
+        switch (action) {
+            case FLUSH -> flush();
+            case CLOSE -> enable.set(false);
         }
     }
 
@@ -262,34 +308,25 @@ public class Blink extends BaseModule {
 
     public void onPacketHurt(Event<EntityDamageS2CPacket> damage) {
         if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
-            if (flushOnHurt.get()) {
-                flush();
-            }
-            if (closeOnHurt.get()) {
-                enable.set(false);
-            }
+            handleAction(onHurtBehaviour.get());
         }
     }
 
     public void onPacketVelocity(Event<EntityVelocityUpdateS2CPacket> event) {
-        if (enable.get() && mc.player != null && event.context.getEntityId() == mc.player.getId()) {
-            if (flushOnVelocity.get()) {
-                flush();
-            }
-            if (closeOnVelocity.get()) {
-                enable.set(false);
-            }
+        if (enable.get()
+                && mc.player != null
+                && event.context.getEntityId() == mc.player.getId()
+                && !event.isCancelled()) {
+            handleAction(onVelocityBehaviour.get());
         }
     }
 
     public void onEntityStatus(Event<EntityStatusS2CPacket> eventTotem) {
         if (checkNull()) return;
         if (enable.get()
-                && closeOnTotem.get()
                 && eventTotem.context.getEntity(mc.world) == mc.player
                 && eventTotem.context.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING) {
-            flush();
-            enable.set(false);
+            handleAction(onTotemBehaviour.get());
         }
     }
 
@@ -299,5 +336,16 @@ public class Blink extends BaseModule {
             return true;
         }
         return false;
+    }
+
+    public static enum Action implements ConfigEnum {
+        NONE,
+        FLUSH,
+        CLOSE;
+
+        @Override
+        public String getConfigEnumType() {
+            return "blink_event_action";
+        }
     }
 }

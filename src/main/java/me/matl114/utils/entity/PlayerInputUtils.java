@@ -126,7 +126,45 @@ public class PlayerInputUtils {
                 mc.getNetworkHandler()
                         .sendPacket(
                                 new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+        public void sendPlayerInputAsRiding() {
+            if (ViaFabricPlusHooks.getInstance().isEnabled()
+                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 1)) {
+                // 1.21.1 ride packet
+                ViaFabricPlusHooks.ViaPacketWrapper wrapper =
+                        ViaFabricPlusHooks.getInstance().createViaPacket();
+                wrapper.writePacketType(ViaProtocols.V1_20_3_TO_1_20_5, PlayPackets.PLAYER_INPUT);
+                wrapper.write("FLOAT", sidewaysSpeed() * 0.98F);
+                wrapper.write("FLOAT", forwardSpeed() * 0.98F);
+                byte b = 0;
+                if (this.jump()) {
+                    b = (byte) (b | 1);
+                }
+
+                if (this.sneak()) {
+                    b = (byte) (b | 2);
+                }
+
+                wrapper.write("BYTE", b);
+                wrapper.scheduleSendToServer(ViaProtocols.V1_21_TO_1_21_2, true);
+            } else {
+                sendPlayerInputPacket();
             }
+        }
+
+        public void sendPlayerSneakUpdatePacket() {
+            if (ViaFabricPlusHooks.getInstance().isEnabled()
+                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)) {
+                // send sneak packet
+                ViaFabricPlusHooks.ViaPacketWrapper wrapper =
+                        ViaFabricPlusHooks.getInstance().createViaPacket();
+                wrapper.writePacketType(ViaProtocols.V1_21_4_TO_1_21_5, PlayPackets.PLAYER_COMMAND);
+                wrapper.write("VAR_INT", MinecraftClient.getInstance().player.getId());
+                wrapper.write("VAR_INT", this.sneak ? 0 : 1);
+                wrapper.write("VAR_INT", 0);
+                // todo why doesn't work
+                wrapper.sendToServer(ViaProtocols.V1_21_5_TO_1_21_6, false);
+            }
+            sendPlayerInputPacket();
         }
 
         public int forwardSpeed() {

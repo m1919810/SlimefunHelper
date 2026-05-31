@@ -144,7 +144,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                 && currentWorking
                 && event.context.teleportId() < 0
                 && mc.player.isFallFlying()
-                && !mc.player.isRiding()
+                && !mc.player.hasVehicle()
                 && false) {
             //            var pp = event.context;
             //            ClientPlayNetworkHandler.setPosition(pp.change(), pp.relatives(), mc.player, false);

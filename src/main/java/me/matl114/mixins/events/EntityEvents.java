@@ -1,14 +1,11 @@
 package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import it.unimi.dsi.fastutil.BidirectionalIterator;
 import java.util.List;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.utils.collections.LinkNode;
 import me.matl114.utils.containers.MetaData;
-import me.matl114.utils.entity.ProgressWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -59,40 +56,6 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
     @Override
     public boolean isMetaEmpty() {
         return metaData == null;
-    }
-
-    @Unique
-    public void addTickWrapper(ProgressWrapper<T> wrapper) {
-        headNode.insertAfter(wrapper);
-    }
-
-    @Unique
-    private final LinkNode<ProgressWrapper<T>> headNode = LinkNode.createHead();
-
-    @Unique
-    private BidirectionalIterator<ProgressWrapper<T>> usedIterator;
-
-    @Unique
-    public void beforeTick() {
-        var iter = LinkNode.iterator(headNode);
-        while (iter.hasNext()) {
-            var next = iter.next();
-            next.preProgress((T) (Object) this);
-        }
-        usedIterator = iter;
-    }
-
-    @Unique
-    public void afterTick() {
-        var iter = usedIterator;
-        usedIterator = null;
-        while (iter.hasPrevious()) {
-            var prev = iter.previous();
-            prev.postProgress((T) (Object) this);
-            if (!prev.stillWrap((T) (Object) this)) {
-                iter.remove();
-            }
-        }
     }
 
     @Shadow

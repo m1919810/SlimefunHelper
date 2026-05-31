@@ -42,9 +42,12 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 
 public class TargetSelector extends BaseModule {
+    public static TargetSelector INSTANCE;
     public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "attack");
 
-    public TargetSelector() {}
+    public TargetSelector() {
+        INSTANCE = this;
+    }
 
     public Set<EntityType<?>> types = new LinkedHashSet<>();
 
@@ -288,15 +291,15 @@ public class TargetSelector extends BaseModule {
         }
     }
 
-    public List<Entity> getAttackableEntities(double nearby) {
-        return getAttackableEntities(nearby, 0, this::canAttack);
+    public List<Entity> getAttackableEntities(double nearbyOverride) {
+        return getAttackableEntities(nearbyOverride, 0, this::canAttack);
     }
 
-    private List<Entity> getAttackableEntities(double nearby, int ticks, Predicate<Entity> predicate) {
+    private List<Entity> getAttackableEntities(double nearbyOverride, int ticks, Predicate<Entity> predicate) {
         List<Entity> entities = new ArrayList<>();
         List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
         for (var e : et) {
-            if (isTargetInRange(e, nearby, ticks) && predicate.test(e)) {
+            if (isTargetInRange(e, nearbyOverride, ticks) && predicate.test(e)) {
                 entities.add(e);
             }
         }
@@ -325,6 +328,7 @@ public class TargetSelector extends BaseModule {
 
     public boolean isTargetInRange(Entity e, double nearby, int ticks) {
         if (mc.player == null) return false;
+        nearby = Math.max(nearby, CombatExtra.INSTANCE.getAttackAtTargetRange(e));
         Vec3d predictionPos =
                 mc.player.getEyePos().add(mc.player.getVelocity().multiply(mc.player.isFallFlying() ? ticks : 0));
         double sq = e.getBoundingBox().squaredMagnitude(predictionPos);

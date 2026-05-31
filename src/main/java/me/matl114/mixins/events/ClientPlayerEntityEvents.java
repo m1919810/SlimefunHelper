@@ -3,16 +3,13 @@ package me.matl114.mixins.events;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.authlib.GameProfile;
-import it.unimi.dsi.fastutil.BidirectionalIterator;
 import java.util.Objects;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.utils.collections.LinkNode;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
-import me.matl114.utils.entity.ProgressWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -89,12 +86,6 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     public LegalMovementManager movementManager;
 
     @Unique
-    private final LinkNode<ProgressWrapper<ClientPlayerEntity>> headNode = LinkNode.createHead();
-
-    @Unique
-    private BidirectionalIterator<ProgressWrapper<ClientPlayerEntity>> usedIterator;
-
-    @Unique
     public LegalMovementManager getLegalMovementManager() {
         return this.movementManager;
     }
@@ -147,7 +138,6 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             boolean lastSprinting,
             CallbackInfo ci) {
         this.movementManager = new LegalMovementManager();
-        this.addTickWrapper(this.movementManager);
         Listener.getPlayerInitConfiguration().broadcast((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
 
@@ -178,18 +168,9 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                     @At(
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/network/AbstractClientPlayerEntity;tick()V",
-                            shift = At.Shift.AFTER))
-    public void prewrappedPlayerMovementSentTick(CallbackInfo ci) {
-        Event<ClientPlayerEntity> event = new Event<>((ClientPlayerEntity) (AbstractClientPlayerEntity) this, true);
-        Listener.getClientPlayerSendMovementPoint().handleValue(event);
-        if (!event.isCancelled()) {
-            var iter = LinkNode.iterator(headNode);
-            while (iter.hasNext()) {
-                var next = iter.next();
-                next.preProgress((ClientPlayerEntity) (Object) this);
-            }
-            usedIterator = iter;
-        }
+                            shift = At.Shift.BEFORE))
+    public void prePlayerTick(CallbackInfo ci) {
+        this.movementManager.preProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
 
     @Inject(
@@ -201,13 +182,17 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                             shift = At.Shift.AFTER),
             cancellable = true)
     public void onAfterTick(CallbackInfo ci) {
+        Event<ClientPlayerEntity> event = new Event<>((ClientPlayerEntity) (AbstractClientPlayerEntity) this, true);
+        Listener.getClientPlayerSendMovementPoint().handleValue(event);
         if (hasVehicle()) {
-            if (!this.movementManager.preInputProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)) {
+            if (!this.movementManager.preInputProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)
+                    || event.isCancelled()) {
                 ci.cancel();
                 onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
             }
         } else {
-            if (!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)) {
+            if (!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)
+                    || event.isCancelled()) {
                 ci.cancel();
                 onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
             }
@@ -224,22 +209,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Unique
     private void onPostPlayerMovementTick(ClientPlayerEntity player) {
-        var iter = usedIterator;
-        usedIterator = null;
-        if (iter != null) {
-            while (iter.hasPrevious()) {
-                var prev = iter.previous();
-                prev.postProgress(player);
-                if (!prev.stillWrap(player)) {
-                    iter.remove();
-                }
-            }
-        }
-    }
-
-    @Unique
-    public void addMovementPacketWrapper(ProgressWrapper<ClientPlayerEntity> wrapper) {
-        headNode.insertAfter(wrapper);
+        movementManager.postProgress(player);
     }
 
     @Unique

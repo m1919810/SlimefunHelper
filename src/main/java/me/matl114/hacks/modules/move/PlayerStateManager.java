@@ -213,7 +213,7 @@ public class PlayerStateManager extends BaseModule {
         if (lastInWater) {
             fallDistance = 0.0;
         }
-        if (mc.player.isRiding()) {
+        if (mc.player.hasVehicle()) {
             fallDistance = 0.0;
         }
         if (mc.player.hasStatusEffect(StatusEffects.SLOW_FALLING)

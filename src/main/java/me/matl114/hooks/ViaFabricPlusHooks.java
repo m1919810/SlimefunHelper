@@ -116,11 +116,12 @@ public abstract class ViaFabricPlusHooks implements IHooks {
     public abstract ViaPacketWrapper createViaPacket();
 
     public static interface ViaPacketWrapper {
+        // the higher version is the target1111
         default ViaPacketWrapper writePacketType(
                 String protocolVersion, net.minecraft.network.packet.PacketType<?> packetType) {
             return writePacketType(protocolVersion, packetType.id().getPath().toUpperCase(Locale.ROOT));
         }
-
+        // the higher version is the target1111
         public ViaPacketWrapper writePacketType(String protocolVersion, String packetType);
 
         public ViaPacketWrapper write(String type, Object val);
@@ -193,7 +194,7 @@ public abstract class ViaFabricPlusHooks implements IHooks {
 
         @Override
         public ViaPacketWrapper writePacketType(String protocolVersion, String packetType) {
-            PacketType type = getPacketType(protocolVersion, packetType);
+            PacketType type = Objects.requireNonNull(getPacketType(protocolVersion, packetType));
             if (delegate == null) {
                 delegate = PacketWrapper.create(type, ViaFabricPlus.getImpl().getPlayNetworkUserConnection());
             } else {
@@ -205,7 +206,7 @@ public abstract class ViaFabricPlusHooks implements IHooks {
         @Override
         public ViaPacketWrapper write(String type, Object val) {
             Preconditions.checkNotNull(delegate, "Set packet type before write");
-            delegate.write(getType(type), val);
+            delegate.write(Objects.requireNonNull(getType(type)), val);
             return this;
         }
 

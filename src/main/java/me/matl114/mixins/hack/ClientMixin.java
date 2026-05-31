@@ -9,6 +9,7 @@ import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.combat.CombatExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -98,7 +99,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isRiding()Z"))
     public boolean onEnableRidingAttack(boolean original) {
 
-        if (CombatTasks.getCombatExtra().rideAttack.get()) {
+        if (CombatExtra.INSTANCE.rideAttack.get()) {
             // always not riding
             return false;
         }

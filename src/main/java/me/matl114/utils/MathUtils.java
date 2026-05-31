@@ -1,5 +1,6 @@
 package me.matl114.utils;
 
+import com.mojang.datafixers.util.Pair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntSupplier;
@@ -41,6 +42,38 @@ public class MathUtils {
 
     public static Box getBlockBox(BlockPos pos) {
         return new Box(pos);
+    }
+
+    public static Vec3d getVerticalWithSameXZ(Vec3d vec3d) {
+        Vec3d direction = vec3d.normalize();
+        return (direction.y != 0
+                        ? new Vec3d(
+                                direction.x,
+                                -(MathUtils.s2(direction.x) + MathUtils.s2(direction.z)) / direction.y,
+                                direction.z)
+                        : new Vec3d(0, 1, 0))
+                .normalize();
+    }
+
+    public static Pair<Vec3d, Vec3d> getTangentWithSameXZ(Vec3d center, double range, Vec3d point) {
+        return getTangentWithSameXZ(range, point.subtract(center));
+    }
+
+    public static Pair<Vec3d, Vec3d> getTangentWithSameXZ(double range, Vec3d point) {
+        double r2 = MathUtils.s2(range);
+        double len = point.length();
+        if (MathUtils.s2(len) <= r2) {
+            // in ball
+            Vec3d vec3d = getVerticalWithSameXZ(point);
+            return Pair.of(vec3d, vec3d.negate());
+        }
+        double cutLine = r2 / len; // < range
+        double cutLen = Math.sqrt(r2 - MathUtils.s2(cutLine));
+        Vec3d verticals = getVerticalWithSameXZ(point);
+        Vec3d cutPoint = point.normalize().multiply(cutLine);
+        return Pair.of(
+                cutPoint.add(verticals.multiply(cutLen)).subtract(point),
+                cutPoint.subtract(verticals.multiply(cutLen)).subtract(point));
     }
 
     public static Vec3d linearInterpolation(Vec3d[] vec3ds, int ticksLater) {
