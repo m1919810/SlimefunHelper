@@ -445,6 +445,8 @@ public class Config implements RefMap {
         @Nullable
         protected Optional<T> defaultValue;
 
+        Runnable postTask;
+
         protected Ref<T> getRef() {
             if (ref == null) {
                 Object obj = root.get(path);
@@ -483,15 +485,19 @@ public class Config implements RefMap {
                     "config default value validation failure: {0}",
                     String.join(".", this.path));
             // validate current value
-            if (!va.test(getRef().getValue())) {
-                getRef().setValue(this.defaultValue.orElse(null));
-            }
-            getRef().addValidator(va);
+            addPost(() -> {
+                if (!va.test(getRef().getValue())) {
+                    getRef().setValue(this.defaultValue.orElse(null));
+                }
+                getRef().addValidator(va);
+            });
             return this;
         }
 
         public SettingBuilder<T> updateListener(Consumer<T> va) {
-            getRef().addUpdateListenerWithUpdate(va);
+            addPost(() -> {
+                getRef().addUpdateListenerWithUpdate(va);
+            });
             return this;
         }
 
@@ -521,7 +527,9 @@ public class Config implements RefMap {
         }
 
         public <W extends Ref<T>> SettingBuilder<T> apply(Consumer<W> va) {
-            va.accept((W) Objects.requireNonNull(getRef()));
+            addPost(() -> {
+                va.accept((W) Objects.requireNonNull(getRef()));
+            });
             return this;
         }
 
@@ -529,7 +537,22 @@ public class Config implements RefMap {
             Objects.requireNonNull(defaultValue);
             var ref1 = (W) Objects.requireNonNull(getRef());
             ref1.setConfigReference(rootConfig);
+            if (postTask != null) {
+                postTask.run();
+            }
             return ref1;
+        }
+
+        protected void addPost(Runnable runnable) {
+            if (postTask == null) {
+                postTask = runnable;
+            } else {
+                Runnable currentPost = postTask;
+                postTask = () -> {
+                    currentPost.run();
+                    runnable.run();
+                };
+            }
         }
     }
 }

@@ -4,7 +4,6 @@ import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.type.Type;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
-import javax.annotation.Nullable;
 
 public interface PacketWrapper {
     int PASSTHROUGH_ID = 1000;
@@ -16,14 +15,14 @@ public interface PacketWrapper {
 
     static PacketWrapper create(
             com.viaversion.viaversion.api.protocol.packet.PacketType packetType,
-            @Nullable ByteBuf inputBuffer,
+            ByteBuf inputBuffer,
             UserConnection connection) {
         return null;
     }
 
     /** @deprecated */
     @Deprecated
-    static PacketWrapper create(int packetId, @Nullable ByteBuf inputBuffer, UserConnection connection) {
+    static PacketWrapper create(int packetId, ByteBuf inputBuffer, UserConnection connection) {
         return null;
     }
 
@@ -35,11 +34,11 @@ public interface PacketWrapper {
 
     boolean isReadable(Type var1, int var2);
 
-    <T> void set(Type<T> var1, int var2, @Nullable T var3);
+    <T> void set(Type<T> var1, int var2, T var3);
 
     <T> T read(Type<T> var1);
 
-    <T> void write(Type<T> var1, @Nullable T var2);
+    <T> void write(Type<T> var1, T var2);
 
     <T> T passthrough(Type<T> var1);
 
@@ -101,7 +100,6 @@ public interface PacketWrapper {
 
     void scheduleSendToServer(Class var1, boolean var2);
 
-    @Nullable
     PacketType getPacketType();
 
     void setPacketType(com.viaversion.viaversion.api.protocol.packet.PacketType var1);
