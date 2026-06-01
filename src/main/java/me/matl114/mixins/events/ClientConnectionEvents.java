@@ -78,7 +78,7 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
             }
         }
     }
-
+    // some sb mod inject at this point, we fix it by order = -999
     @Inject(
             method = "channelRead0(Lio/netty/channel/ChannelHandlerContext;Lnet/minecraft/network/packet/Packet;)V",
             at = @At("HEAD"),
