@@ -622,7 +622,7 @@ public class ElytraBot extends BaseModule {
             if (mc.player.isFallFlying()) {
                 maxHeightInAttack = Math.max(maxHeightInAttack, mc.player.getY());
                 stateMachine.step();
-                //Debug.info("State", stateMachine.getState(), "height", PlayerStateManager.INSTANCE.fallDistance);
+                // Debug.info("State", stateMachine.getState(), "height", PlayerStateManager.INSTANCE.fallDistance);
                 // todo: consider cooldown, do not attack too fast
                 if (attackFlag) {
                     if (base.target != null && lastAttackTick <= Tasks.getTick() - 3) {
