@@ -195,14 +195,14 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             realVector = velocity.toVelocity();
 
             // add FloatingUtils
-            if (MovTasks.getFloatingUtils().workGrimFloatingThisTick()) {
+            if (FloatingUtils.INSTANCE.workGrimFloatingThisTick()) {
                 realVector = Vec3d.ZERO;
                 shouldControl = true;
                 shouldCheckRocket = false;
             } else if (useFloatingUtils.get() && realVector.lengthSquared() < 1e-4) {
                 if (!MovTasks.getElytraExtra().canFireworkControlMotion()) {
                     realVector = Vec3d.ZERO;
-                    MovTasks.getFloatingUtils().setGrimFloatingTick(true);
+                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                 }
                 shouldControl = true;
                 shouldCheckRocket = false;

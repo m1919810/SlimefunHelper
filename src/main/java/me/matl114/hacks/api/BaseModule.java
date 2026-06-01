@@ -413,7 +413,7 @@ public abstract class BaseModule implements ModuleListProvider {
         String keyName;
 
         public WrapperConfigRef(Ref<T> ref, Config config, String[] path) {
-            this.ref = ref;
+            this.ref = Objects.requireNonNull(ref);
             this.path = path;
             this.config = config;
             this.keyName = String.join(".", path);
