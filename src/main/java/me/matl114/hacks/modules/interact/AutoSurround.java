@@ -236,7 +236,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
             }
         }
     }
-
+    // todo: try check block position, sneak-related
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         if (triggerCenterFix && mc.player.isOnGround()) {

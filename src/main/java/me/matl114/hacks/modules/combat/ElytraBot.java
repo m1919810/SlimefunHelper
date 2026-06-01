@@ -375,7 +375,7 @@ public class ElytraBot extends BaseModule {
     }
 
     public static class Follower extends AbstractBotBehaviour {
-
+        // todo: add in-hole behaviour, add hole-esp related, add landing
         @Override
         public void onUpdate() {
             super.onUpdate();

@@ -514,17 +514,23 @@ public abstract class BaseModule implements ModuleListProvider {
         // for gui building
         // todo: create it later
         public WrapperSettingBuilder<W> hideConfig() {
-            getWrapper().hideConfig();
+            addPost(() -> {
+                getWrapper().hideConfig();
+            });
             return this;
         }
 
         public WrapperSettingBuilder<W> showConfig() {
-            getWrapper().showConfig();
+            addPost(() -> {
+                getWrapper().showConfig();
+            });
             return this;
         }
 
         public WrapperSettingBuilder<W> show(BooleanSupplier supplier) {
-            getWrapper().addShowPredicate(supplier);
+            addPost(() -> {
+                getWrapper().addShowPredicate(supplier);
+            });
             return this;
         }
 

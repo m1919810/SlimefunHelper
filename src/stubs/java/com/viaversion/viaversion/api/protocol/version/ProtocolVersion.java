@@ -2,7 +2,6 @@ package com.viaversion.viaversion.api.protocol.version;
 
 import java.util.Comparator;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 public class ProtocolVersion {
     public int getVersion() {
@@ -73,7 +72,7 @@ public class ProtocolVersion {
         return this.newerThan(min) && this.olderThan(max);
     }
 
-    protected @Nullable Comparator<ProtocolVersion> customComparator() {
+    protected Comparator<ProtocolVersion> customComparator() {
         return null;
     }
 
