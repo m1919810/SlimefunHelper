@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(ElytraBehavior.class)
+@Mixin(value = ElytraBehavior.class, remap = false)
 public abstract class ElytraBehaviourMixin {
     @WrapOperation(
             method = {
