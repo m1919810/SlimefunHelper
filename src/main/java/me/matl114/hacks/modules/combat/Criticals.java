@@ -11,6 +11,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
@@ -318,7 +319,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                 shouldApplyFreeze = mc.player.getY() < movementManagerEvent.context.playerStatus.pos.y && lastFall;
             }
             if (shouldApplyFreeze) {
-                MovTasks.getFloatingUtils().setGrimFloatingTick(true);
+                FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                 mc.player.setOnGround(false);
             }
         }

@@ -8,11 +8,11 @@ import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
 import me.matl114.events.catchers.PacketCatcherImpl;
 import me.matl114.events.packets.PacketStorage;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.ac.DisablerManager;
+import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -213,7 +213,7 @@ public class Airplace extends BaseModule {
                     mc.player.swingHand(Hand.MAIN_HAND);
                     // work by magic
                     if (!PlayerInputUtils.of(mc.options).hasWASDMovement()) {
-                        MovTasks.getFloatingUtils().setGrimFloatingTick(true);
+                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                     }
                     return;
                 }

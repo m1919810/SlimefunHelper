@@ -1330,7 +1330,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     if (armorFly.get() && thisFallFlyingIsArmorFly != -1) {
                         player.setOnGround(false);
                         movementManagerEvent.context.playerStatus.restorePos();
-                        MovTasks.getFloatingUtils().setGrimFloatingTick(true);
+                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                         handleNoFall = true;
                         break noFall;
                     }
