@@ -80,9 +80,8 @@ public class SeedOre extends BaseModule {
     private final Map<Long, Map<BlockPos, BlockState>> fakeOres = new ConcurrentHashMap<>();
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
-
     public void saveSeedMap() {
-        seedMapSave.write((Map<String, Long>)seedMap, JavaOps.INSTANCE);
+        seedMapSave.write((Map<String, Long>) seedMap, JavaOps.INSTANCE);
     }
 
     public SeedOre() {
@@ -114,9 +113,7 @@ public class SeedOre extends BaseModule {
             .updateListener(Ore::reloadOreSettings)
             .build();
 
-    public final FileStorage seedMapSave = FileManager.getInstance().getInternalStorage(
-        "seed-storage.nbt"
-    );
+    public final FileStorage seedMapSave = FileManager.getInstance().getInternalStorage("seed-storage.nbt");
 
     {
         NbtCompound nbt = seedMapSave.asReadOnly(NbtOps.INSTANCE);
@@ -124,7 +121,7 @@ public class SeedOre extends BaseModule {
         for (var entry : nbt.entrySet()) {
             String key = entry.getKey();
             NbtElement value = entry.getValue();
-            if(value instanceof NbtLong ll){
+            if (value instanceof NbtLong ll) {
                 seedMap.put(key, ll.value());
             }
         }

@@ -16,7 +16,6 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.StringRef;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VRender;
@@ -27,7 +26,6 @@ import net.minecraft.util.math.*;
 public class ElytraFinder extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath travellingControl = makePath(Configs.MOV_CONFIG, "travelling-control");
     public final ModulePath elytraFinder = travellingControl.add("elytra-finder");
-
 
     static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -83,8 +81,6 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
     // todo: add schedule travel steps
     // todo: add command
     // todo: add pull up actions
-
-
 
     @Override
     public void registerAll() {

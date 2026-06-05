@@ -2,19 +2,16 @@ package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.authlib.GameProfile;
-import java.util.Arrays;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.accessors.hacks.PlayerInternalAccess;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.hacks.utils.entity.PredictorImpl;
-import me.matl114.utils.MathUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -42,8 +39,10 @@ public abstract class PlayerEntityMixin extends LivingEntity
 
         return original < 1E-5 ? 1.0F : original;
     }
-@Unique
+
+    @Unique
     PredictorImpl predictorImpl;
+
     @Inject(
             method = "<init>",
             at =
@@ -57,25 +56,24 @@ public abstract class PlayerEntityMixin extends LivingEntity
     }
 
     @Override
-    public Predictor getPositionPredictor(){
-        if(predictorImpl == null){
+    public Predictor getPositionPredictor() {
+        if (predictorImpl == null) {
             predictorImpl = new PredictorImpl(this);
         }
         return predictorImpl;
     }
 
-
     @Inject(method = "tick", at = @At("HEAD"))
     private void positionRecordTick(CallbackInfo ci) {
-        if(predictorImpl == null) {
+        if (predictorImpl == null) {
             predictorImpl = new PredictorImpl(this);
         }
         predictorImpl.tick();
     }
 
     @Override
-    public PredictorImpl getPredictorImpl(){
-        if(predictorImpl == null){
+    public PredictorImpl getPredictorImpl() {
+        if (predictorImpl == null) {
             predictorImpl = new PredictorImpl(this);
         }
         return predictorImpl;

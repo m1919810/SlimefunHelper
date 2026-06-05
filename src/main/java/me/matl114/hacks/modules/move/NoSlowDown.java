@@ -24,7 +24,6 @@ import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.UseEffectsComponent;
@@ -203,7 +202,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                                 mc.world,
                                 (seq) -> new PlayerActionC2SPacket(
                                         PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP, seq));
-                        //mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
+                        // mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
                         slowMovement.cancel();
                         return;
                     }

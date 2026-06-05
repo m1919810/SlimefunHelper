@@ -194,11 +194,15 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                         return;
                     }
 
-                    if (!mc.player.isFallFlying() &&(!onGroundOnly.get() || mc.player.isOnGround()) && mode.get() == Mode.GRIM_LEGACY_GROUND) {
+                    if (!mc.player.isFallFlying()
+                            && (!onGroundOnly.get() || mc.player.isOnGround())
+                            && mode.get() == Mode.GRIM_LEGACY_GROUND) {
                         handleVelocityGrimLegacy(event);
                         return;
                     }
-                    if (!mc.player.isFallFlying() && (!onGroundOnly.get() || mc.player.isOnGround()) && mode.get() == Mode.GRIM_NEW_GROUND) {
+                    if (!mc.player.isFallFlying()
+                            && (!onGroundOnly.get() || mc.player.isOnGround())
+                            && mode.get() == Mode.GRIM_NEW_GROUND) {
                         handleVelocityGrimNew(event);
                         return;
                     }

@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.combat;
 
 import java.util.List;
-import java.util.Random;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.CombatTasks;

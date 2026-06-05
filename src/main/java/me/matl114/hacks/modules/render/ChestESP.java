@@ -87,7 +87,6 @@ public class ChestESP extends BaseModule {
 
     public void onBlockEntityRender(Event<BlockEntity> blockEntityEvent) {}
 
-
     public void onSwapRenderContent(Event<ClientPlayerEntity> clientPlayerEntityEvent) {
         if (checkNull()) return;
         renderPositions.clear();

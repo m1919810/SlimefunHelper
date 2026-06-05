@@ -30,7 +30,6 @@ import me.matl114.managers.FileManager;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
-import me.matl114.managers.config.ListRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.ChatUtils;
@@ -102,9 +101,10 @@ public class ServerScanner extends BaseModule {
     private final FlagRef randomRequest = new FlagRef(true);
     private final FlagRef filter = new FlagRef(true);
     private final FileStorage serverListSave = FileManager.getInstance().getInternalStorage("server-scanner.nbt");
-    private final NbtList list(){
+
+    private final NbtList list() {
         NbtCompound nbt = (NbtCompound) serverListSave.as(NbtOps.INSTANCE);
-        if(nbt.get("save-list") instanceof NbtList nbtList){
+        if (nbt.get("save-list") instanceof NbtList nbtList) {
             return nbtList;
         }
         nbt = nbt.copy();
@@ -117,8 +117,7 @@ public class ServerScanner extends BaseModule {
     private final List<String> scannedIps = new ArrayList<>();
 
     {
-        list().stream().map(s -> ((NbtString)s).value()).forEach(scannedIps::add);
-
+        list().stream().map(s -> ((NbtString) s).value()).forEach(scannedIps::add);
     }
 
     private Text logInfo = Text.empty();

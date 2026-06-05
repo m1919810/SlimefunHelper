@@ -11,6 +11,7 @@ import me.matl114.managers.config.IntRef;
 public class InteractExtra extends BaseModule {
     public final ModulePath interactFix = makePath(Configs.INTERACT_CONFIG, "interact-fix");
     public static InteractExtra INSTANCE;
+
     public InteractExtra() {
         INSTANCE = this;
     }

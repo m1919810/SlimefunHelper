@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import me.matl114.accessors.access.ChatHudAccess;
 import me.matl114.hacks.ChatTasks;
-import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.modules.chat.ChatExtra;
 import me.matl114.hacks.modules.render.SleepMode;
 import net.fabricmc.api.EnvType;

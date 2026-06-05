@@ -31,12 +31,10 @@ public abstract class EditBoxWidgetMixin extends ScrollableTextFieldWidget imple
     @Unique
     private static final ColorProvider ORIGIN_PROVIDER = McWidgetHelpers.getDefaultTextBoxColorProvider();
 
-
     @Unique
     public void setBorderColorProvider(ColorProvider provider) {
         this.boxColorProvider = provider == null ? ORIGIN_PROVIDER : provider;
     }
-
 
     @Shadow
     public abstract void setChangeListener(Consumer<String> changeListener);

@@ -1,7 +1,6 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.modules.render.RenderExtra;
 import net.minecraft.client.render.fog.FogRenderer;
 import org.spongepowered.asm.mixin.Mixin;

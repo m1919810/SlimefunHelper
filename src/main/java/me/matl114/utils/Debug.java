@@ -75,14 +75,15 @@ public class Debug {
         }
         logger.info(object != null ? object.toString() : "null");
     }
-    public static void debug(Object... objs){
-        if(SlimefunHelper.DEV_ENV){
+
+    public static void debug(Object... objs) {
+        if (SlimefunHelper.DEV_ENV) {
             info((Object[]) objs);
         }
     }
 
-    public static void debug(Object object){
-        if(SlimefunHelper.DEV_ENV){
+    public static void debug(Object object) {
+        if (SlimefunHelper.DEV_ENV) {
             debug((Object) object);
         }
     }
