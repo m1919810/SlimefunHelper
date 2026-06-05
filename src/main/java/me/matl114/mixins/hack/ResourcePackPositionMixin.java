@@ -1,4 +1,4 @@
-package me.matl114.mixins.render;
+package me.matl114.mixins.hack;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;

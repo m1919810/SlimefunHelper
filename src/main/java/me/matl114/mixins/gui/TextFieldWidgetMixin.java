@@ -1,4 +1,4 @@
-package me.matl114.mixins.render;
+package me.matl114.mixins.gui;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -54,23 +54,6 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
     @Unique
     public void setBorderColorProvider(ColorProvider provider) {
         this.boxColorProvider = provider;
-    }
-
-    @Shadow
-    public abstract String getText();
-
-    @Unique
-    @Override
-    public String getTextContent() {
-        return getText();
-    }
-
-    @Shadow
-    public abstract void setText(String text);
-
-    @Unique
-    public void setTextContent(String value) {
-        setText(value);
     }
 
     @Shadow

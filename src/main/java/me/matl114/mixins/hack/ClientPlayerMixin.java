@@ -178,7 +178,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
                                     "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",
                             ordinal = 0))
     public boolean noNausea(boolean val) {
-        if (RenderTasks.getRenderExtra().noNausea.get()) {
+        if (RenderExtra.INSTANCE.noNausea.get()) {
             return false;
         }
         return val;
@@ -202,7 +202,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Unique
     @Override
     public boolean canHaveStatusEffect(StatusEffectInstance effect) {
-        RenderExtra extra = RenderTasks.getRenderExtra();
+        RenderExtra extra = RenderExtra.INSTANCE;
         if (extra.noEffect.get()
                 && extra.noEffectForce.get()
                 && (extra.noEffectTypes.get().test(effect.getEffectType()))) {
@@ -276,7 +276,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Override
     public double getBlockInteractionRange() {
-        MineExtra mineExtra = MineTasks.getMineExtra();
+        MineExtra mineExtra = MineExtra.INSTANCE;
         if (true) {
             return mineExtra.getReachDistance();
         }

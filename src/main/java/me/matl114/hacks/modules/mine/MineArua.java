@@ -114,7 +114,7 @@ public class MineArua extends BaseModule {
             // refresh only 4 ticks once
             if (Tasks.getTick() >= lastRefreshTick + 4) {
                 BlockPos currentBlockPos = mc.player.getBlockPos();
-                for (var vec : MineTasks.getMineExtra().getBlocksAround()) {
+                for (var vec : MineExtra.INSTANCE.getBlocksAround()) {
                     BlockPos pos = currentBlockPos.add(vec);
                     if (isMineAruaTarget(mc.world, pos) && !MineTasks.distanceOutOfReach(pos, eyepos)) {
                         return pos;

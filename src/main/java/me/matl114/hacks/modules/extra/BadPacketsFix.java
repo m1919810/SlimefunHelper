@@ -12,8 +12,11 @@ import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.network.packet.s2c.play.ChunkLoadDistanceS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
+import net.minecraft.world.World;
 
 public class BadPacketsFix extends BaseModule {
     public final ModulePath badPackets = makePath(Configs.TEST_CONFIG, "bad-packets");
@@ -41,6 +44,10 @@ public class BadPacketsFix extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef enableViewDistance = builder(badPackets.add("fix-illegal-server-view-distance"), Boolean.class)
+        .defaultValue(true)
+        .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -54,6 +61,8 @@ public class BadPacketsFix extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerRotation);
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
+        registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
+        registerListener(Listener.getPacketPoint().getChannel(ChunkLoadDistanceS2CPacket.class), this::onRepackViewDistance);
     }
 
     boolean serverSprint = false;
@@ -176,6 +185,25 @@ public class BadPacketsFix extends BaseModule {
             this.serverPitch = serverPitch;
             this.serverYaw = serverYaw;
             return;
+        }
+    }
+
+    public void onWorldChange(Event<World> eventWorldChange){
+        if(enableViewDistance.get() && eventWorldChange.context != null){
+            if(eventWorldChange.context instanceof ClientWorld client){
+                if(client.getChunkManager().chunks.radius > 35){
+                    client.getChunkManager().updateLoadDistance(32);
+                }
+            }
+        }
+    }
+
+    public void onRepackViewDistance(Event<ChunkLoadDistanceS2CPacket> eventChunkLoad){
+        if(enableViewDistance.get() && eventChunkLoad.context != null){
+            ChunkLoadDistanceS2CPacket packet = eventChunkLoad.context();
+            if(packet.getDistance() > 32){
+                eventChunkLoad.context(new ChunkLoadDistanceS2CPacket(32));
+            }
         }
     }
 }

@@ -22,8 +22,7 @@ public abstract class EntityRenderStateMixin {
     private boolean updateBipedRenderState(
             boolean original, @Local(argsOnly = true) AbstractClientPlayerEntity livingEntity) {
         if (livingEntity.isFallFlying() && livingEntity == MinecraftClient.getInstance().player) {
-            ElytraExtra elytraExtra = MovTasks.getElytraExtra();
-            if (elytraExtra.renderFix.get() && elytraExtra.isCurrentArmorGliding()) {
+            if (ElytraExtra.INSTANCE.renderFix.get() && ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
                 return false;
             }
         }

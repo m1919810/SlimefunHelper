@@ -11,21 +11,9 @@ public interface HandledScreenAccess extends ScreenAccess {
     @Nullable
     public Slot reallyGetSlotAt(double var1, double var3);
 
-    public boolean isSlotPointed(Slot slot);
-
-    public boolean isSlotPointed(Slot slot, int var1, int var3);
-
-    public Slot getTouchHoveredSlot();
-
-    public void setHandler(ScreenHandler var1);
-
     static HandledScreenAccess of(HandledScreen var0) {
         return (HandledScreenAccess) var0;
     }
-
-    public void updateSharedArgument(String var1, String var2);
-
-    public TextRenderer getTextRenderer();
 
     public int getScreenX();
 

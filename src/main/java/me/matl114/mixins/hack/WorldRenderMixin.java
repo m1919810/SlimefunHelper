@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.render.RenderExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.WorldRenderer;
@@ -15,7 +16,7 @@ public abstract class WorldRenderMixin {
 
     @Inject(method = "hasBlindnessOrDarkness", at = @At("HEAD"), cancellable = true)
     public void hasBlindnessOrDarkness(CallbackInfoReturnable<Boolean> cir) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderExtra.INSTANCE.noEffect.get()) {
             cir.setReturnValue(false);
         }
     }

@@ -14,6 +14,7 @@ import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -73,7 +74,7 @@ public class TpInteract extends BaseModule {
             var packetToSend = event.context;
             BlockHitResult hit = event.context.getBlockHitResult();
             BlockPos blockPos = hit.getBlockPos();
-            double distance = MineTasks.getMineExtra().getReachDistance() + ENABLE_NO_TP_DISTANCE;
+            double distance = MineExtra.INSTANCE.getReachDistance() + ENABLE_NO_TP_DISTANCE;
             if (new Box(blockPos).squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(distance)) {
                 if (!mc.player.isSneaking() && tryTpSteal.get().isAllPressed()) {
                     int size = InvTasks.predictOpenVanillaContainerSize(blockPos);
@@ -142,7 +143,7 @@ public class TpInteract extends BaseModule {
                 }
             }
             BlockPos blockPos = packet.getPos();
-            double distance = MineTasks.getMineExtra().getReachDistance() + ENABLE_NO_TP_DISTANCE;
+            double distance = MineExtra.INSTANCE.getReachDistance() + ENABLE_NO_TP_DISTANCE;
             if (new Box(blockPos).squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(distance)) {
                 Packet<?> packetToSend = event.context();
                 if (tpToBlock(
@@ -179,7 +180,7 @@ public class TpInteract extends BaseModule {
         if (MineTasks.distanceOutOfReach(pos, selectedPos.add(0, eyeHeight, 0))
                 || MovTasks.ENGIN.checkEnvironmentCollision(mc.player, selectedPos, true)) {
             selectedPos = null;
-            for (var deltaPos : MineTasks.getMineExtra().getBlocksAround()) {
+            for (var deltaPos : MineExtra.INSTANCE.getBlocksAround()) {
                 Vec3d checkPos = pos.add(deltaPos).toBottomCenterPos().add(0, 1E-4, 0);
                 if (!MineTasks.distanceOutOfReach(pos, checkPos.add(0, eyeHeight, 0))
                         && !MovTasks.ENGIN.checkEnvironmentCollision(mc.player, checkPos, true)) {
@@ -206,7 +207,7 @@ public class TpInteract extends BaseModule {
             // make an algorithm to
             BlockPos entityPos = pos.getBlockPos();
             // todo: move this to CombatExtra or PositionPredictor or something
-            for (var deltaPos : MineTasks.getMineExtra().getBlocksAround()) {
+            for (var deltaPos : MineExtra.INSTANCE.getBlocksAround()) {
                 Vec3d checkPos = entityPos.add(deltaPos).toBottomCenterPos().add(0, 1E-4, 0);
                 if (entityBox.squaredMagnitude(checkPos.add(0, eyeHeight, 0)) < MathUtils.s2(attackRange)
                         && !MovTasks.ENGIN.checkEnvironmentCollision(mc.player, checkPos, true)) {

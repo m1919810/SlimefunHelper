@@ -33,7 +33,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.ApiStatus;
 
 public class ChatExtra extends BaseModule {
-    public ChatExtra() {}
+    public static ChatExtra INSTANCE;
+    public ChatExtra() {
+        INSTANCE = this;
+    }
 
     public final ModulePath chat = makePath(Configs.CHAT_CONFIG, "chat-helper");
     public final ModulePath chatTools = makePath(Configs.CHAT_CONFIG, "chat-screen-tools");

@@ -5,7 +5,9 @@
 	"plugin": "me.matl114.hooks.HooksMixinPlugin",
 	"compatibilityLevel": "JAVA_17",
 	"client": [
+		"baritone.BaritoneChunkPackerFixMixin",
 		"baritone.ElytraBehaviourMixin",
+		"baritone.ElytraBehaviourPathManagerMixin",
 		"baritone.ElytraCommandMixin",
 		"baritone.ElytraProcessMixin",
 		"viaversion.PacketWrapperSendEvents"

@@ -143,10 +143,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             var explosion = eventExplosion.context;
             Vec3d knockBack = new Vec3d(
                     explosion.getPlayerVelocityX(), explosion.getPlayerVelocityY(), explosion.getPlayerVelocityZ());
-            if (knockBack.lengthSquared() > 1E-6
-                    || new Vec3d(explosion.getX(), explosion.getY(), explosion.getZ())
-                                    .squaredDistanceTo(mc.player.getPos())
-                            < 9.0D) {
+            if (knockBack.lengthSquared() > 1E-6) {
                 canCancel += 1;
             }
         }
@@ -198,11 +195,11 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                         return;
                     }
 
-                    if (!mc.player.isFallFlying() && mc.player.isOnGround() && mode.get() == Mode.GRIM_LEGACY_GROUND) {
+                    if (!mc.player.isFallFlying() &&(!onGroundOnly.get() || mc.player.isOnGround()) && mode.get() == Mode.GRIM_LEGACY_GROUND) {
                         handleVelocityGrimLegacy(event);
                         return;
                     }
-                    if (!mc.player.isFallFlying() && mc.player.isOnGround() && mode.get() == Mode.GRIM_NEW_GROUND) {
+                    if (!mc.player.isFallFlying() && (!onGroundOnly.get() || mc.player.isOnGround()) && mode.get() == Mode.GRIM_NEW_GROUND) {
                         handleVelocityGrimNew(event);
                         return;
                     }

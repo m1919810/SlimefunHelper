@@ -108,36 +108,40 @@ public class RegistryDisplays {
     }
 
     public static interface IIcon<T> {
-        public static IIcon<?> EMPTY = ((element, context, registerValue) -> {});
+        public static IIcon<?> EMPTY = ((x, y, context, registerValue) -> {});
         public static ItemStack DEFAULT_NULL_ICON = new ItemStack(Items.BARRIER);
 
         default void render(DrawableWidget element, VDrawContext context, T registerValue) {
             // for default
+            int startIndexX = (element.getTextureWidth() - 16) / 2;
+            int startIndexY = (element.getTextureHeight() - 16) / 2;
+            render(startIndexX, startIndexY, context, registerValue);
+
+        }
+
+        default void render(int startIndexX, int startIndexY, VDrawContext context, T registerValue) {
             if (registerValue == null) {
-                int startIndex = (element.getTextureHeight() - 16) / 2;
-                context.drawItem(DEFAULT_NULL_ICON, startIndex, startIndex, 114514, 0);
+                context.drawItem(DEFAULT_NULL_ICON, startIndexX, startIndexY, 114514, 0);
             } else {
-                renderNonnull(element, context, registerValue);
+                renderNonnull(startIndexX, startIndexY, context, registerValue);
             }
         }
 
-        public void renderNonnull(DrawableWidget element, VDrawContext context, T registerValue);
+        public void renderNonnull(int width, int height, VDrawContext context, T registerValue);
 
         public static <T> IIcon<T> renderItem(Function<T, ItemStack> function) {
-            return ((element, context, registerValue) -> {
-                int startIndex = (element.getTextureHeight() - 16) / 2;
-                context.drawItem(function.apply(registerValue), startIndex, startIndex, 114514, 0);
+            return ((startIndexX, startIndexY, context, registerValue) -> {
+                context.drawItem(function.apply(registerValue), startIndexX, startIndexY, 114514, 0);
             });
         }
 
         public static <T> IIcon<T> renderSprite(Function<T, ?> function) {
-            return ((element, context, registerValue) -> {
-                int startIndex = (element.getTextureHeight() - 16) / 2;
+            return ((startIndexX, startIndexY, context, registerValue) -> {
                 var re = function.apply(registerValue);
                 if (re instanceof Identifier identifier) {
-                    context.drawGuiTexture(identifier, startIndex, startIndex, 16, 16);
+                    context.drawGuiTexture(identifier, startIndexX, startIndexY, 16, 16);
                 } else if (re instanceof Sprite sprite) {
-                    context.drawSprite(sprite, startIndex, startIndex, 0, 16, 16);
+                    context.drawSprite(sprite, startIndexX, startIndexY, 0, 16, 16);
                 }
             });
         }

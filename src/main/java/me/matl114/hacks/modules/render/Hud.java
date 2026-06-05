@@ -23,6 +23,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDrawContext;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
@@ -225,9 +226,14 @@ public class Hud extends BaseModule {
     public void handleCommonInfo(VDrawContext vdraw) {
         // tps, fps, version
         SupportVersion currentVersion = ViaFabricPlusHooks.getInstance().getCurrentVersion();
+        int latency = 0;
+        PlayerListEntry pl ;
+        if((pl = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid())) != null){
+            latency = pl.getLatency();
+        }
         Text text = ChatUtils.stringToText("&a&lMCv" + currentVersion
-                + ((Objects.equals(currentVersion, SupportVersion.CURRENT) ? "" : "(Via)") + " Fps:"
-                        + mc.getCurrentFps()));
+                + (Objects.equals(currentVersion, SupportVersion.CURRENT) ? "" : "(Via)") + " Fps:"
+                        + mc.getCurrentFps() + " " + latency + "ms");
         drawText(vdraw, text.asOrderedText());
     }
 

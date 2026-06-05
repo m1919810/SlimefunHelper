@@ -725,7 +725,7 @@
 	"texture-config.namespace-for-custom-textures.tooltips": "修改后需重载资源包才能生效",
 	"slimefun-models.path-pattern-for-slimefun-model": "粘液模型路径匹配",
 	"slimefun-models.path-pattern-for-slimefun-model.tooltips": "需要输入ModelId的正则表达式\n匹配的模型会自动载入并根据文件名小写\n自动对应到粘液物品上\n修改后需重载资源包才能生效",
-
+	
 
 
 	"mine-arua.auto-break": "MineArua; 自动破坏",
@@ -856,15 +856,56 @@
 	"baritone.fix.enable-baritone-command-protect.tooltips": "在未安装Baritone的时候,直接拦截#开头的发言",
 	"baritone.fix.change-landing-to-log": "Baritone: 自动在准备落地时登出",
 	"baritone.fix.change-landing-to-log.tooltips": "在紧急降落/到达目的地降落的时候\n改为直接登出游戏",
+	"baritone.fix.baritone-conditional-pause": "Baritone: 条件性暂停鞘翅进程",
+	"baritone.fix.baritone-conditional-pause.tooltips": "当满足以下条件之一时,暂停Baritone\n1. 启用滞空\n2. 启用鞘翅飞行\n3. 快捷键被按住",
+	"baritone.fix.baritone-pause-hotkey": "Baritone: 暂停快捷键",
+
+	"in-game-hud.inv-hud.enable": "InvHud: 启用",
+	"in-game-hud.inv-hud.hotkey": "InvHud: 快捷键",
+	"in-game-hud.inv-hud.right": "InvHud: 向右对齐",
+	"in-game-hud.inv-hud.down": "InvHud: 向下对齐",
+	"in-game-hud.inv-hud.pos": "InvHud: 位置(百分比)",
+	"in-game-hud.inv-hud.show-items": "InvHud: 显示物品",
+	"in-game-hud.inv-hud.count-per-line": "InvHud: 每行物品数",
+	"in-game-hud.player-statistic.enable": "Statistic: 启用",
+	"in-game-hud.player-statistic.hotkey": "Statistic: 快捷键",
+	"in-game-hud.player-statistic.right": "Statistic: 向右对齐",
+	"in-game-hud.player-statistic.elements": "Statistic: 元素选择",
+	"in-game-hud.player-statistic.pos": "Statistic: 位置(百分比)",
+	"in-game-hud.player-statistic.color": "Statistic: 文字颜色",
+	"baritone.fix.fix-baritone-simulate-error": "Baritone: 飞行模拟BUG修复",
+	"baritone.fix.fix-baritone-error-fly": "Baritone: 飞行碰撞箱增强",
+	"baritone.fix.fix-baritone-error-fly.tooltips": "增大玩家的碰撞箱,防止Baritone贴地/贴岩浆飞行造成意外",
+	"baritone.fix.fix-baritone-lava-fly": "Baritone: 强制禁止撞向岩浆",
+	"baritone.fix.fix-baritone-lava-fly.tooltips": "当Baritone飞向岩浆的时候,直接取消移动并回溯位置",
+	"baritone.fix.enable-force-path-minimal-height": "Baritone: 启用寻路最低高度",
+	"baritone.fix.enable-force-path-minimal-height.tooltips": "让Baritone禁止飞向指定高度下\n防止贴岩浆飞行造成意外",
+	"baritone.fix.force-path-minimal-height-value": "Baritone: 寻路最低高度",
+	"bad-packets.fix-illegal-server-view-distance": "BadPackets: 修复服务端异常视距",
+	"totem.auto-totem-log": "自动图腾提示",
+	"baritone.fix.fix-when-fail-calculate": "Baritone: 鞘翅失控时滞空",
+	"baritone.fix.baritone-experiment-1": "Baritone: 寻路高度偏好",
+	"baritone.fix.baritone-experiment-1.tooltips": "当寻路中出现了低于该高度的段\n会尽可能的让其重计算路径",
+	"baritone.fix.baritone-experiment-height-1": "Baritone: 寻路高度",
+	"totem.totem-swap-cooldown": "图腾切换冷却",
+	"totem.totem-swap-cooldown.tooltips": "防止切换太快导致物品栏回弹或错乱",
 	"hotkeys.test-func-1": "执行测试函数1",
 	"hotkeys.test-func-2": "执行测试函数2",
 	"hotkeys.test-func-3": "执行测试函数3",
 	"hotkeys.test-func-4": "执行测试函数4",
 
-	
-
-
-	
+	"other.boat-vclip.enable": "BoatVClip: 启用",
+	"other.boat-vclip.hotkey": "BoatVClip: 快捷键",
+	"disablers.enable": "Disablers: 启用",
+	"disablers.hotkey": "Disablers: 快捷键",
+	"combat-bot.elytra-bot.spear-anti-spear": "ElytraBot: 长矛对战反长矛方案",
+	"combat-bot.elytra-bot.spear-anti-spear-extra-distance": "ElytraBot: 反长矛方案距离",
+	"combat-bot.elytra-bot.spear-use-predictor": "ElytraBot: 长矛使用位置预测器",
+	"velocity-management.antikb.pause-when-wasd": "反击退: 在WASD时暂停Freeze",
+	"velocity-management.antikb.freeze-time": "反击退: Freeze模式冻结时间",
+	"interaction-tweaks.auto-ride.enable": "自动骑乘: 启用",
+	"interaction-tweaks.auto-ride.hotkey": "自动骑乘: 快捷键",
+	"interaction-tweaks.auto-ride.interact-cooldown": "自动骑乘: 冷却",
 	"hotkeys-toggle.hktest1": "测试状态1",
 	"hotkeys-toggle.hktest2": "测试状态2",
 	"hotkeys-toggle.hktest3": "测试状态3",
@@ -1320,6 +1361,12 @@
 	"module-toggle.velocity-management.antikb.enable": "Velocity",
 	"module-toggle.inventory.gui-move.enable": "GuiMove",
 	"module-toggle.totem.auto-totem": "AutoTotem",
+	"module-toggle.other.boat-vclip.enable": "BoatVClip",
+	"module-toggle.disablers.enable": "Disabler",
+	"module-toggle.interaction-tweaks.auto-ride.enable": "AutoRide",
+	
+	
+	
 	"module-meta.no-fall-bypass-mode.no_bypass": "Packet",
 	"module-meta.no-fall-bypass-mode.lazy_mode": "Lazy",
 	"module-meta.no-fall-bypass-mode.bypass_grim": "OldGrim",
@@ -1348,5 +1395,8 @@
 	"module-meta.critical-mode.packet": "Packet",
 	"module-meta.critical-mode.freeze": "Freeze",
 	"module-meta.critical-mode.grim_ground_simulation": "Grim平地",
-	"module-meta.critical-mode.test": "Test"
+	"module-meta.critical-mode.test": "Test",
+	"module-meta.support-disabler-ac.none": "None",
+	"module-meta.support-disabler-ac.grim": "Grim",
+	"module-meta.support-disabler-ac.matrix": "Matrix"
 }

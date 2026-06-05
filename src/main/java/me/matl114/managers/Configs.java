@@ -229,9 +229,6 @@ public class Configs {
     public static final Config SLIMEFUN_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/slimefun.yml", "slimefun settings")
             .markForSave();
-    public static final Config INTERNAL_CONFIG = ConfigLoader.loadExternalConfig(
-                    "sfhelper-configs/internal.yml", "internal settings")
-            .markForSave();
 
     public static final Config MODEL_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/models.yml", "model settings")
@@ -251,6 +248,13 @@ public class Configs {
                 .toFile();
         if (cfgFile.exists() && !tgtFile.exists()) {
             cfgFile.renameTo(tgtFile);
+        }
+        File internalFile = FabricLoader.getInstance()
+            .getConfigDir()
+            .resolve("sfhelper-configs/internal.yml")
+            .toFile();
+        if(internalFile.exists()){
+            internalFile.delete();
         }
     }
 

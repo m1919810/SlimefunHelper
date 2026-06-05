@@ -135,6 +135,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onPlayerTickVelocity);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMovePacketSend);
         registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onPlayerJump);
+        registerListener(Listener.getPlayerWebSlowPoint(), this::onWeb);
     }
 
     public void onPlayerInit(Event<ClientPlayerEntity> player) {
@@ -206,6 +207,12 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         return false;
     }
 
+    public void onWeb(Event<Vec3d> vec3d){
+        lastOnGroundHeight = mc.player.getY();
+        if(runningDelegate != null)
+            runningDelegate.counter = 0;
+    }
+
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         runningDelegate = getDelegate();
@@ -234,7 +241,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         // reset
         if (args.isOnGround()
                 || args.isTouchingWater()
-                || args.getBlockStateAtPos().isOf(Blocks.BUBBLE_COLUMN)) {
+                || args.getBlockStateAtPos().isOf(Blocks.BUBBLE_COLUMN) || PlayerStateManager.INSTANCE.lastInWeb || PlayerStateManager.INSTANCE.lastInWater) {
             lastOnGroundHeight = lastHeight;
             runningDelegate.counter = 0;
         }

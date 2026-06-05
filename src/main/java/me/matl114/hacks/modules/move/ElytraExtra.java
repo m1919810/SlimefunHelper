@@ -1166,7 +1166,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (lastFireworkRocket != null) {
             if (lastFireworkRocket.isAlive()) {
                 return true;
-            } else if (Tasks.getTick() < lastFireworkRocketTick + lastFireworkThresholdTime + rocketBuffer.get()) {
+            } else if (getTickSinceLastFirework() < rocketBuffer.get()) {
                 return true;
             } else {
                 return false;
@@ -1175,11 +1175,15 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return false;
     }
 
+    public int getTickSinceLastFirework(){
+        return (lastFireworkRocket != null && lastFireworkRocket.isAlive()) ? 0 : (Tasks.getTick() - lastFireworkRocketTick - lastFireworkThresholdTime);
+    }
+
     public boolean shouldLaunchNextFirework() {
         if (lastFireworkRocket != null) {
             if (lastFireworkRocket.isAlive()) {
                 return false;
-            } else if (Tasks.getTick() < lastFireworkRocketTick + lastFireworkThresholdTime + 1) {
+            } else if (getTickSinceLastFirework() < 1) {
                 return false;
             } else {
                 return true;

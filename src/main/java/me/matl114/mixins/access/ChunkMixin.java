@@ -19,7 +19,7 @@ public abstract class ChunkMixin implements ChunkAccess {
     protected Map<BlockPos, BlockEntity> blockEntities;
 
     @Override
-    public Iterable<Map.Entry<BlockPos, BlockEntity>> blockEntities() {
+    public Iterable<Map.Entry<BlockPos, BlockEntity>> blockEntityEntries() {
         return blockEntities.entrySet();
     }
 }

@@ -6,6 +6,7 @@ import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.MathUtils;
@@ -38,14 +39,14 @@ public class AutoCity extends BaseModule {
                 || !targetEntity.isAlive()
                 || targetEntity.isRemoved()
                 || targetEntity.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
-                        > MathUtils.s2(MineTasks.getMineExtra().getReachDistance() + 1.0D)) {
+                        > MathUtils.s2(MineExtra.INSTANCE.getReachDistance() + 1.0D)) {
             targetEntity = null;
             targetPos = null;
         }
         if (targetEntity == null) {
             targetEntity = CombatTasks.getTargetSelector()
                     .searchAttackEntity(
-                            MineTasks.getMineExtra().getReachDistance() + 1.0D,
+                            MineExtra.INSTANCE.getReachDistance() + 1.0D,
                             false,
                             playerOnly.get() ? (pl) -> pl instanceof PlayerEntity : null);
         }

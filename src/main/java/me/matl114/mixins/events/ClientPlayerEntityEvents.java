@@ -1,6 +1,9 @@
 package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.authlib.GameProfile;
 import java.util.Objects;
@@ -8,6 +11,7 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.managers.Tasks;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
@@ -172,7 +176,8 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     public void prePlayerTick(CallbackInfo ci) {
         this.movementManager.preProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
-
+    @Unique
+    int lastCancelTick = 0;
     @Inject(
             method = "tick",
             at =
@@ -187,16 +192,31 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         if (hasVehicle()) {
             if (!this.movementManager.preInputProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)
                     || event.isCancelled()) {
-                ci.cancel();
-                onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
+                lastCancelTick = Tasks.getTick();
             }
         } else {
             if (!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)
                     || event.isCancelled()) {
-                ci.cancel();
-                onPostPlayerMovementTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
+                lastCancelTick = Tasks.getTick();
             }
         }
+    }
+    @ModifyExpressionValue(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasVehicle()Z"))
+    private boolean onTick(boolean original){
+        if(Tasks.getTick() == lastCancelTick){
+            // redirect to sendMovementPackets to eat shit
+            return false;
+        }
+        return original;
+    }
+
+    @ModifyExpressionValue(method = "sendMovementPackets", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isCamera()Z"))
+    private boolean onCancelSendMovementBehaviour(boolean original){
+        if(Tasks.getTick() == lastCancelTick){
+            lastCancelTick = 0;
+            return false;
+        }
+        return original;
     }
 
     @Unique

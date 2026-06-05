@@ -3,6 +3,8 @@ package me.matl114.hacks.modules.extra;
 import java.util.*;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
+
+import com.mojang.serialization.JavaOps;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
@@ -10,7 +12,9 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Configs;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.config.ListRef;
+import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
@@ -34,12 +38,11 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.joml.Vector3d;
 
 public class Warps extends BaseModule {
-    public static final String[] SAVE_PATH = {"warp-saves"};
     private static final String SPLITTER = "|";
     private static final String SPLITTER_REGEX = "\\|";
-    private final ListRef saveMap = builder(Configs.INTERNAL_CONFIG, SAVE_PATH, ListRef.TYPE)
-            .defaultValue(List.of())
-            .build();
+    private static final String SAVE_KEY = "warp-entries";
+    private final FileStorage saveMap = FileManager.getInstance().getInternalStorage("warp-saves.nbt");
+
     // todo: add render settings, add auto create settings
     public final List<String> cachedString = new ArrayList<>();
     public final Map<String, Map<String, Map<String, Vec3d>>> parseVec3ds = new LinkedHashMap<>();
@@ -47,8 +50,9 @@ public class Warps extends BaseModule {
     {
         cachedString.clear();
         parseVec3ds.clear();
+        Map<String, List<String>> mp =  saveMap.asReadOnly(JavaOps.INSTANCE);
         // copy to avoid cmd
-        for (String path : List.copyOf(saveMap.get())) {
+        for (String path : List.copyOf(mp.getOrDefault(SAVE_KEY, List.of()))) {
             String[] splits = path.split(SPLITTER_REGEX);
             Vec3d pos;
             String serverName;
@@ -73,7 +77,8 @@ public class Warps extends BaseModule {
     }
 
     private void onCacheUpdate() {
-        this.saveMap.set(List.copyOf(cachedString));
+        Map<String, List<String>> map = Map.of(SAVE_KEY, cachedString);
+        this.saveMap.write(map, JavaOps.INSTANCE);
     }
 
     private boolean putInternal(String serverName, String worldName, String warpName, Vec3d pos) {

@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.extra;
 
 import com.google.gson.*;
+import com.mojang.serialization.JavaOps;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.lang.ref.WeakReference;
 import java.net.InetSocketAddress;
@@ -25,11 +26,13 @@ import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.ListRef;
 import me.matl114.managers.config.StringRef;
+import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.PropertyTracker;
@@ -41,6 +44,8 @@ import net.minecraft.client.gui.screen.world.WorldIcon;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.*;
 import net.minecraft.client.texture.NativeImage;
+import net.minecraft.nbt.*;
+import net.minecraft.network.NetworkingBackend;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
@@ -55,7 +60,6 @@ public class ServerScanner extends BaseModule {
     public final ModulePath scanner = makePath(Configs.TEST_CONFIG, "other.server-scanner");
     public final FlagRef enable =
             builder(scanner.addEnable(), FlagRef.TYPE).defaultValue(true).build();
-    public static final String[] SCANNER_SAVE = {"server-scanner", "save-list"};
 
     @Override
     public void registerAll() {
@@ -97,14 +101,24 @@ public class ServerScanner extends BaseModule {
     private final IntRef limitSample = new IntRef(1000);
     private final FlagRef randomRequest = new FlagRef(true);
     private final FlagRef filter = new FlagRef(true);
-    private final ListRef serverListSave = builder(Configs.INTERNAL_CONFIG, SCANNER_SAVE, ListRef.TYPE)
-            .defaultValue(new ArrayList<>())
-            .build();
+    private final FileStorage serverListSave = FileManager.getInstance().getInternalStorage("server-scanner.nbt");
+    private final NbtList list(){
+        NbtCompound nbt = (NbtCompound) serverListSave.as(NbtOps.INSTANCE);
+        if(nbt.get("save-list") instanceof NbtList nbtList){
+            return nbtList;
+        }
+        nbt = nbt.copy();
+        var lst = new NbtList();
+        nbt.put("save-list", lst);
+        serverListSave.write(nbt, NbtOps.INSTANCE);
+        return lst;
+    }
     // 内存版本, 为了支持后台运行任务和缓存
     private final List<String> scannedIps = new ArrayList<>();
 
     {
-        scannedIps.addAll(serverListSave.get());
+        list().stream().map(s -> ((NbtString)s).value()).forEach(scannedIps::add);
+
     }
 
     private Text logInfo = Text.empty();
@@ -528,7 +542,9 @@ public class ServerScanner extends BaseModule {
     }
 
     public void saveServerList() {
-        serverListSave.set(List.copyOf(scannedIps));
+        Map<String, List<String>> saveStruct = Map.of("save-list", scannedIps);
+        serverListSave.write(saveStruct, JavaOps.INSTANCE);
+        serverListSave.markDirty(true);
     }
 
     private final Map<String, WorldIcon> openResources = new ConcurrentHashMap<>();

@@ -1,5 +1,7 @@
 package me.matl114.hacks.api;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -37,10 +39,23 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public BaseModule() {
         this.name = this.getClass().getSimpleName();
+        ensureInstanceSet();
     }
 
     public BaseModule(String name) {
         this.name = name;
+        ensureInstanceSet();
+    }
+
+    private void ensureInstanceSet(){
+        try{
+            Field field = getClass().getField("INSTANCE");
+            if(Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers()) && field.getType() == getClass()){
+                field.setAccessible(true);
+                field.set(null, this);
+            }
+        }catch (Throwable e){
+        }
     }
 
     protected boolean lastActiveFlag = false;
