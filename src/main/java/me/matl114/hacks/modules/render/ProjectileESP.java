@@ -4,7 +4,6 @@ import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -514,7 +513,7 @@ public class ProjectileESP extends BaseModule {
         ArrayList<Vec3d> trace = new ArrayList<>();
         Vec3d startpos = fireball.getPos();
         Vec3d lastPos = startpos;
-    
+
         float drag = 0.95F;
         Vec3d motion = fireball.getVelocity();
         Vec3d power = motion.normalize().multiply(fireball.accelerationPower);

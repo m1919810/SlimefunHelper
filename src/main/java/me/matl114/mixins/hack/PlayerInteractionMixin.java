@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.hacks.CombatTasks;
-import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.ItemStackUtils;
@@ -433,8 +432,8 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             currentBreakingPos);
                     if (speed > 0) {
                         setStartFailBreakPos(currentBreakingPos);
-                        MineExtra.INSTANCE
-                                .onPostStopMiningFastBreak(currentBreakingPos, speed, currentBreakingProgress);
+                        MineExtra.INSTANCE.onPostStopMiningFastBreak(
+                                currentBreakingPos, speed, currentBreakingProgress);
                         return true;
                     }
                 }

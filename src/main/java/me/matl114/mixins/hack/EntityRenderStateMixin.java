@@ -2,7 +2,6 @@ package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;

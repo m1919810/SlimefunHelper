@@ -6,7 +6,6 @@ import java.util.List;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.*;
 import me.matl114.events.Event;
-import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
@@ -32,6 +31,7 @@ import org.spongepowered.asm.mixin.Unique;
 
 public class MineExtra extends BaseModule {
     public static MineExtra INSTANCE;
+
     public MineExtra() {
         INSTANCE = this;
     }

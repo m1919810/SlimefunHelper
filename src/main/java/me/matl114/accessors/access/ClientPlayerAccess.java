@@ -18,7 +18,6 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
 
     public void clearKeepedInventory(boolean closeInv);
 
-
     @Nonnull
     public static ClientPlayerAccess of(@Nonnull ClientPlayerEntity player) {
         return (ClientPlayerAccess) player;

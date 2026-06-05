@@ -1,15 +1,13 @@
 package me.matl114.managers.file;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.DynamicOps;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.mojang.serialization.JsonOps;
-import me.matl114.utils.Debug;
-
 import java.io.*;
-import java.nio.file.Files;
+import me.matl114.utils.Debug;
 
 public class JsonFileStorageImpl extends FileStorageImpl {
     private JsonElement data;
@@ -26,13 +24,13 @@ public class JsonFileStorageImpl extends FileStorageImpl {
     public <T, W extends T> W as(DynamicOps<T> ops) {
         // 直接返回存储的数据对象，忽略 ops
 
-        return ((W)JsonOps.INSTANCE.convertTo(ops, this.data));
+        return ((W) JsonOps.INSTANCE.convertTo(ops, this.data));
     }
 
     @Override
     public <T, W extends T> W asReadOnly(DynamicOps<T> ops) {
         // 返回不可修改的视图（如果 data 是 Map/List 可包装，此处简单返回）
-        return (ops == JsonOps.INSTANCE ? (W)this.data : (W)JsonOps.INSTANCE.convertTo(ops, this.data));
+        return (ops == JsonOps.INSTANCE ? (W) this.data : (W) JsonOps.INSTANCE.convertTo(ops, this.data));
     }
 
     @Override
@@ -41,8 +39,6 @@ public class JsonFileStorageImpl extends FileStorageImpl {
         this.data = ops.convertTo(JsonOps.INSTANCE, value);
         this.dirty = true;
     }
-
-
 
     @Override
     public void write() {

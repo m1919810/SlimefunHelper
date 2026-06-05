@@ -50,8 +50,6 @@ public class ExtraTasks {
     @Getter
     public static AutoReconnect autoReconnect;
 
-
-
     @Getter
     public static Warps warps;
 

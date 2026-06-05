@@ -116,7 +116,6 @@ public class RegistryDisplays {
             int startIndexX = (element.getTextureWidth() - 16) / 2;
             int startIndexY = (element.getTextureHeight() - 16) / 2;
             render(startIndexX, startIndexY, context, registerValue);
-
         }
 
         default void render(int startIndexX, int startIndexY, VDrawContext context, T registerValue) {

@@ -34,6 +34,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 public class ChatExtra extends BaseModule {
     public static ChatExtra INSTANCE;
+
     public ChatExtra() {
         INSTANCE = this;
     }

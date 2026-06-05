@@ -3,11 +3,10 @@ package me.matl114.hooks;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import baritone.api.Settings;
+import baritone.api.event.events.ChatEvent;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import baritone.api.event.events.ChatEvent;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.MinecraftClient;
 
@@ -25,7 +24,9 @@ public abstract class BaritoneHooks implements IHooks {
         }
         return instance;
     }
+
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
     public abstract boolean handleCommand(String command);
 
     public abstract <T> ValueAccessor<T> getSetting(String name);
@@ -74,7 +75,10 @@ public abstract class BaritoneHooks implements IHooks {
 
         @Override
         public boolean isElytraProcessing() {
-            return BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().isActive();
+            return BaritoneAPI.getProvider()
+                    .getPrimaryBaritone()
+                    .getElytraProcess()
+                    .isActive();
         }
     }
 

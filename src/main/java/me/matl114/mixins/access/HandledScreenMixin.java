@@ -1,11 +1,8 @@
 package me.matl114.mixins.access;
 
 import me.matl114.accessors.access.HandledScreenAccess;
-import me.matl114.utils.ScreenUtils;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.*;
@@ -25,6 +22,7 @@ public abstract class HandledScreenMixin extends Screen implements HandledScreen
     public Slot reallyGetSlotAt(double var1, double var3) {
         return getSlotAt(var1, var3);
     }
+
     @Shadow
     protected int x;
 

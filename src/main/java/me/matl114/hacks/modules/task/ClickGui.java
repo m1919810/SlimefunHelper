@@ -32,7 +32,6 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.hacks.utils.config.NBTData;
 import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
@@ -72,10 +71,7 @@ public class ClickGui extends BaseModule {
             .defaultValue(new Vec2(55, 12))
             .build();
 
-    public FileStorage internalGuiData = FileManager.getInstance().getInternalStorage(
-        "click-gui-data.nbt"
-    );
-
+    public FileStorage internalGuiData = FileManager.getInstance().getInternalStorage("click-gui-data.nbt");
 
     public NBTRef<WrapColor> moduleListColor = builder(clickGui.add("gui-frame-style"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color("#984FDB")))
@@ -366,14 +362,16 @@ public class ClickGui extends BaseModule {
                 () -> (slideMeta.slidingDown ? subScreen2 : null), 0, expandHead.getHeight()));
         return subScreen;
     }
+
     private final SerialExecutor taskExecutor = new SerialExecutor(CompletableFuture::runAsync);
+
     private DrawableWidget createSearchListContent(ClickGuiMetaData metaData) {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 0, 0);
         int buttonWidth = (int) widgetSize.get().x();
         int buttonHeight = (int) widgetSize.get().y();
         DynamicListWidget listWidget = new DynamicListWidget(0, buttonHeight, buttonWidth);
         subScreen.addDrawableChild(listWidget);
-        Runnable updateTask = ()->{
+        Runnable updateTask = () -> {
             String filter = metaData.searching;
             List<BaseModule> moduleFilter = new ArrayList<>();
             List<BaseModule> settingsFilter = new ArrayList<>();
@@ -381,33 +379,27 @@ public class ClickGui extends BaseModule {
                 for (var group : HackModules.getModuleGroups()) {
                     getShowModuleList(group).forEach(module -> {
                         String moduleName = module.getName();
-                        String moduleTranslationName =
-                            ChatUtils.textToPlainString(getModuleName(module));
+                        String moduleTranslationName = ChatUtils.textToPlainString(getModuleName(module));
                         // match any
                         if (FilterService.nameMatch(moduleName, filter)
-                            || (!Objects.equals(moduleName, moduleTranslationName)
-                            && FilterService.nameMatch(
-                            moduleTranslationName, filter))) {
+                                || (!Objects.equals(moduleName, moduleTranslationName)
+                                        && FilterService.nameMatch(moduleTranslationName, filter))) {
                             moduleFilter.add(module);
                         }
-                        if (module.getEditableConfig().stream()
-                            .anyMatch((editable) -> {
-                                String settingsName =
-                                    ChatUtils.parseTranslation(editable.keyName());
-                                return FilterService.nameMatch(settingsName, filter);
-                            })) {
+                        if (module.getEditableConfig().stream().anyMatch((editable) -> {
+                            String settingsName = ChatUtils.parseTranslation(editable.keyName());
+                            return FilterService.nameMatch(settingsName, filter);
+                        })) {
                             settingsFilter.add(module);
                         }
                     });
                 }
-                mc.execute(()->{
+                mc.execute(() -> {
                     listWidget.clearChildren();
-                    createSearchResultGroupSubList(
-                        listWidget::addDrawableChild, "Name", moduleFilter);
-                    createSearchResultGroupSubList(
-                        listWidget::addDrawableChild, "Setting", settingsFilter);
+                    createSearchResultGroupSubList(listWidget::addDrawableChild, "Name", moduleFilter);
+                    createSearchResultGroupSubList(listWidget::addDrawableChild, "Setting", settingsFilter);
                 });
-            }else{
+            } else {
                 mc.execute(listWidget::clearChildren);
             }
         };

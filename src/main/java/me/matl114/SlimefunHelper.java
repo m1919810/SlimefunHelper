@@ -42,11 +42,11 @@ public class SlimefunHelper implements ModInitializer {
         if (Objects.equals(MinecraftClient.getInstance().getSession().getUsername(), "matl114")) {
             DEV = true;
         }
-        try{
+        try {
             Class.forName("net.minecraft.client.MinecraftClient");
             DEV_ENV = true;
             Debug.info("Dev Environment Detected !");
-        }catch (Throwable e){
+        } catch (Throwable e) {
         }
     }
 
@@ -97,6 +97,7 @@ public class SlimefunHelper implements ModInitializer {
         BridgeMain.init();
         SlimefunHelperApi.init();
     }
+
     public static void reloadModConfig() {
         Debug.info("Reloading Mod Config");
         Configs.loadConfigs();

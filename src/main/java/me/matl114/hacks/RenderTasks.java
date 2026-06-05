@@ -102,10 +102,9 @@ public class RenderTasks {
     }
 
     public static void drawBoxMov(Box box, Vec3d move, int tick, Color color) {
-        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-            tick, new BoxMoveTarget(box, move, color, color)));
+        RenderTasks.registerVirtualRenderTask(
+                new RenderTasks.RenderTask(tick, new BoxMoveTarget(box, move, color, color)));
     }
-
 
     // the visit to renderBlocks need synchronized for thread safety, as they involved for-loop and remove
     private static final Set<VirtualRenderTask> renderBlocks = new LinkedHashSet<>();

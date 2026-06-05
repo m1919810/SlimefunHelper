@@ -15,9 +15,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.utils.entity.PlayerInputUtils;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPosition;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -53,44 +51,47 @@ public class PositionPredict extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityS2CPacket.class), this::onPostEntity);
-        registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityPositionS2CPacket.class), this::onPostEntityPos);
-        registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityPositionSyncS2CPacket.class), this::onPostEntityTeleport);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(EntityPositionS2CPacket.class), this::onPostEntityPos);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(EntityPositionSyncS2CPacket.class),
+                this::onPostEntityTeleport);
     }
 
     // on player update events;
-    public void onPostEntity(Event<EntityS2CPacket> event){
-        if(checkNull())return;
-        if(event.context.getEntity(mc.world) instanceof PlayerInternalAccess internal){
+    public void onPostEntity(Event<EntityS2CPacket> event) {
+        if (checkNull()) return;
+        if (event.context.getEntity(mc.world) instanceof PlayerInternalAccess internal) {
             internal.getPredictorImpl().onEntityPositionMove(event);
         }
     }
 
-    public void onPostEntityPos(Event<EntityPositionS2CPacket> event){
-        if(checkNull())return;
-        if(mc.world.getEntityById(event.context.entityId()) instanceof PlayerInternalAccess internal){
+    public void onPostEntityPos(Event<EntityPositionS2CPacket> event) {
+        if (checkNull()) return;
+        if (mc.world.getEntityById(event.context.entityId()) instanceof PlayerInternalAccess internal) {
             internal.getPredictorImpl().onEntityPositionPost(event);
         }
     }
-    public void onPostEntityTeleport(Event<EntityPositionSyncS2CPacket> event){
-        if(checkNull())return;
-        if(mc.world.getEntityById(event.context.id()) instanceof PlayerInternalAccess internal){
+
+    public void onPostEntityTeleport(Event<EntityPositionSyncS2CPacket> event) {
+        if (checkNull()) return;
+        if (mc.world.getEntityById(event.context.id()) instanceof PlayerInternalAccess internal) {
             internal.getPredictorImpl().onEntityPositionSyncPost(event);
         }
     }
 
-    public Predictor getPredictor(Entity entity){
-        return EntityInternalAccess.of(entity)
-            .getPositionPredictor();
+    public Predictor getPredictor(Entity entity) {
+        return EntityInternalAccess.of(entity).getPositionPredictor();
     }
 
     public Vec3d predictPosition(Entity entity) {
         return EntityInternalAccess.of(entity)
-            .getPositionPredictor().predict(attackPredictTick.get(), predictMode.get().ordinal(), 16);
+                .getPositionPredictor()
+                .predict(attackPredictTick.get(), predictMode.get().ordinal(), 16);
     }
 
-    public Vec3d predictKnownMovement(Entity entity){
-        return EntityInternalAccess.of(entity)
-            .getPositionPredictor().getKnownDeltaMovement();
+    public Vec3d predictKnownMovement(Entity entity) {
+        return EntityInternalAccess.of(entity).getPositionPredictor().getKnownDeltaMovement();
     }
 
     public Vec3d getExactAttackPosition(Entity target) {
@@ -155,9 +156,11 @@ public class PositionPredict extends BaseModule {
                 .subtract(entity.getPos())
                 .multiply(0.75)
                 .add(EntityInternalAccess.of(entity)
-                    .getPositionPredictor().predict(
+                        .getPositionPredictor()
+                        .predict(
                                 (attackPredictTick.get() + estimateTick),
-                                predictMode.get().ordinal(), 16));
+                                predictMode.get().ordinal(),
+                                16));
     }
 
     public boolean considerAntiShield(Entity target) {

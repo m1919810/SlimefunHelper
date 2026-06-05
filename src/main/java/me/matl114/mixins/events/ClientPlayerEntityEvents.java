@@ -176,8 +176,10 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     public void prePlayerTick(CallbackInfo ci) {
         this.movementManager.preProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
+
     @Unique
     int lastCancelTick = 0;
+
     @Inject(
             method = "tick",
             at =
@@ -201,18 +203,23 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             }
         }
     }
-    @ModifyExpressionValue(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasVehicle()Z"))
-    private boolean onTick(boolean original){
-        if(Tasks.getTick() == lastCancelTick){
+
+    @ModifyExpressionValue(
+            method = "tick",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;hasVehicle()Z"))
+    private boolean onTick(boolean original) {
+        if (Tasks.getTick() == lastCancelTick) {
             // redirect to sendMovementPackets to eat shit
             return false;
         }
         return original;
     }
 
-    @ModifyExpressionValue(method = "sendMovementPackets", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isCamera()Z"))
-    private boolean onCancelSendMovementBehaviour(boolean original){
-        if(Tasks.getTick() == lastCancelTick){
+    @ModifyExpressionValue(
+            method = "sendMovementPackets",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isCamera()Z"))
+    private boolean onCancelSendMovementBehaviour(boolean original) {
+        if (Tasks.getTick() == lastCancelTick) {
             lastCancelTick = 0;
             return false;
         }

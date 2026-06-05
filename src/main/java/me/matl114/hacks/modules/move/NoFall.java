@@ -207,10 +207,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         return false;
     }
 
-    public void onWeb(Event<Vec3d> vec3d){
+    public void onWeb(Event<Vec3d> vec3d) {
         lastOnGroundHeight = mc.player.getY();
-        if(runningDelegate != null)
-            runningDelegate.counter = 0;
+        if (runningDelegate != null) runningDelegate.counter = 0;
     }
 
     @Override
@@ -241,7 +240,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         // reset
         if (args.isOnGround()
                 || args.isTouchingWater()
-                || args.getBlockStateAtPos().isOf(Blocks.BUBBLE_COLUMN) || PlayerStateManager.INSTANCE.lastInWeb || PlayerStateManager.INSTANCE.lastInWater) {
+                || args.getBlockStateAtPos().isOf(Blocks.BUBBLE_COLUMN)
+                || PlayerStateManager.INSTANCE.lastInWeb
+                || PlayerStateManager.INSTANCE.lastInWater) {
             lastOnGroundHeight = lastHeight;
             runningDelegate.counter = 0;
         }

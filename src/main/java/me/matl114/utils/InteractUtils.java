@@ -20,6 +20,7 @@ import net.minecraft.world.World;
 
 public class InteractUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
     @Nullable
     public static BlockState getBlockPlacement(
             Block block, PlayerEntity player, World world, BlockHitResult blockHitResult) {
@@ -57,13 +58,14 @@ public class InteractUtils {
     }
 
     public static ActionResult simulateInteract(EntityHitResult entityHitResult) {
-        ActionResult actionResult = mc.interactionManager.interactEntityAtLocation(mc.player, entityHitResult.getEntity(), entityHitResult, Hand.MAIN_HAND);
+        ActionResult actionResult = mc.interactionManager.interactEntityAtLocation(
+                mc.player, entityHitResult.getEntity(), entityHitResult, Hand.MAIN_HAND);
         if (!actionResult.isAccepted()) {
             actionResult = mc.interactionManager.interactEntity(mc.player, entityHitResult.getEntity(), Hand.MAIN_HAND);
         }
 
         if (actionResult instanceof ActionResult.Success) {
-            ActionResult.Success success = (ActionResult.Success)actionResult;
+            ActionResult.Success success = (ActionResult.Success) actionResult;
             if (success.swingSource() == ActionResult.SwingSource.CLIENT) {
                 mc.player.swingHand(Hand.MAIN_HAND);
             }

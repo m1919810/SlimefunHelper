@@ -1,6 +1,5 @@
 package me.matl114.mixins.hack;
 
-import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.modules.extra.ClientExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;

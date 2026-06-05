@@ -32,9 +32,7 @@ public class SpearEnhance extends BaseModule {
 
     public static boolean isUsingSpear(PlayerEntity player) {
         // todo consider viaversion
-        return player != null
-                && player.isUsingItem()
-                && VItem.getInstance().isSpear(player.getActiveItem());
+        return player != null && player.isUsingItem() && VItem.getInstance().isSpear(player.getActiveItem());
     }
 
     public static ItemStack getSpear() {

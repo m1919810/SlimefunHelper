@@ -1,5 +1,6 @@
 package me.matl114.hacks.utils.entity;
 
+import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.MathUtils;
@@ -9,8 +10,6 @@ import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityPositionSyncS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.util.math.Vec3d;
-
-import java.util.*;
 
 public class PredictorImpl implements Predictor {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -27,7 +26,6 @@ public class PredictorImpl implements Predictor {
             positions.removeFirst();
         }
     }
-
 
     public void onEntityPositionPost(Event<EntityPositionS2CPacket> event) {
         EntityPositionS2CPacket packet = event.context();
@@ -87,14 +85,14 @@ public class PredictorImpl implements Predictor {
         for (KnownPosition pos : positions) {
             if (pos.tick() >= currentTick - useTicksBefore) {
                 add = true;
-                if(lastKnown != null){
+                if (lastKnown != null) {
                     histRecords.add(lastKnown);
                 }
             }
             lastKnown = pos;
         }
         // 如果最后一个需要加入。那么add必然为true
-        if(lastKnown != null && add){
+        if (lastKnown != null && add) {
             histRecords.add(lastKnown);
         }
         // 如果没有，则直接返回
@@ -120,7 +118,7 @@ public class PredictorImpl implements Predictor {
             return currentPos;
         }
         // 同步到10000
-        if(firstTick0 > startTick0){
+        if (firstTick0 > startTick0) {
             KnownPosition firstPosition = histRecords.get(0);
             histRecords.add(0, new KnownPosition(firstPosition.vec3d(), startTick0));
             firstTick0 = startTick0;
@@ -131,30 +129,33 @@ public class PredictorImpl implements Predictor {
         // lastTick0 + 1.。。 currentTick left for empty
         // 10005是empty的 需要在ticksAfter加入
         int blankTicks = currentTick - lastTick0;
-        if(usableTicks < 2){
+        if (usableTicks < 2) {
             return currentPos;
         }
 
         Vec3d[] history = new Vec3d[usableTicks];
-        int currentIndex = 0 ;
+        int currentIndex = 0;
         KnownPosition pos = histRecords.get(currentIndex);
         KnownPosition lastPos = null;
-        for (int i = 0 ; i < history.length; ++i) {
+        for (int i = 0; i < history.length; ++i) {
             int realTick = startTick0 + i;
             // realTick <= historyRecords.getLast().tick()
-            while (true){
-                if(pos.tick() == realTick){
+            while (true) {
+                if (pos.tick() == realTick) {
                     history[i] = pos.vec3d();
                     break;
                 }
-                if(lastPos != null && lastPos.tick() < realTick && pos.tick() > realTick){
+                if (lastPos != null && lastPos.tick() < realTick && pos.tick() > realTick) {
                     // pos.tick > realTick > lastPos.tick
-                    history[i] = pos.vec3d().multiply (pos.tick() - realTick).add(lastPos.vec3d().multiply (realTick - lastPos.tick())).multiply(1.0D / (pos.tick() - lastPos.tick()));
+                    history[i] = pos.vec3d()
+                            .multiply(pos.tick() - realTick)
+                            .add(lastPos.vec3d().multiply(realTick - lastPos.tick()))
+                            .multiply(1.0D / (pos.tick() - lastPos.tick()));
                     break;
                 }
                 lastPos = pos;
                 currentIndex += 1;
-                if(currentIndex >= histRecords.size()){
+                if (currentIndex >= histRecords.size()) {
                     // impossible
                     throw new RuntimeException("?   WTF");
                 }

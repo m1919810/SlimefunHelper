@@ -30,15 +30,14 @@ import net.minecraft.util.math.Vec3d;
 public class DisablerManager extends BaseModule {
     public static DisablerManager INSTANCE;
 
-
     public final ModulePath disablers = makePath(Configs.TEST_CONFIG, "disablers");
 
-    public final FlagRef enable = builder(disablers.addEnable(), Boolean.class)
-        .defaultValue(true)
-        .build();
+    public final FlagRef enable =
+            builder(disablers.addEnable(), Boolean.class).defaultValue(true).build();
 
-    public final KeyBindRef hotkey = moduleEntry(disablers.addHotkey(), new MultiKeyBind(), disablers.addEnable(), moduleMeta(()-> this.currentAC))
-        .build();
+    public final KeyBindRef hotkey = moduleEntry(
+                    disablers.addHotkey(), new MultiKeyBind(), disablers.addEnable(), moduleMeta(() -> this.currentAC))
+            .build();
 
     public final EnumRef<SupportAC> currentAC = builder(disablers.add("current-ac"), SupportAC.class)
             .defaultValue(SupportAC.NONE)
@@ -99,7 +98,7 @@ public class DisablerManager extends BaseModule {
     }
 
     public boolean isMultiPlaceCheckDisabled() {
-        if(enable.get()){
+        if (enable.get()) {
             return switch (currentAC.get()) {
                 case GRIM -> isGrimMultiPlaceDisabled();
                 case MATRIX -> false;
@@ -114,7 +113,7 @@ public class DisablerManager extends BaseModule {
     }
 
     public boolean isRotationPlaceCheckDisabled() {
-        if(enable.get()){
+        if (enable.get()) {
             return switch (currentAC.get()) {
                 case GRIM -> isGrimSelfCheckDisabled();
                 case MATRIX -> false;

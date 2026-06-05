@@ -66,12 +66,14 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
         }
         return true;
     }
+
     @Unique
     Predictor predictorInstance;
-@Unique
-    public Predictor getPositionPredictor(){
-        if(predictorInstance == null) {
-            predictorInstance = new SimpleEntityPredictor((Entity)(Object) this);
+
+    @Unique
+    public Predictor getPositionPredictor() {
+        if (predictorInstance == null) {
+            predictorInstance = new SimpleEntityPredictor((Entity) (Object) this);
         }
         return predictorInstance;
     }

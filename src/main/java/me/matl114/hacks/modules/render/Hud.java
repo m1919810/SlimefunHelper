@@ -227,13 +227,13 @@ public class Hud extends BaseModule {
         // tps, fps, version
         SupportVersion currentVersion = ViaFabricPlusHooks.getInstance().getCurrentVersion();
         int latency = 0;
-        PlayerListEntry pl ;
-        if((pl = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid())) != null){
+        PlayerListEntry pl;
+        if ((pl = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid())) != null) {
             latency = pl.getLatency();
         }
         Text text = ChatUtils.stringToText("&a&lMCv" + currentVersion
                 + (Objects.equals(currentVersion, SupportVersion.CURRENT) ? "" : "(Via)") + " Fps:"
-                        + mc.getCurrentFps() + " " + latency + "ms");
+                + mc.getCurrentFps() + " " + latency + "ms");
         drawText(vdraw, text.asOrderedText());
     }
 

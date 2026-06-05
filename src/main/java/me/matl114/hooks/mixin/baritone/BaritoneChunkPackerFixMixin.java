@@ -19,9 +19,18 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class BaritoneChunkPackerFixMixin {
     @Unique
     private static final BlockState a = Blocks.AIR.getDefaultState();
-    @WrapOperation(method = "a(Lnet/minecraft/world/chunk/WorldChunk;)Lbaritone/cache/CachedChunk;", at = @At(value = "INVOKE", target = "Lbaritone/utils/BlockStateInterface;a(Lnet/minecraft/world/chunk/WorldChunk;III)Lnet/minecraft/block/BlockState;"), require = 0)
-    private static BlockState fixWorldAccessIndexOutOfBound(WorldChunk chunk, int x, int y, int z, Operation<BlockState> original){
-        if(y < 0 || y >= (chunk.getSectionArray().length << 4)){
+
+    @WrapOperation(
+            method = "a(Lnet/minecraft/world/chunk/WorldChunk;)Lbaritone/cache/CachedChunk;",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lbaritone/utils/BlockStateInterface;a(Lnet/minecraft/world/chunk/WorldChunk;III)Lnet/minecraft/block/BlockState;"),
+            require = 0)
+    private static BlockState fixWorldAccessIndexOutOfBound(
+            WorldChunk chunk, int x, int y, int z, Operation<BlockState> original) {
+        if (y < 0 || y >= (chunk.getSectionArray().length << 4)) {
             return a;
         }
         return original.call(chunk, x, y, z);
