@@ -175,7 +175,7 @@ public class WorldScanner extends BaseModule {
         if (checkNull()) return;
         Set<ChunkPos> blocks = new HashSet<>(currentSearchingResult.keySet());
         var iter = currentSearchingResult.entrySet().iterator();
-        while (iter.hasNext()){
+        while (iter.hasNext()) {
             var entry = iter.next();
             var key = entry.getKey();
             Chunk chunk = mc.world.getChunkManager().getChunk(key.x, key.z, ChunkStatus.FULL, false);

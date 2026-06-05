@@ -45,8 +45,8 @@ public class BadPacketsFix extends BaseModule {
             .build();
 
     public final FlagRef enableViewDistance = builder(badPackets.add("fix-illegal-server-view-distance"), Boolean.class)
-        .defaultValue(true)
-        .build();
+            .defaultValue(true)
+            .build();
 
     @Override
     public void registerAll() {
@@ -62,7 +62,8 @@ public class BadPacketsFix extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
-        registerListener(Listener.getPacketPoint().getChannel(ChunkLoadDistanceS2CPacket.class), this::onRepackViewDistance);
+        registerListener(
+                Listener.getPacketPoint().getChannel(ChunkLoadDistanceS2CPacket.class), this::onRepackViewDistance);
     }
 
     boolean serverSprint = false;
@@ -188,20 +189,20 @@ public class BadPacketsFix extends BaseModule {
         }
     }
 
-    public void onWorldChange(Event<World> eventWorldChange){
-        if(enableViewDistance.get() && eventWorldChange.context != null){
-            if(eventWorldChange.context instanceof ClientWorld client){
-                if(client.getChunkManager().chunks.radius > 35){
+    public void onWorldChange(Event<World> eventWorldChange) {
+        if (enableViewDistance.get() && eventWorldChange.context != null) {
+            if (eventWorldChange.context instanceof ClientWorld client) {
+                if (client.getChunkManager().chunks.radius > 35) {
                     client.getChunkManager().updateLoadDistance(32);
                 }
             }
         }
     }
 
-    public void onRepackViewDistance(Event<ChunkLoadDistanceS2CPacket> eventChunkLoad){
-        if(enableViewDistance.get() && eventChunkLoad.context != null){
+    public void onRepackViewDistance(Event<ChunkLoadDistanceS2CPacket> eventChunkLoad) {
+        if (enableViewDistance.get() && eventChunkLoad.context != null) {
             ChunkLoadDistanceS2CPacket packet = eventChunkLoad.context();
-            if(packet.getDistance() > 32){
+            if (packet.getDistance() > 32) {
                 eventChunkLoad.context(new ChunkLoadDistanceS2CPacket(32));
             }
         }

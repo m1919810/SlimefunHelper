@@ -2,7 +2,6 @@ package me.matl114.utils.world;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.world.chunk.Chunk;
@@ -13,11 +12,12 @@ public class ChunkIterator implements Iterator<Chunk> {
     private final boolean onlyWithLoadedNeighbours;
 
     private Chunk chunk;
-    private final int minX, maxX,  maxZ;
+    private final int minX, maxX, maxZ;
     private int currentX, currentZ;
+
     public ChunkIterator(boolean onlyWithLoadedNeighbours) {
         this.onlyWithLoadedNeighbours = onlyWithLoadedNeighbours;
-        int realRange =Math.min(map.radius , Math.max(2,  mc.options.getClampedViewDistance()) + 3);
+        int realRange = Math.min(map.radius, Math.max(2, mc.options.getClampedViewDistance()) + 3);
         int centerX = map.centerChunkX;
         int centerZ = map.centerChunkZ;
         minX = centerX - realRange;
@@ -33,13 +33,13 @@ public class ChunkIterator implements Iterator<Chunk> {
         Chunk prev = chunk;
         chunk = null;
         search:
-        while (currentZ <= maxZ){
-            while (currentX <= maxX){
+        while (currentZ <= maxZ) {
+            while (currentX <= maxX) {
                 int idx = map.getIndex(currentX++, currentZ);
                 chunk = map.chunks.get(idx);
                 if (chunk != null && (!onlyWithLoadedNeighbours || isInRadius(chunk))) break search;
             }
-            currentZ ++;
+            currentZ++;
             currentX = minX;
         }
 
@@ -63,7 +63,7 @@ public class ChunkIterator implements Iterator<Chunk> {
 
     @Override
     public Chunk next() {
-        if(chunk == null){
+        if (chunk == null) {
             throw new NoSuchElementException();
         }
         return getNext();

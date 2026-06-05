@@ -125,6 +125,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     int[] dz = {-1, 1, 0, 0};
     Direction[] dd = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, Direction.DOWN};
     BlockPos lastSurround;
+
     public boolean checkSurround() {
         BlockPos vcPos = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
         lastSurround = vcPos;
@@ -201,7 +202,8 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 item -> {
                     if (item.getItem() instanceof BlockItem blockItem) {
                         return (double) (blockItem.getBlock().getBlastResistance())
-                                + ((blockItem == Items.OBSIDIAN) ? 1E8 : 0) + (blockItem.getBlock() instanceof BlockWithEntity ? -1E8 :0 );
+                                + ((blockItem == Items.OBSIDIAN) ? 1E8 : 0)
+                                + (blockItem.getBlock() instanceof BlockWithEntity ? -1E8 : 0);
                     }
                     return null;
                 },
@@ -213,18 +215,19 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     boolean triggerCenterFix = false;
     boolean rotateSuccess = false;
     BlockPos lastCenter;
+
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         boolean last = lastOnGround;
         lastOnGround = mc.player.isOnGround();
 
         if (enable.get() && autoCenter.get()) {
-            if (!last && lastOnGround ) {
+            if (!last && lastOnGround) {
                 triggerCenterFix = true;
             }
         }
         if (triggerCenterFix && mc.player.isOnGround()) {
-            if(lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 1.0)){
+            if (lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 1.0)) {
                 lastCenter = lastSurround == null ? PlayerStateManager.INSTANCE.lastVelocityAffectingPos : lastSurround;
             }
             var blockPos = lastCenter;
@@ -245,7 +248,6 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 lastCenter = null;
             }
         }
-
     }
     // todo: try check block position, sneak-related
     @Override

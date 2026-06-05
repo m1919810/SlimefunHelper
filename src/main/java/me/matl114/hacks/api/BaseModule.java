@@ -47,14 +47,16 @@ public abstract class BaseModule implements ModuleListProvider {
         ensureInstanceSet();
     }
 
-    private void ensureInstanceSet(){
-        try{
+    private void ensureInstanceSet() {
+        try {
             Field field = getClass().getField("INSTANCE");
-            if(Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers()) && field.getType() == getClass()){
+            if (Modifier.isStatic(field.getModifiers())
+                    && !Modifier.isFinal(field.getModifiers())
+                    && field.getType() == getClass()) {
                 field.setAccessible(true);
                 field.set(null, this);
             }
-        }catch (Throwable e){
+        } catch (Throwable e) {
         }
     }
 

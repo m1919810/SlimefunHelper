@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.combat;
 
+import java.util.Objects;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
@@ -23,7 +24,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.RaycastUtils;
@@ -40,8 +40,6 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-
-import java.util.Objects;
 
 public class Criticals extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath attBot = makePath(Configs.COMBAT_CONFIG, "att-bot");
@@ -122,7 +120,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         ;
     }
 
-    private boolean canNotCrit(){
+    private boolean canNotCrit() {
         return mc.player.isTouchingWater() || mc.player.hasVehicle() || PlayerStateManager.INSTANCE.lastInWeb;
     }
 
@@ -152,8 +150,10 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             case PACKET -> {
                 // do not influence tp
                 if (!CombatTasks.getAttack().canUseTp()) {
-                    if(mc.player.isSprinting()){
-                        mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                    if (mc.player.isSprinting()) {
+                        mc.getNetworkHandler()
+                                .sendPacket(new ClientCommandC2SPacket(
+                                        mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
                         ClientPlayerAccess.of(mc.player).setLastSprintFlag(false);
                     }
                     mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 5.0E-4, z, false, false));
@@ -193,13 +193,16 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             }
             case GRIM_GROUND_SIMULATION -> {
                 if (mc.player.isOnGround()) {
-                    if(mc.player.isSprinting()){
-                        mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                    if (mc.player.isSprinting()) {
+                        mc.getNetworkHandler()
+                                .sendPacket(new ClientCommandC2SPacket(
+                                        mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
                         ClientPlayerAccess.of(mc.player).setLastSprintFlag(false);
                     }
                     if (!shouldApplyGrimGroundSimulationAutoFakeGround()) {
                         mc.getNetworkHandler()
-                                .sendPacket(VPacket.newPositionAndOnGround(x, y + getNotRecognizedAsDuplicateFullDelta(true), z, true, false));
+                                .sendPacket(VPacket.newPositionAndOnGround(
+                                        x, y + getNotRecognizedAsDuplicateFullDelta(true), z, true, false));
                     }
                     // trigger simulation to sync our position from y + 1.0E-5 -> y, critical
                     switch (setBackType.get()) {
@@ -291,7 +294,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             var stack = cachedHandStack;
             PacketManager.schedulePostCallback(event.context, () -> {
                 var weapon = mc.player.getStackInHand(Hand.MAIN_HAND);
-                //Debug.chat("Attack");
+                // Debug.chat("Attack");
                 Runnable callback = null;
                 if (delaySwap.get()
                         && stack != null
@@ -332,15 +335,13 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     public static final double MIN_HEIGHT_THRESHOLD = 1E-4;
     public static final double MIN_HEIGHT_DELTA = 1E-5;
 
-    public double getNotRecognizedAsDuplicateFullDelta(boolean hasMove){
+    public double getNotRecognizedAsDuplicateFullDelta(boolean hasMove) {
         return (!hasMove && ViaFabricPlusHooks.isSupportDupRot()) ? 2.01E-4 : MIN_HEIGHT_DELTA;
     }
 
-    public double getNotRecognizedAsDuplicateFullThreshold(boolean hasMove){
+    public double getNotRecognizedAsDuplicateFullThreshold(boolean hasMove) {
         return (!hasMove && ViaFabricPlusHooks.isSupportDupRot()) ? 5E-4 : MIN_HEIGHT_THRESHOLD;
     }
-
-
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
@@ -369,7 +370,8 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             setbackFlag -= 1;
         }
         if (enable.get()
-                && mode.get() == Mode.GRIM_GROUND_SIMULATION && !canNotCrit()
+                && mode.get() == Mode.GRIM_GROUND_SIMULATION
+                && !canNotCrit()
                 && shouldApplyGrimGroundSimulationAutoFakeGround()) {
             double yLevel = mc.player.getY();
 
@@ -383,7 +385,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                 double newYLevel = (((int) (yLevel * thresNeg)) * thres) + delta;
                 Vec3d pos = mc.player.getPos();
                 mc.player.setPosition(pos.withAxis(Direction.Axis.Y, newYLevel));
-                if(!Objects.equals(pos, mc.player.getPos())){
+                if (!Objects.equals(pos, mc.player.getPos())) {
                     // must resend because of ojng's shit move threshold
                     ClientPlayerAccess.of(mc.player).resyncPos();
                 }
@@ -441,7 +443,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                 }
             }
         }
-        if(lastStartCacheTick + 3 >= Tasks.getTick()){
+        if (lastStartCacheTick + 3 >= Tasks.getTick()) {
             input.sprint(false).forward(false);
             mc.player.setSprinting(false);
         }
@@ -454,16 +456,16 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         return true;
     }
 
-    public void onModulePreset(Event<EventContainer<ModulePreset>> eventModule){
+    public void onModulePreset(Event<EventContainer<ModulePreset>> eventModule) {
         switch (eventModule.context.getValue()) {
             case AC_GRIM_LEGACY -> {
-                if(mode.get().isIn(Mode.PACKET)){
+                if (mode.get().isIn(Mode.PACKET)) {
                     mode.set(Mode.GRIM_GROUND_SIMULATION);
                 }
                 autoFakeGround.set(false);
             }
             case AC_GRIM -> {
-                if(mode.get().isIn(Mode.PACKET)){
+                if (mode.get().isIn(Mode.PACKET)) {
                     mode.set(Mode.GRIM_GROUND_SIMULATION);
                 }
                 autoFakeGround.set(true);
@@ -471,12 +473,9 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             case HACKING, VANILLA -> {
                 mode.set(Mode.PACKET);
             }
-            default -> {
-
-            }
+            default -> {}
         }
     }
-
 
     public static enum Mode implements ConfigEnum {
         PACKET,

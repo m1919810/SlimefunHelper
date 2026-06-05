@@ -9,7 +9,6 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.inv.GuiMove;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;

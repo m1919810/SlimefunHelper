@@ -11,16 +11,12 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
@@ -97,44 +93,67 @@ public abstract class ElytraProcessMixin {
     }
 
     @Inject(method = "onTick", at = @At("HEAD"), cancellable = true)
-    private void hookPauseElytraProcess(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir){
-        if(BaritoneFix.INSTANCE.shouldPauseBaritoneElytra()){
+    private void hookPauseElytraProcess(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
+        if (BaritoneFix.INSTANCE.shouldPauseBaritoneElytra()) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.REQUEST_PAUSE));
         }
     }
-//    @Unique
-//    Box cachedBox;
+    //    @Unique
+    //    Box cachedBox;
 
-//    @Inject(method = "onTick", at = @At(value = "INVOKE", target = "Lbaritone/process/elytra/ElytraBehavior$SolverContext;<init>(Lbaritone/process/elytra/ElytraBehavior;Z)V", shift = At.Shift.BEFORE), require = 0)
-//    private void hookElytraBehaviorSolverBox(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
-//        if(BaritoneFix.INSTANCE.fixErrorFly.get()){
-//            Box box1 = BaritoneFix.INSTANCE.processBoxOfElytraFlight();
-//            if(box1 != null){
-//                var pl =  MinecraftClient.getInstance().player;
-//                cachedBox = pl.getBoundingBox();
-//                pl.setBoundingBox(box1);
-//            }
-//        }
-//    }
-//    @Inject(method = "onTick", at = @At(value = "INVOKE", target = "Lbaritone/process/elytra/ElytraBehavior$SolverContext;<init>(Lbaritone/process/elytra/ElytraBehavior;Z)V", shift = At.Shift.AFTER), require =  0)
-//    private void hookElytraBehaviorSolverBox2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir){
-//        if(cachedBox != null){
-//            MinecraftClient.getInstance().player.setBoundingBox(cachedBox);
-//            cachedBox = null;
-//        }
-//    }
+    //    @Inject(method = "onTick", at = @At(value = "INVOKE", target =
+    // "Lbaritone/process/elytra/ElytraBehavior$SolverContext;<init>(Lbaritone/process/elytra/ElytraBehavior;Z)V", shift
+    // = At.Shift.BEFORE), require = 0)
+    //    private void hookElytraBehaviorSolverBox(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand>
+    // cir) {
+    //        if(BaritoneFix.INSTANCE.fixErrorFly.get()){
+    //            Box box1 = BaritoneFix.INSTANCE.processBoxOfElytraFlight();
+    //            if(box1 != null){
+    //                var pl =  MinecraftClient.getInstance().player;
+    //                cachedBox = pl.getBoundingBox();
+    //                pl.setBoundingBox(box1);
+    //            }
+    //        }
+    //    }
+    //    @Inject(method = "onTick", at = @At(value = "INVOKE", target =
+    // "Lbaritone/process/elytra/ElytraBehavior$SolverContext;<init>(Lbaritone/process/elytra/ElytraBehavior;Z)V", shift
+    // = At.Shift.AFTER), require =  0)
+    //    private void hookElytraBehaviorSolverBox2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand>
+    // cir){
+    //        if(cachedBox != null){
+    //            MinecraftClient.getInstance().player.setBoundingBox(cachedBox);
+    //            cachedBox = null;
+    //        }
+    //    }
 
-    @Inject(method = "onTick", at = @At(value = "INVOKE", target = "Lbaritone/process/elytra/ElytraBehavior;a(Ljava/lang/String;)V", ordinal = 2), require = 0)
-    private void onNoSolution1(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir){
-        if(BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()){
-            Debug.chat(ChatUtils.stringToText("&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (All)"));
+    @Inject(
+            method = "onTick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lbaritone/process/elytra/ElytraBehavior;a(Ljava/lang/String;)V",
+                            ordinal = 2),
+            require = 0)
+    private void onNoSolution1(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
+        if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
+            Debug.chat(ChatUtils.stringToText(
+                    "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (All)"));
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
     }
-    @Inject(method = "onTick", at = @At(value = "INVOKE", target = "Lbaritone/process/elytra/ElytraBehavior;a(Ljava/lang/String;)V", ordinal = 3), require = 0)
-    private void onNoSolution2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir){
-        if(BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()){
-            Debug.chat(ChatUtils.stringToText("&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (Pitch)"));
+
+    @Inject(
+            method = "onTick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lbaritone/process/elytra/ElytraBehavior;a(Ljava/lang/String;)V",
+                            ordinal = 3),
+            require = 0)
+    private void onNoSolution2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
+        if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
+            Debug.chat(ChatUtils.stringToText(
+                    "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (Pitch)"));
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
     }

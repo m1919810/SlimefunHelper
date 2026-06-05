@@ -1,19 +1,16 @@
 package me.matl114.hacks.modules.extra;
 
+import com.mojang.serialization.JavaOps;
 import java.util.*;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-
-import com.mojang.serialization.JavaOps;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
-import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
-import me.matl114.managers.config.ListRef;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CommonUtils;
@@ -50,7 +47,7 @@ public class Warps extends BaseModule {
     {
         cachedString.clear();
         parseVec3ds.clear();
-        Map<String, List<String>> mp =  saveMap.asReadOnly(JavaOps.INSTANCE);
+        Map<String, List<String>> mp = saveMap.asReadOnly(JavaOps.INSTANCE);
         // copy to avoid cmd
         for (String path : List.copyOf(mp.getOrDefault(SAVE_KEY, List.of()))) {
             String[] splits = path.split(SPLITTER_REGEX);

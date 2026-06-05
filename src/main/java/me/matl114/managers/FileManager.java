@@ -1,50 +1,49 @@
 package me.matl114.managers;
 
 import com.google.common.base.Preconditions;
-import me.matl114.SlimefunHelper;
-import me.matl114.managers.config.Config;
-import me.matl114.managers.file.FileStorage;
-import me.matl114.managers.file.NBTFileStorageImpl;
-import me.matl114.utils.Debug;
-import net.fabricmc.loader.api.FabricLoader;
-import org.yaml.snakeyaml.Yaml;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import me.matl114.SlimefunHelper;
+import me.matl114.managers.file.FileStorage;
+import me.matl114.managers.file.NBTFileStorageImpl;
+import me.matl114.utils.Debug;
+import net.fabricmc.loader.api.FabricLoader;
+import org.yaml.snakeyaml.Yaml;
 
 public class FileManager {
-    public static FileManager getInstance(){
+    public static FileManager getInstance() {
         return INSTANCE;
     }
+
     public static final String FILE_SAVE_PATH = SlimefunHelper.MOD_ID;
     public static final String INTERNAL_SAVE_PATH = "internal";
     public static final String CONFIG_SAVE_PATH = "config";
-    public static final File FOLDER = FabricLoader.getInstance().getGameDir().resolve(FILE_SAVE_PATH).toFile();
+    public static final File FOLDER =
+            FabricLoader.getInstance().getGameDir().resolve(FILE_SAVE_PATH).toFile();
     public static final File INTERNAL_FOLDER = new File(FOLDER, INTERNAL_SAVE_PATH);
     public static final File CONFIG_SAVE_FOLDER = new File(FOLDER, CONFIG_SAVE_PATH);
     public static final Map<File, FileStorage> trackedFileStorages = new ConcurrentHashMap<>();
 
     protected static final FileManager INSTANCE = new FileManager();
-    private FileManager(){
+
+    private FileManager() {
         // create files
-        if(!FOLDER.exists() || !FOLDER.isDirectory()){
+        if (!FOLDER.exists() || !FOLDER.isDirectory()) {
             Preconditions.checkArgument(FOLDER.mkdirs(), "File create failure");
         }
-        if(!INTERNAL_FOLDER.exists() || !INTERNAL_FOLDER.isDirectory()){
+        if (!INTERNAL_FOLDER.exists() || !INTERNAL_FOLDER.isDirectory()) {
             Preconditions.checkArgument(INTERNAL_FOLDER.mkdirs(), "File create failure");
         }
         ScheduleService.launchAsyncRepeatTask(this::onScheduleSave, 15 * 1000, 15 * 1000);
     }
 
-
-    private  void onScheduleSave(){
+    private void onScheduleSave() {
         for (Map.Entry<File, FileStorage> entry : trackedFileStorages.entrySet()) {
             FileStorage storage = entry.getValue();
             if (storage.isDirty()) {
@@ -54,14 +53,11 @@ public class FileManager {
         }
     }
 
-
-
-
-    public FileStorage getStorage(File file, boolean reload){
+    public FileStorage getStorage(File file, boolean reload) {
         FileStorage storage;
         storage = trackedFileStorages.get(file);
-        if(storage != null){
-            if(reload){
+        if (storage != null) {
+            if (reload) {
                 storage.read();
             }
             return storage;
@@ -71,62 +67,43 @@ public class FileManager {
         return storage;
     }
 
-    public FileStorage getStorage(File flie){
+    public FileStorage getStorage(File flie) {
         return getStorage(flie, false);
     }
 
-    public FileStorage getInternalStorage(String filePath){
+    public FileStorage getInternalStorage(String filePath) {
         return getStorage(new File(INTERNAL_FOLDER, filePath), false);
     }
 
-
-    public void reloadAll(){
-        for (var re : new ArrayList<> (trackedFileStorages.keySet())) {
+    public void reloadAll() {
+        for (var re : new ArrayList<>(trackedFileStorages.keySet())) {
             getStorage(re, true);
         }
     }
 
-
-    private FileStorage createFileStorage(File file){
+    private FileStorage createFileStorage(File file) {
         String name = file.getName();
         // 简单根据扩展名判断是否为 NBT 文件（支持 .nbt, .dat）
         if (name.endsWith(".nbt") || name.endsWith(".dat")) {
             // 假设 NBTFileStorageImpl 构造函数接受 File
             return new NBTFileStorageImpl(file);
         } else {
-            throw new UnsupportedOperationException("Unsupported file type: " + name + " (only .nbt/.dat supported for now)");
+            throw new UnsupportedOperationException(
+                    "Unsupported file type: " + name + " (only .nbt/.dat supported for now)");
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public static File loadOrUseInternal(String configName) {
         final File configFile =
-            FabricLoader.getInstance().getConfigDir().resolve(configName).toFile();
+                FabricLoader.getInstance().getConfigDir().resolve(configName).toFile();
         if (!configFile.exists()) {
             try {
                 if (!configFile.getParentFile().exists()) {
                     Files.createDirectories(configFile.toPath().getParent());
                 }
                 Files.copy(
-                    SlimefunHelper.getInstance().getClass().getResourceAsStream("/" + configName),
-                    configFile.toPath());
+                        SlimefunHelper.getInstance().getClass().getResourceAsStream("/" + configName),
+                        configFile.toPath());
             } catch (Throwable e) {
                 Debug.info("AN INTERNAL ERROR WHILE LOADING DEFAULT CONFIG");
                 Debug.info(e);
@@ -169,6 +146,4 @@ public class FileManager {
             }
         }
     }
-
-
 }

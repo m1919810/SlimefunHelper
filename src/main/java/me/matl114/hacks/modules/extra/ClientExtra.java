@@ -37,6 +37,7 @@ import net.minecraft.world.chunk.BlockEntityTickInvoker;
 
 public class ClientExtra extends BaseModule {
     public static ClientExtra INSTANCE;
+
     public ClientExtra() {
         INSTANCE = this;
     }

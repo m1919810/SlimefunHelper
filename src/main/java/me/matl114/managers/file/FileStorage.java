@@ -1,6 +1,5 @@
 package me.matl114.managers.file;
 
-import com.mojang.serialization.Codec;
 import com.mojang.serialization.DynamicOps;
 
 public interface FileStorage {

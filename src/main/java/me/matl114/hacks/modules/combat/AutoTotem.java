@@ -53,16 +53,14 @@ public class AutoTotem extends BaseModule {
             .build();
 
     public final FlagRef log = builder(totem.add("auto-totem-log"), Boolean.class)
-        .defaultValue(true)
-        .build();
+            .defaultValue(true)
+            .build();
 
     public final IntRef cooldown = builder(totem.add("totem-swap-cooldown"), IntRef.TYPE)
-        .defaultValue(1)
-        .build();
+            .defaultValue(1)
+            .build();
 
     public final FlagRef smartTotem = flagBuilder(totem.add("smart-auto-totem")).build();
-
-
 
     public final NBTRef<RegistryRegex<Item>> enableHandItems = builder(
                     totem.add("enable-hand-items"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
@@ -83,6 +81,7 @@ public class AutoTotem extends BaseModule {
     private boolean canBeAccepted(ItemStack ex) {
         return ex.getItem() == Items.TOTEM_OF_UNDYING || enableHandItems.get().test(ex.getItem());
     }
+
     boolean noTotemMention = false;
     // todo: add legal mode (swap hand)
     public void onTick(Event<ClientPlayerEntity> ev) {
@@ -97,34 +96,38 @@ public class AutoTotem extends BaseModule {
             }
         }
     }
-    private void handleTotemSwapFailure(){
-        if(!noTotemMention){
+
+    private void handleTotemSwapFailure() {
+        if (!noTotemMention) {
             noTotemMention = true;
-            if(log.get()){
+            if (log.get()) {
                 Debug.chat(ChatUtils.stringToText("&c[AutoTotem] &fTotem not found in your inventory"));
             }
         }
     }
+
     int lastStartSwap114514 = 0;
     int swapCnt1919810 = 0;
-    private void handleTotemSwapSuccess(){
+
+    private void handleTotemSwapSuccess() {
         noTotemMention = false;
         lastSwapTick = Tasks.getTick() + cooldown.get();
-        if(lastStartSwap114514 < Tasks.getTick() - 20){
+        if (lastStartSwap114514 < Tasks.getTick() - 20) {
             lastStartSwap114514 = Tasks.getTick();
             swapCnt1919810 = 1;
-        }else{
-            if(++swapCnt1919810 > 5){
+        } else {
+            if (++swapCnt1919810 > 5) {
                 swapCnt1919810 = 0;
-                if(log.get()){
+                if (log.get()) {
                     Debug.chat(ChatUtils.stringToText("&c[AutoTotem] &fTotem swap too frequently, may caused by lag"));
                 }
             }
         }
     }
+
     public void onTotemLazy() {
         // stop from duplicate swap
-        if(lastSwapTick >= Tasks.getTick()){
+        if (lastSwapTick >= Tasks.getTick()) {
             return;
         }
         if (!canBeAccepted(mc.player.getOffHandStack())) {
@@ -172,12 +175,14 @@ public class AutoTotem extends BaseModule {
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 InvTasks.clickSlotAsync(random, 40, SlotActionType.SWAP);
                 handleTotemSwapSuccess();
-            }else {
+            } else {
                 handleTotemSwapFailure();
             }
         }
     }
+
     int lastSwapTick = 0;
+
     public void onTotem(Event<EntityStatusS2CPacket> eventTotem) {
         if (checkNull()) return;
         if (enable.get()
@@ -205,7 +210,7 @@ public class AutoTotem extends BaseModule {
         }
     }
 
-    public void onPlayerInit(Event<ClientPlayerEntity> eventPlayer){
+    public void onPlayerInit(Event<ClientPlayerEntity> eventPlayer) {
         noTotemMention = false;
     }
 

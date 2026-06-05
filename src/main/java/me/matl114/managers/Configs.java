@@ -250,10 +250,10 @@ public class Configs {
             cfgFile.renameTo(tgtFile);
         }
         File internalFile = FabricLoader.getInstance()
-            .getConfigDir()
-            .resolve("sfhelper-configs/internal.yml")
-            .toFile();
-        if(internalFile.exists()){
+                .getConfigDir()
+                .resolve("sfhelper-configs/internal.yml")
+                .toFile();
+        if (internalFile.exists()) {
             internalFile.delete();
         }
     }

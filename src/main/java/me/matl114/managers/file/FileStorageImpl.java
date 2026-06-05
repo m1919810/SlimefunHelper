@@ -4,11 +4,14 @@ import java.io.File;
 
 public abstract class FileStorageImpl implements FileStorage {
     protected final File file;
+
     public FileStorageImpl(File file) {
         this.file = file;
         ensureParentDir();
     }
+
     protected boolean dirty;
+
     @Override
     public void markDirty(boolean dirty) {
         this.dirty = dirty;

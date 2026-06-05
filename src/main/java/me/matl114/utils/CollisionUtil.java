@@ -2055,7 +2055,8 @@ public final class CollisionUtil {
                                 if (state.isAir()) continue;
 
                                 // 获取碰撞形状（优先使用 Moonrise 常量形状）
-                                VoxelShape shape = MoonriseBlockStateBaseAccess.of(state).moonrise$getConstantCollisionShape();
+                                VoxelShape shape =
+                                        MoonriseBlockStateBaseAccess.of(state).moonrise$getConstantCollisionShape();
                                 if (shape == null) {
                                     mutablePos.set(blockX, blockY, blockZ);
                                     shape = state.getCollisionShape(world, mutablePos, ShapeContext.absent());
