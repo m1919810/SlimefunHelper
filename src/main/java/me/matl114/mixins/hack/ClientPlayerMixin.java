@@ -49,29 +49,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayerEntity.class)
 public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity implements ClientPlayerAccess {
-
-    @Final
-    @Shadow
-    public ClientPlayNetworkHandler networkHandler;
-
-    @Accessor("lastXClient")
-    public abstract double getLastX();
-
-    @Accessor("lastYClient")
-    public abstract double getLastBaseY();
-
-    @Accessor("lastZClient")
-    public abstract double getLastZ();
-
-    @Accessor("lastOnGround")
-    public abstract boolean getLastOnGround();
-
-    @Accessor("lastPitchClient")
-    public abstract float getLastPitch();
-
-    @Accessor("lastYawClient")
-    public abstract float getLastYaw();
-
     @Unique
     private boolean forceNoFall;
 
@@ -154,10 +131,10 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Override
     public float getEffectFadeFactor(RegistryEntry<StatusEffect> effect, float tickProgress) {
-        if (RenderTasks.getRenderExtra().noNausea.get() && Objects.equals(effect, StatusEffects.NAUSEA)) {
+        if (RenderExtra.INSTANCE.noNausea.get() && Objects.equals(effect, StatusEffects.NAUSEA)) {
             return 0.0F;
         }
-        if (RenderTasks.getRenderExtra().noEffect.get()
+        if (RenderExtra.INSTANCE.noEffect.get()
                 && (Objects.equals(effect, StatusEffects.DARKNESS)
                         || Objects.equals(effect, StatusEffects.BLINDNESS))) {
             return 0.0F;
@@ -183,7 +160,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     @Unique
     @Override
     public boolean canHaveStatusEffect(StatusEffectInstance effect) {
-        RenderExtra extra = RenderTasks.getRenderExtra();
+        RenderExtra extra = RenderExtra.INSTANCE;
         if (extra.noEffect.get()
                 && extra.noEffectForce.get()
                 && (extra.noEffectTypes.get().test(effect.getEffectType()))) {
@@ -307,7 +284,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Override
     public double getBlockInteractionRange() {
-        MineExtra mineExtra = MineTasks.getMineExtra();
+        MineExtra mineExtra = MineExtra.INSTANCE;
         if (true) {
             return mineExtra.getReachDistance();
         }

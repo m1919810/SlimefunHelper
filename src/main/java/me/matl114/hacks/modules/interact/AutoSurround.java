@@ -9,6 +9,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
@@ -20,6 +21,7 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockWithEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.item.BlockItem;
@@ -122,9 +124,10 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     int[] dz = {-1, 1, 0, 0};
     Direction[] dd = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, Direction.DOWN};
-
+    BlockPos lastSurround;
     public boolean checkSurround() {
-        BlockPos vcPos = mc.player.getVelocityAffectingPos();
+        BlockPos vcPos = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
+        lastSurround = vcPos;
         if (onlyGround.get() && !mc.player.isOnGround() && !CollisionUtil.isEntitySupported(mc.player, 1.5D)) {
             return false;
         }
@@ -198,7 +201,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 item -> {
                     if (item.getItem() instanceof BlockItem blockItem) {
                         return (double) (blockItem.getBlock().getBlastResistance())
-                                + ((blockItem == Items.OBSIDIAN) ? 1E8 : 0);
+                                + ((blockItem == Items.OBSIDIAN) ? 1E8 : 0) + (blockItem.getBlock() instanceof BlockWithEntity ? -1E8 :0 );
                     }
                     return null;
                 },
@@ -208,18 +211,23 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     boolean lastOnGround = false;
     boolean triggerCenterFix = false;
-
+    boolean rotateSuccess = false;
+    BlockPos lastCenter;
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         boolean last = lastOnGround;
         lastOnGround = mc.player.isOnGround();
+
         if (enable.get() && autoCenter.get()) {
-            if (!last && lastOnGround) {
+            if (!last && lastOnGround ) {
                 triggerCenterFix = true;
             }
         }
         if (triggerCenterFix && mc.player.isOnGround()) {
-            BlockPos blockPos = mc.player.getVelocityAffectingPos();
+            if(lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 1.0)){
+                lastCenter = lastSurround == null ? PlayerStateManager.INSTANCE.lastVelocityAffectingPos : lastSurround;
+            }
+            var blockPos = lastCenter;
             boolean fixed = mc.player.getX() - blockPos.getX() - 0.5 <= 0.2
                     && mc.player.getX() - blockPos.getX() - 0.5 >= -0.2
                     && mc.player.getZ() - blockPos.getZ() - 0.5 <= 0.2
@@ -227,19 +235,23 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
             if (!fixed) {
                 PlayerInputUtils.Input inputUtils = PlayerInputUtils.of(mc.options);
                 if (!inputUtils.hasMovement() && !movementManagerEvent.context.hasImportantRotation()) {
+                    rotateSuccess = true;
                     Vec3d lookHorizontal = blockPos.toCenterPos().subtract(mc.player.getPos());
                     EntityUtils.setEntityYawSafe(mc.player, EntityUtils.rotationToYaw(lookHorizontal.normalize()));
                     movementManagerEvent.context.markForResetRot();
                 }
             } else {
                 triggerCenterFix = false;
+                lastCenter = null;
             }
         }
+
     }
     // todo: try check block position, sneak-related
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        if (triggerCenterFix && mc.player.isOnGround()) {
+        if (triggerCenterFix && mc.player.isOnGround() && rotateSuccess) {
+            rotateSuccess = false;
             var input = PlayerInputUtils.of(mc.player);
             if (!input.hasWASDMovement()) {
                 input.forward(true).applyInput(mc.player);

@@ -4,6 +4,8 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.hacks.MovTasks;
+import me.matl114.hacks.utils.entity.Predictor;
+import me.matl114.hacks.utils.entity.SimpleEntityPredictor;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
@@ -63,5 +65,14 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
             return false;
         }
         return true;
+    }
+    @Unique
+    Predictor predictorInstance;
+@Unique
+    public Predictor getPositionPredictor(){
+        if(predictorInstance == null) {
+            predictorInstance = new SimpleEntityPredictor((Entity)(Object) this);
+        }
+        return predictorInstance;
     }
 }

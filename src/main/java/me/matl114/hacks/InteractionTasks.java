@@ -282,6 +282,9 @@ public class InteractionTasks {
     @Getter
     public static PrinterRewrite printerRewrite;
 
+    @Getter
+    public static AutoRide autoRide;
+
     private static void initModules(ModuleManager m) {
         interactExtra = new InteractExtra().register(m);
 
@@ -291,6 +294,7 @@ public class InteractionTasks {
         autoSurround = new AutoSurround().register(m);
         blockRotate = new BlockRotate().register(m);
         printerRewrite = new PrinterRewrite().register(m);
+        autoRide = new AutoRide().register(m);
     }
 
     static {

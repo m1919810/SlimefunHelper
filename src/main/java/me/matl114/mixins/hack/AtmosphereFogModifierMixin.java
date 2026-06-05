@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.render.RenderExtra;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.fog.AtmosphericFogModifier;
@@ -25,7 +26,7 @@ public abstract class AtmosphereFogModifierMixin {
             float f,
             RenderTickCounter renderTickCounter,
             CallbackInfo ci) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderExtra.INSTANCE.noEffect.get()) {
             data.environmentalStart = 1000000;
             data.environmentalEnd = 1000000;
         }

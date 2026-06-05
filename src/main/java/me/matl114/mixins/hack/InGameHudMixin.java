@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.render.RenderExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -41,7 +42,7 @@ public abstract class InGameHudMixin {
             method =
                     "renderPlayerList(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V")
     private void rejectWurstHud(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        if (RenderTasks.getRenderExtra().noWurstHud.get()) {
+        if (RenderExtra.INSTANCE.noWurstHud.get()) {
             this.tmpValue3 = true;
             this.tmpValue2 = MinecraftClient.getInstance().options.hudHidden;
             client.options.hudHidden = false;

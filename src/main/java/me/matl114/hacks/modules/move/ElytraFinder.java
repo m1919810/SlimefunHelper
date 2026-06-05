@@ -27,8 +27,7 @@ import net.minecraft.util.math.*;
 public class ElytraFinder extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath travellingControl = makePath(Configs.MOV_CONFIG, "travelling-control");
     public final ModulePath elytraFinder = travellingControl.add("elytra-finder");
-    public final ModulePath internalTravellingControl = makePath(Configs.INTERNAL_CONFIG, "travelling-control");
-    public final ModulePath internalElytraFinder = internalTravellingControl.add("elytra-finder");
+
 
     static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -85,36 +84,7 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
     // todo: add command
     // todo: add pull up actions
 
-    public void saveBlocks() {
-        JsonObject jsonObject = new JsonObject();
-        for (var entry : locatedPlaces.entrySet()) {
-            JsonArray obj = new JsonArray();
-            for (var k : entry.getValue()) {
-                obj.add(BlockPos.asLong(k.getX(), k.getY(), k.getZ()));
-            }
-            jsonObject.add(entry.getKey(), obj);
-        }
-        located.set(new Gson().toJson(jsonObject));
-    }
 
-    public void addFindBlock(BlockPos pos) {
-        locatedPlaces
-                .computeIfAbsent(CommonUtils.getWorldName(), (k -> new LinkedHashSet<>()))
-                .add(pos);
-        saveBlocks();
-    }
-
-    public void clearBlocks() {
-        if (locatedPlaces.remove(CommonUtils.getWorldName()) != null) {
-            saveBlocks();
-        }
-    }
-
-    public StringRef located = builder(
-                    Configs.INTERNAL_CONFIG, elytraFinder.add("history").toPath(), StringRef.TYPE)
-            .defaultValue("{}")
-            .updateListener(this::updateStore)
-            .build();
 
     @Override
     public void registerAll() {

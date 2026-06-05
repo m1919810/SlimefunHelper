@@ -26,12 +26,15 @@ import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 
 public class RenderExtra extends BaseModule {
+    public static RenderExtra INSTANCE;
     public final ModulePath resource = makePath(Configs.RENDER_CONFIG, "resource");
     public final ModulePath serverResource = resource.add("server");
     public final ModulePath render = makePath(Configs.RENDER_CONFIG, "render");
     public final ModulePath effectSetting = render.add("eff-setting");
 
-    public RenderExtra() {}
+    public RenderExtra() {
+        INSTANCE = this;
+    }
 
     public final FlagRef enableRejectResourcePack =
             flagBuilder(serverResource.add("ignore-server-request")).build();

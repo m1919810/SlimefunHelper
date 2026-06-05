@@ -13,6 +13,7 @@ import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.render.*;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
@@ -73,7 +74,7 @@ public class RenderTasks {
             if (mc.player != null) {
                 try {
                     RenderUtils.startDrawVirtual(event.context());
-                    BlockPos pos = mc.player.getVelocityAffectingPos();
+                    BlockPos pos = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
                     RenderUtils.drawOutlinedBox(
                             event.context(),
                             pos.toCenterPos().add(RenderTasks.FROM),
@@ -99,6 +100,12 @@ public class RenderTasks {
         RenderTasks.registerVirtualRenderTask(
                 new RenderTasks.RenderTask(timeTick, new BoxObject(box.getMinPos(), box.getMaxPos(), color)));
     }
+
+    public static void drawBoxMov(Box box, Vec3d move, int tick, Color color) {
+        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+            tick, new BoxMoveTarget(box, move, color, color)));
+    }
+
 
     // the visit to renderBlocks need synchronized for thread safety, as they involved for-loop and remove
     private static final Set<VirtualRenderTask> renderBlocks = new LinkedHashSet<>();
@@ -510,6 +517,12 @@ public class RenderTasks {
     @Getter
     public static Hud hud;
 
+    @Getter
+    public static InvHud invHud;
+
+    @Getter
+    public static PlayerStatistic playerStatistic;
+
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         entityLog = new EntityLog().register(m);
@@ -525,6 +538,8 @@ public class RenderTasks {
         freecam = new Freecam().register(m);
         renderOptimize = new RenderOptimize().register(m);
         hud = new Hud().register(m);
+        invHud = new InvHud().register(m);
+        playerStatistic = new PlayerStatistic().register(m);
     }
 
     static {

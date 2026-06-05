@@ -58,7 +58,6 @@ public class AttackArua extends BaseModule {
     }
 
     private int interval;
-    private final Random timeRandom = new Random();
 
     public void onTick(Event<ClientPlayerEntity> tickEvent) {
         if (mc.player == null) return;

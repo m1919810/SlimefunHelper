@@ -31,8 +31,10 @@ import org.joml.Vector2i;
 import org.spongepowered.asm.mixin.Unique;
 
 public class MineExtra extends BaseModule {
-
-    public MineExtra() {}
+    public static MineExtra INSTANCE;
+    public MineExtra() {
+        INSTANCE = this;
+    }
 
     public List<Vec3i> blocksAround = new ArrayList<>();
 
@@ -362,7 +364,7 @@ public class MineExtra extends BaseModule {
     }
 
     public void onPostStopMiningLegally(BlockPos pos) {
-        MineExtra mineExtra = MineTasks.getMineExtra();
+        MineExtra mineExtra = MineExtra.INSTANCE;
         int threshold = mineExtra.grimAcCounterThreshold.get();
         ignoreNextFastBreakStatus = 0;
         if (mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_BAD_PACKETS) {
@@ -392,7 +394,7 @@ public class MineExtra extends BaseModule {
         if (lastStartMineBreakingProgressResetTick == 0) {
             return;
         }
-        MineExtra mineExtra = MineTasks.getMineExtra();
+        MineExtra mineExtra = MineExtra.INSTANCE;
         int predictTick = (int) Math.ceil(1 / speed);
         int tickUsed = (int) Math.ceil(currentProgress / speed);
         int diff = predictTick - tickUsed;

@@ -50,8 +50,13 @@ public class ExtraTasks {
     @Getter
     public static AutoReconnect autoReconnect;
 
+
+
     @Getter
     public static Warps warps;
+
+    @Getter
+    public static BoatVClip boatVClip;
 
     private static void initModules(ModuleManager m) {
         clientExtra = new ClientExtra().register(m);
@@ -67,6 +72,7 @@ public class ExtraTasks {
         serverScanner = new ServerScanner().register(m);
         autoReconnect = new AutoReconnect().register(m);
         warps = new Warps().register(m);
+        boatVClip = new BoatVClip().register(m);
     }
 
     static {

@@ -16,8 +16,11 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ChatUtils;
+import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityStatuses;
@@ -49,7 +52,17 @@ public class AutoTotem extends BaseModule {
             .defaultValue(Configs.AutoInvMode.LAZY)
             .build();
 
+    public final FlagRef log = builder(totem.add("auto-totem-log"), Boolean.class)
+        .defaultValue(true)
+        .build();
+
+    public final IntRef cooldown = builder(totem.add("totem-swap-cooldown"), IntRef.TYPE)
+        .defaultValue(1)
+        .build();
+
     public final FlagRef smartTotem = flagBuilder(totem.add("smart-auto-totem")).build();
+
+
 
     public final NBTRef<RegistryRegex<Item>> enableHandItems = builder(
                     totem.add("enable-hand-items"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
@@ -64,20 +77,16 @@ public class AutoTotem extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotem);
+        registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerInit);
     }
 
     private boolean canBeAccepted(ItemStack ex) {
         return ex.getItem() == Items.TOTEM_OF_UNDYING || enableHandItems.get().test(ex.getItem());
     }
-
+    boolean noTotemMention = false;
     // todo: add legal mode (swap hand)
     public void onTick(Event<ClientPlayerEntity> ev) {
-        var player = ev.context();
         if (enable.get()) {
-            // ScreenHandler handled = ClientPlayerAccess.of(player).getServerScreenHandler();
-            //            if( handled != player.playerScreenHandler){
-            //                return;
-            //            }
             switch (mode.get()) {
                 case LAZY -> {
                     onTotemLazy();
@@ -88,8 +97,36 @@ public class AutoTotem extends BaseModule {
             }
         }
     }
-
+    private void handleTotemSwapFailure(){
+        if(!noTotemMention){
+            noTotemMention = true;
+            if(log.get()){
+                Debug.chat(ChatUtils.stringToText("&c[AutoTotem] &fTotem not found in your inventory"));
+            }
+        }
+    }
+    int lastStartSwap114514 = 0;
+    int swapCnt1919810 = 0;
+    private void handleTotemSwapSuccess(){
+        noTotemMention = false;
+        lastSwapTick = Tasks.getTick() + cooldown.get();
+        if(lastStartSwap114514 < Tasks.getTick() - 20){
+            lastStartSwap114514 = Tasks.getTick();
+            swapCnt1919810 = 1;
+        }else{
+            if(++swapCnt1919810 > 5){
+                swapCnt1919810 = 0;
+                if(log.get()){
+                    Debug.chat(ChatUtils.stringToText("&c[AutoTotem] &fTotem swap too frequently, may caused by lag"));
+                }
+            }
+        }
+    }
     public void onTotemLazy() {
+        // stop from duplicate swap
+        if(lastSwapTick >= Tasks.getTick()){
+            return;
+        }
         if (!canBeAccepted(mc.player.getOffHandStack())) {
             if (smartTotem.get() && mc.player.getMainHandStack().getItem() == Items.TOTEM_OF_UNDYING) {
                 return;
@@ -107,9 +144,12 @@ public class AutoTotem extends BaseModule {
                         && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(i, toSlot, SlotActionType.SWAP);
+                    Debug.info("handle swap success");
+                    handleTotemSwapSuccess();
                     return;
                 }
             }
+            handleTotemSwapFailure();
         }
     }
 
@@ -131,10 +171,13 @@ public class AutoTotem extends BaseModule {
                 int random = totemList.getInt(inventorRandom.nextInt(totemList.size()));
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 InvTasks.clickSlotAsync(random, 40, SlotActionType.SWAP);
+                handleTotemSwapSuccess();
+            }else {
+                handleTotemSwapFailure();
             }
         }
     }
-
+    int lastSwapTick = 0;
     public void onTotem(Event<EntityStatusS2CPacket> eventTotem) {
         if (checkNull()) return;
         if (enable.get()
@@ -142,7 +185,6 @@ public class AutoTotem extends BaseModule {
                 && eventTotem.context.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING
                 && eventTotem.context.getEntity(mc.world) == mc.player) {
             ItemStack stackInMainHand = mc.player.getMainHandStack();
-            ItemStack stackInOffHand = mc.player.getOffHandStack();
             int consumeSlot =
                     stackInMainHand.getItem() == Items.TOTEM_OF_UNDYING ? InventoryUtils.getSelectedSlot() : 40;
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
@@ -153,10 +195,18 @@ public class AutoTotem extends BaseModule {
                         && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(i, consumeSlot, SlotActionType.SWAP);
+                    handleTotemSwapSuccess();
+                    // pre tick
+                    lastSwapTick += 1;
                     return;
                 }
             }
+            handleTotemSwapFailure();
         }
+    }
+
+    public void onPlayerInit(Event<ClientPlayerEntity> eventPlayer){
+        noTotemMention = false;
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {

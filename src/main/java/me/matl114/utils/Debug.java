@@ -2,6 +2,7 @@ package me.matl114.utils;
 
 import java.util.Arrays;
 import lombok.Getter;
+import me.matl114.SlimefunHelper;
 import me.matl114.hacks.ChatTasks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.MutableText;
@@ -73,6 +74,17 @@ public class Debug {
             return;
         }
         logger.info(object != null ? object.toString() : "null");
+    }
+    public static void debug(Object... objs){
+        if(SlimefunHelper.DEV_ENV){
+            info((Object[]) objs);
+        }
+    }
+
+    public static void debug(Object object){
+        if(SlimefunHelper.DEV_ENV){
+            debug((Object) object);
+        }
     }
 
     public static void stackTrace() {

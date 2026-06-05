@@ -10,8 +10,10 @@ import me.matl114.managers.config.IntRef;
 
 public class InteractExtra extends BaseModule {
     public final ModulePath interactFix = makePath(Configs.INTERACT_CONFIG, "interact-fix");
-
-    public InteractExtra() {}
+    public static InteractExtra INSTANCE;
+    public InteractExtra() {
+        INSTANCE = this;
+    }
 
     public final FlagRef noCooldown =
             flagBuilder(interactFix.add("no-cool-down")).build();

@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.ExtraTasks;
+import me.matl114.hacks.modules.extra.ClientExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientLoginNetworkHandler;
@@ -19,7 +20,7 @@ public abstract class ClientLoginNetworkHandlerMixin {
                             value = "INVOKE",
                             target = "Lnet/minecraft/network/packet/BrandCustomPayload;<init>(Ljava/lang/String;)V"))
     private String changeBrandName(String string) {
-        String brand = ExtraTasks.getClientExtra().clientBrandName.getValue();
+        String brand = ClientExtra.INSTANCE.clientBrandName.getValue();
         if (brand != null && !brand.isEmpty()) {
             return brand;
         }

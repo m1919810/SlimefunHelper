@@ -43,11 +43,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class SleepMode extends BaseModule {
-
+    public static SleepMode INSTANCE;
     private int sleepingLevel = 0;
     public final ModulePath render = makePath(Configs.RENDER_CONFIG, "render");
 
-    public SleepMode() {}
+    public SleepMode() {
+        INSTANCE = this;
+    }
 
     public final KeyBindRef keyBindRef = hotkey(
                     Configs.RENDER_CONFIG, render.add("wake-up-screen").toPath())

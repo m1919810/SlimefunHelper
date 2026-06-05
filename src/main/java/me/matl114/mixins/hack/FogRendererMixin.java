@@ -2,6 +2,7 @@ package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.render.RenderExtra;
 import net.minecraft.client.render.fog.FogRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,7 +20,7 @@ public abstract class FogRendererMixin {
                                     "Lnet/minecraft/client/render/fog/FogRenderer;applyFog(Ljava/nio/ByteBuffer;ILorg/joml/Vector4f;FFFFFF)V"),
             index = 5)
     private float applyFog(float environmentalStart) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderExtra.INSTANCE.noEffect.get()) {
             return 1000000;
         }
         return environmentalStart;
@@ -35,7 +36,7 @@ public abstract class FogRendererMixin {
                                     "Lnet/minecraft/client/render/fog/FogRenderer;applyFog(Ljava/nio/ByteBuffer;ILorg/joml/Vector4f;FFFFFF)V"),
             index = 6)
     private float applyFog2(float value) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderExtra.INSTANCE.noEffect.get()) {
             return 1000000;
         }
         return value;
@@ -50,7 +51,7 @@ public abstract class FogRendererMixin {
                                     "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",
                             ordinal = 0))
     private boolean applyNightVision(boolean original) {
-        if (RenderTasks.getRenderExtra().nightVision.get()) {
+        if (RenderExtra.INSTANCE.nightVision.get()) {
             return true;
         }
         return original;
@@ -65,7 +66,7 @@ public abstract class FogRendererMixin {
                                     "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",
                             ordinal = 1))
     private boolean applyNoEffect(boolean original) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderExtra.INSTANCE.noEffect.get()) {
             return false;
         }
         return original;

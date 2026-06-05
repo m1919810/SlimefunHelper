@@ -6,7 +6,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.Chunk;
 
 public interface ChunkAccess {
-    public Iterable<Map.Entry<BlockPos, BlockEntity>> blockEntities();
+    public Iterable<Map.Entry<BlockPos, BlockEntity>> blockEntityEntries();
 
     public static ChunkAccess of(Chunk chunk) {
         return (ChunkAccess) chunk;

@@ -144,7 +144,7 @@ public class TargetSelector extends BaseModule {
     public void removeFriend(String friend) {
         List<String> friendList = this.friendList.get();
         if (friendList.contains(friend)) {
-            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功添移除了 %s 好友".formatted(friend)));
+            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功移除了 %s 好友".formatted(friend)));
             friendList = new ArrayList<>(friendList);
             friendList.remove(friend);
             this.friendList.set(friendList);

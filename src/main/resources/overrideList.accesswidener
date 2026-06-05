@@ -93,3 +93,8 @@ accessible field net/minecraft/client/gui/render/state/GuiRenderState currentLay
 accessible field net/minecraft/client/gui/render/state/GuiRenderState currentLayerBounds Lnet/minecraft/client/gui/ScreenRect;
 accessible method net/minecraft/client/network/ClientPlayNetworkHandler setPosition (Lnet/minecraft/entity/EntityPosition;Ljava/util/Set;Lnet/minecraft/entity/Entity;Z)Z
 accessible field net/minecraft/client/option/KeyBinding boundKey Lnet/minecraft/client/util/InputUtil$Key;
+accessible field net/minecraft/network/packet/s2c/play/EntityStatusS2CPacket entityId I
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap centerChunkX I
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap centerChunkZ I
+accessible method net/minecraft/client/world/ClientChunkManager$ClientChunkMap getIndex (II)I
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap radius I

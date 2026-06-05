@@ -11,6 +11,8 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.modules.combat.CombatExtra;
+import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.render.RenderExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -169,7 +171,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
                             ordinal = 0))
     public boolean onAllowingPlayerAttackWhenUseItem(ClientPlayerEntity instance, Operation<Boolean> original) {
         boolean flag = original.call(instance);
-        if (flag && CombatTasks.getCombatExtra().useAttack.get()) {
+        if (flag && CombatExtra.INSTANCE.useAttack.get()) {
             // do attack logic
             boolean bl3 = false;
             // still do attack first
@@ -192,7 +194,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",
                             ordinal = 0))
     public boolean onAllowingPlayerBreakingWhenUseItem(ClientPlayerEntity player) {
-        if (CombatTasks.getCombatExtra().useAttack.get()) {
+        if (CombatExtra.INSTANCE.useAttack.get()) {
             return false;
         } else {
             return player.isUsingItem();
@@ -209,7 +211,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
             method = "doItemUse",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isRiding()Z"))
     public boolean onAllowRidingUse(ClientPlayerEntity instance) {
-        if (InteractionTasks.getInteractExtra().rideUse.get()) {
+        if (InteractExtra.INSTANCE.rideUse.get()) {
             return false;
         }
         return instance.isRiding();
@@ -227,13 +229,6 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Shadow
     @Nullable
     public Screen currentScreen;
-
-    @Shadow
-    @Final
-    public GameRenderer gameRenderer;
-
-    @Shadow
-    protected abstract void render(boolean tick);
 
     @Shadow
     public int attackCooldown;
@@ -263,7 +258,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
 
     @Inject(method = "hasReducedDebugInfo", at = @At("HEAD"), cancellable = true)
     private void onEnhanceDebug(CallbackInfoReturnable<Boolean> cir) {
-        if (RenderTasks.getRenderExtra().enhancedDebugHud.get()) {
+        if (RenderExtra.INSTANCE.enhancedDebugHud.get()) {
             cir.setReturnValue(false);
         }
     }

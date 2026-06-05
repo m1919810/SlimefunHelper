@@ -12,6 +12,7 @@ import me.matl114.events.RenderListener;
 import me.matl114.gui.GuiMain;
 import me.matl114.hacks.MainTasks;
 import me.matl114.jsApi.SlimefunHelperApi;
+import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.CommonUtils;
@@ -36,10 +37,17 @@ public class SlimefunHelper implements ModInitializer {
     public static SlimefunHelper instance;
 
     public static boolean DEV = false;
+    public static boolean DEV_ENV = false;
 
     public static void authentication() {
         if (Objects.equals(MinecraftClient.getInstance().getSession().getUsername(), "matl114")) {
             DEV = true;
+        }
+        try{
+            Class.forName("net.minecraft.client.MinecraftClient");
+            DEV_ENV = true;
+            Debug.info("Dev Environment Detected !");
+        }catch (Throwable e){
         }
     }
 
@@ -51,7 +59,7 @@ public class SlimefunHelper implements ModInitializer {
         // Proceed with mild caution.
         authentication();
         Debug.info("SlimefunHelper, start!");
-        ModConfig.reloadModConfig();
+        reloadModConfig();
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES)
                 .registerReloadListener(new SimpleSynchronousResourceReloadListener() {
                     @Override
@@ -62,14 +70,14 @@ public class SlimefunHelper implements ModInitializer {
                     @Override
                     public void reload(ResourceManager manager) {
                         Debug.info("Resource reload called for SlimefunHelper");
-                        ModConfig.reloadModConfig();
+                        reloadModConfig();
                         RenderListener.onResourceReload(manager);
                     }
                 });
         ModelLoadingPluginManager.<Collection<Identifier>>registerPlugin(
                 (resourceManager, executor) -> CompletableFuture.supplyAsync(() -> {
                     Debug.info("check model plugin work");
-                    ModConfig.reloadModConfig();
+                    reloadModConfig();
                     // we removed the itemModel auto register to ItemAssetsLoader
                     return Set.of(); // RenderListener.getReloadingResources(resourceManager.getResourceManager());
                 }),
@@ -90,7 +98,10 @@ public class SlimefunHelper implements ModInitializer {
         BridgeMain.init();
         SlimefunHelperApi.init();
     }
-
+    public static void reloadModConfig() {
+        Debug.info("Reloading Mod Config");
+        Configs.loadConfigs();
+    }
     // 大饼: 实现指令系统，接入聊天框 !!开头
     // 大饼: 客户端实现/give指令劫持
     // 大饼: 发射器界面实现一键放入+合成(?)+交互合成按钮  有了

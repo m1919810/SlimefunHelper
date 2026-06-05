@@ -1,9 +1,10 @@
 package me.matl114.hacks.modules.move;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+
+import com.google.common.collect.Streams;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.MetadataHolder;
@@ -12,11 +13,14 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Tasks;
+import me.matl114.utils.CollisionUtil;
 import me.matl114.utils.DamageUtils;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.containers.MetaData;
 import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.utils.inventory.ItemStackSample;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
@@ -32,10 +36,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
+import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class PlayerStateManager extends BaseModule {
@@ -62,6 +69,9 @@ public class PlayerStateManager extends BaseModule {
     public PlayerInputUtils.Input lastInput = PlayerInputUtils.EMPTY.clone();
     public boolean serverSideCanFly;
     public Deque<Vec3d> last40Positions = new ArrayDeque<>();
+    public BlockPos lastVelocityAffectingPos = BlockPos.ORIGIN;
+    public Map<ItemStackSample, Integer> inventorySummary;
+    public Map<ItemStackSample, Integer> inventoryTotalSummary;
     private static final int MAX_SIZE = 20;
 
     {
@@ -88,6 +98,11 @@ public class PlayerStateManager extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::updateOtherPlayers);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotemPop);
         registerListener(Listener.getServerLeavePoint(), this::onLeave);
+        registerListener(Listener.getPostClickSlot(), this::onClickSlot);
+        registerListener(Listener.getPacketPoint().getChannel(InventoryS2CPacket.class), this::onInventoryUpdate);
+        registerListener(Listener.getPacketPoint().getChannel(ScreenHandlerSlotUpdateS2CPacket.class), this::onInventorySlotUpdate);
+        registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onInventoryClose);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerRespawnS2CPacket.class), this::onRespawn);
     }
 
     public void onMove(Event<PlayerMoveC2SPacket> event) {
@@ -188,7 +203,53 @@ public class PlayerStateManager extends BaseModule {
     public void onPreGameTick(Event<ClientPlayerEntity> event) {
         handleTick();
     }
-
+    private BlockPos calculateVelocityAffectingPos(){
+        BlockPos pos = mc.player.getVelocityAffectingPos();
+        BlockState state = mc.world.getBlockState(pos);
+        if(!state.isAir() && !state.isLiquid()){
+            return pos;
+        }
+        Box box = mc.player.getBoundingBox();
+        int minX = (int) Math.floor(box.minX);
+        int maxX = (int) Math.floor(box.maxX - 1e-7); // 避免边界溢出，实际遍历时用 <= 处理
+        int minZ = (int) Math.floor(box.minZ);
+        int maxZ = (int) Math.floor(box.maxZ - 1e-7);
+        int y = pos.getY();
+        boolean hasBlock = false;
+        search:
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                BlockPos candidate = new BlockPos(x, y, z);
+                BlockState candidateState = mc.world.getBlockState(candidate);
+                if (!candidateState.isAir() && !candidateState.isLiquid()) {
+                    hasBlock = true;
+                    break search;
+                }
+            }
+        }
+        if(!hasBlock){
+            return pos;
+        }
+        Box velocityTest = box.offset(0, 0.500001F,0);
+        List<BlockPos> blockPoses = CollisionUtil.getIntersectingBlockPositions(mc.world, velocityTest, false);
+        for (var re : blockPoses){
+            if(pos.getY() == re.getY()){
+                return re;
+            }
+        }
+        return pos;
+    }
+    private Stream<ItemStack> streamInvContent(ItemStack stack){
+        var cp = stack.get(DataComponentTypes.CONTAINER);
+        return cp == null ? Stream.empty() : cp.stream();
+    }
+    private Stream<ItemStack> streamItems(ItemStack stack){
+        return Streams.concat(
+            Stream.of(stack),
+            streamInvContent(stack).flatMap(this::streamItems)
+        );
+    }
+    private int cooldownInvSummary = 0;
     public void handleTick() {
         // base flag ticks;
         lastInLava = mc.player.isInLava();
@@ -197,6 +258,23 @@ public class PlayerStateManager extends BaseModule {
         lastInWeb = inWeb;
         inWeb = false;
         lastInWall = MovTasks.isCollidingWithEnvironment(mc.player);
+        lastVelocityAffectingPos = calculateVelocityAffectingPos();
+        if(++cooldownInvSummary > 10 || inventorySummary == null || inventoryTotalSummary == null){
+            cooldownInvSummary = 0;
+            LinkedHashMap<ItemStackSample,Integer> map0 = new LinkedHashMap<>();
+            mc.player.getInventory().getMainStacks().stream().filter(v -> !v.isEmpty())
+                    .forEach(s -> map0.merge(ItemStackSample.of(s), s.getCount(), Integer::sum));
+            inventorySummary = map0;
+            LinkedHashMap<ItemStackSample, Integer> map1 = new LinkedHashMap<>(map0.size());
+            for (var re : map0.entrySet()){
+                int count = re.getValue();
+                streamItems(re.getKey().sample()).
+                    filter(v -> !v.isEmpty())
+                    .forEach(s -> map1.merge(ItemStackSample.of(s), s.getCount() * count, Integer::sum));
+            }
+
+            inventoryTotalSummary = map1;
+        }
         // push vec3d
         Vec3d nowPos = new Vec3d(lastX, lastY, lastZ);
         last40Positions.addLast(nowPos);
@@ -261,6 +339,21 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
+    public void onClickSlot(Event<SlotActionType> eventClick){
+        cooldownInvSummary = 100;
+    }
+
+    public void onInventoryUpdate(Event<InventoryS2CPacket> event){
+        cooldownInvSummary = 100;
+    }
+    public void onInventorySlotUpdate(Event<ScreenHandlerSlotUpdateS2CPacket> event){
+        cooldownInvSummary = 100;
+    }
+
+    public void onInventoryClose(Event<CloseHandledScreenC2SPacket> event){
+        cooldownInvSummary = 100;
+    }
+
     public void handlePearlTeleport() {
         fallDistance = 0;
     }
@@ -283,6 +376,9 @@ public class PlayerStateManager extends BaseModule {
         lastYaw = 0.0F;
         lastSprint = false;
         lastInput = PlayerInputUtils.EMPTY.clone();
+        lastVelocityAffectingPos = BlockPos.ORIGIN;
+        inventoryTotalSummary = null;
+        inventorySummary = null;
     }
 
     public void onTickEnd(Event<ClientTickEndC2SPacket> tickEndPacket) {
@@ -379,10 +475,16 @@ public class PlayerStateManager extends BaseModule {
             if (packet.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING) {
                 int uid = player.getId();
                 popMap.merge(uid, 1, Integer::sum);
-            } else if (packet.getStatus() == EntityStatuses.PLAY_DEATH_SOUND_OR_ADD_PROJECTILE_HIT_PARTICLES) {
-                popMap.remove(player.getId());
             }
         }
+        if(packet.getStatus() == EntityStatuses.PLAY_DEATH_SOUND_OR_ADD_PROJECTILE_HIT_PARTICLES) {
+            popMap.remove(packet.entityId);
+        }
+    }
+
+    public void onRespawn(Event<PlayerRespawnS2CPacket> eventRespawn){
+        if(checkNull())return;
+        popMap.remove(mc.player.getId());
     }
 
     public void onLeave(Event<Void> event) {

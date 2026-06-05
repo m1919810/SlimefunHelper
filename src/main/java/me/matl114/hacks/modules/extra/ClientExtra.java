@@ -36,7 +36,10 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.BlockEntityTickInvoker;
 
 public class ClientExtra extends BaseModule {
-    public ClientExtra() {}
+    public static ClientExtra INSTANCE;
+    public ClientExtra() {
+        INSTANCE = this;
+    }
 
     public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
 

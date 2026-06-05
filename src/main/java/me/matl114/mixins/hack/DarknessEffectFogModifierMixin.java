@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.render.RenderExtra;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.fog.DarknessEffectFogModifier;
@@ -25,7 +26,7 @@ public abstract class DarknessEffectFogModifierMixin {
             cancellable = true)
     private void applyDarknessModifier(
             LivingEntity cameraEntity, float darkness, float tickProgress, CallbackInfoReturnable<Float> cir) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderExtra.INSTANCE.noEffect.get()) {
             cir.setReturnValue(darkness);
         }
     }
@@ -45,7 +46,7 @@ public abstract class DarknessEffectFogModifierMixin {
             float f,
             RenderTickCounter renderTickCounter,
             CallbackInfo ci) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderExtra.INSTANCE.noEffect.get()) {
             ci.cancel();
         }
     }
