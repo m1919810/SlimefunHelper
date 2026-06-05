@@ -12,6 +12,8 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.NetworkUtils;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
@@ -28,7 +30,15 @@ import net.minecraft.util.math.Vec3d;
 public class DisablerManager extends BaseModule {
     public static DisablerManager INSTANCE;
 
+
     public final ModulePath disablers = makePath(Configs.TEST_CONFIG, "disablers");
+
+    public final FlagRef enable = builder(disablers.addEnable(), Boolean.class)
+        .defaultValue(true)
+        .build();
+
+    public final KeyBindRef hotkey = moduleEntry(disablers.addHotkey(), new MultiKeyBind(), disablers.addEnable(), moduleMeta(()-> this.currentAC))
+        .build();
 
     public final EnumRef<SupportAC> currentAC = builder(disablers.add("current-ac"), SupportAC.class)
             .defaultValue(SupportAC.NONE)
@@ -53,6 +63,7 @@ public class DisablerManager extends BaseModule {
     public DisablerManager() {
         super("Disabler");
         INSTANCE = this;
+        bindFlag(enable);
     }
 
     boolean grimSelfCheckDisabler;
@@ -84,15 +95,18 @@ public class DisablerManager extends BaseModule {
     boolean hasPlaceThisTick;
 
     public boolean isGrimSelfCheckDisabled() {
-        return currentAC.get() == SupportAC.GRIM && grimSelfCheck.get() && grimSelfCheckDisabler;
+        return enable.get() && currentAC.get() == SupportAC.GRIM && grimSelfCheck.get() && grimSelfCheckDisabler;
     }
 
     public boolean isMultiPlaceCheckDisabled() {
-        return switch (currentAC.get()) {
-            case GRIM -> isGrimMultiPlaceDisabled();
-            case MATRIX -> false;
-            default -> true;
-        };
+        if(enable.get()){
+            return switch (currentAC.get()) {
+                case GRIM -> isGrimMultiPlaceDisabled();
+                case MATRIX -> false;
+                default -> true;
+            };
+        }
+        return false;
     }
 
     public boolean isMultiRotPlaceCheckDisabled() {
@@ -100,15 +114,18 @@ public class DisablerManager extends BaseModule {
     }
 
     public boolean isRotationPlaceCheckDisabled() {
-        return switch (currentAC.get()) {
-            case GRIM -> isGrimSelfCheckDisabled();
-            case MATRIX -> false;
-            default -> true;
-        };
+        if(enable.get()){
+            return switch (currentAC.get()) {
+                case GRIM -> isGrimSelfCheckDisabled();
+                case MATRIX -> false;
+                default -> true;
+            };
+        }
+        return false;
     }
 
     public boolean isGrimMultiPlaceDisabled() {
-        return currentAC.get() == SupportAC.GRIM && (grimMultiplace.get());
+        return enable.get() && currentAC.get() == SupportAC.GRIM && (grimMultiplace.get());
     }
 
     public void onDisconnect(Event<Void> eventDisconnect) {
@@ -117,7 +134,7 @@ public class DisablerManager extends BaseModule {
 
     boolean hasAnyPlaceActionGrimQueue = false;
 
-    public void flushACPlaceQueue() {
+    private void flushACPlaceQueue() {
         switch (currentAC.get()) {
             case GRIM -> {
                 // flush ghost blocks
@@ -135,7 +152,7 @@ public class DisablerManager extends BaseModule {
         Direction direction = hitResult.getSide();
         Vec3d cursor = hitResult.getPos();
         BlockPos blockPos = hitResult.getBlockPos();
-        if (hasAnyPlaceActionGrimQueue && autoFlushPlaceQueue.get()) {
+        if (enable.get() && hasAnyPlaceActionGrimQueue && autoFlushPlaceQueue.get()) {
             flushACPlaceQueue();
         }
         hasAnyPlaceActionGrimQueue = true;
@@ -143,7 +160,7 @@ public class DisablerManager extends BaseModule {
         if (grimSelfCheckDisabler) {
             hasPlaceThisTick = false;
         }
-        if (hasPlaceThisTick) {
+        if (hasPlaceThisTick && enable.get() && currentAC.get() == SupportAC.GRIM && grimMultiplace.get()) {
             if (direction != lastDirection
                     || !Objects.equals(cursor, lastCursor)
                     || !Objects.equals(blockPos, lastPos)) {

@@ -1,4 +1,4 @@
-package me.matl114.mixins.render;
+package me.matl114.mixins.gui;
 
 import me.matl114.accessors.gui.CustomFocusBehaviourScreenAccess;
 import net.fabricmc.api.EnvType;

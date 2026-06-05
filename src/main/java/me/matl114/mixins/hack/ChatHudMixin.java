@@ -5,6 +5,8 @@ import java.util.List;
 import me.matl114.accessors.access.ChatHudAccess;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.chat.ChatExtra;
+import me.matl114.hacks.modules.render.SleepMode;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.hud.ChatHud;
@@ -38,7 +40,7 @@ public abstract class ChatHudMixin implements ChatHudAccess {
             at = @At(value = "INVOKE", target = "Ljava/util/List;remove(I)Ljava/lang/Object;", shift = At.Shift.BEFORE),
             cancellable = true)
     private void resizeChatHistoryMaxLength(ChatHudLine message, CallbackInfo ci) {
-        if (ChatTasks.getChatExtra().overrideChatHistoryLength.get()) {
+        if (ChatExtra.INSTANCE.overrideChatHistoryLength.get()) {
             int chat = ChatTasks.getChatExtra().chatHistoryLength.get();
             if (chat > 0) {
                 // 提前结束
@@ -53,8 +55,8 @@ public abstract class ChatHudMixin implements ChatHudAccess {
 
     @Inject(method = "isChatFocused", at = @At("HEAD"), cancellable = true)
     private void onSleepingChatScreenUseChatHud(CallbackInfoReturnable<Boolean> cir) {
-        if (RenderTasks.getSleepMode().isScreenSleeping()
-                && RenderTasks.getSleepMode().getCurrentRenderingSleeping() instanceof ChatScreen) {
+        if (SleepMode.INSTANCE.isScreenSleeping()
+                && SleepMode.INSTANCE.getCurrentRenderingSleeping() instanceof ChatScreen) {
             cir.setReturnValue(true);
         }
     }

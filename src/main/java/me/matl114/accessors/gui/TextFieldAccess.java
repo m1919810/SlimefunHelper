@@ -5,12 +5,6 @@ import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.gui.widget.ClickableWidget;
 
 public interface TextFieldAccess {
-    boolean isMultiLine();
-
-    String getTextContent();
-
-    void setTextContent(String value);
-
     void setListener(PropertyTracker<TextFieldAccess, String> tracker);
 
     public void setBorderColorProvider(ColorProvider provider);

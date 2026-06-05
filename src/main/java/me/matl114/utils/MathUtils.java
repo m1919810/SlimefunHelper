@@ -44,6 +44,32 @@ public class MathUtils {
         return new Box(pos);
     }
 
+    public static List<BlockPos> getOccupiedBlockPositions(Box box) {
+        int minX = (int) Math.floor(box.minX);
+        int maxX = (int) Math.ceil(box.maxX) - 1;
+        int minY = (int) Math.floor(box.minY);
+        int maxY = (int) Math.ceil(box.maxY) - 1;
+        int minZ = (int) Math.floor(box.minZ);
+        int maxZ = (int) Math.ceil(box.maxZ) - 1;
+
+        List<BlockPos> positions = new ArrayList<>((maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1));
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    positions.add(new BlockPos(x, y, z));
+                }
+            }
+        }
+        return positions;
+    }
+
+    /**
+     * 根据两个 Vec3d 点（最小和最大坐标）构建 Box 并获取占据的方块。
+     */
+    public static List<BlockPos> getOccupiedBlockPositions(Vec3d min, Vec3d max) {
+        return getOccupiedBlockPositions(new Box(min, max));
+    }
+
     public static Vec3d getVerticalWithSameXZ(Vec3d vec3d) {
         Vec3d direction = vec3d.normalize();
         return (direction.y != 0
@@ -164,7 +190,7 @@ public class MathUtils {
                 break;
             }
         }
-        if (datapoints < 3) {
+        if (datapoints < 2) {
             return vec3ds[vec3ds.length - 1];
         }
         Vec3d[] vec3ds1 = new Vec3d[datapoints];

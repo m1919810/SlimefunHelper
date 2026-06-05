@@ -24,8 +24,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Generic3x3ContainerScreen.class)
 public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3ContainerScreenHandler>
         implements TileInventoryScreen {
-    @Unique
-    private SlimefunDispensorSuggestBookWidget recipeBookWidget;
 
     @Unique
     private BlockPos pos;

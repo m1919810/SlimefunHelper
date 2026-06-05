@@ -1,4 +1,4 @@
-package me.matl114.mixins.render;
+package me.matl114.mixins.gui;
 
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
@@ -30,32 +30,12 @@ public abstract class EditBoxWidgetMixin extends ScrollableTextFieldWidget imple
     @Unique
     private static final ColorProvider ORIGIN_PROVIDER = McWidgetHelpers.getDefaultTextBoxColorProvider();
 
-    @Unique
-    public boolean isMultiLine() {
-        return false;
-    }
 
     @Unique
     public void setBorderColorProvider(ColorProvider provider) {
         this.boxColorProvider = provider == null ? ORIGIN_PROVIDER : provider;
     }
 
-    @Shadow
-    public abstract String getText();
-
-    @Unique
-    @Override
-    public String getTextContent() {
-        return getText();
-    }
-
-    @Shadow
-    public abstract void setText(String text);
-
-    @Unique
-    public void setTextContent(String value) {
-        setText(value);
-    }
 
     @Shadow
     public abstract void setChangeListener(Consumer<String> changeListener);

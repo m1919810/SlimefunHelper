@@ -346,7 +346,7 @@ public class MineBot extends BaseModule {
         BlockPos posCenter = posStanding.add(0, 1, 0);
         int lowest = minY.get();
         int highest = maxY.get();
-        for (var vec : MineTasks.getMineExtra().getBlocksAround()) {
+        for (var vec : MineExtra.INSTANCE.getBlocksAround()) {
             int x = vec.getX();
             int y = vec.getY();
             int z = vec.getZ();
@@ -374,7 +374,7 @@ public class MineBot extends BaseModule {
             Collections.reverse(yLevelList);
         }
         for (int y : yLevelList) {
-            for (var plate : MineTasks.getMineExtra().getPlatesAround()) {
+            for (var plate : MineExtra.INSTANCE.getPlatesAround()) {
                 int x = plate.x;
                 int z = plate.y;
                 BlockPos newPose = posCenter.add(x, y, z);
@@ -404,7 +404,7 @@ public class MineBot extends BaseModule {
             searchingWidth.add(i);
             searchingWidth.add(-i);
         }
-        for (var k = 0; k <= MineTasks.getMineExtra().getReachDistance(); ++k) {
+        for (var k = 0; k <= MineExtra.INSTANCE.getReachDistance(); ++k) {
             BlockPos currentCenter = posCenter.offset(facingDirection, k);
             for (var i = lowest; i < highest; ++i) {
                 BlockPos currentHeightCenter = currentCenter.add(0, i, 0);
@@ -453,7 +453,7 @@ public class MineBot extends BaseModule {
         int lowest = minY.get();
         int highest = maxY.get();
         List<BlockPos> availablePos = new ArrayList<>();
-        for (var vec : MineTasks.getMineExtra().getBlocksAround()) {
+        for (var vec : MineExtra.INSTANCE.getBlocksAround()) {
             int x = vec.getX();
             int y = vec.getY();
             int z = vec.getZ();

@@ -87,32 +87,20 @@ public class ChestESP extends BaseModule {
 
     public void onBlockEntityRender(Event<BlockEntity> blockEntityEvent) {}
 
-    public int tick4 = 0;
 
     public void onSwapRenderContent(Event<ClientPlayerEntity> clientPlayerEntityEvent) {
         if (checkNull()) return;
-        if (tick4 < 4) {
-            tick4 += 1;
+        renderPositions.clear();
 
-        } else {
-            renderPositions.clear();
-        }
         if (enable.get()) {
             for (var chunk : CommonUtils.chunks(false)) {
-                for (var blockEntities : ChunkAccess.of(chunk).blockEntities()) {
+                for (var blockEntities : ChunkAccess.of(chunk).blockEntityEntries()) {
                     if (typeFilter.get().test(blockEntities.getValue().getType())) {
                         renderPositions.put(blockEntities.getKey(), blockEntities.getValue());
                     }
                 }
             }
         }
-
-        //        tick4 = 0;
-        //        if(!collectingRenderPositions.isEmpty() || !renderPositions.isEmpty()){
-        //            renderPositions = collectingRenderPositions;
-        //            collectingRenderPositions = new HashMap<>();
-        //        }
-
     }
 
     public void onRender(Event<MatrixStack> render) {

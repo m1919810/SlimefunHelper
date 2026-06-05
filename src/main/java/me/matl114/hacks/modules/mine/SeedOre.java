@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.mine;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.JavaOps;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import java.awt.*;
@@ -18,10 +19,12 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.StringRef;
+import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.*;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.block.Block;
@@ -30,6 +33,10 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtLong;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
@@ -73,22 +80,9 @@ public class SeedOre extends BaseModule {
     private final Map<Long, Map<BlockPos, BlockState>> fakeOres = new ConcurrentHashMap<>();
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
-    public void onSeedMap(String json) {
-        JsonObject element = (JsonObject) JsonParser.parseString(json);
-        seedMap.clear();
-        for (Map.Entry<String, JsonElement> entry : element.entrySet()) {
-            String key = entry.getKey();
-            JsonElement value = entry.getValue();
-            seedMap.put(key, value.getAsLong());
-        }
-    }
 
     public void saveSeedMap() {
-        JsonObject obj = new JsonObject();
-        for (var entry : seedMap.object2LongEntrySet()) {
-            obj.addProperty(entry.getKey(), entry.getLongValue());
-        }
-        seedMapSave.set(gson.toJson(obj));
+        seedMapSave.write((Map<String, Long>)seedMap, JavaOps.INSTANCE);
     }
 
     public SeedOre() {
@@ -120,11 +114,21 @@ public class SeedOre extends BaseModule {
             .updateListener(Ore::reloadOreSettings)
             .build();
 
-    public final StringRef seedMapSave = builder(Configs.INTERNAL_CONFIG, SEED_MAP, String.class)
-            .defaultValue("{}")
-            .validator(Configs.JSON_VALIDATOR)
-            .updateListener(this::onSeedMap)
-            .build();
+    public final FileStorage seedMapSave = FileManager.getInstance().getInternalStorage(
+        "seed-storage.nbt"
+    );
+
+    {
+        NbtCompound nbt = seedMapSave.asReadOnly(NbtOps.INSTANCE);
+        seedMap.clear();
+        for (var entry : nbt.entrySet()) {
+            String key = entry.getKey();
+            NbtElement value = entry.getValue();
+            if(value instanceof NbtLong ll){
+                seedMap.put(key, ll.value());
+            }
+        }
+    }
 
     @Override
     public void registerAll() {

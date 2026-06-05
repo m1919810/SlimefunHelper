@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.task;
 
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.lang.ref.WeakReference;
@@ -37,14 +36,16 @@ import me.matl114.hacks.utils.config.NBTData;
 import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
-import me.matl114.managers.ScheduleService;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.config.*;
+import me.matl114.managers.file.FileStorage;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.IInputManager;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
+import me.matl114.utils.algorithms.SerialExecutor;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
@@ -68,13 +69,13 @@ public class ClickGui extends BaseModule {
             .build();
 
     public NBTRef<Vec2> widgetSize = builder(clickGui.add("widget-size"), Vec2.class)
-            .defaultValue(new Vec2(50, 13))
+            .defaultValue(new Vec2(55, 12))
             .build();
 
-    public NBTRef<NBTData> internalGuiData = builder(
-                    Configs.INTERNAL_CONFIG, clickGui.add("gui-data").toPath(), NBTData.class)
-            .defaultValue(new NBTData(new NbtCompound()))
-            .build();
+    public FileStorage internalGuiData = FileManager.getInstance().getInternalStorage(
+        "click-gui-data.nbt"
+    );
+
 
     public NBTRef<WrapColor> moduleListColor = builder(clickGui.add("gui-frame-style"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color("#984FDB")))
@@ -133,7 +134,7 @@ public class ClickGui extends BaseModule {
         if (mc.currentScreen instanceof ClickGuiMainScreen guiMain) {
             guiMain.close();
         }
-        internalGuiData.set(new NBTData(new NbtCompound()));
+        internalGuiData.write(new NbtCompound(), NbtOps.INSTANCE);
     }
 
     public List<String> getModules() {
@@ -143,8 +144,8 @@ public class ClickGui extends BaseModule {
     private static final String SEARCH_MODULE = "Search";
 
     public ClickGuiMetaData getClickGuiMetadata() {
-        NBTData data = internalGuiData.get();
-        var result = ClickGuiMetaData.CODEC.decode(NbtOps.INSTANCE, data.nbtElement());
+        NbtCompound data = internalGuiData.asReadOnly(NbtOps.INSTANCE);
+        var result = ClickGuiMetaData.CODEC.decode(NbtOps.INSTANCE, data);
         ClickGuiMetaData meta;
         if (result.isSuccess()) {
             meta = result.getOrThrow().getFirst();
@@ -163,7 +164,7 @@ public class ClickGui extends BaseModule {
     public void setClickGuiMeta(ClickGuiMetaData meta) {
         NbtElement element =
                 ClickGuiMetaData.CODEC.encodeStart(NbtOps.INSTANCE, meta).getOrThrow();
-        internalGuiData.set(new NBTData(element));
+        internalGuiData.write(element, NbtOps.INSTANCE);
     }
 
     public static final int DEFAULT_GAP = 5;
@@ -365,60 +366,52 @@ public class ClickGui extends BaseModule {
                 () -> (slideMeta.slidingDown ? subScreen2 : null), 0, expandHead.getHeight()));
         return subScreen;
     }
-
+    private final SerialExecutor taskExecutor = new SerialExecutor(CompletableFuture::runAsync);
     private DrawableWidget createSearchListContent(ClickGuiMetaData metaData) {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 0, 0);
         int buttonWidth = (int) widgetSize.get().x();
         int buttonHeight = (int) widgetSize.get().y();
         DynamicListWidget listWidget = new DynamicListWidget(0, buttonHeight, buttonWidth);
         subScreen.addDrawableChild(listWidget);
-        Runnable refreshListTask = () -> {
-            CompletableFuture.supplyAsync(
-                            () -> {
-                                String filter = metaData.searching;
-                                List<BaseModule> moduleFilter = new ArrayList<>();
-                                List<BaseModule> settingsFilter = new ArrayList<>();
-                                if (filter != null && !filter.isEmpty()) {
-                                    for (var group : HackModules.getModuleGroups()) {
-                                        getShowModuleList(group).forEach(module -> {
-                                            String moduleName = module.getName();
-                                            String moduleTranslationName =
-                                                    ChatUtils.textToPlainString(getModuleName(module));
-                                            // match any
-                                            if (FilterService.nameMatch(moduleName, filter)
-                                                    || (!Objects.equals(moduleName, moduleTranslationName)
-                                                            && FilterService.nameMatch(
-                                                                    moduleTranslationName, filter))) {
-                                                moduleFilter.add(module);
-                                            }
-                                            if (module.getEditableConfig().stream()
-                                                    .anyMatch((editable) -> {
-                                                        String settingsName =
-                                                                ChatUtils.parseTranslation(editable.keyName());
-                                                        return FilterService.nameMatch(settingsName, filter);
-                                                    })) {
-                                                settingsFilter.add(module);
-                                            }
-                                        });
-                                    }
-                                    return Pair.of(moduleFilter, settingsFilter);
-                                } else {
-                                    return null;
-                                }
-                            },
-                            ScheduleService.getSingleThreadScheduler())
-                    .thenAcceptAsync(
-                            (pair) -> {
-                                listWidget.clearChildren();
-                                if (pair != null) {
-                                    createSearchResultGroupSubList(
-                                            listWidget::addDrawableChild, "Name", pair.getFirst());
-                                    createSearchResultGroupSubList(
-                                            listWidget::addDrawableChild, "Setting", pair.getSecond());
-                                }
-                            },
-                            mc);
+        Runnable updateTask = ()->{
+            String filter = metaData.searching;
+            List<BaseModule> moduleFilter = new ArrayList<>();
+            List<BaseModule> settingsFilter = new ArrayList<>();
+            if (filter != null && !filter.isEmpty()) {
+                for (var group : HackModules.getModuleGroups()) {
+                    getShowModuleList(group).forEach(module -> {
+                        String moduleName = module.getName();
+                        String moduleTranslationName =
+                            ChatUtils.textToPlainString(getModuleName(module));
+                        // match any
+                        if (FilterService.nameMatch(moduleName, filter)
+                            || (!Objects.equals(moduleName, moduleTranslationName)
+                            && FilterService.nameMatch(
+                            moduleTranslationName, filter))) {
+                            moduleFilter.add(module);
+                        }
+                        if (module.getEditableConfig().stream()
+                            .anyMatch((editable) -> {
+                                String settingsName =
+                                    ChatUtils.parseTranslation(editable.keyName());
+                                return FilterService.nameMatch(settingsName, filter);
+                            })) {
+                            settingsFilter.add(module);
+                        }
+                    });
+                }
+                mc.execute(()->{
+                    listWidget.clearChildren();
+                    createSearchResultGroupSubList(
+                        listWidget::addDrawableChild, "Name", moduleFilter);
+                    createSearchResultGroupSubList(
+                        listWidget::addDrawableChild, "Setting", settingsFilter);
+                });
+            }else{
+                mc.execute(listWidget::clearChildren);
+            }
         };
+
         ContentDelegateWidget<TextFieldWidget> inputWidget = McWidgetHelpers.createTextFieldEditBox(
                 0,
                 0,
@@ -427,12 +420,12 @@ public class ClickGui extends BaseModule {
                 (v, t) -> {
                     if (!Objects.equals(t, metaData.searching)) {
                         metaData.setSearching(t);
-                        refreshListTask.run();
+                        taskExecutor.submit(updateTask);
                     }
                 },
                 metaData.searching);
         // initialize
-        refreshListTask.run();
+        updateTask.run();
         subScreen.addDrawableChild(inputWidget);
         return subScreen;
     }

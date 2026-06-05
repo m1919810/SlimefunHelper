@@ -74,7 +74,7 @@ public class AntiAXray extends BaseModule {
 
         BlockPos currentPlayer = mc.player.getSteppingPos().add(0, 1, 0);
         int limitation = 0;
-        for (var posDelta : MineTasks.getMineExtra().getBlocksAround()) {
+        for (var posDelta : MineExtra.INSTANCE.getBlocksAround()) {
             BlockPos testPos = currentPlayer.add(posDelta);
             if (!MineTasks.distanceOutOfReach(testPos, mc.player.getEyePos())) {
                 if (!simpleDetection.contains(testPos)) {

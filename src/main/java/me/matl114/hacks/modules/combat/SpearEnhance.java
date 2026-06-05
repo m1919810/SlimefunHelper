@@ -8,6 +8,9 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.KineticWeaponComponent;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -27,19 +30,19 @@ public class SpearEnhance extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onPreTick);
     }
 
-    public static boolean isUsingSpear() {
+    public static boolean isUsingSpear(PlayerEntity player) {
         // todo consider viaversion
-        return mc.player != null
-                && mc.player.isUsingItem()
-                && VItem.getInstance().isSpear(mc.player.getActiveItem());
+        return player != null
+                && player.isUsingItem()
+                && VItem.getInstance().isSpear(player.getActiveItem());
     }
 
-    public ItemStack getSpear() {
+    public static ItemStack getSpear() {
         return mc.player.getActiveItem();
     }
 
     public void onPreTick(Event<ClientPlayerEntity> tickEvent) {
-        if (isUsingSpear()) {
+        if (isUsingSpear(mc.player)) {
             ItemStack stack = getSpear();
             int maxKineticTime = getMaxKineticTime(stack);
             Hand hand = mc.player.getActiveHand();

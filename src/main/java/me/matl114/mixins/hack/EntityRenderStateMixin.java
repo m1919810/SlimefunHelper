@@ -17,8 +17,7 @@ public abstract class EntityRenderStateMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isFallFlying()Z"))
     private static boolean updateBipedRenderState(boolean original, @Local(argsOnly = true) LivingEntity livingEntity) {
         if (livingEntity.isFallFlying() && livingEntity == MinecraftClient.getInstance().player) {
-            ElytraExtra elytraExtra = MovTasks.getElytraExtra();
-            if (elytraExtra.renderFix.get() && elytraExtra.isCurrentArmorGliding()) {
+            if (ElytraExtra.INSTANCE.renderFix.get() && ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
                 return false;
             }
         }

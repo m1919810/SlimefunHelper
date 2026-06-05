@@ -11,18 +11,17 @@ import me.matl114.accessors.moonrise.MoonriseVoxelShapeAccess;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.utils.world.CachedShapeData;
 import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.EmptyBlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.*;
 
 public final class CollisionUtil {
 
@@ -1985,6 +1984,99 @@ public final class CollisionUtil {
         }
 
         return ret;
+    }
+
+    /**
+     * 获取与指定 AxisAlignedBB 存在碰撞的所有方块位置。
+     *
+     * @param world     世界
+     * @param box       目标碰撞箱（世界坐标）
+     * @param loadChunks 是否加载未加载的区块（若为 false，未加载区块内的方块将被忽略）
+     * @return 与之相交的方块位置列表（按遍历顺序，无去重）
+     */
+    public static List<BlockPos> getIntersectingBlockPositions(World world, Box box, boolean loadChunks) {
+        List<BlockPos> result = new ArrayList<>();
+
+        // 扩展一个极小容差，确保边界方块被包含（与原版碰撞检测一致）
+        final double eps = COLLISION_EPSILON;
+
+        int minBlockX = MathHelper.floor(box.minX - eps) - 1;
+        int maxBlockX = MathHelper.floor(box.maxX + eps) + 1;
+        int minBlockY = MathHelper.floor(box.minY - eps) - 1;
+        int maxBlockY = MathHelper.floor(box.maxY + eps) + 1;
+        int minBlockZ = MathHelper.floor(box.minZ - eps) - 1;
+        int maxBlockZ = MathHelper.floor(box.maxZ + eps) + 1;
+
+        int minChunkX = minBlockX >> 4;
+        int maxChunkX = maxBlockX >> 4;
+        int minChunkY = minBlockY >> 4;
+        int maxChunkY = maxBlockY >> 4;
+        int minChunkZ = minBlockZ >> 4;
+        int maxChunkZ = maxBlockZ >> 4;
+
+        ChunkManager chunkManager = world.getChunkManager();
+        BlockPos.Mutable mutablePos = new BlockPos.Mutable();
+
+        for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+            for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+                Chunk chunk = chunkManager.getChunk(chunkX, chunkZ, ChunkStatus.FULL, loadChunks);
+                if (chunk == null) continue;
+
+                ChunkSection[] sections = chunk.getSectionArray();
+                int bottomSection = world.getBottomSectionCoord();
+
+                for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+                    int sectionIdx = chunkY - bottomSection;
+                    if (sectionIdx < 0 || sectionIdx >= sections.length) continue;
+                    ChunkSection section = sections[sectionIdx];
+                    if (section == null || section.isEmpty()) continue;
+
+                    // 获取该段内的方块状态容器
+                    PalettedContainer<BlockState> states = section.getBlockStateContainer();
+
+                    // 本段内需要迭代的局部坐标范围
+                    int minX = (chunkX == minChunkX) ? (minBlockX & 15) : 0;
+                    int maxX = (chunkX == maxChunkX) ? (maxBlockX & 15) : 15;
+                    int minY = (chunkY == minChunkY) ? (minBlockY & 15) : 0;
+                    int maxY = (chunkY == maxChunkY) ? (maxBlockY & 15) : 15;
+                    int minZ = (chunkZ == minChunkZ) ? (minBlockZ & 15) : 0;
+                    int maxZ = (chunkZ == maxChunkZ) ? (maxBlockZ & 15) : 15;
+
+                    for (int y = minY; y <= maxY; y++) {
+                        int blockY = (chunkY << 4) + y;
+                        for (int z = minZ; z <= maxZ; z++) {
+                            int blockZ = (chunkZ << 4) + z;
+                            for (int x = minX; x <= maxX; x++) {
+                                int blockX = (chunkX << 4) + x;
+                                int localIndex = x + (z << 4) + (y << 8);
+                                BlockState state = states.get(localIndex);
+
+                                // 快速跳过空气（可选，但可提升性能）
+                                if (state.isAir()) continue;
+
+                                // 获取碰撞形状（优先使用 Moonrise 常量形状）
+                                VoxelShape shape = MoonriseBlockStateBaseAccess.of(state).moonrise$getConstantCollisionShape();
+                                if (shape == null) {
+                                    mutablePos.set(blockX, blockY, blockZ);
+                                    shape = state.getCollisionShape(world, mutablePos, ShapeContext.absent());
+                                }
+                                if (shape.isEmpty()) continue;
+
+                                // 将形状便宜到世界坐标
+                                shape = shape.offset(blockX, blockY, blockZ);
+
+                                // 使用已有的快速相交检测方法
+                                if (voxelShapeIntersectNoEmpty(shape, box)) {
+                                    result.add(new BlockPos(blockX, blockY, blockZ));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     public static boolean isHardColliding(Entity entity) {

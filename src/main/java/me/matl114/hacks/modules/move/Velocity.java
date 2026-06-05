@@ -143,7 +143,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                 && explosions.get()
                 && mc.player != null
                 && (eventExplosion.context.playerKnockback().isPresent()
-                        || eventExplosion.context.center().squaredDistanceTo(mc.player.getPos()) < 9.0D)) {
+                        || eventExplosion.context.center().squaredDistanceTo(mc.player.getPos()) < 25.0D)) {
             canCancel += 1;
         }
     }
@@ -194,11 +194,11 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                         return;
                     }
 
-                    if (!mc.player.isFallFlying() && mc.player.isOnGround() && mode.get() == Mode.GRIM_LEGACY_GROUND) {
+                    if (!mc.player.isFallFlying() &&(!onGroundOnly.get() || mc.player.isOnGround()) && mode.get() == Mode.GRIM_LEGACY_GROUND) {
                         handleVelocityGrimLegacy(event);
                         return;
                     }
-                    if (!mc.player.isFallFlying() && mc.player.isOnGround() && mode.get() == Mode.GRIM_NEW_GROUND) {
+                    if (!mc.player.isFallFlying() && (!onGroundOnly.get() || mc.player.isOnGround()) && mode.get() == Mode.GRIM_NEW_GROUND) {
                         handleVelocityGrimNew(event);
                         return;
                     }

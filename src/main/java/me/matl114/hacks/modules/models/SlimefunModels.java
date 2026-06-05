@@ -4,12 +4,13 @@ import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import me.matl114.ModConfig;
+
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.ListRef;
 import me.matl114.utils.Debug;
@@ -113,7 +114,7 @@ public class SlimefunModels extends BaseModule {
 
     public void loadCustomModelDatas() {
         try {
-            final File configFile = ModConfig.loadOrUseInternal("slimefun-item-model.yml");
+            final File configFile = FileManager.loadOrUseInternal("slimefun-item-model.yml");
             Yaml yaml = new Yaml();
             try (FileReader inputStream = new FileReader(configFile)) {
                 // 将 YAML 文件内容加载到 Map 中

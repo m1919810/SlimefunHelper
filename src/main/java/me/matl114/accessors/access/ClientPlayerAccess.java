@@ -18,10 +18,6 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
 
     public void clearKeepedInventory(boolean closeInv);
 
-    //    public void resyncPos();
-    //    public void resyncRot();
-    //    public void syncLocationPackets();
-    public boolean isContinueMoving();
 
     @Nonnull
     public static ClientPlayerAccess of(@Nonnull ClientPlayerEntity player) {
@@ -42,16 +38,4 @@ public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
     public boolean isForceNoFall();
 
     public void setForceNoFall(boolean fall);
-
-    public abstract double getLastX();
-
-    public abstract double getLastBaseY();
-
-    public abstract double getLastZ();
-
-    public abstract boolean getLastOnGround();
-
-    public abstract float getLastPitch();
-
-    public abstract float getLastYaw();
 }

@@ -174,14 +174,17 @@ public class WorldScanner extends BaseModule {
     public void validateAndClearSearchResult(boolean strict) {
         if (checkNull()) return;
         Set<ChunkPos> blocks = new HashSet<>(currentSearchingResult.keySet());
-        for (var key : blocks) {
+        var iter = currentSearchingResult.entrySet().iterator();
+        while (iter.hasNext()){
+            var entry = iter.next();
+            var key = entry.getKey();
             Chunk chunk = mc.world.getChunkManager().getChunk(key.x, key.z, ChunkStatus.FULL, false);
             if (chunk == null) {
-                currentSearchingResult.remove(key);
+                iter.remove();
             } else {
-                Map<BlockPos, BlockState> stateMap = currentSearchingResult.get(key);
+                Map<BlockPos, BlockState> stateMap = entry.getValue();
                 if (stateMap == null || stateMap.isEmpty()) {
-                    currentSearchingResult.remove(key);
+                    iter.remove();
                 } else {
                     if (strict) {
                         // should we add this?

@@ -1,11 +1,15 @@
 package me.matl114.hooks;
 
 import baritone.api.BaritoneAPI;
+import baritone.api.IBaritone;
 import baritone.api.Settings;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import baritone.api.event.events.ChatEvent;
 import me.matl114.utils.config.ValueAccessor;
+import net.minecraft.client.MinecraftClient;
 
 public abstract class BaritoneHooks implements IHooks {
 
@@ -21,8 +25,12 @@ public abstract class BaritoneHooks implements IHooks {
         }
         return instance;
     }
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
+    public abstract boolean handleCommand(String command);
 
     public abstract <T> ValueAccessor<T> getSetting(String name);
+
+    public abstract boolean isElytraProcessing();
 
     public static class Impl extends BaritoneHooks {
         Settings settings;
@@ -47,8 +55,26 @@ public abstract class BaritoneHooks implements IHooks {
         }
 
         @Override
+        public boolean handleCommand(String command) {
+            ChatEvent var4 = new ChatEvent(command);
+            IBaritone var3;
+            if ((var3 = BaritoneAPI.getProvider().getBaritoneForPlayer(mc.player)) != null) {
+                var3.getGameEventHandler().onSendChatMessage(var4);
+                if (var4.isCancelled()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
         public <T> ValueAccessor<T> getSetting(String name) {
             return (ValueAccessor<T>) settingsMap.get(name.toLowerCase(Locale.ROOT));
+        }
+
+        @Override
+        public boolean isElytraProcessing() {
+            return BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().isActive();
         }
     }
 
@@ -60,8 +86,18 @@ public abstract class BaritoneHooks implements IHooks {
         }
 
         @Override
+        public boolean handleCommand(String command) {
+            return false;
+        }
+
+        @Override
         public <T> ValueAccessor<T> getSetting(String name) {
             return null;
+        }
+
+        @Override
+        public boolean isElytraProcessing() {
+            return false;
         }
     }
 }

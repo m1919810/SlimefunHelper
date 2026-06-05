@@ -1,4 +1,4 @@
-package me.matl114.mixins.hack;
+package me.matl114.mixins.command;
 
 import com.mojang.brigadier.suggestion.Suggestions;
 import java.util.concurrent.CompletableFuture;
@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ChatInputSuggestor.class)
-public abstract class ChatInputSuggestorMixin {
+public abstract class ChatInputSuggestorEvents {
     @Shadow
     @Final
     TextFieldWidget textField;

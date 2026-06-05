@@ -20,10 +20,12 @@ public class PacketEventChannel extends EventChannelDispatcher<Packet<?>> {
 
     @Override
     public boolean handleValue(Event<Packet<?>> express) {
-        if (express.context.getPacketId().side() == NetworkSide.CLIENTBOUND) {
-            getPacketReceiveChannel().handleValue(express);
-        } else {
-            getPacketSendChannel().handleValue(express);
+        if(express.context.getPacketId() != null){
+            if (express.context.getPacketId().side() == NetworkSide.CLIENTBOUND) {
+                getPacketReceiveChannel().handleValue(express);
+            } else {
+                getPacketSendChannel().handleValue(express);
+            }
         }
         return super.handleValue(express);
     }
