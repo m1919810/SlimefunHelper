@@ -1486,7 +1486,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if (last) {
                 mc.player.setOnGround(true);
                 Vec3d look = args.getRotationVector();
-                Debug.chat("Snap");
+                // Debug.chat("Snap");
                 LegacySnapRotManager.INSTANCE.snapAt(look, true);
                 mc.player.setOnGround(false);
                 last = false;

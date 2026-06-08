@@ -4,8 +4,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.*;
 import java.util.List;
 import java.util.function.Function;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
+import me.matl114.utils.render.RenderCollector;
 import me.matl114.utils.world.RegionPos;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
@@ -355,5 +357,68 @@ public class RenderUtils {
         Matrix4f projView = mc.gameRenderer.getBasicProjectionMatrix(g);
         Vec3d camera = getCameraPos();
         return translate3DTo2D(modelView, projView, camera, pos);
+    }
+
+    public static RenderCollector<Box> createBoxCollector(
+            boolean drawOutline, boolean drawSolid, boolean drawTraceLine) {
+        return new RenderCollector.Impl<Box>() {
+            @Override
+            public void render(MatrixStack matrices) {
+                if (entries.isEmpty()) return;
+                Vec3d cameraPos = getCameraPos().negate();
+                if (drawSolid) {
+                    VRender.getInstance()
+                            .createQuadsLayer(
+                                    (operation, vertexConsumer) -> {
+                                        if (!entries.isEmpty()) {
+                                            for (IndexEntry<Box> boxEntry : entries) {
+                                                var box = boxEntry.val().offset(cameraPos);
+                                                operation.drawSolidBoxQuad(
+                                                        matrices,
+                                                        vertexConsumer,
+                                                        box.getMinPos(),
+                                                        box.getMaxPos(),
+                                                        boxEntry.index());
+                                            }
+                                        }
+                                    },
+                                    true);
+                }
+                if (drawOutline || drawTraceLine) {
+                    VRender.getInstance().createLinesLayer((op, vtx) -> {
+                        if (drawOutline) {
+                            for (var re : entries) {
+                                var box = re.val().offset(cameraPos);
+                                op.drawOutlinedBox(matrices, vtx, box.getMinPos(), box.getMaxPos(), re.index());
+                            }
+                        }
+                        if (drawTraceLine) {
+                            Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
+                            for (var re : entries) {
+                                var box = re.val().getCenter().add(cameraPos);
+                                op.drawLine(matrices, vtx, traceOrigin, box, re.index());
+                            }
+                        }
+                    });
+                }
+            }
+        };
+    }
+
+    public static RenderCollector<Vec3d> createTracerCollector() {
+        return new RenderCollector.Impl<Vec3d>() {
+            @Override
+            public void render(MatrixStack matrices) {
+                if (entries.isEmpty()) return;
+                Vec3d cameraPos = getCameraPos().negate();
+                Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
+                VRender.getInstance().createLinesLayer((op, vtx) -> {
+                    for (var re : entries) {
+                        var box = re.val().add(cameraPos);
+                        op.drawLine(matrices, vtx, traceOrigin, box, re.index());
+                    }
+                });
+            }
+        };
     }
 }

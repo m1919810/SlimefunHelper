@@ -1,6 +1,5 @@
 package me.matl114.hooks.mixin.baritone;
 
-import baritone.api.process.PathingCommand;
 import baritone.api.utils.IPlayerController;
 import baritone.behavior.InventoryBehavior;
 import baritone.process.elytra.ElytraBehavior;
@@ -24,7 +23,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
@@ -187,7 +186,7 @@ public abstract class ElytraBehaviourMixin {
                             target = "Lbaritone/process/elytra/ElytraBehavior;logVerbose(Ljava/lang/String;)V",
                             ordinal = 2),
             require = 0)
-    private void onNoSolution3(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
+    private void onNoSolution3(CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
             Debug.chat(ChatUtils.stringToText(
                     "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (All)"));
@@ -203,7 +202,7 @@ public abstract class ElytraBehaviourMixin {
                             target = "Lbaritone/process/elytra/ElytraBehavior;logVerbose(Ljava/lang/String;)V",
                             ordinal = 3),
             require = 0)
-    private void onNoSolution4(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
+    private void onNoSolution4(CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
             Debug.chat(ChatUtils.stringToText(
                     "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (Pitch)"));

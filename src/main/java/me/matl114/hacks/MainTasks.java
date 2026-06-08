@@ -1,20 +1,28 @@
 package me.matl114.hacks;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Listener;
 import me.matl114.gui.complex.config.ConfigurateNewStyleScreen;
+import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModuleEntry;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.task.ClickGui;
+import me.matl114.hacks.modules.task.ConfigManager;
 import me.matl114.hacks.modules.task.ConfigSystem;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.Config;
+import me.matl114.managers.config.ConfigEnum;
 import me.matl114.utils.ApiMethod;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.MinecraftClient;
@@ -23,7 +31,10 @@ import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 
@@ -33,7 +44,13 @@ public class MainTasks {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public static List<String> getSpecialTaskName() {
-        return List.of("xray_demo", "writable_book_generate", "strider_fix", "client_crash", "client_lite_crash");
+        return List.of(
+                "xray_demo",
+                "writable_book_generate",
+                "strider_fix",
+                "client_crash",
+                "client_lite_crash",
+                "check_translation_key");
     }
 
     @ApiMethod
@@ -56,6 +73,9 @@ public class MainTasks {
                 }
                 case "client_lite_crash" -> {
                     clientLiteCrash(args);
+                }
+                case "check_translation_key" -> {
+                    checkTranslationKey(args);
                 }
             }
         } catch (Throwable e) {
@@ -100,6 +120,86 @@ public class MainTasks {
                     throw new CrashException(new CrashReport("test crash", new NullPointerException()));
                 },
                 1);
+    }
+
+    public static void checkTranslationKey(String[] args) {
+        Set<String> checkedKeys = new LinkedHashSet<>();
+        List<String> missingKeys = new ArrayList<>();
+        int wrapperConfigCount = 0;
+        int moduleEntryCount = 0;
+        int configEnumCount = 0;
+        int clickGuiModuleNameCount = 0;
+        int configIndexCount = 0;
+
+        for (ModuleGroup group : HackModules.getModuleGroups()) {
+            for (BaseModule module : group.getModules()) {
+                for (var configWrapper : module.getEditableConfig()) {
+                    ++wrapperConfigCount;
+                    checkTranslationKey(configWrapper.keyName(), checkedKeys, missingKeys);
+                }
+                for (ModuleEntry entry : module.getModuleEntries().toList()) {
+                    ++moduleEntryCount;
+                    checkTranslationKey(entry.getTranslationKey(), checkedKeys, missingKeys);
+                }
+                ++clickGuiModuleNameCount;
+                if (module.hasEditableConfig()) {
+                    checkTranslationText(MainTasks.clickGui.getModuleName(module), checkedKeys, missingKeys);
+                }
+            }
+        }
+
+        for (var enumGroup : ConfigEnum.registeredConfigs.values()) {
+            for (ConfigEnum configEnum : enumGroup.values()) {
+                ++configEnumCount;
+                checkTranslationText(configEnum.getDisplay(), checkedKeys, missingKeys);
+            }
+        }
+
+        for (Config config : Config.getConfigs()) {
+            Set<String> indexes = new LinkedHashSet<>();
+            for (String path : config.getVisiblePaths()) {
+                String[] cut = Config.cutToPath(path);
+                if (cut.length > 0) {
+                    indexes.add(cut[0]);
+                }
+            }
+            for (String index : indexes) {
+                ++configIndexCount;
+                checkTranslationKey("config.index." + index, checkedKeys, missingKeys);
+            }
+        }
+
+        if (missingKeys.isEmpty()) {
+            Debug.chat(Text.literal("翻译检查完成，WrapperConfig=" + wrapperConfigCount + "，快捷键入口=" + moduleEntryCount
+                            + "，ConfigEnum=" + configEnumCount + "，ClickGui模块名=" + clickGuiModuleNameCount
+                            + "，config.index=" + configIndexCount + "，未发现缺失翻译")
+                    .formatted(Formatting.GREEN));
+            return;
+        }
+        Debug.chat(Text.literal("翻译检查完成，WrapperConfig=" + wrapperConfigCount + "，快捷键入口=" + moduleEntryCount
+                        + "，ConfigEnum=" + configEnumCount + "，ClickGui模块名=" + clickGuiModuleNameCount
+                        + "，config.index=" + configIndexCount + "，共发现缺失翻译 " + missingKeys.size() + " 个")
+                .formatted(Formatting.YELLOW));
+        for (String key : missingKeys) {
+            Debug.chat(Text.literal(" - " + key).formatted(Formatting.RED));
+        }
+    }
+
+    private static void checkTranslationText(Text text, Set<String> checkedKeys, List<String> missingKeys) {
+        if (text instanceof MutableText mutableText
+                && mutableText.getContent() instanceof TranslatableTextContent translatableTextContent) {
+            checkTranslationKey(translatableTextContent.getKey(), checkedKeys, missingKeys);
+        }
+    }
+
+    private static void checkTranslationKey(String translationKey, Set<String> checkedKeys, List<String> missingKeys) {
+        if (translationKey == null || translationKey.isEmpty() || !checkedKeys.add(translationKey)) {
+            return;
+        }
+        if (!ChatUtils.hasTranslation(translationKey)) {
+            missingKeys.add(translationKey);
+            Debug.info("Missing translation key for", translationKey);
+        }
     }
 
     public static void fillFakeSubChunkWithStone() {}
@@ -155,9 +255,13 @@ public class MainTasks {
     @Getter
     public static ClickGui clickGui;
 
+    @Getter
+    public static ConfigManager configManager;
+
     private static void initModule(ModuleManager m) {
         configSystem = new ConfigSystem().register(m);
         clickGui = new ClickGui().register(m);
+        configManager = new ConfigManager().register(m);
     }
 
     // TODO: add entity inspect in info command

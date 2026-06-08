@@ -1,7 +1,10 @@
 package me.matl114.gui;
 
+import com.google.common.collect.ImmutableMap;
 import java.awt.*;
 import java.util.List;
+import java.util.Map;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -28,4 +31,14 @@ public interface Constants {
 
     public static final Identifier EXPAND_GUI_ON_SPRITE = new Identifier("slimefunhelper", "gui/triangle");
     public static final Identifier EXPAND_GUI_OFF_SPRITE = new Identifier("slimefunhelper", "gui/triangle_90");
+
+    public static final Map<EquipmentSlot, Identifier> EMPTY_SLOT_TO_SPRITE =
+            ImmutableMap.<EquipmentSlot, Identifier>builder()
+                    .put(EquipmentSlot.MAINHAND, new Identifier("slimefunhelper", "gui/empty_main_hand_slot"))
+                    .put(EquipmentSlot.OFFHAND, new Identifier("slimefunhelper", "gui/empty_armor_slot_shield"))
+                    .put(EquipmentSlot.FEET, new Identifier("slimefunhelper", "gui/empty_armor_slot_boots"))
+                    .put(EquipmentSlot.LEGS, new Identifier("slimefunhelper", "gui/empty_armor_slot_leggings"))
+                    .put(EquipmentSlot.CHEST, new Identifier("slimefunhelper", "gui/empty_armor_slot_chestplate"))
+                    .put(EquipmentSlot.HEAD, new Identifier("slimefunhelper", "gui/empty_armor_slot_helmet"))
+                    .build();
 }

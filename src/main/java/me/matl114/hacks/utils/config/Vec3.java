@@ -44,7 +44,7 @@ public record Vec3(double x, double y, double z) implements NBTParsable<Vec3> {
                         .addDrawableChild(DisplayWidget.instance(2 * half, 0, dy, dy)
                                 .setRenderHandler(
                                         new ButtonElement(TextProvider.of(Text.literal("Z:")), ButtonAction.empty())))
-                        .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.DOUBLE_TYPE)
+                        .addDrawableChild(new TypeConvertAttrKeyValue<>(s, thirdWrapper, NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(2 * half + dy, 0, half - dy, dy));
             },
             new Vec3(0, 0, 0));

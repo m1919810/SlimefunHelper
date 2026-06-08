@@ -52,7 +52,13 @@ public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegiste
     }
 
     default Map<String, ConfigEnum> getMap() {
+        ensureRegistered((Class<? extends Enum>) this.getClass());
         return registeredConfigs.get(this.getConfigEnumType());
+    }
+
+    public static <T extends Enum<T>> Map<String, T> getMap(Class<T> configEnum) {
+        ConfigEnum enumValue = (ConfigEnum) configEnum.getEnumConstants()[0];
+        return (Map) enumValue.getMap();
     }
 
     static void onLoad(Class<?> clazz) {

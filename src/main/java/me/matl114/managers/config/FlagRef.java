@@ -39,7 +39,7 @@ public class FlagRef extends Ref<Boolean> {
 
     @Override
     public Object getAsPrimitive() {
-        return flag ? "true" : "false";
+        return flag;
     }
 
     @Override

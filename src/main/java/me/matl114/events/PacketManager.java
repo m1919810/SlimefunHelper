@@ -41,6 +41,7 @@ public class PacketManager {
     public static final WeakHashMap<Packet<?>, List<Consumer<Event<Packet<?>>>>> postSendQueue = new WeakHashMap<>();
 
     public static void schedulePostSendPacket(Packet<?> post, Packet<?> packet) {
+        if (packet == null) return;
         schedulePostCallback(post, (ev) -> {
             ClientConnection conn = ev.getArgs(0);
             conn.send(packet);
@@ -48,12 +49,14 @@ public class PacketManager {
     }
 
     public static <T extends Packet<?>> void schedulePostCallback(T post, Runnable packet) {
+        if (packet == null) return;
         schedulePostCallback(post, (ev) -> {
             packet.run();
         });
     }
 
     public static <T extends Packet<?>> void schedulePostCallback(T post, Consumer<Event<T>> packet) {
+        if (packet == null) return;
         postSendQueue.computeIfAbsent(post, (kv) -> new ArrayList<>()).add((Consumer) packet);
     }
 

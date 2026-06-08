@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.DoubleStream;
 import me.matl114.commands.MainCommand;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -38,6 +39,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -56,6 +58,9 @@ public class TargetSelector extends BaseModule {
         EntityUtils.parseEntityWhiteList(regex, va);
         types = va;
     }
+
+    public final FlagRef grimExpandEyeHeight =
+            flagBuilder(attack.add("use-grim-expand-eye-height")).build();
 
     public final StringRef whiteListTypes = builder(attack.add("whitelist"), StringRef.TYPE)
             .defaultValue("^(monster|!endermite|player)$")
@@ -123,6 +128,44 @@ public class TargetSelector extends BaseModule {
         registerCommandBootstrap(this::onFriendCommandBootstrap);
     }
 
+    private static final double[] FALL_FLYING_EYE_HEIGHTS = {0.4D, 1.62D, 1.27D};
+    private static final double[] STANDING_EYE_HEIGHTS = {1.62D, 1.27D, 0.4D};
+
+    public DoubleStream getPotentialEyeHeights() {
+        if (grimExpandEyeHeight.get()) {
+            double scale = mc.player.getScale();
+            if (mc.player.isFallFlying() || mc.player.isUsingRiptide() || mc.player.isSwimming()) {
+                return DoubleStream.concat(
+                        Arrays.stream(FALL_FLYING_EYE_HEIGHTS).map(s -> s * scale),
+                        DoubleStream.of(mc.player.dimensions.eyeHeight()));
+            }
+            return DoubleStream.concat(
+                    Arrays.stream(STANDING_EYE_HEIGHTS).map(s -> s * scale),
+                    DoubleStream.of(mc.player.dimensions.eyeHeight()));
+        }
+        return DoubleStream.of(mc.player.dimensions.eyeHeight());
+    }
+
+    public boolean isWithinAttackRange(Vec3d pos, Box box, double range) {
+        return getPotentialEyeHeights()
+                .mapToObj(s -> pos.add(0, s, 0))
+                .anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
+    }
+
+    public Vec3d getBestAttackEyePos(Vec3d pos, Box box) {
+        var poses = getPotentialEyeHeights().mapToObj(s -> pos.add(0, s, 0)).toList();
+        Vec3d playerPos = pos.add(mc.player.getEyePos().subtract(mc.player.getPos()));
+        double s2 = box.squaredMagnitude(playerPos);
+        for (var pp : poses) {
+            double s3 = box.squaredMagnitude(pp);
+            if (s3 < s2) {
+                s2 = s3;
+                playerPos = pp;
+            }
+        }
+        return playerPos;
+    }
+
     public void onAddFriend() {
         if (mc.crosshairTarget.getType() == HitResult.Type.ENTITY
                 && ((EntityHitResult) mc.crosshairTarget).getEntity() instanceof PlayerEntity player
@@ -187,6 +230,14 @@ public class TargetSelector extends BaseModule {
         return checkWeapon(target, true) && canAttack(target);
     }
 
+    public boolean isInFriendList(PlayerEntity e){
+        List<String> list = friendList.get();
+        if (list != null && list.contains(e.getNameForScoreboard())) {
+            return true;
+        }
+        return false;
+    }
+
     public boolean isNotFriend(Entity e) {
         if (e instanceof PlayerEntity pl) {
             String name = pl.getNameForScoreboard();
@@ -196,10 +247,11 @@ public class TargetSelector extends BaseModule {
                 return false;
             }
             if (!attackFriend.get()) {
-                List<String> list = friendList.get();
-                if (list != null && list.contains(name)) {
+                if(isInFriendList(pl)){
                     return false;
                 }
+
+
             }
             return true;
         } else {
@@ -329,10 +381,9 @@ public class TargetSelector extends BaseModule {
     public boolean isTargetInRange(Entity e, double nearby, int ticks) {
         if (mc.player == null) return false;
         nearby = Math.max(nearby, CombatExtra.INSTANCE.getAttackAtTargetRange(e));
-        Vec3d predictionPos =
-                mc.player.getEyePos().add(mc.player.getVelocity().multiply(mc.player.isFallFlying() ? ticks : 0));
-        double sq = e.getBoundingBox().squaredMagnitude(predictionPos);
-        return sq < MathUtils.s2(nearby);
+        Vec3d predictedPlayerPos =
+                mc.player.getPos().add(mc.player.getVelocity().multiply(mc.player.isFallFlying() ? ticks : 0));
+        return isWithinAttackRange(predictedPlayerPos, e.getBoundingBox(), nearby);
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect) {

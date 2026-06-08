@@ -8,7 +8,7 @@ import net.minecraft.client.MinecraftClient;
 
 public class HotKeyUtils {
     private static final FlagRef hotkeyNoScreen =
-            Configs.HOTKEY_CONFIG.getBoolean(Configs.HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN);
+            Configs.MISC_CONFIG.getBoolean(Configs.HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN);
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public static boolean isValidState() {

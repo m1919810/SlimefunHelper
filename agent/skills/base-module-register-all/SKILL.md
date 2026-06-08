@@ -12,9 +12,9 @@ disable-model-invocation: true
 
 - 模块命名与 `ModulePath`
 - 启用开关 `FlagRef` 与 `bindFlag`
+- 向ModuleList注册可显示的模块
 - 常见配置项注册
 - 事件监听注册
-- 热键注册
 - 命令注册
 - 生命周期放置位置
 
@@ -26,8 +26,10 @@ disable-model-invocation: true
 
 - 事件监听放在 `registerAll()`
 - 命令注册放在 `registerAll()`
-- 热键优先通过配置构建器注册
-- 模块启用状态通过 `bindFlag(enable)` 绑定
+- 所有监听器和命令Bootstrap均为本模块的方法化为的lambda
+- 所有监听器和命令必须要通过BaseModule中的指定方法注册
+- 所有配置项必须通过BaseModule中的指定方法创建builder注册
+- 模块启用状态通过在<init>中创建 `bindFlag(enable)` 绑定
 - 运行时状态初始化放 `onEnableModule()`
 - 需要主动清理的任务或外部状态放 `onDisableModule()`
 
@@ -63,7 +65,7 @@ public class MyModule extends BaseModule {
 
 ### 模块显示名
 
-有显示名需求时用构造器：
+有显示名需求(默认没有)时用构造器：
 
 ```java
 super("Config");
@@ -74,6 +76,7 @@ super("BeaconPlus");
 否则直接默认类名。
 
 ### 根路径
+ModulePath集成了Config和Path，指定了保存路径
 
 优先先抽一个 `ModulePath` 根，再从根派生：
 
@@ -82,7 +85,7 @@ public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "attack");
 public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
 ```
 
-子项统一写成：
+子项统一通过根项追加生成：
 
 ```java
 attack.add("whitelist")
@@ -91,7 +94,7 @@ moveSafety.add("auto-resync-pos")
 
 ## Flag 绑定
 
-模块型功能默认都要有 enable flag，并在构造器中绑定：
+如果该模块希望可以在菜单中快捷启用/关闭， 则其需要指定一个 enable flag，并在构造器中绑定：
 
 ```java
 public final FlagRef enable = flagBuilder(module.add("enable")).build();
@@ -101,13 +104,14 @@ public MyModule() {
 }
 ```
 
-如果模块不是典型开关模块，可以不绑，但要明确是工具模块还是命令模块。
+这类模型通常只有一个主要功能
 
-## Ref 注册套路
+## Ref(配置项) 注册套路
 
 ### FlagRef
 
 ```java
+// 默认值为false，不可修改
 public final FlagRef enable = flagBuilder(module.add("enable")).build();
 
 public final FlagRef log = builder(module.add("log"), Boolean.class)
@@ -173,15 +177,34 @@ public final NBTRef<Vec2> pos = builder(module.add("pos"), Vec2.class)
 ```
 
 ### KeyBindRef
-
+运行功能形快捷键：
 ```java
 public final KeyBindRef openMenu = hotkey(module.add("open-menu"))
         .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_G))
         .registerHotkey(HotKeyUtils.wrapAsHandler(this::openMenu))
         .build();
 ```
+切换形快捷键在下章
 
-## 常用监听器写法
+## 注册到ModuleList
+我们有一些功能会注册到ModuleList中， 其中 ModuleEntry是我们注册的东西
+
+一个ModuleEntry并不和一个BaseModule绑定， 一个BaseModule可以注册多个ModuleEntry
+
+只要有一个FlagRef和配套的KeyBind用于切换该FlagRef即可注册ModuleEntry
+
+```java
+public final FlagRef enable = flagBuilder(module.add("enable")).build();
+
+// 通过调用moduleEntry方法将enable绑定到该快捷键并自动注册ModuleEntry
+public final KeyBindRef hotkey = moduleEntry(module.add("hotkey"), new MultiKeyBind(), module.add("enable"))
+    .build();
+// 可以通过该方法设置动态附加给ModuleEntry的metadata， 让其显示例如当前模式等
+public final KeyBindRef hotkey = moduleEntry(module.add("hotkey"), new MultiKeyBind(), module.add("enable"), ()-> Text.literal("当前的模式..."))
+    .build();
+```
+
+## 常用配置项注意事项
 
 ### 配置 validator
 
@@ -203,11 +226,6 @@ public final KeyBindRef openMenu = hotkey(module.add("open-menu"))
 .updateListener(v -> typesDebug = getDebugTypes(v))
 ```
 
-原则：
-
-- 放纯同步逻辑
-- 只做派生缓存刷新、编译、索引重建
-- 不在这里注册事件或命令
 
 ### listValidator
 
@@ -226,7 +244,7 @@ public final KeyBindRef openMenu = hotkey(module.add("open-menu"))
 .hideConfig()
 ```
 
-## 事件监听注册
+## 监听注册
 
 统一放在 `registerAll()`。
 
@@ -242,12 +260,12 @@ public void registerAll() {
 ```
 
 ## 常用监听器类别
+监听channel定义在Listener和RenderListener两个类中
 
 ### 基础生命周期 / tick
 
-- `Listener.getPostGameTick()`
-- `Listener.getPreTick()`
-- `Listener.getWorldSwitchPoint()`
+- `Listener.getPostGameTick()` // post tick
+- `Listener.getPreGameTick()` // pre tick
 
 ### 网络包精确监听
 
@@ -257,8 +275,16 @@ public void registerAll() {
 registerListener(Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetBack);
 ```
 
-### 自定义事件
+如果包含了全部入站/出站包，可以使用
+```java
+registerListener(Listener.getPacketPoint().getPacketSendChannel(), this::onSetBack);
+registerListener(Listener.getPacketPoint().getPacketReceiveChannel(), this::onSetBack);
+```
 
+### 自定义事件
+注： 常用的channel:
+- ModulePreset.class, 事件发送于玩家使用preset指令切换反作弊配置，如果某些配置需要基于反作弊变化，则需要注册其监听器自动修改模式
+- FlightVelocity.class, 事件发送于飞行控制模块的决策过程。通过修改FlightVelocity可以修改鞘翅飞行/动量飞行的飞行决策
 ```java
 registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
 ```
@@ -274,13 +300,16 @@ public final KeyBindRef actionKey = hotkey(module.add("action"))
         .build();
 ```
 
-### 包一层模块上下文
+### 包一层上下文
+用于让该快捷键在打开其他屏幕/玩家不在游戏中 的时候不起作用
+如果该功能涉及游戏修改，那么最好需要使用
 
 ```java
 .registerHotkey(HotKeyUtils.wrapAsHandler(this::openConfigMenu))
 ```
 
 ### 开关配置热键
+(仅包含不需要注册为ModuleEntry的开关)
 
 ```java
 public final KeyBindRef toggleKey = toggleHotkey(
@@ -290,17 +319,8 @@ public final KeyBindRef toggleKey = toggleHotkey(
         .build();
 ```
 
-### 模块入口热键
-
-用于把热键和 toggle/config 元数据一起挂到模块入口：
-
-```java
-public final KeyBindRef entry = moduleEntry(
-                module.add("hotkey"),
-                new MultiKeyBind(KeyCode.KEY_R),
-                module.add("enable"))
-        .build();
-```
+### 模块热键
+在ModuleEntry处已经讲过了
 
 ## 命令注册
 
@@ -314,8 +334,29 @@ public void registerAll() {
 }
 ```
 
-### 命令入口方法形态
+### 命令体系简介
+命令包含若干类型节点：用来操纵参数流以及响应
+- Task : 接受后面所有的参数，执行指定任务，并返回接受状态
+- Tree : 接受一个参数，并基于该参数dispatch到子节点， 返回子节点的接收状态
+- List : 不接受参数, 直接将参数流依次推送向子节点直到某个子节点返回了接受的接受状态
+- Bridge : 接受一个参数，并要求该参数与指定名字相同，如果相同则将参数流推送给子节点，否则返回不接受
+- Delegate : 将参数流直接推送给delegate
+- Main : 结构为一个delegate的List，相当于直接将参数流推送给List节点，当被“外部”调用的时候，会在参数流前面追加MainName（并标记为已接受）
+- 
+我们的MainCommand构成：一个AbstractMain
 
+### 命令入口方法形态
+向MainCommand的List节点中注册一个命令节点时，要先分清你要的是哪一层：
+
+- `mainBuilder()`：直接把 `Tree` 节点塞进 `MainCommand` 的 `List` 根节点
+- `subMainBuilder()`：先用同名 `Bridge` 节点包一层，再把里面的 `Tree` 节点塞进 `MainCommand` 的 `List` 根节点
+
+这里有一个关键点：
+
+- `mainBuilder()` 返回的 `Tree` 节点名字本身不重要，因为它是被直接放进 `List` 根节点里按顺序尝试接收的
+- 只有 `subMainBuilder()` 这种“先包一层 Bridge”的入口，`Tree` 的名字才会作为外部命令分发名真正生效
+
+直接注册 `Tree` 节点的例子：
 ```java
 public void bootStrapTargetCommand(MainCommand mainCommand) {
     TreeSubCommand main = mainCommand.mainBuilder().name("target").build();
@@ -329,7 +370,26 @@ public void bootStrapTargetCommand(MainCommand mainCommand) {
                     .complete())
             .complete();
 }
+
+registerCommandBootstrap(this::bootStrapTargetCommand);
 ```
+
+需要把整棵树作为一个具名子命令暴露时，用 `subMainBuilder()`：
+
+```java
+public void bootStrapConfigCommand(MainCommand mainCommand) {
+    TreeSubCommand main = mainCommand.subMainBuilder().name("config").build();
+    main.subBuilder(SubCommand.taskBuilder())
+            .name("open")
+            .post(e -> e.executor(CommandContext.run(this::onOpen)))
+            .complete();
+}
+```
+
+### 不推荐的方案
+可以注册一个SubCommand Factory 通过registerCommands和registerSubCommands注册入MainCommand 
+
+其中 两者的区别在于registerCommands直接将实例加入MainCommand的List节点中， 而registerSubCommands会先包装一个Bridge节点（用提供的name）再加入List节点
 
 ### 命令处理函数常见形态
 
@@ -358,20 +418,14 @@ public void onCancel() {}
 
 - `registerListener(...)`
 - `registerCommandBootstrap(...)`
-- 极少量一次性初始化入口
+
 
 ### onEnableModule
 
-放运行时开启动作：
-
 - 清空计数器
 - 重置缓存状态
-- 打开某个活动流程
 
 ### onDisableModule
-
-放运行时关闭动作：
-
 - 取消任务
 - 回滚临时状态
 - 清空本模块持有的运行期引用
@@ -394,11 +448,4 @@ public void onCancel() {}
 
 ## 完成模块基础注册时的检查顺序
 
-1. 是否存在模块根 `ModulePath`
-2. 是否存在 enable flag，且需要时已 `bindFlag`
-3. 配置项是否都走构建器注册
-4. `validator` / `updateListener` 是否只做配置层逻辑
-5. 监听器是否都在 `registerAll()`
-6. 命令是否都在 `registerAll()`
-7. 热键是否通过构建器注册
-8. `onEnableModule` / `onDisableModule` 是否只处理运行时状态
+无需检查，用户会自行检查

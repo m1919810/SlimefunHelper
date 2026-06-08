@@ -71,8 +71,8 @@ public class PacketDebugger extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle);
-        registerListener(Listener.getPacketPostSendPoint(), this::onPacketSend, Integer.MAX_VALUE);
+        registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle, Integer.MIN_VALUE);
+        registerListener(Listener.getPacketPostSendPoint(), this::onPacketSend, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint(), this::onPacket);
     }
 

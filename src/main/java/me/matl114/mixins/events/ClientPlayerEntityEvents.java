@@ -146,13 +146,13 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             boolean lastSprinting,
             CallbackInfo ci) {
         this.movementManager = new LegalMovementManager();
-        Listener.getPlayerInitConfiguration().broadcast((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
 
     @Inject(
             method = "tickMovement",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick()V", shift = At.Shift.AFTER))
     public void onPostInputTick(CallbackInfo ci) {
+        if (!checkClientPlayer()) return;
         PlayerInput currentInput = this.input.playerInput;
         if (!Listener.getPlayerKeyboardInputTick().isEmpty()) {
             Listener.getPlayerKeyboardInputTick().handleValue(new Event<>(this.input, false, false));
@@ -175,6 +175,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                             target = "Lnet/minecraft/client/network/AbstractClientPlayerEntity;tick()V",
                             shift = At.Shift.BEFORE))
     public void prePlayerTick(CallbackInfo ci) {
+        if (!checkClientPlayer()) return;
         this.movementManager.preProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
 
@@ -190,6 +191,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                             shift = At.Shift.AFTER),
             cancellable = true)
     public void onAfterTick(CallbackInfo ci) {
+        if (!checkClientPlayer()) return;
         Event<ClientPlayerEntity> event = new Event<>((ClientPlayerEntity) (AbstractClientPlayerEntity) this, true);
         Listener.getClientPlayerSendMovementPoint().handleValue(event);
         if (hasVehicle()) {
@@ -249,6 +251,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))
     public void postwrapperPlayerMovementSentTick(CallbackInfo ci) {
+        if (!checkClientPlayer()) return;
         onPostPlayerMovementTick((ClientPlayerEntity) (Object) this);
     }
 
@@ -259,6 +262,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Override
     public boolean checkGliding() {
+        if (!checkClientPlayer()) return super.checkGliding();
         boolean fallflying = this.isFallFlying();
         boolean shouldSwitch = false;
         if (!fallflying) {

@@ -20,11 +20,8 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ColorUtils;
-import me.matl114.utils.InteractUtils;
-import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.RenderUtils;
-import me.matl114.versioned.api.VRender;
+import me.matl114.utils.*;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.util.math.MatrixStack;
@@ -33,7 +30,7 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 
@@ -104,8 +101,9 @@ public class PrinterRewrite extends BaseModule {
     }
 
     int countDown;
-    final Set<BlockPos> placeFailureBlocks = new HashSet<>();
-    final Set<BlockPos> placeSuccessBlocks = new HashSet<>();
+    //    final Set<BlockPos> placeFailureBlocks = new HashSet<>();
+    //    final Set<BlockPos> placeSuccessBlocks = new HashSet<>();
+    final RenderCollector<Box> drawOutlines = RenderUtils.createBoxCollector(true, false, false);
 
     public void onPreInputEvent(Event<Void> event) {
         if (++countDown > delay.get()) {
@@ -113,8 +111,9 @@ public class PrinterRewrite extends BaseModule {
         } else {
             return;
         }
-        placeFailureBlocks.clear();
-        placeSuccessBlocks.clear();
+        //        placeFailureBlocks.clear();
+        //        placeSuccessBlocks.clear();
+        drawOutlines.clear();
         if (enable.get() && LitematicaHooks.getInstance().isEnabled()) {
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
             BlockPos posStanding = mc.player.getSteppingPos();
@@ -154,11 +153,13 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public void putCanNotPlace(BlockPos pos) {
-        placeFailureBlocks.add(pos);
+        //        placeFailureBlocks.add(pos);
+        drawOutlines.submit(MathUtils.getBlockBox(pos), ColorUtils.withAlphaInt(Color.RED.getRGB(), 1.0F));
     }
 
     public void putSuccessPlace(BlockPos pos) {
-        placeSuccessBlocks.add(pos);
+        //        placeSuccessBlocks.add(pos);
+        drawOutlines.submit(MathUtils.getBlockBox(pos), ColorUtils.withAlphaInt(Color.GREEN.getRGB(), 1.0F));
     }
 
     public boolean doPlace(BlockPos pos, BlockState targetState, boolean useAirPlace) {
@@ -174,15 +175,18 @@ public class PrinterRewrite extends BaseModule {
         if (result != null && InteractUtils.getBlockPlacement(needBlock, mc.player, mc.world, result) != null) {
             FlagRef enableRotateFix = InteractionTasks.getBlockRotate().enable2;
             FlagRef enableLegalLook = InteractionTasks.getBlockRotate().legal;
+            EnumRef<Configs.BypassMode> enableRot = InteractionTasks.getBlockRotate().bypassMode2;
             boolean state = enableRotateFix.get();
             boolean state2 = enableLegalLook.get();
+            Configs.BypassMode bypassMode = enableRot.get();
             if (!state) {
                 enableRotateFix.set(true);
             }
-            if (state2) {
+            if (!state2) {
                 // cancel legal look fix because we here handle the look, do not duplicate
-                enableLegalLook.set(false);
+                enableLegalLook.set(true);
             }
+            enableRot.set(Configs.BypassMode.NO_BYPASS);
             try {
                 Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(idx);
                 if (callback == null) {
@@ -198,9 +202,10 @@ public class PrinterRewrite extends BaseModule {
                 if (!state) {
                     enableRotateFix.set(false);
                 }
-                if (state2) {
-                    enableLegalLook.set(true);
+                if (!state2) {
+                    enableLegalLook.set(false);
                 }
+                enableRot.set(bypassMode);
             }
         } else {
             putCanNotPlace(pos);
@@ -221,26 +226,7 @@ public class PrinterRewrite extends BaseModule {
         if (enable.get() && render.get()) {
             RenderUtils.startDrawVirtual(stack);
             try {
-                VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
-                    Vec3d camerPos = RenderUtils.getCameraPos();
-                    for (var bx : placeFailureBlocks) {
-                        operation.drawOutlinedBox(
-                                stack,
-                                vertexConsumer,
-                                Vec3d.of(bx).subtract(camerPos),
-                                Vec3d.of(bx).add(1, 1, 1).subtract(camerPos),
-                                ColorUtils.withAlphaInt(Color.RED.getRGB(), 1.0F));
-                    }
-
-                    for (var bx : placeSuccessBlocks) {
-                        operation.drawOutlinedBox(
-                                stack,
-                                vertexConsumer,
-                                Vec3d.of(bx).subtract(camerPos),
-                                Vec3d.of(bx).add(1, 1, 1).subtract(camerPos),
-                                ColorUtils.withAlphaInt(Color.GREEN.getRGB(), 1.0F));
-                    }
-                }));
+                drawOutlines.render(stack);
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }
@@ -250,6 +236,7 @@ public class PrinterRewrite extends BaseModule {
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         switch (event.context.getValue()) {
             case HACKING, VANILLA -> mode.set(Configs.LegalInteractMode.NONE);
+            case AC_GRIM_LEGACY -> mode.set(Configs.LegalInteractMode.LEGACY_SLIENT_ROT);
             default -> mode.set(Configs.LegalInteractMode.DELAY_MOVEMENT);
         }
     }

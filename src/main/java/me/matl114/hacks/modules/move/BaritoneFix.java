@@ -30,9 +30,9 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         INSTANCE = this;
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
-        MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
     }
 
     public final ModulePath fix = makePath(Configs.MOV_CONFIG, "baritone.fix");
@@ -46,13 +46,11 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     public final FlagRef enableEmergencyLandingFix =
             flagBuilder(fix.add("emergency-landing-fix")).build();
 
-    public final FlagRef disableInventoryCheck = flagBuilder(fix.add("disable-inventory-check"))
-            .updateListener(s -> {
-                if (s) {
-                    setAllowInventoryToTrue();
-                }
-            })
-            .build();
+    public final FlagRef disableInventoryCheck =
+            flagBuilder(fix.add("disable-inventory-check")).build();
+
+    public final FlagRef enableInventoryFireworks =
+            flagBuilder(fix.add("enable-inventory-fireworks")).build();
 
     public final FlagRef enableGhostHandFireworks =
             flagBuilder(fix.add("enable-firework-swap")).build();
@@ -60,13 +58,8 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     public final FlagRef enableBaritoneCommandProtect =
             flagBuilder(fix.add("enable-baritone-command-protect")).build();
 
-    public final FlagRef emergencyFixToLog = flagBuilder(fix.add("change-landing-to-log"))
-            .updateListener(s -> {
-                if (s) {
-                    setDisconnectWhenArrive();
-                }
-            })
-            .build();
+    public final FlagRef emergencyFixToLog =
+            flagBuilder(fix.add("change-landing-to-log")).build();
 
     public final FlagRef pauseElytraProcess =
             flagBuilder(fix.add("baritone-conditional-pause")).build();
@@ -98,44 +91,15 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         registerListener(Listener.getChatSend(), this::onChatCommand);
     }
 
-    private void setAllowInventoryToTrue() {
-        if (this.allowInventory != null && !this.allowInventory.getValue()) {
-            this.allowInventory.setValue(true);
-            if (mc.player != null) {
-                Debug.chat(ChatUtils.stringToText("&c[BaritoneFix] &fSet baritone settings allowInventory to true"));
-            }
-        }
-    }
-
-    private void setDisconnectWhenArrive() {
-        if (this.disconnectOnArrival != null && !this.disconnectOnArrival.getValue()) {
-            this.disconnectOnArrival.setValue(true);
-            if (mc.player != null) {
-                Debug.chat(
-                        ChatUtils.stringToText("&c[BaritoneFix] &fSet baritone settings disconnectOnArrival to true"));
-            }
-        }
-    }
-
     public ValueAccessor<Integer> durabilitySetting;
     public ValueAccessor<Integer> fireworkSetting;
-    public ValueAccessor<Boolean> allowInventory;
-    public ValueAccessor<Boolean> disconnectOnArrival;
     public ValueAccessor<String> commandPrefix;
 
     private void initializeBaritoneSettings() {
-        if (durabilitySetting == null
-                || fireworkSetting == null
-                || allowInventory == null
-                || disconnectOnArrival == null
-                || commandPrefix == null) {
+        if (durabilitySetting == null || fireworkSetting == null || commandPrefix == null) {
             durabilitySetting = BaritoneHooks.getInstance().<Integer>getSetting("elytraMinimumDurability");
             fireworkSetting = BaritoneHooks.getInstance().<Integer>getSetting("elytraMinFireworksBeforeLanding");
-            allowInventory = BaritoneHooks.getInstance().<Boolean>getSetting("allowInventory");
-            disconnectOnArrival = BaritoneHooks.getInstance().<Boolean>getSetting("disconnectOnArrival");
             commandPrefix = BaritoneHooks.getInstance().getSetting("prefix");
-            setAllowInventoryToTrue();
-            setDisconnectWhenArrive();
         }
     }
 

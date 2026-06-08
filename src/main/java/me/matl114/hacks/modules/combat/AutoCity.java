@@ -22,6 +22,8 @@ public class AutoCity extends BaseModule {
 
     public final FlagRef playerOnly = flagBuilder(autoCity.add("player-only")).build();
 
+
+
     public AutoCity() {}
 
     @Override
@@ -38,7 +40,7 @@ public class AutoCity extends BaseModule {
                 || !targetEntity.isAlive()
                 || targetEntity.isRemoved()
                 || targetEntity.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
-                        > MathUtils.s2(MineExtra.INSTANCE.getReachDistance() + 1.0D)) {
+                        > MathUtils.s2(MineExtra.INSTANCE.getReachDistance() + 2.0D)) {
             targetEntity = null;
             targetPos = null;
         }

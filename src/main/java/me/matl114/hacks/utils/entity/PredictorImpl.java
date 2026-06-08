@@ -25,6 +25,9 @@ public class PredictorImpl implements Predictor {
         while (positions.size() > MAX_HISTORY) {
             positions.removeFirst();
         }
+        if (mc.player == this.owner) {
+            addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
+        }
     }
 
     public void onEntityPositionPost(Event<EntityPositionS2CPacket> event) {
@@ -74,7 +77,7 @@ public class PredictorImpl implements Predictor {
      * @param useTicksBefore 只使用过去 useTicksBefore 刻内的历史记录
      */
     public Vec3d predict(int ticksLater, int method, int useTicksBefore) {
-        if (ticksLater <= 0) return owner.getPos();
+        if (ticksLater == 0) return owner.getPos();
         int currentTick = Tasks.getTick();
         Vec3d currentPos = owner.getPos();
 
@@ -112,7 +115,9 @@ public class PredictorImpl implements Predictor {
         int lastTick0 = histRecords.get(histRecords.size() - 1).tick();
         int firstTick0 = histRecords.get(0).tick();
         int startTick0 = currentTick - useTicksBefore;
-
+        if (currentTick + ticksLater < firstTick0) {
+            return histRecords.get(0).vec3d();
+        }
         if (startTick0 >= lastTick0) {
             // 窗口内没有记录，直接返回当前
             return currentPos;
@@ -163,6 +168,9 @@ public class PredictorImpl implements Predictor {
             }
         }
         int futureSteps = blankTicks + ticksLater;
+        if (futureSteps <= 0) {
+            return history[history.length - 1 + futureSteps];
+        }
         switch (method) {
             case 1:
                 return MathUtils.linearPrediction(history, futureSteps);
