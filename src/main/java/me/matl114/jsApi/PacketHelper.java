@@ -95,7 +95,7 @@ public class PacketHelper {
                                             .getCurrentMiningPos(),
                                     dir));
                 }
-                PlayerInteractionAccess.of(mc.interactionManager).sendStartBreakPacket(blockPos, dir);
+                PlayerInteractionAccess.of(mc.interactionManager).startMiningBlock(blockPos, dir);
             }
         }
     }
@@ -189,13 +189,13 @@ public class PacketHelper {
 
     public static void sendStopMining() {
         var access = PlayerInteractionAccess.of(mc.interactionManager); // .sendStopBreakPacket();
-        access.sendStopBreakPacket(access.getCurrentMiningPos(), Direction.UP);
+        access.sendBreakPacket(access.getCurrentMiningPos(), Direction.UP);
     }
 
     public static void sendStopMining(Object pos, Object direction) {
         Direction dir = JsHelper.toEnum(direction, Direction.class);
         BlockPos blockPos = DataHelper.createBlockPos(pos);
-        PlayerInteractionAccess.of(mc.interactionManager).sendStopBreakPacket(blockPos, dir);
+        PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(blockPos, dir);
     }
 
     public static void sendStopMining(int x, int y, int z, Object direction) {}

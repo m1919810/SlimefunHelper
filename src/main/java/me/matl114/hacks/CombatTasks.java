@@ -243,6 +243,7 @@ public class CombatTasks {
 
     @Getter
     public static Blink blink;
+
     @Getter
     public static PearlFly pearlFly;
 

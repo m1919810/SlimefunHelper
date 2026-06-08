@@ -47,7 +47,8 @@ public class PacketMine extends BaseModule {
     public final FlagRef considerAirState =
             flagBuilder(packetMine.add("simulate-real-break")).build();
 
-    public final FlagRef airBreak = flagBuilder(packetMine.add("consider-air-break")).build();
+    public final FlagRef airBreak =
+            flagBuilder(packetMine.add("consider-air-break")).build();
 
     public final FlagRef swingHand = flagBuilder(packetMine.add("swing-hand")).build();
 
@@ -96,7 +97,7 @@ public class PacketMine extends BaseModule {
                                 mc.interactionManager.breakBlock(pos);
                             }
                             for (int i = 0; i < multiplePackets.get(); ++i) {
-                                if(swingHand.get())
+                                if (swingHand.get())
                                     mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
                                 PlayerInteractionAccess.of(mc.interactionManager)
                                         .sendStopBreakPacket(pos, dir);
@@ -116,15 +117,15 @@ public class PacketMine extends BaseModule {
     public IndexEntry<ItemStack> getCurrentUsableTool(BlockState currentState) {
         if (autoTool.get()) {
             BlockState calS;
-            if(currentState.isAir() || currentState.isLiquid()){
+            if (currentState.isAir() || currentState.isLiquid()) {
                 calS = Blocks.OBSIDIAN.getDefaultState();
-            }else {
+            } else {
                 calS = currentState;
             }
             var re = InventoryUtils.findBestPlayerItem(
                     item -> {
-                        return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                mc.player, calS, item);
+                        return (double)
+                                WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, calS, item);
                     },
                     true,
                     true);
@@ -149,10 +150,9 @@ public class PacketMine extends BaseModule {
         }
     }
 
-    public static class Post{
+    public static class Post {
         public static final Post INSTANCE = new Post();
-        private Post(){
 
-        }
+        private Post() {}
     }
 }
