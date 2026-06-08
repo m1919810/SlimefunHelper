@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
@@ -95,30 +94,31 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             .build();
 
     public final FlagRef inWallPacket = flagBuilder(criticals.add("in-wall-packet"))
-        .show(()-> mode.get().isNotIn(Mode.FREEZE, Mode.PACKET))
-        .build();
+            .show(() -> mode.get().isNotIn(Mode.FREEZE, Mode.PACKET))
+            .build();
 
     public final FlagRef inAirFreeze = builder(criticals.add("in-air-freeze"), Boolean.class)
-        .defaultValue(true)
-        .show(()-> mode.get().isIn(Mode.FREEZE))
-        .build();
+            .defaultValue(true)
+            .show(() -> mode.get().isIn(Mode.FREEZE))
+            .build();
 
-    public final FlagRef inWallFreezeCritical =  builder(criticals.add("in-wall-freeze"), Boolean.class)
-        .defaultValue(true)
-        .show(()-> mode.get().isIn(Mode.FREEZE))
-        .build();
+    public final FlagRef inWallFreezeCritical = builder(criticals.add("in-wall-freeze"), Boolean.class)
+            .defaultValue(true)
+            .show(() -> mode.get().isIn(Mode.FREEZE))
+            .build();
 
     public final DoubleRef customInWallJumpFreezeHeight = builder(criticals.add("custom-in-wall-height"), Double.class)
-        .defaultValue(0.05)
-        .validator(Configs.doubleRange(0, 1))
-        .show(()-> mode.get().isIn(Mode.FREEZE))
-        .build();
+            .defaultValue(0.05)
+            .validator(Configs.doubleRange(0, 1))
+            .show(() -> mode.get().isIn(Mode.FREEZE))
+            .build();
 
-    public final DoubleRef customInWallJumpPacketHeight = builder(criticals.add("custom-in-wall-packet-height"), Double.class)
-        .defaultValue(0.05)
-        .validator(Configs.doubleRange(0, 1))
-        .show(()-> mode.get().isNotIn(Mode.FREEZE))
-        .build();
+    public final DoubleRef customInWallJumpPacketHeight = builder(
+                    criticals.add("custom-in-wall-packet-height"), Double.class)
+            .defaultValue(0.05)
+            .validator(Configs.doubleRange(0, 1))
+            .show(() -> mode.get().isNotIn(Mode.FREEZE))
+            .build();
 
     static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -174,7 +174,9 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         // todo: handle wall critical, handle in wall critical
 
         // todo: handle sprint, handle inWater, handle condition
-        if(inWallPacket.get() && PlayerStateManager.INSTANCE.lastInWall && mode.get().isNotIn(Mode.FREEZE, Mode.PACKET)){
+        if (inWallPacket.get()
+                && PlayerStateManager.INSTANCE.lastInWall
+                && mode.get().isNotIn(Mode.FREEZE, Mode.PACKET)) {
             handleCriticalWall(event);
             return;
         }
@@ -280,12 +282,15 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         }
     }
 
-    public void handleCriticalWall(Event<PlayerInteractEntityC2SPacket> event){
+    public void handleCriticalWall(Event<PlayerInteractEntityC2SPacket> event) {
         var x = mc.player.getX();
         var y = mc.player.getY();
         var z = mc.player.getZ();
-        mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + customInWallJumpPacketHeight.get(), z, false, false));
-        mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + customInWallJumpPacketHeight.get() * 0.75, z, false, false));
+        mc.getNetworkHandler()
+                .sendPacket(VPacket.newPositionAndOnGround(x, y + customInWallJumpPacketHeight.get(), z, false, false));
+        mc.getNetworkHandler()
+                .sendPacket(VPacket.newPositionAndOnGround(
+                        x, y + customInWallJumpPacketHeight.get() * 0.75, z, false, false));
     }
 
     public void onSwing(Event<HandSwingC2SPacket> eventSwing) {
@@ -385,53 +390,62 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     public double getNotRecognizedAsDuplicateFullThreshold(boolean hasMove) {
         return (!hasMove && ViaFabricPlusHooks.isSupportDupRot()) ? 5E-4 : MIN_HEIGHT_THRESHOLD;
     }
+
     boolean lastShiftUp = false;
     boolean lastTickSetBack;
+
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         // todo: optimize using falldistance
         boolean lastLastOnGround = lastOnGroundT;
         lastOnGroundT = mc.player.isOnGround() && !movementManagerEvent.context.playerStatus.onGround;
-        if (enable.get() && mode.get() == Mode.FREEZE && shouldApplyCriticalConditionCheck() && !mc.player.isFallFlying()) {
+        if (enable.get()
+                && mode.get() == Mode.FREEZE
+                && shouldApplyCriticalConditionCheck()
+                && !mc.player.isFallFlying()) {
             boolean shouldApplyFreeze = false;
             how_to_apply:
             {
-                if(inWallFreezeCritical.get() && (PlayerStateManager.INSTANCE.lastUnderBlock || PlayerStateManager.INSTANCE.lastInWall)){
+                if (inWallFreezeCritical.get()
+                        && (PlayerStateManager.INSTANCE.lastUnderBlock || PlayerStateManager.INSTANCE.lastInWall)) {
                     // wall shit
                     double jumpMin = customInWallJumpFreezeHeight.get() / 4.0D;
-                    Box oldBox = mc.player.dimensions.getBoxAt( movementManagerEvent.context.playerStatus.pos);
-                    Set<BlockPos> moveablePoses = new HashSet<>( CollisionUtil.getIntersectingBlockPositions(mc.world, oldBox, false));
-                    List<BlockPos> moveDownWards = CollisionUtil.getIntersectingBlockPositions(mc.world,oldBox.offset(0, - jumpMin,0), false);
+                    Box oldBox = mc.player.dimensions.getBoxAt(movementManagerEvent.context.playerStatus.pos);
+                    Set<BlockPos> moveablePoses =
+                            new HashSet<>(CollisionUtil.getIntersectingBlockPositions(mc.world, oldBox, false));
+                    List<BlockPos> moveDownWards =
+                            CollisionUtil.getIntersectingBlockPositions(mc.world, oldBox.offset(0, -jumpMin, 0), false);
                     boolean realOnGround = moveDownWards.stream().anyMatch(pos -> !moveablePoses.contains(pos));
-                    if(realOnGround){
+                    if (realOnGround) {
                         double yLevel = mc.player.getY() + jumpMin * 4;
                         movementManagerEvent.context.playerStatus.restorePos();
                         mc.player.setPosition(mc.player.getPos().withAxis(Direction.Axis.Y, yLevel));
                         mc.player.setOnGround(false);
                         lastShiftUp = true;
                         break how_to_apply;
-                    }else{
-                        if(PlayerStateManager.INSTANCE.fallDistance > 0){
+                    } else {
+                        if (PlayerStateManager.INSTANCE.fallDistance > 0) {
                             mc.player.setOnGround(false);
                             shouldApplyFreeze = true;
                             break how_to_apply;
-                        }else if(lastShiftUp){
+                        } else if (lastShiftUp) {
                             lastShiftUp = false;
                             movementManagerEvent.context.playerStatus.restorePos();
-                            mc.player.setPosition(mc.player.getPos().add(0, - jumpMin , 0));
+                            mc.player.setPosition(mc.player.getPos().add(0, -jumpMin, 0));
                             mc.player.setOnGround(false);
                             break how_to_apply;
                         }
                     }
                 }
-                if(inAirFreeze.get()){
+                if (inAirFreeze.get()) {
                     if (groundOnly.get()) {
                         shouldApplyFreeze = lastLastOnGround || lastOnGroundT;
                         if (shouldApplyFreeze) {
                             lastOnGroundT = true;
                         }
                     } else {
-                        shouldApplyFreeze = mc.player.getY() < movementManagerEvent.context.playerStatus.pos.y && lastFall;
+                        shouldApplyFreeze =
+                                mc.player.getY() < movementManagerEvent.context.playerStatus.pos.y && lastFall;
                     }
                 }
             }

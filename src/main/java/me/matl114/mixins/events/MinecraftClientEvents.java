@@ -55,11 +55,14 @@ public abstract class MinecraftClientEvents {
     @Nullable
     public ClientPlayerEntity player;
 
-    @Shadow protected abstract void handleBlockBreaking(boolean breaking);
+    @Shadow
+    protected abstract void handleBlockBreaking(boolean breaking);
 
-    @Shadow public int attackCooldown;
+    @Shadow
+    public int attackCooldown;
 
-    @Shadow protected abstract void handleInputEvents();
+    @Shadow
+    protected abstract void handleInputEvents();
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     public void onPreSetScreen(Screen screen, CallbackInfo ci, @Local(argsOnly = true) LocalRef<Screen> screenRef) {
@@ -293,8 +296,10 @@ public abstract class MinecraftClientEvents {
         cacheHitResult = null;
     }
 
-    @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;handleInputEvents()V"))
-    private void onInputEvent(MinecraftClient instance, Operation<Void> original){
+    @WrapOperation(
+            method = "tick",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;handleInputEvents()V"))
+    private void onInputEvent(MinecraftClient instance, Operation<Void> original) {
         Event<Void> re = new Event<>(null, true, false);
         Listener.getPreHandleInputEvents().handleValue(re);
         if (!re.isCancelled()) {
@@ -304,17 +309,17 @@ public abstract class MinecraftClientEvents {
     }
 
     @Inject(
-        method = "tick",
-        at =
-        @At(
-            value = "FIELD",
-            target =
-                "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;",
-            shift = At.Shift.BEFORE,
-            ordinal = 2))
+            method = "tick",
+            at =
+                    @At(
+                            value = "FIELD",
+                            target =
+                                    "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;",
+                            shift = At.Shift.BEFORE,
+                            ordinal = 2))
     public void onInputEventIfScreenOpen(CallbackInfo ci, @Local Profiler profiler) {
         if (MinecraftClient.getInstance().currentScreen != null
-            || MinecraftClient.getInstance().getOverlay() != null) {
+                || MinecraftClient.getInstance().getOverlay() != null) {
             profiler.swap("Keybindings");
             if (MinecraftClient.getInstance().player != null) {
                 Event<Void> re = new Event<>(null, true, false);
@@ -322,7 +327,7 @@ public abstract class MinecraftClientEvents {
                 Listener.getPreHandleInputEvents().handleValue(re);
                 if (!re.isCancelled()) {
                     handleInputEvents();
-                }else{
+                } else {
                     this.handleBlockBreaking(false);
                     if (this.attackCooldown > 0) {
                         --this.attackCooldown;
@@ -332,7 +337,6 @@ public abstract class MinecraftClientEvents {
             }
         }
     }
-
 
     @Inject(
             method = "tick",

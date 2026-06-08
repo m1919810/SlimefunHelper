@@ -293,7 +293,8 @@ public class PlayerStateManager extends BaseModule {
         inWeb = false;
         lastInWall = MovTasks.isCollidingWithEnvironment(mc.player);
         Box box = mc.player.getBoundingBox();
-        lastUnderBlock =  MovTasks.isCollidingWithEnvironment(box.withMinY(box.maxY).withMaxY(box.maxY + 0.42));
+        lastUnderBlock =
+                MovTasks.isCollidingWithEnvironment(box.withMinY(box.maxY).withMaxY(box.maxY + 0.42));
         lastVelocityAffectingPos = calculateVelocityAffectingPos();
         if (++cooldownInvSummary > 10 || inventorySummary == null || inventoryTotalSummary == null) {
             cooldownInvSummary = 0;

@@ -3,7 +3,6 @@ package me.matl114.mixins.hack;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.InteractionTasks;
@@ -22,14 +21,12 @@ import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.Window;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.profiler.Profiler;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
@@ -102,7 +99,6 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         }
         return original;
     }
-
 
     boolean lastUse = false;
 

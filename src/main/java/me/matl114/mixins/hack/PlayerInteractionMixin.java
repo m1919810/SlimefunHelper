@@ -76,6 +76,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         return currentBreakingPos;
     }
 
+    @Override
     public void resetCurrentMiningPos() {
         currentBreakingPos = new BlockPos(-1, -1, -1);
         currentBreakingProgress = 0.0F;
@@ -85,6 +86,11 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Nullable
     public BlockPos getCurrentFailBreakPos() {
         return MineExtra.INSTANCE.doubleBreak.get() ? currentFailBreakPos : null;
+    }
+
+    @Override
+    public boolean isFailBreakEmpty() {
+        return currentFailBreakPos == null;
     }
 
     @Override
@@ -148,20 +154,26 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
     @Unique
     @Override
-    public boolean setStartFailBreakPos(BlockPos pos) {
-        if (pos != null) {
-            if (currentFailBreakPos == null) {
-                currentFailBreakPos = pos;
-                currentBreakingPos = pos;
-                failBreakStartTick = MineExtra.INSTANCE.lastStartMineBreakingProgressResetTick;
-                return true;
-            }
-        } else {
-            currentFailBreakPos = null;
+    public boolean beginFailBreak(BlockPos pos) {
+        if (currentFailBreakPos == null) {
+            currentFailBreakPos = pos;
+            currentBreakingPos = pos;
+            failBreakStartTick = MineExtra.INSTANCE.lastStartMineBreakingProgressResetTick;
             return true;
         }
-
         return false;
+    }
+
+    @Unique
+    @Override
+    public boolean moveCurrentMiningToFailBreak() {
+        return beginFailBreak(currentBreakingPos);
+    }
+
+    @Unique
+    @Override
+    public void clearFailBreak() {
+        currentFailBreakPos = null;
     }
 
     @Shadow
@@ -177,7 +189,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
     @Override
     @Unique
-    public void sendStopBreakPacket(BlockPos pos, Direction direction) {
+    public void sendBreakPacket(BlockPos pos, Direction direction) {
         this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
             return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
         }));
@@ -185,7 +197,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
     @Override
     @Unique
-    public void sendStartBreakPacket(BlockPos pos, Direction direction) {
+    public void startMiningBlock(BlockPos pos, Direction direction) {
         this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
             // every start break change the server side start break time
             currentBreakingProgress = 0.0F;
@@ -431,7 +443,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             MinecraftClient.getInstance().player.getWorld(),
                             currentBreakingPos);
                     if (speed > 0) {
-                        setStartFailBreakPos(currentBreakingPos);
+                        moveCurrentMiningToFailBreak();
                         MineExtra.INSTANCE.onPostStopMiningFastBreak(
                                 currentBreakingPos, speed, currentBreakingProgress);
                         return true;

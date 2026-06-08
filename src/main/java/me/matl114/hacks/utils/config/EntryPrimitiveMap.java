@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.*;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import me.matl114.managers.config.NBTParsable;
@@ -127,8 +128,14 @@ public class EntryPrimitiveMap<T, W> implements NBTParsable<EntryPrimitiveMap<T,
 
     public static final NBTType<EntryPrimitiveMap<Object, Object>> TYPE = create();
 
+    @Nullable
     public W getOrDefault(T va) {
         return map.getOrDefault(va, defaultValue);
+    }
+
+    public W getOrWithDefault(T va, W val) {
+        var re = getOrDefault(va);
+        return re == null ? val : re;
     }
 
     @Override

@@ -58,10 +58,49 @@ public class EntityESP extends BaseModule {
                     TextColor.fromFormatting(Formatting.RED)))
             .build();
 
-    public final NBTRef<TracingOption> traceOption = builder(entityEsp.add("tracing-option"), TracingOption.class)
-            .defaultValue(new TracingOption(true, false))
+    public final NBTRef<EntryPrimitiveMap<EntityType<?>, Boolean>> renderBoxSettings = builder(
+                    entityEsp.add("boxing-option"),
+                    NBTType.<EntryPrimitiveMap<EntityType<?>, Boolean>>parameter(EntryPrimitiveMap.class))
+            .defaultValue(new EntryPrimitiveMap<>(
+                    Registries.ENTITY_TYPE,
+                    NBTTypes.BOOLEAN_TYPE,
+                    Map.of(
+                            EntityType.PLAYER, true,
+                            EntityType.END_CRYSTAL, true,
+                            EntityType.WITHER, true),
+                    false))
             .build();
-    public final FlagRef glowEntity = flagBuilder(entityEsp.add("glow-effect")).build();
+
+    public final NBTRef<EntryPrimitiveMap<EntityType<?>, Boolean>> renderTraceSettings = builder(
+                    entityEsp.add("trace-option"),
+                    NBTType.<EntryPrimitiveMap<EntityType<?>, Boolean>>parameter(EntryPrimitiveMap.class))
+            .defaultValue(new EntryPrimitiveMap<>(
+                    Registries.ENTITY_TYPE,
+                    NBTTypes.BOOLEAN_TYPE,
+                    Map.of(
+                            EntityType.PLAYER, true,
+                            EntityType.END_CRYSTAL, false,
+                            EntityType.WITHER, true),
+                    false))
+            .build();
+
+    public final NBTRef<EntryPrimitiveMap<EntityType<?>, Boolean>> highLightSettings = builder(
+                    entityEsp.add("highlight-option"),
+                    NBTType.<EntryPrimitiveMap<EntityType<?>, Boolean>>parameter(EntryPrimitiveMap.class))
+            .defaultValue(new EntryPrimitiveMap<>(
+                    Registries.ENTITY_TYPE,
+                    NBTTypes.BOOLEAN_TYPE,
+                    Map.of(
+                            EntityType.PLAYER, true,
+                            EntityType.END_CRYSTAL, true,
+                            EntityType.WITHER, true),
+                    true))
+            .build();
+
+    //    public final NBTRef<TracingOption> traceOption = builder(entityEsp.add("tracing-option"), TracingOption.class)
+    //            .defaultValue(new TracingOption(true, false))
+    //            .build();
+    //    public final FlagRef glowEntity = flagBuilder(entityEsp.add("glow-effect")).build();
 
     @Override
     public void registerAll() {
@@ -78,7 +117,7 @@ public class EntityESP extends BaseModule {
         boolean enable = this.enable.get();
 
         var whitelist = whiteList.get().getFilterValue();
-
+        var glowMap = highLightSettings.get();
         for (Entity entity : mc.world.getEntities()) {
             if (entity == mc.gameRenderer.getCamera().getFocusedEntity()) continue;
             if (entity == null || entity.isRemoved()) {
@@ -86,7 +125,7 @@ public class EntityESP extends BaseModule {
             } else {
                 EntityInternalAccess<?> access = EntityInternalAccess.of(entity);
                 int renderLevel = access.renderTrackedLevel();
-                if (!glowEntity.get()) {
+                if (!glowMap.getOrWithDefault(entity.getType(), false)) {
                     access.setGlow0(false);
                 }
                 if (renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST) {
@@ -98,7 +137,7 @@ public class EntityESP extends BaseModule {
                 }
                 if ((renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST && enable)
                         || renderLevel == EntityInternalAccess.RENDER_LEVEL_FORCE) {
-                    if (glowEntity.get()) {
+                    if (glowMap.getOrWithDefault(entity.getType(), false)) {
                         if (!entity.isGlowing()) {
                             access.setGlow0(true);
                         }
@@ -120,23 +159,30 @@ public class EntityESP extends BaseModule {
         if (enable.get()) {
             var stack = stackE.context;
             float tickDelta = stackE.getArgs(0);
-            boolean doLineTrace = traceOption.get().line(); // .get();
-            boolean doBoxTrace = traceOption.get().box();
+            var lineMap = renderTraceSettings.get();
+            var boxMap = renderBoxSettings.get();
             RenderUtils.startDrawVirtual(stack);
             try {
-                var render = RenderUtils.createBoxCollector(doBoxTrace, false, doLineTrace);
+                var renderBox = RenderUtils.createBoxCollector(true, false, false);
+                var renderTrace = RenderUtils.createTracerCollector();
                 List<Entity> entities = this.entities;
                 for (var entity : entities) {
-                    //  entity.getBoundingBox();
                     Color color = getShaderColorByEntityType(entity);
                     if (color != null) {
 
                         Box box = RenderUtils.getLerpedBox(entity, tickDelta);
-                        render.submit(box, color.getRGB());
+                        if (boxMap.getOrWithDefault(entity.getType(), false)) {
+                            renderBox.submit(box, color.getRGB());
+                        }
+                        if (lineMap.getOrWithDefault(entity.getType(), false)) {
+                            renderTrace.submit(box.getCenter(), color.getRGB());
+                        }
                     }
                 }
-                render.render(stack);
-                render.clear();
+                renderBox.render(stack);
+                renderTrace.render(stack);
+                renderBox.clear();
+                renderTrace.clear();
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }
