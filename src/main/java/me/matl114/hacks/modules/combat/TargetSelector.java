@@ -230,7 +230,7 @@ public class TargetSelector extends BaseModule {
         return checkWeapon(target, true) && canAttack(target);
     }
 
-    public boolean isInFriendList(PlayerEntity e){
+    public boolean isInFriendList(PlayerEntity e) {
         List<String> list = friendList.get();
         if (list != null && list.contains(e.getNameForScoreboard())) {
             return true;
@@ -247,11 +247,9 @@ public class TargetSelector extends BaseModule {
                 return false;
             }
             if (!attackFriend.get()) {
-                if(isInFriendList(pl)){
+                if (isInFriendList(pl)) {
                     return false;
                 }
-
-
             }
             return true;
         } else {

@@ -81,11 +81,11 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             .build();
 
     public final FlagRef inFirework = builder(antiKb.add("execute-during-fireworks"), Boolean.class)
-        .defaultValue(true)
-        .build();
+            .defaultValue(true)
+            .build();
 
     public final FlagRef inWall = builder(antiKb.add("execute-in-wall"), Boolean.class)
-        .defaultValue(true)
+            .defaultValue(true)
             .build();
 
     public final FlagRef noBlock = flagBuilder(antiKb.add("no-block-push")).build();
@@ -181,7 +181,9 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public void onPlayerVelocity(Event<Vec3d> event) {
         if (enable.get() && mc.player != null) {
-            if (inFirework.get() && mc.player.isFallFlying() && MovTasks.getElytraExtra().canFireworkControlMotion()) {
+            if (inFirework.get()
+                    && mc.player.isFallFlying()
+                    && MovTasks.getElytraExtra().canFireworkControlMotion()) {
                 markForCancelVelocity();
                 event.cancel();
                 return;

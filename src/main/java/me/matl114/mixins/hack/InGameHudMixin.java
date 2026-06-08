@@ -47,7 +47,7 @@ public abstract class InGameHudMixin {
             client.options.hudHidden = false;
             if (!this.client.debugHudEntryList.isF3Enabled()) {
                 this.tmpValue = true;
-                this.client.debugHudEntryList.f3Enabled = true;// setF3Enabled(true);
+                this.client.debugHudEntryList.f3Enabled = true; // setF3Enabled(true);
             } else {
                 this.tmpValue = false;
             }

@@ -22,8 +22,6 @@ public class AutoCity extends BaseModule {
 
     public final FlagRef playerOnly = flagBuilder(autoCity.add("player-only")).build();
 
-
-
     public AutoCity() {}
 
     @Override

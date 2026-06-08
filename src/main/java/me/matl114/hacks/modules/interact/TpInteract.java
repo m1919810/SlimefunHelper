@@ -151,7 +151,7 @@ public class TpInteract extends BaseModule {
                         useFallMine.get()
                                 ? (selectedPos) -> {
                                     PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
-                                    if (access.setStartFailBreakPos(blockPos)) {
+                                    if (access.beginFailBreak(blockPos)) {
                                         PlayerActionC2SPacket stopMinePacket = new PlayerActionC2SPacket(
                                                 PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
                                                 blockPos,
@@ -160,7 +160,7 @@ public class TpInteract extends BaseModule {
                                         if (executeTp(selectedPos, packetToSend, stopMinePacket)) {
                                             return true;
                                         } else {
-                                            access.setStartFailBreakPos(null);
+                                            access.clearFailBreak();
                                             return false;
                                         }
                                     }

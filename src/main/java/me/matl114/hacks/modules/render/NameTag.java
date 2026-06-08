@@ -100,8 +100,8 @@ public class NameTag extends BaseModule {
             .build();
 
     public final NBTRef<WrapColor> pingColor = builder(nameTag.add("ping-color"), WrapColor.class)
-        .defaultValue(new WrapColor(ColorUtils.color(Formatting.GREEN)))
-        .build();
+            .defaultValue(new WrapColor(ColorUtils.color(Formatting.GREEN)))
+            .build();
 
     public final NBTRef<WrapColor> distColor = builder(nameTag.add("distance-color"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.RED)))
@@ -139,15 +139,11 @@ public class NameTag extends BaseModule {
                 MutableText text = Text.empty();
                 String name = player.getNameForScoreboard();
                 if (name == null) continue;
-                if(TargetSelector.INSTANCE.isInFriendList(player)){
-                    text.append(
-                        Text.literal("[F]").withColor(Color.ORANGE.getRGB())
-                    );
+                if (TargetSelector.INSTANCE.isInFriendList(player)) {
+                    text.append(Text.literal("[F]").withColor(Color.ORANGE.getRGB()));
                 }
-                if(player.isCreative()){
-                    text.append(
-                        Text.literal("[C]").withColor(Color.RED.getRGB())
-                    );
+                if (player.isCreative()) {
+                    text.append(Text.literal("[C]").withColor(Color.RED.getRGB()));
                 }
 
                 text.append(
@@ -156,13 +152,14 @@ public class NameTag extends BaseModule {
                     text.append(Text.literal(" %d♥".formatted((int) player.getHealth()))
                             .withColor(healthColor.get().asRGB()));
                 }
-                if(showPing.get()){
+                if (showPing.get()) {
                     int latency = 0;
                     PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(player.getUuid());
-                    if(entry != null){
+                    if (entry != null) {
                         latency = entry.getLatency();
                     }
-                    text.append(Text.literal(" %dms".formatted(latency)).withColor(pingColor.get().asRGB()));
+                    text.append(Text.literal(" %dms".formatted(latency))
+                            .withColor(pingColor.get().asRGB()));
                 }
                 if (dist.get()) {
                     double len = mc.player.getPos().distanceTo(player.getPos());

@@ -663,14 +663,14 @@ public class MovTasks {
         final List<Box> collisionsBB = new java.util.ArrayList<>();
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
         CollisionUtil.getCollisionsForBlocksOrWorldBorder(
-            mc.world,
-            mc.player,
-            box,
-            collisionsVoxel,
-            collisionsBB,
-            CollisionUtil.COLLISION_FLAG_CHECK_BORDER,
-            null,
-            null);
+                mc.world,
+                mc.player,
+                box,
+                collisionsVoxel,
+                collisionsBB,
+                CollisionUtil.COLLISION_FLAG_CHECK_BORDER,
+                null,
+                null);
         return !collisionsVoxel.isEmpty() || !collisionsBB.isEmpty();
     }
 
