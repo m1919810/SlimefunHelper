@@ -147,7 +147,7 @@ public class AutoTotem extends BaseModule {
                         && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(i, toSlot, SlotActionType.SWAP);
-                    Debug.info("handle swap success");
+                    Debug.debug("handle swap success");
                     handleTotemSwapSuccess();
                     return;
                 }
@@ -192,6 +192,7 @@ public class AutoTotem extends BaseModule {
             ItemStack stackInMainHand = mc.player.getMainHandStack();
             int consumeSlot =
                     stackInMainHand.getItem() == Items.TOTEM_OF_UNDYING ? InventoryUtils.getSelectedSlot() : 40;
+            mc.player.getInventory().setStack(consumeSlot, ItemStack.EMPTY);
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;
             for (var i = 0; i < slots.size(); ++i) {
@@ -201,6 +202,7 @@ public class AutoTotem extends BaseModule {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(i, consumeSlot, SlotActionType.SWAP);
                     handleTotemSwapSuccess();
+                    Debug.debug("handle antimiss success");
                     // pre tick
                     lastSwapTick += 1;
                     return;

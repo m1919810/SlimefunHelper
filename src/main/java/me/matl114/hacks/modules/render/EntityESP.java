@@ -14,7 +14,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
-import me.matl114.versioned.api.VRender;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
@@ -23,7 +22,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 
 public class EntityESP extends BaseModule {
     public final ModulePath entityRoot = makePath(Configs.RENDER_CONFIG, "detect-entity");
@@ -126,26 +124,19 @@ public class EntityESP extends BaseModule {
             boolean doBoxTrace = traceOption.get().box();
             RenderUtils.startDrawVirtual(stack);
             try {
-                Vec3d traceOrigin = RenderUtils.getTracerOrigin(tickDelta);
-                Vec3d camera = RenderUtils.getCameraPos();
-                VRender.getInstance().createLinesLayer((op, vp) -> {
-                    List<Entity> entities = this.entities;
-                    for (var entity : entities) {
-                        //  entity.getBoundingBox();
-                        Color color = getShaderColorByEntityType(entity);
-                        if (color != null) {
-                            Box box =
-                                    RenderUtils.getLerpedBox(entity, tickDelta).offset(camera.negate());
-                            if (doLineTrace) {
-                                Vec3d center = box.getCenter();
-                                op.drawLine(stack, vp, traceOrigin, center, color.getRGB());
-                            }
-                            if (doBoxTrace) {
-                                op.drawOutlinedBox(stack, vp, box.getMinPos(), box.getMaxPos(), color.getRGB());
-                            }
-                        }
+                var render = RenderUtils.createBoxCollector(doBoxTrace, false, doLineTrace);
+                List<Entity> entities = this.entities;
+                for (var entity : entities) {
+                    //  entity.getBoundingBox();
+                    Color color = getShaderColorByEntityType(entity);
+                    if (color != null) {
+
+                        Box box = RenderUtils.getLerpedBox(entity, tickDelta);
+                        render.submit(box, color.getRGB());
                     }
-                });
+                }
+                render.render(stack);
+                render.clear();
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }

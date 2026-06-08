@@ -44,8 +44,14 @@ public class FileManager {
     }
 
     private void onScheduleSave() {
-        for (Map.Entry<File, FileStorage> entry : trackedFileStorages.entrySet()) {
+        var iterator = trackedFileStorages.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<File, FileStorage> entry = iterator.next();
             FileStorage storage = entry.getValue();
+            if (storage.isDeprecated()) {
+                iterator.remove();
+                continue;
+            }
             if (storage.isDirty()) {
                 storage.write();
                 storage.markDirty(false);
@@ -53,31 +59,57 @@ public class FileManager {
         }
     }
 
-    public FileStorage getStorage(File file, boolean reload) {
-        FileStorage storage;
-        storage = trackedFileStorages.get(file);
+    public FileStorage getStorage(File file, boolean reload, boolean createOnNoExist) {
+        FileStorage storage = trackedFileStorages.get(file);
         if (storage != null) {
-            if (reload) {
-                storage.read();
+            if (storage.isDeprecated()) {
+                trackedFileStorages.remove(file, storage);
+            } else {
+                if (reload) {
+                    storage.read();
+                }
+                return storage;
             }
-            return storage;
+        }
+        if (!createOnNoExist && !file.exists()) {
+            return null;
         }
         storage = createFileStorage(file);
         trackedFileStorages.put(file, storage);
         return storage;
     }
 
+    public FileStorage getStorage(File file, boolean reload) {
+        return getStorage(file, reload, true);
+    }
+
     public FileStorage getStorage(File flie) {
-        return getStorage(flie, false);
+        return getStorage(flie, false, true);
     }
 
     public FileStorage getInternalStorage(String filePath) {
-        return getStorage(new File(INTERNAL_FOLDER, filePath), false);
+        return getStorage(new File(INTERNAL_FOLDER, filePath), false, true);
+    }
+
+    public FileStorage getStorage(String file) {
+        return getStorage(new File(FOLDER, file), false, true);
+    }
+
+    public FileStorage getStorage(String file, boolean createOnNoExist) {
+        return getStorage(new File(FOLDER, file), false, createOnNoExist);
+    }
+
+    public FileStorage getConfigStorage(String filePath) {
+        return getStorage(new File(CONFIG_SAVE_FOLDER, filePath), false, true);
+    }
+
+    public FileStorage getConfigStorage(String filePath, boolean createOnNoExist) {
+        return getStorage(new File(CONFIG_SAVE_FOLDER, filePath), false, createOnNoExist);
     }
 
     public void reloadAll() {
         for (var re : new ArrayList<>(trackedFileStorages.keySet())) {
-            getStorage(re, true);
+            getStorage(re, true, true);
         }
     }
 

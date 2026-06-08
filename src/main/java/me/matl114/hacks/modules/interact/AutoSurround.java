@@ -211,21 +211,13 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 false);
     }
 
-    boolean lastOnGround = false;
     boolean triggerCenterFix = false;
     boolean rotateSuccess = false;
     BlockPos lastCenter;
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-        boolean last = lastOnGround;
-        lastOnGround = mc.player.isOnGround();
 
-        if (enable.get() && autoCenter.get()) {
-            if (!last && lastOnGround) {
-                triggerCenterFix = true;
-            }
-        }
         if (triggerCenterFix && mc.player.isOnGround()) {
             if (lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 1.0)) {
                 lastCenter = lastSurround == null ? PlayerStateManager.INSTANCE.lastVelocityAffectingPos : lastSurround;

@@ -94,6 +94,11 @@ public class Attack extends BaseModule {
             .show(() -> legalMode.get() && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
             .build();
 
+    public final FlagRef postFix = builder(attack.add("attack-post-fix"), Boolean.class)
+            .defaultValue(true)
+            .show(() -> legalMode.get() && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
+            .build();
+
     public final FlagRef autoAntiShield =
             flagBuilder(attack.add("auto-anti-shield")).build();
 
@@ -225,7 +230,7 @@ public class Attack extends BaseModule {
     }
 
     private static boolean canEntityUseShieldBlockMe(LivingEntity target, PlayerEntity player) {
-        return player.getEyePos().subtract(target.getEyePos()).dotProduct(target.getRotationVector()) > 0;
+        return true; // player.getEyePos().subtract(target.getEyePos()).dotProduct(target.getRotationVector()) > 0;
     }
 
     public AttackSettings createAttackSettings() {
@@ -243,6 +248,13 @@ public class Attack extends BaseModule {
                 useTp, maceSwap, invSwap, selectWeapon, antiShield, useAttack, elytraSwitch, criticalSprint, maceVClip);
     }
 
+    public static boolean shouldUseAntiShield(Entity target) {
+        return target instanceof LivingEntity lv
+                && lv.isUsingItem()
+                && lv.getActiveItem().getItem() instanceof ShieldItem sh
+                && canEntityUseShieldBlockMe(lv, mc.player);
+    }
+
     public static void attackWithSettings(PlayerEntity player, Entity target, AttackSettings attackSettings) {
         PlayerInputUtils.Input input = null;
         if (player.hasVehicle()) {
@@ -258,10 +270,7 @@ public class Attack extends BaseModule {
         Runnable callback = null;
         IndexEntry<ItemStack> invResult;
         if (attackSettings.antiShieldSwap()
-                && target instanceof LivingEntity lv
-                && lv.isUsingItem()
-                && lv.getActiveItem().getItem() instanceof ShieldItem sh
-                && canEntityUseShieldBlockMe(lv, player)
+                && shouldUseAntiShield(target)
                 && (invResult = InventoryUtils.findPlayerItem(
                                 (ex) -> VItem.getInstance().isAxe(ex), false, false))
                         != null) {
@@ -454,7 +463,8 @@ public class Attack extends BaseModule {
 
                             // step back our position
                             velocity = args.getVelocity();
-                            Vec3d predictedEyePos = mc.player.getEyePos();
+                            Vec3d predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(
+                                    mc.player.getPos(), target.getBoundingBox()); // mc.player.getEyePos();
                             // revert shit
                             if (useMaceAttack || args.isFallFlying()) {
                                 // fix targeting in big velocity
@@ -479,11 +489,12 @@ public class Attack extends BaseModule {
                                     posDelta = vec3d; // vec3d1.subtract(vec3d);
                                     posDelta2 = vec3d1;
                                     args.setPosition(vec3d1.add(0, 9E-8, 0));
-                                    predictedEyePos = args.getEyePos();
+                                    predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(
+                                            args.getPos(), target.getBoundingBox());
                                 }
                                 // backoff
-                                if (target.getBoundingBox().squaredMagnitude(predictedEyePos)
-                                        > MathUtils.s2(attackRange)) {
+                                if (!TargetSelector.INSTANCE.isWithinAttackRange(
+                                        args.getPos(), target.getBoundingBox(), attackRange)) {
                                     // Debug.chat("Distance to large , disable atack");
                                     distancePassAttack = false;
                                     movementManagerEvent.context.playerStatus.restoreRotation();
@@ -610,9 +621,13 @@ public class Attack extends BaseModule {
         //            }
         //            return false;
         //        })));
-        ACTasks.addPostTransactionAction((ch) -> {
+        if (postFix.get()) {
+            ACTasks.addPostTransactionAction((ch) -> {
+                attackWithSettings(mc.player, target, settings);
+            });
+        } else {
             attackWithSettings(mc.player, target, settings);
-        });
+        }
     }
 
     private boolean processLegacySnapAttack(Entity target, AttackSettings settings) {
@@ -632,10 +647,10 @@ public class Attack extends BaseModule {
             attackWithSettings(mc.player, target, settings);
             return false;
         }
-        Vec3d predictedEyePos = mc.player.getEyePos();
         Vec3d vec3d = mc.player.getPos();
+        Vec3d predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(vec3d, target.getBoundingBox());
         boolean distancePassAttack =
-                target.getBoundingBox().squaredMagnitude(predictedEyePos) <= MathUtils.s2(attackRange);
+                TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player.getBoundingBox(), attackRange);
         if (tpRange.get() > 1E-7 && !distancePassAttack) {
 
             Vec3d vec3d1 = MovTasks.tpAttackSearch(vec3d, target.getBoundingBox(), attackRange, 9.9, 1).stream()
@@ -644,10 +659,10 @@ public class Attack extends BaseModule {
             // calculateBestReachPos(vec3d, target.getBoundingBox());
             if (vec3d1 != null && vec3d1.squaredDistanceTo(vec3d) > 1E-7) {
                 mc.player.setPosition(vec3d1.add(0, 9E-8, 0));
-                predictedEyePos = mc.player.getEyePos();
+                predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(vec3d, target.getBoundingBox());
             }
             // backoff
-            if (target.getBoundingBox().squaredMagnitude(predictedEyePos) > MathUtils.s2(attackRange)) {
+            if (!TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player.getBoundingBox(), attackRange)) {
                 distancePassAttack = false;
                 mc.player.setPosition(vec3d);
                 // skip attack
@@ -693,7 +708,11 @@ public class Attack extends BaseModule {
         movementStack.addLast(MovTasks.MovInfo.createNoUpdate(mc.player.getPos()));
         shouldMoveBackStack.addFirst(MovTasks.MovInfo.createNoUpdate(mc.player.getPos()));
         boolean alreadyInRange = alreadyAtTarget
-                || target.getBoundingBox().squaredMagnitude(player.getEyePos()) < MathUtils.s2(attackRange);
+                || TargetSelector.INSTANCE.isWithinAttackRange(
+                        player.getPos(),
+                        target.getBoundingBox(),
+                        attackRange); // target.getBoundingBox().squaredMagnitude(player.getEyePos()) <
+        // MathUtils.s2(attackRange);
         // mace hack、
         boolean useExactAttack = settings.useTp()
                 && exactAttack.get()

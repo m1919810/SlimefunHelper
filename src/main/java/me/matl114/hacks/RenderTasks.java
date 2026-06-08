@@ -522,6 +522,9 @@ public class RenderTasks {
     @Getter
     public static PlayerStatistic playerStatistic;
 
+    @Getter
+    public static EquipmentHud equipmentHud;
+
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         entityLog = new EntityLog().register(m);
@@ -539,6 +542,7 @@ public class RenderTasks {
         hud = new Hud().register(m);
         invHud = new InvHud().register(m);
         playerStatistic = new PlayerStatistic().register(m);
+        equipmentHud = new EquipmentHud().register(m);
     }
 
     static {

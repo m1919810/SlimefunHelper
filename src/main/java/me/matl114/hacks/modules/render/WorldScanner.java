@@ -23,8 +23,7 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.RenderUtils;
-import me.matl114.utils.collections.IndexEntry;
-import me.matl114.versioned.api.VRender;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -195,7 +194,10 @@ public class WorldScanner extends BaseModule {
     }
 
     int resultUpdate = 0;
-    List<IndexEntry<Box>> boxes = new ArrayList<>();
+    // List<IndexEntry<Box>> boxes = new ArrayList<>();
+    final RenderCollector<Box> boxOutlineCollector = RenderUtils.createBoxCollector(true, false, false);
+    final RenderCollector<Box> boxSolidCollector = RenderUtils.createBoxCollector(false, true, false);
+    final RenderCollector<Vec3d> traceLineCollector = RenderUtils.createTracerCollector();
     int lastLogTick = 0;
     final int MAX_RENDER_BLOCKS = 10_000;
 
@@ -207,6 +209,9 @@ public class WorldScanner extends BaseModule {
             pendingRefreshWhenInGame = false;
             WorldTasks.restartWorldScanner();
         }
+        boxOutlineCollector.clear();
+        boxSolidCollector.clear();
+        traceLineCollector.clear();
         if (enable.get()) {
             if (resultUpdate < 50) {
                 resultUpdate++;
@@ -215,15 +220,14 @@ public class WorldScanner extends BaseModule {
                 resultUpdate = 0;
                 validateAndClearSearchResult(true);
             }
-            if (!boxes.isEmpty()) {
-                boxes = new ArrayList<>();
-            }
+
             if (!checkNull()) {
                 if (!currentSearchingResult.isEmpty()) {
                     int radius = distanceChunk.get();
                     ChunkPos chunkPos = mc.player.getChunkPos();
                     Set<ChunkPos> chunkKeys = new HashSet<>(currentSearchingResult.keySet());
                     int cnt = 0;
+                    TracingOption option = this.option.get();
                     for (ChunkPos chunkKey : chunkKeys) {
                         if (Math.abs(chunkPos.x - chunkKey.x) <= radius
                                 && Math.abs(chunkPos.z - chunkKey.z) <= radius) {
@@ -236,7 +240,20 @@ public class WorldScanner extends BaseModule {
                                     if (!shape.isEmpty()) {
                                         Box box = shape.getBoundingBox();
                                         if (cnt < MAX_RENDER_BLOCKS) {
-                                            boxes.add(new IndexEntry<>(color.getRgb(), box.offset(entry.getKey())));
+                                            if (option.box()) {
+                                                boxOutlineCollector.submit(
+                                                        box.offset(entry.getKey()),
+                                                        ColorUtils.withAlphaInt(color.getRgb(), 128));
+                                                boxSolidCollector.submit(
+                                                        box.offset(entry.getKey()),
+                                                        ColorUtils.withAlphaInt(color.getRgb(), 64));
+                                            }
+                                            if (option.line()) {
+                                                traceLineCollector.submit(
+                                                        box.offset(entry.getKey())
+                                                                .getCenter(),
+                                                        ColorUtils.withAlphaInt(color.getRgb(), 255));
+                                            }
                                         }
                                         cnt += 1;
                                     }
@@ -260,55 +277,13 @@ public class WorldScanner extends BaseModule {
 
     public void onRender(Event<MatrixStack> event) {
         if (checkNull()) return;
-        if (enable.get() && !boxes.isEmpty()) {
+        if (enable.get()) {
             MatrixStack stack = event.context();
             RenderUtils.startDrawVirtual(stack);
             try {
-                TracingOption option = this.option.get();
-                Vec3d cameraNeg = RenderUtils.getCameraPos().negate();
-                if (option.box()) {
-                    VRender.getInstance()
-                            .createQuadsLayer(
-                                    ((operation, vertexConsumer) -> {
-                                        for (IndexEntry<Box> entry : boxes) {
-                                            Box box = entry.val().offset(cameraNeg);
-                                            operation.drawSolidBoxQuad(
-                                                    stack,
-                                                    vertexConsumer,
-                                                    box.getMinPos(),
-                                                    box.getMaxPos(),
-                                                    ColorUtils.withAlphaInt(entry.index(), 0.25F));
-                                        }
-                                    }),
-                                    true);
-                }
-
-                VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
-                    if (option.box()) {
-                        for (IndexEntry<Box> entry : boxes) {
-                            Box box = entry.val().offset(cameraNeg);
-                            operation.drawOutlinedBox(
-                                    stack,
-                                    vertexConsumer,
-                                    box.getMinPos(),
-                                    box.getMaxPos(),
-                                    ColorUtils.withAlphaInt(entry.index(), 0.5F));
-                        }
-                    }
-                    if (option.line()) {
-                        Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
-                        for (IndexEntry<Box> entry : boxes) {
-                            Box box = entry.val();
-                            Vec3d pos = box.getCenter().add(cameraNeg);
-                            operation.drawLine(
-                                    stack,
-                                    vertexConsumer,
-                                    traceOrigin,
-                                    pos,
-                                    ColorUtils.withAlphaInt(entry.index(), 1.0F));
-                        }
-                    }
-                }));
+                boxSolidCollector.render(stack);
+                boxOutlineCollector.render(stack);
+                traceLineCollector.render(stack);
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }

@@ -1,6 +1,7 @@
 package me.matl114.utils.config.kv;
 
 import com.google.common.base.Suppliers;
+import com.google.common.util.concurrent.Runnables;
 import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.*;
@@ -15,6 +16,9 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.ColorBoxElement;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.managers.config.ConfigEnum;
+import me.matl114.utils.ReflectUtils;
+import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
 import net.minecraft.text.Text;
@@ -61,8 +65,32 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
         }
     };
 
+    public static <T extends Enum<T>> CustomWidgetFactory<T> createEnumWidgetFactory(Class<T> enumClass) {
+        List<Pair<String, Supplier<Text>>> flattenMap;
+        Map<String, T> map;
+        if (ConfigEnum.class.isAssignableFrom(enumClass)) {
+            map = ConfigEnum.getMap(enumClass);
+        } else {
+            map = ReflectUtils.getEnumMap(enumClass);
+        }
+
+        if (Displayable.class.isAssignableFrom(enumClass)) {
+            Map<String, Displayable> valueMap = (Map) map;
+            flattenMap = valueMap.entrySet().stream()
+                    .map((entry) -> new Pair<>(entry.getKey(), (Supplier<Text>) entry.getValue()::getDisplay))
+                    .toList();
+        } else {
+            flattenMap = map.keySet().stream()
+                    .map(v -> new Pair<>(v, (Supplier<Text>) () -> Text.literal(v)))
+                    .toList();
+        }
+        return (s, x, y, dx, dy) -> {
+            return generateSwitchingButton(flattenMap, s, x, y, dx, dy, Runnables.doNothing());
+        };
+    }
+
     public DrawableWidget generateSwitchingButton(
-            int x, int y, int dx, int dy, Consumer<EnumAttrKeyValue<T>> changelistener) {
+            int x, int y, int dx, int dy, Consumer<EnumAttrKeyValue<T>> callback) {
         List<Pair<String, Supplier<Text>>> flattenMap;
         if (Displayable.class.isAssignableFrom(identifier)) {
             Map<String, Displayable> valueMap = (Map<String, Displayable>) (this).getValueMap();
@@ -75,11 +103,25 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                             .map(v -> new Pair<>(v, (Supplier<Text>) () -> Text.literal(v)))
                             .toList();
         }
+        return generateSwitchingButton(flattenMap, this, x, y, dx, dy, () -> {
+            callback.accept(this);
+        });
+    }
+
+    public static DrawableWidget generateSwitchingButton(
+            List<Pair<String, Supplier<Text>>> flattenMap,
+            AttrKeyValue<?> ex,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            Runnable runnable) {
+
         int choices = flattenMap.size();
         if (choices > 0) {
             AtomicInteger integer = new AtomicInteger();
             Runnable kvUpdater = () -> {
-                String val = this.getValue();
+                String val = ex.getValue();
                 int index = -1;
                 for (int i = 0; i < choices; ++i) {
                     if (Objects.equals(val, flattenMap.get(i).getFirst())) {
@@ -88,18 +130,18 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                     }
                 }
                 if (index == -1) {
-                    this.valueChange(this, flattenMap.get(0).getFirst());
+                    ex.valueChange(ex, flattenMap.get(0).getFirst());
                     index = 0;
                 } else {
-                    this.valueChange(this, flattenMap.get(index).getFirst());
+                    ex.valueChange(ex, flattenMap.get(index).getFirst());
                 }
                 integer.set(index);
             };
             kvUpdater.run();
             SubScreenWidget subScreen = new SubScreenWidget(x, y, dx, dy);
             Runnable indexUpdater = () -> {
-                this.valueChange(this, flattenMap.get(integer.get()).getFirst());
-                changelistener.accept(this);
+                ex.valueChange(ex, flattenMap.get(integer.get()).getFirst());
+                runnable.run();
             };
             subScreen.addDrawableChild(ExecutableWidget.instance(1, 1, dx - dy - 2, dy - 2)
                     .setElementHandler(new ButtonElement(
@@ -117,7 +159,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                                         integer.set(index0);
                                         indexUpdater.run();
                                     }))
-                            .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName()))))));
+                            .withTooltips(TooltipHandler.of(List.of(Text.translatable(ex.getKeyName()))))));
             MutableBoolean show = new MutableBoolean(false);
             subScreen.addDrawableChild(ExecutableWidget.instance(dx - dy + 2, 2, dy - 4, dy - 4)
                     .setElementHandler(IconElement.statedGuiPredicate(
@@ -162,7 +204,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
             // no choice
             return ExecutableWidget.instance(x + 1, y + 1, dx - 2, dy - 2)
                     .setElementHandler(new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
-                            .withTooltips(TooltipHandler.of(List.of(Text.translatable(this.getKeyName())))));
+                            .withTooltips(TooltipHandler.of(List.of(Text.translatable(ex.getKeyName())))));
         }
     }
 }

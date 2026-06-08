@@ -133,7 +133,7 @@ public class DisablerManager extends BaseModule {
 
     boolean hasAnyPlaceActionGrimQueue = false;
 
-    private void flushACPlaceQueue() {
+    public void flushACPlaceQueue() {
         switch (currentAC.get()) {
             case GRIM -> {
                 // flush ghost blocks

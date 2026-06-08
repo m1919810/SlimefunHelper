@@ -1,9 +1,13 @@
 package me.matl114.managers.file;
 
 import java.io.File;
+import lombok.Getter;
 
 public abstract class FileStorageImpl implements FileStorage {
+    @Getter
     protected final File file;
+
+    protected boolean deprecated;
 
     public FileStorageImpl(File file) {
         this.file = file;
@@ -15,6 +19,16 @@ public abstract class FileStorageImpl implements FileStorage {
     @Override
     public void markDirty(boolean dirty) {
         this.dirty = dirty;
+    }
+
+    @Override
+    public boolean isDeprecated() {
+        return deprecated;
+    }
+
+    @Override
+    public void markDeprecated(boolean deprecated) {
+        this.deprecated = deprecated;
     }
 
     protected void ensureParentDir() {

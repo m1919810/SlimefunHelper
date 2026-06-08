@@ -1,20 +1,37 @@
 package me.matl114.hacks.modules.combat;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.With;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.accessors.hacks.PlayerInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.RenderListener;
+import me.matl114.gui.basic.ButtonAction;
+import me.matl114.gui.basic.DisplayWidget;
+import me.matl114.gui.basic.SubScreenWidget;
+import me.matl114.gui.basic.TextProvider;
+import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.ConfigEnum;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
+import me.matl114.managers.config.*;
+import me.matl114.utils.CodecUtils;
+import me.matl114.utils.RenderUtils;
+import me.matl114.utils.config.WrapperFactory;
+import me.matl114.utils.config.kv.EnumAttrKeyValue;
+import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
 import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.versioned.api.VRender;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
@@ -23,6 +40,7 @@ import net.minecraft.item.ShieldItem;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityPositionSyncS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -35,17 +53,31 @@ public class PositionPredict extends BaseModule {
     public PositionPredict() {
         INSTANCE = this;
     }
+    //
+    //    public final FlagRef render = flagBuilder(attack.add("render-predict-pos"))
+    //        .build();
 
-    public final IntRef attackPredictTick =
-            intBuilder(attack.add("pos-predict-tick")).defaultValue(2).build();
+    public final NBTRef<PredictArgument> attackPredictArgument = builder(
+                    attack.add("attack-predict-argument"), PredictArgument.class)
+            .defaultValue(new PredictArgument(2, 5, Mode.NO_PREDICT))
+            .build();
+
+    public final NBTRef<PredictArgument> flyPredictArgument = builder(
+                    attack.add("fly-predict-argument"), PredictArgument.class)
+            .defaultValue(new PredictArgument(2, 5, Mode.PREDICTOR_NV))
+            .build();
+
+    public final NBTRef<PredictArgument> spearPredictArgument = builder(
+                    attack.add("spear-predict-argument"), PredictArgument.class)
+            .defaultValue(new PredictArgument(2, 5, Mode.PREDICTOR_NV))
+            .build();
 
     public final FlagRef enableNoShield = builder(attBot.add("exact-tp-anti-shield"), Boolean.class)
             .defaultValue(false)
             .build();
 
-    public final EnumRef<Mode> predictMode = builder(attack.add("pos-predict-mode"), Mode.class)
-            .defaultValue(Mode.QUADRATIC)
-            .build();
+    public final FlagRef debugRender =
+            flagBuilder(attack.add("debug-render-prediction")).build();
 
     @Override
     public void registerAll() {
@@ -56,6 +88,37 @@ public class PositionPredict extends BaseModule {
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityPositionSyncS2CPacket.class),
                 this::onPostEntityTeleport);
+        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+    }
+
+    public void onRender(Event<MatrixStack> event) {
+        if (debugRender.get()) {
+            RenderUtils.startDrawVirtual(event.context);
+            try {
+                List<Box> boxes = new ArrayList<>();
+                Vec3d camera = RenderUtils.getCameraPos().negate();
+                for (var re : mc.world.getPlayers()) {
+                    if (re != mc.getCameraEntity()) {
+                        Vec3d pos = flyPredictArgument
+                                .get()
+                                .predict(re); // predictFlyingPosition(re, 2, renderUseArgument1.get());
+                        boxes.add(mc.player.dimensions.getBoxAt(pos).offset(camera));
+                    }
+                }
+                VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
+                    for (Box box : boxes) {
+                        operation.drawOutlinedBox(
+                                event.context,
+                                vertexConsumer,
+                                box.getMinPos(),
+                                box.getMaxPos(),
+                                Color.MAGENTA.getRGB());
+                    }
+                }));
+            } finally {
+                RenderUtils.stopDrawVirtual(event.context);
+            }
+        }
     }
 
     // on player update events;
@@ -82,12 +145,6 @@ public class PositionPredict extends BaseModule {
 
     public Predictor getPredictor(Entity entity) {
         return EntityInternalAccess.of(entity).getPositionPredictor();
-    }
-
-    public Vec3d predictPosition(Entity entity) {
-        return EntityInternalAccess.of(entity)
-                .getPositionPredictor()
-                .predict(attackPredictTick.get(), predictMode.get().ordinal(), 16);
     }
 
     public Vec3d predictKnownMovement(Entity entity) {
@@ -125,7 +182,11 @@ public class PositionPredict extends BaseModule {
             if (considerAntiShield) {
                 deltaMovments = target.getRotationVector().normalize().multiply(-0.2);
             } else if (target instanceof PlayerEntity playerEntity) {
-                Vec3d predictedPosition = predictPosition(playerEntity);
+                var re = attackPredictArgument.get();
+
+                Vec3d predictedPosition = re.predict(
+                        playerEntity); /// predictAttackPosition(playerEntity, re.ticksLater(), re.ticksHistory(),
+                // re.mode());
                 deltaMovments = predictedPosition.subtract(target.getPos());
             } else {
                 Vec3d targetFacing = mc.player.getPos().subtract(target.getPos());
@@ -155,12 +216,7 @@ public class PositionPredict extends BaseModule {
         return entity.getEyePos()
                 .subtract(entity.getPos())
                 .multiply(0.75)
-                .add(EntityInternalAccess.of(entity)
-                        .getPositionPredictor()
-                        .predict(
-                                (attackPredictTick.get() + estimateTick),
-                                predictMode.get().ordinal(),
-                                16));
+                .add(flyPredictArgument.get().predictWithExtraTicks(entity, estimateTick));
     }
 
     public boolean considerAntiShield(Entity target) {
@@ -190,6 +246,67 @@ public class PositionPredict extends BaseModule {
         @Override
         public String getConfigEnumType() {
             return "predict_mode";
+        }
+    }
+
+    @With
+    public static record PredictArgument(int ticksLater, int ticksHistory, Mode mode)
+            implements NBTParsable<PredictArgument> {
+        public static NBTType<PredictArgument> TYPE = new NBTType<>(
+                PredictArgument.class,
+                RecordCodecBuilder.<PredictArgument>create(s -> s.group(
+                                Codec.INT.fieldOf("ticks").forGetter(PredictArgument::ticksLater),
+                                Codec.INT.fieldOf("history").forGetter(PredictArgument::ticksHistory),
+                                CodecUtils.enumCodec(Mode.class).fieldOf("mode").forGetter(PredictArgument::mode))
+                        .apply(s, PredictArgument::new)),
+                (s, x, y, dx, dy) -> {
+                    SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
+                    int half = dx / 4;
+                    WrapperFactory<Integer, PredictArgument> firstWrapper =
+                            WrapperFactory.of((d) -> s.getOriginValue().withTicksLater(d), PredictArgument::ticksLater);
+                    WrapperFactory<Integer, PredictArgument> secondWrapper = WrapperFactory.of(
+                            (d) -> s.getOriginValue().withTicksHistory(d), PredictArgument::ticksHistory);
+                    WrapperFactory<Mode, PredictArgument> thirdWrapper =
+                            WrapperFactory.of((d) -> s.getOriginValue().withMode(d), PredictArgument::mode);
+
+                    return subScreenWidget
+                            .addDrawableChild(DisplayWidget.instance(0, 0, dy, dy)
+                                    .setRenderHandler(new ButtonElement(
+                                            TextProvider.of(Text.literal("F:")), ButtonAction.empty())))
+                            .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.INT_TYPE)
+                                    .generateValueWidget(dy, 0, half - dy, dy))
+                            .addDrawableChild(DisplayWidget.instance(half, 0, dy, dy)
+                                    .setRenderHandler(new ButtonElement(
+                                            TextProvider.of(Text.literal("H:")), ButtonAction.empty())))
+                            .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.INT_TYPE)
+                                    .generateValueWidget(half + dy, 0, half - dy, dy))
+                            .addDrawableChild(DisplayWidget.instance(2 * half, 0, dy, dy)
+                                    .setRenderHandler(new ButtonElement(
+                                            TextProvider.of(Text.literal("M:")), ButtonAction.empty())))
+                            .addDrawableChild(new TypeConvertAttrKeyValue<>(
+                                            s,
+                                            thirdWrapper,
+                                            EnumAttrKeyValue.createEnumWidgetFactory(Mode.class),
+                                            WrapperFactory.of(Mode::valueOf, Mode::name))
+                                    .generateValueWidget(2 * half + dy, 0, 2 * half - dy, dy));
+                },
+                new PredictArgument(2, 5, Mode.NO_PREDICT));
+
+        @Override
+        public NBTType<PredictArgument> type() {
+            return TYPE;
+        }
+
+        public Vec3d predict(Entity entity) {
+            return EntityInternalAccess.of(entity)
+                    .getPositionPredictor()
+                    .predict(ticksLater, mode.ordinal(), ticksHistory);
+        }
+
+        public Vec3d predictWithExtraTicks(Entity entity, int ticks) {
+            return EntityInternalAccess.of(entity)
+                    .getPositionPredictor()
+                    .predict(ticksLater + ticks, mode.ordinal(), ticksHistory);
         }
     }
 }

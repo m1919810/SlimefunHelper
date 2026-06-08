@@ -119,7 +119,10 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         }
         Vec3d playerPos = mc.player.getPos();
         Vec2f playerPy = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
-        Vec3d targetPos = CombatTasks.getPositionPredict().predictPosition(target);
+        Vec3d targetPos = CombatTasks.getPositionPredict()
+                .spearPredictArgument
+                .get()
+                .predict(target); // .predictAttackPosition(target);
         Vec3d direction =
                 targetPos.add(0, target.getEyeHeight(target.getPose()), 0).subtract(mc.player.getEyePos());
         if (RenderTasks.DEBUG_RENDER_SPEAR) {

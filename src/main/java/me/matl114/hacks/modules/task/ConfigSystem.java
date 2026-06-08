@@ -19,8 +19,8 @@ import net.minecraft.client.option.SimpleOption;
 import net.minecraft.text.Text;
 
 public class ConfigSystem extends BaseModule {
-    public final ModulePath hotkeys = makePath(Configs.HOTKEY_CONFIG, "hotkeys");
-    public final ModulePath config = makePath(Configs.HOTKEY_CONFIG, "hotkeys");
+    public final ModulePath hotkeys = makePath(Configs.MISC_CONFIG, "hotkeys");
+    public final ModulePath config = makePath(Configs.MISC_CONFIG, "hotkeys");
 
     public ConfigSystem() {
         super("Config");

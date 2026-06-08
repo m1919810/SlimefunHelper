@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.move;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -53,6 +54,15 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     public final FlagRef explosions =
             flagBuilder(antiKb.add("bypass-explosions")).build();
 
+    public final FlagRef freezeIfWalk = flagBuilder(antiKb.add("grim-freeze-if-walk"))
+            .show(() -> mode.get().isIn(Mode.GRIM_LEGACY_GROUND))
+            .build();
+
+    public final IntRef resetKBTick = intBuilder(antiKb.add("grim-reset-kb-tick"))
+            .defaultValue(3)
+            .show(() -> mode.get().isIn(Mode.GRIM_LEGACY_GROUND))
+            .build();
+
     public final FlagRef pauseWhenWASD = flagBuilder(antiKb.add("pause-when-wasd"))
             .show(() -> mode.get().isIn(Mode.FREEZE))
             .build();
@@ -70,8 +80,12 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             .show(() -> mode.get().isNotIn(Mode.NONE))
             .build();
 
-    public final FlagRef inWall = flagBuilder(antiKb.add("execute-in-wall"))
-            .show(() -> mode.get().isNotIn(Mode.NONE))
+    public final FlagRef inFirework = builder(antiKb.add("execute-during-fireworks"), Boolean.class)
+        .defaultValue(true)
+        .build();
+
+    public final FlagRef inWall = builder(antiKb.add("execute-in-wall"), Boolean.class)
+        .defaultValue(true)
             .build();
 
     public final FlagRef noBlock = flagBuilder(antiKb.add("no-block-push")).build();
@@ -167,6 +181,18 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public void onPlayerVelocity(Event<Vec3d> event) {
         if (enable.get() && mc.player != null) {
+            if (inFirework.get() && mc.player.isFallFlying() && MovTasks.getElytraExtra().canFireworkControlMotion()) {
+                markForCancelVelocity();
+                event.cancel();
+                return;
+            }
+            // todo: make this inside wall
+            if (inWall.get() && mc.player.isInsideWall()) {
+                // handle In
+                markForCancelVelocity();
+                event.cancel();
+                return;
+            }
             if (canCancel > 0) {
                 canCancel -= 1;
                 if (event.isCancelled()) {
@@ -178,20 +204,8 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                     return;
                 } else if (lastVelocity.horizontalLength() >= minHorizontalVelocity.get()
                         || Math.abs(lastVelocity.y) >= minVerticalVelocity.get()) {
-                    if (mc.player.isFallFlying() && MovTasks.getElytraExtra().canFireworkControlMotion()) {
-                        markForCancelVelocity();
-                        event.cancel();
-                        return;
-                    }
                     if ((mc.player.isTouchingWater() || mc.player.isSubmergedInWater() || mc.player.isInLava())
                             && notInWater.get()) {
-                        return;
-                    }
-                    // todo: make this inside wall
-                    if (inWall.get() && mc.player.isInsideWall()) {
-                        // handle In
-                        markForCancelVelocity();
-                        event.cancel();
                         return;
                     }
 
@@ -276,12 +290,19 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             //            mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new
             // PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, new BlockHitResult(pos.toBottomCenterPos(), Direction.DOWN,
             // pos, false ), seq));
-            if (lastCancelVelocityTick + 3 <= Tasks.getTick()) {
+            if (lastCancelVelocityTick + resetKBTick.get() <= Tasks.getTick()) {
                 flagLegacy = false;
                 // mc.player.setVelocity(Vec3d.ZERO);
             } else {
-                FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-                mc.player.setOnGround(true);
+                if (freezeIfWalk.get() || !PlayerInputUtils.of(mc.options).hasMovementControl()) {
+                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                    mc.player.setOnGround(true);
+                } else {
+                    ClientPlayerAccess.of(mc.player).resyncPos();
+                    mc.player.setOnGround(true);
+                }
+                // FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                // mc.player.setOnGround(true);
             }
         }
         // hyw

@@ -6,7 +6,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 public class ReflectUtils {
@@ -1019,6 +1018,10 @@ public class ReflectUtils {
      * @return A map where keys are enum constant names and values are the enum constants
      */
     public static <T extends Enum> Map<String, T> getEnumMap(Class<T> clazz) {
-        return Arrays.stream(clazz.getEnumConstants()).collect(Collectors.toMap(i -> ((Enum) i).name(), s -> (T) s));
+        Map<String, T> map0 = new LinkedHashMap<>();
+        for (var re : clazz.getEnumConstants()) {
+            map0.put(re.name(), re);
+        }
+        return map0;
     }
 }

@@ -1,9 +1,11 @@
 package me.matl114.hacks.modules.combat;
 
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -66,6 +68,7 @@ public class CombatExtra extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(CooldownUpdateS2CPacket.class), this::asyncUpdateShieldCooldown);
         registerListener(Listener.getAttackAction(), this::onUseAttackNoSlow);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 
     public int shieldExceptionspam = 0;
@@ -133,6 +136,23 @@ public class CombatExtra extends BaseModule {
             } catch (Throwable e) {
                 // any exception
 
+            }
+        }
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        switch (event.context.getValue()) {
+            case HACKING -> {
+                range.set(3.0);
+                boatAttackRange.set(3.0);
+            }
+            case AC_GRIM, AC_GRIM_LEGACY -> {
+                range.set(0.0);
+                boatAttackRange.set(3.0);
+            }
+            default -> {
+                range.set(0.0);
+                boatAttackRange.set(0.0);
             }
         }
     }

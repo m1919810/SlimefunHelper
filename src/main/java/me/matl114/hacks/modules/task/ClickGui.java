@@ -60,7 +60,7 @@ import org.jetbrains.annotations.NotNull;
 public class ClickGui extends BaseModule {
     public ClickGui() {}
 
-    public ModulePath clickGui = makePath(Configs.HOTKEY_CONFIG, "click-gui");
+    public ModulePath clickGui = makePath(Configs.MISC_CONFIG, "click-gui");
 
     public KeyBindRef keyBind = hotkey(clickGui.add("hotkey"))
             .defaultValue(new MultiKeyBind(KeyCode.KEY_RIGHT_ALT))

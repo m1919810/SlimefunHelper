@@ -40,6 +40,14 @@ public class MathUtils {
         return Math.abs(a.x) < range && Math.abs(a.y) < range && Math.abs(a.z) < range;
     }
 
+    public static boolean isInXZRange(Vec3d a, Vec3d b, double range) {
+        return isInBox(a.subtract(b), range);
+    }
+
+    public static boolean isInXZRange(Vec3d a, double range) {
+        return Math.abs(a.x) < range && Math.abs(a.z) < range;
+    }
+
     public static Box getBlockBox(BlockPos pos) {
         return new Box(pos);
     }
@@ -81,6 +89,18 @@ public class MathUtils {
                 .normalize();
     }
 
+    public static Vec3d getVerticalWithSameY(Vec3d vec3d) {
+        Vec3d dir = vec3d.normalize();
+        double dx = dir.x;
+        double dz = dir.z;
+        if (Math.abs(dx) < 1e-8 && Math.abs(dz) < 1e-8) {
+            // 点在 Y 轴上，任何水平向量都是垂直的
+            return new Vec3d(1, 0, 0);
+        }
+        // 与 (dx, dz) 垂直的向量为 (dz, -dx)，y=0
+        return new Vec3d(dz, 0, -dx).normalize();
+    }
+
     public static Pair<Vec3d, Vec3d> getTangentWithSameXZ(Vec3d center, double range, Vec3d point) {
         return getTangentWithSameXZ(range, point.subtract(center));
     }
@@ -96,6 +116,27 @@ public class MathUtils {
         double cutLine = r2 / len; // < range
         double cutLen = Math.sqrt(r2 - MathUtils.s2(cutLine));
         Vec3d verticals = getVerticalWithSameXZ(point);
+        Vec3d cutPoint = point.normalize().multiply(cutLine);
+        return Pair.of(
+                cutPoint.add(verticals.multiply(cutLen)).subtract(point),
+                cutPoint.subtract(verticals.multiply(cutLen)).subtract(point));
+    }
+
+    public static Pair<Vec3d, Vec3d> getTangentWithSamePlate(Vec3d center, double range, Vec3d point) {
+        return getTangentWithSamePlate(range, point.subtract(center));
+    }
+
+    public static Pair<Vec3d, Vec3d> getTangentWithSamePlate(double range, Vec3d point) {
+        double r2 = MathUtils.s2(range);
+        double len = point.length();
+        if (MathUtils.s2(len) <= r2) {
+            // in ball
+            Vec3d vec3d = getVerticalWithSameY(point);
+            return Pair.of(vec3d, vec3d.negate());
+        }
+        double cutLine = r2 / len; // < range
+        double cutLen = Math.sqrt(r2 - MathUtils.s2(cutLine));
+        Vec3d verticals = getVerticalWithSameY(point);
         Vec3d cutPoint = point.normalize().multiply(cutLine);
         return Pair.of(
                 cutPoint.add(verticals.multiply(cutLen)).subtract(point),

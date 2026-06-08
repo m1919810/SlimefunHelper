@@ -22,22 +22,25 @@ public abstract class PacketWrapperSendEvents implements PacketWrapper {
             method = "Lcom/viaversion/viaversion/protocol/packet/PacketWrapperImpl;sendToServer0(Ljava/lang/Class;ZZ)V")
     public void onSendToServer(
             Class<?> protocol, boolean skipCurrentPipeline, boolean currentThread, Operation<Void> operation) {
-        if (this.getPacketType() != null && this.getPacketType().state() == State.PLAY) {
-            if (!PacketManager.startFlushOut) {
-                PacketWrapperSendStorageImpl storageImpl = new PacketWrapperSendStorageImpl(
-                        System.currentTimeMillis(),
-                        this,
-                        this.user().getChannel(),
-                        (bl) -> operation.call(protocol, skipCurrentPipeline, bl));
-                Event<PacketStorage> event = new Event<>(storageImpl, true, false);
-                PacketManager.getPacketQueueEvent().handleValue(event);
-                if (event.isCancelled()) {
-                    PacketManager.handleQueueOut(storageImpl);
-                    return;
+        if (user() != null && user().getChannel() != null) {
+            if (this.getPacketType() != null && this.getPacketType().state() == State.PLAY) {
+                if (!PacketManager.startFlushOut) {
+                    PacketWrapperSendStorageImpl storageImpl = new PacketWrapperSendStorageImpl(
+                            System.currentTimeMillis(),
+                            this,
+                            this.user().getChannel(),
+                            (bl) -> operation.call(protocol, skipCurrentPipeline, bl));
+                    Event<PacketStorage> event = new Event<>(storageImpl, true, false);
+                    PacketManager.getPacketQueueEvent().handleValue(event);
+                    if (event.isCancelled()) {
+                        PacketManager.handleQueueOut(storageImpl);
+                        return;
+                    }
                 }
             }
+
+            operation.call(protocol, skipCurrentPipeline, currentThread);
         }
-        operation.call(protocol, skipCurrentPipeline, currentThread);
     }
     //
     //    @WrapMethod(method = "sendToServer0")

@@ -44,8 +44,6 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.registry.Registries;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -687,25 +685,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public void switchSlotToArmor(int idx) {
+        int armorSlot = 6;
+        int targetSlot = idx;
         if (mc.player.playerScreenHandler == ClientPlayerAccess.of(mc.player).getServerScreenHandler()) {
-            MovTasks.getMovExtra().sendPacketsForInventoryAction();
-            int armorSlot = 6;
-            int targetSlot = idx; // InvTasks.getScreenSlotByInventoryIndex(idx);
-            ScreenHandler handler = mc.player.playerScreenHandler;
-            if (targetSlot >= 36 && targetSlot <= 45) {
-                // use number operation
-                int target = (targetSlot < 45) ? targetSlot - 36 : 40;
-                mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
-            } else {
-                // fuck, do not kick me.
-
-                // swap target to hotbar, hotbar to target
-                mc.interactionManager.clickSlot(handler.syncId, targetSlot, 40, SlotActionType.SWAP, mc.player);
-                // swap hotbar to armor, armor to hotbar
-                mc.interactionManager.clickSlot(handler.syncId, armorSlot, 40, SlotActionType.SWAP, mc.player);
-                // swap the rest
-                mc.interactionManager.clickSlot(handler.syncId, targetSlot, 40, SlotActionType.SWAP, mc.player);
-            }
+            InvExtra.INSTANCE.swapInventorySlots(armorSlot, targetSlot);
         }
     }
 
