@@ -70,20 +70,28 @@ public class LegacySnapRotManager extends BaseModule {
 
     public void snapAt(float pitch, float yaw, boolean force) {
         if (force || PlayerStateManager.INSTANCE.isRotationDifferent(pitch, yaw)) {
-            float lastYaw = PlayerStateManager.INSTANCE.lastYaw;
-            mc.getNetworkHandler()
-                    .sendPacket(PlayerMoveC2SPacketAccess.setCause(
-                            VPacket.newFull(
-                                    mc.player.getX(),
-                                    mc.player.getY(),
-                                    mc.player.getZ(),
-                                    EntityUtils.getSafeYaw(lastYaw, yaw),
-                                    EntityUtils.getSafePitch(pitch),
-                                    mc.player.isOnGround(),
-                                    mc.player.horizontalCollision),
-                            PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP));
+            mc.getNetworkHandler().sendPacket(createSnapAt(pitch, yaw));
         }
         lastSnapPitchYaw = new Vec2f(pitch, yaw);
+    }
+
+    public PlayerMoveC2SPacket createSnapAt(Vec3d look) {
+        Vec2f py = EntityUtils.rotationToPitchYaw(look.normalize());
+        return createSnapAt(py.x, py.y);
+    }
+
+    public PlayerMoveC2SPacket createSnapAt(float pitch, float yaw) {
+        float lastYaw = PlayerStateManager.INSTANCE.lastYaw;
+        return PlayerMoveC2SPacketAccess.setCause(
+                VPacket.newFull(
+                        mc.player.getX(),
+                        mc.player.getY(),
+                        mc.player.getZ(),
+                        EntityUtils.getSafeYaw(lastYaw, yaw),
+                        EntityUtils.getSafePitch(pitch),
+                        mc.player.isOnGround(),
+                        mc.player.horizontalCollision),
+                PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);
     }
 
     public void sendAsSnap(PlayerMoveC2SPacket full) {

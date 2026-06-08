@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import com.mojang.serialization.JsonOps;
+import java.io.File;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -706,6 +707,11 @@ public class ChatUtils {
                 .setStyle(Style.EMPTY
                         .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy text")))
                         .withClickEvent(new ClickEvent.CopyToClipboard(copy)));
+    }
+
+    @ApiMethod
+    public static ClickEvent getOpenFile(File path) {
+        return new ClickEvent.OpenFile(path);
     }
 
     @ApiMethod

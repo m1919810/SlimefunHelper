@@ -214,32 +214,6 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
-                    .name("config")
-                    .helper("<operation:default open> 配置文件操作")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("operation")
-                            .select(List.of("open", "reload"), "open")
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onConfig)))
-                    .complete();
-        }
-
-        public void onConfig(ArgumentInputStream s) {
-            String next = s.nextNonnull();
-            switch (next) {
-                case "open" -> {
-                    Tasks.scheduleDelayed(MainTasks::openConfigNewStyleScreen, 1);
-                    Debug.chat(Text.literal("成功打开配置文件界面").formatted(Formatting.GREEN));
-                }
-                case "reload" -> {
-                    Tasks.scheduleDelayed(Config::reloadAll, 1);
-                    Debug.chat(Text.literal("成功重载配置文件").formatted(Formatting.GREEN));
-                }
-            }
-        }
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
                     .name("task")
                     .helper("<taskid> <args> 运行内置任务")
                     .arg(SimpleCommandArgs.argumentBuilder()

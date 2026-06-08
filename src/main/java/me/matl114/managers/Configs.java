@@ -27,7 +27,7 @@ public class Configs {
             INTERACT_CONFIG.registerGlobal();
             SLIMEFUN_CONFIG.registerGlobal();
             MODEL_CONFIG.registerGlobal();
-            HOTKEY_CONFIG.registerGlobal();
+            MISC_CONFIG.registerGlobal();
             TOGGLE_CONFIG.registerGlobal();
         } else {
             CHAT_CONFIG.registerGlobal();
@@ -35,7 +35,7 @@ public class Configs {
             HTTP_CONFIG.registerGlobal();
             SLIMEFUN_CONFIG.registerGlobal();
             MODEL_CONFIG.registerGlobal();
-            HOTKEY_CONFIG.registerGlobal();
+            MISC_CONFIG.registerGlobal();
             TOGGLE_CONFIG.registerGlobal();
         }
         if (init) {
@@ -258,12 +258,12 @@ public class Configs {
         }
     }
 
-    public static final Config HOTKEY_CONFIG = ConfigLoader.loadExternalConfig(
+    public static final Config MISC_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/misc.yml", "misc settings")
             .markForSave();
 
     static {
-        HOTKEY_CONFIG
+        MISC_CONFIG
                 .builder(Boolean.class)
                 .path(HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN)
                 .defaultValue(true)

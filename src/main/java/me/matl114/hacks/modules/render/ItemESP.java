@@ -15,8 +15,8 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDataFlag;
-import me.matl114.versioned.api.VRender;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.ComponentChanges;
@@ -226,95 +226,61 @@ public class ItemESP extends BaseModule {
         }
     }
 
-    List<Box> simpleBoxes;
-    List<Box> specialBoxes;
+    final RenderCollector<Box> boxCollector = RenderUtils.createBoxCollector(true, false, false);
+    final RenderCollector<Vec3d> tracerCollector = RenderUtils.createTracerCollector();
 
     public void onUpdate(Event<Void> eventVoid) {
+        boxCollector.clear();
+        tracerCollector.clear();
         if (checkNull()) {
-            simpleBoxes = null;
-            specialBoxes = null;
             return;
         }
+
         if (enable.get()) {
             boolean special = enableSpecial.get();
             boolean common = enableSimple.get();
-
+            int color = ColorUtils.withAlphaInt(this.color.get().asRGB(), 1.0F);
+            int specialColor = ColorUtils.withAlphaInt(this.specialColor.get().asRGB(), 1.0F);
+            TracingOption op = option.get();
             if (special || common) {
-                if (special) {
-                    specialBoxes = new ArrayList<>();
-                }
-                if (common) {
-                    simpleBoxes = new ArrayList<>();
-                }
                 for (var entity : mc.world.getEntities()) {
                     if ((entity instanceof ItemEntity i || (enableFrame.get() && entity instanceof ItemFrameEntity))) {
                         if (special
                                 && entity instanceof EntityAccess<?> access
                                 && !access.isMetaEmpty()
                                 && access.getMetadata().get(this, ITEM_ESP_METADATA_KEY) != null) {
-                            specialBoxes.add(entity.getBoundingBox());
+                            if (op.box()) {
+                                boxCollector.submit(entity.getBoundingBox(), specialColor);
+                            }
+                            if (op.line()) {
+                                tracerCollector.submit(entity.getBoundingBox().getCenter(), specialColor);
+                            }
                             continue;
                         }
                         if (common) {
-                            simpleBoxes.add(entity.getBoundingBox());
+                            if (op.box()) {
+                                boxCollector.submit(entity.getBoundingBox(), color);
+                            }
+                            if (op.line()) {
+                                tracerCollector.submit(entity.getBoundingBox().getCenter(), color);
+                            }
                         }
                     }
                 }
             }
-        } else {
-            specialBoxes = null;
-            simpleBoxes = null;
         }
     }
 
     public void onRenderEntity(Event<MatrixStack> event) {
         if (enable.get()) {
             MatrixStack stack = event.context();
-            if (simpleBoxes != null && !simpleBoxes.isEmpty()) {
-                TracingOption op = option.get();
-                int color = this.color.get().asRGB();
-                drawBoxes(stack, simpleBoxes, op, color);
-            }
-            if (specialBoxes != null && !specialBoxes.isEmpty()) {
-                TracingOption op = specialOptions.get();
-                int color = this.specialColor.get().asRGB();
-                drawBoxes(stack, specialBoxes, op, color);
-            }
-        }
-    }
-
-    private void drawBoxes(MatrixStack stack, List<Box> boxes, TracingOption op, int color) {
-        if (op.isEmpty()) return;
-        Vec3d cameraPos = RenderUtils.getCameraPos().negate();
-        RenderUtils.startDrawVirtual(stack);
-        try {
-            VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
-                if (op.box()) {
-                    for (var box2 : boxes) {
-                        box2 = box2.offset(cameraPos);
-                        operation.drawOutlinedBox(
-                                stack,
-                                vertexConsumer,
-                                box2.getMinPos(),
-                                box2.getMaxPos(),
-                                ColorUtils.withAlphaInt(color, 1.0F));
-                    }
-                }
-                if (op.line()) {
-                    Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
-                    for (var box : boxes) {
-                        box = box.offset(cameraPos);
-                        operation.drawLine(
-                                stack,
-                                vertexConsumer,
-                                traceOrigin,
-                                box.getCenter(),
-                                ColorUtils.withAlphaInt(color, 1.0F));
-                    }
-                }
-            }));
-        } finally {
             RenderUtils.stopDrawVirtual(stack);
+            try {
+                boxCollector.render(stack);
+                tracerCollector.render(stack);
+            } finally {
+                RenderUtils.stopDrawVirtual(stack);
+            }
         }
     }
 }

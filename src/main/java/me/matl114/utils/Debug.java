@@ -84,7 +84,7 @@ public class Debug {
 
     public static void debug(Object object) {
         if (SlimefunHelper.DEV_ENV) {
-            debug((Object) object);
+            info((Object) object);
         }
     }
 

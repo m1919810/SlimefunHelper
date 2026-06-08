@@ -3,9 +3,6 @@ package me.matl114.hacks.modules.render;
 import static me.matl114.utils.ColorUtils.*;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import me.matl114.accessors.access.ChunkAccess;
 import me.matl114.events.Event;
@@ -20,8 +17,7 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.RenderUtils;
-import me.matl114.utils.collections.IndexEntry;
-import me.matl114.versioned.api.VRender;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
@@ -75,7 +71,7 @@ public class ChestESP extends BaseModule {
                     color(Formatting.GREEN)))
             .build();
 
-    public Map<BlockPos, BlockEntity> renderPositions = new HashMap<>();
+    //    public final Map<BlockPos, BlockEntity> renderPositions = new HashMap<>();
 
     @Override
     public void registerAll() {
@@ -87,15 +83,21 @@ public class ChestESP extends BaseModule {
 
     public void onBlockEntityRender(Event<BlockEntity> blockEntityEvent) {}
 
+    public final RenderCollector<Box> boxSolidCollector = RenderUtils.createBoxCollector(false, true, false);
+    public final RenderCollector<Box> boxOutlineCollector = RenderUtils.createBoxCollector(true, false, false);
+    public final RenderCollector<Vec3d> boxTraceLineCollector = RenderUtils.createTracerCollector();
+
     public void onSwapRenderContent(Event<ClientPlayerEntity> clientPlayerEntityEvent) {
         if (checkNull()) return;
-        renderPositions.clear();
+        boxOutlineCollector.clear();
+        boxTraceLineCollector.clear();
+        boxSolidCollector.clear();
 
         if (enable.get()) {
             for (var chunk : CommonUtils.chunks(false)) {
                 for (var blockEntities : ChunkAccess.of(chunk).blockEntityEntries()) {
                     if (typeFilter.get().test(blockEntities.getValue().getType())) {
-                        renderPositions.put(blockEntities.getKey(), blockEntities.getValue());
+                        dispatchBlockEntityRender(blockEntities.getValue(), blockEntities.getKey());
                     }
                 }
             }
@@ -107,65 +109,16 @@ public class ChestESP extends BaseModule {
             MatrixStack stack = render.context();
             RenderUtils.startDrawVirtual(stack);
             try {
-                List<IndexEntry<Box>> boxes = new ArrayList<>();
-                List<IndexEntry<Vec3d>> lines = new ArrayList<>();
-
-                for (var entry : renderPositions.entrySet()) {
-                    dispatchBlockEntityRender(entry.getValue(), entry.getKey(), stack, boxes, lines);
-                }
-                Vec3d cameraPosNeg = RenderUtils.getCameraPos().negate();
-                VRender.getInstance()
-                        .createQuadsLayer(
-                                ((operation, vertexConsumer) -> {
-                                    if (!boxes.isEmpty()) {
-                                        for (IndexEntry<Box> boxEntry : boxes) {
-                                            var box = boxEntry.val().offset(cameraPosNeg);
-                                            operation.drawSolidBoxQuad(
-                                                    stack,
-                                                    vertexConsumer,
-                                                    box.getMinPos(),
-                                                    box.getMaxPos(),
-                                                    boxEntry.index());
-                                        }
-                                    }
-                                }),
-                                true);
-                VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
-                    if (!boxes.isEmpty()) {
-                        for (var boxEntry : boxes) {
-                            var box = boxEntry.val().offset(cameraPosNeg);
-                            operation.drawOutlinedBox(
-                                    stack,
-                                    vertexConsumer,
-                                    box.getMinPos(),
-                                    box.getMaxPos(),
-                                    ColorUtils.withAlphaInt(boxEntry.index(), 0.5F));
-                        }
-                    }
-                    if (!lines.isEmpty()) {
-                        Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
-                        for (var line : lines) {
-                            operation.drawLine(
-                                    stack,
-                                    vertexConsumer,
-                                    traceOrigin,
-                                    line.val().add(cameraPosNeg),
-                                    line.index());
-                        }
-                    }
-                }));
+                boxSolidCollector.render(stack);
+                boxOutlineCollector.render(stack);
+                boxTraceLineCollector.render(stack);
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }
         }
     }
 
-    public void dispatchBlockEntityRender(
-            BlockEntity blockEntity,
-            BlockPos blockPos,
-            MatrixStack matrixStack,
-            List<IndexEntry<Box>> boxes,
-            List<IndexEntry<Vec3d>> lines) {
+    public void dispatchBlockEntityRender(BlockEntity blockEntity, BlockPos blockPos) {
         TextColor color = colorMap.get().getOrDefault(blockEntity.getType());
         if (color == null) return;
         TracingOption option = enableLines.get();
@@ -173,11 +126,12 @@ public class ChestESP extends BaseModule {
             BlockState state = blockEntity.getCachedState();
             Box outBox = handleDoubleChestBox(state, blockPos);
             if (outBox != null) {
-                boxes.add(new IndexEntry<>(ColorUtils.withAlphaInt(color.getRgb(), 0.25F), outBox.offset(blockPos)));
+                boxSolidCollector.submit(outBox.offset(blockPos), ColorUtils.withAlphaInt(color.getRgb(), 0.25F));
+                boxOutlineCollector.submit(outBox.offset(blockPos), ColorUtils.withAlphaInt(color.getRgb(), 0.5F));
             }
         }
         if (option.line()) {
-            lines.add(new IndexEntry<>(ColorUtils.withAlphaInt(color.getRgb(), 1.0F), blockPos.toCenterPos()));
+            boxTraceLineCollector.submit(blockPos.toCenterPos(), ColorUtils.withAlphaInt(color.getRgb(), 1.0F));
         }
     }
 

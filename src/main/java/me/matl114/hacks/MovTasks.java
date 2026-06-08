@@ -659,6 +659,22 @@ public class MovTasks {
     }
 
     @ApiMethod
+    public static boolean isCollidingWithEnvironment(Box box) {
+        final List<Box> collisionsBB = new java.util.ArrayList<>();
+        final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
+        CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+            mc.world,
+            mc.player,
+            box,
+            collisionsVoxel,
+            collisionsBB,
+            CollisionUtil.COLLISION_FLAG_CHECK_BORDER,
+            null,
+            null);
+        return !collisionsVoxel.isEmpty() || !collisionsBB.isEmpty();
+    }
+
+    @ApiMethod
     private static boolean checkEnvironmentCollision(
             Entity entity, Vec3d pos, boolean checkLiquid, boolean ignoreChunkBorder) {
         // should also consider entity collision, shit shulker

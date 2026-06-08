@@ -63,6 +63,14 @@ public class AbstractMainCommand implements SubCommand, InterruptionHandler {
         });
     }
 
+    public SubCommand.Builder<TreeSubCommand> subMainBuilder() {
+        return SubCommand.factoryBuilder((a, b, c) -> {
+            var root = new TreeSubCommand(a, c);
+            this.root.registerSub(new BridgeSubCommand(root.getName(), root));
+            return root;
+        });
+    }
+
     /**
      * Sends a message to the command sender with color code translation.
      *

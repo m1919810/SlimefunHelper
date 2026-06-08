@@ -103,33 +103,6 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         return original;
     }
 
-    @Inject(
-            method = "tick",
-            at =
-                    @At(
-                            value = "FIELD",
-                            target =
-                                    "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;",
-                            shift = At.Shift.BEFORE,
-                            ordinal = 2))
-    public void onInputEventIfScreenOpen(CallbackInfo ci, @Local Profiler profiler) {
-        if (MinecraftClient.getInstance().currentScreen != null
-                || MinecraftClient.getInstance().getOverlay() != null) {
-            profiler.swap("Keybindings");
-            handleInputEventWhenScreenOpen();
-        }
-    }
-
-    @Unique
-    private void handleInputEventWhenScreenOpen() {
-        // check in game and do the tick
-        if (MinecraftClient.getInstance().player != null) {
-            this.handleBlockBreaking(false);
-            if (this.attackCooldown > 0) {
-                --this.attackCooldown;
-            }
-        }
-    }
 
     boolean lastUse = false;
 

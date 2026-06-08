@@ -4,11 +4,11 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 
-public class DamageManager extends BaseModule {
+public class CombatManager extends BaseModule {
     public final ModulePath combat = makePath(Configs.COMBAT_CONFIG, "attack");
-    public static DamageManager INSTANCE;
+    public static CombatManager INSTANCE;
 
-    public DamageManager() {
+    public CombatManager() {
         INSTANCE = this;
     }
 

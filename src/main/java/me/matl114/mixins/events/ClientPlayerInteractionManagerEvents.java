@@ -11,12 +11,16 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.network.SequencedPacketCreator;
+import net.minecraft.client.recipebook.ClientRecipeBook;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.stat.StatHandler;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.PlayerInput;
 import net.minecraft.util.hit.BlockHitResult;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -101,5 +105,20 @@ public abstract class ClientPlayerInteractionManagerEvents {
     public void onClickSlotPost(
             int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
         Listener.getPostClickSlot().broadcast(actionType, syncId, slotId, button);
+    }
+
+    @Inject(
+            method =
+                    "createPlayer(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/stat/StatHandler;Lnet/minecraft/client/recipebook/ClientRecipeBook;Lnet/minecraft/util/PlayerInput;Z)Lnet/minecraft/client/network/ClientPlayerEntity;",
+            at = @At("RETURN"))
+    public void onCreatePlayer(
+            ClientWorld world,
+            StatHandler statHandler,
+            ClientRecipeBook recipeBook,
+            PlayerInput lastPlayerInput,
+            boolean lastSprinting,
+            CallbackInfoReturnable<ClientPlayerEntity> cir) {
+        ClientPlayerEntity player = cir.getReturnValue();
+        Listener.getPlayerInitConfiguration().broadcast(player);
     }
 }

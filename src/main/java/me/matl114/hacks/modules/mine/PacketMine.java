@@ -4,6 +4,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -16,6 +17,7 @@ import me.matl114.utils.MathUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -43,7 +45,11 @@ public class PacketMine extends BaseModule {
             .build();
 
     public final FlagRef considerAirState =
-            flagBuilder(packetMine.add("consider-air-state")).build();
+            flagBuilder(packetMine.add("simulate-real-break")).build();
+
+    public final FlagRef airBreak = flagBuilder(packetMine.add("consider-air-break")).build();
+
+    public final FlagRef swingHand = flagBuilder(packetMine.add("swing-hand")).build();
 
     public final DoubleRef mineThreshold = builder(packetMine.add("mine-threshold"), DoubleRef.TYPE)
             .defaultValue(0.7)
@@ -88,13 +94,14 @@ public class PacketMine extends BaseModule {
                                                     .getCurrentMiningProgress(true)
                                             > 0.98F) {
                                 mc.interactionManager.breakBlock(pos);
-                                // mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
                             }
                             for (int i = 0; i < multiplePackets.get(); ++i) {
-                                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                                if(swingHand.get())
+                                    mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
                                 PlayerInteractionAccess.of(mc.interactionManager)
                                         .sendStopBreakPacket(pos, dir);
                             }
+                            Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
                             if (callback != null) {
                                 callback.run();
                             }
@@ -108,10 +115,16 @@ public class PacketMine extends BaseModule {
     @Nonnull
     public IndexEntry<ItemStack> getCurrentUsableTool(BlockState currentState) {
         if (autoTool.get()) {
+            BlockState calS;
+            if(currentState.isAir() || currentState.isLiquid()){
+                calS = Blocks.OBSIDIAN.getDefaultState();
+            }else {
+                calS = currentState;
+            }
             var re = InventoryUtils.findBestPlayerItem(
                     item -> {
                         return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                mc.player, currentState, item);
+                                mc.player, calS, item);
                     },
                     true,
                     true);
@@ -125,7 +138,7 @@ public class PacketMine extends BaseModule {
     public boolean canMine(BlockState state, ItemStack tool) {
         // do not mine liquid, that's a disaster
         // do not mine air, shit
-        if (state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && !state.isAir()) {
+        if (state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && (airBreak.get() || !state.isAir())) {
             if (mineThreshold.get() > 0) {
                 var access = PlayerInteractionAccess.of(mc.interactionManager);
                 return access.predictCurrentMiningProgressWithTool(tool) > Math.min(0.98, mineThreshold.get());
@@ -133,6 +146,13 @@ public class PacketMine extends BaseModule {
             return true;
         } else {
             return false;
+        }
+    }
+
+    public static class Post{
+        public static final Post INSTANCE = new Post();
+        private Post(){
+
         }
     }
 }

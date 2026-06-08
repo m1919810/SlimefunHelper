@@ -33,9 +33,9 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
     public BoatVClip() {
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
-        MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         bindFlag(enable);
     }
 

@@ -166,6 +166,12 @@ tasks.named("runClient", JavaExec) {
 	jvmArgs("-XX:+AllowEnhancedClassRedefinition", "-XX:-OmitStackTraceInFastThrow"
 			, "-Dmixin.debug.export=true"
 	)
+	systemProperties = [
+			"https.proxyHost": "127.0.0.1",
+			"https.proxyPort": "7890",
+			"http.proxyHost": "127.0.0.1",
+			"http.proxyPort": "7890"
+	]
 }
 //
 //tasks.named('downloadAssets', JavaExec) {

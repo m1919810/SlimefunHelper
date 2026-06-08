@@ -10,6 +10,10 @@ public class ColorUtils {
         return new Color((a & 255) << 24 | (r & 255) << 16 | (g & 255) << 8 | (b & 255), true);
     }
 
+    public static int getColorInt(float r, float g, float b) {
+        return getColorInt((int) (r * 255), (int) (g * 255), (int) (b * 255));
+    }
+
     public static int getColorInt(int r, int g, int b) {
         return 0XFF000000 | ((r & 255) << 16) | ((g & 255) << 8) | (b & 255);
     }

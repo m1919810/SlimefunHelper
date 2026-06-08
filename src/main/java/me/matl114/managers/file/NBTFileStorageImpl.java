@@ -2,7 +2,6 @@ package me.matl114.managers.file;
 
 import com.mojang.serialization.DynamicOps;
 import java.io.File;
-import me.matl114.utils.Debug;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
@@ -45,16 +44,15 @@ public class NBTFileStorageImpl extends FileStorageImpl {
     @Override
     public void read() {
         if (!this.file.exists()) {
-            Debug.info("Creating new NBTStorage file at", this.file);
             this.nbtCompound = new NbtCompound();
-            write();
-        } else {
-            try {
-                this.nbtCompound = NbtIo.read(this.file.toPath());
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
-            }
             dirty = false;
+            return;
         }
+        try {
+            this.nbtCompound = NbtIo.read(this.file.toPath());
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+        dirty = false;
     }
 }

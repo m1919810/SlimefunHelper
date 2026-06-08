@@ -63,7 +63,7 @@ public abstract class PlayerEntityMixin extends LivingEntity
         return predictorImpl;
     }
 
-    @Inject(method = "tick", at = @At("HEAD"))
+    @Inject(method = "tick", at = @At("RETURN"))
     private void positionRecordTick(CallbackInfo ci) {
         if (predictorImpl == null) {
             predictorImpl = new PredictorImpl(this);

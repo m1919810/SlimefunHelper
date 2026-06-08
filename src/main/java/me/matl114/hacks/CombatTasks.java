@@ -197,7 +197,7 @@ public class CombatTasks {
     public static CombatExtra combatExtra;
 
     @Getter
-    public static DamageManager damageManager;
+    public static CombatManager combatManager;
 
     @Getter
     public static TargetSelector targetSelector;
@@ -243,6 +243,8 @@ public class CombatTasks {
 
     @Getter
     public static Blink blink;
+    @Getter
+    public static PearlFly pearlFly;
 
     @Getter
     public static ElytraBot elytraBot;
@@ -263,7 +265,7 @@ public class CombatTasks {
     // todo: crystal
     private static void initModules(ModuleManager m) {
         combatExtra = new CombatExtra().register(m);
-        damageManager = new DamageManager().register(m);
+        combatManager = new CombatManager().register(m);
         targetSelector = new TargetSelector().register(m);
         positionPredict = new PositionPredict().register(m);
         attack = new Attack().register(m);
@@ -279,6 +281,7 @@ public class CombatTasks {
         spearEnhance = new SpearEnhance().register(m);
         spearAttack = new SpearAttack().register(m);
         blink = new Blink().register(m);
+        pearlFly = new PearlFly().register(m);
         elytraBot = new ElytraBot().register(m);
         // transactionBlocker = new TransactionBlocker().register(m);
     }

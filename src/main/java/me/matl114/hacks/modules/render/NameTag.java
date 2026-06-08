@@ -2,14 +2,20 @@ package me.matl114.hacks.modules.render;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.gui.Constants;
+import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
@@ -17,12 +23,19 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VDrawContext;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.network.OtherClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.StringHelper;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Vector2d;
@@ -43,15 +56,29 @@ public class NameTag extends BaseModule {
 
     public final FlagRef enable = flagBuilder(nameTag.addEnable()).build();
 
+    public final FlagRef enablePlayer =
+            flagBuilder(nameTag.add("show-player-head")).build();
+
+    public final FlagRef enableList =
+            flagBuilder(nameTag.add("show-player-list")).build();
+
     public final DoubleRef height =
-            doubleBuilder(nameTag.add("extra-height")).defaultValue(1.0D).build();
+            doubleBuilder(nameTag.add("player-extra-height")).defaultValue(1.0D).build();
 
     public final DoubleRef size =
-            doubleBuilder(nameTag.add("size")).defaultValue(1.0D).build();
+            doubleBuilder(nameTag.add("player-size")).defaultValue(1.0D).build();
+
+    public FlagRef right = flagBuilder(nameTag.add("list-right")).build();
+    public NBTRef<Vec2> pos = builder(nameTag.add("list-pos"), Vec2.class)
+            .defaultValue(new Vec2(0.02D, 0.02D))
+            .validator((v) -> v.x() >= 0.0D && v.y() >= 0.0D && v.x() <= 1.0D && v.y() <= 1.0D)
+            .build();
 
     public final FlagRef hideName = flagBuilder(nameTag.add("hide-vanilla")).build();
 
     public final FlagRef showHealth = flagBuilder(nameTag.add("health")).build();
+
+    public final FlagRef showPing = flagBuilder(nameTag.add("ping")).build();
 
     public final FlagRef dist = flagBuilder(nameTag.add("distance")).build();
 
@@ -72,6 +99,10 @@ public class NameTag extends BaseModule {
             .defaultValue(new WrapColor(ColorUtils.color(new Color(20, 170, 170))))
             .build();
 
+    public final NBTRef<WrapColor> pingColor = builder(nameTag.add("ping-color"), WrapColor.class)
+        .defaultValue(new WrapColor(ColorUtils.color(Formatting.GREEN)))
+        .build();
+
     public final NBTRef<WrapColor> distColor = builder(nameTag.add("distance-color"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.RED)))
             .build();
@@ -82,6 +113,10 @@ public class NameTag extends BaseModule {
 
     public final NBTRef<WrapColor> infoColor = builder(nameTag.add("other-info-color"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
+            .build();
+
+    public final NBTRef<WrapColor> potionColor = builder(nameTag.add("potion-color"), WrapColor.class)
+            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
             .build();
 
     List<PlayerNameTagInfo> nameTagInfos;
@@ -98,17 +133,36 @@ public class NameTag extends BaseModule {
         if (!checkNull() && enable.get()) {
             nameTagInfos = new ArrayList<>();
             for (var player : mc.world.getPlayers()) {
-                if (player == mc.player) {
+                if (!(player instanceof ClientPlayerEntity) && !(player instanceof OtherClientPlayerEntity)) {
                     continue;
                 }
                 MutableText text = Text.empty();
                 String name = player.getNameForScoreboard();
                 if (name == null) continue;
+                if(TargetSelector.INSTANCE.isInFriendList(player)){
+                    text.append(
+                        Text.literal("[F]").withColor(Color.ORANGE.getRGB())
+                    );
+                }
+                if(player.isCreative()){
+                    text.append(
+                        Text.literal("[C]").withColor(Color.RED.getRGB())
+                    );
+                }
+
                 text.append(
                         player.getDisplayName().copy().withColor(nameColor.get().asRGB()));
                 if (showHealth.get()) {
                     text.append(Text.literal(" %d♥".formatted((int) player.getHealth()))
                             .withColor(healthColor.get().asRGB()));
+                }
+                if(showPing.get()){
+                    int latency = 0;
+                    PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(player.getUuid());
+                    if(entry != null){
+                        latency = entry.getLatency();
+                    }
+                    text.append(Text.literal(" %dms".formatted(latency)).withColor(pingColor.get().asRGB()));
                 }
                 if (dist.get()) {
                     double len = mc.player.getPos().distanceTo(player.getPos());
@@ -168,10 +222,35 @@ public class NameTag extends BaseModule {
                         text2.append(re);
                     }
                 }
-                nameTagInfos.add(new PlayerNameTagInfo(player, text, stack5, text2));
+                Map<RegistryEntry<StatusEffect>, Text> visible = null;
+                if (potion.get()) {
+                    PlayerStateManager.PlayerStatus status = PlayerStateManager.INSTANCE.getPlayerStatus(player);
+                    if (status != null) {
+                        var map = status.visibleStatusEffects;
+                        visible = new LinkedHashMap<>(map.size());
+                        for (var entry : map.entrySet()) {
+                            if (entry.getValue().visible) {
+                                visible.put(
+                                        entry.getKey(),
+                                        getDurationText(entry.getValue().getRemainDurations()));
+                            }
+                        }
+                    }
+                }
+                nameTagInfos.add(new PlayerNameTagInfo(player, text, stack5, text2, visible));
             }
         } else {
             nameTagInfos = null;
+        }
+    }
+
+    private static Text getDurationText(int duration) {
+        if (duration > Integer.MAX_VALUE - 1) {
+            return Text.translatable("effect.duration.infinite");
+        } else {
+            int i = MathHelper.floor((float) duration);
+            return Text.literal(
+                    StringHelper.formatTicks(i, mc.world.getTickManager().getTickRate()));
         }
     }
 
@@ -181,11 +260,24 @@ public class NameTag extends BaseModule {
         }
         if (enable.get() && nameTagInfos != null) {
             var stack = event.context;
-            Matrix4f cam = RenderListener.getWorldModelViewMatrix();
-            Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();
-            Function<Vec3d, Vector2d> projector = RenderUtils.createProjector(cam, proj);
-            for (var entity : nameTagInfos) {
-                onRenderPlayer(entity, stack, projector, (event.<Float>getArgs(0)));
+            if (enablePlayer.get()) {
+                Matrix4f cam = RenderListener.getWorldModelViewMatrix();
+                Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();
+                Function<Vec3d, Vector2d> projector = RenderUtils.createProjector(cam, proj);
+                for (var entity : nameTagInfos) {
+                    if (entity.player != mc.getCameraEntity()) {
+                        onRenderPlayer(entity, stack, projector, (event.<Float>getArgs(0)));
+                    }
+                }
+            }
+            if (enableList.get()) {
+                stack.getMatrices().pushMatrix();
+                handleRenderPosition(stack);
+                for (var entry : nameTagInfos) {
+                    onRenderList(entry, stack, (event.<Float>getArgs(0)));
+                    stack.getMatrices().translate(0, HEIGHT);
+                }
+                stack.getMatrices().popMatrix();
             }
         }
     }
@@ -199,9 +291,10 @@ public class NameTag extends BaseModule {
             try {
                 vdraw.getMatrices().translate((float) screenPos.x, (float) screenPos.y);
                 handleSize(vdraw);
-                handleNameLine(vdraw, player);
-                handleEquipment(vdraw, player);
+                handleNameLinePlayer(vdraw, player);
+                handleEquipmentPlayer(vdraw, player);
                 handleOtherInfoLine(vdraw, player);
+                handleEffectDisplayPlayer(vdraw, player);
                 //               if(screenPos.x == 0F && screenPos.y == 0F){
                 //                    vdraw.getMatrices().translate((float) screenPos.x + 1.0F, (float) screenPos.y);
                 //                }else{
@@ -215,6 +308,32 @@ public class NameTag extends BaseModule {
         }
     }
 
+    public void handleRenderPosition(VDrawContext vdraw) {
+        int sizeX = mc.getWindow().getScaledWidth();
+        int sizeY = mc.getWindow().getScaledHeight();
+        //        vdraw.pushMatrix();
+        //        vdraw.drawTexturedQuad(Identifier.tryParse("slimefunhelper:textures/custom/genshin_impact.png"), sizeX
+        // - 30,sizeX, sizeY - 20, sizeY, 0, 0,1,0 , 1);
+        //        vdraw.popMatrix();
+        var pp = pos.get();
+        double xPer = pp.x();
+        double yPer = pp.y();
+        int startX = (int) (right.get() ? (sizeX - xPer * sizeX) : xPer * sizeX);
+        int startY = (int) (yPer * sizeY);
+        vdraw.getMatrices().translate(startX, startY);
+    }
+
+    public void onRenderList(PlayerNameTagInfo player, VDrawContext vdraw, float tick) {
+        vdraw.pushMatrix();
+        try {
+            handleNameLineList(vdraw, player);
+            handleEquipmentList(vdraw, player);
+            handleEffectDisplayList(vdraw, player);
+        } finally {
+            vdraw.popMatrix();
+        }
+    }
+
     private static final float HEIGHT = 9.0F;
 
     public void handleSize(VDrawContext vdraw) {
@@ -222,7 +341,7 @@ public class NameTag extends BaseModule {
         vdraw.getMatrices().scale((float) size.get(), (float) size.get());
     }
 
-    public void handleNameLine(VDrawContext vdraw, PlayerNameTagInfo player) {
+    public void handleNameLinePlayer(VDrawContext vdraw, PlayerNameTagInfo player) {
         if (player.nameDisplay != null) {
             float length = player.nameLength;
             float lengthHalf = length / 2.0F;
@@ -231,7 +350,20 @@ public class NameTag extends BaseModule {
         }
     }
 
-    public void handleEquipment(VDrawContext vdraw, PlayerNameTagInfo player) {
+    public void handleNameLineList(VDrawContext vdraw, PlayerNameTagInfo player) {
+        if (player.nameDisplay != null) {
+            float length = player.nameLength;
+            if (right.get()) {
+                vdraw.getMatrices().translate(-length, 0);
+            }
+            vdraw.drawText(mc.textRenderer, player.nameDisplay.asOrderedText(), (int) 0, 0, -1, true);
+            if (!right.get()) {
+                vdraw.getMatrices().translate(length, 0);
+            }
+        }
+    }
+
+    public void handleEquipmentPlayer(VDrawContext vdraw, PlayerNameTagInfo player) {
         if (player.equipments != null) {
             ItemStack[] stacks = player.equipments;
             int length = stacks.length * 18;
@@ -239,11 +371,40 @@ public class NameTag extends BaseModule {
             vdraw.getMatrices().pushMatrix();
             vdraw.getMatrices().scale(0.75F, 0.75F);
             for (var i = 0; i < stacks.length; ++i) {
-                vdraw.drawItem(stacks[i], startX + i * 18, -17, 999, 0);
-                vdraw.drawItemInSlot(mc.textRenderer, stacks[i], startX + i * 18, -17, null);
+                if (stacks[i].isEmpty()) {
+                    EquipmentSlot slot = SLOTS[i];
+                    vdraw.drawGuiTexture(Constants.EMPTY_SLOT_TO_SPRITE.get(slot), startX + i * 18, -17, 16, 16);
+                } else {
+                    vdraw.drawItem(stacks[i], startX + i * 18, -17, 999, 0);
+                    vdraw.drawItemInSlot(mc.textRenderer, stacks[i], startX + i * 18, -17, null);
+                }
             }
             vdraw.getMatrices().popMatrix();
             vdraw.getMatrices().translate(0, -HEIGHT * 1.5F);
+        }
+    }
+
+    public void handleEquipmentList(VDrawContext vdraw, PlayerNameTagInfo player) {
+        if (player.equipments != null) {
+            ItemStack[] stacks = player.equipments;
+            if (right.get()) {
+                vdraw.getMatrices().translate(-(stacks.length * 9), 0);
+            }
+            vdraw.getMatrices().pushMatrix();
+            vdraw.getMatrices().scale(9 / 16.0F, 9 / 16.0F);
+            for (var i = 0; i < stacks.length; ++i) {
+                if (stacks[i].isEmpty()) {
+                    EquipmentSlot slot = SLOTS[i];
+                    vdraw.drawGuiTexture(Constants.EMPTY_SLOT_TO_SPRITE.get(slot), i * 16, 0, 16, 16);
+                } else {
+                    vdraw.drawItem(stacks[i], i * 16, 0, 999, 0);
+                    vdraw.drawItemInSlot(mc.textRenderer, stacks[i], i * 16, 0, null);
+                }
+            }
+            vdraw.getMatrices().popMatrix();
+            if (!right.get()) {
+                vdraw.getMatrices().translate((stacks.length * 9), 0);
+            }
         }
     }
 
@@ -256,6 +417,89 @@ public class NameTag extends BaseModule {
         }
     }
 
+    private static final RegistryDisplays.IIcon<StatusEffect> statusEffectRenderer =
+            RegistryDisplays.getIcon(StatusEffect.class);
+
+    public void handleEffectDisplayPlayer(VDrawContext vdraw, PlayerNameTagInfo player) {
+        if (player.visibleEffects != null) {
+            List<Map.Entry<RegistryEntry<StatusEffect>, Text>> line =
+                    player.visibleEffects.entrySet().stream().toList();
+            int size = line.size();
+            for (var i = 0; i < size; i += 3) {
+                int endI = Math.min(i + 3, size);
+                if (endI == i) continue;
+                float width = (endI - i - 1);
+                for (var j = i; j < endI; j++) {
+                    width += 9;
+                    width += mc.textRenderer
+                            .getTextHandler()
+                            .getWidth(line.get(j).getValue());
+                }
+                vdraw.getMatrices().translate(0, -HEIGHT);
+                vdraw.getMatrices().pushMatrix();
+                {
+                    vdraw.getMatrices().translate(-width / 2, 0);
+                    for (var j = i; j < endI; j++) {
+                        var entry = line.get(j);
+                        vdraw.getMatrices().pushMatrix();
+                        {
+                            vdraw.getMatrices().scale(0.5F, 0.5F);
+                            statusEffectRenderer.render(
+                                    1, 1, vdraw, entry.getKey().value());
+                        }
+                        vdraw.getMatrices().popMatrix();
+                        vdraw.getMatrices().translate(9, 0);
+                        vdraw.drawText(
+                                mc.textRenderer,
+                                entry.getValue().asOrderedText(),
+                                0,
+                                0,
+                                potionColor.get().withAlpha(255),
+                                true);
+                        vdraw.getMatrices()
+                                .translate(
+                                        mc.textRenderer
+                                                        .getTextHandler()
+                                                        .getWidth(line.get(j).getValue())
+                                                + 1,
+                                        0);
+                    }
+                }
+                vdraw.getMatrices().popMatrix();
+            }
+        }
+    }
+
+    public void handleEffectDisplayList(VDrawContext vdraw, PlayerNameTagInfo player) {
+        if (player.visibleEffects != null) {
+            List<Map.Entry<RegistryEntry<StatusEffect>, Text>> line =
+                    player.visibleEffects.entrySet().stream().toList();
+            int size = line.size();
+            for (var i = 0; i < size; i++) {
+                var entry = line.get(i);
+                float len = mc.textRenderer.getTextHandler().getWidth(entry.getValue());
+                if (right.get()) {
+                    vdraw.getMatrices().translate(-9 - len, 0);
+                }
+                vdraw.getMatrices().pushMatrix();
+                vdraw.getMatrices().scale(9 / 16.0F, 9 / 16.0F);
+                statusEffectRenderer.render(0, 0, vdraw, entry.getKey().value());
+                vdraw.getMatrices().popMatrix();
+                vdraw.drawText(
+                        mc.textRenderer,
+                        entry.getValue().asOrderedText(),
+                        9,
+                        0,
+                        potionColor.get().withAlpha(255),
+                        true);
+
+                if (!right.get()) {
+                    vdraw.getMatrices().translate(9 + len, 0);
+                }
+            }
+        }
+    }
+
     public static class PlayerNameTagInfo {
         PlayerEntity player;
         Text nameDisplay;
@@ -263,8 +507,14 @@ public class NameTag extends BaseModule {
         ItemStack[] equipments;
         Text otherInfoDisplay;
         float otherInfoLength;
+        Map<RegistryEntry<StatusEffect>, Text> visibleEffects;
 
-        public PlayerNameTagInfo(PlayerEntity player, Text display, ItemStack[] equipments, Text otherInfo) {
+        public PlayerNameTagInfo(
+                PlayerEntity player,
+                Text display,
+                ItemStack[] equipments,
+                Text otherInfo,
+                Map<RegistryEntry<StatusEffect>, Text> effects) {
             this.player = player;
             this.nameDisplay = display;
             this.nameLength =
@@ -279,6 +529,7 @@ public class NameTag extends BaseModule {
             if (this.otherInfoLength <= 0.0F) {
                 this.otherInfoDisplay = null;
             }
+            visibleEffects = effects;
         }
     }
 }

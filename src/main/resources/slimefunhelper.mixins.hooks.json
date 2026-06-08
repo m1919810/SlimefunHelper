@@ -10,6 +10,8 @@
 		"baritone.ElytraBehaviourPathManagerMixin",
 		"baritone.ElytraCommandMixin",
 		"baritone.ElytraProcessMixin",
+		"baritone.InventoryBehaviourMixin",
+		"litematica.PlacementManagerDaemonFixMixin",
 		"viaversion.PacketWrapperSendEvents"
 	],
 	"injectors": {

@@ -58,7 +58,7 @@ public class Tests extends BaseModule {
             .defaultValue(461)
             .build();
 
-    public final KeyBindRef key0 = hotkey(Configs.HOTKEY_CONFIG, TEST_HOTKEY, new MultiKeyBind())
+    public final KeyBindRef key0 = hotkey(Configs.MISC_CONFIG, TEST_HOTKEY, new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::doTest2))
             .build();
 
@@ -66,7 +66,7 @@ public class Tests extends BaseModule {
             flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_1).build();
 
     public final KeyBindRef key1 = toggleConfigHotkey(
-                    Configs.HOTKEY_CONFIG,
+                    Configs.MISC_CONFIG,
                     TEST_TOGGLE_1,
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_1))
             .build();
@@ -75,7 +75,7 @@ public class Tests extends BaseModule {
             flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_2).build();
 
     public final KeyBindRef key2 = toggleConfigHotkey(
-                    Configs.HOTKEY_CONFIG,
+                    Configs.MISC_CONFIG,
                     TEST_TOGGLE_2,
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_2))
             .build();
@@ -84,7 +84,7 @@ public class Tests extends BaseModule {
             flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_3).build();
 
     public final KeyBindRef key3 = toggleConfigHotkey(
-                    Configs.HOTKEY_CONFIG,
+                    Configs.MISC_CONFIG,
                     TEST_TOGGLE_3,
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_3))
             .build();
@@ -93,7 +93,7 @@ public class Tests extends BaseModule {
             flagBuilder(Configs.TOGGLE_CONFIG, TEST_TOGGLE_4).build();
 
     public final KeyBindRef key4 = toggleConfigHotkey(
-                    Configs.HOTKEY_CONFIG,
+                    Configs.MISC_CONFIG,
                     TEST_TOGGLE_4,
                     new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_T, KeyCode.KEY_4))
             .build();
