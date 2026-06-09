@@ -100,7 +100,7 @@ public class PacketMine extends BaseModule {
                                 if (swingHand.get())
                                     mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
                                 PlayerInteractionAccess.of(mc.interactionManager)
-                                        .sendStopBreakPacket(pos, dir);
+                                        .sendBreakPacket(pos, dir);
                             }
                             Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
                             if (callback != null) {

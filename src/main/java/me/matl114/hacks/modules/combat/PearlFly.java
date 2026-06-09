@@ -11,6 +11,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.EntityMovementStatus;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.item.ItemStack;
@@ -36,7 +37,10 @@ public class PearlFly extends BaseModule {
 
     public final FlagRef autoCrawl = flagBuilder(pearl.add("auto-crawl")).build();
 
+    public final FlagRef useWASDControl = flagBuilder(pearl.add("use-wasd-control")).build();
+
     public final FlagRef offhand = flagBuilder(pearl.add("offhand")).build();
+
 
     @Override
     public void registerAll() {
@@ -63,46 +67,69 @@ public class PearlFly extends BaseModule {
             Direction direction = mc.player.getHorizontalFacing();
             Vec3d pos = mc.player.getBlockPos().toCenterPos();
             Vec3d ppos = mc.player.getPos();
-            if (MathUtils.isInXZRange(pos, ppos, 0.19)) {
+            BlockPos pbpos = mc.player.getBlockPos();
+            if (MathUtils.isInXZRange(pos, ppos, 0.15)) {
                 return;
             }
-            Direction search = direction;
 
-            do {
-                Vec3d searchPos = pos.offset(search, 1);
-                if (MathUtils.isInXZRange(ppos, searchPos, 0.5 + 0.31)) {
-                    BlockState state =
-                            mc.world.getBlockState(mc.player.getBlockPos().offset(search));
-                    if (!state.isAir() && !state.isLiquid()) {
-                        if (doPearlUse(search, mc.player.getBlockPos().offset(search))) {
-                            enable.set(false);
-                            return;
+            BlockPos searchPos;
+            if(useWASDControl.get() && PlayerInputUtils.of(mc.options).hasWASDMovement()) {
+                var input = PlayerInputUtils.of(mc.options);
+                Direction right = direction.rotateYCounterclockwise();
+                searchPos = pbpos.add(direction.getVector().multiply(input.forwardSpeed())).add(right.getVector().multiply(input.sidewaysSpeed()));
+            }else {
+                Direction search = direction;
+                Direction result = direction;
+                double min = Double.MAX_VALUE;
+                do{
+                    BlockPos test = pbpos.offset(search);
+                    if(MathUtils.isInXZRange(ppos, test.toCenterPos(), 0.5 + 0.35)){
+                        double sqd = test.getSquaredDistance(ppos);
+                        if(sqd < min){
+                            result = search;
+                            min = sqd;
                         }
                     }
-                    if (autoCrawl.get() && pose != EntityPose.SWIMMING) {
-                        BlockState state2 = mc.world.getBlockState(
-                                mc.player.getBlockPos().offset(search).offset(Direction.UP));
-                        if (!state2.isAir() && !state2.isLiquid()) {
-                            if (doPearlUse(search, mc.player.getBlockPos().offset(search))) {
-                                enable.set(false);
-                                return;
-                            }
-                        }
+
+                    search = search.rotateYClockwise();
+                }while(search != direction);
+                if(min == Double.MAX_VALUE){
+                    return;
+                }
+                search = result;
+                searchPos = pbpos.offset(search, 1);
+            }
+
+
+            BlockState state =
+                mc.world.getBlockState(searchPos);
+            if (!state.isAir() && !state.isLiquid()) {
+                if (doPearlUse(pbpos, searchPos)) {
+                    enable.set(false);
+                    return;
+                }
+            }
+            if (autoCrawl.get() && pose != EntityPose.SWIMMING) {
+                BlockState state2 = mc.world.getBlockState(
+                    searchPos.offset(Direction.UP));
+                if (!state2.isAir() && !state2.isLiquid()) {
+                    if (doPearlUse(pbpos, searchPos)) {
+                        enable.set(false);
+                        return;
                     }
                 }
+            }
 
-                search = search.rotateYClockwise();
-            } while (search != direction);
         }
     }
 
-    public boolean doPearlUse(Direction direction, BlockPos pos) {
+    public boolean doPearlUse(BlockPos originPos, BlockPos pos) {
         EntityPose pose = mc.player.getPose();
         Vec3d look;
         if (pose == EntityPose.SWIMMING) {
             look = pos.toCenterPos().subtract(mc.player.getEyePos());
         } else {
-            look = pos.toBottomCenterPos().offset(direction.getOpposite(), 0.5).subtract(mc.player.getEyePos());
+            look = pos.toCenterPos().add(originPos.toCenterPos()).multiply(0.5).subtract(mc.player.getEyePos());
         }
         return usePearl(look);
     }
