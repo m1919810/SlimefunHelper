@@ -102,13 +102,30 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
+    public final FlagRef macePullUpUsePredictor = flagBuilder(elytraBot.add("mace-pull-up-use-predictor"))
+        .show(()-> mode.get().isIn(Mode.MACE_ARUA))
+        .build();
+
+    public final FlagRef maceFollowUsePredictor = flagBuilder(elytraBot.add("mace-follow-use-predictor"))
+        .show(()-> mode.get().isIn(Mode.MACE_ARUA))
+        .build();
+
     public final FlagRef combatSmoothFlight = flagBuilder(elytraBot.add("combat-smooth-flight"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
+    public final DoubleRef combatSmoothArg1 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-1"))
+        .show(()-> mode.get().isIn(Mode.MACE_ARUA))
+        .defaultValue(1.0D)
+        .build();
+
     public final FlagRef combatSmoothFlight2 = flagBuilder(elytraBot.add("combat-smooth-flight-2"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
+
+    public final FlagRef combatSmoothFlight3 = flagBuilder(elytraBot.add("combat-smooth-flight-3"))
+        .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+        .build();
 
     public final FlagRef spearAntiSpear = flagBuilder(elytraBot.add("spear-anti-spear"))
             .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
@@ -550,6 +567,7 @@ public class ElytraBot extends BaseModule {
         }
 
         private void setTargetToPlayerUpper() {
+            Vec3d predictor = base.macePullUpUsePredictor.get() ? PositionPredict.INSTANCE.attackPredictArgument.get().predict(base.target) : base.target.getPos();
             if (base.combatSmoothFlight.get()) {
                 double combatRange = base.combatRange.get();
                 //                if (base.currentAction == TargetAction.COMBATING) {
@@ -563,9 +581,9 @@ public class ElytraBot extends BaseModule {
                 //                    movementDirection = vertical.multiply(10);
                 //                    return;
                 //                }
-                if (base.target.getY() >= mc.player.getY()) {
-                    Vec3d center = base.target.getBoundingBox().getCenter();
-                    double radius = combatRange + (base.target.getBoundingBox().getLengthY() / 2.0D);
+                if (predictor.getY() >= mc.player.getY()) {
+                    Vec3d center = base.target.dimensions.getBoxAt(predictor).getCenter();
+                    double radius = combatRange + base.combatSmoothArg1.get();
                     Pair<Vec3d, Vec3d> tangents = MathUtils.getTangentWithSameXZ(center, radius, mc.player.getEyePos());
                     Vec3d vec3d = tangents.getFirst();
                     Vec3d vec3d2 = tangents.getSecond();
@@ -576,14 +594,14 @@ public class ElytraBot extends BaseModule {
                     }
                 }
             }
-            movementDirection = base.target
-                    .getPos()
-                    .withAxis(Direction.Axis.Y, (base.target.getY() + (2 * base.maceHeight.get()) + 0.5))
+            movementDirection = predictor
+                    .withAxis(Direction.Axis.Y, (predictor.getY() + (2 * base.maceHeight.get()) + 0.5))
                     .subtract(mc.player.getPos());
         }
 
         private void setTargetToPlayer(boolean waitAttack) {
-            movementDirection = base.target.getPos().subtract(mc.player.getPos());
+            Vec3d targetPos = base.maceFollowUsePredictor.get() ? PositionPredict.INSTANCE.attackPredictArgument.get().predict(base.target) : base.target.getPos();
+            movementDirection = targetPos.subtract(mc.player.getPos());
             double minimalHeightLow = waitAttack
                     ? (CombatExtra.INSTANCE.getAttackRange() + mc.player.getEyeHeight(mc.player.getPose()))
                     : base.maceMaxFollowLowHeight.get();
@@ -599,19 +617,22 @@ public class ElytraBot extends BaseModule {
                 } else if (base.combatSmoothFlight2.get()
                         && TargetSelector.INSTANCE.isWithinAttackRange(
                                 mc.player.getPos(), base.target.getBoundingBox(), base.combatRange.get())) {
+                    //todo: smooth flight 3, use xz cut , find fastest y low and acceptable
                     smoothFlightAttack();
                 }
             }
         }
         // compat delay attack shit, add cd,
         public int onStateWaitAttack(StateMachine machine) {
-            if (++startWaitAttack > 2) {
-                return STATE_NONE;
-            }
+//            if (++startWaitAttack > 2) {
+//                return STATE_NONE;
+//            }
             machine.markForEndState();
-            // stay!
-            setTargetToPlayer(true);
-            return STATE_WAIT_ATTACK;
+            return STATE_PULL_UP;
+//            machine.markForEndState();
+//            // stay!
+//            setTargetToPlayer(true);
+//            return STATE_WAIT_ATTACK;
         }
 
         private void smoothFlightAttack() {

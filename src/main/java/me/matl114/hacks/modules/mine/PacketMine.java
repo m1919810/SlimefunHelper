@@ -65,8 +65,27 @@ public class PacketMine extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onTick);
     }
 
+    public boolean hasMiningTarget() {
+        return getCurrentMiningPos() != null;
+    }
+
+    public boolean isMining() {
+        return hasMiningTarget();
+    }
+
+    public boolean isMining(BlockPos pos) {
+        return Objects.equals(getCurrentMiningPos(), pos);
+    }
+
+    public BlockPos getCurrentMiningPos() {
+        if (mc.interactionManager == null) {
+            return null;
+        }
+        return PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+    }
+
     public void cancelPacketMine(BlockPos pos) {
-        BlockPos po = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+        BlockPos po = getCurrentMiningPos();
         if (Objects.equals(po, pos)) {
             PlayerInteractionAccess.of(mc.interactionManager).resetCurrentMiningPos();
         }

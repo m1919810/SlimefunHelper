@@ -16,4 +16,9 @@ public interface ClientAccess {
     public int getAttackCooldown();
 
     public int getItemUseCooldown();
+
+    public void simulateRightClick();
+
+    public void simulateLeftClick();
+
 }

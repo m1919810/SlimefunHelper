@@ -22,7 +22,9 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class PearlFly extends BaseModule {
-    public PearlFly() {}
+    public PearlFly() {
+        bindFlag(enable);
+    }
 
     public final ModulePath combatUtils = makePath(Configs.COMBAT_CONFIG, "combat-utils");
     public final ModulePath pearl = combatUtils.add("pearl-fly");
