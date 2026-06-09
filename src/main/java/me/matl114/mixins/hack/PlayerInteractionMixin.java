@@ -107,12 +107,13 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     /**
      * 读取当前 failBreak 槽位。
      *
-     * <p>当 doubleBreak 关闭时，直接对外隐藏该槽位，避免调用方误把一个无效的内部缓存继续当作可消费状态。
+     * <p>这里直接暴露当前备用槽位本身，不再由 doubleBreak 开关决定可见性；是否允许写入或消费该槽位，
+     * 由具体调用路径自行判断。
      */
     @Override
     @Nullable
     public BlockPos getCurrentFailBreakPos() {
-        return MineExtra.INSTANCE.doubleBreak.get() ? currentFailBreakPos : null;
+        return currentFailBreakPos;
     }
 
     /**

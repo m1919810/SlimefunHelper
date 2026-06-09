@@ -156,8 +156,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         if (enable.get()
                 && explosions.get()
                 && mc.player != null
-                && (eventExplosion.context.playerKnockback().isPresent()
-                        || eventExplosion.context.center().squaredDistanceTo(mc.player.getPos()) < 25.0D)) {
+                && (eventExplosion.context.playerKnockback().isPresent())) {
             canCancel += 1;
         }
     }
