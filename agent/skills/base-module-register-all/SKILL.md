@@ -92,6 +92,9 @@ attack.add("whitelist")
 moveSafety.add("auto-resync-pos")
 ```
 
+### 配置项路径要求
+配置项使用的路径命名风格需要是类似上面的带- - 的， 不能使用java风格的命名
+
 ## Flag 绑定
 
 如果该模块希望可以在菜单中快捷启用/关闭， 则其需要指定一个 enable flag，并在构造器中绑定：
@@ -449,3 +452,5 @@ public void onCancel() {}
 ## 完成模块基础注册时的检查顺序
 
 无需检查，用户会自行检查
+无需编译，用户会自行编译
+无需风格对齐，用户会自己spotless

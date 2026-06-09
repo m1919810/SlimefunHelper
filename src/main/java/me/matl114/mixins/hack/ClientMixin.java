@@ -212,6 +212,8 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Shadow
     public abstract Window getWindow();
 
+    @Shadow protected abstract void doItemUse();
+
     @Override
     public ClientAccess clone() {
         try {
@@ -227,5 +229,15 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         if (RenderExtra.INSTANCE.enhancedDebugHud.get()) {
             cir.setReturnValue(false);
         }
+    }
+
+    @Unique
+    public void simulateRightClick(){
+        doItemUse();
+    }
+
+    @Unique
+    public void simulateLeftClick(){
+        doAttack();
     }
 }

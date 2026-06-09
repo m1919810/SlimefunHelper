@@ -67,8 +67,8 @@ public interface PlayerInteractionAccess {
     /**
      * 读取当前 failBreak 槽位的位置。
      *
-     * <p>当 doubleBreak/failMine 语义未启用时，实现方可以直接返回 {@code null}，表示外部不应继续
-     * 依赖这一槽位。
+     * <p>这是一个独立的备用挖掘槽位视图，不应由 doubleBreak 开关直接屏蔽；是否允许建立或消费该槽位，
+     * 由具体触发路径自己决定。
      */
     public BlockPos getCurrentFailBreakPos();
 

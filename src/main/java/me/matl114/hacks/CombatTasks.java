@@ -245,6 +245,9 @@ public class CombatTasks {
     public static Blink blink;
 
     @Getter
+    public static BackTrack backTrack;
+
+    @Getter
     public static PearlFly pearlFly;
 
     @Getter
@@ -282,6 +285,7 @@ public class CombatTasks {
         spearEnhance = new SpearEnhance().register(m);
         spearAttack = new SpearAttack().register(m);
         blink = new Blink().register(m);
+        backTrack = new BackTrack().register(m);
         pearlFly = new PearlFly().register(m);
         elytraBot = new ElytraBot().register(m);
         // transactionBlocker = new TransactionBlocker().register(m);
