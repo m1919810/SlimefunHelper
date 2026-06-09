@@ -416,6 +416,64 @@ public class MineExtra extends BaseModule {
         return true;
     }
 
+    /**
+     * 判断当前主挖掘进度是否已经可以直接走 fastbreak 收尾。
+     *
+     * <p>这里不消费 ignore 状态，只负责告诉 mixin：当前这一次 update 是否应立刻走 stop 路径。
+     */
+    public boolean shouldExecuteFastBreak(float currentProgress) {
+        return quickMine.get() && currentProgress >= breakThreshold.get() && ignoreNextFastBreakStatus <= 0;
+    }
+
+    /**
+     * 判断一个挖掘速度是否应被视为 instant / pseudo-instant 分支。
+     *
+     * <p>它统一复用 breakThreshold 与 fakeInstaBreak 的阈值语义，避免这些判定散落在多个 hook 和接口实现里。
+     */
+    public boolean shouldTreatAsInstantBreak(float speed) {
+        return speed >= 1.0F
+                || (speed > breakThreshold.get() && quickMine.get())
+                || shouldQueueNextTickEarlyBreak(speed);
+    }
+
+    /**
+     * 判断这次 attack 后是否应立即补一个 stop，实现 early stop。
+     */
+    public boolean shouldTriggerEarlyStop(float speed) {
+        return quickMine.get() && speed < 1.0F && speed > breakThreshold.get();
+    }
+
+    /**
+     * 判断这次速度是否落在 fakeInstaBreak 的“下一 tick 收尾”区间。
+     */
+    public boolean shouldQueueNextTickEarlyBreak(float speed) {
+        return fakeInstaBreak.get() && speed > ((breakThreshold.get() / 2.0) + 0.04d);
+    }
+
+    /**
+     * 记录下一 tick 需要执行一次 early break。
+     */
+    public void queueNextTickEarlyBreak() {
+        nextTickEarlyBreak = true;
+    }
+
+    /**
+     * grim bad packets 模式下，doubleBreak 切块时是否需要额外补一个 stop。
+     */
+    public boolean shouldSendGrimBadPacketsExtraStop() {
+        return fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS && grimBadPacketFix1.get();
+    }
+
+    /**
+     * 切换到新方块时，旧方块是否仍值得转入 doubleBreak / failBreak 支线。
+     */
+    public boolean shouldTryDoubleBreak(float predictedProgress) {
+        return doubleBreak.get() && predictedProgress <= 1.0F;
+    }
+
+    /**
+     * 判断 quickMine 当前 tick 是否允许生效，并在需要时消费一次忽略窗口。
+     */
     public boolean shouldUseQuickMine() {
         if (ignoreNextFastBreakStatus > 0) {
             // I accept the status !
@@ -428,6 +486,9 @@ public class MineExtra extends BaseModule {
         return true;
     }
 
+    /**
+     * 消费“下一 tick 提前收尾”标志。
+     */
     public boolean shouldApplyNextTickFirstBreak() {
         if (this.nextTickEarlyBreak) {
             this.nextTickEarlyBreak = false;

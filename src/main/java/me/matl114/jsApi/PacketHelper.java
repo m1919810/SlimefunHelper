@@ -184,7 +184,7 @@ public class PacketHelper {
     public static void sendStartMining(Object pos, Object direction) {
         Direction dir = JsHelper.toEnum(direction, Direction.class);
         BlockPos blockPos = DataHelper.createBlockPos(pos);
-        PlayerInteractionAccess.of(mc.interactionManager).sendStartBreakPacket(blockPos, dir);
+        PlayerInteractionAccess.of(mc.interactionManager).startMiningBlock(blockPos, dir);
     }
 
     public static void sendStopMining() {

@@ -64,35 +64,73 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Shadow
     private BlockPos currentBreakingPos;
 
+    /**
+     * doubleBreak / failMine 使用的备用挖掘槽位。
+     *
+     * <p>主挖掘位置切走后，旧位置如果仍值得继续复用，就暂存在这里，等待后续 stop 或自动完成逻辑消费。
+     */
     @Nullable
     @Unique
     private BlockPos currentFailBreakPos = null;
 
+    /**
+     * failBreak 槽位建立时对应的 start tick。
+     *
+     * <p>它和 {@link #currentFailBreakPos} 一起构成“备用挖掘会话”的最小状态，用于按服务端 start/stop
+     * 状态机推导理论进度，而不是依赖客户端原版破坏动画。
+     */
     @Unique
     private int failBreakStartTick;
 
+    /**
+     * 返回当前主挖掘槽位绑定的位置。
+     *
+     * <p>这是服务端后续 stop 包默认要对应的位置，也是 optimizeOneBlock 复用的主状态位。
+     */
     @Override
     public BlockPos getCurrentMiningPos() {
         return currentBreakingPos;
     }
 
+    /**
+     * 本地清空当前主挖掘位。
+     *
+     * <p>这里只处理客户端会话态，不主动补发 stop。调用方通常在确定该上下文已经无效、或者需要显式重建
+     * start 上下文时使用它。
+     */
     @Override
     public void resetCurrentMiningPos() {
         currentBreakingPos = new BlockPos(-1, -1, -1);
-        currentBreakingProgress = 0.0F;
+        resetLocalMiningProgress();
     }
 
+    /**
+     * 读取当前 failBreak 槽位。
+     *
+     * <p>当 doubleBreak 关闭时，直接对外隐藏该槽位，避免调用方误把一个无效的内部缓存继续当作可消费状态。
+     */
     @Override
     @Nullable
     public BlockPos getCurrentFailBreakPos() {
         return MineExtra.INSTANCE.doubleBreak.get() ? currentFailBreakPos : null;
     }
 
+    /**
+     * 判断 failBreak 槽位当前是否空闲。
+     *
+     * <p>这是对外暴露的稳定语义，调用方不需要再依赖 null 细节自行拼装状态判断。
+     */
     @Override
     public boolean isFailBreakEmpty() {
         return currentFailBreakPos == null;
     }
 
+    /**
+     * 用指定工具预测当前主挖掘位的理论进度。
+     *
+     * <p>这个方法不读取当前手持物，而是假设“如果现在使用 tool 继续挖”，服务端从最近一次 start 开始，
+     * 理论上已经累计了多少进度。它服务于切工具收益估算，而不是本地动画显示。
+     */
     @Override
     public float predictCurrentMiningProgressWithTool(ItemStack tool) {
         BlockState block = this.client.world.getBlockState(currentBreakingPos);
@@ -102,10 +140,22 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         float miningSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(this.client.player, block, tool);
         float speed = WorldUtils.calcBlockBreakingDelta(block, this.client.world, currentBreakingPos, miningSpeed);
         int ticksSinceLastStart = Tasks.getTick() - MineExtra.INSTANCE.lastStartMineBreakingProgressResetTick;
-        // loading progress...
         return speed * ticksSinceLastStart;
     }
 
+    /**
+     * 读取当前主挖掘位进度。
+     *
+     * <p>优先返回原版仍然有效的本地缓存进度；如果当前不是原版持续挖掘路径，且允许预测，则回退为“最近一次
+     * start tick × 当前速度”的理论值。
+     *
+     * <p>这样可以同时兼容：
+     * <ul>
+     *     <li>原版正在持续更新的本地挖掘动画</li>
+     *     <li>optimizeOneBlock 对同位置状态的复用</li>
+     *     <li>quickMine / bypass 对服务端 start-stop 状态机的推导</li>
+     * </ul>
+     */
     @Override
     public float getCurrentMiningProgress(boolean shouldPredict) {
         BlockState block = MinecraftClient.getInstance().world.getBlockState(currentBreakingPos);
@@ -115,27 +165,24 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         if ((breakingBlock && isCurrentlyBreaking(currentBreakingPos))) {
             return this.currentBreakingProgress == 0.0F ? -1.0F : this.currentBreakingProgress;
         }
-        // when oneBlock mode, the value is the predicted value
-        // when not in oneBlock mode, we should consider the predict flag
         if (!MineExtra.INSTANCE.optimizeOneBlock.get() && !shouldPredict) {
             return this.currentBreakingProgress == 0.0F ? -1.0F : this.currentBreakingProgress;
         }
 
-        // ack predict
         float speed = block.calcBlockBreakingDelta(
                 MinecraftClient.getInstance().player,
                 MinecraftClient.getInstance().player.getEntityWorld(),
                 currentBreakingPos);
-        //                else if(HotKeys.getHotkeyToggleManager().getState(HotKeys.QUICK_MINE) && speed >
-        // breakThreshold.get()){
-        //                    //no need to restore currentBreakingProgress?
-        //                    return;
-        //                }
         int ticksSinceLastStart = Tasks.getTick() - MineExtra.INSTANCE.lastStartMineBreakingProgressResetTick;
-        // loading progress...
         return speed * ticksSinceLastStart;
     }
 
+    /**
+     * 读取 failBreak 槽位按当前 tick 推导出的理论进度。
+     *
+     * <p>这条支线不依赖原版 {@code currentBreakingProgress}，因为 failBreak 本质上是“主挖掘位切走后仍然
+     * 继续复用的一段服务端上下文”，其可信来源是 start tick 与当前方块速度。
+     */
     @Override
     public float getFailBreakMiningProgress() {
         if (currentFailBreakPos == null) {
@@ -152,6 +199,18 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         return (Tasks.getTick() - failBreakStartTick) * speed;
     }
 
+    /**
+     * 显式建立一个 failBreak 槽位。
+     *
+     * <p>成功时会同时：
+     * <ul>
+     *     <li>登记备用位置</li>
+     *     <li>把当前主挖掘位切到该位置，便于后续 stop 复用同一套位置语义</li>
+     *     <li>记录该会话对应的 start tick</li>
+     * </ul>
+     *
+     * <p>如果槽位已被占用，则拒绝覆盖，避免多个未完成的备用会话互相踩状态。
+     */
     @Unique
     @Override
     public boolean beginFailBreak(BlockPos pos) {
@@ -164,16 +223,170 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         return false;
     }
 
+    /**
+     * 尝试把当前主挖掘位整体迁入 failBreak 槽位。
+     *
+     * <p>这是 doubleBreak / 切块续挖最常用的入口，用于在开始处理新方块前，先保留旧方块的服务端挖掘上下文。
+     */
     @Unique
     @Override
     public boolean moveCurrentMiningToFailBreak() {
         return beginFailBreak(currentBreakingPos);
     }
 
+    /**
+     * 清空 failBreak 槽位和它的时间基线。
+     *
+     * <p>一旦调用，表示这段备用挖掘上下文已经失效、完成或不再值得继续复用。
+     */
     @Unique
     @Override
     public void clearFailBreak() {
         currentFailBreakPos = null;
+        failBreakStartTick = 0;
+    }
+
+    /**
+     * 只复位本地缓存的破坏进度。
+     *
+     * <p>这是一个纯本地 helper，不做位置切换，也不修改发包状态，用于把多个 stop/start 分支里的进度清理收口。
+     */
+    @Unique
+    private void resetLocalMiningProgress() {
+        currentBreakingProgress = 0.0F;
+    }
+
+    /**
+     * 清理“原版仍在持续挖掘”的本地标记。
+     *
+     * <p>很多 bypass 分支在提前 stop 时，都需要先把原版 breaking 标志降下来，避免后续 tick 继续按普通挖掘流推进。
+     */
+    @Unique
+    private void clearBreakingState() {
+        this.breakingBlock = false;
+    }
+
+    /**
+     * 执行一次 stop 之后的本地统一收尾。
+     *
+     * <p>它集中维护三类状态：
+     * <ul>
+     *     <li>是否清空本地进度缓存</li>
+     *     <li>声音冷却归零</li>
+     *     <li>交互冷却按 MineExtra 策略重置</li>
+     * </ul>
+     *
+     * <p>这样不同 stop 路径就不需要再各自散写相同字段。
+     */
+    @Unique
+    private void applyPostStopState(boolean resetProgress) {
+        if (resetProgress) {
+            resetLocalMiningProgress();
+        }
+        this.blockBreakingSoundCooldown = 0.0F;
+        this.blockBreakingCooldown = MineExtra.INSTANCE.cooldownManaging();
+    }
+
+    /**
+     * 只发送一个 STOP_DESTROY_BLOCK。
+     *
+     * <p>用于那些“服务端已有有效 start 上下文，当前只需要补一个 stop 包”的路径，例如同位置复用、
+     * doubleBreak 补包等。
+     */
+    @Unique
+    private void sendStopBreakPacketInternal(BlockPos pos, Direction direction) {
+        this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
+            return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
+        }));
+    }
+
+    /**
+     * 先执行一次本地 breakBlock，再发送 STOP_DESTROY_BLOCK 收尾。
+     *
+     * <p>这是更强语义的“完成一次 break”，用于 quickMine / fakeInstaBreak 这类希望立即把本地表现和 stop
+     * 动作一起落地的路径。
+     */
+    @Unique
+    private void sendBreakAndStopPacket(BlockPos pos, Direction direction) {
+        this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
+            this.breakBlock(pos);
+            return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
+        });
+    }
+
+    @Unique
+    private void continueSameBlockMining(BlockPos pos, Direction direction) {
+        this.currentBreakingPos = pos;
+        this.currentBreakingProgress = getCurrentMiningProgress(true);
+        this.breakingBlock = true;
+        this.selectedStack = this.client.player.getMainHandStack();
+        this.client.world.setBlockBreakingInfo(
+                this.client.player.getId(), this.currentBreakingPos, this.getBlockBreakingProgress());
+        this.updateBlockBreakingProgress(pos, direction);
+    }
+
+    @Unique
+    private void sendExtraGrimBadPacketsStop(BlockPos pos, Direction direction) {
+        sendStopBreakPacketInternal(pos, direction);
+    }
+
+    @Unique
+    private boolean tryAbortCurrentMiningIntoFailBreak() {
+        if (!MineExtra.INSTANCE.doubleBreak.get() || !isFailBreakEmpty()) {
+            return false;
+        }
+        ClientPlayerEntity playerEntity = MinecraftClient.getInstance().player;
+        if (!playerEntity.canInteractWithBlockAt(this.currentBreakingPos, 1.0D)) {
+            return false;
+        }
+        BlockState state = MinecraftClient.getInstance().world.getBlockState(this.currentBreakingPos);
+        if (state.isAir() || state.isLiquid()) {
+            return false;
+        }
+        float speed = state.calcBlockBreakingDelta(
+                MinecraftClient.getInstance().player,
+                MinecraftClient.getInstance().player.getEntityWorld(),
+                currentBreakingPos);
+        if (speed <= 0) {
+            return false;
+        }
+        moveCurrentMiningToFailBreak();
+        MineExtra.INSTANCE.onPostStopMiningFastBreak(currentBreakingPos, speed, currentBreakingProgress);
+        return true;
+    }
+
+    /**
+     * 判断当前 failBreak 槽位是否已经不值得继续保留。
+     *
+     * <p>清理条件包括：
+     * <ul>
+     *     <li>玩家或模式已经不再允许继续按生存挖掘处理</li>
+     *     <li>槽位方块已空气化或液体化</li>
+     *     <li>按 start tick 推导已经理论完成，不再需要继续挂起</li>
+     *     <li>玩家与该位置距离过远，继续复用失去意义</li>
+     * </ul>
+     */
+    @Unique
+    private boolean shouldClearFailBreakBecauseInvalidState() {
+        if (MinecraftClient.getInstance().world == null) {
+            return false;
+        }
+        BlockState state = MinecraftClient.getInstance().world.getBlockState(currentFailBreakPos);
+        if (client.player == null || gameMode != GameMode.SURVIVAL) {
+            return true;
+        }
+        if (state == null || state.isAir() || state.isLiquid()) {
+            return true;
+        }
+        float speed = state.calcBlockBreakingDelta(
+                MinecraftClient.getInstance().player,
+                MinecraftClient.getInstance().world,
+                currentFailBreakPos);
+        if (speed > 0.0F && ((Tasks.getTick() - failBreakStartTick) * speed > 1.0F)) {
+            return true;
+        }
+        return client.player != null
+                && client.player.getPos().squaredDistanceTo(currentBreakingPos.toCenterPos()) > 225;
     }
 
     @Shadow
@@ -187,6 +400,11 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     @Final
     private ClientPlayNetworkHandler networkHandler;
 
+    /**
+     * 对外暴露的 stop 语义入口。
+     *
+     * <p>这里只发送 stop 包，不附带本地 breakBlock；更强的“break + stop”组合由内部 helper 单独负责。
+     */
     @Override
     @Unique
     public void sendBreakPacket(BlockPos pos, Direction direction) {
@@ -195,12 +413,17 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         }));
     }
 
+    /**
+     * 对外暴露的 start 语义入口。
+     *
+     * <p>调用时会复位本地进度，并在非 instant break 情况下切换主挖掘位置。这样外部模块就不需要再知道
+     * “什么时候改 currentBreakingPos、什么时候只发 start 包” 这类内部细节。
+     */
     @Override
     @Unique
     public void startMiningBlock(BlockPos pos, Direction direction) {
         this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
-            // every start break change the server side start break time
-            currentBreakingProgress = 0.0F;
+            resetLocalMiningProgress();
             BlockState state = client.world.getBlockState(pos);
             if (!state.isAir()
                     && state.calcBlockBreakingDelta(this.client.player, this.client.player.getEntityWorld(), pos)
@@ -240,13 +463,8 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         } else {
             BlockState state = this.client.world.getBlockState(blockPos);
             float speed =
-                    state.calcBlockBreakingDelta(this.client.player, this.client.player.getWorld(), blockPos);
-            MineExtra mineExtra = MineExtra.INSTANCE;
-            if (speed >= 1.0f
-                    || (speed > mineExtra.breakThreshold.get() && mineExtra.quickMine.get())
-                    || (mineExtra.fakeInstaBreak.get() && speed > ((mineExtra.breakThreshold.get() / 2.0) + 0.04d))) {
-                return true;
-            } else return false;
+                    state.calcBlockBreakingDelta(this.client.player, this.client.player.getEntityWorld(), blockPos);
+            return MineExtra.INSTANCE.shouldTreatAsInstantBreak(speed);
         }
     }
 
@@ -268,30 +486,14 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             CallbackInfoReturnable<Boolean> cir,
             net.minecraft.block.BlockState blockState) {
         MineExtra mineExtra = MineExtra.INSTANCE;
-        if (mineExtra.quickMine.get()) {
-            // Debug.info(breakThreshold.get(),this.currentBreakingProgress);
-            // do insta break
-            if (this.currentBreakingProgress >= mineExtra.breakThreshold.get()) {
-                // Debug.info("here");
-                if (mineExtra.ignoreNextFastBreakStatus > 0) {
-                    return;
-                }
-                this.breakingBlock = false;
-                this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
-                    this.breakBlock(pos);
-                    return new PlayerActionC2SPacket(
-                            PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
-                });
-                float speed = blockState.calcBlockBreakingDelta(
-                        MinecraftClient.getInstance().player, MinecraftClient.getInstance().world, pos);
-                mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
-                if (!mineExtra.optimizeOneBlock.get()) {
-                    this.currentBreakingProgress = 0.0F;
-                }
-                this.blockBreakingSoundCooldown = 0.0F;
-                this.blockBreakingCooldown = mineExtra.cooldownManaging();
-                cir.cancel();
-            }
+        if (mineExtra.shouldExecuteFastBreak(this.currentBreakingProgress)) {
+            clearBreakingState();
+            sendBreakAndStopPacket(pos, direction);
+            float speed = blockState.calcBlockBreakingDelta(
+                    MinecraftClient.getInstance().player, MinecraftClient.getInstance().world, pos);
+            mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
+            applyPostStopState(!mineExtra.optimizeOneBlock.get());
+            cir.cancel();
         }
     }
 
@@ -319,48 +521,14 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 if (!mineExtra.shouldExecuteOptimizeOneBlock()) {
                     return;
                 }
-                // loading progress...
-                this.currentBreakingPos = pos;
-                this.currentBreakingProgress = getCurrentMiningProgress(true);
-                this.breakingBlock = true;
-                this.selectedStack = this.client.player.getMainHandStack();
-                this.client.world.setBlockBreakingInfo(
-                        this.client.player.getId(), this.currentBreakingPos, this.getBlockBreakingProgress());
-                // avoid targeting another block too quickly
-                // update blockbreaking progress, do anything you want, sendpackets or sth
-                this.updateBlockBreakingProgress(pos, direction);
+                continueSameBlockMining(pos, direction);
                 cir.setReturnValue(true);
             } else {
-                // 不同的时候
-                // 尝试把当前的挖掘进度转为doubleMine或者直接终止 double Mine需要考虑
-                // 是否需要考虑
-                if (mineExtra.doubleBreak.get()) {
-
-                    // FIXed: double break collapse with optimizeOneBlockBreak
-                    // : if predicted progress should be finished, do not make doublebreak
-                    float predictedProgress = getCurrentMiningProgress(true);
-                    if (predictedProgress <= 1.0F) {
-                        if (onDoubleBreakAbort()) {
-                            // fixme： can not pass MultiBreak check..., may add a TickPacket or something
-                            this.sendSequencedPacket(
-                                    MinecraftClient.getInstance().world,
-                                    (seq) -> new PlayerActionC2SPacket(
-                                            PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
-                                            currentBreakingPos,
-                                            direction,
-                                            seq));
-                            // fake packet to cheat MultiBreak module
-                            // magic, doesn't always work
-                            // shit, it crash with AirLiquidBreak.
-                            // shit, player has to choose in hand
-                            if (mineExtra.fastBreakBypassMode.get() == MineExtra.Mode.BYPASS_GRIM_BAD_PACKETS
-                                    && mineExtra.grimBadPacketFix1.get()) {
-                                this.sendSequencedPacket(
-                                        MinecraftClient.getInstance().world,
-                                        (seq) -> new PlayerActionC2SPacket(
-                                                PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, seq));
-                            }
-                        }
+                float predictedProgress = getCurrentMiningProgress(true);
+                if (mineExtra.shouldTryDoubleBreak(predictedProgress) && tryAbortCurrentMiningIntoFailBreak()) {
+                    sendStopBreakPacketInternal(currentBreakingPos, direction);
+                    if (mineExtra.shouldSendGrimBadPacketsExtraStop()) {
+                        sendExtraGrimBadPacketsStop(pos, direction);
                     }
                 }
             }
@@ -390,17 +558,14 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                                     "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
     private void onDoubleBreak(ClientPlayNetworkHandler instance, Packet packet) {
 
-        if (!MineExtra.INSTANCE.optimizeOneBlock.get() && onDoubleBreakAbort()) {
+        if (!MineExtra.INSTANCE.optimizeOneBlock.get() && tryAbortCurrentMiningIntoFailBreak()) {
             // we make optimizeOneBlockMine delay its destroy packet to changing the currentPosition in method
             // sameBlockOptimize
             Vec3d shouldFacing = currentBreakingPos
                     .toCenterPos()
                     .subtract(MinecraftClient.getInstance().player.getEyePos());
             Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-            this.sendSequencedPacket(MinecraftClient.getInstance().world, (seq) -> {
-                return new PlayerActionC2SPacket(
-                        PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, currentBreakingPos, dir, seq);
-            });
+            sendStopBreakPacketInternal(currentBreakingPos, dir);
             return;
         }
 
@@ -418,41 +583,14 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             ClientPlayNetworkHandler instance, Packet packet, @Local(argsOnly = true) Direction direction) {
         // conflict with optimizeOneBlock
 
-        if (!MineExtra.INSTANCE.optimizeOneBlock.get() && onDoubleBreakAbort()) {
+        if (!MineExtra.INSTANCE.optimizeOneBlock.get() && tryAbortCurrentMiningIntoFailBreak()) {
             // we make optimizeOneBlockMine delay its destroy packet to check onDoubleBreakAbort() and  changing the
             // currentPosition in method sameBlockOptimize
-            this.sendSequencedPacket(MinecraftClient.getInstance().world, (seq) -> {
-                return new PlayerActionC2SPacket(
-                        PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, currentBreakingPos, direction, seq);
-            });
+            sendStopBreakPacketInternal(currentBreakingPos, direction);
             return;
         }
 
         instance.sendPacket(packet);
-    }
-
-    private boolean onDoubleBreakAbort() {
-        if (MineExtra.INSTANCE.doubleBreak.get() && currentFailBreakPos == null) {
-            ClientPlayerEntity playerEntity = MinecraftClient.getInstance().player;
-            // FIX: DO NOT USE BlockPos.ZERO
-            if (playerEntity.canInteractWithBlockAt(this.currentBreakingPos, 1.0D)) {
-                BlockState state = MinecraftClient.getInstance().world.getBlockState(this.currentBreakingPos);
-                if (!state.isAir() && !state.isLiquid()) {
-                    float speed = state.calcBlockBreakingDelta(
-                            MinecraftClient.getInstance().player,
-                            MinecraftClient.getInstance().player.getEntityWorld(),
-                            currentBreakingPos);
-                    if (speed > 0) {
-                        moveCurrentMiningToFailBreak();
-                        MineExtra.INSTANCE.onPostStopMiningFastBreak(
-                                currentBreakingPos, speed, currentBreakingProgress);
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
     }
 
     @Shadow
@@ -500,7 +638,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             Direction direction,
             CallbackInfoReturnable<Boolean> cir,
             net.minecraft.block.BlockState blockState) {
-        this.blockBreakingCooldown = MineExtra.INSTANCE.cooldownManaging();
+        applyPostStopState(false);
         if (MineExtra.INSTANCE.quickMine.get()) {
             cir.setReturnValue(true);
         }
@@ -525,43 +663,18 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 MinecraftClient.getInstance().player,
                 MinecraftClient.getInstance().player.getEntityWorld(),
                 pos);
-        MineExtra.INSTANCE.onStartingMine(pos, speed, false);
-        if (MineExtra.INSTANCE.quickMine.get()) {
-            // make cooldown issues
-
-            if (!MineExtra.INSTANCE.shouldUseQuickMine()) {
-                return;
-            }
-
-            // speed>1.0f可以秒破 此处不调用
-            // Debug.info("speed",speed);
-            if (!blockState.isAir()) {
-                if (speed < 1.0f) {
-                    MineExtra mineExtra = MineExtra.INSTANCE;
-                    if (speed > mineExtra.breakThreshold.get()) {
-                        this.breakingBlock = false;
-                        // this start-break + end-break can not pass grimac check, need a normal break to reset buffers
-                        // calculate advantages
-                        this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
-                            this.breakBlock(pos);
-                            return new PlayerActionC2SPacket(
-                                    PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
-                        });
-                        mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
-                        //                CompletableFuture.runAsync(()->{
-                        //
-                        //                });
-                        if (!mineExtra.optimizeOneBlock.get()) {
-                            this.currentBreakingProgress = 0.0F;
-                        }
-                        this.blockBreakingSoundCooldown = 0.0F;
-                        this.blockBreakingCooldown = mineExtra.cooldownManaging();
-                    } else if (mineExtra.fakeInstaBreak.get()
-                            && speed > ((mineExtra.breakThreshold.get() / 2.0) + 0.04d)) {
-                        mineExtra.nextTickEarlyBreak = true;
-                    }
-                }
-            }
+        MineExtra mineExtra = MineExtra.INSTANCE;
+        mineExtra.onStartingMine(pos, speed, false);
+        if (!mineExtra.shouldUseQuickMine() || blockState.isAir()) {
+            return;
+        }
+        if (mineExtra.shouldTriggerEarlyStop(speed)) {
+            clearBreakingState();
+            sendBreakAndStopPacket(pos, direction);
+            mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
+            applyPostStopState(!mineExtra.optimizeOneBlock.get());
+        } else if (mineExtra.shouldQueueNextTickEarlyBreak(speed)) {
+            mineExtra.queueNextTickEarlyBreak();
         }
     }
 
@@ -578,7 +691,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             locals = LocalCapture.CAPTURE_FAILSOFT)
     public void instaBreakPacketWhenUpdate(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
         MineExtra.INSTANCE.onStartingMine(pos, Float.MAX_VALUE, true);
-        this.blockBreakingCooldown = MineExtra.INSTANCE.cooldownManaging();
+        applyPostStopState(false);
     }
 
     @Inject(
@@ -592,22 +705,17 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             cancellable = true,
             locals = LocalCapture.CAPTURE_FAILSOFT)
     public void earlyBreakNextTickPacketSend(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
-        if (MineExtra.INSTANCE.fakeInstaBreak.get() && MineExtra.INSTANCE.nextTickEarlyBreak) {
+        MineExtra mineExtra = MineExtra.INSTANCE;
+        if (mineExtra.shouldApplyNextTickFirstBreak()) {
             BlockState blockState = MinecraftClient.getInstance().world.getBlockState(pos);
             float speed = blockState.calcBlockBreakingDelta(
                     MinecraftClient.getInstance().player,
-                    MinecraftClient.getInstance().player.getEntityWorld(),
+                    MinecraftClient.getInstance().player.getWorld(),
                     pos);
-            this.breakingBlock = false;
-            this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
-                this.breakBlock(pos);
-                return new PlayerActionC2SPacket(
-                        PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
-            });
-            MineExtra.INSTANCE.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress + speed);
-            if (!MineExtra.INSTANCE.optimizeOneBlock.get()) this.currentBreakingProgress = 0.0F;
-            this.blockBreakingSoundCooldown = 0.0F;
-            this.blockBreakingCooldown = MineExtra.INSTANCE.cooldownManaging();
+            clearBreakingState();
+            sendBreakAndStopPacket(pos, direction);
+            mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress + speed);
+            applyPostStopState(!mineExtra.optimizeOneBlock.get());
             //
             MinecraftClient.getInstance()
                     .world
@@ -656,38 +764,8 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
     @Inject(method = "tick", at = @At("RETURN"))
     public void onTick(CallbackInfo ci) {
-        if (currentFailBreakPos != null) {
-            resetFailBreak:
-            {
-                if (MinecraftClient.getInstance().world != null) {
-                    BlockState state = MinecraftClient.getInstance().world.getBlockState(currentFailBreakPos);
-                    if (client.player == null || gameMode != GameMode.SURVIVAL) {
-                        currentFailBreakPos = null;
-                        break resetFailBreak;
-                    }
-                    // we do not mine air or liquid
-                    if (state == null || state.isAir() || state.isLiquid()) {
-                        currentFailBreakPos = null;
-                        break resetFailBreak;
-                    }
-                    float speed = state.calcBlockBreakingDelta(
-                            MinecraftClient.getInstance().player,
-                            MinecraftClient.getInstance().world,
-                            currentFailBreakPos);
-                    if (speed > 0.0F && ((Tasks.getTick() - failBreakStartTick) * speed > 1.0F)) {
-                        // speed < 0 hard
-                        currentFailBreakPos = null;
-                        break resetFailBreak;
-                    }
-                    if (client.player != null) {
-                        // leave too far
-                        if (client.player.getPos().squaredDistanceTo(currentBreakingPos.toCenterPos()) > 225) {
-                            currentFailBreakPos = null;
-                            break resetFailBreak;
-                        }
-                    }
-                }
-            }
+        if (!isFailBreakEmpty() && shouldClearFailBreakBecauseInvalidState()) {
+            clearFailBreak();
         }
     }
 
