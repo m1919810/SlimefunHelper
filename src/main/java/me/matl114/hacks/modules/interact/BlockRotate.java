@@ -627,26 +627,26 @@ public class BlockRotate extends BaseModule {
             deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
             return;
         }
-//        if (block instanceof DriedGhastBlock) {
-//            Direction facing = targetState.get(DriedGhastBlock.FACING);
-//            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-//            return;
-//        }
-//        if (block instanceof ShelfBlock) {
-//            Direction facing = targetState.get(ShelfBlock.FACING);
-//            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-//            return;
-//        }
+        //        if (block instanceof DriedGhastBlock) {
+        //            Direction facing = targetState.get(DriedGhastBlock.FACING);
+        //            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
+        //            return;
+        //        }
+        //        if (block instanceof ShelfBlock) {
+        //            Direction facing = targetState.get(ShelfBlock.FACING);
+        //            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
+        //            return;
+        //        }
         if (block instanceof LecternBlock) {
             Direction facing = targetState.get(LecternBlock.FACING);
             deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
             return;
         }
-//        if (block instanceof CopperGolemStatueBlock) {
-//            Direction facing = targetState.get(CopperGolemStatueBlock.FACING);
-//            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-//            return;
-//        }
+        //        if (block instanceof CopperGolemStatueBlock) {
+        //            Direction facing = targetState.get(CopperGolemStatueBlock.FACING);
+        //            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
+        //            return;
+        //        }
         if (block instanceof TrapdoorBlock) {
             Direction facing = targetState.get(TrapdoorBlock.FACING);
             deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());

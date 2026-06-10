@@ -1,8 +1,9 @@
 package me.matl114.hacks.modules.combat;
 
-import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -18,16 +19,17 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.ResourceUtils;
+import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.KineticWeaponComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -69,6 +71,8 @@ public class SpearEnhance extends BaseModule {
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
+        registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
+        registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onEntityStatus);
     }
 
     public static boolean isUsingSpear(PlayerEntity player) {
@@ -113,19 +117,12 @@ public class SpearEnhance extends BaseModule {
         }
     }
 
-    public boolean canSpearKineticAttack() {
-        if (isUsingSpear()) {
-            ItemStack stack = getSpear();
-            // KineticWeaponComponent kineticWeaponComponent = stack.get(DataComponentTypes.KINETIC_WEAPON);
-            //            if (kineticWeaponComponent != null) {
-            //                if (mc.player.getItemUseTime() < kineticWeaponComponent.delayTicks()) {
-            //                    return false;
-            //                }
-            //            } else {
+    public static boolean canSpearKineticAttack(PlayerEntity player) {
+        if (isUsingSpear(player)) {
             if (mc.player.getItemUseTime() < 8) {
                 return false;
             }
-            // }
+            ItemStack stack = getSpear();
             int maxKineticTime = getMaxKineticTime(stack);
             return player.getItemUseTime() < maxKineticTime;
         }
@@ -137,55 +134,69 @@ public class SpearEnhance extends BaseModule {
     }
 
     public static int getMaxKineticTime(ItemStack stack) {
-        //        KineticWeaponComponent kineticWeaponComponent = stack.get(DataComponentTypes.KINETIC_WEAPON);
-        //        if (kineticWeaponComponent != null) {
-        //            if (kineticWeaponComponent.damageConditions().isPresent()) {
-        //                return kineticWeaponComponent.damageConditions().get().maxDurationTicks();
-        //            }
-        //            return 0;
-        //        } else {
-        Item item = stack.getItem();
-        float lastingSec;
-        if (item == Items.DIAMOND_SWORD) {
-            lastingSec = 10;
-        } else if (item == Items.NETHERITE_SWORD) {
-            lastingSec = 8.75f;
-        } else if (item == Items.IRON_SWORD) {
-            lastingSec = 11.25f;
-            //            } else if (item == Items.COPPER_SWORD) {
-            //                lastingSec = 12.5f;
-        } else if (item == Items.STONE_SWORD || item == Items.GOLDEN_SWORD) {
-            lastingSec = 13.75f;
-        } else if (item == Items.WOODEN_SWORD) {
-            lastingSec = 15f;
-        } else {
+        if (!VItem.getInstance().isSpear(stack)) {
             return 0;
+        } else {
+            Item item = stack.getItem();
+            float lastingSec;
+            if (item == Items.DIAMOND_SWORD) {
+                lastingSec = 10;
+            } else if (item == Items.NETHERITE_SWORD) {
+                lastingSec = 8.75f;
+            } else if (item == Items.IRON_SWORD) {
+                lastingSec = 11.25f;
+            } else if (item == Items.STONE_SWORD || item == Items.GOLDEN_SWORD) {
+                lastingSec = 13.75f;
+            } else if (item == Items.WOODEN_SWORD) {
+                lastingSec = 15f;
+            } else {
+                return 0;
+            }
+            return (int) lastingSec * 20;
         }
-        return (int) lastingSec * 20;
-        // }
     }
 
-    private final Map<Item, Item> materialSwordToSpearMap = new HashMap<>();
+    // map 声明改为
+    private Map<Item, Identifier> materialSwordToSpearMap = new HashMap<>();
 
+    // 初始化
     {
         // 木制
-        materialSwordToSpearMap.put(Items.WOODEN_SWORD, Items.WOODEN_SPEAR);
+        materialSwordToSpearMap.put(Items.WOODEN_SWORD, new Identifier("slimefunhelper", "spear/wooden_spear"));
         // 石制
-        materialSwordToSpearMap.put(Items.STONE_SWORD, Items.STONE_SPEAR);
+        materialSwordToSpearMap.put(Items.STONE_SWORD, new Identifier("slimefunhelper", "spear/stone_spear"));
         // 铁制
-        materialSwordToSpearMap.put(Items.IRON_SWORD, Items.IRON_SPEAR);
+        materialSwordToSpearMap.put(Items.IRON_SWORD, new Identifier("slimefunhelper", "spear/iron_spear"));
         // 金制
-        materialSwordToSpearMap.put(Items.GOLDEN_SWORD, Items.GOLDEN_SPEAR);
+        materialSwordToSpearMap.put(Items.GOLDEN_SWORD, new Identifier("slimefunhelper", "spear/golden_spear"));
         // 钻石
-        materialSwordToSpearMap.put(Items.DIAMOND_SWORD, Items.DIAMOND_SPEAR);
+        materialSwordToSpearMap.put(Items.DIAMOND_SWORD, new Identifier("slimefunhelper", "spear/diamond_spear"));
         // 下界合金
-        materialSwordToSpearMap.put(Items.NETHERITE_SWORD, Items.NETHERITE_SPEAR);
+        materialSwordToSpearMap.put(Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "spear/netherite_spear"));
+    }
 
-        // 铜制（根据模组实际物品名调整）
-        materialSwordToSpearMap.put(Items.COPPER_SWORD, Items.COPPER_SPEAR);
-        // 如果使用原版铜锭但剑来自其他模组，例如：
-        // put(Registry.ITEM.get(new Identifier("some_mod", "copper_sword")),
-        //     Registry.ITEM.get(new Identifier("some_mod", "copper_spear")));
+    public void onAtlas(Event<Set<Identifier>> event) {
+        if (event.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
+            event.context()
+                    .addAll(ResourceUtils.lookupResources(
+                            event.getArgs(0),
+                            "slimefunhelper",
+                            "slimefunhelper",
+                            "textures",
+                            ".png",
+                            s -> s.startsWith("spear")));
+        }
+    }
+
+    public void onModelSupply(Event<Set<Identifier>> event) {
+        event.context()
+                .addAll(ResourceUtils.lookupResources(
+                        event.getArgs(0),
+                        "slimefunhelper",
+                        "slimefunhelper",
+                        "models",
+                        ".json",
+                        s -> s.startsWith("spear")));
     }
 
     public void onReplaceSpearModel(Event<Identifier> eventIdentifier) {
@@ -194,27 +205,45 @@ public class SpearEnhance extends BaseModule {
             ItemStack origin = eventIdentifier.getArgs(0);
             if (materialSwordToSpearMap.containsKey(origin.getItem())
                     && VItem.getInstance().isSpear(origin)) {
-                Item item = materialSwordToSpearMap.get(origin.getItem());
+                Identifier item = materialSwordToSpearMap.get(origin.getItem());
                 if (item != null) {
-                    eventIdentifier.context(item.getComponents().get(DataComponentTypes.ITEM_MODEL));
+                    eventIdentifier.context(item);
                 }
             }
         }
     }
 
-    public ItemStack getOriginalStack(ItemStack stack) {
-        Item item = stack.getItem();
-        Item trans = materialSwordToSpearMap.get(item);
-        return trans == null ? ItemStack.EMPTY : new ItemStack(trans);
+    private static final String META_DATA_SPEAR_LAST_KINETIC_TIME = "slimefunhelper:spear_module/last_kinetic_time";
+
+    public void onEntityStatus(Event<EntityStatusS2CPacket> event) {
+        if (event.context.getEntity(mc.world) instanceof PlayerEntity pl
+                && pl instanceof MetadataHolder md
+                && event.context.getStatus() == VDataFlag.ENTITY_STATUS_KINETIC_ATTACK) {
+            md.getMetadata().put(this, META_DATA_SPEAR_LAST_KINETIC_TIME, mc.world.getTime());
+        }
     }
 
-    public KineticWeaponComponent getRealComponent(ItemStack stack) {
-        Item item = stack.getItem();
-        Item trans = materialSwordToSpearMap.get(item);
-        if (trans != null && VItem.getInstance().isSpear(stack)) {
-            return trans.getComponents().get(DataComponentTypes.KINETIC_WEAPON);
+    public long getLastKineticTime(Entity player) {
+        if (player instanceof MetadataHolder md
+                && !md.isMetaEmpty()
+                && md.getMetadata().get(this, META_DATA_SPEAR_LAST_KINETIC_TIME) instanceof Number nb) {
+            return nb.longValue();
         }
-        return stack.get(DataComponentTypes.KINETIC_WEAPON);
+        return -2147483648L;
+    }
+
+    public float getTimeSinceLastKineticAttack(Entity pl, float tickProgress) {
+        var lastKineticTime = getLastKineticTime(pl);
+        return lastKineticTime < 0L ? 0.0F : (float) (mc.world.getTime() - lastKineticTime) + tickProgress;
+    }
+
+    public boolean hasRealComponent(ItemStack stack) {
+        Item item = stack.getItem();
+        Identifier trans = materialSwordToSpearMap.get(item);
+        if (trans != null && VItem.getInstance().isSpear(stack)) {
+            return true;
+        }
+        return false;
     }
 
     public void onPostTick(Event<ClientPlayerEntity> eventPostTick) {
