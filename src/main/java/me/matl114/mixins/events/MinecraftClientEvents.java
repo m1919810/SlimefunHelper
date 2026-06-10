@@ -315,7 +315,7 @@ public abstract class MinecraftClientEvents {
                             target =
                                     "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;",
                             shift = At.Shift.BEFORE,
-                            ordinal = 2))
+                            ordinal = 0))
     public void onInputEventIfScreenOpen(CallbackInfo ci, @Local Profiler profiler) {
         if (MinecraftClient.getInstance().currentScreen != null
                 || MinecraftClient.getInstance().getOverlay() != null) {
