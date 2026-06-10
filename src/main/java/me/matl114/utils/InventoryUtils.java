@@ -176,7 +176,9 @@ public class InventoryUtils {
         IndexEntry<ItemStack> result = null;
         if ((acceptEmpty || !item.isEmpty())) {
             maxValue = maxFunction.apply(item);
-            result = new IndexEntry<>(selecedSlot, item);
+            if (maxValue != null) {
+                result = new IndexEntry<>(selecedSlot, item);
+            }
         }
         if (doNotFSearchWhenOpenOtherScreen
                 && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId

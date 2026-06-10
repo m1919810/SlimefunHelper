@@ -478,6 +478,10 @@ public class Listener {
     private static final EventChannel<ClientPlayerEntity> clientPlayerSendMovementPoint = new EventChannel<>();
 
     @Getter
+    @Broadcast
+    private static final EventChannel<ClientPlayerEntity> clientPlayerPostSendMovementPoint = new EventChannel<>();
+
+    @Getter
     @Cancelable
     @Modifiable
     @ApiStatus.Experimental

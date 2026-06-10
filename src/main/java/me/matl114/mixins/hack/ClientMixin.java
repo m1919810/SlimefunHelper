@@ -212,7 +212,8 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Shadow
     public abstract Window getWindow();
 
-    @Shadow protected abstract void doItemUse();
+    @Shadow
+    protected abstract void doItemUse();
 
     @Override
     public ClientAccess clone() {
@@ -232,12 +233,12 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     }
 
     @Unique
-    public void simulateRightClick(){
+    public void simulateRightClick() {
         doItemUse();
     }
 
     @Unique
-    public void simulateLeftClick(){
+    public void simulateLeftClick() {
         doAttack();
     }
 }
