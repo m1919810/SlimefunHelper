@@ -718,7 +718,7 @@ public class ChatUtils {
 
     @ApiMethod
     public static ClickEvent getOpenFile(File path) {
-        return new ClickEvent.OpenFile(path);
+        return new ClickEvent(ClickEvent.Action.OPEN_FILE, path.getAbsolutePath());
     }
 
     @ApiMethod

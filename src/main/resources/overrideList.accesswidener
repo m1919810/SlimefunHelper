@@ -76,3 +76,9 @@ accessible field net/minecraft/client/gui/DrawContext vertexConsumers Lnet/minec
 accessible method net/minecraft/client/gui/DrawContext drawSpriteRegion (Ljava/util/function/Function;Lnet/minecraft/client/texture/Sprite;IIIIIIIII)V
 accessible field net/minecraft/particle/EntityEffectParticleEffect color I
 accessible field net/minecraft/entity/effect/StatusEffectInstance duration I
+accessible method net/minecraft/nbt/NbtCompound entrySet ()Ljava/util/Set;
+accessible field net/minecraft/client/gui/hud/DebugHud showDebugHud Z
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap radius I
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap centerChunkX I
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap centerChunkZ I
+accessible method net/minecraft/client/world/ClientChunkManager$ClientChunkMap getIndex (II)I

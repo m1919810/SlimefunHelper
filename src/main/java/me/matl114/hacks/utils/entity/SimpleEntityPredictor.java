@@ -6,7 +6,7 @@ import net.minecraft.util.math.Vec3d;
 public record SimpleEntityPredictor(Entity entity) implements Predictor {
     @Override
     public Vec3d getKnownDeltaMovement() {
-        return new Vec3d(entity.getX() - entity.lastX, entity.getY() - entity.lastY, entity.getZ() - entity.lastZ);
+        return new Vec3d(entity.getX() - entity.prevX, entity.getY() - entity.prevY, entity.getZ() - entity.prevZ);
     }
 
     @Override

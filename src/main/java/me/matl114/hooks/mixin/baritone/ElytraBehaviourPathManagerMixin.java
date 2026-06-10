@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Environment(EnvType.CLIENT)
-@Mixin(ElytraBehavior.PathManager.class)
+@Mixin(value = ElytraBehavior.PathManager.class, remap = false)
 public abstract class ElytraBehaviourPathManagerMixin {
     @WrapOperation(
             method = {"b()V", "Lbaritone/process/elytra/ElytraBehavior$PathManager;pathfindAroundObstacles()V"},

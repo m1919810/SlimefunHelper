@@ -20,7 +20,6 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.PlayerInput;
 import net.minecraft.util.hit.BlockHitResult;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -109,13 +108,13 @@ public abstract class ClientPlayerInteractionManagerEvents {
 
     @Inject(
             method =
-                    "createPlayer(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/stat/StatHandler;Lnet/minecraft/client/recipebook/ClientRecipeBook;Lnet/minecraft/util/PlayerInput;Z)Lnet/minecraft/client/network/ClientPlayerEntity;",
+                    "createPlayer(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/stat/StatHandler;Lnet/minecraft/client/recipebook/ClientRecipeBook;ZZ)Lnet/minecraft/client/network/ClientPlayerEntity;",
             at = @At("RETURN"))
     public void onCreatePlayer(
             ClientWorld world,
             StatHandler statHandler,
             ClientRecipeBook recipeBook,
-            PlayerInput lastPlayerInput,
+            boolean lastSneaking,
             boolean lastSprinting,
             CallbackInfoReturnable<ClientPlayerEntity> cir) {
         ClientPlayerEntity player = cir.getReturnValue();

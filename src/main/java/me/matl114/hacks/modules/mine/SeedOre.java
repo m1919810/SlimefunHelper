@@ -122,7 +122,7 @@ public class SeedOre extends BaseModule {
             String key = entry.getKey();
             NbtElement value = entry.getValue();
             if (value instanceof NbtLong ll) {
-                seedMap.put(key, ll.value());
+                seedMap.put(key, ll.longValue());
             }
         }
     }

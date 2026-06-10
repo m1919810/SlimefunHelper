@@ -5,7 +5,6 @@
 	"compatibilityLevel": "JAVA_17",
 	"client": [
 		"access.ChunkMixin",
-		"access.ExplosiveProjectileMixin",
 		"access.FireworkRocketEntityMixin",
 		"access.HandledScreenMixin",
 		"access.HitResultMixin",
@@ -64,7 +63,6 @@
 		"fix.SignBlockEntityRendererFixMixin",
 		"fix.StringHelperFixMixin",
 		"hack.ChatHudMixin",
-		"hack.ChatInputSuggestorMixin",
 		"hack.ChatScreenMixin",
 		"hack.ChestScreenMixin",
 		"hack.ClientLoginNetworkHandlerMixin",
@@ -89,11 +87,6 @@
 		"hack.SplashOverlayMixin",
 		"hack.VillagerTradeScreenMixin",
 		"hack.WorldRenderMixin",
-		"render.EditBoxWidgetMixin",
-		"render.ResourcePackPositionMixin",
-		"render.ScreenMixin",
-		"render.ScrollableWidgetMixin",
-		"render.TextFieldWidgetMixin",
 		"versioned.HeldItemVersionedSpearMixin",
 		"versioned.MatrixStackMixin"
 	],

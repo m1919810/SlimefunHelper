@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 
 @Pseudo
-@Mixin(PlacementManagerDaemonHandler.class)
+@Mixin(value = PlacementManagerDaemonHandler.class, remap = false)
 @Environment(EnvType.CLIENT)
 public abstract class PlacementManagerDaemonFixMixin {
     @WrapMethod(

@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class LightMapTextureMixin {
     @Inject(method = "getDarknessFactor", at = @At("HEAD"), cancellable = true)
     private void getDarknessFactor(CallbackInfoReturnable<Float> cir) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (RenderExtra.INSTANCE.noEffect.get()) {
             cir.setReturnValue(0.0F);
         }
     }
