@@ -44,7 +44,6 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.*;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.nbt.*;
-import net.minecraft.network.NetworkingBackend;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
@@ -117,7 +116,7 @@ public class ServerScanner extends BaseModule {
     private final List<String> scannedIps = new ArrayList<>();
 
     {
-        list().stream().map(s -> ((NbtString) s).value()).forEach(scannedIps::add);
+        list().stream().map(s -> ((NbtString) s).asString()).forEach(scannedIps::add);
     }
 
     private Text logInfo = Text.empty();

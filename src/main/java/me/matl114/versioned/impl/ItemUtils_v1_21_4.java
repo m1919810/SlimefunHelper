@@ -151,6 +151,8 @@ public class ItemUtils_v1_21_4 implements VItem {
                     && nbt.get("VV|original_hashes") instanceof NbtCompound original
                     && original.get("id") instanceof NbtInt intValue) {
                 return intValue.intValue();
+            } else if (nbt != null && nbt.get("VB|Protocol1_21_11To1_21_9|id") instanceof NbtInt intVal) {
+                return intVal.intValue();
             }
         }
         return null;

@@ -94,6 +94,7 @@
 		"render.ScreenMixin",
 		"render.ScrollableWidgetMixin",
 		"render.TextFieldWidgetMixin",
+		"versioned.HeldItemVersionedSpearMixin",
 		"versioned.MatrixStackMixin"
 	],
 	"injectors": {
@@ -103,6 +104,7 @@
 		"fix.DecoderByteBufExceptionFixMixin",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
-		"fix.ScreenHandlerFixMixin"
+		"fix.ScreenHandlerFixMixin",
+		"versioned.ItemVersionedSpearMixin"
 	]
 }

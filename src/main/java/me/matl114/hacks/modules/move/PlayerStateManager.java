@@ -32,10 +32,9 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ProjectileUtil;
-import net.minecraft.entity.projectile.thrown.LingeringPotionEntity;
-import net.minecraft.entity.projectile.thrown.SplashPotionEntity;
+import net.minecraft.entity.projectile.thrown.PotionEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.item.consume.ApplyEffectsConsumeEffect;
 import net.minecraft.item.consume.ClearAllEffectsConsumeEffect;
 import net.minecraft.item.consume.RemoveEffectsConsumeEffect;
@@ -44,8 +43,8 @@ import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.*;
+import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.TintedParticleEffect;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.FluidTags;
@@ -53,6 +52,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class PlayerStateManager extends BaseModule {
@@ -124,10 +124,8 @@ public class PlayerStateManager extends BaseModule {
         registerListener(
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onEntityTrackedDataUpdate);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onEntityConsume);
-        registerListener(
-                Listener.getEntityRemoveListener().getChannel(EntityType.SPLASH_POTION), this::onSplashedPotionHit);
-        registerListener(
-                Listener.getEntityRemoveListener().getChannel(EntityType.AREA_EFFECT_CLOUD), this::onLingerPotionHit);
+        registerListener(Listener.getEntityRemoveListener().getChannel(EntityType.POTION), this::onSplashedPotionHit);
+        registerListener(Listener.getEntityRemoveListener().getChannel(EntityType.POTION), this::onLingerPotionHit);
         registerListener(
                 Listener.getEntityPreTickListener().getChannel(EntityType.AREA_EFFECT_CLOUD),
                 this::onAreaEffectCloudTick);
@@ -299,7 +297,7 @@ public class PlayerStateManager extends BaseModule {
         if (++cooldownInvSummary > 10 || inventorySummary == null || inventoryTotalSummary == null) {
             cooldownInvSummary = 0;
             LinkedHashMap<ItemStackSample, Integer> map0 = new LinkedHashMap<>();
-            mc.player.getInventory().getMainStacks().stream()
+            mc.player.getInventory().main.stream()
                     .filter(v -> !v.isEmpty())
                     .forEach(s -> map0.merge(ItemStackSample.of(s), s.getCount(), Integer::sum));
             inventorySummary = map0;
@@ -540,7 +538,7 @@ public class PlayerStateManager extends BaseModule {
                 PlayerStatus status = getOrCreateStatus(pl);
                 Set<RegistryEntry<StatusEffect>> keys = new HashSet<>(status.visibleStatusEffects.keySet());
                 for (var ptc : particles) {
-                    if (ptc instanceof TintedParticleEffect tinted) {
+                    if (ptc instanceof EntityEffectParticleEffect tinted) {
                         int colorValue = ColorUtils.withAlphaInt(tinted.color, 0);
                         var effect = colorToRegistry.get(colorValue);
                         if (effect != null) {
@@ -549,7 +547,6 @@ public class PlayerStateManager extends BaseModule {
                             if (!effectTracker.hasInitialized()) {
                                 effectTracker.startTick = Tasks.getTick();
                             }
-                            effectTracker.particleEffect = tinted;
                             effectTracker.visible = true;
                         }
                     }
@@ -583,21 +580,17 @@ public class PlayerStateManager extends BaseModule {
                                                     .streamAll(Consumable.class)
                                                     .forEach(s -> {
                                                         if (s instanceof PotionContentsComponent foodComponent) {
-                                                            float scale = (Float) consumedUsing.getOrDefault(
-                                                                    DataComponentTypes.POTION_DURATION_SCALE, 1.0F);
-                                                            foodComponent.forEachEffect(
-                                                                    (instance) -> {
-                                                                        if (!(instance.getEffectType()
-                                                                                        .value())
-                                                                                .isInstant()) {
-                                                                            status.visibleStatusEffects
-                                                                                    .computeIfAbsent(
-                                                                                            instance.getEffectType(),
-                                                                                            EffectTracker::new)
-                                                                                    .refresh(instance);
-                                                                        }
-                                                                    },
-                                                                    scale);
+                                                            foodComponent.forEachEffect((instance) -> {
+                                                                if (!(instance.getEffectType()
+                                                                                .value())
+                                                                        .isInstant()) {
+                                                                    status.visibleStatusEffects
+                                                                            .computeIfAbsent(
+                                                                                    instance.getEffectType(),
+                                                                                    EffectTracker::new)
+                                                                            .refresh(instance);
+                                                                }
+                                                            });
                                                         }
                                                         ;
                                                     });
@@ -666,28 +659,33 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
-    public void onSplashedPotionHit(Event<SplashPotionEntity> eventPotionEntity) {
+    public static float getToleranceMargin(Entity entity) {
+        return Math.max(0.0F, Math.min(0.3F, (float) (entity.age - 2) / 20.0F));
+    }
+
+    public void onSplashedPotionHit(Event<PotionEntity> eventPotionEntity) {
         if (checkNull()) return;
         Entity.RemovalReason reason = eventPotionEntity.getArgs(0);
         if (reason.shouldDestroy()) {
-            SplashPotionEntity potionEntity = eventPotionEntity.context;
+            PotionEntity potionEntity = eventPotionEntity.context;
             ItemStack stack = potionEntity.getStack();
-            if (stack.isEmpty()) return;
+
+            if (stack.isEmpty() || stack.isOf(Items.LINGERING_POTION)) return;
             PotionContentsComponent potionContentsComponent = stack.get(DataComponentTypes.POTION_CONTENTS);
             if (potionContentsComponent == null
                     || Objects.equals(potionContentsComponent, PotionContentsComponent.DEFAULT)) {
                 return;
             }
-            float durationScale = stack.getOrDefault(DataComponentTypes.POTION_DURATION_SCALE, 1.0f);
+            float durationScale = 1.0F;
             Box boundingBox = potionEntity.getBoundingBox();
             boundingBox = boundingBox.expand(4, 2, 4);
             List<PlayerEntity> players = mc.world.getNonSpectatingEntities(PlayerEntity.class, boundingBox);
             if (!players.isEmpty()) {
-                float g = ProjectileUtil.getToleranceMargin(potionEntity);
+                float g = getToleranceMargin(potionEntity);
                 for (PlayerEntity player : players) {
                     if (player.isDead()) continue;
                     double distanceSq =
-                            boundingBox.squaredMagnitude(player.getBoundingBox().expand(g));
+                            boundingBox.squaredMagnitudE(player.getBoundingBox().expand(g));
                     if (distanceSq >= 16.0) continue;
                     double actualDistance = Math.sqrt(distanceSq);
                     double attenuation = 1.0 - actualDistance / 4.0;
@@ -722,19 +720,19 @@ public class PlayerStateManager extends BaseModule {
     private static final String AREA_EFFECT_CLOUD_POTION_CONTENT =
             "slimefunhelper:player_manager/tracking_linger_potion_type";
 
-    public void onLingerPotionHit(Event<LingeringPotionEntity> eventLinger) {
+    public void onLingerPotionHit(Event<PotionEntity> eventLinger) {
         if (checkNull()) return;
         Entity.RemovalReason reason = eventLinger.getArgs(0);
         if (reason.shouldDestroy()) {
-            LingeringPotionEntity potionEntity = eventLinger.context;
+            PotionEntity potionEntity = eventLinger.context;
             ItemStack stack = potionEntity.getStack();
-            if (stack.isEmpty()) return;
+            if (stack.isEmpty() || !stack.isOf(Items.LINGERING_POTION)) return;
             PotionContentsComponent potionContentsComponent = stack.get(DataComponentTypes.POTION_CONTENTS);
             if (potionContentsComponent == null
                     || Objects.equals(potionContentsComponent, PotionContentsComponent.DEFAULT)) {
                 return;
             }
-            float durationScale = stack.getOrDefault(DataComponentTypes.POTION_DURATION_SCALE, 1.0f);
+            float durationScale = 0.25F;
             Vec3d pos = potionEntity.getPos();
             int startTick = Tasks.getTick();
             Box detectBox = new Box(pos.add(-0.2, -0.2, -0.2), pos.add(0.2, 0.2, 0.2));
@@ -769,6 +767,13 @@ public class PlayerStateManager extends BaseModule {
         performCloudUpdate(cloud, radius);
     }
 
+    public StatusEffectInstance withScaledDuration(StatusEffectInstance instance, float durationMultiplier) {
+        StatusEffectInstance statusEffectInstance = new StatusEffectInstance(instance);
+        statusEffectInstance.duration = statusEffectInstance.mapDuration((duration) -> {
+            return Math.max(MathHelper.floor((float) duration * durationMultiplier), 1);
+        });
+        return statusEffectInstance;
+    }
     /**
      * 核心更新逻辑（每 5 刻执行一次）
      */
@@ -783,7 +788,7 @@ public class PlayerStateManager extends BaseModule {
                         mc.world.getNonSpectatingEntities(PlayerEntity.class, cloud.getBoundingBox());
                 if (targets.isEmpty()) return;
                 List<StatusEffectInstance> effectList = new ArrayList<>();
-                pairData.getFirst().forEachEffect(effectList::add, pairData.getSecond());
+                pairData.getFirst().forEachEffect((v) -> effectList.add(withScaledDuration(v, pairData.getSecond())));
                 for (PlayerEntity target : targets) {
                     // 冷却检查
                     if (target.isDead()) continue;
@@ -861,7 +866,6 @@ public class PlayerStateManager extends BaseModule {
         int duration = 0;
         public boolean visible;
         final StatusEffect effectInstance;
-        TintedParticleEffect particleEffect;
 
         public EffectTracker(RegistryEntry<StatusEffect> effectRegistryEntry) {
             effectInstance = effectRegistryEntry.value();
