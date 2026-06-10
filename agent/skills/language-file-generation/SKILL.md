@@ -12,22 +12,16 @@ disable-model-invocation: true
 
 - key 路径与配置路径一致
 - 文案风格与现有 `en_us.json` 一致
-- 同模块条目放在同一段附近
+- 同前缀条目在同一段附近
 - tooltips 与主文案分层清晰
 
 ## 先看什么
 
 优先阅读：
-
 - `src/main/resources/assets/slimefunhelper/lang/en_us.json`
-
-必要时再看：
-
-- 对应模块的 `ModulePath`
-- 对应配置项声明位置
-- 现有相邻 key 的文案写法
-
-不要先凭名字硬翻。先确认它属于哪个模块段、当前项目里这个模块怎么命名。
+仿照当前风格和同前缀路径
+不要凭名字硬翻。
+不要阅读代码文件
 
 ## 文件结构规律
 
@@ -51,6 +45,8 @@ disable-model-invocation: true
 - ModuleMeta的翻译值 (前缀为module-meta.)
 - ClickGui中的模块名 (前缀为widget.click-gui.module-name)
 - ClickGui中的模块介绍 
+
+在补全的时候 你不需要调查这些 你只需要认准给出的missing是哪组的然后补全即可
 
 ## 工作流
 
@@ -76,8 +72,7 @@ disable-model-invocation: true
 新增 key 时：
 
 - 就近插入到同前缀分组附近
-- 不要全部堆到文件末尾
-- 优先保持同一个模块块内连续
+- 同一个前缀的最好连续
 
 例如：
 
@@ -87,13 +82,27 @@ disable-model-invocation: true
 
 ## 检查清单
 
-完成后至少确认：
+无需检查 用户会自己检查
 
-- JSON 语法有效
-- key 没有重复
-- 新 key 名和日志里的缺失 key 完全一致
-- 文案前缀和相邻条目一致
-- 如果存在 `.tooltips`，它解释的是行为/限制，不是重复标题
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
+
+无需检查 用户会自己检查
 
 ## 快速模板
 
@@ -127,10 +136,6 @@ disable-model-invocation: true
 "config.privacy-protection-path-keywords": "配置快照: 隐私保护关键词"
 ```
 
-## 本项目这次补语言总结
-
-- `en_us.json` 名字虽然是英文区，但项目实际内容以中文文案为准
-- `Missing translation key` 批量出现时，通常意味着新增了一组配置，但语言文件没同步
 
 ## 用户需求
 当用户需求提供了一组Missing translation key的时候 尝试按上面规则补全他们

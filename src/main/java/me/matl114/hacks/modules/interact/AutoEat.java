@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.interact;
 
 import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.Nonnull;
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
@@ -161,31 +162,33 @@ public class AutoEat extends BaseModule {
         return off != null ? new IndexEntry<>(40, stackOffhand) : null;
     }
 
-    private void tryStartEating() {
+    private IndexEntry<ItemStack> findFood() {
         boolean healthPriority = enableHealth.get() && mc.player.getHealth() <= healthLevel.get();
-        var re = inv.get()
+        return inv.get()
                 ? InventoryUtils.findBestPlayerItem(stack -> scoreFood(stack, healthPriority), true, false)
                 : findHandStack(healthPriority);
-        if (re != null) {
-            if (log.get()) {
-                Text text = re.val().getName();
-                Debug.chat(ChatUtils.stringToText("&c[Eat] &fStart to eat"), text);
-            }
-            boolean offHand = re.index() == 40;
-            Runnable cbb = offHand
-                    ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(40)
-                    : InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
-            if (cbb != null) {
-                ClientAccess.of(mc).simulateRightClick();
-                if (mc.player.isUsingItem()
-                        && ((mc.player.getActiveHand() == Hand.OFF_HAND) == offHand)
-                        && ItemStack.areItemsAndComponentsEqual(re.val(), mc.player.getActiveItem())) {
-                    eating = true;
-                    restoreCallback = cbb;
-                    eatingSlot = offHand ? 40 : InventoryUtils.getSelectedSlot();
-                } else {
-                    cbb.run();
-                }
+    }
+
+    private void tryStartEating(@Nonnull IndexEntry<ItemStack> re) {
+
+        if (log.get()) {
+            Text text = re.val().getName();
+            Debug.chat(ChatUtils.stringToText("&c[Eat] &fStart to eat"), text);
+        }
+        boolean offHand = re.index() == 40;
+        Runnable cbb = offHand
+                ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(40)
+                : InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
+        if (cbb != null) {
+            ClientAccess.of(mc).simulateRightClick();
+            if (mc.player.isUsingItem()
+                    && ((mc.player.getActiveHand() == Hand.OFF_HAND) == offHand)
+                    && ItemStack.areItemsAndComponentsEqual(re.val(), mc.player.getActiveItem())) {
+                eating = true;
+                restoreCallback = cbb;
+                eatingSlot = offHand ? 40 : InventoryUtils.getSelectedSlot();
+            } else {
+                cbb.run();
             }
         }
     }
@@ -245,6 +248,10 @@ public class AutoEat extends BaseModule {
                 }
                 if (canStartEat) {
                     boolean canStartNow = true;
+                    var re = findFood();
+                    if (re == null) {
+                        return;
+                    }
                     if (fireworkFix.get() && player.isFallFlying()) {
                         // using
                         if (ElytraExtra.INSTANCE.getTickSinceLastFirework() > 10) {
@@ -260,7 +267,7 @@ public class AutoEat extends BaseModule {
                     }
                     if (canStartNow) {
                         lastAutoFireworkIsDone = false;
-                        tryStartEating();
+                        tryStartEating(re);
                     }
                 }
             }
