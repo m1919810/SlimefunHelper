@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.ConfigLoader;
@@ -73,6 +74,14 @@ public class Configs {
         LEGACY_SLIENT_ROT;
         ;
 
+        public static LegalInteractMode getFromPreset(ModulePreset preset) {
+            return switch (preset) {
+                case AC_GRIM_LEGACY -> LEGACY_SLIENT_ROT;
+                case AC_GRIM, AC_MATRIX -> DELAY_MOVEMENT;
+                default -> NONE;
+            };
+        }
+
         @Override
         public String getConfigEnumType() {
             return "legal_interact_mode";
@@ -90,6 +99,13 @@ public class Configs {
     public enum BypassMode implements ConfigEnum {
         NO_BYPASS,
         BYPASS_GRIM;
+
+        public static BypassMode getFromPreset(ModulePreset preset) {
+            return switch (preset) {
+                case AC_GRIM_LEGACY, AC_GRIM -> BYPASS_GRIM;
+                default -> NO_BYPASS;
+            };
+        }
 
         public boolean hasAc() {
             return this != NO_BYPASS;

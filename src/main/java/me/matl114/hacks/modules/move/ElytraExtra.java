@@ -1164,6 +1164,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 : (Tasks.getTick() - lastFireworkRocketTick - lastFireworkThresholdTime);
     }
 
+    public int getTicksSinceLastFireworkSpawn() {
+        return (lastFireworkRocket != null && lastFireworkRocket.isAlive())
+                ? (Tasks.getTick() - lastFireworkRocketTick)
+                : -1;
+    }
+
     public boolean shouldLaunchNextFirework() {
         if (lastFireworkRocket != null) {
             if (lastFireworkRocket.isAlive()) {

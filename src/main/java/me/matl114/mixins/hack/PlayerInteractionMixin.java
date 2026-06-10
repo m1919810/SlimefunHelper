@@ -380,9 +380,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             return true;
         }
         float speed = state.calcBlockBreakingDelta(
-                MinecraftClient.getInstance().player,
-                MinecraftClient.getInstance().world,
-                currentFailBreakPos);
+                MinecraftClient.getInstance().player, MinecraftClient.getInstance().world, currentFailBreakPos);
         if (speed > 0.0F && ((Tasks.getTick() - failBreakStartTick) * speed > 1.0F)) {
             return true;
         }
@@ -526,8 +524,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 cir.setReturnValue(true);
             } else {
                 float predictedProgress = getCurrentMiningProgress(true);
-                if (mineExtra.shouldTryDoubleBreak(predictedProgress) && tryAbortCurrentMiningIntoFailBreak()) {
-                    sendStopBreakPacketInternal(currentBreakingPos, direction);
+                if (mineExtra.shouldTryDoubleBreak(predictedProgress) && sendFailBreakCurrentPos(direction)) {
                     if (mineExtra.shouldSendGrimBadPacketsExtraStop()) {
                         sendExtraGrimBadPacketsStop(pos, direction);
                     }
@@ -559,18 +556,31 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                                     "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
     private void onDoubleBreak(ClientPlayNetworkHandler instance, Packet packet) {
 
-        if (!MineExtra.INSTANCE.optimizeOneBlock.get() && tryAbortCurrentMiningIntoFailBreak()) {
+        if (!MineExtra.INSTANCE.optimizeOneBlock.get()) {
             // we make optimizeOneBlockMine delay its destroy packet to changing the currentPosition in method
             // sameBlockOptimize
-            Vec3d shouldFacing = currentBreakingPos
-                    .toCenterPos()
-                    .subtract(MinecraftClient.getInstance().player.getEyePos());
-            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-            sendStopBreakPacketInternal(currentBreakingPos, dir);
-            return;
+            if (sendFailBreakCurrentPos(null)) {
+                return;
+            }
         }
 
         instance.sendPacket(packet);
+    }
+
+    @Unique
+    @Override
+    public boolean sendFailBreakCurrentPos(@Nullable Direction direction) {
+        if (tryAbortCurrentMiningIntoFailBreak()) {
+            if (direction == null) {
+                Vec3d shouldFacing = currentBreakingPos
+                        .toCenterPos()
+                        .subtract(MinecraftClient.getInstance().player.getEyePos());
+                direction = Direction.getFacing(shouldFacing).getOpposite();
+            }
+            sendStopBreakPacketInternal(currentBreakingPos, direction);
+            return true;
+        }
+        return false;
     }
 
     @Redirect(
@@ -584,11 +594,12 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             ClientPlayNetworkHandler instance, Packet packet, @Local(argsOnly = true) Direction direction) {
         // conflict with optimizeOneBlock
 
-        if (!MineExtra.INSTANCE.optimizeOneBlock.get() && tryAbortCurrentMiningIntoFailBreak()) {
+        if (!MineExtra.INSTANCE.optimizeOneBlock.get()) {
             // we make optimizeOneBlockMine delay its destroy packet to check onDoubleBreakAbort() and  changing the
             // currentPosition in method sameBlockOptimize
-            sendStopBreakPacketInternal(currentBreakingPos, direction);
-            return;
+            if (sendFailBreakCurrentPos(direction)) {
+                return;
+            }
         }
 
         instance.sendPacket(packet);

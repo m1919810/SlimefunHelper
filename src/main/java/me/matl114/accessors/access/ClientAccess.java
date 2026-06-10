@@ -20,5 +20,4 @@ public interface ClientAccess {
     public void simulateRightClick();
 
     public void simulateLeftClick();
-
 }

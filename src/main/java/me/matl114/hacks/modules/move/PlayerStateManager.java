@@ -294,8 +294,8 @@ public class PlayerStateManager extends BaseModule {
         inWeb = false;
         lastInWall = MovTasks.isCollidingWithEnvironment(mc.player);
         Box box = mc.player.getBoundingBox();
-        lastUnderBlock =
-                MovTasks.isCollidingWithEnvironment(box.withMinY(box.maxY).withMaxY(box.maxY + 0.42));
+        lastUnderBlock = MovTasks.isCollidingWithEnvironment(
+                mc.player, box.withMinY(box.maxY).withMaxY(box.maxY + 0.42));
         lastVelocityAffectingPos = calculateVelocityAffectingPos();
         if (++cooldownInvSummary > 10 || inventorySummary == null || inventoryTotalSummary == null) {
             cooldownInvSummary = 0;
@@ -816,6 +816,8 @@ public class PlayerStateManager extends BaseModule {
         public int blastProtection;
         public ItemStack lastUsing;
         public Hand lastUsingHand;
+        public boolean lastInBlock;
+        public boolean lastUnderBlock;
         public Map<RegistryEntry<StatusEffect>, EffectTracker> visibleStatusEffects = new ConcurrentHashMap<>();
         // todo: add more shit
         public void tickUpdate(PlayerEntity player) {
@@ -846,7 +848,10 @@ public class PlayerStateManager extends BaseModule {
                 lastUsing = null;
                 lastUsingHand = null;
             }
-
+            lastInBlock = MovTasks.isCollidingWithEnvironment(player);
+            Box box = mc.player.getBoundingBox();
+            lastUnderBlock = MovTasks.isCollidingWithEnvironment(
+                    player, box.withMinY(box.maxY).withMaxY(box.maxY + 0.42));
             this.lastUpdate = Tasks.getTick();
         }
     }

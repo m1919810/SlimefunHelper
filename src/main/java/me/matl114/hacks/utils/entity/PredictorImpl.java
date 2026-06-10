@@ -186,6 +186,30 @@ public class PredictorImpl implements Predictor {
         }
     }
 
+    public List<KnownPosition> getLastKnownPositions(int lastNumber) {
+        if (lastNumber <= 0) return Collections.emptyList();
+
+        // 先收集已有的历史记录（从旧到新）
+        List<KnownPosition> result = new ArrayList<>(positions);
+
+        // 如果历史记录超过所需数量，只保留最后 lastNumber 个
+        if (result.size() > lastNumber) {
+            result = result.subList(result.size() - lastNumber, result.size());
+        }
+
+        // 如果不足，用当前实体位置补全（添加在末尾）
+        int missing = lastNumber - result.size();
+        if (missing > 0) {
+            Vec3d currentPos = owner.getPos();
+            int currentTick = Tasks.getTick();
+            for (int i = 0; i < missing; i++) {
+                result.add(new KnownPosition(currentPos, currentTick));
+            }
+        }
+
+        return result;
+    }
+
     private void addRecord(KnownPosition record) {
         // 若与队尾 tick 相同，则替换（避免重复记录同一时刻）
         positions.add(record);

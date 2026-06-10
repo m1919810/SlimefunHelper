@@ -1,10 +1,12 @@
 package me.matl114.accessors.hacks;
 
 import javax.annotation.Nullable;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 public interface PlayerInteractionAccess {
     /**
@@ -133,6 +135,13 @@ public interface PlayerInteractionAccess {
         startMiningBlock(pos, direction);
     }
 
+    default void sendStartBreakPacket(BlockPos pos) {
+        Vec3d shouldFacing =
+                pos.toCenterPos().subtract(MinecraftClient.getInstance().player.getEyePos());
+        Direction direction = Direction.getFacing(shouldFacing).getOpposite();
+        sendStartBreakPacket(pos, direction);
+    }
+
     /**
      * 兼容旧调用名：语义等价于 {@link #sendBreakPacket(BlockPos, Direction)}。
      */
@@ -152,6 +161,8 @@ public interface PlayerInteractionAccess {
         }
         return beginFailBreak(pos);
     }
+
+    public boolean sendFailBreakCurrentPos(@Nullable Direction direction);
 
     /**
      * 把原版 {@link ClientPlayerInteractionManager} 视为本接口语义边界。
