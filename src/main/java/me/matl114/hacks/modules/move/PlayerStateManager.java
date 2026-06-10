@@ -32,6 +32,9 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.thrown.LingeringPotionEntity;
+import net.minecraft.entity.projectile.thrown.PotionEntity;
+import net.minecraft.entity.projectile.thrown.SplashPotionEntity;
 import net.minecraft.entity.projectile.thrown.PotionEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -663,7 +666,7 @@ public class PlayerStateManager extends BaseModule {
         return Math.max(0.0F, Math.min(0.3F, (float) (entity.age - 2) / 20.0F));
     }
 
-    public void onSplashedPotionHit(Event<PotionEntity> eventPotionEntity) {
+    public void onSplashedPotionHit(Event<SplashPotionEntity> eventPotionEntity) {
         if (checkNull()) return;
         Entity.RemovalReason reason = eventPotionEntity.getArgs(0);
         if (reason.shouldDestroy()) {
@@ -684,8 +687,8 @@ public class PlayerStateManager extends BaseModule {
                 float g = getToleranceMargin(potionEntity);
                 for (PlayerEntity player : players) {
                     if (player.isDead()) continue;
-                    double distanceSq =
-                            boundingBox.squaredMagnitudE(player.getBoundingBox().expand(g));
+                    double distanceSq = MathUtils.squaredMagnitude(
+                            boundingBox, player.getBoundingBox().expand(g));
                     if (distanceSq >= 16.0) continue;
                     double actualDistance = Math.sqrt(distanceSq);
                     double attenuation = 1.0 - actualDistance / 4.0;
