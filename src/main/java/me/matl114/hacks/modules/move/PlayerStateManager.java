@@ -32,8 +32,8 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.entity.projectile.thrown.LingeringPotionEntity;
+import net.minecraft.entity.projectile.thrown.PotionEntity;
 import net.minecraft.entity.projectile.thrown.SplashPotionEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.consume.ApplyEffectsConsumeEffect;
@@ -127,7 +127,7 @@ public class PlayerStateManager extends BaseModule {
         registerListener(
                 Listener.getEntityRemoveListener().getChannel(EntityType.SPLASH_POTION), this::onSplashedPotionHit);
         registerListener(
-                Listener.getEntityRemoveListener().getChannel(EntityType.AREA_EFFECT_CLOUD), this::onLingerPotionHit);
+                Listener.getEntityRemoveListener().getChannel(EntityType.LINGERING_POTION), this::onLingerPotionHit);
         registerListener(
                 Listener.getEntityPreTickListener().getChannel(EntityType.AREA_EFFECT_CLOUD),
                 this::onAreaEffectCloudTick);
@@ -549,7 +549,6 @@ public class PlayerStateManager extends BaseModule {
                             if (!effectTracker.hasInitialized()) {
                                 effectTracker.startTick = Tasks.getTick();
                             }
-                            effectTracker.particleEffect = tinted;
                             effectTracker.visible = true;
                         }
                     }
@@ -666,11 +665,15 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
+    public static float getToleranceMargin(Entity entity) {
+        return Math.max(0.0F, Math.min(0.3F, (float) (entity.age - 2) / 20.0F));
+    }
+
     public void onSplashedPotionHit(Event<SplashPotionEntity> eventPotionEntity) {
         if (checkNull()) return;
         Entity.RemovalReason reason = eventPotionEntity.getArgs(0);
         if (reason.shouldDestroy()) {
-            SplashPotionEntity potionEntity = eventPotionEntity.context;
+            PotionEntity potionEntity = eventPotionEntity.context;
             ItemStack stack = potionEntity.getStack();
             if (stack.isEmpty()) return;
             PotionContentsComponent potionContentsComponent = stack.get(DataComponentTypes.POTION_CONTENTS);
@@ -683,11 +686,11 @@ public class PlayerStateManager extends BaseModule {
             boundingBox = boundingBox.expand(4, 2, 4);
             List<PlayerEntity> players = mc.world.getNonSpectatingEntities(PlayerEntity.class, boundingBox);
             if (!players.isEmpty()) {
-                float g = ProjectileUtil.getToleranceMargin(potionEntity);
+                float g = getToleranceMargin(potionEntity);
                 for (PlayerEntity player : players) {
                     if (player.isDead()) continue;
-                    double distanceSq =
-                            boundingBox.squaredMagnitude(player.getBoundingBox().expand(g));
+                    double distanceSq = MathUtils.squaredMagnitude(
+                            boundingBox, player.getBoundingBox().expand(g));
                     if (distanceSq >= 16.0) continue;
                     double actualDistance = Math.sqrt(distanceSq);
                     double attenuation = 1.0 - actualDistance / 4.0;
@@ -726,7 +729,7 @@ public class PlayerStateManager extends BaseModule {
         if (checkNull()) return;
         Entity.RemovalReason reason = eventLinger.getArgs(0);
         if (reason.shouldDestroy()) {
-            LingeringPotionEntity potionEntity = eventLinger.context;
+            PotionEntity potionEntity = eventLinger.context;
             ItemStack stack = potionEntity.getStack();
             if (stack.isEmpty()) return;
             PotionContentsComponent potionContentsComponent = stack.get(DataComponentTypes.POTION_CONTENTS);
@@ -861,7 +864,6 @@ public class PlayerStateManager extends BaseModule {
         int duration = 0;
         public boolean visible;
         final StatusEffect effectInstance;
-        TintedParticleEffect particleEffect;
 
         public EffectTracker(RegistryEntry<StatusEffect> effectRegistryEntry) {
             effectInstance = effectRegistryEntry.value();

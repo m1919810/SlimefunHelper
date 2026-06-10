@@ -1,4 +1,4 @@
-package me.matl114.mixins.hack;
+package me.matl114.mixins.versioned;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Environment(EnvType.CLIENT)
 @Mixin(Lancing.class)
-public abstract class LancingMixin {
+public abstract class LancingVersionedSpearMixin {
     @WrapOperation(
             method = "positionArmForSpear",
             at =

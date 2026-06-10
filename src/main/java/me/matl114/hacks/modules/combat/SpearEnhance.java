@@ -47,11 +47,13 @@ public class SpearEnhance extends BaseModule {
     public final FlagRef renderKineticPlayers =
             flagBuilder(spearModule.add("render-kinetic-players")).build();
 
-    public final FlagRef replaceSpearModel =
-            flagBuilder(spearModule.add("replace-via-spear-model")).build();
+    public final FlagRef replaceSpearModel = builder(spearModule.add("replace-via-spear-model"), Boolean.class)
+            .defaultValue(true)
+            .build();
 
-    public final FlagRef fixOldVersionSpear =
-            flagBuilder(spearModule.add("fix-old-version-spear")).build();
+    public final FlagRef fixOldVersionSpear = builder(spearModule.add("fix-old-version-spear"), Boolean.class)
+            .defaultValue(true)
+            .build();
 
     public final NBTRef<WrapColor> renderColor = builder(
                     spearModule.add("render-kinetic-players-color"), WrapColor.class)

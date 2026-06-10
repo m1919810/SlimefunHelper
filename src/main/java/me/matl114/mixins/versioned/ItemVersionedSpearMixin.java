@@ -1,4 +1,4 @@
-package me.matl114.mixins.hack;
+package me.matl114.mixins.versioned;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Environment(EnvType.CLIENT)
 @Mixin(Item.class)
-public abstract class ItemMixin {
+public abstract class ItemVersionedSpearMixin {
     @WrapOperation(
             method = "getUseAction",
             at =
