@@ -7,6 +7,7 @@ import java.util.function.IntSupplier;
 import lombok.AllArgsConstructor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
@@ -26,6 +27,13 @@ public class MathUtils {
             sum += y * y;
         }
         return sum;
+    }
+
+    public static double squaredMagnitude(Box thi, Box other) {
+        double d = Math.max(Math.max(thi.minX - other.maxX, other.minX - thi.maxX), 0.0);
+        double e = Math.max(Math.max(thi.minY - other.maxY, other.minY - thi.maxY), 0.0);
+        double f = Math.max(Math.max(thi.minZ - other.maxZ, other.minZ - thi.maxZ), 0.0);
+        return MathHelper.squaredMagnitude(d, e, f);
     }
 
     public static int sgn(int t) {
