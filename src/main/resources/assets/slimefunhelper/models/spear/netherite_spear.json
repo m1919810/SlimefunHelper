@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/netherite_spear"
+    "layer0": "slimefunhelper:spear/netherite_spear"
   }
 }

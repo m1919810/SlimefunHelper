@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Item.class)
 public abstract class ItemVersionedSpearMixin {
-    @Inject(method = "getMaxUseTime", at = @At("RETURN"))
+    @Inject(method = "getMaxUseTime", at = @At("RETURN"), cancellable = true)
     private void fixSpearUse2(ItemStack stack, LivingEntity user, CallbackInfoReturnable<Integer> cir) {
         int val = cir.getReturnValueI();
         if (val == 0

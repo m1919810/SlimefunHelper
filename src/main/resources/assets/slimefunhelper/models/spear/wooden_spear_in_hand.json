@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:item/spear_in_hand",
+  "parent": "slimefunhelper:spear/spear_in_hand",
   "textures": {
-    "layer0": "minecraft:item/wooden_spear_in_hand"
+    "layer0": "slimefunhelper:spear/wooden_spear_in_hand"
   }
 }
