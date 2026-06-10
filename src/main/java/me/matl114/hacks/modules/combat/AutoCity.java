@@ -106,14 +106,6 @@ public class AutoCity extends BaseModule {
 
         Comparator<BlockPos> blockPosComparator =
                 Comparator.comparingDouble(v -> MathUtils.getBlockBox(v).squaredMagnitude(pos));
-        if (surround.get()) {
-            Set<BlockPos> surround = new HashSet<>();
-            surround.addAll(
-                    MathUtils.getOccupiedBlockPositions(box.expand(0.99, 0, 0).withMaxY(box.minY + 0.5)));
-            surround.addAll(
-                    MathUtils.getOccupiedBlockPositions(box.expand(0, 0, 0.99).withMaxY(box.minY + 0.5)));
-            surround.stream().filter(filter).sorted(blockPosComparator).forEach(outerPoses::add);
-        }
         Box heightTest = box;
         if (head.get()) {
             heightTest = box.stretch(0, 0.75, 0);
@@ -127,7 +119,15 @@ public class AutoCity extends BaseModule {
             MathUtils.getOccupiedBlockPositions(heightTest).stream()
                     .filter(filter)
                     .sorted(blockPosComparator)
-                    .forEach(selfPoses::add);
+                    .forEach(outerPoses::add);
+        }
+        if (surround.get()) {
+            Set<BlockPos> surround = new HashSet<>();
+            surround.addAll(
+                    MathUtils.getOccupiedBlockPositions(box.expand(0.99, 0, 0).withMaxY(box.minY + 0.5)));
+            surround.addAll(
+                    MathUtils.getOccupiedBlockPositions(box.expand(0, 0, 0.99).withMaxY(box.minY + 0.5)));
+            surround.stream().filter(filter).sorted(blockPosComparator).forEach(outerPoses::add);
         }
 
         outerPoses.removeAll(selfPoses);
