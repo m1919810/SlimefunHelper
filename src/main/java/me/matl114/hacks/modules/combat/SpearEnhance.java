@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.combat;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -19,7 +18,6 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.RenderUtils;
-import me.matl114.utils.ResourceUtils;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -73,7 +71,8 @@ public class SpearEnhance extends BaseModule {
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
-        registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
+        // registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
+        // registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlas);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onEntityStatus);
     }
 
@@ -159,47 +158,47 @@ public class SpearEnhance extends BaseModule {
     }
 
     // map 声明改为
-    private Map<Item, Identifier> materialSwordToSpearMap = new HashMap<>();
+    private final Map<Item, Identifier> materialSwordToSpearMap = new HashMap<>();
 
     // 初始化
     {
         // 木制
-        materialSwordToSpearMap.put(Items.WOODEN_SWORD, new Identifier("slimefunhelper", "spear/wooden_spear"));
+        materialSwordToSpearMap.put(Items.WOODEN_SWORD, new Identifier("slimefunhelper", "wooden_spear"));
         // 石制
-        materialSwordToSpearMap.put(Items.STONE_SWORD, new Identifier("slimefunhelper", "spear/stone_spear"));
+        materialSwordToSpearMap.put(Items.STONE_SWORD, new Identifier("slimefunhelper", "stone_spear"));
         // 铁制
-        materialSwordToSpearMap.put(Items.IRON_SWORD, new Identifier("slimefunhelper", "spear/iron_spear"));
+        materialSwordToSpearMap.put(Items.IRON_SWORD, new Identifier("slimefunhelper", "iron_spear"));
         // 金制
-        materialSwordToSpearMap.put(Items.GOLDEN_SWORD, new Identifier("slimefunhelper", "spear/golden_spear"));
+        materialSwordToSpearMap.put(Items.GOLDEN_SWORD, new Identifier("slimefunhelper", "golden_spear"));
         // 钻石
-        materialSwordToSpearMap.put(Items.DIAMOND_SWORD, new Identifier("slimefunhelper", "spear/diamond_spear"));
+        materialSwordToSpearMap.put(Items.DIAMOND_SWORD, new Identifier("slimefunhelper", "diamond_spear"));
         // 下界合金
-        materialSwordToSpearMap.put(Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "spear/netherite_spear"));
+        materialSwordToSpearMap.put(Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "netherite_spear"));
     }
 
-    public void onAtlas(Event<Set<Identifier>> event) {
-        if (event.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
-            event.context()
-                    .addAll(ResourceUtils.lookupResources(
-                            event.getArgs(0),
-                            "slimefunhelper",
-                            "slimefunhelper",
-                            "textures",
-                            ".png",
-                            s -> s.startsWith("spear")));
-        }
-    }
+    //    public void onAtlas(Event<Set<Identifier>> event) {
+    //        if (event.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
+    //            event.context()
+    //                    .addAll(ResourceUtils.lookupResources(
+    //                            event.getArgs(0),
+    //                            "slimefunhelper",
+    //                            "slimefunhelper",
+    //                            "textures",
+    //                            ".png",
+    //                            s -> s.startsWith("spear")));
+    //        }
+    //    }
 
-    public void onModelSupply(Event<Set<Identifier>> event) {
-        event.context()
-                .addAll(ResourceUtils.lookupResources(
-                        event.getArgs(0),
-                        "slimefunhelper",
-                        "slimefunhelper",
-                        "models",
-                        ".json",
-                        s -> s.startsWith("spear")));
-    }
+    //    public void onModelSupply(Event<Set<Identifier>> event) {
+    //        event.context()
+    //                .addAll(ResourceUtils.lookupResources(
+    //                        event.getArgs(0),
+    //                        "slimefunhelper",
+    //                        "slimefunhelper",
+    //                        "models",
+    //                        ".json",
+    //                        s -> s.startsWith("spear")));
+    //    }
 
     public void onReplaceSpearModel(Event<Identifier> eventIdentifier) {
         if (eventIdentifier.isCancelled() || eventIdentifier.context != null) return;
@@ -218,9 +217,10 @@ public class SpearEnhance extends BaseModule {
     private static final String META_DATA_SPEAR_LAST_KINETIC_TIME = "slimefunhelper:spear_module/last_kinetic_time";
 
     public void onEntityStatus(Event<EntityStatusS2CPacket> event) {
-        if (event.context.getEntity(mc.world) instanceof PlayerEntity pl
-                && pl instanceof MetadataHolder md
-                && event.context.getStatus() == VDataFlag.ENTITY_STATUS_KINETIC_ATTACK) {
+        if (checkNull()) return;
+        if (event.context.getStatus() == VDataFlag.ENTITY_STATUS_KINETIC_ATTACK
+                && event.context.getEntity(mc.world) instanceof PlayerEntity pl
+                && pl instanceof MetadataHolder md) {
             md.getMetadata().put(this, META_DATA_SPEAR_LAST_KINETIC_TIME, mc.world.getTime());
         }
     }
