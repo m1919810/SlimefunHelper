@@ -28,8 +28,11 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class PacketMine extends BaseModule {
+    public static PacketMine INSTANCE;
+
     public PacketMine() {
         bindFlag(autoEnable);
+        INSTANCE = this;
     }
 
     public ModulePath packetMine = makePath(Configs.MINE_CONFIG, "mine-oneblock");
@@ -93,38 +96,41 @@ public class PacketMine extends BaseModule {
 
     public void onTick(Event<ClientPlayerEntity> tickEvent) {
         if (isActive()) {
-            if (mc.interactionManager != null && mc.player != null) {
-                BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
-                // todo: add predicted speed
-                if (pos != null) {
-                    double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
-                    if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
+            tickMine();
+        }
+    }
 
-                        BlockState blockState = mc.world.getBlockState(pos);
-                        IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
+    public void tickMine() {
+        if (mc.interactionManager != null && mc.player != null) {
+            BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+            // todo: add predicted speed
+            if (pos != null) {
+                double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
+                if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
 
-                        ItemStack currentTool = currentItemSlot.val();
-                        if (canMine(blockState, currentTool)) {
-                            Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
+                    BlockState blockState = mc.world.getBlockState(pos);
+                    IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
 
-                            Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
-                            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-                            if (considerAirState.get()
-                                    && PlayerInteractionAccess.of(mc.interactionManager)
-                                                    .getCurrentMiningProgress(true)
-                                            > 0.98F) {
-                                mc.interactionManager.breakBlock(pos);
-                            }
-                            for (int i = 0; i < multiplePackets.get(); ++i) {
-                                if (swingHand.get())
-                                    mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                                PlayerInteractionAccess.of(mc.interactionManager)
-                                        .sendBreakPacket(pos, dir);
-                            }
-                            Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
-                            if (callback != null) {
-                                callback.run();
-                            }
+                    ItemStack currentTool = currentItemSlot.val();
+                    if (canMine(blockState, currentTool)) {
+                        Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
+
+                        Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
+                        Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+                        if (considerAirState.get()
+                                && PlayerInteractionAccess.of(mc.interactionManager)
+                                                .getCurrentMiningProgress(true)
+                                        > 0.98F) {
+                            mc.interactionManager.breakBlock(pos);
+                        }
+                        for (int i = 0; i < multiplePackets.get(); ++i) {
+                            if (swingHand.get())
+                                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                            PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(pos, dir);
+                        }
+                        Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
+                        if (callback != null) {
+                            callback.run();
                         }
                     }
                 }
@@ -155,10 +161,14 @@ public class PacketMine extends BaseModule {
         return InventoryUtils.getSelectedItem();
     }
 
+    public boolean isMineable(BlockState state) {
+        return state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && (airBreak.get() || !state.isAir());
+    }
+
     public boolean canMine(BlockState state, ItemStack tool) {
         // do not mine liquid, that's a disaster
         // do not mine air, shit
-        if (state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && (airBreak.get() || !state.isAir())) {
+        if (isMineable(state)) {
             if (mineThreshold.get() > 0) {
                 var access = PlayerInteractionAccess.of(mc.interactionManager);
                 return access.predictCurrentMiningProgressWithTool(tool) > Math.min(0.98, mineThreshold.get());

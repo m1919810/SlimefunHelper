@@ -1,28 +1,61 @@
 package me.matl114.hacks.modules.combat;
 
+import java.util.*;
+import java.util.function.Predicate;
+import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.CombatTasks;
+import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.mine.MineExtra;
+import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 
 public class AutoCity extends BaseModule {
+    public static AutoCity INSTANCE;
     public final ModulePath combatUtils = makePath(Configs.COMBAT_CONFIG, "combat-utils");
     public final ModulePath autoCity = combatUtils.add("auto-city");
 
+    public AutoCity() {
+        INSTANCE = this;
+        bindFlag(enable);
+    }
+
     public final FlagRef enable = flagBuilder(autoCity.add("enable")).build();
 
-    public final FlagRef playerOnly = flagBuilder(autoCity.add("player-only")).build();
+    public final KeyBindRef hotkey = moduleEntry(autoCity.add("hotkey"), new MultiKeyBind(), autoCity.add("enable"))
+            .build();
 
-    public AutoCity() {}
+    // 是否优先考虑目标脚下/卡脚位置的黑曜石。
+    public final FlagRef burrow = builder(autoCity.add("burrow-first"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    // 是否考虑目标脸侧可直接打开缺口的位置。
+    public final FlagRef head = flagBuilder(autoCity.add("head-target")).build();
+
+    // 是否允许向下扩展搜索目标下方可挖位置。
+    public final FlagRef down = flagBuilder(autoCity.add("down")).build();
+
+    // 是否启用周围一圈的 surround 位置搜索。
+    public final FlagRef surround =
+            builder(autoCity.add("surround"), Boolean.class).defaultValue(true).build();
+
+    public final FlagRef doubleMineFace =
+            flagBuilder(autoCity.add("double-mine-face")).build();
 
     @Override
     public void registerAll() {
@@ -30,32 +63,135 @@ public class AutoCity extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
     }
 
-    Entity targetEntity;
+    PlayerEntity targetEntity;
     BlockPos targetPos;
 
     public void refreshTarget() {
+        double range = MineExtra.INSTANCE.getReachDistance() + 1;
         if (targetEntity == null
                 || !targetEntity.isAlive()
                 || targetEntity.isRemoved()
-                || targetEntity.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
-                        > MathUtils.s2(MineExtra.INSTANCE.getReachDistance() + 2.0D)) {
+                || targetEntity.getBoundingBox().squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(range)) {
             targetEntity = null;
             targetPos = null;
         }
         if (targetEntity == null) {
-            targetEntity = CombatTasks.getTargetSelector()
-                    .searchAttackEntity(
-                            MineExtra.INSTANCE.getReachDistance() + 1.0D,
-                            false,
-                            playerOnly.get() ? (pl) -> pl instanceof PlayerEntity : null);
+            Entity en =
+                    CombatTasks.getTargetSelector().searchAttackEntity(range, true, (pl) -> pl instanceof PlayerEntity);
+            if (en instanceof PlayerEntity pl && pl != mc.player) {
+                targetEntity = pl;
+            }
         }
     }
 
-    public BlockPos calculateTargetPos() {
-        Vec3d vec3d = targetEntity.getPos();
-        // BlockPos pos = vec3
-        return null;
+    public void onInputEvent(Event<Void> event) {
+        if (enable.get()) {
+            refreshTarget();
+            if (targetEntity != null) {
+                onMine();
+            }
+        }
     }
 
-    public void onInputEvent(Event<Void> event) {}
+    private void onMine() {
+        Box box = targetEntity.getBoundingBox();
+        Set<BlockPos> outerPoses = new LinkedHashSet<>();
+        Set<BlockPos> selfPoses = new LinkedHashSet<>();
+        Vec3d pos = mc.player.getEyePos();
+        double range = MineExtra.INSTANCE.getReachDistance();
+        Predicate<BlockPos> filter = (np) -> MathUtils.getBlockBox(np).squaredMagnitude(pos) < range;
+        selfPoses.addAll(MathUtils.getOccupiedBlockPositions(box).stream()
+                .sorted(Comparator.comparingInt(Vec3i::getY))
+                .toList());
+
+        Comparator<BlockPos> blockPosComparator =
+                Comparator.comparingDouble(v -> MathUtils.getBlockBox(v).squaredMagnitude(pos));
+        if (surround.get()) {
+            Set<BlockPos> surround = new HashSet<>();
+            surround.addAll(
+                    MathUtils.getOccupiedBlockPositions(box.expand(0.99, 0, 0).withMaxY(box.minY + 0.5)));
+            surround.addAll(
+                    MathUtils.getOccupiedBlockPositions(box.expand(0, 0, 0.99).withMaxY(box.minY + 0.5)));
+            surround.stream().filter(filter).sorted(blockPosComparator).forEach(outerPoses::add);
+        }
+        Box heightTest = box;
+        if (head.get()) {
+            heightTest = box.stretch(0, 0.75, 0);
+            MathUtils.getOccupiedBlockPositions(heightTest).stream()
+                    .filter(filter)
+                    .sorted(blockPosComparator)
+                    .forEach(outerPoses::add);
+        }
+        if (down.get()) {
+            heightTest = box.stretch(0, -0.75, 0);
+            MathUtils.getOccupiedBlockPositions(heightTest).stream()
+                    .filter(filter)
+                    .sorted(blockPosComparator)
+                    .forEach(selfPoses::add);
+        }
+
+        outerPoses.removeAll(selfPoses);
+        PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
+        BlockPos currentPos = access.getCurrentMiningPos();
+        // not mining
+        boolean working = false;
+        boolean switchPosition;
+        if (burrow.get()) {
+            switchPosition = MovTasks.isCollidingWithEnvironment(targetEntity) || !outerPoses.contains(currentPos);
+        } else {
+            switchPosition = !outerPoses.contains(currentPos);
+        }
+        if (switchPosition) {
+            List<BlockPos> selfPosList = selfPoses.stream().toList();
+            List<BlockPos> outerPosList = outerPoses.stream().toList();
+            BlockPos currentMinePos = null;
+            BlockPos currentFailMinePos = null;
+            boolean canFailMine = access.isFailBreakEmpty();
+            find_mine_schedule:
+            {
+                // process selfPos first
+                for (var bp : selfPosList) {
+                    BlockState bs = mc.world.getBlockState(bp);
+                    if (!bs.isAir() && !bs.isLiquid() && PacketMine.INSTANCE.isMineable(bs)) {
+                        if (currentFailMinePos == null && canFailMine && doubleMineFace.get()) {
+                            currentFailMinePos = bp;
+                            continue;
+                        }
+                        currentMinePos = bp;
+                        break find_mine_schedule;
+                    }
+                }
+                for (var bp : outerPosList) {
+                    BlockState bs = mc.world.getBlockState(bp);
+                    if (!bs.isAir() && !bs.isLiquid() && PacketMine.INSTANCE.isMineable(bs)) {
+                        currentMinePos = bp;
+                        break find_mine_schedule;
+                    }
+                }
+            }
+            if (currentFailMinePos != null) {
+                // abort current
+                if (currentMinePos != null) {
+                    if (!Objects.equals(currentPos, currentFailMinePos)) {
+                        access.sendStartBreakPacket(currentFailMinePos);
+                    }
+                    access.sendFailBreakCurrentPos(null);
+                } else {
+                    currentMinePos = currentFailMinePos;
+                    currentFailMinePos = null;
+                }
+            }
+            if (currentMinePos != null) {
+                working = true;
+                if (!Objects.equals(currentPos, currentMinePos)) {
+                    access.sendStartBreakPacket(currentMinePos);
+                }
+            }
+        } else {
+            working = true;
+        }
+        if (working) {
+            PacketMine.INSTANCE.tickMine();
+        }
+    }
 }

@@ -8,10 +8,14 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.versioned.api.VItem;
@@ -19,6 +23,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.KineticWeaponComponent;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -26,6 +31,7 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 
 public class SpearEnhance extends BaseModule {
     public static SpearEnhance INSTANCE;
@@ -52,12 +58,17 @@ public class SpearEnhance extends BaseModule {
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
             .build();
 
+    public final KeyBindRef spearSpeedRotReset = builder(spearModule.add("reset-spear-speed-rot"), KeyBindRef.TYPE)
+            .defaultValue(new MultiKeyBind())
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
+        registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
     }
 
     public static boolean isUsingSpear(PlayerEntity player) {
@@ -191,5 +202,30 @@ public class SpearEnhance extends BaseModule {
             return trans.getComponents().get(DataComponentTypes.KINETIC_WEAPON);
         }
         return stack.get(DataComponentTypes.KINETIC_WEAPON);
+    }
+
+    public void onPostTick(Event<ClientPlayerEntity> eventPostTick) {
+        if (checkNull()) return;
+        if (eventPostTick.context == mc.player
+                && spearSpeedRotReset.get().isAllPressed()
+                && ViaFabricPlusHooks.isSupportDupRot()) {
+            Entity targetEntity =
+                    TargetSelector.INSTANCE.searchAttackEntity(10, true, pl -> pl instanceof PlayerEntity);
+            Vec3d look;
+            if (targetEntity != null) {
+                look = targetEntity
+                        .dimensions
+                        .getBoxAt(PositionPredict.INSTANCE
+                                .spearPredictArgument
+                                .get()
+                                .predict(targetEntity))
+                        .getCenter()
+                        .subtract(mc.player.getEyePos());
+            } else {
+                look = mc.player.getRotationVector();
+            }
+            // reset speed and rotation
+            LegacySnapRotManager.INSTANCE.snapAt(look, true);
+        }
     }
 }

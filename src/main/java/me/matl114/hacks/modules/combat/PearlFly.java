@@ -39,10 +39,10 @@ public class PearlFly extends BaseModule {
 
     public final FlagRef autoCrawl = flagBuilder(pearl.add("auto-crawl")).build();
 
-    public final FlagRef useWASDControl = flagBuilder(pearl.add("use-wasd-control")).build();
+    public final FlagRef useWASDControl =
+            flagBuilder(pearl.add("use-wasd-control")).build();
 
     public final FlagRef offhand = flagBuilder(pearl.add("offhand")).build();
-
 
     @Override
     public void registerAll() {
@@ -75,36 +75,35 @@ public class PearlFly extends BaseModule {
             }
 
             BlockPos searchPos;
-            if(useWASDControl.get() && PlayerInputUtils.of(mc.options).hasWASDMovement()) {
+            if (useWASDControl.get() && PlayerInputUtils.of(mc.options).hasWASDMovement()) {
                 var input = PlayerInputUtils.of(mc.options);
                 Direction right = direction.rotateYCounterclockwise();
-                searchPos = pbpos.add(direction.getVector().multiply(input.forwardSpeed())).add(right.getVector().multiply(input.sidewaysSpeed()));
-            }else {
+                searchPos = pbpos.add(direction.getVector().multiply(input.forwardSpeed()))
+                        .add(right.getVector().multiply(input.sidewaysSpeed()));
+            } else {
                 Direction search = direction;
                 Direction result = direction;
                 double min = Double.MAX_VALUE;
-                do{
+                do {
                     BlockPos test = pbpos.offset(search);
-                    if(MathUtils.isInXZRange(ppos, test.toCenterPos(), 0.5 + 0.35)){
+                    if (MathUtils.isInXZRange(ppos, test.toCenterPos(), 0.5 + 0.35)) {
                         double sqd = test.getSquaredDistance(ppos);
-                        if(sqd < min){
+                        if (sqd < min) {
                             result = search;
                             min = sqd;
                         }
                     }
 
                     search = search.rotateYClockwise();
-                }while(search != direction);
-                if(min == Double.MAX_VALUE){
+                } while (search != direction);
+                if (min == Double.MAX_VALUE) {
                     return;
                 }
                 search = result;
                 searchPos = pbpos.offset(search, 1);
             }
 
-
-            BlockState state =
-                mc.world.getBlockState(searchPos);
+            BlockState state = mc.world.getBlockState(searchPos);
             if (!state.isAir() && !state.isLiquid()) {
                 if (doPearlUse(pbpos, searchPos)) {
                     enable.set(false);
@@ -112,8 +111,7 @@ public class PearlFly extends BaseModule {
                 }
             }
             if (autoCrawl.get() && pose != EntityPose.SWIMMING) {
-                BlockState state2 = mc.world.getBlockState(
-                    searchPos.offset(Direction.UP));
+                BlockState state2 = mc.world.getBlockState(searchPos.offset(Direction.UP));
                 if (!state2.isAir() && !state2.isLiquid()) {
                     if (doPearlUse(pbpos, searchPos)) {
                         enable.set(false);
@@ -121,7 +119,6 @@ public class PearlFly extends BaseModule {
                     }
                 }
             }
-
         }
     }
 

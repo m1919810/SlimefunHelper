@@ -257,6 +257,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Unique
     private void onPostPlayerMovementTick(ClientPlayerEntity player) {
+        Listener.getClientPlayerPostSendMovementPoint().broadcast(player);
         movementManager.postProgress(player);
     }
 
