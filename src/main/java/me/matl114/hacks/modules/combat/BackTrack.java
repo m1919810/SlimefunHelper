@@ -27,7 +27,6 @@ import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityPositionSyncS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.util.math.Box;
@@ -172,13 +171,8 @@ public class BackTrack extends BaseModule {
             if (storage instanceof PacketManager.PacketStorageImpl impl) {
                 var packet = impl.packet();
                 if (PacketManager.isAsyncOrNotTransactionS2CPacket(packet)) return;
-                if (packet instanceof EntityPositionSyncS2CPacket positionSync
-                        && positionSync.id() == currentTarget.getId()) {
-                    onShutdown();
-                    return;
-                }
                 if (packet instanceof EntityPositionS2CPacket position
-                        && position.entityId() == currentTarget.getId()) {
+                        && position.getEntityId() == currentTarget.getId()) {
                     onShutdown();
                     return;
                 }

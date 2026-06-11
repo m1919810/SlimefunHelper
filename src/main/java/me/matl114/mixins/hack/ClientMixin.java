@@ -34,9 +34,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ClientMixin implements Cloneable, ClientAccess {
 
     @Shadow
-    private Profiler profiler;
-
-    @Shadow
     @Nullable
     public ClientPlayerEntity player;
 

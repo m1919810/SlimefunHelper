@@ -38,7 +38,6 @@ import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ShieldItem;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityPositionSyncS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
@@ -85,9 +84,6 @@ public class PositionPredict extends BaseModule {
         registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityS2CPacket.class), this::onPostEntity);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityPositionS2CPacket.class), this::onPostEntityPos);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(EntityPositionSyncS2CPacket.class),
-                this::onPostEntityTeleport);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
     }
 
@@ -131,15 +127,8 @@ public class PositionPredict extends BaseModule {
 
     public void onPostEntityPos(Event<EntityPositionS2CPacket> event) {
         if (checkNull()) return;
-        if (mc.world.getEntityById(event.context.entityId()) instanceof PlayerInternalAccess internal) {
+        if (mc.world.getEntityById(event.context.getEntityId()) instanceof PlayerInternalAccess internal) {
             internal.getPredictorImpl().onEntityPositionPost(event);
-        }
-    }
-
-    public void onPostEntityTeleport(Event<EntityPositionSyncS2CPacket> event) {
-        if (checkNull()) return;
-        if (mc.world.getEntityById(event.context.id()) instanceof PlayerInternalAccess internal) {
-            internal.getPredictorImpl().onEntityPositionSyncPost(event);
         }
     }
 

@@ -7,7 +7,6 @@ import me.matl114.utils.MathUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityPositionSyncS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.util.math.Vec3d;
 
@@ -33,12 +32,6 @@ public class PredictorImpl implements Predictor {
     public void onEntityPositionPost(Event<EntityPositionS2CPacket> event) {
         EntityPositionS2CPacket packet = event.context();
         if (packet.entityId() != owner.getId()) return;
-        addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
-    }
-
-    public void onEntityPositionSyncPost(Event<EntityPositionSyncS2CPacket> event) {
-        EntityPositionSyncS2CPacket packet = event.context();
-        if (packet.id() != owner.getId()) return;
         addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
     }
 

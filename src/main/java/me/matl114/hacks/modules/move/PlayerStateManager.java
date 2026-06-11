@@ -35,11 +35,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.thrown.PotionEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.consume.ApplyEffectsConsumeEffect;
-import net.minecraft.item.consume.ClearAllEffectsConsumeEffect;
-import net.minecraft.item.consume.RemoveEffectsConsumeEffect;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.*;
@@ -573,38 +569,31 @@ public class PlayerStateManager extends BaseModule {
                                                     && handItem.getItem() != lastUsing.getItem())) {
                                         // mark as consuming
                                         ItemStack consumedUsing = lastUsing;
-                                        ConsumableComponent componentEat =
-                                                consumedUsing.get(DataComponentTypes.CONSUMABLE);
+                                        FoodComponent componentEat = consumedUsing.get(DataComponentTypes.FOOD);
                                         if (componentEat != null) {
-                                            consumedUsing
-                                                    .streamAll(Consumable.class)
-                                                    .forEach(s -> {
-                                                        if (s instanceof PotionContentsComponent foodComponent) {
-                                                            foodComponent.forEachEffect((instance) -> {
-                                                                if (!(instance.getEffectType()
-                                                                                .value())
-                                                                        .isInstant()) {
-                                                                    status.visibleStatusEffects
-                                                                            .computeIfAbsent(
-                                                                                    instance.getEffectType(),
-                                                                                    EffectTracker::new)
-                                                                            .refresh(instance);
-                                                                }
-                                                            });
-                                                        }
-                                                        ;
-                                                    });
-                                            if (!componentEat.onConsumeEffects().isEmpty()) {
-                                                for (var effect : componentEat.onConsumeEffects()) {
-                                                    if (effect instanceof ApplyEffectsConsumeEffect apply) {
-                                                        apply.effects().forEach(s -> status.visibleStatusEffects
-                                                                .computeIfAbsent(s.getEffectType(), EffectTracker::new)
-                                                                .refresh(s));
-                                                    } else if (effect instanceof ClearAllEffectsConsumeEffect clear) {
-                                                        // it will be cleared by tracked data update
-                                                        // status.visibleStatusEffects.clear();
-                                                    } else if (effect instanceof RemoveEffectsConsumeEffect remove) {
-                                                        // it will be cleared by tracked data update
+                                            PotionContentsComponent foodComponent =
+                                                    consumedUsing.get(DataComponentTypes.POTION_CONTENTS);
+                                            if (foodComponent != null) {
+                                                foodComponent.forEachEffect((instance) -> {
+                                                    if (!(instance.getEffectType()
+                                                                    .value())
+                                                            .isInstant()) {
+                                                        status.visibleStatusEffects
+                                                                .computeIfAbsent(
+                                                                        instance.getEffectType(), EffectTracker::new)
+                                                                .refresh(instance);
+                                                    }
+                                                });
+                                            }
+                                            if (!componentEat.effects().isEmpty()) {
+                                                for (var effect : componentEat.effects()) {
+                                                    if (effect.probability() > 0) {
+                                                        status.visibleStatusEffects
+                                                                .computeIfAbsent(
+                                                                        effect.effect()
+                                                                                .getEffectType(),
+                                                                        EffectTracker::new)
+                                                                .refresh(effect.effect());
                                                     }
                                                 }
                                             }

@@ -87,7 +87,7 @@ public class ItemUtils_v1_21_1 implements VItem {
 
     @Override
     public boolean isEatable(ItemStack stack) {
-        return stack.contains(DataComponentTypes.FOOD);
+        return stack.contains(DataComponentTypes.FOOD) || stack.getItem() instanceof PotionItem;
     }
 
     @Override

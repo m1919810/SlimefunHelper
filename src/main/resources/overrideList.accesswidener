@@ -77,3 +77,5 @@ accessible method net/minecraft/item/BlockItem getPlacementState (Lnet/minecraft
 accessible field net/minecraft/client/network/PendingUpdateManager sequence I
 accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraft/client/render/Camera;FZ)D
 accessible field net/minecraft/client/gui/DrawContext guiAtlasManager Lnet/minecraft/client/texture/GuiAtlasManager;
+accessible field net/minecraft/particle/EntityEffectParticleEffect color I
+accessible field net/minecraft/entity/effect/StatusEffectInstance duration I

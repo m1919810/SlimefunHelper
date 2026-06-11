@@ -25,7 +25,6 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ConsumableComponent;
 import net.minecraft.component.type.FoodComponent;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.EntityStatuses;
@@ -36,7 +35,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.consume.ApplyEffectsConsumeEffect;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -336,21 +334,22 @@ public class AutoEat extends BaseModule {
     }
 
     private boolean isHealingPotion(ItemStack stack) {
-        ConsumableComponent consumable = stack.get(DataComponentTypes.CONSUMABLE);
-        if (consumable == null) {
+        FoodComponent consumable = stack.get(DataComponentTypes.FOOD);
+        PotionContentsComponent potion = stack.get(DataComponentTypes.POTION_CONTENTS);
+        if (consumable == null && potion == null) {
             return false;
         }
-        if (stack.streamAll(PotionContentsComponent.class).anyMatch(component -> Streams.of(component.getEffects())
-                .map(StatusEffectInstance::getEffectType)
-                .anyMatch(healingEffects::contains))) {
+        if (potion != null
+                && Streams.of(potion.getEffects())
+                        .map(StatusEffectInstance::getEffectType)
+                        .anyMatch(healingEffects::contains)) {
             return true;
         }
-        for (var effect : consumable.onConsumeEffects()) {
-            if (effect instanceof ApplyEffectsConsumeEffect apply
-                    && apply.effects().stream()
-                            .map(StatusEffectInstance::getEffectType)
-                            .anyMatch(healingEffects::contains)) {
-                return true;
+        if (consumable != null) {
+            for (var effect : consumable.effects()) {
+                if (healingEffects.contains(effect.effect().getEffectType())) {
+                    return true;
+                }
             }
         }
         return false;
