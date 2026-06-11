@@ -5,7 +5,6 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.util.List;
 import javax.annotation.Nullable;
-import me.matl114.accessors.events.ItemRenderStateAccess;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.events.model.GuiModel;
@@ -19,7 +18,6 @@ import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -103,9 +101,9 @@ public abstract class ItemModelManagerEvents {
                 renderState,
                 stack,
                 (ItemModelManager) (Object) this,
-                displayContext,
+                transformationMode,
                 world instanceof ClientWorld cli ? cli : null,
-                heldItemContext,
+                entity,
                 seed);
     }
 }

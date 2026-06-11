@@ -13,12 +13,11 @@ import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.util.HeldItemContext;
 import net.minecraft.util.Identifier;
-import org.jspecify.annotations.Nullable;
 
 public interface GuiModel {
     public static final GuiModel EMPTY = new BlankGuiModel();
@@ -66,10 +65,10 @@ public interface GuiModel {
             ItemStack stack,
             ItemModelManager resolver,
             ItemDisplayContext displayContext,
-            @Nullable ClientWorld world,
-            @Nullable HeldItemContext heldItemContext,
+            ClientWorld world,
+            LivingEntity liv,
             int seed) {
-        Entry entry = updateAndSubmit(renderState, stack, resolver, displayContext, world, heldItemContext, seed);
+        Entry entry = updateAndSubmit(renderState, stack, resolver, displayContext, world, liv, seed);
         if (entry != null) {
             var lst = ItemRenderStateAccess.of(renderState).getAttachedRenderState();
             lst.clear();
@@ -85,8 +84,8 @@ public interface GuiModel {
             ItemStack stack,
             ItemModelManager resolver,
             ItemDisplayContext displayContext,
-            @Nullable ClientWorld world,
-            @Nullable HeldItemContext heldItemContext,
+            ClientWorld world,
+            LivingEntity livingEntity,
             int seed);
 
     public static class BlankGuiModel implements GuiModel {
@@ -96,8 +95,8 @@ public interface GuiModel {
                 ItemStack stack,
                 ItemModelManager resolver,
                 ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
+                ClientWorld world,
+                LivingEntity livingEntity,
                 int seed) {
             return null;
         }
@@ -113,14 +112,14 @@ public interface GuiModel {
                 ItemStack stack,
                 ItemModelManager resolver,
                 ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
+                ClientWorld world,
+                LivingEntity livingEntity,
                 int seed) {
             if (itemStack != null && !itemStack.isEmpty()) {
                 ItemRenderState state2 = new ItemRenderState();
 
                 // init attached info
-                resolver.clearAndUpdate(state2, itemStack, displayContext, world, heldItemContext, seed);
+                resolver.update(state2, itemStack, displayContext, world, livingEntity, seed);
                 return new Entry(null, state2);
             }
             return null;
@@ -133,7 +132,7 @@ public interface GuiModel {
     //
     //        @Override
     //        public Entry updateAndSubmit(ItemRenderState renderState, ItemStack stack, ItemModelManager resolver,
-    // ItemDisplayContext displayContext, @Nullable ClientWorld world, @Nullable HeldItemContext heldItemContext, int
+    // ItemDisplayContext displayContext,  ClientWorld world,  HeldItemContext heldItemContext, int
     // seed) {
     //            if(itemModel != null){
     //                ItemRenderState state2 = new ItemRenderState();
@@ -160,11 +159,11 @@ public interface GuiModel {
                 ItemStack stack,
                 ItemModelManager resolver,
                 ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
+                ClientWorld world,
+                LivingEntity LivingEntity,
                 int seed) {
             List<Entry> updatedList =
-                    updateAndSubmitList(renderState, stack, resolver, displayContext, world, heldItemContext, seed);
+                    updateAndSubmitList(renderState, stack, resolver, displayContext, world, LivingEntity, seed);
             if (updatedList != null && !updatedList.isEmpty()) {
                 // arrange positions
                 List<Entry> arranged = arrangeEntries(updatedList);
@@ -181,19 +180,19 @@ public interface GuiModel {
                 ItemStack stack,
                 ItemModelManager resolver,
                 ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
+                ClientWorld world,
+                LivingEntity LivingEntity,
                 int seed) {
             return guiModelList.stream()
                     .flatMap(s -> {
                         if (s instanceof PackingModel pack) {
                             return pack
                                     .updateAndSubmitList(
-                                            renderState, stack, resolver, displayContext, world, heldItemContext, seed)
+                                            renderState, stack, resolver, displayContext, world, LivingEntity, seed)
                                     .stream();
                         } else {
                             return Stream.of(s.updateAndSubmit(
-                                    renderState, stack, resolver, displayContext, world, heldItemContext, seed));
+                                    renderState, stack, resolver, displayContext, world, LivingEntity, seed));
                         }
                     })
                     .toList();
@@ -205,8 +204,8 @@ public interface GuiModel {
                 ItemStack stack,
                 ItemModelManager resolver,
                 ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
+                ClientWorld world,
+                LivingEntity LivingEntity,
                 int seed) {
             throw new UnsupportedOperationException("DO NOT CALL");
         }
@@ -240,5 +239,5 @@ public interface GuiModel {
     }
 
     @With
-    public static record Entry(@Nullable UnaryOperator<MatrixStack> stackTransformer, ItemRenderState state) {}
+    public static record Entry(UnaryOperator<MatrixStack> stackTransformer, ItemRenderState state) {}
 }

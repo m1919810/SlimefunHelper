@@ -13,14 +13,12 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
-import net.minecraft.item.BowItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.MaceItem;
+import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
@@ -96,7 +94,7 @@ public class EnchantmentDisplay extends BaseModule {
             if (item instanceof MaceItem mace) {
                 checkList.put(item, List.of(Enchantments.DENSITY, Enchantments.BREACH));
                 checkFlags.put(item, enableMace);
-            } else if (item.getComponents().contains(DataComponentTypes.WEAPON)) {
+            } else if (VItem.getInstance().isWeapon(new ItemStack(item))) {
                 checkList.put(
                         item, List.of(Enchantments.SHARPNESS, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS));
                 checkFlags.put(item, enableWeapon);

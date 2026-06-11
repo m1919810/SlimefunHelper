@@ -3,11 +3,8 @@ package me.matl114.mixins.events;
 import java.util.ArrayList;
 import java.util.List;
 import me.matl114.accessors.events.ItemRenderStateAccess;
-import me.matl114.events.model.GuiModel;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import me.matl114.events.GlobalEventVars;
+import me.matl114.events.model.GuiModel;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
@@ -28,12 +25,11 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
     public abstract void clear();
 
     @Unique
-    ItemRenderState attachedRender;
+    List<GuiModel.Entry> attachedRenders;
 
     public List<GuiModel.Entry> getAttachedRenderState() {
         if (attachedRenders == null) {
             attachedRenders = new ArrayList<>();
-            addModelKey(attachedRenders);
         }
         return attachedRenders;
     }
@@ -47,7 +43,7 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
     @Inject(method = "render", at = @At("RETURN"))
     private void onRender1(
             MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, CallbackInfo ci) {
-        if (attachedRender != null && !attachedRender.isEmpty()) {
+        if (attachedRenders != null && !attachedRenders.isEmpty()) {
             matrices.push();
             try {
                 final float scale = 0.54f;
@@ -92,10 +88,10 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
                     if (entry.stackTransformer() != null) {
                         matrices.push();
                         entry.stackTransformer().apply(matrices);
-                        entry.state().render(matrices, orderedRenderCommandQueue, light, overlay, i);
+                        entry.state().render(matrices, vertexConsumers, light, overlay);
                         matrices.pop();
                     } else {
-                        entry.state().render(matrices, orderedRenderCommandQueue, light, overlay, i);
+                        entry.state().render(matrices, vertexConsumers, light, overlay);
                     }
                 }
             } finally {
