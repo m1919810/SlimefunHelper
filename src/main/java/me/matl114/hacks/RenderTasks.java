@@ -529,6 +529,9 @@ public class RenderTasks {
     @Getter
     public static StorageDisplay storageDisplay;
 
+    @Getter
+    public static EnchantmentDisplay enchantmentDisplay;
+
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         entityLog = new EntityLog().register(m);
@@ -548,6 +551,7 @@ public class RenderTasks {
         playerStatistic = new PlayerStatistic().register(m);
         equipmentHud = new EquipmentHud().register(m);
         storageDisplay = new StorageDisplay().register(m);
+        enchantmentDisplay = new EnchantmentDisplay().register(m);
     }
 
     static {

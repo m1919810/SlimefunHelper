@@ -8,6 +8,7 @@ import me.matl114.events.annotations.Cancelable;
 import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.annotations.Modifiable;
 import me.matl114.events.channels.EventChannel;
+import me.matl114.events.model.GuiModel;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.entity.BlockEntity;
@@ -85,10 +86,10 @@ public class RenderListener {
     @ExtraArgs(
             value = {ItemStack.class},
             names = {"originItemStack"})
-    private static final EventChannel<ItemStack> detachedItemStackInformation = new EventChannel<>();
+    private static final EventChannel<List<GuiModel>> detachedItemStackInformation = new EventChannel<>();
 
-    public static ItemStack getContainedItemInfo(ItemStack stack) {
-        Event<ItemStack> searchEvent = new Event<>(null, true, true, stack);
+    public static List<GuiModel> getContainedItemInfo(ItemStack stack) {
+        Event<List<GuiModel>> searchEvent = new Event<>(new ArrayList<>(), true, false, stack);
         detachedItemStackInformation.handleValue(searchEvent);
         if (searchEvent.isCancelled()) {
             return null;

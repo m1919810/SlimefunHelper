@@ -16,16 +16,19 @@ import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.model.GuiModel;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.models.NewStyleModel;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
+import me.matl114.managers.config.ConfigEnum;
+import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
-import net.minecraft.client.render.model.BakedModel;
+import me.matl114.utils.inventory.ItemStackSample;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
@@ -50,6 +53,10 @@ public class StorageDisplay extends BaseModule {
 
     public final FlagRef shulkerDisplay =
             flagBuilder(modelConfig.add("enable-shulker-display")).build();
+
+    public final EnumRef<Mode> mode = builder(modelConfig.add("display-mode"), Mode.class)
+            .defaultValue(Mode.ALL)
+            .build();
 
     private static final Map<EntityType<?>, ItemStack> spawnEggNewStyleItem = new HashMap<>();
 
@@ -81,26 +88,20 @@ public class StorageDisplay extends BaseModule {
         registerListener(RenderListener.getAsyncItemModelSupply(), this::onGceChickenModelLoad);
     }
 
-    public void onContainerSpawner(Event<ItemStack> event) {
-        if (event.context() != null) {
-            return;
-        }
+    public void onContainerSpawner(Event<List<GuiModel>> event) {
         if (infoDisplay.get()) {
             ItemStack stack = event.getArgs(0);
             EntityType<?> typed = EntityUtils.getStoredEntityType(stack);
             if (typed != null) {
                 ItemStack render = getRenderingEntityContent(typed);
                 if (render != null) {
-                    event.context(render);
+                    event.context().add(GuiModel.of(render));
                 }
             }
         }
     }
     // TODO: add shulker storage display
-    public void onContainerVanilla(Event<ItemStack> event) {
-        if (event.context() != null) {
-            return;
-        }
+    public void onContainerVanilla(Event<List<GuiModel>> event) {
         if (shulkerDisplay.get()) {
             ItemStack stack = event.getArgs(0);
             var container = stack.get(DataComponentTypes.CONTAINER);
@@ -108,23 +109,33 @@ public class StorageDisplay extends BaseModule {
                 ItemStackWithTimeStamp timeStamp = asyncUpdateItemInfo(stack, ((st0) -> {
                     ItemStack st = (ItemStack) st0;
                     var con = st.get(DataComponentTypes.CONTAINER);
-                    ItemStack stackSample = null;
                     if (con != null) {
+                        Map<ItemStackSample, Integer> map = new LinkedHashMap<>();
+                        loop_items:
                         for (var item : con.iterateNonEmpty()) {
-                            if (stackSample == null) {
-                                stackSample = item.copy();
-                            } else if (!ItemStack.areItemsAndComponentsEqual(stackSample, item)) {
-                                return null;
+                            if (item.isEmpty()) {
+                                continue loop_items;
                             }
+                            for (var re : map.entrySet()) {
+                                if (ItemStackUtils.matchItemWithout(
+                                        item, re.getKey().sample(), false, false, false)) {
+                                    re.setValue(re.getValue() + item.getCount());
+                                    continue loop_items;
+                                }
+                            }
+                            map.put(ItemStackSample.of(item), item.getCount());
                         }
+                        return map.entrySet().stream()
+                                .sorted(Comparator.comparingInt(v -> -v.getValue()))
+                                .map(Map.Entry::getKey)
+                                .map(ItemStackSample::sample)
+                                .toList();
                     }
-                    return stackSample;
+                    return null;
                 }));
                 // all the same, render
-                ItemStack result = timeStamp.itemStack;
-                if (result != null && !result.isEmpty()) {
-                    event.context(result);
-                }
+                List<ItemStack> result = timeStamp.itemStack;
+                appendContainerInfos(event.context, result);
             }
         }
     }
@@ -132,7 +143,7 @@ public class StorageDisplay extends BaseModule {
     @AllArgsConstructor
     public static class ItemStackWithTimeStamp {
         volatile long lastUpdated;
-        volatile ItemStack itemStack;
+        volatile List<ItemStack> itemStack;
     }
 
     private final Map<ItemStack, ItemStackWithTimeStamp> storageItemStackCache =
@@ -173,7 +184,7 @@ public class StorageDisplay extends BaseModule {
     private final long updateIntervalMs = 10000;
 
     @Nonnull
-    private ItemStackWithTimeStamp asyncUpdateItemInfo(ItemStack stack, Function<ItemStack, ItemStack> func) {
+    private ItemStackWithTimeStamp asyncUpdateItemInfo(ItemStack stack, Function<ItemStack, List<ItemStack>> func) {
         ItemStackWithTimeStamp timeStamp = storageItemStackCache.get(stack);
         if (timeStamp == null || timeStamp.lastUpdated < System.currentTimeMillis() - updateIntervalMs) {
             if (timeStamp == null) {
@@ -193,10 +204,26 @@ public class StorageDisplay extends BaseModule {
         return timeStamp;
     }
 
-    public void onContainerPluginStorage(Event<ItemStack> event) {
-        if (event.context() != null) {
-            return;
+    private void appendContainerInfos(List<GuiModel> event, List<ItemStack> stack) {
+        if (stack == null || stack.isEmpty()) return;
+        switch (mode.get()) {
+            case ALL -> {
+                stack.stream().map(GuiModel::of).forEach(event::add);
+            }
+            case MOST -> {
+                if (!stack.isEmpty()) {
+                    event.add(GuiModel.of(stack.get(0)));
+                }
+            }
+            case ONLY_ONE -> {
+                if (stack.size() == 1) {
+                    event.add(GuiModel.of(stack.get(0)));
+                }
+            }
         }
+    }
+
+    public void onContainerPluginStorage(Event<List<GuiModel>> event) {
         if (storageDisplay.get()) {
             ItemStack stack = event.getArgs(0);
             NbtCompound tag = getBukkitValueReadOnly(stack);
@@ -218,21 +245,18 @@ public class StorageDisplay extends BaseModule {
                     } else {
                         stored = null;
                     }
-                    return stored == null ? null : BukkitItemStackUtils.getAsDisplayItem(stored);
+                    if (stored == null) return null;
+                    ItemStack displayItem = BukkitItemStackUtils.getAsDisplayItem(stored);
+                    return displayItem == null || displayItem.isEmpty() ? null : List.of(displayItem);
                 });
-                ItemStack result = timeStamp.itemStack;
-                if (result != null && !result.isEmpty()) {
-                    event.context(timeStamp.itemStack);
-                }
+                List<ItemStack> result = timeStamp.itemStack;
+                appendContainerInfos(event.context, result);
             }
             return;
         }
     }
 
-    public void onProductsSpecialPlugin(Event<ItemStack> event) {
-        if (event.context() != null) {
-            return;
-        }
+    public void onProductsSpecialPlugin(Event<List<GuiModel>> event) {
         if (infoDisplay.get()) {
             ItemStack stack = event.getArgs(0);
             String sfid = ItemStackUtils.getSfId(stack);
@@ -247,34 +271,18 @@ public class StorageDisplay extends BaseModule {
                 } else {
                     return;
                 }
-                event.context(item);
+                event.context().add(GuiModel.of(item));
             }
         }
     }
 
     public void onGceChickenModelLoad(Event<Set<Identifier>> reloadEvent) {
-        reloadEvent
-                .context()
-                .addAll(ResourceUtils.lookupResources(
-                        reloadEvent.getArgs(0),
-                        "slimefunhelper",
-                        "slimefunhelper",
-                        "models",
-                        ".json",
-                        s -> s.startsWith("gce")));
+        reloadEvent.context().addAll(ResourceUtils.lookupOurModelResources(reloadEvent.getArgs(0), "gce"));
     }
 
     public void onGceChickenTextureLoad(Event<Set<Identifier>> reloadEvent) {
         if (reloadEvent.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
-            reloadEvent
-                    .context()
-                    .addAll(ResourceUtils.lookupResources(
-                            reloadEvent.getArgs(0),
-                            "slimefunhelper",
-                            "slimefunhelper",
-                            "textures",
-                            ".png",
-                            s -> s.startsWith("gce")));
+            reloadEvent.context().addAll(ResourceUtils.lookupOurTextureResources(reloadEvent.getArgs(0), "gce"));
         }
     }
 
@@ -1242,5 +1250,16 @@ public class StorageDisplay extends BaseModule {
             }
         }
         return null;
+    }
+
+    public enum Mode implements ConfigEnum {
+        MOST,
+        ONLY_ONE,
+        ALL;
+
+        @Override
+        public String getConfigEnumType() {
+            return "shulker_storage_display_mode";
+        }
     }
 }
