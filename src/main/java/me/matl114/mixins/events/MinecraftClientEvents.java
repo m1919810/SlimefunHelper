@@ -316,7 +316,7 @@ public abstract class MinecraftClientEvents {
                                     "Lnet/minecraft/client/MinecraftClient;overlay:Lnet/minecraft/client/gui/screen/Overlay;",
                             shift = At.Shift.BEFORE,
                             ordinal = 0))
-    public void onInputEventIfScreenOpen(CallbackInfo ci, @Local Profiler profiler) {
+    public void onInputEventIfScreenOpen(CallbackInfo ci) {
         if (MinecraftClient.getInstance().currentScreen != null
                 || MinecraftClient.getInstance().getOverlay() != null) {
             profiler.swap("Keybindings");

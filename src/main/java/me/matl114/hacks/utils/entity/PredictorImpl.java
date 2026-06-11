@@ -31,7 +31,7 @@ public class PredictorImpl implements Predictor {
 
     public void onEntityPositionPost(Event<EntityPositionS2CPacket> event) {
         EntityPositionS2CPacket packet = event.context();
-        if (packet.entityId() != owner.getId()) return;
+        if (packet.getEntityId() != owner.getId()) return;
         addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
     }
 

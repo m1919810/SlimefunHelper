@@ -14,7 +14,6 @@ import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityPose;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -63,7 +62,7 @@ public class PearlFly extends BaseModule {
                     return;
                 }
             }
-            if (mc.player.getItemCooldownManager().isCoolingDown(new ItemStack(Items.ENDER_PEARL))) {
+            if (mc.player.getItemCooldownManager().isCoolingDown(Items.ENDER_PEARL)) {
                 return;
             }
             Direction direction = mc.player.getHorizontalFacing();

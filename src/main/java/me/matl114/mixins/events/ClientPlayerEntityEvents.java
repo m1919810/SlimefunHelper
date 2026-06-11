@@ -252,7 +252,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     @Override
     public boolean checkFallFlying() {
-        if (!checkClientPlayer()) return super.checkGliding();
+        if (!checkClientPlayer()) return super.checkFallFlying();
         boolean fallflying = this.isFallFlying();
         boolean shouldSwitch = false;
         if (!fallflying) {

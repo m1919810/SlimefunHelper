@@ -23,6 +23,7 @@ import me.matl114.utils.ResourceUtils;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -73,7 +74,7 @@ public class SpearEnhance extends BaseModule {
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
-        // registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
+        registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
         registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlas);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onEntityStatus);
     }
@@ -165,17 +166,17 @@ public class SpearEnhance extends BaseModule {
     // 初始化
     {
         // 木制
-        materialSwordToSpearMap.put(Items.WOODEN_SWORD, new Identifier("slimefunhelper", "wooden_spear"));
+        materialSwordToSpearMap.put(Items.WOODEN_SWORD, new Identifier("slimefunhelper", "spear/wooden_spear"));
         // 石制
-        materialSwordToSpearMap.put(Items.STONE_SWORD, new Identifier("slimefunhelper", "stone_spear"));
+        materialSwordToSpearMap.put(Items.STONE_SWORD, new Identifier("slimefunhelper", "spear/stone_spear"));
         // 铁制
-        materialSwordToSpearMap.put(Items.IRON_SWORD, new Identifier("slimefunhelper", "iron_spear"));
+        materialSwordToSpearMap.put(Items.IRON_SWORD, new Identifier("slimefunhelper", "spear/iron_spear"));
         // 金制
-        materialSwordToSpearMap.put(Items.GOLDEN_SWORD, new Identifier("slimefunhelper", "golden_spear"));
+        materialSwordToSpearMap.put(Items.GOLDEN_SWORD, new Identifier("slimefunhelper", "spear/golden_spear"));
         // 钻石
-        materialSwordToSpearMap.put(Items.DIAMOND_SWORD, new Identifier("slimefunhelper", "diamond_spear"));
+        materialSwordToSpearMap.put(Items.DIAMOND_SWORD, new Identifier("slimefunhelper", "spear/diamond_spear"));
         // 下界合金
-        materialSwordToSpearMap.put(Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "netherite_spear"));
+        materialSwordToSpearMap.put(Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "spear/netherite_spear"));
     }
 
     public void onAtlas(Event<Set<Identifier>> event) {
@@ -191,18 +192,18 @@ public class SpearEnhance extends BaseModule {
         }
     }
 
-    //    public void onModelSupply(Event<Set<Identifier>> event) {
-    //        event.context()
-    //                .addAll(ResourceUtils.lookupResources(
-    //                        event.getArgs(0),
-    //                        "slimefunhelper",
-    //                        "slimefunhelper",
-    //                        "models",
-    //                        ".json",
-    //                        s -> s.startsWith("spear")));
-    //    }
+    public void onModelSupply(Event<Set<Identifier>> event) {
+        event.context()
+                .addAll(ResourceUtils.lookupResources(
+                        event.getArgs(0),
+                        "slimefunhelper",
+                        "slimefunhelper",
+                        "models",
+                        ".json",
+                        s -> s.startsWith("spear")));
+    }
 
-    public void onReplaceSpearModel(Event<Identifier> eventIdentifier) {
+    public void onReplaceSpearModel(Event<BakedModel> eventIdentifier) {
         if (eventIdentifier.isCancelled() || eventIdentifier.context != null) return;
         if (replaceSpearModel.get()) {
             ItemStack origin = eventIdentifier.getArgs(0);
@@ -210,7 +211,10 @@ public class SpearEnhance extends BaseModule {
                     && VItem.getInstance().isSpear(origin)) {
                 Identifier item = materialSwordToSpearMap.get(origin.getItem());
                 if (item != null) {
-                    eventIdentifier.context(item);
+                    var model = RenderListener.getCustomModelOf(item);
+                    if (model != null) {
+                        eventIdentifier.context(model);
+                    }
                 }
             }
         }

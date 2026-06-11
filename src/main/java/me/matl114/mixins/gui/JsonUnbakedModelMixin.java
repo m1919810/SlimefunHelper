@@ -1,4 +1,4 @@
-package me.matl114.mixins.render;
+package me.matl114.mixins.gui;
 
 import java.util.Iterator;
 import java.util.List;

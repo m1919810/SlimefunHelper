@@ -993,7 +993,7 @@ public class ElytraBot extends BaseModule {
         private boolean moveAdjust(Vec3d originalLook) {
             //
             Debug.debug("Judget may hit");
-            Vec3d originalLookHorizontal = originalLook.getHorizontal();
+            Vec3d originalLookHorizontal = new Vec3d(originalLook.x, 0, originalLook.z);
             Vec3d vertical = new Vec3d(0, 1, 0);
             Vec3d side = vertical.crossProduct(originalLookHorizontal);
             Vec3d revertDirection =

@@ -1,14 +1,15 @@
 package me.matl114.mixins.versioned;
 
 import me.matl114.hacks.modules.combat.SpearEnhance;
-import me.matl114.versioned.accessors.PlayerEntityRendererStateAccess;
 import me.matl114.versioned.impl.LancingUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
-import net.minecraft.client.render.entity.state.BipedEntityRenderState;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Arm;
+import net.minecraft.util.Hand;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -32,22 +33,28 @@ public abstract class BipedEntityModelVersionedSpearMixin {
     public ModelPart rightArm;
 
     @Inject(method = "positionRightArm", at = @At("RETURN"))
-    private void positionRightArm(BipedEntityRenderState state, BipedEntityModel.ArmPose armPose, CallbackInfo ci) {
-        if (state instanceof PlayerEntityRendererStateAccess acc
-                && acc.getSpearingHand() == Arm.RIGHT
-                && acc.getSpearingItem() != null
-                && SpearEnhance.INSTANCE.fixOldVersionSpear.get()) {
-            LancingUtils.positionArmForSpear(rightArm, head, true, acc.getSpearingItem(), state);
+    private void positionRightArm(LivingEntity entity, CallbackInfo ci) {
+        if (entity instanceof PlayerEntity pl
+                && SpearEnhance.INSTANCE.fixOldVersionSpear.get()
+                && SpearEnhance.isUsingSpear(pl)) {
+            Hand hand = pl.getActiveHand();
+            Arm arm = hand == Hand.MAIN_HAND ? pl.getMainArm() : pl.getMainArm().getOpposite();
+            if (arm == Arm.RIGHT) {
+                LancingUtils.positionArmForSpear(rightArm, head, true, pl.getActiveItem(), pl);
+            }
         }
     }
 
     @Inject(method = "positionLeftArm", at = @At("RETURN"))
-    private void positionLefgArm(BipedEntityRenderState state, BipedEntityModel.ArmPose armPose, CallbackInfo ci) {
-        if (state instanceof PlayerEntityRendererStateAccess acc
-                && acc.getSpearingHand() == Arm.RIGHT
-                && acc.getSpearingItem() != null
-                && SpearEnhance.INSTANCE.fixOldVersionSpear.get()) {
-            LancingUtils.positionArmForSpear(leftArm, head, false, acc.getSpearingItem(), state);
+    private void positionLefgArm(LivingEntity entity, CallbackInfo ci) {
+        if (entity instanceof PlayerEntity pl
+                && SpearEnhance.INSTANCE.fixOldVersionSpear.get()
+                && SpearEnhance.isUsingSpear(pl)) {
+            Hand hand = pl.getActiveHand();
+            Arm arm = hand == Hand.MAIN_HAND ? pl.getMainArm() : pl.getMainArm().getOpposite();
+            if (arm == Arm.LEFT) {
+                LancingUtils.positionArmForSpear(leftArm, head, false, pl.getActiveItem(), pl);
+            }
         }
     }
 }

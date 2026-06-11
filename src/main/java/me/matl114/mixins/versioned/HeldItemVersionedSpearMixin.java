@@ -22,7 +22,7 @@ public abstract class HeldItemVersionedSpearMixin {
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/client/render/item/HeldItemRenderer;applyEquipOffset(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/Arm;F)V",
-                            ordinal = 1))
+                            ordinal = 2))
     private void onSpearUseRender(
             HeldItemRenderer instance,
             MatrixStack matrices,

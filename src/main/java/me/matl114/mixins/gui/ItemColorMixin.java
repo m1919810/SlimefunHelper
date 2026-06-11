@@ -1,4 +1,4 @@
-package me.matl114.mixins.render;
+package me.matl114.mixins.gui;
 
 import me.matl114.hacks.ModelTasks;
 import net.fabricmc.api.EnvType;

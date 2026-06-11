@@ -7,6 +7,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -22,22 +23,22 @@ public class LancingUtils {
         return 0.4F * (outQuart(lerpSpear(f, 1.0F, 3.0F)) - inOutSine(lerpSpear(f, 3.0F, 10.0F)));
     }
 
-    public static <T extends BipedEntityRenderState> void positionArmForSpear(
-            ModelPart arm, ModelPart head, boolean right, ItemStack itemStack, T state) {
+    public static void positionArmForSpear(
+            ModelPart arm, ModelPart head, boolean right, ItemStack itemStack, LivingEntity state) {
         int i = right ? 1 : -1;
         arm.yaw = -0.1F * (float) i + head.yaw;
         arm.pitch = -1.5707964F + head.pitch + 0.8F;
-        if (state.isGliding || state.leaningPitch > 0.0F) {
+        if (state.isFallFlying()) {
             arm.pitch -= 0.9599311F;
         }
 
         arm.yaw = 0.017453292F * Math.clamp(57.295776F * arm.yaw, -60.0F, 60.0F);
         arm.pitch = 0.017453292F * Math.clamp(57.295776F * arm.pitch, -120.0F, 30.0F);
-        if (!(state.itemUseTime <= 0.0F)
-                && (!state.isUsingItem || state.activeHand == (right ? Hand.MAIN_HAND : Hand.OFF_HAND))) {
+        if (!(state.getItemUseTime() <= 0.0F)
+                && (!state.isUsingItem() || state.getActiveHand() == (right ? Hand.MAIN_HAND : Hand.OFF_HAND))) {
             Kinetic kineticWeaponComponent = SWORD_KINETIC_MAP.get(itemStack.getItem());
             if (kineticWeaponComponent != null) {
-                LancingContext lv = LancingContext.createContext(kineticWeaponComponent, state.itemUseTime);
+                LancingContext lv = LancingContext.createContext(kineticWeaponComponent, state.getItemUseTime());
                 arm.yaw += (float) (-i) * lv.swayScaleFast() * 0.017453292F * lv.swayIntensity() * 1.0F;
                 arm.roll += (float) (-i) * lv.swayScaleSlow() * 0.017453292F * lv.swayIntensity() * 0.5F;
                 arm.pitch += 0.017453292F
@@ -88,12 +89,7 @@ public class LancingUtils {
         }
     }
 
-    public static void applyHeldItemFeatureArm(
-            ArmedEntityRenderState armedEntityRenderState,
-            MatrixStack matrixStack,
-            float f,
-            Arm arm,
-            ItemStack itemStack) {
+    public static void applyHeldItemFeatureArm(MatrixStack matrixStack, float f, Arm arm, ItemStack itemStack) {
         Kinetic kineticWeaponComponent = SWORD_KINETIC_MAP.get(itemStack.getItem());
         if (kineticWeaponComponent != null && f != 0.0F) {
             float g = inQuad(lerpSpear(0, 0.05F, 0.2F));

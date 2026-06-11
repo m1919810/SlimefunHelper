@@ -1,18 +1,18 @@
 package me.matl114.mixins.versioned;
 
 import me.matl114.hacks.modules.combat.SpearEnhance;
-import me.matl114.versioned.accessors.PlayerEntityRendererStateAccess;
 import me.matl114.versioned.impl.LancingUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.feature.HeldItemFeatureRenderer;
-import net.minecraft.client.render.entity.state.ArmedEntityRenderState;
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
-import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Arm;
+import net.minecraft.util.Hand;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,25 +27,24 @@ public abstract class HeldItemFeatureRendererVersionedSpearMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/item/ItemRenderState;render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II)V"))
+                                    "Lnet/minecraft/client/render/item/HeldItemRenderer;renderItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V"))
     private void onRenderItemSpear1(
-            ArmedEntityRenderState entityState,
-            ItemRenderState itemState,
+            LivingEntity entity,
+            ItemStack stack,
+            ItemDisplayContext transformationMode,
             Arm arm,
             MatrixStack matrices,
             VertexConsumerProvider vertexConsumers,
             int light,
             CallbackInfo ci) {
-        if (entityState instanceof PlayerEntityRendererStateAccess acc
-                && acc instanceof PlayerEntityRenderState pls
-                && SpearEnhance.INSTANCE.fixOldVersionSpear.get()) {
-            Arm spearHand = acc.getSpearingHand();
-            if (spearHand != null && spearHand == arm) {
-                ItemStack stack = acc.getSpearingItem();
-                if (stack != null) {
-                    LancingUtils.applyHeldItemFeatureArm(
-                            entityState, matrices, ((PlayerEntityRenderState) entityState).itemUseTime, arm, stack);
-                }
+        if (entity instanceof PlayerEntity pl
+                && SpearEnhance.INSTANCE.fixOldVersionSpear.get()
+                && SpearEnhance.isUsingSpear(pl)) {
+            Hand hand = pl.getActiveHand();
+            Arm arm1 =
+                    hand == Hand.MAIN_HAND ? pl.getMainArm() : pl.getMainArm().getOpposite();
+            if (arm1 == arm) {
+                LancingUtils.applyHeldItemFeatureArm(matrices, pl.getItemUseTime(), arm, stack);
             }
         }
     }

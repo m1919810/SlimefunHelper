@@ -64,9 +64,8 @@ public class InteractUtils {
             actionResult = mc.interactionManager.interactEntity(mc.player, entityHitResult.getEntity(), Hand.MAIN_HAND);
         }
 
-        if (actionResult instanceof ActionResult.Success) {
-            ActionResult.Success success = (ActionResult.Success) actionResult;
-            if (success.swingSource() == ActionResult.SwingSource.CLIENT) {
+        if (actionResult.isAccepted()) {
+            if (actionResult.shouldSwingHand()) {
                 mc.player.swingHand(Hand.MAIN_HAND);
             }
         }

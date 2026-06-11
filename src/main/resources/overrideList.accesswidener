@@ -79,3 +79,9 @@ accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraf
 accessible field net/minecraft/client/gui/DrawContext guiAtlasManager Lnet/minecraft/client/texture/GuiAtlasManager;
 accessible field net/minecraft/particle/EntityEffectParticleEffect color I
 accessible field net/minecraft/entity/effect/StatusEffectInstance duration I
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap radius I
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap centerChunkX I
+accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap centerChunkZ I
+accessible method net/minecraft/client/world/ClientChunkManager$ClientChunkMap getIndex (II)I
+accessible method net/minecraft/nbt/NbtCompound entrySet ()Ljava/util/Set;
+accessible field net/minecraft/client/gui/hud/DebugHud showDebugHud Z
