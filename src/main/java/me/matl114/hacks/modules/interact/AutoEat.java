@@ -254,7 +254,7 @@ public class AutoEat extends BaseModule {
                     }
                     if (fireworkFix.get() && player.isFallFlying()) {
                         // using
-                        if (ElytraExtra.INSTANCE.getTickSinceLastFirework() > 10) {
+                        if (ElytraExtra.INSTANCE.getTicksSinceLastFireworkSpawn() > 10) {
                             canStartNow = false;
                         }
                     }

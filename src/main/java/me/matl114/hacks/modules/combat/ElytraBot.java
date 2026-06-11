@@ -85,6 +85,11 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isNotIn(Mode.SPEAR_ARUA))
             .build();
 
+    public final DoubleRef followOnSkyHeight = builder(elytraBot.add("follow-on-sky-height-extra"), DoubleRef.TYPE)
+            .defaultValue(0.0D)
+            .show(() -> mode.get().isNotIn(Mode.SPEAR_ARUA))
+            .build();
+
     public final DoubleRef maceHeight = builder(elytraBot.add("mace-height"), DoubleRef.TYPE)
             .defaultValue(10.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
@@ -323,6 +328,7 @@ public class ElytraBot extends BaseModule {
                 && enable.get()
                 && autoFly.get()
                 && !mc.player.isFallFlying()
+                && !PlayerInputUtils.of(mc.options).hasMovementControl()
                 && currentBehaviour != null
                 && !Objects.equals(Vec3d.ZERO, currentBehaviour.movementDirection)) {
             if (mc.player.isOnGround()) {
@@ -374,14 +380,15 @@ public class ElytraBot extends BaseModule {
 
     public void onElytraChase(Event<EventContainer<FlightVelocity>> event) {
         if (enable.get()) {
-            if (onlyWhenNoWASD.get()) {
-                PlayerInputUtils.Input input = PlayerInputUtils.of(mc.options);
-                if (input.hasMovementControl()) {
-                    return;
-                }
-            }
             AbstractBotBehaviour behaviour = currentBehaviour;
             if (behaviour != null) {
+                if (onlyWhenNoWASD.get()) {
+                    PlayerInputUtils.Input input = PlayerInputUtils.of(mc.options);
+                    if (input.hasMovementControl()) {
+                        behaviour.onPauseControl();
+                        return;
+                    }
+                }
                 behaviour.onElytra(event);
             }
         }
@@ -479,6 +486,8 @@ public class ElytraBot extends BaseModule {
         public abstract void onEnable();
 
         public abstract void onDisable();
+
+        public void onPauseControl() {}
     }
 
     public static class Follower extends AbstractBotBehaviour {
@@ -541,7 +550,8 @@ public class ElytraBot extends BaseModule {
 
         public int onStateNone(StateMachine machine) {
             if (base.target != null) {
-                if (PlayerStateManager.INSTANCE.fallDistance > 4) {
+                if (PlayerStateManager.INSTANCE.fallDistance > 4
+                        && mc.player.getPos().getY() > base.target.getPos().getY() + 4.4) {
                     return STATE_FOLLOW;
                 }
                 return STATE_PULL_UP;
@@ -663,6 +673,7 @@ public class ElytraBot extends BaseModule {
                 // handle on ground target
                 movementDirection = movementDirection.add(0, base.followOnGroundHeight.get(), 0);
             } else {
+                movementDirection = movementDirection.add(0, base.followOnSkyHeight.get(), 0);
                 if (base.target.getY() > mc.player.getY() && base.target.getY() < mc.player.getY() + minimalHeightLow) {
                     // do not go up if it is just a bit higher than
                     movementDirection = movementDirection.withAxis(Direction.Axis.Y, 0);
@@ -828,8 +839,13 @@ public class ElytraBot extends BaseModule {
                 }
             } else {
                 stateMachine.setState(STATE_NONE);
+                movementDirection = Vec3d.ZERO;
             }
             lastFallDistance = PlayerStateManager.INSTANCE.fallDistance;
+        }
+
+        public synchronized void onPauseControl() {
+            stateMachine.setState(STATE_NONE);
         }
 
         boolean attackFlag = false;
@@ -1158,7 +1174,12 @@ public class ElytraBot extends BaseModule {
         @Override
         public synchronized void onUpdate() {
             super.onUpdate();
-            stateMachine.step();
+            if (mc.player.isFallFlying()) {
+                stateMachine.step();
+            } else {
+                movementDirection = Vec3d.ZERO;
+                stateMachine.setState(STATE_NONE);
+            }
         }
 
         @Override

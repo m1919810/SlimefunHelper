@@ -23,15 +23,11 @@ public class ModelTasks {
     @Getter
     public static SlimefunModels slimefunModels;
 
-    @Getter
-    public static StorageDisplay storageDisplay;
-
     private static void initModule(ModuleManager m) {
         modelExtra = new ModelExtra().register(m);
         customTextures = new CustomTextures().register(m);
         newStyleModel = new NewStyleModel().register(m);
         slimefunModels = new SlimefunModels().register(m);
-        storageDisplay = new StorageDisplay().register(m);
     }
 
     static {

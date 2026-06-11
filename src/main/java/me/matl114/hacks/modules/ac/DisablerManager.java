@@ -48,7 +48,7 @@ public class DisablerManager extends BaseModule {
             .build();
 
     public final FlagRef grimSelfCheck = builder(disablers.add("grim-self-check"), Boolean.class)
-            .defaultValue(true)
+            .defaultValue(false)
             .build();
 
     public final FlagRef grimMultiplace = builder(disablers.add("grim-multi-place"), Boolean.class)
