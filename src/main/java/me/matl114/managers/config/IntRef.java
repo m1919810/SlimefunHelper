@@ -51,6 +51,12 @@ public class IntRef extends Ref<Integer> {
         if (otherRef instanceof IntRef integer) {
             integer.set(this.value);
             return true;
+        } else if (otherRef instanceof FlagRef flag) {
+            if (this.value == 0 || this.value == 1) {
+                flag.set(this.value == 1);
+                return true;
+            }
+            return false;
         } else return false;
     }
 

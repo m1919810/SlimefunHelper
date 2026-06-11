@@ -37,10 +37,16 @@ public class FileManager {
         if (!FOLDER.exists() || !FOLDER.isDirectory()) {
             Preconditions.checkArgument(FOLDER.mkdirs(), "File create failure");
         }
-        if (!INTERNAL_FOLDER.exists() || !INTERNAL_FOLDER.isDirectory()) {
-            Preconditions.checkArgument(INTERNAL_FOLDER.mkdirs(), "File create failure");
-        }
+        checkFile(INTERNAL_FOLDER);
+        checkFile(CONFIG_SAVE_FOLDER);
+
         ScheduleService.launchAsyncRepeatTask(this::onScheduleSave, 15 * 1000, 15 * 1000);
+    }
+
+    private void checkFile(File file) {
+        if (!file.exists() || !file.isDirectory()) {
+            Preconditions.checkArgument(file.mkdirs(), "File create failure");
+        }
     }
 
     private void onScheduleSave() {

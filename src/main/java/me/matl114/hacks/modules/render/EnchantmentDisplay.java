@@ -46,7 +46,7 @@ public class EnchantmentDisplay extends BaseModule {
     }
 
     public final FlagRef enable =
-            builder(modelConfig.addEnable(), Boolean.class).defaultValue(true).build();
+            builder(modelConfig.addEnable(), Boolean.class).defaultValue(false).build();
 
     public final FlagRef enableMace =
             builder(modelConfig.add("mace"), Boolean.class).defaultValue(true).build();
