@@ -17,23 +17,11 @@ public class GuiMain {
 
     public static void onAtlasLoadGuiElements(Event<Set<Identifier>> loadEvent) {
         if (new Identifier("minecraft", "gui").equals(loadEvent.getArgs(1))) {
-            var customGuis = ResourceUtils.lookupResources(
-                    loadEvent.getArgs(0),
-                    "slimefunhelper",
-                    "slimefunhelper",
-                    "textures",
-                    ".png",
-                    s -> s.startsWith("gui"));
+            var customGuis = ResourceUtils.lookupOurTextureResources(loadEvent.getArgs(0), "gui");
             loadEvent.context().addAll(customGuis);
             CUSTOM_GUI_SPRITE.clear();
             CUSTOM_GUI_SPRITE.addAll(customGuis);
-            var customTextures = ResourceUtils.lookupResources(
-                    loadEvent.getArgs(0),
-                    "slimefunhelper",
-                    "slimefunhelper",
-                    "textures",
-                    ".png",
-                    s -> s.startsWith("custom"));
+            var customTextures = ResourceUtils.lookupOurTextureResources(loadEvent.getArgs(0), "custom");
             CUSTOM_TEXTURES.clear();
             customTextures.stream()
                     .map(s -> new Identifier(s.getNamespace(), "textures/" + s.getPath() + ".png"))

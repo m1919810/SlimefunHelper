@@ -3,13 +3,17 @@ package me.matl114.mixins.events;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import java.util.List;
+import javax.annotation.Nullable;
 import me.matl114.accessors.events.ItemRenderStateAccess;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
+import me.matl114.events.model.GuiModel;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.item.ItemModelManager;
 import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
@@ -93,18 +97,15 @@ public abstract class ItemModelManagerEvents {
             LivingEntity entity,
             int seed,
             CallbackInfo ci) {
-        ItemStack info = RenderListener.getContainedItemInfo(stack);
-        if (info != null) {
-            ItemRenderStateAccess stateAccess = ItemRenderStateAccess.of(renderState);
-            ItemRenderState state2 = stateAccess.getAttachedRenderState();
-            if (state2 == null) {
-                state2 = new ItemRenderState();
-            }
-            // init attached info
-            update(state2, info, transformationMode, false, world, entity, seed);
-            ItemRenderStateAccess.of(renderState).setAttachedRenderState(state2);
-        } else {
-            ItemRenderStateAccess.of(renderState).setAttachedRenderState(null);
-        }
+        List<GuiModel> info = RenderListener.getContainedItemInfo(stack);
+        GuiModel modelPack = GuiModel.packOrder(info);
+        modelPack.update(
+                renderState,
+                stack,
+                (ItemModelManager) (Object) this,
+                displayContext,
+                world instanceof ClientWorld cli ? cli : null,
+                heldItemContext,
+                seed);
     }
 }

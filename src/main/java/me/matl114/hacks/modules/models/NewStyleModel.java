@@ -102,26 +102,14 @@ public class NewStyleModel extends BaseModule {
 
     public void onAtlas(Event<Set<Identifier>> event) {
         if (event.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
-            event.context()
-                    .addAll(ResourceUtils.lookupResources(
-                            event.getArgs(0),
-                            "slimefunhelper",
-                            "slimefunhelper",
-                            "textures",
-                            ".png",
-                            s -> s.startsWith("enchanted_book") || s.startsWith("new-version")));
+            event.context().addAll(ResourceUtils.lookupOurTextureResources(event.getArgs(0), "enchanted_book"));
+            event.context().addAll(ResourceUtils.lookupOurTextureResources(event.getArgs(0), "new-version"));
         }
     }
 
     public void onModelSupply(Event<Set<Identifier>> event) {
-        event.context()
-                .addAll(ResourceUtils.lookupResources(
-                        event.getArgs(0),
-                        "slimefunhelper",
-                        "slimefunhelper",
-                        "models",
-                        ".json",
-                        s -> s.startsWith("enchanted_book") || s.startsWith("new-version")));
+        event.context().addAll(ResourceUtils.lookupOurModelResources(event.getArgs(0), "enchanted_book"));
+        event.context().addAll(ResourceUtils.lookupOurModelResources(event.getArgs(0), "new-version"));
     }
 
     public void onRefreshCache(Event<ResourceManager> event) {

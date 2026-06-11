@@ -1,6 +1,12 @@
 package me.matl114.mixins.events;
 
+import java.util.ArrayList;
+import java.util.List;
 import me.matl114.accessors.events.ItemRenderStateAccess;
+import me.matl114.events.model.GuiModel;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.DiffuseLighting;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import me.matl114.events.GlobalEventVars;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderState;
@@ -18,25 +24,30 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
     @Shadow
     private ItemDisplayContext modelTransformationMode;
 
+    @Shadow
+    public abstract void clear();
+
     @Unique
     ItemRenderState attachedRender;
 
-    public ItemRenderState getAttachedRenderState() {
-        return attachedRender;
+    public List<GuiModel.Entry> getAttachedRenderState() {
+        if (attachedRenders == null) {
+            attachedRenders = new ArrayList<>();
+            addModelKey(attachedRenders);
+        }
+        return attachedRenders;
     }
 
-    public void setAttachedRenderState(ItemRenderState state) {
-        attachedRender = state;
-        // mark a difference in the cache
-        //        if (state != null) {
-        //            addModelKey(state instanceof KeyedItemRenderState keyed ? keyed.getModelKey() : state);
-        //        }
+    public void clearAttachedRenderState() {
+        if (attachedRenders != null) {
+            attachedRenders.clear();
+        }
     }
 
     @Inject(method = "render", at = @At("RETURN"))
     private void onRender1(
             MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, CallbackInfo ci) {
-        if (attachedRender != null) {
+        if (attachedRender != null && !attachedRender.isEmpty()) {
             matrices.push();
             try {
                 final float scale = 0.54f;
@@ -77,8 +88,16 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
                 if (inGui) {
                     GlobalEventVars.lastRenderNeedDisableGuiLight = true;
                 }
-
-                attachedRender.render(matrices, vertexConsumers, light, overlay);
+                for (var entry : attachedRenders) {
+                    if (entry.stackTransformer() != null) {
+                        matrices.push();
+                        entry.stackTransformer().apply(matrices);
+                        entry.state().render(matrices, orderedRenderCommandQueue, light, overlay, i);
+                        matrices.pop();
+                    } else {
+                        entry.state().render(matrices, orderedRenderCommandQueue, light, overlay, i);
+                    }
+                }
             } finally {
                 matrices.pop();
             }
@@ -87,6 +106,6 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
 
     @Inject(method = "clear", at = @At("HEAD"))
     private void onClear(CallbackInfo ci) {
-        attachedRender = null;
+        clearAttachedRenderState();
     }
 }
