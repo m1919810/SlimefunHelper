@@ -5,11 +5,15 @@ import java.util.Map;
 import java.util.Optional;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.entity.state.ArmedEntityRenderState;
+import net.minecraft.client.render.entity.state.BipedEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Arm;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 
@@ -18,6 +22,35 @@ public class LancingUtils {
     // copied from ojng Lancing.class
     private static float method_75916(float f) {
         return 0.4F * (outQuart(lerpSpear(f, 1.0F, 3.0F)) - inOutSine(lerpSpear(f, 3.0F, 10.0F)));
+    }
+
+    public static <T extends BipedEntityRenderState> void positionArmForSpear(
+            ModelPart arm, ModelPart head, boolean right, ItemStack itemStack, T state) {
+        int i = right ? 1 : -1;
+        arm.yaw = -0.1F * (float) i + head.yaw;
+        arm.pitch = -1.5707964F + head.pitch + 0.8F;
+        if (state.isGliding || state.leaningPitch > 0.0F) {
+            arm.pitch -= 0.9599311F;
+        }
+
+        arm.yaw = 0.017453292F * Math.clamp(57.295776F * arm.yaw, -60.0F, 60.0F);
+        arm.pitch = 0.017453292F * Math.clamp(57.295776F * arm.pitch, -120.0F, 30.0F);
+        if (!(state.itemUseTime <= 0.0F)
+                && (!state.isUsingItem || state.activeHand == (right ? Hand.MAIN_HAND : Hand.OFF_HAND))) {
+            Kinetic kineticWeaponComponent = SWORD_KINETIC_MAP.get(itemStack.getItem());
+            if (kineticWeaponComponent != null) {
+                LancingContext lv = LancingContext.createContext(kineticWeaponComponent, state.itemUseTime);
+                arm.yaw += (float) (-i) * lv.swayScaleFast() * 0.017453292F * lv.swayIntensity() * 1.0F;
+                arm.roll += (float) (-i) * lv.swayScaleSlow() * 0.017453292F * lv.swayIntensity() * 0.5F;
+                arm.pitch += 0.017453292F
+                        * (-40.0F * lv.raiseProgressStart()
+                                + 30.0F * lv.raiseProgressMiddle()
+                                + -20.0F * lv.raiseProgressEnd()
+                                + 20.0F * lv.lowerProgress()
+                                + 10.0F * lv.raiseBackProgress()
+                                + 0.6F * lv.swayScaleSlow() * lv.swayIntensity());
+            }
+        }
     }
 
     public static void applySpearKineticTransform(
@@ -54,6 +87,56 @@ public class LancingUtils {
                     0.0F,
                     0.0F);
             matrixStack.translate(0.0F, -method_75916(f), 0.0F);
+        }
+    }
+
+    public static void applyHeldItemFeatureArm(
+            ArmedEntityRenderState armedEntityRenderState,
+            MatrixStack matrixStack,
+            float f,
+            Arm arm,
+            ItemStack itemStack) {
+        Kinetic kineticWeaponComponent = SWORD_KINETIC_MAP.get(itemStack.getItem());
+        if (kineticWeaponComponent != null && f != 0.0F) {
+            float g = inQuad(lerpSpear(0, 0.05F, 0.2F));
+            float h = inOutExpo(lerpSpear(0, 0.4F, 1.0F));
+            LancingContext lv = LancingContext.createContext(kineticWeaponComponent, f);
+            int i = arm == Arm.RIGHT ? 1 : -1;
+            float j = 1.0F - outBack(1.0F - lv.raiseProgress());
+            float k = 0.125F;
+            float l = method_75916(0);
+            matrixStack.translate(0.0, (double) (-l) * 0.4, (double)
+                    (-kineticWeaponComponent.forwardMovement() * (j - lv.raiseBackProgress()) + l));
+            matrixStack.multiply(
+                    RotationAxis.NEGATIVE_X.rotationDegrees(
+                            70.0F * (lv.raiseProgress() - lv.raiseBackProgress()) - 40.0F * (g - h)),
+                    0.0F,
+                    -0.03125F,
+                    0.125F);
+            matrixStack.multiply(
+                    RotationAxis.POSITIVE_Y.rotationDegrees(
+                            (float) (i * 90) * (lv.raiseProgress() - lv.swayProgress() + 3.0F * h + g)),
+                    0.0F,
+                    0.0F,
+                    0.125F);
+        }
+    }
+
+    public static float outBack(float t) {
+        float f = 1.70158F;
+        float g = 2.70158F;
+        return 1.0F + 2.70158F * cube(t - 1.0F) + 1.70158F * MathHelper.square(t - 1.0F);
+    }
+
+    public static float inQuad(float t) {
+        return t * t;
+    }
+
+    public static float inOutExpo(float t) {
+        if (t < 0.5F) {
+            return t == 0.0F ? 0.0F : (float) (Math.pow(2.0, 20.0 * (double) t - 10.0) / 2.0);
+        } else {
+            return t == 1.0F ? 1.0F : (float) ((2.0 - Math.pow(2.0, -20.0 * (double) t + 10.0)) / 2.0);
         }
     }
 
@@ -147,6 +230,10 @@ public class LancingUtils {
 
         public static LancingContext createContext(Item kinetic, float f) {
             var kineticWeaponComponent = SWORD_KINETIC_MAP.get(kinetic);
+            return createContext(kineticWeaponComponent, f);
+        }
+
+        public static LancingContext createContext(Kinetic kineticWeaponComponent, float f) {
             int i = kineticWeaponComponent.delayTicks();
             int j = (Integer) kineticWeaponComponent
                             .dismountConditions()
