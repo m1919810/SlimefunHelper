@@ -1,4 +1,4 @@
-package me.matl114.hacks.modules.models;
+package me.matl114.hacks.modules.render;
 
 import static me.matl114.utils.ItemStackUtils.*;
 import static me.matl114.utils.ItemStackUtils.getSfId;
@@ -18,6 +18,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.models.NewStyleModel;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -35,7 +36,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
 public class StorageDisplay extends BaseModule {
-    public final ModulePath modelConfig = makePath(Configs.MODEL_CONFIG, "model-config");
+    public final ModulePath modelConfig = makePath(Configs.RENDER_CONFIG, "itemstack-display.storage-display");
 
     public StorageDisplay() {}
 
