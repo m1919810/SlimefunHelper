@@ -33,7 +33,7 @@ import net.minecraft.util.Identifier;
 
 public class ConfigManager extends BaseModule {
     public ConfigManager() {
-        super("Config");
+        super("ConfigManager");
     }
 
     private final ModulePath root = makePath(Configs.MISC_CONFIG, "config");

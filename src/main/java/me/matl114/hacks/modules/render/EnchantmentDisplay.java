@@ -13,6 +13,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
@@ -48,7 +49,7 @@ public class EnchantmentDisplay extends BaseModule {
     }
 
     public final FlagRef enable =
-            builder(modelConfig.addEnable(), Boolean.class).defaultValue(true).build();
+            builder(modelConfig.addEnable(), Boolean.class).defaultValue(false).build();
 
     public final FlagRef enableMace =
             builder(modelConfig.add("mace"), Boolean.class).defaultValue(true).build();
@@ -96,7 +97,7 @@ public class EnchantmentDisplay extends BaseModule {
             if (item instanceof MaceItem mace) {
                 checkList.put(item, List.of(Enchantments.DENSITY, Enchantments.BREACH));
                 checkFlags.put(item, enableMace);
-            } else if (item.getComponents().contains(DataComponentTypes.WEAPON)) {
+            } else if (VItem.getInstance().isWeapon(new ItemStack(item))) {
                 checkList.put(
                         item, List.of(Enchantments.SHARPNESS, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS));
                 checkFlags.put(item, enableWeapon);
