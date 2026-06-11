@@ -215,6 +215,10 @@ public class MineExtra extends BaseModule {
             var packet = event.context();
             if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
                     && packet.getPos().getY() < 1145) {
+                if (mc.player.getAbilities().creativeMode) {
+                    gainedAdvantageCooldown = 150;
+                    return;
+                }
                 int duplicate = (doubleBreak.get() && (Tasks.getTick() - lastFinishBreakingTick) >= 5) ? 6 : 1;
                 List<PlayerActionC2SPacket> actionPackets = new ArrayList<>();
 
@@ -245,9 +249,13 @@ public class MineExtra extends BaseModule {
     }
 
     public void onGrimCooldownResetPackets(Event<ClientPlayerEntity> tickEvent) {
-        if (quickMine.get() && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS) {
+        if (quickMine.get() && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS && mc.player != null) {
             // exact tick we send,
             if (lastBreak != null && Tasks.getTick() - lastFinishBreakingTick == 6) {
+                if (mc.player.getAbilities().creativeMode) {
+                    gainedAdvantageCooldown = 150;
+                    return;
+                }
                 do {
                     mc.interactionManager.sendSequencedPacket(
                             mc.world,
@@ -347,17 +355,20 @@ public class MineExtra extends BaseModule {
         // we will deal the cooldown shit of bad packets mode in the duplication count of bad packets
         if (gainedAdvantageCooldown > threshold
                 && canResetThisTime
-                && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT) {
+                && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT
+                && mc.player != null) {
             // reset
             gainedAdvantageCooldown = 150;
-            ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
-                    .getOpposite();
-            for (int i = 0; i < 20; ++i) {
-                mc.interactionManager.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
-                    return new PlayerActionC2SPacket(
-                            PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, dir, sequence);
-                }));
+            if (!mc.player.getAbilities().creativeMode) {
+                ClientPlayerEntity player = MinecraftClient.getInstance().player;
+                Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
+                        .getOpposite();
+                for (int i = 0; i < 20; ++i) {
+                    mc.interactionManager.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
+                        return new PlayerActionC2SPacket(
+                                PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, dir, sequence);
+                    }));
+                }
             }
         }
         gainedAdvantageCooldown = MathHelper.clamp(gainedAdvantageCooldown, -1000, 1000);
@@ -373,16 +384,19 @@ public class MineExtra extends BaseModule {
         } else {
             gainedAdvantageMining = (int) (gainedAdvantageMining * 0.9);
             if (gainedAdvantageMining > threshold
-                    && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT) {
+                    && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT
+                    && mc.player != null) {
                 gainedAdvantageMining = 150;
-                ClientPlayerEntity player = MinecraftClient.getInstance().player;
-                Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
-                        .getOpposite();
-                for (int i = 0; i < 20; ++i) {
-                    mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> {
-                        return new PlayerActionC2SPacket(
-                                PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, dir, sequence);
-                    }));
+                if (!mc.player.getAbilities().creativeMode) {
+                    ClientPlayerEntity player = MinecraftClient.getInstance().player;
+                    Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
+                            .getOpposite();
+                    for (int i = 0; i < 20; ++i) {
+                        mc.interactionManager.sendSequencedPacket(mc.world, (sequence -> {
+                            return new PlayerActionC2SPacket(
+                                    PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, dir, sequence);
+                        }));
+                    }
                 }
             }
         }

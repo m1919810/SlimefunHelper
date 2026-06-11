@@ -32,9 +32,7 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.thrown.LingeringPotionEntity;
 import net.minecraft.entity.projectile.thrown.PotionEntity;
-import net.minecraft.entity.projectile.thrown.SplashPotionEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.consume.ApplyEffectsConsumeEffect;
 import net.minecraft.item.consume.ClearAllEffectsConsumeEffect;
@@ -669,7 +667,7 @@ public class PlayerStateManager extends BaseModule {
         return Math.max(0.0F, Math.min(0.3F, (float) (entity.age - 2) / 20.0F));
     }
 
-    public void onSplashedPotionHit(Event<SplashPotionEntity> eventPotionEntity) {
+    public void onSplashedPotionHit(Event<PotionEntity> eventPotionEntity) {
         if (checkNull()) return;
         Entity.RemovalReason reason = eventPotionEntity.getArgs(0);
         if (reason.shouldDestroy()) {
@@ -725,7 +723,7 @@ public class PlayerStateManager extends BaseModule {
     private static final String AREA_EFFECT_CLOUD_POTION_CONTENT =
             "slimefunhelper:player_manager/tracking_linger_potion_type";
 
-    public void onLingerPotionHit(Event<LingeringPotionEntity> eventLinger) {
+    public void onLingerPotionHit(Event<PotionEntity> eventLinger) {
         if (checkNull()) return;
         Entity.RemovalReason reason = eventLinger.getArgs(0);
         if (reason.shouldDestroy()) {

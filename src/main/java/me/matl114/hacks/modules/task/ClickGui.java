@@ -603,11 +603,11 @@ public class ClickGui extends BaseModule {
         private int y;
         // limit, do not move out of bound
         public void setX(int x) {
-            this.x = Math.max(x, 0);
+            this.x = x;
         }
 
         public void setY(int y) {
-            this.y = Math.max(y, 0);
+            this.y = y;
         }
 
         boolean slidingDown;
