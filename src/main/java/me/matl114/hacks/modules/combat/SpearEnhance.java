@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.combat;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -18,6 +19,7 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.ResourceUtils;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -72,7 +74,7 @@ public class SpearEnhance extends BaseModule {
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
         // registerListener(RenderListener.getAsyncItemModelSupply(), this::onModelSupply);
-        // registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlas);
+        registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlas);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onEntityStatus);
     }
 
@@ -176,18 +178,18 @@ public class SpearEnhance extends BaseModule {
         materialSwordToSpearMap.put(Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "netherite_spear"));
     }
 
-    //    public void onAtlas(Event<Set<Identifier>> event) {
-    //        if (event.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
-    //            event.context()
-    //                    .addAll(ResourceUtils.lookupResources(
-    //                            event.getArgs(0),
-    //                            "slimefunhelper",
-    //                            "slimefunhelper",
-    //                            "textures",
-    //                            ".png",
-    //                            s -> s.startsWith("spear")));
-    //        }
-    //    }
+    public void onAtlas(Event<Set<Identifier>> event) {
+        if (event.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
+            event.context()
+                    .addAll(ResourceUtils.lookupResources(
+                            event.getArgs(0),
+                            "slimefunhelper",
+                            "slimefunhelper",
+                            "textures",
+                            ".png",
+                            s -> s.startsWith("spear")));
+        }
+    }
 
     //    public void onModelSupply(Event<Set<Identifier>> event) {
     //        event.context()
