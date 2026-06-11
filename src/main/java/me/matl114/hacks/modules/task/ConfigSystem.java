@@ -23,7 +23,7 @@ public class ConfigSystem extends BaseModule {
     public final ModulePath config = makePath(Configs.MISC_CONFIG, "hotkeys");
 
     public ConfigSystem() {
-        super("Config");
+        super("ConfigMenu");
     }
 
     public final KeyBindRef keyBind = hotkey(hotkeys.add("open-menu"))

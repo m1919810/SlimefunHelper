@@ -99,6 +99,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef autoSwitch =
             flagBuilder(elytraTweaks.add("auto-switch")).build();
 
+    public final KeyBindRef autoTakeOff = hotkey(elytraTweaks.add("auto-take-off"), new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::autoTakeoff))
+            .build();
+
     // public final FlagRef elytraAntiKB = flagBuilder(Configs.MOV_CONFIG, ELYTRA_ANTI_KB).build();
 
     public final FlagRef enableUnbreakableElytra =
@@ -254,6 +258,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         } else {
             Debug.chat("[Elytra] 你不在滑翔");
         }
+    }
+
+    boolean autoTakeOffFlag = false;
+
+    public void autoTakeoff() {
+        autoTakeOffFlag = true;
     }
 
     public boolean clickRocket() {
@@ -1262,6 +1272,21 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             // fix grimac multiaction c
             PlayerInputUtils.of(player).sprint(false).applyInput(player);
             player.setSprinting(false);
+        }
+        if (autoTakeOffFlag) {
+            if (player.isFallFlying()) {
+                autoTakeOffFlag = false;
+            } else {
+                if (mc.player.isOnGround()) {
+                    PlayerInputUtils.of(player).jump(true).applyInput(player);
+                } else {
+                    if (player.checkGliding()) {
+                        mc.getNetworkHandler()
+                                .sendPacket(new ClientCommandC2SPacket(
+                                        mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    }
+                }
+            }
         }
 
         //        if(armorFly.get() && player.isFallFlying() && this.thisFallFlyingIsArmorFly != -1){

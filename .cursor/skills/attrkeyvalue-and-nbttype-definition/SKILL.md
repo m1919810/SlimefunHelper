@@ -23,6 +23,8 @@ disable-model-invocation: true
 
 新增一个 NBT 配置类型时，必须把这条链一次补完整。不要只写 Codec，不要只写 GUI，也不要只写字符串解析。
 
+在AttrKeyValue体系中 玩家gui输入以string的形态传播,经过factory反序列化出对象并通过validators后才会修改原始值， Codec则用于和配置文件中的nbt string进行序列化/反序列化，
+
 ## 先看什么
 
 优先阅读这些真实实现：
@@ -88,99 +90,17 @@ disable-model-invocation: true
 
 - `Codec` 只解决 `NBT <-> T`
 - `WrapperFactory<String, T>` 只解决 `String <-> T`
-- `CustomWidgetFactory<T>` 只解决 `T -> GUI`
+- `CustomWidgetFactory<T>` 只解决 `AttrKeyValue 创建 GUI`，GUI的行为应该转换为String状态更新向AttrKeyValue
+- `AttrKeyValue`负责将用户GUI交互转换来的String反向解析为T，并进行条件验证。如果未能通过验证或者格式错误，则不会更新真实值
+- 玩家通过GUI交互->String->T-> Config这样的链路来操作配置项的值
 - `NBTType` 把这三者合并成“配置系统可用的完整类型”
 
-## 自动链路是怎么接起来的
+### NBTType与配置文件体系的交互
+当创建Ref的时候，需要指定类型
 
-### A. 从 `builder(..., SomeClass.class)` 开始
+如果一个类实现了NBTParsable接口 并且他类里存在静态字段NBTType TYPE 则在创建Ref的时候会自动加载该TYPE
 
-当模块里声明：
-
-- `builder(path, SomeNbtParsable.class).defaultValue(new SomeNbtParsable(...)).build()`
-
-真实链路是：
-
-1. `BaseModule.builder(...)` 转到 `Config.SettingBuilder`
-2. `SettingBuilder` 构造时调用 `Config.registerClassSupport(clazz)`
-3. 如果类实现了 `AutoRegisterType`，就反射调用静态 `onLoad(Class)`
-4. `NBTParsable.onLoad(Class)` 会查找该类公开的静态 `TYPE`
-5. 找到 `TYPE` 后调用 `NBTParsable.registerNBTType(type)`
-6. 该类型进入 `NBTParsable.registeredParsableTypes`
-
-结论：
-
-- 只要类实现 `NBTParsable`
-- 且暴露 `public static ... TYPE`
-- 再通过 `builder(..., Xxx.class)` 被声明
-
-它就会自动接入配置体系。
-
-### B. 默认值如何变成 `Ref`
-
-`defaultValue(val)` 内部会走：
-
-1. `Refs.wrapInstance(val)`
-2. 命中 `NBTParsable.class -> NBTRef::new`
-3. 包成 `NBTRef<T>`
-4. `NBTRef(T nbtR)` 取 `nbtR.type().typeName()` 作为类型名
-5. `NBTRef` 调用 `tryRegisterType(value)`，也就是 `value.registerNBTType()`
-6. 同时把真实值转成 lazy 载体 `NbtElement`
-
-结论：
-
-- builder 声明类会注册一次
-- defaultValue 给实例时又会兜底注册一次
-- 所以新增类型不要绕开 `builder(..., Xxx.class)` 正常声明
-
-### C. 配置读盘怎么恢复
-
-YAML/primitive 层保存的是字符串：
-
-```text
-nbt:<typeName>:<rawNbtString>
-```
-
-读盘时走：
-
-1. YAML 先读成 `Map<String, Object>`
-2. `Refs.transferConfig(...)` 递归包装
-3. 字符串分支会尝试 `NBTRef::fromString`
-4. 命中 `nbt:` 前缀后得到 `NBTRef(String value)`
-5. `NBTRef` 只先记住：
-   - `enumType` = typeName
-   - `enumValue` = 原始 `NbtElement`
-6. 真正解析成 `T` 时，`tryResolve()` 再去 `registeredParsableTypes` 查 `NBTType`
-7. 解析成功后才能得到真实业务对象
-
-这就是“懒注册 / 懒解析”的来源。
-
-### D. 配置编辑怎么接 GUI
-
-`Ref.createKeyValue(key)` 的真实链路是：
-
-1. `Ref._createKeyValue0(key)` 生成一个 `AttrKeyValue<T>`
-2. `Ref` 把已有 validator 全挂到 `AttrKeyValue`
-3. `Ref` 再挂一个 listener，把 GUI 侧更新写回 `Ref`
-4. `WrapperConfigRef.createKeyValue()` 暴露给模块配置界面
-5. `KeyValueInputWidget` 左边渲染 key，右边调用 `keyValue.generateValueWidget(...)`
-6. `AttrKeyValue.generateValueWidget(...)` 再转给 `CustomWidgetFactory<T>`
-
-对 `NBTRef<T>` 来说：
-
-1. `_createKeyValue0(key)` 内部先 `tryResolve()`
-2. 找到对应 `NBTType<T>` 后调用 `type.createAttrKeyValue(key, get())`
-3. `NBTType.createAttrKeyValue(...)` 创建 `BaseAttrKeyValue<T>`
-4. 其 `stringifyFactory` 不是手写的原始 `String <-> T`
-5. 而是 `AttrKeyValues.NBT_FACTORY.concat(WrapperFactory.of(this::parse, this::toNbt))`
-
-也就是：
-
-```text
-String <-> NbtElement <-> T
-```
-
-这条字符串链会自动拼好。
+通过读取这个TYPE, NBTRef可以惰性加载nbt字符串为具体实例
 
 ## `AttrKeyValue` 在这里到底干什么
 
@@ -211,21 +131,6 @@ String <-> NbtElement <-> T
 - `AttrKeyValue` 负责把字符串态收敛回真实值
 - 配置是否合法也在这里判定
 
-### 2. 红框校验是自动的
-
-默认文本输入组件来自：
-
-- `BaseAttrKeyValue.generateTextInputValueWidget(...)`
-- `McWidgetHelpers.createAttrValueEditBox(...)`
-- `AttrKeyValueTextFieldWidget`
-
-这个输入框会根据 `attrKeyValue.isValidate()` 自动切边框颜色。
-
-结论：
-
-- 只要 `stringifyFactory` 和 validator 正确
-- 文本输入态的报错表现就是自动的
-
 ### 3. `CustomWidgetFactory<T>` 决定“怎么编辑”
 
 基础类型默认是文本框或布尔按钮。
@@ -235,6 +140,7 @@ String <-> NbtElement <-> T
 - 直接手写一个组合控件
 - 或复用子字段控件拼起来
 - 或打开列表编辑子界面
+- 或者其他操作，可以自行在CustomWidgetFactory中实现
 
 ## 这套系统为什么能“自动生成 GUI”
 
@@ -484,7 +390,7 @@ Pair<K1, K2> <-> T
 - value 先包成 `Primitive<W>`
 - 然后再交给 array-map 组合器统一处理
 
-## 新增 `NBTParsable` 时的硬规则
+## `NBTParsable` 时的硬规则
 
 ### 1. 必须暴露 `TYPE`
 
@@ -555,27 +461,6 @@ public static final NBTType<Xxx> TYPE = ...;
 
 不要反过来从 GUI 开始硬拼。
 
-## 判断某个类型为什么“自动可编辑”的排查顺序
-
-如果一个新类型已经能存盘但不能编辑，按这个顺序查：
-
-1. `builder(..., Xxx.class)` 是否真的声明了该类
-2. 该类是否实现 `NBTParsable<Xxx>`
-3. 是否存在公开静态 `TYPE`
-4. `TYPE.typeName` 是否稳定
-5. `TYPE.customWidgetFactory` 是否非空
-6. `TYPE.stringifyFactory` 是否能 round-trip
-7. `Refs.wrapInstance(defaultValue)` 是否命中 `NBTRef`
-8. `NBTRef._createKeyValue0(...)` 时是否已经 resolve 成功
-9. GUI 是否实际走到了 `AttrKeyValue.generateValueWidget(...)`
-
-如果一个类型能编辑但 reload 后炸掉，按这个顺序查：
-
-1. `getAsPrimitive()` 最终写出的 `nbt:<type>:<payload>` 是否正确
-2. `NBTRef.fromString(...)` 是否能重建 lazy ref
-3. `NBTParsable.registeredParsableTypes` 里是否有该类型
-4. `TYPE.typeCodec` 是否真的能从 payload 解回来
-5. 依赖上下文的参数是否都被写进持久化结构了
 
 ## 针对本仓库的实现倾向
 
