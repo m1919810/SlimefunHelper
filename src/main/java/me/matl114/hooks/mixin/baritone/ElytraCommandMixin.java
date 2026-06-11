@@ -35,7 +35,8 @@ public abstract class ElytraCommandMixin extends Command {
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/registry/RegistryKey;"))
+                            target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/registry/RegistryKey;"),
+            require = 0)
     private RegistryKey<World> onExecuteNetherSupport(RegistryKey<World> original) {
         if (BaritoneFix.INSTANCE.enableDimensionFix.get() && original != World.NETHER) {
             Debug.chat(ChatUtils.stringToText(
@@ -45,7 +46,7 @@ public abstract class ElytraCommandMixin extends Command {
         return original;
     }
 
-    @Inject(method = "execute", at = @At("HEAD"))
+    @Inject(method = "execute", at = @At("HEAD"), require = 0)
     private void onAutoImportSeedValue(String par1, IArgConsumer par2, CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.enableSeedAutoImport.get()) {
             SeedOre seedOre = SeedOre.INSTANCE;

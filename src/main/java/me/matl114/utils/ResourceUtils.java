@@ -33,6 +33,16 @@ public class ResourceUtils {
         return identifiers;
     }
 
+    public static Set<Identifier> lookupOurModelResources(ResourceManager m, String prefix) {
+        return ResourceUtils.lookupResources(
+                m, "slimefunhelper", "slimefunhelper", "models", ".json", s -> s.startsWith(prefix));
+    }
+
+    public static Set<Identifier> lookupOurTextureResources(ResourceManager m, String prefix) {
+        return ResourceUtils.lookupResources(
+                m, "slimefunhelper", "slimefunhelper", "textures", ".png", s -> s.startsWith(prefix));
+    }
+
     public static Identifier ofAtlasTexture(String type) {
         return Identifier.ofVanilla("textures/atlas/" + type + ".png");
     }

@@ -203,7 +203,7 @@ public final FlagRef enable = flagBuilder(module.add("enable")).build();
 public final KeyBindRef hotkey = moduleEntry(module.add("hotkey"), new MultiKeyBind(), module.add("enable"))
     .build();
 // 可以通过该方法设置动态附加给ModuleEntry的metadata， 让其显示例如当前模式等
-public final KeyBindRef hotkey = moduleEntry(module.add("hotkey"), new MultiKeyBind(), module.add("enable"), ()-> Text.literal("当前的模式..."))
+public final KeyBindRef hotkey = moduleEntry(module.add("hotkey"), new MultiKeyBind(), module.add("enable"), () -> Text.literal("当前的模式..."))
     .build();
 ```
 

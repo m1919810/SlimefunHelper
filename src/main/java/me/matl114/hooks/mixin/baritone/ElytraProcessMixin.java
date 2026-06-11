@@ -27,8 +27,7 @@ public abstract class ElytraProcessMixin {
     @Inject(
             method = {"a()Z", "shouldLandForSafety()Z"},
             at = @At("HEAD"),
-            expect = 1,
-            require = 1,
+            require = 0,
             cancellable = true)
     private void hookShouldLandForSafety(CallbackInfoReturnable<Boolean> ci) {
         if (BaritoneFix.INSTANCE.disableInventoryCheck.get()) {
@@ -42,7 +41,8 @@ public abstract class ElytraProcessMixin {
                     @At(
                             value = "INVOKE",
                             target = "Lbaritone/process/ElytraProcess;logDirect(Ljava/lang/String;)V",
-                            ordinal = 4))
+                            ordinal = 4),
+            require = 0)
     private boolean hookLogDirect(ElytraProcess instance, String string) {
         if (BaritoneFix.INSTANCE.enableEmergencyLandingFix.get()) {
             return false;
@@ -56,8 +56,7 @@ public abstract class ElytraProcessMixin {
                     @At(
                             value = "INVOKE",
                             target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/registry/RegistryKey;"),
-            expect = 1,
-            require = 1)
+            require = 0)
     private RegistryKey<World> hookGetRegistryKey(RegistryKey<World> original) {
         if (BaritoneFix.INSTANCE.enableDimensionFix.get() && original != World.NETHER) {
             return World.NETHER;
@@ -72,7 +71,8 @@ public abstract class ElytraProcessMixin {
                             value = "FIELD",
                             target = "Lbaritone/api/Settings;elytraAllowEmergencyLand:Lbaritone/api/Settings$Setting;",
                             shift = At.Shift.BEFORE),
-            cancellable = true)
+            cancellable = true,
+            require = 0)
     private void hookAllowEmergencyLand(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.handleLog("Emergency Landing")) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
@@ -86,14 +86,15 @@ public abstract class ElytraProcessMixin {
                             value = "INVOKE",
                             target = "Lbaritone/process/ElytraProcess;logDirect(Ljava/lang/String;)V",
                             ordinal = 5),
-            cancellable = true)
+            cancellable = true,
+            require = 0)
     private void hookLogDirect(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.handleLog("Path Complete")) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
         }
     }
 
-    @Inject(method = "onTick", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "onTick", at = @At("HEAD"), cancellable = true, require = 0)
     private void hookPauseElytraProcess(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.shouldPauseBaritoneElytra()) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.REQUEST_PAUSE));

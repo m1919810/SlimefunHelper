@@ -100,3 +100,4 @@ accessible method net/minecraft/client/world/ClientChunkManager$ClientChunkMap g
 accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap radius I
 accessible field net/minecraft/particle/TintedParticleEffect color I
 accessible field net/minecraft/client/gui/hud/debug/DebugHudProfile f3Enabled Z
+accessible field net/minecraft/client/render/item/ItemRenderState displayContext Lnet/minecraft/item/ItemDisplayContext;

@@ -1,11 +1,13 @@
 package me.matl114.mixins.events;
 
+import java.util.ArrayList;
+import java.util.List;
 import me.matl114.accessors.events.ItemRenderStateAccess;
+import me.matl114.events.model.GuiModel;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.item.ItemRenderState;
-import net.minecraft.client.render.item.KeyedItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemDisplayContext;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,18 +25,23 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
     @Shadow
     public abstract void addModelKey(Object modelKey);
 
-    @Unique
-    ItemRenderState attachedRender;
+    @Shadow
+    public abstract void clear();
 
-    public ItemRenderState getAttachedRenderState() {
-        return attachedRender;
+    @Unique
+    List<GuiModel.Entry> attachedRenders;
+
+    public List<GuiModel.Entry> getAttachedRenderState() {
+        if (attachedRenders == null) {
+            attachedRenders = new ArrayList<>();
+            addModelKey(attachedRenders);
+        }
+        return attachedRenders;
     }
 
-    public void setAttachedRenderState(ItemRenderState state) {
-        attachedRender = state;
-        // mark a difference in the cache
-        if (state != null) {
-            addModelKey(state instanceof KeyedItemRenderState keyed ? keyed.getModelKey() : state);
+    public void clearAttachedRenderState() {
+        if (attachedRenders != null) {
+            attachedRenders.clear();
         }
     }
 
@@ -46,7 +53,7 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
             int overlay,
             int i,
             CallbackInfo ci) {
-        if (attachedRender != null) {
+        if (attachedRenders != null && !attachedRenders.isEmpty()) {
             matrices.push();
             try {
                 final float scale = 0.54f;
@@ -90,8 +97,16 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
                             .getDiffuseLighting()
                             .setShaderLights(DiffuseLighting.Type.ITEMS_FLAT);
                 }
-
-                attachedRender.render(matrices, orderedRenderCommandQueue, light, overlay, i);
+                for (var entry : attachedRenders) {
+                    if (entry.stackTransformer() != null) {
+                        matrices.push();
+                        entry.stackTransformer().apply(matrices);
+                        entry.state().render(matrices, orderedRenderCommandQueue, light, overlay, i);
+                        matrices.pop();
+                    } else {
+                        entry.state().render(matrices, orderedRenderCommandQueue, light, overlay, i);
+                    }
+                }
             } finally {
                 matrices.pop();
             }
@@ -100,6 +115,6 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
 
     @Inject(method = "clear", at = @At("HEAD"))
     private void onClear(CallbackInfo ci) {
-        attachedRender = null;
+        clearAttachedRenderState();
     }
 }
