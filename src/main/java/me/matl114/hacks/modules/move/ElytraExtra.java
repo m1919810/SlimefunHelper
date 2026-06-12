@@ -1280,7 +1280,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 if (mc.player.isOnGround()) {
                     PlayerInputUtils.of(player).jump(true).applyInput(player);
                 } else {
-                    if (player.checkGliding()) {
+                    if (player.checkFallFlying()) {
                         mc.getNetworkHandler()
                                 .sendPacket(new ClientCommandC2SPacket(
                                         mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));

@@ -59,21 +59,42 @@ public interface GuiModel {
         return new ItemGuiModel(stack, model);
     }
 
-    default void render(ItemRenderer itemRenderer, ItemDisplayContext renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay){
+    default void render(
+            ItemRenderer itemRenderer,
+            ItemDisplayContext renderMode,
+            boolean leftHanded,
+            MatrixStack matrices,
+            VertexConsumerProvider vertexConsumers,
+            int light,
+            int overlay) {
         Entry entry = updateAndSubmit(itemRenderer);
         if (entry != null) {
-            if(entry.stackTransformer() != null){
+            if (entry.stackTransformer() != null) {
                 matrices.push();
                 entry.stackTransformer().apply(matrices);
-                itemRenderer.renderItem(entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+                itemRenderer.renderItem(
+                        entry.stack(),
+                        renderMode,
+                        leftHanded,
+                        matrices,
+                        vertexConsumers,
+                        light,
+                        overlay,
+                        entry.state());
                 matrices.pop();
-            }else {
-                itemRenderer.renderItem(entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+            } else {
+                itemRenderer.renderItem(
+                        entry.stack(),
+                        renderMode,
+                        leftHanded,
+                        matrices,
+                        vertexConsumers,
+                        light,
+                        overlay,
+                        entry.state());
             }
         }
     }
-
-
 
     // do not call
     public Entry updateAndSubmit(ItemRenderer itemRenderer);
@@ -92,14 +113,17 @@ public interface GuiModel {
 
         @Override
         public Entry updateAndSubmit(ItemRenderer itemRenderer) {
-            if(itemStack == null || itemStack.isEmpty())return null;
-            return new Entry(null, itemStack, itemRenderer.getModel(
-                itemStack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0));
+            if (itemStack == null || itemStack.isEmpty()) return null;
+            return new Entry(
+                    null,
+                    itemStack,
+                    itemRenderer.getModel(
+                            itemStack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0));
         }
     }
 
     @AllArgsConstructor
-    public static class ItemGuiModel implements GuiModel{
+    public static class ItemGuiModel implements GuiModel {
         ItemStack itemStack;
         BakedModel itemModel;
 
@@ -108,47 +132,64 @@ public interface GuiModel {
             return new Entry(null, itemStack, itemModel);
         }
     }
+
     @AllArgsConstructor
     public static class PackingModel implements GuiModel {
         List<GuiModel> guiModelList;
 
-
         @Override
-        public void render(ItemRenderer itemRenderer, ItemDisplayContext renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+        public void render(
+                ItemRenderer itemRenderer,
+                ItemDisplayContext renderMode,
+                boolean leftHanded,
+                MatrixStack matrices,
+                VertexConsumerProvider vertexConsumers,
+                int light,
+                int overlay) {
             List<Entry> entries = updateAndSubmitList(itemRenderer);
             if (entries != null && !entries.isEmpty()) {
                 // arrange positions
                 List<Entry> arranged = arrangeEntries(entries);
                 for (Entry entry : arranged) {
-                    if(entry.stackTransformer() != null){
+                    if (entry.stackTransformer() != null) {
                         matrices.push();
                         entry.stackTransformer().apply(matrices);
-                        itemRenderer.renderItem(entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+                        itemRenderer.renderItem(
+                                entry.stack(),
+                                renderMode,
+                                leftHanded,
+                                matrices,
+                                vertexConsumers,
+                                light,
+                                overlay,
+                                entry.state());
                         matrices.pop();
-                    }else {
-                        itemRenderer.renderItem(entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+                    } else {
+                        itemRenderer.renderItem(
+                                entry.stack(),
+                                renderMode,
+                                leftHanded,
+                                matrices,
+                                vertexConsumers,
+                                light,
+                                overlay,
+                                entry.state());
                     }
                 }
             }
         }
 
-        public List<Entry> updateAndSubmitList(
-                ItemRenderer renderer) {
+        public List<Entry> updateAndSubmitList(ItemRenderer renderer) {
             return guiModelList.stream()
                     .flatMap(s -> {
                         if (s instanceof PackingModel pack) {
-                            return pack
-                                    .updateAndSubmitList(
-                                           renderer)
-                                    .stream();
+                            return pack.updateAndSubmitList(renderer).stream();
                         } else {
-                            return Stream.of(s.updateAndSubmit(
-                                   renderer));
+                            return Stream.of(s.updateAndSubmit(renderer));
                         }
                     })
                     .toList();
         }
-
 
         private List<Entry> arrangeEntries(List<Entry> originalEntries) {
             List<Entry> result = new ArrayList<>();
@@ -184,5 +225,5 @@ public interface GuiModel {
     }
 
     @With
-    public static record Entry( UnaryOperator<MatrixStack> stackTransformer, ItemStack stack, BakedModel state) {}
+    public static record Entry(UnaryOperator<MatrixStack> stackTransformer, ItemStack stack, BakedModel state) {}
 }

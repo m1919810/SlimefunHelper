@@ -1,0 +1,6 @@
+{
+  "parent": "slimefunhelper:spear/spear_in_hand",
+  "textures": {
+    "layer0": "slimefunhelper:spear/wooden_spear"
+  }
+}

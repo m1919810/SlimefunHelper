@@ -1,12 +1,12 @@
 package me.matl114.mixins.events;
 
+import java.util.List;
 import me.matl114.events.Event;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.RenderListener;
 import me.matl114.events.model.GuiModel;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
@@ -19,8 +19,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.List;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ItemRenderer.class)
@@ -50,7 +48,13 @@ public abstract class ItemRendererEvents {
         List<GuiModel> stack = RenderListener.getContainedItemInfo(item);
         if (stack != null && !stack.isEmpty()) {
             renderItemContainerItemInfo(
-                    (ItemRenderer) (Object) this, matrices, renderMode, GuiModel.packOrder(stack), leftHanded, vertexConsumers, overlay);
+                    (ItemRenderer) (Object) this,
+                    matrices,
+                    renderMode,
+                    GuiModel.packOrder(stack),
+                    leftHanded,
+                    vertexConsumers,
+                    overlay);
         }
     }
 
