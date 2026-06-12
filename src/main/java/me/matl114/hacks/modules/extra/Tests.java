@@ -408,6 +408,7 @@ public class Tests extends BaseModule {
         //                }
         //            }
         //        }
+        if (checkNull()) return;
 
         if (mc.player != null) {
             HitResult result = mc.player.raycast(10, 0, false);

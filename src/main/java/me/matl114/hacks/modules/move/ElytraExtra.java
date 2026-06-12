@@ -267,6 +267,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     boolean autoTakeOffFlag = false;
 
     public void autoTakeoff() {
+        if (checkNull()) return;
         autoTakeOffFlag = true;
     }
 

@@ -38,10 +38,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.config.*;
 import me.matl114.managers.file.FileStorage;
-import me.matl114.managers.input.HotKeyUtils;
-import me.matl114.managers.input.IInputManager;
-import me.matl114.managers.input.KeyCode;
-import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.managers.input.*;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.algorithms.SerialExecutor;
@@ -89,7 +86,7 @@ public class ClickGui extends BaseModule {
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
             .build();
 
-    private boolean onHotkey(IInputManager manager) {
+    private boolean onHotkey(IHotKey iHotKey, IInputManager manager) {
         if (HotKeyUtils.isValidState()) {
             openClickGui();
             return true;
