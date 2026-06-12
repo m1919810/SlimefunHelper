@@ -244,6 +244,8 @@
 	"other.auto-reconnect.enable": "自动重连: 启用",
 	"other.auto-reconnect.enable-buttons": "自动重连: 启用按钮",
 	"other.auto-reconnect.delay": "自动重连: 延迟",
+	"packet-debugger.enable": "调试: 启用",
+	"packet-debugger.hotkey": "调试: 快捷键",
 	"packet-debugger.debug-packet-in": "调试: 接受发包",
 	"packet-debugger.debug-packet-out": "调试: 发送发包",
 	"packet-debugger.optional-press-enable": "调试: 可选启用键",
@@ -256,6 +258,7 @@
 	"bad-packets.fix-dup-input": "BadPackets: 重复键盘输入修复",
 	"bad-packets.fix-fly-packets": "BadPackets: 非法飞行状态修复",
 	"bad-packets.fix-dup-rot": "BadPackets: 重复玩家视角修复",
+	"bad-packets.exempt-dup-rot": "BadPackets: Via1.20.5转头豁免",
 	"disablers.grim-self-check": "GrimSelfCheck特性",
 	"disablers.grim-self-check.tooltips": "该特性需要玩家手动触发\n当玩家切换世界/重生一次之后即可触发\n若不勾选,相关特性则会自动禁止\n该特性在最新版GrimV3中已经修复(5.25测试)",
 	"attack.cancel-interval": "取消攻击间隔",
@@ -404,6 +407,8 @@
 	"spear-module.render-target": "长矛模拟: 渲染目标",
 	"spear-module.spear-server-tick-delay": "长矛模拟: 持续时长",
 	"spear-module.reset-spear-speed-rot": "长矛工具: 重置长矛速度和转向",
+	"spear-module.reset-spear-speed-rot-enable": "长矛重置: 启用",
+	"spear-module.reset-spear-speed-rot-hotkey": "长矛重置: 快捷键",
 	"auto-logout.enable": "自动断连: 启用",
 	"auto-logout.hotkey": "自动断连: 快捷键",
 	"auto-logout.health.enable": "自动断连: 启用血量检测",
@@ -1530,6 +1535,8 @@
 	"module-toggle.totem.auto-totem": "AutoTotem",
 	"module-toggle.other.boat-vclip.enable": "BoatVClip",
 	"module-toggle.disablers.enable": "Disabler",
+	"module-toggle.packet-debugger.enable": "PacketDebug",
+	"module-toggle.spear-module.reset-spear-speed-rot-enable": "SpearReset",
 	"module-toggle.interaction-tweaks.auto-ride.enable": "AutoRide",
 	"module-toggle.interaction-tweaks.auto-eat.enable": "AutoEat",
 	"module-toggle.interaction-tweaks.auto-use.enable": "AutoUse",
@@ -1567,5 +1574,7 @@
 	"module-meta.critical-mode.test": "Test",
 	"module-meta.support-disabler-ac.none": "None",
 	"module-meta.support-disabler-ac.grim": "Grim",
-	"module-meta.support-disabler-ac.matrix": "Matrix"
+	"module-meta.support-disabler-ac.matrix": "Matrix",
+	"widget.click-gui.module-name.Tasks.HotkeyCommand": "快捷键指令",
+	"widget.click-gui.module-name.Tasks.HotkeyCommand.tooltips": "按配置的快捷键执行聊天消息、服务端指令或客户端指令。"
 }
