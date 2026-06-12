@@ -1016,6 +1016,13 @@
 	"interaction-tweaks.auto-ride.enable": "自动骑乘: 启用",
 	"interaction-tweaks.auto-ride.hotkey": "自动骑乘: 快捷键",
 	"interaction-tweaks.auto-ride.interact-cooldown": "自动骑乘: 冷却",
+	"interaction-tweaks.auto-use.enable": "自动使用: 启用",
+	"interaction-tweaks.auto-use.hotkey": "自动使用: 快捷键",
+	"interaction-tweaks.auto-use.log": "自动使用: 日志",
+	"interaction-tweaks.auto-use.only-when-enemy-near": "自动使用: 仅附近有敌人",
+	"interaction-tweaks.auto-use.enemy-near-distance": "自动使用: 敌人距离",
+	"interaction-tweaks.auto-use.use-food": "自动使用: 使用食物",
+	"interaction-tweaks.auto-use.use-item-white-list": "自动使用: 物品白名单",
 	"hotkeys-toggle.hktest1": "测试状态1",
 	"hotkeys-toggle.hktest2": "测试状态2",
 	"hotkeys-toggle.hktest3": "测试状态3",
@@ -1247,6 +1254,8 @@
 	"widget.click-gui.module-group-name.Extra": "Extra",
 	"widget.click-gui.module-name.Tasks.Config": "Config",
 	"widget.click-gui.module-name.Tasks.Config.tooltips": "",
+	"widget.click-gui.module-name.Tasks.ConfigMenu": "ConfigMenu",
+	"widget.click-gui.module-name.Tasks.ConfigManager": "ConfigManager",
 	"widget.click-gui.module-name.Tasks.ClickGui": "ClickGui",
 	"widget.click-gui.module-name.Tasks.ClickGui.tooltips": "",
 	"widget.click-gui.module-name.Mine.MineExtra": "MineExtra",
@@ -1436,6 +1445,7 @@
 	"widget.click-gui.module-name.Interaction.AutoRide.tooltips": "自动骑乘附近载具或生物",
 	"widget.click-gui.module-name.Interaction.AutoEat": "AutoEat",
 	"widget.click-gui.module-name.Interaction.AutoEat.tooltips": "自动处理进食与烟花补给",
+	"widget.click-gui.module-name.Interaction.AutoUse": "AutoUse",
 	"widget.click-gui.module-name.Interaction.BlockRotate": "BlockRotate",
 	"widget.click-gui.module-name.Interaction.BlockRotate.tooltips": "配置方块放置重定向设置\n用于投影打印机,轻松放置和投影放置方向修复",
 	"widget.click-gui.module-name.Interaction.Printer": "Printer",
@@ -1522,6 +1532,7 @@
 	"module-toggle.disablers.enable": "Disabler",
 	"module-toggle.interaction-tweaks.auto-ride.enable": "AutoRide",
 	"module-toggle.interaction-tweaks.auto-eat.enable": "AutoEat",
+	"module-toggle.interaction-tweaks.auto-use.enable": "AutoUse",
 	
 	
 	

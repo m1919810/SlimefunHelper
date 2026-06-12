@@ -177,6 +177,9 @@ public class Attack extends BaseModule {
         }
     }
 
+    private Entity lastTickTarget;
+    private int lastTick;
+
     public void onRenderTarget(Event<MatrixStack> stackE) {
         var stack = stackE.context;
         if (enable.get() && mc.player != null && renderAttackTarget.get()) {
@@ -194,9 +197,17 @@ public class Attack extends BaseModule {
             if (CombatTasks.notSuitableForAttack(mc.player.getMainHandStack())) {
                 return;
             }
+            if (lastTick != Tasks.getTick()) {
+                lastTick = Tasks.getTick();
+                lastTickTarget = CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), true);
+            }
+            if (lastTickTarget == null || !lastTickTarget.isAlive()) {
+                lastTickTarget = null;
+                return;
+            }
             RenderUtils.startDrawVirtual(stack);
             try {
-                Entity entity = CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), true);
+                Entity entity = lastTickTarget;
                 if (entity != null) {
                     float dist = entity.distanceTo(mc.player);
                     float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);

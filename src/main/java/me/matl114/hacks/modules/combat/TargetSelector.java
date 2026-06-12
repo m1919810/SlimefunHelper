@@ -145,6 +145,11 @@ public class TargetSelector extends BaseModule {
     }
 
     public boolean isWithinAttackRange(Vec3d pos, Box box, double range) {
+        if (box.squaredMagnitude(pos) > MathUtils.s2(range + 2 + mc.player.dimensions.eyeHeight())) {
+            // filter all outofrange
+            // optimize calculation
+            return false;
+        }
         return getPotentialEyeHeights()
                 .mapToObj(s -> pos.add(0, s, 0))
                 .anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
@@ -337,7 +342,7 @@ public class TargetSelector extends BaseModule {
         List<Entity> entities = new ArrayList<>();
         List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
         for (var e : et) {
-            if (isTargetInRange(e, nearbyOverride, ticks) && predicate.test(e)) {
+            if (predicate.test(e) && isTargetInRange(e, nearbyOverride, ticks)) {
                 entities.add(e);
             }
         }

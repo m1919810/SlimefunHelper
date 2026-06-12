@@ -59,7 +59,25 @@ public class ItemUtils_v1_21_11 implements VItem {
 
     @Override
     public boolean isWeapon(ItemStack stack) {
-        return stack.contains(DataComponentTypes.WEAPON);
+        if (stack.getItem() instanceof MaceItem) {
+            return true;
+        } else if (stack.contains(DataComponentTypes.TOOL)) {
+            Item tool = stack.getItem();
+            if (tool instanceof AxeItem) {
+                return true;
+            } else if (isMiningPurposeWeaponWTFTool(stack)) {
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    private boolean isMiningPurposeWeaponWTFTool(ItemStack stack) {
+        WeaponComponent component = stack.get(DataComponentTypes.WEAPON);
+        return component != null && component.itemDamagePerAttack() > 1;
     }
 
     @Override

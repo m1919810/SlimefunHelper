@@ -328,7 +328,7 @@ public class ElytraBot extends BaseModule {
                 && enable.get()
                 && autoFly.get()
                 && !mc.player.isFallFlying()
-                && !PlayerInputUtils.of(mc.options).hasMovementControl()
+                && !PlayerInputUtils.of(mc.options).jump(false).hasMovementControl() // do not check jump
                 && currentBehaviour != null
                 && !Objects.equals(Vec3d.ZERO, currentBehaviour.movementDirection)) {
             if (mc.player.isOnGround()) {
@@ -714,14 +714,14 @@ public class ElytraBot extends BaseModule {
         }
         // compat delay attack shit, add cd,
         public int onStateWaitAttack(StateMachine machine) {
-            //            if (++startWaitAttack > 2) {
-            //                return STATE_NONE;
-            //            }
+
             if (base.currentAction != TargetAction.AFK && base.currentAction != TargetAction.SLOW_SPEED) {
                 machine.markForEndState();
                 return STATE_PULL_UP;
             }
-
+            if (++startWaitAttack > 2) {
+                return STATE_NONE;
+            }
             machine.markForEndState();
             // stay!
             setTargetToPlayer(true);
@@ -809,11 +809,11 @@ public class ElytraBot extends BaseModule {
                 // Debug.info("State", stateMachine.getState(), "height", PlayerStateManager.INSTANCE.fallDistance);
                 // todo: consider cooldown, do not attack too fast
                 if (attackFlag) {
-                    if (base.target != null && lastAttackTick <= Tasks.getTick() - 3) {
+                    if (base.target != null) {
                         // anti shield
+                        boolean cooldown = lastAttackTick <= Tasks.getTick() - 3;
                         boolean useAntiShield = Attack.shouldUseAntiShield(base.target);
-
-                        if (mc.player.getAttackCooldownProgress(0.5F) > 0.95F || useAntiShield) {
+                        if ((mc.player.getAttackCooldownProgress(0.5F) > 0.95F) || useAntiShield) {
                             // can not deal mace attack anyway
                             Attack.AttackSettings settings =
                                     CombatTasks.getAttack().createAttackSettings();
@@ -821,8 +821,9 @@ public class ElytraBot extends BaseModule {
                                 settings = settings.withAntiShieldSwap(true);
                             }
                             CombatTasks.getAttack().attackEntity(base.target, settings);
+                            lastAttackTick = Tasks.getTick();
                         }
-                        if (PlayerStateManager.INSTANCE.fallDistance > 1.5) {
+                        if (cooldown || PlayerStateManager.INSTANCE.fallDistance > 3) {
                             Attack.AttackSettings settings =
                                     CombatTasks.getAttack().createAttackSettings();
                             CombatTasks.getAttack()
@@ -831,8 +832,8 @@ public class ElytraBot extends BaseModule {
                                             settings.withMaceSwap(true)
                                                     .withInvSwap(false)
                                                     .withAntiShieldSwap(false));
+                            lastAttackTick = Tasks.getTick();
                         }
-                        lastAttackTick = Tasks.getTick();
                     }
                     maxHeightInAttack = mc.player.getY();
                     attackFlag = false;
@@ -870,12 +871,13 @@ public class ElytraBot extends BaseModule {
                     && stateMachine.getState() != STATE_PULL_UP
                     && stateMachine.getState() != STATE_DOWN_ATTACK) {
                 stateMachine.setState(STATE_FOLLOW);
+                lastAttackTick = Tasks.getTick();
             }
         }
 
         @Override
         public synchronized void onHit(int type) {
-            if ((type == HIT_MACE || type == HIT_ATTACK)
+            if (lastAttackTick > Tasks.getTick() - 5
                     && stateMachine.getState() != STATE_PULL_UP
                     && stateMachine.getState() != STATE_DOWN_ATTACK) {
                 stateMachine.setState(STATE_PULL_UP);
