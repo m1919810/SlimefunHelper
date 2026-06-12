@@ -24,7 +24,7 @@ public class HotKeyUtils {
     }
 
     public static SimpleHotKey.InputHandler wrapAsHandler(Runnable task) {
-        return (in) -> {
+        return (ih, in) -> {
             if (isValidState()) {
                 task.run();
                 return true;
@@ -34,7 +34,7 @@ public class HotKeyUtils {
     }
 
     public static SimpleHotKey.InputHandler wrapAsHandler(BooleanSupplier task) {
-        return (in) -> {
+        return (ih, in) -> {
             if (isValidState()) {
                 return task.getAsBoolean();
             }
@@ -43,13 +43,13 @@ public class HotKeyUtils {
     }
 
     public static SimpleHotKey.InputHandler asHandler(Runnable task) {
-        return (in) -> {
+        return (ih, in) -> {
             task.run();
             return true;
         };
     }
 
     public static SimpleHotKey.InputHandler asHandler(BooleanSupplier task) {
-        return in -> task.getAsBoolean();
+        return (ih, in) -> task.getAsBoolean();
     }
 }

@@ -63,8 +63,13 @@ public class SpearEnhance extends BaseModule {
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
             .build();
 
-    public final KeyBindRef spearSpeedRotReset = builder(spearModule.add("reset-spear-speed-rot"), KeyBindRef.TYPE)
-            .defaultValue(new MultiKeyBind())
+    public final FlagRef spearSpeedReset =
+            flagBuilder(spearModule.add("reset-spear-speed-rot-enable")).build();
+
+    public final KeyBindRef spearSpeedRotReset = moduleEntry(
+                    spearModule.add("reset-spear-speed-rot-hotkey"),
+                    new MultiKeyBind(),
+                    spearModule.add("reset-spear-speed-rot-enable"))
             .build();
 
     @Override
@@ -256,9 +261,7 @@ public class SpearEnhance extends BaseModule {
 
     public void onPostTick(Event<ClientPlayerEntity> eventPostTick) {
         if (checkNull()) return;
-        if (eventPostTick.context == mc.player
-                && spearSpeedRotReset.get().isAllPressed()
-                && ViaFabricPlusHooks.isSupportDupRot()) {
+        if (eventPostTick.context == mc.player && spearSpeedReset.get() && ViaFabricPlusHooks.isSupportDupRot()) {
             Entity targetEntity =
                     TargetSelector.INSTANCE.searchAttackEntity(10, true, pl -> pl instanceof PlayerEntity);
             Vec3d look;

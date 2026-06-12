@@ -21,7 +21,9 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
 
 public class AutoUse extends BaseModule {
-    public AutoUse() {}
+    public AutoUse() {
+        bindFlag(enable);
+    }
 
     public ModulePath path = makePath(Configs.INTERACT_CONFIG, "interaction-tweaks.auto-use");
     public final FlagRef enable = flagBuilder(path.addEnable()).build();
@@ -58,6 +60,15 @@ public class AutoUse extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
+    }
+
+    @Override
+    public void onDisableModule() {
+        super.onDisableModule();
+        if (!checkNull() && lastAutoUsingSpear) {
+            lastAutoUsingSpear = false;
+            KeyBindAccess.of(mc.options.useKey).resetKeyState();
+        }
     }
 
     private boolean pass() {
@@ -100,13 +111,21 @@ public class AutoUse extends BaseModule {
                                     mc.player.getActiveItem().getName());
                         }
                     }
+                } else {
+                    if (lastAutoUsingSpear) {
+                        lastAutoUsingSpear = false;
+                        KeyBindAccess.of(mc.options.useKey).resetKeyState();
+                    }
                 }
             } else {
                 if (isWorkingAcceptable(mc.player.getActiveItem())) {
                     mc.options.useKey.setPressed(true);
                     lastAutoUsingSpear = true;
                 } else {
-                    lastAutoUsingSpear = false;
+                    if (lastAutoUsingSpear) {
+                        lastAutoUsingSpear = false;
+                        KeyBindAccess.of(mc.options.useKey).resetKeyState();
+                    }
                 }
             }
         } else {

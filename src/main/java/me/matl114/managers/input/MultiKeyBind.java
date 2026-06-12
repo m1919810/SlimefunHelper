@@ -4,11 +4,21 @@ import com.google.common.base.Preconditions;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
+import lombok.With;
 
 @Getter
 public class MultiKeyBind {
-    String[] keys;
-    int[] keyCodes;
+    private MultiKeyBind(String[] keys, int[] keyCodes, boolean toggleOnRelease) {
+        this.keys = keys;
+        this.keyCodes = keyCodes;
+        this.toggleOnRelease = toggleOnRelease;
+    }
+
+    final String[] keys;
+    final int[] keyCodes;
+
+    @With
+    final boolean toggleOnRelease;
 
     private void validateKeys() {
         Preconditions.checkNotNull(keys);
@@ -26,11 +36,12 @@ public class MultiKeyBind {
         }
     }
 
-    public MultiKeyBind(List<String> keys) {
-        this(keys.toArray(String[]::new));
+    public MultiKeyBind(List<String> keys, boolean toggleOnRelease) {
+        this(keys.toArray(String[]::new), toggleOnRelease);
     }
 
-    public MultiKeyBind(String[] keys) {
+    public MultiKeyBind(String[] keys, boolean toggleOnRelease) {
+        this.toggleOnRelease = toggleOnRelease;
         this.keys = Arrays.copyOf(keys, keys.length);
         this.keyCodes = new int[keys.length];
         validateKeys();
@@ -40,6 +51,12 @@ public class MultiKeyBind {
         if (rawStr.startsWith("hotkey:")) {
             rawStr = rawStr.substring("hotkey:".length());
         }
+        if (rawStr.startsWith("T|")) {
+            rawStr = rawStr.substring("T|".length());
+            toggleOnRelease = true;
+        } else {
+            toggleOnRelease = false;
+        }
         keys = rawStr.isEmpty() ? new String[0] : rawStr.split(",");
         keyCodes = new int[keys.length];
         validateKeys();
@@ -47,6 +64,7 @@ public class MultiKeyBind {
 
     public MultiKeyBind(int... keyCodes) throws RuntimeException {
         Preconditions.checkNotNull(keyCodes);
+        this.toggleOnRelease = false;
         this.keyCodes = Arrays.copyOf(keyCodes, keyCodes.length);
         this.keys = new String[keyCodes.length];
         for (int i = 0; i < keyCodes.length; i++) {
@@ -60,7 +78,7 @@ public class MultiKeyBind {
     }
 
     public String asString() {
-        return "hotkey:" + String.join(",", keys);
+        return "hotkey:" + (toggleOnRelease ? "T|" : "") + String.join(",", keys);
     }
 
     public String getKeyStr() {
@@ -101,7 +119,7 @@ public class MultiKeyBind {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         else if (obj instanceof MultiKeyBind other) {
-            return Arrays.equals(keyCodes, other.keyCodes);
+            return Arrays.equals(keyCodes, other.keyCodes) && other.toggleOnRelease == toggleOnRelease;
         } else return false;
     }
 }

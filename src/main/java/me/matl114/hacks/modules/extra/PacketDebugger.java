@@ -27,6 +27,7 @@ public class PacketDebugger extends BaseModule {
 
     public PacketDebugger() {
         super("PacketDebug");
+        bindFlag(enable);
     }
 
     private Set<PacketType<?>> typesDebug = new HashSet<>();
@@ -43,15 +44,17 @@ public class PacketDebugger extends BaseModule {
         return types;
     }
 
+    public final FlagRef enable = flagBuilder(packetDebugger.addEnable()).build();
+
+    public final KeyBindRef enablePressShow = moduleEntry(
+                    packetDebugger.addHotkey(), new MultiKeyBind(), packetDebugger.addEnable())
+            .build();
+
     public final FlagRef debugIn =
             flagBuilder(packetDebugger.add("debug-packet-in")).build();
 
     public final FlagRef debugOut =
             flagBuilder(packetDebugger.add("debug-packet-out")).build();
-
-    public final KeyBindRef enablePressShow = hotkey(packetDebugger.add("optional-press-enable"))
-            .defaultValue(new MultiKeyBind())
-            .build();
 
     public final StringRef debugPacketType = builder(packetDebugger.add("debug-packet-type"), StringRef.TYPE)
             .defaultValue("^(move_player_.*)$")
@@ -82,15 +85,9 @@ public class PacketDebugger extends BaseModule {
         } else return id.toString();
     }
 
-    private boolean handleKey() {
-        MultiKeyBind keyBind = enablePressShow.get();
-        if (keyBind.isEmpty()) return true;
-        else return keyBind.isAllPressed();
-    }
-
     public void onPacketHandle(Event<Packet<?>> packetEvent) {
         if (packetEvent.isCancelled()) return;
-        if (debugIn.get() && handleKey()) {
+        if (enable.get() && debugIn.get()) {
             Packet<?> type = packetEvent.context();
             if (typesDebug.contains(type.getPacketId())) {
                 if (type instanceof PlayerPositionLookS2CPacket positionLookS2CPacket) {
@@ -115,7 +112,7 @@ public class PacketDebugger extends BaseModule {
 
     public void onPacketSend(Event<Packet<?>> packetEvent) {
         if (packetEvent.isCancelled()) return;
-        if (debugOut.get() && handleKey()) {
+        if (enable.get() && debugOut.get()) {
             Packet<?> type = packetEvent.context();
             if (typesDebug.contains(type.getPacketId())) {
                 if (type instanceof PlayerMoveC2SPacket moveC2SPacket) {
@@ -161,7 +158,7 @@ public class PacketDebugger extends BaseModule {
 
     public void onPacket(Event<Packet<?>> packetEvent) {
         if (packetEvent.isCancelled()) return;
-        if (interceptPacket.get()) {
+        if (enable.get() && interceptPacket.get()) {
             Packet<?> type = packetEvent.context();
             if (typesIntercept.contains(type.getPacketId())) {
                 packetEvent.cancel();
