@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.Tasks;
 
 public class SimpleHotKey implements IHotKey {
     private final IntList keyCodes = new IntArrayList(4);
@@ -18,7 +18,6 @@ public class SimpleHotKey implements IHotKey {
     //    public int triggerKey;
     public final MultiKeyBind defaultKeyCode;
     public MultiKeyBind keyCode;
-    private KeyBindRef ref;
 
     @Setter
     private InputHandler inputHandler = InputHandler.EMPTY;
@@ -76,7 +75,7 @@ public class SimpleHotKey implements IHotKey {
     public interface InputHandler {
         public static InputHandler EMPTY = HotKeyUtils.wrapAsHandler(Runnables.doNothing());
 
-        public boolean handle(IInputManager manager);
+        public boolean handle(IHotKey iHotKey, IInputManager manager);
     }
 
     public boolean handleKeyInput(IInputManager manager, int keyCode, boolean isStateChanged, boolean isClicked) {
@@ -94,7 +93,28 @@ public class SimpleHotKey implements IHotKey {
                         return false;
                     }
                     if (inputHandler != null) {
-                        return inputHandler.handle(manager);
+
+                        if (inputHandler.handle(this, manager)) {
+                            MultiKeyBind currKeyCode = getKeyCodes();
+                            if (currKeyCode != null && currKeyCode.isToggleOnRelease()) {
+                                Tasks.scheduleRepeatedPre(
+                                        () -> {
+                                            if (getKeyCodes() != currKeyCode) {
+                                                return true;
+                                            }
+                                            if (!currKeyCode.isAllPressed()) {
+                                                inputHandler.handle(this, manager);
+                                                return true;
+                                            }
+                                            return false;
+                                        },
+                                        1,
+                                        1);
+                            }
+                            return true;
+                        } else {
+                            return false;
+                        }
                     }
                     return true;
                 }

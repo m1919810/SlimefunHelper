@@ -6,6 +6,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.entity.PlayerInputUtils;
@@ -36,6 +37,10 @@ public class BadPacketsFix extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef exemptDupRot = builder(badPackets.add("exempt-dup-rot"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef enableFly = builder(badPackets.add("fix-fly-packets"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -59,8 +64,8 @@ public class BadPacketsFix extends BaseModule {
                 Listener.getPacketPoint().getChannel(UpdatePlayerAbilitiesC2SPacket.class), this::onAbilityUpdate);
         registerListener(Listener.getPacketPoint().getChannel(TeleportConfirmC2SPacket.class), this::onTeleportConfirm);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerRotation);
-        registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
-        registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
+        //        registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
+        //        registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
         registerListener(
                 Listener.getPacketPoint().getChannel(ChunkLoadDistanceS2CPacket.class), this::onRepackViewDistance);
@@ -73,15 +78,15 @@ public class BadPacketsFix extends BaseModule {
     PlayerInputUtils.Input serverInput = PlayerInputUtils.EMPTY;
     float serverPitch;
     float serverYaw;
-    boolean handlingInputs = false;
+    //    boolean handlingInputs = false;
 
-    public void onPreInputEvent(Event<Void> eventVoid) {
-        handlingInputs = true;
-    }
-
-    public void onPostInputEvent(Event<Void> eventVoid) {
-        handlingInputs = false;
-    }
+    //    public void onPreInputEvent(Event<Void> eventVoid) {
+    //        handlingInputs = true;
+    //    }
+    //
+    //    public void onPostInputEvent(Event<Void> eventVoid) {
+    //        handlingInputs = false;
+    //    }
 
     public void onPlayerInitialize(Event<ClientPlayerEntity> event) {
         ClientPlayerEntity entity = event.context();
@@ -154,8 +159,11 @@ public class BadPacketsFix extends BaseModule {
             }
         }
         // fix lower than 1.20.6 interactItem protocol
-        if (handlingInputs) {
-            exempt = true;
+        if (exemptDupRot.get() && ViaFabricPlusHooks.isSupportDupRot()) {
+            if (packet instanceof PlayerMoveC2SPacket.Full fullPacket) {
+                // 懒得核验了，直接过吧
+                exempt = true;
+            }
         }
         if (exempt) {
             this.serverPitch = serverPitch;
