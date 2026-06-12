@@ -15,7 +15,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VItem;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
@@ -46,11 +45,12 @@ public class AutoUse extends BaseModule {
             .build();
 
     public boolean isUsableNotFood(ItemStack stack) {
-        var block = stack.get(DataComponentTypes.BLOCKS_ATTACKS);
-        if (block != null) return true;
         if (VItem.getInstance().isSpear(stack)) return true;
         var item = stack.getItem();
-        if (item instanceof BowItem || item instanceof TridentItem || item instanceof CrossbowItem) return true;
+        if (item instanceof ShieldItem
+                || item instanceof BowItem
+                || item instanceof TridentItem
+                || item instanceof CrossbowItem) return true;
         return false;
     }
 
