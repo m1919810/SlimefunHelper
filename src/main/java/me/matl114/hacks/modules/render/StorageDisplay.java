@@ -29,6 +29,7 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
 import me.matl114.utils.inventory.ItemStackSample;
+import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;

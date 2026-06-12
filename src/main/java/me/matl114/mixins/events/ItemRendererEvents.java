@@ -3,6 +3,7 @@ package me.matl114.mixins.events;
 import me.matl114.events.Event;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.RenderListener;
+import me.matl114.events.model.GuiModel;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -18,6 +19,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.List;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ItemRenderer.class)
@@ -44,10 +47,10 @@ public abstract class ItemRendererEvents {
             int overlay,
             BakedModel model,
             CallbackInfo ci) {
-        ItemStack stack = RenderListener.getContainedItemInfo(item);
-        if (stack != null) {
+        List<GuiModel> stack = RenderListener.getContainedItemInfo(item);
+        if (stack != null && !stack.isEmpty()) {
             renderItemContainerItemInfo(
-                    (ItemRenderer) (Object) this, matrices, renderMode, stack, leftHanded, vertexConsumers, overlay);
+                    (ItemRenderer) (Object) this, matrices, renderMode, GuiModel.packOrder(stack), leftHanded, vertexConsumers, overlay);
         }
     }
 
@@ -56,7 +59,7 @@ public abstract class ItemRendererEvents {
             ItemRenderer itemRenderer,
             MatrixStack matrices,
             ItemDisplayContext renderMode,
-            ItemStack stack,
+            GuiModel model,
             boolean leftHanded,
             VertexConsumerProvider vertexConsumers,
             int overlay) {
@@ -96,14 +99,11 @@ public abstract class ItemRendererEvents {
             } else {
                 return;
             }
-            BakedModel bakedModel = itemRenderer.getModel(
-                    stack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0);
             // fixme: renderer error here
             if (inGui) {
                 GlobalEventVars.lastRenderNeedDisableGuiLight = true;
             }
-            itemRenderer.renderItem(
-                    stack, renderMode, leftHanded, matrices, vertexConsumers, 0xF000F0, overlay, bakedModel);
+            model.render(itemRenderer, renderMode, leftHanded, matrices, vertexConsumers, 0xF000F0, overlay);
         } finally {
             matrices.pop();
         }

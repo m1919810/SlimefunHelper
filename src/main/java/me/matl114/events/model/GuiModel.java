@@ -7,18 +7,16 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import lombok.With;
-import me.matl114.accessors.events.ItemRenderStateAccess;
-import net.minecraft.client.item.ItemModelManager;
-import net.minecraft.client.render.item.ItemRenderState;
+import me.matl114.events.RenderListener;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.util.HeldItemContext;
 import net.minecraft.util.Identifier;
-import org.jspecify.annotations.Nullable;
 
 public interface GuiModel {
     public static final GuiModel EMPTY = new BlankGuiModel();
@@ -57,48 +55,33 @@ public interface GuiModel {
         if (id == null) return EMPTY;
         //        return new ItemGuiModel(RenderListener.getCustomModelOf(id));
         ItemStack stack = new ItemStack(Items.BARRIER);
-        stack.set(DataComponentTypes.ITEM_MODEL, id);
-        return new ItemStackModel(stack);
+        BakedModel model = RenderListener.getCustomModelOf(id);
+        return new ItemGuiModel(stack, model);
     }
 
-    default void update(
-            ItemRenderState renderState,
-            ItemStack stack,
-            ItemModelManager resolver,
-            ItemDisplayContext displayContext,
-            @Nullable ClientWorld world,
-            @Nullable HeldItemContext heldItemContext,
-            int seed) {
-        Entry entry = updateAndSubmit(renderState, stack, resolver, displayContext, world, heldItemContext, seed);
+    default void render(ItemRenderer itemRenderer, ItemDisplayContext renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay){
+        Entry entry = updateAndSubmit(itemRenderer);
         if (entry != null) {
-            var lst = ItemRenderStateAccess.of(renderState).getAttachedRenderState();
-            lst.clear();
-            lst.add(entry);
-        } else {
-            ItemRenderStateAccess.of(renderState).clearAttachedRenderState();
+            if(entry.stackTransformer() != null){
+                matrices.push();
+                entry.stackTransformer().apply(matrices);
+                itemRenderer.renderItem(entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+                matrices.pop();
+            }else {
+                itemRenderer.renderItem(entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+            }
         }
     }
 
+
+
     // do not call
-    public Entry updateAndSubmit(
-            ItemRenderState renderState,
-            ItemStack stack,
-            ItemModelManager resolver,
-            ItemDisplayContext displayContext,
-            @Nullable ClientWorld world,
-            @Nullable HeldItemContext heldItemContext,
-            int seed);
+    public Entry updateAndSubmit(ItemRenderer itemRenderer);
 
     public static class BlankGuiModel implements GuiModel {
+
         @Override
-        public Entry updateAndSubmit(
-                ItemRenderState renderState,
-                ItemStack stack,
-                ItemModelManager resolver,
-                ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
-                int seed) {
+        public Entry updateAndSubmit(ItemRenderer itemRenderer) {
             return null;
         }
     }
@@ -108,108 +91,64 @@ public interface GuiModel {
         ItemStack itemStack;
 
         @Override
-        public Entry updateAndSubmit(
-                ItemRenderState renderState,
-                ItemStack stack,
-                ItemModelManager resolver,
-                ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
-                int seed) {
-            if (itemStack != null && !itemStack.isEmpty()) {
-                ItemRenderState state2 = new ItemRenderState();
-
-                // init attached info
-                resolver.clearAndUpdate(state2, itemStack, displayContext, world, heldItemContext, seed);
-                return new Entry(null, state2);
-            }
-            return null;
+        public Entry updateAndSubmit(ItemRenderer itemRenderer) {
+            if(itemStack == null || itemStack.isEmpty())return null;
+            return new Entry(null, itemStack, itemRenderer.getModel(
+                itemStack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0));
         }
     }
-    //
-    //    @AllArgsConstructor
-    //    public static class ItemGuiModel implements GuiModel{
-    //        ItemModel itemModel;
-    //
-    //        @Override
-    //        public Entry updateAndSubmit(ItemRenderState renderState, ItemStack stack, ItemModelManager resolver,
-    // ItemDisplayContext displayContext, @Nullable ClientWorld world, @Nullable HeldItemContext heldItemContext, int
-    // seed) {
-    //            if(itemModel != null){
-    //                ItemRenderState state2 = new ItemRenderState();
-    //                // init attached info
-    //                renderState.clear();
-    //                renderState.displayContext = displayContext;
-    //                renderState.setOversizedInGui(false);
-    //                itemModel.update(renderState, new ItemStack(Items.BARRIER), resolver, displayContext, world,
-    // heldItemContext, seed);
-    //                return new Entry(null, state2);
-    //            }else {
-    //                return null;
-    //            }
-    //
-    //        }
-    //    }
+
+    @AllArgsConstructor
+    public static class ItemGuiModel implements GuiModel{
+        ItemStack itemStack;
+        BakedModel itemModel;
+
+        @Override
+        public Entry updateAndSubmit(ItemRenderer itemRenderer) {
+            return new Entry(null, itemStack, itemModel);
+        }
+    }
     @AllArgsConstructor
     public static class PackingModel implements GuiModel {
         List<GuiModel> guiModelList;
 
+
         @Override
-        public void update(
-                ItemRenderState renderState,
-                ItemStack stack,
-                ItemModelManager resolver,
-                ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
-                int seed) {
-            List<Entry> updatedList =
-                    updateAndSubmitList(renderState, stack, resolver, displayContext, world, heldItemContext, seed);
-            if (updatedList != null && !updatedList.isEmpty()) {
+        public void render(ItemRenderer itemRenderer, ItemDisplayContext renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+            List<Entry> entries = updateAndSubmitList(itemRenderer);
+            if (entries != null && !entries.isEmpty()) {
                 // arrange positions
-                List<Entry> arranged = arrangeEntries(updatedList);
-                var curr = ItemRenderStateAccess.of(renderState).getAttachedRenderState();
-                curr.clear();
-                curr.addAll(arranged);
-            } else {
-                ItemRenderStateAccess.of(renderState).clearAttachedRenderState();
+                List<Entry> arranged = arrangeEntries(entries);
+                for (Entry entry : arranged) {
+                    if(entry.stackTransformer() != null){
+                        matrices.push();
+                        entry.stackTransformer().apply(matrices);
+                        itemRenderer.renderItem(entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+                        matrices.pop();
+                    }else {
+                        itemRenderer.renderItem(entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+                    }
+                }
             }
         }
 
         public List<Entry> updateAndSubmitList(
-                ItemRenderState renderState,
-                ItemStack stack,
-                ItemModelManager resolver,
-                ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
-                int seed) {
+                ItemRenderer renderer) {
             return guiModelList.stream()
                     .flatMap(s -> {
                         if (s instanceof PackingModel pack) {
                             return pack
                                     .updateAndSubmitList(
-                                            renderState, stack, resolver, displayContext, world, heldItemContext, seed)
+                                           renderer)
                                     .stream();
                         } else {
                             return Stream.of(s.updateAndSubmit(
-                                    renderState, stack, resolver, displayContext, world, heldItemContext, seed));
+                                   renderer));
                         }
                     })
                     .toList();
         }
 
-        @Override
-        public Entry updateAndSubmit(
-                ItemRenderState renderState,
-                ItemStack stack,
-                ItemModelManager resolver,
-                ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
-                int seed) {
-            throw new UnsupportedOperationException("DO NOT CALL");
-        }
 
         private List<Entry> arrangeEntries(List<Entry> originalEntries) {
             List<Entry> result = new ArrayList<>();
@@ -237,8 +176,13 @@ public interface GuiModel {
             }
             return result;
         }
+
+        @Override
+        public Entry updateAndSubmit(ItemRenderer itemRenderer) {
+            throw new UnsupportedOperationException("DO NOT CALL");
+        }
     }
 
     @With
-    public static record Entry(@Nullable UnaryOperator<MatrixStack> stackTransformer, ItemRenderState state) {}
+    public static record Entry( UnaryOperator<MatrixStack> stackTransformer, ItemStack stack, BakedModel state) {}
 }
