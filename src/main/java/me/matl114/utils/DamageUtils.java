@@ -28,6 +28,24 @@ public class DamageUtils {
         return key != null && Objects.equals(key.getValue().getPath(), type);
     }
 
+    public static double getAttributeValue(
+            RegistryEntry<EntityAttribute> entry, PlayerEntity player, ItemStack stack, EquipmentSlot slot) {
+        double att = player.getAttributeBaseValue(entry);
+        AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        if (modifiers != null && !modifiers.modifiers().isEmpty()) {
+            att = applyOperations(modifiers.modifiers(), entry, att, slot);
+        }
+        return att;
+    }
+
+    public static double getArmorValue(PlayerEntity player, ItemStack stack, EquipmentSlot slot) {
+        return getAttributeValue(EntityAttributes.ARMOR, player, stack, slot);
+    }
+
+    public static double getArmorToughnessValue(PlayerEntity player, ItemStack stack, EquipmentSlot slot) {
+        return getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS, player, stack, slot);
+    }
+
     public static double getAttackSpeed(PlayerEntity player, ItemStack stack) {
         double speed = player.getAttributeBaseValue(EntityAttributes.ATTACK_SPEED);
         AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);

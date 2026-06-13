@@ -113,24 +113,30 @@ public class PacketMine extends BaseModule {
 
                     ItemStack currentTool = currentItemSlot.val();
                     if (canMine(blockState, currentTool)) {
-                        Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
+                        Event<EventContainer<?>> eventPre =
+                                new Event<>(new EventContainer<>(Pre.class, Pre.INSTANCE), true, false, pos);
+                        Listener.getCustomListener().handleValue(eventPre);
+                        if (!eventPre.isCancelled()) {
+                            Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
 
-                        Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
-                        Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-                        if (considerAirState.get()
-                                && PlayerInteractionAccess.of(mc.interactionManager)
-                                                .getCurrentMiningProgress(true)
-                                        > 0.98F) {
-                            mc.interactionManager.breakBlock(pos);
-                        }
-                        for (int i = 0; i < multiplePackets.get(); ++i) {
-                            if (swingHand.get())
-                                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                            PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(pos, dir);
-                        }
-                        Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
-                        if (callback != null) {
-                            callback.run();
+                            Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
+                            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+                            if (considerAirState.get()
+                                    && PlayerInteractionAccess.of(mc.interactionManager)
+                                                    .getCurrentMiningProgress(true)
+                                            > 0.98F) {
+                                mc.interactionManager.breakBlock(pos);
+                            }
+                            for (int i = 0; i < multiplePackets.get(); ++i) {
+                                if (swingHand.get())
+                                    mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                                PlayerInteractionAccess.of(mc.interactionManager)
+                                        .sendBreakPacket(pos, dir);
+                            }
+                            if (callback != null) {
+                                callback.run();
+                            }
+                            Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
                         }
                     }
                 }
@@ -177,6 +183,12 @@ public class PacketMine extends BaseModule {
         } else {
             return false;
         }
+    }
+
+    public static class Pre {
+        public static final Pre INSTANCE = new Pre();
+
+        private Pre() {}
     }
 
     public static class Post {

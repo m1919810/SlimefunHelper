@@ -1,12 +1,8 @@
 package me.matl114.utils.commands.params.impl;
 
-import java.util.List;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.api.ArgumentType;
-import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.EntitySelector;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
 
 public class EntityArgumentResult extends AbstractArgumentResult<EntitySelector> {
     private final String rawString;
@@ -26,5 +22,4 @@ public class EntityArgumentResult extends AbstractArgumentResult<EntitySelector>
     public String resultAsString() {
         return rawString;
     }
-
 }

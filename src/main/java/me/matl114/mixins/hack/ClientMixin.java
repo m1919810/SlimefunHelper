@@ -20,6 +20,9 @@ import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.Window;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -240,5 +243,21 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Unique
     public void simulateLeftClick() {
         doAttack();
+    }
+
+    @Unique
+    public ActionResult simulateUseItem(Hand hand) {
+        ItemStack itemStack = player.getStackInHand(hand);
+        if (!itemStack.isEmpty()) {
+            ActionResult actionResult3 = this.interactionManager.interactItem(this.player, hand);
+            if (actionResult3 instanceof ActionResult.Success) {
+                ActionResult.Success success3 = (ActionResult.Success) actionResult3;
+                if (success3.swingSource() == ActionResult.SwingSource.CLIENT) {
+                    this.player.swingHand(hand);
+                }
+            }
+            return actionResult3;
+        }
+        return ActionResult.FAIL;
     }
 }

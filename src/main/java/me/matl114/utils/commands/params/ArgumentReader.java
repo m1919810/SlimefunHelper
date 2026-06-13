@@ -38,6 +38,13 @@ public class ArgumentReader {
         this.currentCursor = 0;
     }
 
+    public ArgumentReader stepAll() {
+        while (hasNext()) {
+            next();
+        }
+        return this;
+    }
+
     public boolean hasNext() {
         return currentCursor < args.length;
     }

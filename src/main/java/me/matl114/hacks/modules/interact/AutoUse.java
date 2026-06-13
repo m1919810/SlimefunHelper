@@ -103,7 +103,7 @@ public class AutoUse extends BaseModule {
                     useHand = null;
                 }
                 if (useHand != null) {
-                    ClientAccess.of(mc).simulateRightClick();
+                    ClientAccess.of(mc).simulateUseItem(useHand);
                     if (mc.player.isUsingItem() && mc.player.getActiveHand() == useHand) {
                         if (log.get()) {
                             Debug.chat(

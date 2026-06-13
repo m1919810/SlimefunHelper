@@ -3,6 +3,8 @@ package me.matl114.managers.input;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.Map;
 import javax.annotation.Nullable;
 import me.matl114.utils.Debug;
 import org.lwjgl.glfw.GLFW;
@@ -157,6 +159,10 @@ public class KeyCode {
     }
 
     public static void init() {}
+
+    public static Map<String, Integer> getKeyMap() {
+        return Collections.unmodifiableMap(MAP_NAME_TO_KEY);
+    }
 
     static {
         MAP_NAME_TO_KEY.defaultReturnValue(KEY_NONE);

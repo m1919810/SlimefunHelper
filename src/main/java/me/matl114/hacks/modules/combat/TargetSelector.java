@@ -10,6 +10,7 @@ import me.matl114.commands.MainCommand;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.entity.CameraEntity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.HotKeyUtils;
@@ -203,7 +204,7 @@ public class TargetSelector extends BaseModule {
 
     public boolean canAttack(Entity target) {
         if (mc.player == null) return false;
-        if (target == null || target == mc.player) {
+        if (target == null || target == mc.player || target instanceof CameraEntity) {
             return false;
         }
         if (target instanceof LivingEntity lv && lv.getHealth() <= 0) {

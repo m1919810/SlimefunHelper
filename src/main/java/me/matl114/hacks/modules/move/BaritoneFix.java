@@ -84,6 +84,15 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
             .defaultValue(36.0D)
             .build();
 
+    public final FlagRef baritoneExperimental2 =
+            flagBuilder(fix.add("baritone-experiment-2")).build();
+
+    public final DoubleRef exp2Min =
+            doubleBuilder(fix.add("exp-2-min-height")).defaultValue(38.0D).build();
+
+    public final DoubleRef exp2Max =
+            doubleBuilder(fix.add("exp-2-max-height")).defaultValue(42.0D).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -221,7 +230,7 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
             // check condition
             var box = mc.player.getBoundingBox();
             Box box2 = null; // processBoxOfElytraFlight();
-            box = (box2 != null ? box2 : box).expand(0.3, 0.3, 0.3);
+            box = (box2 != null ? box2 : box).expand(0.05, 0.3, 0.05);
             var blocks = (MathUtils.getOccupiedBlockPositions(box));
             for (var block : blocks) {
                 BlockState state = mc.world.getBlockState(block);
@@ -236,8 +245,22 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         }
     }
 
+    int cachedArmorFlyIndex = -1;
+
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        if (this.baritoneExperimental2.get()
+                && mc.player.isFallFlying()
+                && BaritoneHooks.getInstance().isElytraProcessing()
+                && ElytraExtra.INSTANCE.armorFly.get()) {
+            boolean usingArmorFly = ElytraExtra.INSTANCE.thisFallFlyingIsArmorFly != -1;
+            if (usingArmorFly && mc.player.getY() < exp2Min.get()) {
+
+                ElytraExtra.INSTANCE.endArmorFlyTransaction();
+            } else if (!usingArmorFly && mc.player.getY() > exp2Max.get()) {
+                ElytraExtra.INSTANCE.startArmorFlyTransaction(-1);
+            }
+        }
         return true;
     }
 }

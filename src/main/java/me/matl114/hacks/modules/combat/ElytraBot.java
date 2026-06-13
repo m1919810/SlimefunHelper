@@ -21,7 +21,6 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.hacks.utils.entity.PredictorImpl;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
@@ -981,7 +980,7 @@ public class ElytraBot extends BaseModule {
             //            }
             if (otherShit.squaredDistanceTo(mc.player.getPos())
                     < MathUtils.s2(getActiveRange() * 2 + base.spearAntiSpearExtraDistance.get() * 2)) {
-                if (Tasks.getTick() % 2 == 0) {
+                if (Tasks.getTick() % 4 < 2) {
                     return moveAdjust(originalLook);
                 } else {
                     return movementPredictAdjust(originalLook);
@@ -1043,15 +1042,6 @@ public class ElytraBot extends BaseModule {
         }
 
         private boolean movementPredictAdjust(Vec3d originalLook) {
-            if (base.usePredictor.get()) {
-                Predictor predictorMain = PositionPredict.INSTANCE.getPredictor(mc.player);
-                Vec3d oldPosition = predictorMain.predict(-1, 0, 20);
-                Vec3d otherPosition = base.target.getPos();
-                Vec3d predicted = otherPosition.add(
-                        oldPosition.subtract(otherPosition).normalize().multiply(2.0F));
-                movementDirection = predicted.subtract(mc.player.getPos());
-                return true;
-            }
             return false;
         }
 
@@ -1096,7 +1086,7 @@ public class ElytraBot extends BaseModule {
                 if (base.currentAction != null) {
                     if (base.currentAction == TargetAction.AFK
                             || base.currentAction == TargetAction.SLOW_SPEED
-                            || base.currentInCombatRange) {
+                            || (base.currentInCombatRange && base.currentAction != TargetAction.ESCAPING)) {
                         // stable
                         int leftTicks = getCooldown() - pullOverTimer;
                         double canChaseDistance = Math.max(0.0D, 3.4D * (leftTicks));

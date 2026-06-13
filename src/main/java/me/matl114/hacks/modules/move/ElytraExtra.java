@@ -26,6 +26,7 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
@@ -343,11 +344,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 if (nextPacketResetFallFlying) {
                     var val = serializedEntryUpdateEvent.context();
                     if (val.id() == VDataFlag.ID_FLAGS) {
-                        nextPacketResetFallFlying = false;
                         byte data = (byte) val.value();
                         if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
                             // try start
-                            if (canContinueGliding() && hasGlidingEquipments()) {
+                            nextPacketResetFallFlying = false;
+                            if (hasGlidingEquipments()) {
                                 MovTasks.getMovExtra().sendPacketsForPreStartFallFlying();
                                 mc.getNetworkHandler()
                                         .sendPacket(new ClientCommandC2SPacket(
@@ -792,16 +793,73 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
+    public void endArmorFlyTransaction() {
+        if (thisFallFlyingIsArmorFly != -1) {
+            // current ArmoFly
+            // switch Elytra on
+            switchSlotToArmor(thisFallFlyingIsArmorFly);
+            nextPacketResetFallFlying = true;
+            thisFallFlyingIsArmorFly = -1;
+            this.autoTakeOffFlag = true;
+        }
+    }
+
+    public void startArmorFlyTransaction(int value) {
+        if (thisFallFlyingIsArmorFly == -1) {
+            if (value != -1) {
+                thisFallFlyingIsArmorFly = value;
+                thisFallFlyingIsAutoSwitch = -1;
+                switchSlotToArmor(value);
+                this.elytraUnbreakableSwitchSlot = -1;
+            } else {
+                if (this.elytraUnbreakableSwitchSlot != -1) {
+                    // during a elytraUnbreakableSwitch
+                    this.thisFallFlyingIsArmorFly = this.elytraUnbreakableSwitchSlot;
+                    this.elytraUnbreakableSwitchSlot = -1;
+                    this.thisFallFlyingIsAutoSwitch = -1;
+
+                    // use their cache
+                } else if (hasGlidingEquipments()) {
+                    ItemStack stack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+                    if (VItem.getInstance().canGlide(stack)) {
+                        IndexEntry<ItemStack> findBestArmor = InventoryUtils.findBestPlayerInventory(
+                                (entry) -> {
+                                    if (entry.index() >= 36 && entry.index() != 40) return null;
+                                    // do not use chest item
+                                    var item = entry.val();
+                                    if (item.isEmpty()) return -3.0D;
+                                    if (mc.player.canEquip(item, EquipmentSlot.CHEST)) {
+                                        return DamageUtils.getArmorValue(mc.player, item, EquipmentSlot.CHEST)
+                                                * DamageUtils.getArmorToughnessValue(
+                                                        mc.player, item, EquipmentSlot.CHEST);
+                                    }
+                                    return null;
+                                },
+                                true,
+                                false);
+                        if (findBestArmor != null) {
+                            var slot = mc.player
+                                    .playerScreenHandler
+                                    .getSlotIndex(mc.player.getInventory(), findBestArmor.index())
+                                    .orElse(-1);
+                            if (slot != -1) {
+                                thisFallFlyingIsArmorFly = slot;
+                                thisFallFlyingIsAutoSwitch = -1;
+                                switchSlotToArmor(slot);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public void onToggleArmorFly(boolean armorFly) {
         if (mc.player != null && mc.player.isFallFlying()) {
             if (!armorFly) {
-                if (thisFallFlyingIsArmorFly != -1) {
-                    // current ArmoFly
-                    // switch Elytra on
-                    switchSlotToArmor(thisFallFlyingIsArmorFly);
-                    nextPacketResetFallFlying = true;
-                    thisFallFlyingIsArmorFly = -1;
-                }
+                endArmorFlyTransaction();
+            } else {
+                startArmorFlyTransaction(-1);
             }
         }
     }

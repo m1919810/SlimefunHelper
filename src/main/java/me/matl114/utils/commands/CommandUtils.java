@@ -1,6 +1,9 @@
 package me.matl114.utils.commands;
 
+import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
+import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import me.matl114.utils.commands.interruption.TypeError;
@@ -192,6 +195,15 @@ public class CommandUtils {
      */
     public static Supplier<Stream<String>> floatStreamSupplier() {
         return FLOATS::stream;
+    }
+
+    public static Supplier<Stream<String>> fileSupplier(File parent, Predicate<String> suffix) {
+        return () -> {
+            return Arrays.stream(parent.listFiles())
+                    .filter(File::isFile)
+                    .map(File::getName)
+                    .filter(suffix);
+        };
     }
 
     public static TabResult createXResult() {

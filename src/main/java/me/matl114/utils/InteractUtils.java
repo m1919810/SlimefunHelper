@@ -72,4 +72,13 @@ public class InteractUtils {
         }
         return actionResult;
     }
+
+    public static void swingHandIfSuccess(ActionResult actionResult3, Hand hand) {
+        if (actionResult3 instanceof ActionResult.Success) {
+            ActionResult.Success success3 = (ActionResult.Success) actionResult3;
+            if (success3.swingSource() == ActionResult.SwingSource.CLIENT) {
+                mc.player.swingHand(hand);
+            }
+        }
+    }
 }

@@ -1,8 +1,11 @@
 package me.matl114.managers.file;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import java.io.File;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
 
@@ -28,6 +31,18 @@ public class NBTFileStorageImpl extends FileStorageImpl {
     public <T> void write(T value, DynamicOps<T> ops) {
         this.nbtCompound = (NbtCompound) ops.convertTo(NbtOps.INSTANCE, value);
         this.dirty = true;
+    }
+
+    @Override
+    public <W> DataResult<W> read(Codec<W> codec) {
+        return codec.parse(NbtOps.INSTANCE, this.nbtCompound);
+    }
+
+    @Override
+    public <W> DataResult<?> write(Codec<W> codec, W value) {
+        DataResult<NbtElement> encoded = codec.encodeStart(NbtOps.INSTANCE, value);
+        encoded.result().ifPresent(result -> write(result, NbtOps.INSTANCE));
+        return encoded;
     }
 
     @Override

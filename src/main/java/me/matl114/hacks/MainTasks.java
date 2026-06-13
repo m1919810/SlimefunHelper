@@ -15,10 +15,10 @@ import me.matl114.hacks.api.ModuleEntry;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
+import me.matl114.hacks.modules.task.BindCommand;
 import me.matl114.hacks.modules.task.ClickGui;
 import me.matl114.hacks.modules.task.ConfigManager;
 import me.matl114.hacks.modules.task.ConfigSystem;
-import me.matl114.hacks.modules.task.HotkeyCommand;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
@@ -260,13 +260,13 @@ public class MainTasks {
     public static ConfigManager configManager;
 
     @Getter
-    public static HotkeyCommand hotkeyCommand;
+    public static BindCommand bindCommand;
 
     private static void initModule(ModuleManager m) {
         configSystem = new ConfigSystem().register(m);
         clickGui = new ClickGui().register(m);
         configManager = new ConfigManager().register(m);
-        hotkeyCommand = new HotkeyCommand().register(m);
+        bindCommand = new BindCommand().register(m);
     }
 
     // TODO: add entity inspect in info command

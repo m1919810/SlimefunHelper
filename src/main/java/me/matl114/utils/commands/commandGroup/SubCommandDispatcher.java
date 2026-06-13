@@ -93,7 +93,7 @@ public interface SubCommandDispatcher extends CustomTabExecutor, SubCommand.SubC
                     reader.next();
                     return command1.onCustomHelp(sender, reader);
                 } else {
-                    return getHelp(reader.getAlreadyReadCmdStr());
+                    return Stream.empty(); // getHelp(reader.getAlreadyReadCmdStr());
                 }
             } else {
                 return getHelp(reader.getAlreadyReadCmdStr());

@@ -70,27 +70,12 @@ public class OptionalArgumentType<T> extends AbstractArgumentType<T> implements 
     }
 
     private OptionalArgumentResult<T> defaultResult(ArgumentReader reader, int startIndex) {
-        return new OptionalArgumentResult<>(defaultValue, this, reader, startIndex, null, true);
-    }
-
-    private static class OptionalArgumentResult<T> extends AbstractArgumentResult<T> {
-        private final String rawString;
-
-        private OptionalArgumentResult(
-                T result,
-                ArgumentType<T> type,
-                ArgumentReader reader,
-                int startIndex,
-                String rawString,
-                boolean parseSuccess) {
-            super(result, type, reader, startIndex);
-            this.rawString = rawString;
-            this.parseSuccess = parseSuccess;
-        }
-
-        @Override
-        public String resultAsString() {
-            return rawString;
-        }
+        return new OptionalArgumentResult<>(
+                defaultValue,
+                this,
+                reader,
+                startIndex,
+                defaultValue == null ? null : String.valueOf(defaultValue),
+                true);
     }
 }

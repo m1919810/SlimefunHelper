@@ -42,23 +42,11 @@ public class AbstractMainCommand implements SubCommand, InterruptionHandler {
     /** Internal reference to the root command */
     private final ListSubCommand root = new ListSubCommand("");
 
-    {
-        // this should be the first help command to be dispatched
-        this.root.registerSub(new BridgeSubCommand(
-                "help",
-                SubCommand.taskBuilder()
-                        .name("help")
-                        .post(s -> s.executor(((var1, streamArgs, argsReader) -> {
-                            showHelpCommand(var1, new ArgumentReader(getName(), argsReader.getRemainingArgs()));
-                            return true;
-                        })))
-                        .build()));
-    }
-
     public SubCommand.Builder<TreeSubCommand> mainBuilder() {
         return SubCommand.factoryBuilder((a, b, c) -> {
             var root = new TreeSubCommand(a, c);
             this.root.registerSub(root);
+            root.conditional(true);
             return root;
         });
     }
@@ -410,7 +398,7 @@ public class AbstractMainCommand implements SubCommand, InterruptionHandler {
         CommandExecution execution = CommandExecution.sender(var1);
         try {
             // return getMainCommand().onCustomCommand(var1, var2, new ArgumentReader(getMainName(), var4));
-            return onCustomCommand(execution, new ArgumentReader(getMainName(), var4));
+            return onCustomCommand(execution, new ArgumentReader(var4));
         } catch (ArgumentException ex) {
             ex.handleAbort(execution, this);
             return true;
