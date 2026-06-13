@@ -459,14 +459,7 @@ public class ItemStackUtils {
                     return false;
                 }
             }
-            if (!matchDur) {
-                n1 = map1.remove(DAMAGE);
-                n2 = map2.remove(DAMAGE);
-                // both having or not having lore
-                if (!((n1 == null) ? (n2 == null || n2 == Optional.empty()) : (n2 != null && n2.isPresent()))) {
-                    return false;
-                }
-            }
+
             if (!matchEnch) {
                 n1 = map1.remove(ENCHANTMENTS);
                 n2 = map2.remove(ENCHANTMENTS);
@@ -474,6 +467,10 @@ public class ItemStackUtils {
                 if (!((n1 == null) ? (n2 == null || n2 == Optional.empty()) : (n2 != null && n2.isPresent()))) {
                     return false;
                 }
+            }
+            if (!matchDur) {
+                map1.remove(DAMAGE);
+                map2.remove(DAMAGE);
             }
             return map1.equals(map2);
         }

@@ -3,12 +3,7 @@ package me.matl114.hacks.modules.task;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 import me.matl114.commands.MainCommand;
 import me.matl114.hacks.MainTasks;
@@ -21,12 +16,14 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.commands.CommandUtils;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.TabResult;
+import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -49,6 +46,25 @@ public class ConfigManager extends BaseModule {
 
     public void bootStrapConfigCommand(MainCommand mainCommand) {
         TreeSubCommand main = mainCommand.subMainBuilder().name("config").build();
+        SimpleCommandArgs.Argument configNameArgument = SimpleCommandArgs.argumentBuilder()
+                .name("config_name")
+                .tabCompletor(TabResult.ofStreamSupplier(() -> Config.REGISTRY.stream()
+                        .map(Config::getRegistryKey)
+                        .filter(Objects::nonNull)
+                        .map(registryKey -> registryKey.getValue().toString())))
+                .build();
+        SimpleCommandArgs.Argument pathArgument = SimpleCommandArgs.argumentBuilder()
+                .name("path")
+                .tabCompletor(TabResult.ofDispatcher((sender, configName) -> {
+                    Config config = Config.REGISTRY.get(Identifier.tryParse(configName));
+                    if (config == null) {
+                        return Stream.empty();
+                    }
+                    return Stream.concat(config.getVisiblePaths().stream(), config.getPaths().stream())
+                            .distinct()
+                            .sorted();
+                }))
+                .build();
         main.subBuilder(SubCommand.taskBuilder())
                 .name("open")
                 .helper("打开配置文件界面")
@@ -70,9 +86,27 @@ public class ConfigManager extends BaseModule {
                 .helper("<path> 加载配置快照")
                 .arg(SimpleCommandArgs.argumentBuilder()
                         .name("path")
-                        .tabCompletor(TabResult.ofStreamSupplier(this::getSnapshotFileSuggestions))
+                        .tabCompletor(TabResult.ofStreamSupplier(
+                                CommandUtils.fileSupplier(FileManager.CONFIG_SAVE_FOLDER, (sx) -> {
+                                    return sx.endsWith(".nbt") || sx.endsWith(".dat");
+                                })))
                         .build())
                 .post(e -> e.executor(CommandContext.run(this::onLoad)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("set")
+                .helper("<config_name> <path> <string> 设置配置项")
+                .arg(configNameArgument)
+                .arg(pathArgument)
+                .arg(SimpleCommandArgs.argumentBuilder().name("string").build())
+                .post(e -> e.executor(CommandContext.run(this::onSet)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("reset")
+                .helper("<config_name> <path> 重置配置项为默认值")
+                .arg(configNameArgument)
+                .arg(pathArgument)
+                .post(e -> e.executor(CommandContext.run(this::onReset)))
                 .complete();
     }
 
@@ -84,6 +118,56 @@ public class ConfigManager extends BaseModule {
     public void onReload() {
         Tasks.scheduleDelayed(Config::reloadAll, 1);
         Debug.chat(Text.literal("成功重载配置文件").formatted(Formatting.GREEN));
+    }
+
+    public void onSet(ArgumentInputStream args) {
+        String configName = args.nextNonnullString();
+        String rawPath = args.nextNonnullString();
+        String value = args.nextNonnullString();
+
+        Config config = Config.REGISTRY.get(Identifier.tryParse(configName));
+        if (config == null) {
+            Debug.chat(Text.literal("未找到配置文件: " + configName).formatted(Formatting.RED));
+            return;
+        }
+
+        Ref<?> ref = config.get(rawPath.split("\\."));
+        if (ref == null) {
+            Debug.chat(Text.literal("未找到配置项: " + configName + "." + rawPath).formatted(Formatting.RED));
+            return;
+        }
+
+        AttrKeyValue<?> keyValue = ref.createKeyValue(rawPath);
+        keyValue.valueChange(this, value);
+        if (!keyValue.isValidate()) {
+            Debug.chat(Text.literal("配置项格式不正确: " + configName + "." + rawPath).formatted(Formatting.RED));
+            return;
+        }
+        Debug.chat(Text.literal("成功设置配置项: " + configName + "." + rawPath).formatted(Formatting.GREEN));
+    }
+
+    public void onReset(ArgumentInputStream args) {
+        String configName = args.nextNonnullString();
+        String rawPath = args.nextNonnullString();
+
+        Config config = Config.REGISTRY.get(Identifier.tryParse(configName));
+        if (config == null) {
+            Debug.chat(Text.literal("未找到配置文件: " + configName).formatted(Formatting.RED));
+            return;
+        }
+
+        Ref<?> ref = config.get(rawPath.split("\\."));
+        if (ref == null) {
+            Debug.chat(Text.literal("未找到配置项: " + configName + "." + rawPath).formatted(Formatting.RED));
+            return;
+        }
+        if (!ref.hasDefaultValue()) {
+            Debug.chat(Text.literal("配置项没有默认值: " + configName + "." + rawPath).formatted(Formatting.RED));
+            return;
+        }
+
+        ref.resetValue();
+        Debug.chat(Text.literal("成功重置配置项: " + configName + "." + rawPath).formatted(Formatting.GREEN));
     }
 
     public static final Codec<MapRef> CONFIG_CODEC = Codec.PASSTHROUGH.comapFlatMap(
@@ -136,16 +220,13 @@ public class ConfigManager extends BaseModule {
             return;
         }
 
-        FileStorage storage = FileManager.getInstance().getConfigStorage(fileName);
-        try {
+        try (FileStorage storage = FileManager.getInstance().getConfigStorage(fileName)) {
             storage.write(encoded.result().get(), ConfigOp.INSTANCE);
             storage.write();
             Debug.chat(Text.literal("成功保存配置快照: " + fileName + " ,点击本文本打开文件夹")
                     .formatted(Formatting.GREEN)
                     .styled(style -> style.withClickEvent(
                             ChatUtils.getOpenFile(storage.getFile().getParentFile()))));
-        } finally {
-            storage.markDeprecated(true);
         }
     }
 
@@ -164,13 +245,12 @@ public class ConfigManager extends BaseModule {
             return;
         }
 
-        FileStorage storage = FileManager.getInstance().getConfigStorage(fileName, false);
-        if (storage == null) {
-            Debug.chat(Text.literal("配置快照不存在: " + fileName).formatted(Formatting.RED));
-            promptSnapshotFolderImport();
-            return;
-        }
-        try {
+        try (FileStorage storage = FileManager.getInstance().getConfigStorage(fileName, true, false)) {
+            if (storage == null) {
+                Debug.chat(Text.literal("配置快照不存在: " + fileName).formatted(Formatting.RED));
+                promptSnapshotFolderImport();
+                return;
+            }
             storage.read();
             Ref<?> rawSnapshot = storage.asReadOnly(ConfigOp.INSTANCE);
             DataResult<ConfigSnapshot> decoded = ConfigSnapshot.CODEC.parse(ConfigOp.INSTANCE, rawSnapshot);
@@ -196,8 +276,6 @@ public class ConfigManager extends BaseModule {
                 }
             }
             Debug.chat(Text.literal("成功加载配置快照" + fileName).formatted(Formatting.GREEN));
-        } finally {
-            storage.markDeprecated(true);
         }
     }
 
@@ -212,15 +290,6 @@ public class ConfigManager extends BaseModule {
         Debug.chat(Text.literal("请将保存的 config 文件拖到配置快照目录中，点击本文本打开文件夹")
                 .formatted(Formatting.YELLOW)
                 .styled(style -> style.withClickEvent(ChatUtils.getOpenFile(FileManager.CONFIG_SAVE_FOLDER))));
-    }
-
-    private Stream<String> getSnapshotFileSuggestions() {
-        File[] files = FileManager.CONFIG_SAVE_FOLDER.listFiles(
-                file -> file.isFile() && file.getName().endsWith(".nbt"));
-        if (files == null || files.length == 0) {
-            return Stream.empty();
-        }
-        return Arrays.stream(files).map(File::getName).sorted();
     }
 
     private static List<LeafEntry> flattenMapRef(MapRef mapRef) {

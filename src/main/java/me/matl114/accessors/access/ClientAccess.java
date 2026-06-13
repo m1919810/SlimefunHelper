@@ -1,6 +1,8 @@
 package me.matl114.accessors.access;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 
 public interface ClientAccess {
     static ClientAccess of(MinecraftClient client) {
@@ -20,4 +22,6 @@ public interface ClientAccess {
     public void simulateRightClick();
 
     public void simulateLeftClick();
+
+    public ActionResult simulateUseItem(Hand hand);
 }

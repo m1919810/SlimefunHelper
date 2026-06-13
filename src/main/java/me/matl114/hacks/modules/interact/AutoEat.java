@@ -180,7 +180,7 @@ public class AutoEat extends BaseModule {
                 ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(40)
                 : InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
         if (cbb != null) {
-            ClientAccess.of(mc).simulateRightClick();
+            ClientAccess.of(mc).simulateUseItem(offHand ? Hand.OFF_HAND : Hand.MAIN_HAND);
             if (mc.player.isUsingItem()
                     && ((mc.player.getActiveHand() == Hand.OFF_HAND) == offHand)
                     && ItemStack.areItemsAndComponentsEqual(re.val(), mc.player.getActiveItem())) {

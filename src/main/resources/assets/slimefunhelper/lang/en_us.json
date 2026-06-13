@@ -1028,6 +1028,9 @@
 	"interaction-tweaks.auto-use.enemy-near-distance": "自动使用: 敌人距离",
 	"interaction-tweaks.auto-use.use-food": "自动使用: 使用食物",
 	"interaction-tweaks.auto-use.use-item-white-list": "自动使用: 物品白名单",
+	"interaction-tweaks.interact-manager.enable": "交互管理器: 启用",
+	"interaction-tweaks.interact-manager.hotkey": "交互管理器: 快捷键",
+	"interaction-tweaks.interact-manager.offhand": "交互管理器: 默认使用副手",
 	"hotkeys-toggle.hktest1": "测试状态1",
 	"hotkeys-toggle.hktest2": "测试状态2",
 	"hotkeys-toggle.hktest3": "测试状态3",
@@ -1540,6 +1543,7 @@
 	"module-toggle.interaction-tweaks.auto-ride.enable": "AutoRide",
 	"module-toggle.interaction-tweaks.auto-eat.enable": "AutoEat",
 	"module-toggle.interaction-tweaks.auto-use.enable": "AutoUse",
+	"module-toggle.interaction-tweaks.interact-manager.enable": "InteractManager",
 	
 	
 	

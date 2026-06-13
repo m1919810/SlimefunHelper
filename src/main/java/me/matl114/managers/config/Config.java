@@ -505,16 +505,16 @@ public class Config implements RefMap {
             if (ref instanceof KeyBindRef keyBindRef) {
                 String pathHotkey = String.join(".", this.path);
                 IHotKey hotKey = SimpleInputManager.getInstance().getHotkey(pathHotkey);
-                if (hotKey != null) {
+                if (hotKey instanceof SimpleHotKey simple) {
                     // keep track, and
-                    hotKey.setInputHandler(handler);
-                    ((SettingBuilder<MultiKeyBind>) this).updateListener(hotKey::setKeyCodes);
+                    simple.setInputHandler(handler);
+                    ((SettingBuilder<MultiKeyBind>) this).updateListener(simple::setKeyCodes);
                     return this;
                 } else {
                     MultiKeyBind defaultKeyBind = this.defaultValue == null
                             ? new MultiKeyBind("")
                             : (MultiKeyBind) this.defaultValue.orElse(null);
-                    IHotKey hotKey1 = new SimpleHotKey(path, defaultKeyBind);
+                    SimpleHotKey hotKey1 = new SimpleHotKey(path, defaultKeyBind);
                     hotKey1.setInputHandler(handler);
                     SimpleInputManager.getInstance().registerHotKeys(hotKey1);
                     // register here

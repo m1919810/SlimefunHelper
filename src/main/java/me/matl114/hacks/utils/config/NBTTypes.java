@@ -20,7 +20,9 @@ import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.presets.choices.ColorSelectIcon;
 import me.matl114.gui.presets.lists.NBTBoundedListScreen;
 import me.matl114.gui.presets.lists.NBTListModifyScreen;
+import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTType;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.collections.InitializationTask;
 import me.matl114.utils.config.*;
 import me.matl114.utils.config.kv.AttrKeyValues;
@@ -62,6 +64,21 @@ public interface NBTTypes {
             NBTTypes::generateColorInputWidget,
             COLOR_FACTORY,
             TextColor.fromFormatting(Formatting.BLACK));
+
+    public NBTType<MultiKeyBind> KEY_BIND_TYPE = new NBTType<>(
+            "keybind",
+            Codec.STRING.comapFlatMap(
+                    (str) -> {
+                        try {
+                            return DataResult.success(new MultiKeyBind(str));
+                        } catch (Throwable e) {
+                            return DataResult.error(() -> "Invalid keybind: " + str);
+                        }
+                    },
+                    MultiKeyBind::asString),
+            KeyBindRef.WIDGET_FACTORY,
+            KeyBindRef.FACTORY,
+            new MultiKeyBind());
 
     @SuppressWarnings("unchecked")
     public NBTType<Registry<?>> REGISTRY_TYPE = new NBTType<>(

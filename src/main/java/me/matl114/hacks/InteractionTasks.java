@@ -291,6 +291,9 @@ public class InteractionTasks {
     @Getter
     public static AutoUse autoUse;
 
+    @Getter
+    public static InteractManager interactManager;
+
     private static void initModules(ModuleManager m) {
         interactExtra = new InteractExtra().register(m);
 
@@ -303,6 +306,7 @@ public class InteractionTasks {
         autoRide = new AutoRide().register(m);
         autoEat = new AutoEat().register(m);
         autoUse = new AutoUse().register(m);
+        interactManager = new InteractManager().register(m);
     }
 
     static {

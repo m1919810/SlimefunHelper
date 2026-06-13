@@ -68,6 +68,13 @@ public interface CommandContext {
         };
     }
 
+    public static CommandContext execute(Consumer<CommandExecution> var) {
+        return ((var1, streamArgs, argsReader) -> {
+            var.accept(var1);
+            return true;
+        });
+    }
+
     public static CommandContext execute(BiConsumer<CommandExecution, ArgumentInputStream> var) {
         return ((var1, streamArgs, argsReader) -> {
             var.accept(var1, streamArgs);

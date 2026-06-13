@@ -88,7 +88,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     public void onVcUpdate(Event<EntityVelocityUpdateS2CPacket> event) {
         Vec3d velocity = VPacket.getVelocity(event.context);
         // todo: fix it
-        if (false && mc.player != null && event.context.getEntityId() == mc.player.getId()) {
+        if (mc.player != null && event.context.getEntityId() == mc.player.getId()) {
 
             if ((enable.get() && mc.player.isFallFlying()) || lastWorkingTick + 10 > Tasks.getTick()) {
                 if (mc.player.isFallFlying()) {
@@ -214,7 +214,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> sendMovementPacketEvent) {
         if (currentTryWorking) {
             Vec3d velocity = mc.player.getVelocity();
-            double speed = velocity.horizontalLength();
+            double speed = velocity.length();
             if (currentWorking) {
                 if (speed > maxVelocityAccept.get()) {
                     currentWorking = false;

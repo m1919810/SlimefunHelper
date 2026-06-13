@@ -64,7 +64,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             .build();
 
     public final EnumRef<Mode> noFallMode = builder(noFallPath.add("bypass-mode"), Mode.class)
-            .defaultValue(Mode.NO_BYPASS)
+            .defaultValue(Mode.LAZY_MODE)
             .build();
 
     public final IntRef noFallSafeDistance =

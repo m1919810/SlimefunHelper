@@ -17,36 +17,46 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
+import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.DoubleRef;
+import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.commands.CommandUtils;
+import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
+import me.matl114.utils.commands.params.api.TabResult;
+import me.matl114.versioned.api.VRender;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtOps;
+import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
+import net.minecraft.text.Text;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 
 public class PathManager extends BaseModule {
     public static PathManager INSTANCE;
 
-    private static final double SAMPLE_PER_BLOCK = 4.0D;
     private static final int SNAPSHOT_ROLLBACK_TICKS = 20;
-    private static final double SNAPSHOT_ROLLBACK_DISTANCE = 4.0D;
-    private static final double SNAPSHOT_ROLLBACK_DISTANCE_SQUARED = SNAPSHOT_ROLLBACK_DISTANCE * SNAPSHOT_ROLLBACK_DISTANCE;
-    private static final Vec3d SNAPSHOT_RENDER_FROM = new Vec3d(-0.35D, -0.35D, -0.35D);
-    private static final Vec3d SNAPSHOT_RENDER_TO = new Vec3d(0.35D, 0.35D, 0.35D);
+    private static final double SNAPSHOT_ROLLBACK_DISTANCE = 3.0D;
+    private static final double SNAPSHOT_ROLLBACK_DISTANCE_SQUARED =
+            SNAPSHOT_ROLLBACK_DISTANCE * SNAPSHOT_ROLLBACK_DISTANCE;
+    private static final Vec3d SNAPSHOT_RENDER_FROM = new Vec3d(-0.25D, -0.25D, -0.25D);
+    private static final Vec3d SNAPSHOT_RENDER_TO = new Vec3d(0.25D, 0.25D, 0.25D);
+    private static final String PATH_PATH = "path_storage";
 
     public final ModulePath pathManager = makePath(Configs.MOV_CONFIG, "path-manager");
 
@@ -57,6 +67,10 @@ public class PathManager extends BaseModule {
 
     public final FlagRef render = flagBuilder(pathManager.add("render")).build();
 
+    public final EnumRef<Mode> rerunMode = builder(pathManager.add("rerun-mode"), Mode.class)
+            .defaultValue(Mode.ELYTRA_FLIGHT)
+            .build();
+
     private FileStorage recordingStorage;
     private String recordingPathFile;
     private RecordPath recordingPath;
@@ -66,6 +80,7 @@ public class PathManager extends BaseModule {
     private List<BlockPos> currentPath = List.of();
     private String currentPathFile;
     private boolean currentPathReversed;
+    public File SAVE_FILE = FileManager.getInstance().getAndCreateFile(PATH_PATH);
 
     public PathManager() {}
 
@@ -88,28 +103,61 @@ public class PathManager extends BaseModule {
     public void bootStrapPathCommand(MainCommand mainCommand) {
         TreeSubCommand main = mainCommand.subMainBuilder().name("pathm").build();
         main.subBuilder(SubCommand.taskBuilder())
-            .name("start")
-            .helper("<path file> 开始录制鞘翅路径")
-            .arg(SimpleCommandArgs.argumentBuilder().name("path_file").build())
-            .post(e -> e.executor(this::onStart))
-            .complete()
-            .subBuilder(SubCommand.taskBuilder())
-            .name("stop")
-            .helper("停止当前路径录制")
-            .post(e -> e.executor(this::onStop))
-            .complete()
-            .subBuilder(SubCommand.taskBuilder())
-            .name("load")
-            .helper("<path file> <reverse=false> 加载路径")
-            .arg(SimpleCommandArgs.argumentBuilder().name("path_file").build())
-            .arg(SimpleCommandArgs.argumentBuilder().name("reverse").bool(false).build())
-            .post(e -> e.executor(this::onLoad))
-            .complete()
-            .subBuilder(SubCommand.taskBuilder())
-            .name("rerun")
-            .helper("重新执行当前路径")
-            .post(e -> e.executor(this::onRerun))
-            .complete();
+                .name("start")
+                .helper("<path file> 开始录制鞘翅路径")
+                .arg(SimpleCommandArgs.argumentBuilder().name("path_file").build())
+                .post(e -> e.executor(this::onStart))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("restart")
+                .helper("<path file> 继续录制之前录制的路径")
+                .arg(SimpleCommandArgs.argumentBuilder()
+                        .name("path_file")
+                        .tabCompletor(TabResult.ofStreamSupplier(CommandUtils.fileSupplier(SAVE_FILE, (ex) -> {
+                            return ex.endsWith(".nbt") || ex.endsWith(".dat");
+                        })))
+                        .build())
+                .post(e -> e.executor(this::onReStart))
+                .complete()
+                .subBuilder(SubCommand.treeBuilder())
+                .name("modify")
+                .helper("<type> 修改当前加载中的路径")
+                .post(s -> s.subBuilder(SubCommand.taskBuilder())
+                        .name("push")
+                        .helper(" 加入当前坐标点")
+                        .post(s1 -> s1.executor(CommandContext.execute(this::onPush)))
+                        .complete()
+                        .subBuilder(SubCommand.taskBuilder())
+                        .name("pop")
+                        .helper(" 移除上一个坐标点")
+                        .post(s1 -> s1.executor(CommandContext.execute(this::onPop)))
+                        .complete())
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("stop")
+                .helper("停止当前路径录制")
+                .post(e -> e.executor(this::onStop))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("load")
+                .helper("<path file> <reverse=false> 加载路径")
+                .arg(SimpleCommandArgs.argumentBuilder()
+                        .name("path_file")
+                        .tabCompletor(TabResult.ofStreamSupplier(CommandUtils.fileSupplier(SAVE_FILE, (ex) -> {
+                            return ex.endsWith(".nbt") || ex.endsWith(".dat");
+                        })))
+                        .build())
+                .arg(SimpleCommandArgs.argumentBuilder()
+                        .name("reverse")
+                        .bool(false)
+                        .build())
+                .post(e -> e.executor(this::onLoad))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("rerun")
+                .helper("重新执行当前路径")
+                .post(e -> e.executor(this::onRerun))
+                .complete();
     }
 
     private boolean onStart(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
@@ -121,10 +169,75 @@ public class PathManager extends BaseModule {
             context.sendMessage("&c当前已经在录制路径: " + recordingPathFile);
             return true;
         }
-        String pathFile = normalizePathFile(args.nextNonnullString());
-        startPath(pathFile, FileManager.getInstance().getStorage(pathFile));
+        String pathFile = args.nextNonnullString();
+        if (!pathFile.endsWith(".nbt")) {
+            pathFile = pathFile + ".nbt";
+        }
+        startPath(pathFile, FileManager.getInstance().getStorage(new File(SAVE_FILE, pathFile)));
         context.sendMessage("&a开始等待鞘翅飞行，路径文件: " + pathFile);
         return true;
+    }
+
+    private boolean onReStart(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
+        if (checkNull()) {
+            context.sendMessage("&c当前不在游戏内，无法开始路径录制");
+            return true;
+        }
+        if (recordingStorage != null) {
+            context.sendMessage("&c当前已经在录制路径: " + recordingPathFile);
+            return true;
+        }
+        String pathFile = args.nextNonnullString();
+        FileStorage storage = FileManager.getInstance().getStorage(new File(SAVE_FILE, pathFile), true, false);
+        if (storage == null) {
+            context.sendMessage("&c路径文件不存在: " + pathFile);
+            return true;
+        }
+        var loadedPath = readPath(storage);
+        if (loadedPath == null || loadedPath.bp().isEmpty()) {
+            context.sendMessage("&c路径文件为空或格式不正确: " + pathFile);
+            storage.markDeprecated(true);
+            return true;
+        }
+        String currentServer = CommonUtils.getServerName();
+        String currentWorld = currentWorldKey();
+        if (!Objects.equals(loadedPath.server(), currentServer)) {
+            context.sendMessage("&e路径服务器不一致: 文件=" + loadedPath.server() + " 当前=" + currentServer + "，仍继续加载");
+        }
+        if (!Objects.equals(loadedPath.world(), currentWorld)) {
+            context.sendMessage("&c路径维度不一致: 文件=" + loadedPath.world() + " 当前=" + currentWorld + "，已取消加载");
+            storage.markDeprecated(true);
+            return true;
+        }
+        restartPath(pathFile, storage, loadedPath.bp());
+        context.sendMessage("&a已载入历史路线记录，路径文件: " + pathFile);
+        return true;
+    }
+
+    private void onPush(CommandExecution context) {
+        if (recordingStorage == null || recordingPath == null) {
+            context.sendMessage("&c当前没有正在录制的路径");
+            return;
+        }
+        startSnapshot(mc.player.getBlockPos());
+        context.sendMessage("&a当前位置以添加");
+        return;
+    }
+
+    public void onPop(CommandExecution context) {
+        if (recordingStorage == null || recordingPath == null) {
+            context.sendMessage("&c当前没有正在录制的路径");
+            return;
+        }
+        if (recordingPath.bp.isEmpty()) {
+            context.sendMessage("&c当前没有多余的路径点");
+            return;
+        }
+
+        recordingPath.bp.remove(recordingPath.bp.size() - 1);
+        restartSnapshot();
+        context.sendMessage("&a当前位置以添加");
+        return;
     }
 
     private boolean onStop(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
@@ -142,15 +255,18 @@ public class PathManager extends BaseModule {
             context.sendMessage("&c当前不在游戏内，无法加载路径");
             return true;
         }
-        String pathFile = normalizePathFile(args.nextNonnullString());
+        String pathFile = args.nextNonnullString();
         boolean reverse = args.nextBoolean();
-        FileStorage storage = FileManager.getInstance().getStorage(new File(FileManager.FOLDER, pathFile), true, false);
-        if (storage == null) {
-            context.sendMessage("&c路径文件不存在: " + pathFile);
-            return true;
+        RecordPath loadedPath;
+        try (FileStorage storage = FileManager.getInstance().getStorage(new File(SAVE_FILE, pathFile), true, false)) {
+            if (storage == null) {
+                context.sendMessage("&c路径文件不存在: " + pathFile);
+                return true;
+            }
+            storage.read();
+            loadedPath = readPath(storage);
         }
-        storage.read();
-        RecordPath loadedPath = readPath(storage);
+
         if (loadedPath == null || loadedPath.bp().isEmpty()) {
             context.sendMessage("&c路径文件为空或格式不正确: " + pathFile);
             return true;
@@ -182,36 +298,21 @@ public class PathManager extends BaseModule {
     }
 
     private void onPreTick(Event<ClientPlayerEntity> event) {
-        if (recordingStorage == null) {
-            return;
-        }
-        try {
+        if (recordingStorage != null) {
             if (checkNull()) {
                 finishPath("录制任务意外退出", null);
-                return;
-            }
-            ClientPlayerEntity player = mc.player;
-            if (!recordingFlightStarted) {
-                if (!player.isFallFlying()) {
+            } else {
+                ClientPlayerEntity player = mc.player;
+                if (!recordingFlightStarted) {
+                    if (!player.isFallFlying()) {
+                        return;
+                    }
+                    startSnapshot(player.getBlockPos());
+                    recordingFlightStarted = true;
                     return;
                 }
-                startSnapshot(player.getBlockPos());
-                recordingFlightStarted = true;
-                return;
+                recordCurrentPosition(player.getBlockPos());
             }
-            if (!player.isFallFlying()) {
-                finishPath("鞘翅飞行结束", null);
-                return;
-            }
-            if (player.horizontalCollision || player.verticalCollision) {
-                finishPath("玩家碰撞", null);
-                return;
-            }
-            recordCurrentPosition(player.getBlockPos());
-        } catch (Throwable e) {
-            Debug.info("PathManager recording task failed");
-            Debug.info(e);
-            finishPath("录制任务意外退出", null);
         }
     }
 
@@ -223,18 +324,60 @@ public class PathManager extends BaseModule {
         finishPath("玩家重生", null);
     }
 
+    private static final int POSITION_FLAG = VRender.createTextPositionFlag(0, 1);
+
     private void onRender(Event<MatrixStack> event) {
         if (!render.get() || recordingSnapshot == null || checkNull()) {
             return;
         }
         ClientPlayerEntity player = mc.player;
         Vec3d snapshotPos = recordingSnapshot.snapshotPos().toCenterPos();
-        Vec3d feetPos = player.getPos();
+        Vec3d feetPos = RenderUtils.getCameraPos();
         RenderUtils.startDrawVirtual(event.context());
         try {
             RenderUtils.drawOutlinedBox(
-                    event.context(), snapshotPos.add(SNAPSHOT_RENDER_FROM), snapshotPos.add(SNAPSHOT_RENDER_TO), Color.CYAN);
-            RenderUtils.drawLineVirtual(event.context(), snapshotPos, feetPos, Color.CYAN);
+                    event.context(),
+                    snapshotPos.add(SNAPSHOT_RENDER_FROM),
+                    snapshotPos.add(SNAPSHOT_RENDER_TO),
+                    Color.CYAN);
+            Vec3d delta = snapshotPos.subtract(feetPos);
+            RenderUtils.drawLineVirtualCameraCoord(
+                    event.context(), delta, RenderUtils.getTracerOrigin(0.0F), Color.CYAN);
+            var stack = event.context;
+            stack.push();
+            stack.translate(delta.x, delta.y + 0.25, delta.z);
+            // title的高度是9 我们希望这个9在 0.75 ~ 1.0之间
+            // 我希望他看向我
+            float scaling = (float) delta.length();
+            stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
+            stack.scale(0.002F * scaling, 0.002F * scaling, 1);
+            VRender.getInstance()
+                    .drawTextCameraCoord(
+                            Text.literal("距离: %.1f".formatted(scaling)).asOrderedText(),
+                            stack,
+                            Vec3d.ZERO,
+                            VRender.createTextPositionFlag(0, 1),
+                            Color.WHITE,
+                            VRender.DEFAULT_TEXT);
+
+            stack.pop();
+            Vec3d lastPos = snapshotPos;
+            if (recordingPath != null) {
+                var lst = recordingPath.bp();
+                var size = lst.size();
+                for (var i = size - 1; i >= 0; --i) {
+                    var bbb = lst.get(i);
+
+                    Vec3d ppp = bbb.toCenterPos();
+                    RenderUtils.drawOutlinedBox(
+                            event.context(), ppp.add(SNAPSHOT_RENDER_FROM), ppp.add(SNAPSHOT_RENDER_TO), Color.CYAN);
+                    RenderUtils.drawLineVirtual(event.context(), ppp, lastPos, Color.CYAN);
+                    lastPos = ppp;
+                    if (bbb.getSquaredDistance(feetPos) > MathUtils.s2(autoWriteDistance.get() * 2)) {
+                        break;
+                    }
+                }
+            }
         } finally {
             RenderUtils.stopDrawVirtual(event.context());
         }
@@ -246,6 +389,16 @@ public class PathManager extends BaseModule {
         recordingPath = new RecordPath(new ArrayList<>());
         recordingFlightStarted = false;
         recordingSnapshot = null;
+    }
+
+    private void restartPath(String pathFile, FileStorage storage, List<BlockPos> blockPos) {
+        recordingStorage = storage;
+        recordingPathFile = pathFile;
+        recordingPath = new RecordPath(new ArrayList<>(blockPos));
+
+        recordingFlightStarted = true;
+        recordingSnapshot = null;
+        restartSnapshot();
     }
 
     private void endPath(FileStorage storage) {
@@ -267,9 +420,6 @@ public class PathManager extends BaseModule {
         String pathFile = recordingPathFile;
         int savedSize = recordingPath == null ? 0 : recordingPath.bp().size();
         try {
-            if (recordingFlightStarted && recordingSnapshot != null) {
-                addRecordingPoint(recordingSnapshot.lastPosition());
-            }
             savedSize = recordingPath == null ? 0 : recordingPath.bp().size();
             writePath(storage, recordingPath == null ? new RecordPath(List.of()) : recordingPath);
             storage.write();
@@ -289,8 +439,24 @@ public class PathManager extends BaseModule {
     }
 
     private void startSnapshot(BlockPos pos) {
-        addRecordingPoint(pos);
+        if (recordingPath == null || pos == null) {
+            return;
+        }
+        List<BlockPos> path = recordingPath.bp();
+        if (path.isEmpty() || !path.getLast().equals(pos)) {
+            path.add(pos.toImmutable());
+        }
         recordingSnapshot = new RecordSnapshot(pos);
+    }
+
+    private void restartSnapshot() {
+        if (recordingPath != null && !recordingPath.bp.isEmpty()) {
+            BlockPos pos = recordingPath.bp().get(recordingPath.bp.size() - 1);
+            recordingSnapshot = new RecordSnapshot(pos);
+            recordingSnapshot.lastPosition = mc.player.getBlockPos();
+        } else {
+            startSnapshot(mc.player.getBlockPos());
+        }
     }
 
     private void recordCurrentPosition(BlockPos current) {
@@ -324,40 +490,56 @@ public class PathManager extends BaseModule {
             return false;
         }
         List<BlockPos> path = recordingPath.bp();
+        BlockPos previousPoint = path.get(path.size() - 2); // 回滚后会变成最后一个点
+        if (!canSee(previousPoint, current)) {
+            // 上一个点与当前位置不可见，不回滚（避免丢失关键转弯点）
+            return false;
+        }
         path.remove(path.size() - 1);
         recordingSnapshot = new RecordSnapshot(path.getLast());
         return true;
     }
 
     private boolean shouldWriteBeforeCurrent(RecordSnapshot snapshot, BlockPos current) {
-        double writeDistance = autoWriteDistance.get();
-        if (writeDistance > 0.0D && snapshot.snapshotPos().getSquaredDistance(current) >= writeDistance * writeDistance) {
-            return true;
-        }
-        return !canSee(snapshot.snapshotPos(), current);
-    }
 
-    private void addRecordingPoint(BlockPos pos) {
-        if (recordingPath == null || pos == null) {
-            return;
+        double writeDistance = autoWriteDistance.get();
+        double disSqr = snapshot.snapshotPos().getSquaredDistance(current);
+        if (canSee(snapshot.lastPosition(), current)) {}
+        if (writeDistance > 0.0D && disSqr < MathUtils.s2(2 * writeDistance)) {
+            if (canSee(snapshot.snapshotPos(), snapshot.lastPosition())) {
+                if (disSqr < MathUtils.s2(writeDistance)) {
+                    return !canSee(snapshot.snapshotPos(), current);
+                }
+                return true;
+            }
+            return false;
         }
-        List<BlockPos> path = recordingPath.bp();
-        if (path.isEmpty() || !path.getLast().equals(pos)) {
-            path.add(pos.toImmutable());
-        }
+        return false;
     }
 
     private boolean canSee(BlockPos from, BlockPos to) {
-        if (mc.world == null) {
+        if (mc.world == null || mc.player == null) {
+            return false;
+        }
+        if (from.getSquaredDistance(to) > MathUtils.s2(autoWriteDistance.get() + 10)) {
             return false;
         }
         Vec3d start = Vec3d.ofBottomCenter(from);
-        Vec3d end = Vec3d.ofBottomCenter(to);
-        Vec3d delta = end.subtract(start);
-        int steps = Math.max(1, (int) Math.ceil(delta.length() * SAMPLE_PER_BLOCK));
-        for (int i = 1; i <= steps; ++i) {
-            Vec3d pos = start.add(delta.multiply((double) i / steps));
-            if (!mc.world.isSpaceEmpty(makeBodyBox(pos))) {
+        Box box = makeBodyBox(Vec3d.ofBottomCenter(to));
+        Vec3d[] corners = new Vec3d[] {
+            new Vec3d(box.minX, box.minY, box.minZ),
+            new Vec3d(box.maxX, box.minY, box.minZ),
+            new Vec3d(box.minX, box.maxY, box.minZ),
+            new Vec3d(box.maxX, box.maxY, box.minZ),
+            new Vec3d(box.minX, box.minY, box.maxZ),
+            new Vec3d(box.maxX, box.minY, box.maxZ),
+            new Vec3d(box.minX, box.maxY, box.maxZ),
+            new Vec3d(box.maxX, box.maxY, box.maxZ)
+        };
+        for (Vec3d corner : corners) {
+            HitResult result = mc.world.raycast(new RaycastContext(
+                    start, corner, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player));
+            if (result.getType() != HitResult.Type.MISS) {
                 return false;
             }
         }
@@ -375,12 +557,15 @@ public class PathManager extends BaseModule {
     }
 
     private void writePath(FileStorage storage, RecordPath path) {
-        storage.write(RecordPath.CODEC.encodeStart(NbtOps.INSTANCE, path).getOrThrow(), NbtOps.INSTANCE);
+        DataResult<?> encoded = storage.write(RecordPath.CODEC, path);
+        if (encoded.isError()) {
+            throw new IllegalArgumentException(
+                    encoded.error().map(error -> error.message()).orElse("未知编码错误"));
+        }
     }
 
     private RecordPath readPath(FileStorage storage) {
-        NbtCompound root = storage.asReadOnly(NbtOps.INSTANCE);
-        DataResult<RecordPath> decoded = RecordPath.CODEC.parse(NbtOps.INSTANCE, root);
+        DataResult<RecordPath> decoded = storage.read(RecordPath.CODEC);
         if (decoded.isError()) {
             Debug.info("PathManager failed to decode path: "
                     + decoded.error().map(error -> error.message()).orElse("未知解码错误"));
@@ -406,14 +591,6 @@ public class PathManager extends BaseModule {
         return List.copyOf(path.subList(nearest, path.size()));
     }
 
-    private String normalizePathFile(String pathFile) {
-        String normalized = pathFile.replace('\\', '/');
-        if (!normalized.endsWith(".nbt") && !normalized.endsWith(".dat")) {
-            normalized += ".nbt";
-        }
-        return normalized;
-    }
-
     private static String currentWorldKey() {
         return mc.world == null ? "" : mc.world.getRegistryKey().getValue().toString();
     }
@@ -430,10 +607,19 @@ public class PathManager extends BaseModule {
         return currentPathReversed;
     }
 
+    public enum Mode implements ConfigEnum {
+        BARITONE,
+        ELYTRA_FLIGHT;
+
+        @Override
+        public String getConfigEnumType() {
+            return "path_manager_flight_mode";
+        }
+    }
+
     public static class RecordPath {
-        private static final Codec<List<BlockPos>> POS_CODEC = Codec.LONG.listOf().xmap(
-                raw -> raw.stream().map(BlockPos::fromLong).toList(),
-                pos -> pos.stream().map(BlockPos::asLong).toList());
+        private static final Codec<List<BlockPos>> POS_CODEC =
+                Codec.LONG.xmap(BlockPos::fromLong, BlockPos::asLong).listOf();
 
         public static final Codec<RecordPath> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                         POS_CODEC.fieldOf("pos").forGetter(RecordPath::bp),

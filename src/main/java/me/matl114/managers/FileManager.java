@@ -49,6 +49,19 @@ public class FileManager {
         }
     }
 
+    public File getAndCreateFile(String path) {
+        checkFile(path);
+        return getFile(path);
+    }
+
+    public File getFile(String path) {
+        return new File(FOLDER, path);
+    }
+
+    public void checkFile(String s) {
+        checkFile(new File(FOLDER, s));
+    }
+
     private void onScheduleSave() {
         var iterator = trackedFileStorages.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -81,6 +94,10 @@ public class FileManager {
             return null;
         }
         storage = createFileStorage(file);
+        FileStorage storage2 = trackedFileStorages.remove(file);
+        if (storage2 != null) {
+            storage2.markDeprecated(true);
+        }
         trackedFileStorages.put(file, storage);
         return storage;
     }
@@ -105,12 +122,20 @@ public class FileManager {
         return getStorage(new File(FOLDER, file), false, createOnNoExist);
     }
 
+    public FileStorage getStorage(String filePath, boolean reload, boolean createOnNoExist) {
+        return getStorage(new File(FOLDER, filePath), reload, createOnNoExist);
+    }
+
     public FileStorage getConfigStorage(String filePath) {
         return getStorage(new File(CONFIG_SAVE_FOLDER, filePath), false, true);
     }
 
     public FileStorage getConfigStorage(String filePath, boolean createOnNoExist) {
         return getStorage(new File(CONFIG_SAVE_FOLDER, filePath), false, createOnNoExist);
+    }
+
+    public FileStorage getConfigStorage(String filePath, boolean reload, boolean createOnNoExist) {
+        return getStorage(new File(CONFIG_SAVE_FOLDER, filePath), reload, createOnNoExist);
     }
 
     public void reloadAll() {

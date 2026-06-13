@@ -80,8 +80,7 @@ public class UnboundPrimitiveMap<T, W> implements NBTParsable<UnboundPrimitiveMa
         };
         return new NBTType<UnboundPrimitiveMap<T, W>>(
                 NBTType.<UnboundPrimitiveMap<T, W>>parameter(UnboundPrimitiveMap.class),
-                RecordCodecBuilder.<UnboundPrimitiveMap<T, W>>create(instance -> instance
-                        .group(
+                RecordCodecBuilder.<UnboundPrimitiveMap<T, W>>create(instance -> instance.group(
                                 CodecUtils.arrayMapCodec(keyCodec, valueCodec)
                                         .fieldOf("data")
                                         .forGetter(UnboundPrimitiveMap::toPrimitiveMap),
@@ -91,13 +90,15 @@ public class UnboundPrimitiveMap<T, W> implements NBTParsable<UnboundPrimitiveMa
                 (attr, x, y, dx, dy) -> {
                     UnboundPrimitiveMap<T, W> map = attr.getOriginValue();
                     WrapperFactory<Map<Primitive<T>, Primitive<W>>, UnboundPrimitiveMap<T, W>> wrapperFactory =
-                            WrapperFactory.of(mp -> new UnboundPrimitiveMap<>(mp, map.keyType, map.valueType),
+                            WrapperFactory.of(
+                                    mp -> new UnboundPrimitiveMap<>(mp, map.keyType, map.valueType),
                                     UnboundPrimitiveMap::toPrimitiveMap);
                     return new TypeConvertAttrKeyValue<>(attr, wrapperFactory, typeGenerator.apply(map))
                             .generateValueWidget(x, y, dx, dy);
                 },
                 null,
-                (UnboundPrimitiveMap<T, W>) new UnboundPrimitiveMap<>(NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, Map.of()));
+                (UnboundPrimitiveMap<T, W>)
+                        new UnboundPrimitiveMap<>(NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, Map.of()));
     }
 
     public static final NBTType<UnboundPrimitiveMap<Object, Object>> TYPE = create();

@@ -2,16 +2,25 @@ package me.matl114.utils.commands.commandGroup;
 
 import java.util.*;
 import java.util.stream.Stream;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import me.matl114.utils.commands.interruption.ArgumentException;
+import me.matl114.utils.commands.interruption.DispatchFailureError;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.api.InputArgument;
 import me.matl114.utils.commands.params.api.TabResult;
+import org.jetbrains.annotations.NotNull;
 
+@Accessors(chain = true, fluent = true)
 public class TreeSubCommand extends SubCommandImpl implements SubCommandDispatcher, SubCommand.SubCommandCaller {
     private SubCommand fallBackCommand = null;
     private TabResult fallbackTabSuggestor = TabResult.EMPTY;
     private final Map<String, SubCommand> subCommands;
+    // whether throw DispatchNoConditionError when dispatch failure
+    @Setter
+    boolean conditional = false;
 
     public TreeSubCommand(String name, String... helpContent) {
         super(name, null, helpContent);
@@ -60,5 +69,16 @@ public class TreeSubCommand extends SubCommandImpl implements SubCommandDispatch
 
     public Stream<String> onCustomHelp(CommandExecution sender, ArgumentReader arguments) {
         return SubCommandDispatcher.super.onCustomHelp(sender, arguments);
+    }
+
+    public boolean onDefaultCommand(@NotNull CommandExecution var1, ArgumentReader reader) throws ArgumentException {
+        var defaultCmd = getFallbackCommand();
+        if (defaultCmd == null) {
+            var exp = new DispatchFailureError(reader);
+            exp.setCondition(conditional);
+            throw exp;
+        } else {
+            return defaultCmd.onCustomCommand(var1, reader);
+        }
     }
 }

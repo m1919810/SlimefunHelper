@@ -41,6 +41,15 @@ public class BridgeSubCommand extends DelegateSubCommand {
 
     @Override
     public Stream<String> onCustomHelp(CommandExecution sender, ArgumentReader arguments) {
+        if (arguments.hasNext()) {
+            String argument = arguments.peek();
+            if (getName().equalsIgnoreCase(argument)) {
+                arguments.next();
+                return super.onCustomHelp(sender, arguments);
+            } else {
+                return Stream.empty();
+            }
+        }
         return super.onCustomHelp(sender, arguments).map(s -> getName() + " " + s);
         //        if (arguments.hasNext() && getName().equalsIgnoreCase(arguments.next())) {
         //            return super.onCustomHelp(sender, arguments);

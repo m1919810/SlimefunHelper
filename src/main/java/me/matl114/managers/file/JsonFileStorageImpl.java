@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import java.io.*;
@@ -38,6 +40,18 @@ public class JsonFileStorageImpl extends FileStorageImpl {
         // 用新值替换内部数据
         this.data = ops.convertTo(JsonOps.INSTANCE, value);
         this.dirty = true;
+    }
+
+    @Override
+    public <W> DataResult<W> read(Codec<W> codec) {
+        return codec.parse(JsonOps.INSTANCE, this.data);
+    }
+
+    @Override
+    public <W> DataResult<?> write(Codec<W> codec, W value) {
+        DataResult<JsonElement> encoded = codec.encodeStart(JsonOps.INSTANCE, value);
+        encoded.result().ifPresent(result -> write(result, JsonOps.INSTANCE));
+        return encoded;
     }
 
     @Override

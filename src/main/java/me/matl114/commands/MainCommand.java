@@ -13,6 +13,11 @@ import me.matl114.events.Listener;
 import me.matl114.utils.Debug;
 import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
 import me.matl114.utils.commands.commandGroup.BridgeSubCommand;
+import me.matl114.utils.commands.commandGroup.CommandContext;
+import me.matl114.utils.commands.commandGroup.SubCommand;
+import me.matl114.utils.commands.params.ArgumentInputStream;
+import me.matl114.utils.commands.params.ArgumentReader;
+import me.matl114.utils.commands.params.api.CommandExecution;
 import net.minecraft.client.MinecraftClient;
 
 public class MainCommand extends AbstractMainCommand {
@@ -34,6 +39,33 @@ public class MainCommand extends AbstractMainCommand {
         if (COMMAND_BOOTSTRAPS != null) {
             COMMAND_BOOTSTRAPS.forEach(s -> s.onCommandReload(this));
         }
+    }
+
+    {
+        // this should be the first help command to be dispatched
+        registerSub(new BridgeSubCommand(
+                "help",
+                SubCommand.taskBuilder()
+                        .name("help")
+                        .post(s -> s.executor(new CommandContext() {
+                            @Override
+                            public boolean execute(
+                                    CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
+                                ArgumentReader reader = new ArgumentReader(argsReader.getRemainingArgs());
+                                reader.stepAll();
+                                showHelpCommand(var1, reader);
+                                return true;
+                            }
+
+                            @Override
+                            public List<String> supplyTab(
+                                    CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
+                                ArgumentReader reader = new ArgumentReader(argsReader.getRemainingArgs());
+                                reader.stepAll();
+                                return onCustomTabComplete(var1, argsReader);
+                            }
+                        }))
+                        .build()));
     }
 
     private static MainCommand REGISTERED_COMMANDS;

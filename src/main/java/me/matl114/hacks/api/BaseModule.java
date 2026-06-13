@@ -247,7 +247,7 @@ public abstract class BaseModule implements ModuleListProvider {
         return !registeredConfigEditableRefs.isEmpty();
     }
 
-    private final Set<IHotKey> registeredHotkeys = new LinkedHashSet<>();
+    private final Set<SimpleHotKey> registeredHotkeys = new LinkedHashSet<>();
 
     public <T> WrapperSettingBuilder<T> builder(Config config, Class<T> type) {
         return new WrapperSettingBuilder<>(config.asRef(), config, type, this);
@@ -367,7 +367,7 @@ public abstract class BaseModule implements ModuleListProvider {
         }
     }
 
-    public void registerHotkey(IHotKey register) {
+    public void registerHotkey(SimpleHotKey register) {
         registeredHotkeys.add(register);
     }
 
@@ -474,7 +474,7 @@ public abstract class BaseModule implements ModuleListProvider {
     public static class WrapperSettingBuilder<W> extends Config.SettingBuilder<W> {
         BaseModule module;
         WrapperConfigRef<W> wrapperConfig;
-        IHotKey hotkey;
+        SimpleHotKey hotkey;
 
         private WrapperConfigRef<W> getWrapper() {
             if (wrapperConfig == null) {
@@ -519,7 +519,7 @@ public abstract class BaseModule implements ModuleListProvider {
 
         public WrapperSettingBuilder<W> registerHotkey(SimpleHotKey.InputHandler path) {
             var re = (WrapperSettingBuilder<W>) super.registerHotkey(path);
-            this.hotkey = SimpleInputManager.getInstance().getHotkey(String.join(".", this.path));
+            this.hotkey = (SimpleHotKey) SimpleInputManager.getInstance().getHotkey(String.join(".", this.path));
             return re;
         }
 

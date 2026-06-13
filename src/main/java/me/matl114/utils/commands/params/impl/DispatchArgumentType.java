@@ -31,14 +31,17 @@ public class DispatchArgumentType<T> implements ArgumentType<T> {
             int argumentIndex, String string, ArgumentType<? extends T> type) {
         registerDispatcher(
                 ((execution, arguments) -> {
-                    if (argumentIndex < 0) {
-                        var re = arguments.get(arguments.size() + argumentIndex);
-                        return re.nonnullResultAsString().equalsIgnoreCase(string);
-                    } else {
-                        return arguments
-                                .get(argumentIndex)
-                                .nonnullResultAsString()
-                                .equalsIgnoreCase(string);
+                    try {
+                        int index = argumentIndex < 0 ? arguments.size() + argumentIndex : argumentIndex;
+                        if (index < 0 || index >= arguments.size()) {
+                            return false;
+                        }
+                        var re = arguments.get(index);
+                        return re != null
+                                && re.isParseSuccess()
+                                && re.nonnullResultAsString().equalsIgnoreCase(string);
+                    } catch (Throwable ignored) {
+                        return false;
                     }
                 }),
                 type);
