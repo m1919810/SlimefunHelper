@@ -2273,6 +2273,9 @@ public class MovTasks {
     public static TravellingControl travellingControl;
 
     @Getter
+    public static PathManager pathManager;
+
+    @Getter
     public static BaritoneFix baritoneFix;
 
     @ApiStatus.Experimental
@@ -2307,6 +2310,7 @@ public class MovTasks {
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);
         travellingControl = new TravellingControl().register(m);
+        pathManager = new PathManager().register(m);
         baritoneFix = new BaritoneFix().register(m);
         elytraFinder = new ElytraFinder().register(m);
     }
@@ -2455,14 +2459,16 @@ public class MovTasks {
     }
 
     public static final TabResult playerName = TabResult.ofStreamSupplier(
-            () -> mc.world != null ? EntityUtils.getWorldPlayerNames(false) : Stream.empty());
+            () -> mc.world != null ? EntityUtils.getWorldPlayerNames(false).map(name -> "@" + name) : Stream.empty());
 
     public static final TabResult crossHairTarget = TabResult.ofStreamSupplier(() -> (mc.crosshairTarget != null
                     && mc.crosshairTarget.getType() == HitResult.Type.ENTITY)
-            ? Stream.of(((EntityHitResult) (mc.crosshairTarget)).getEntity().getUuidAsString())
+            ? Stream.of(
+                    "@" + ((EntityHitResult) (mc.crosshairTarget)).getEntity().getUuidAsString())
             : Stream.empty());
 
-    public static final ArgumentType<String> entityTargetArgumentType = SimpleCommandArgs.argumentBuilder()
+    public static final ArgumentType<?> entityAtArgumentType = SimpleCommandArgs.argumentBuilder(
+                    me.matl114.utils.commands.params.impl.EntityArgumentType::new)
             .name("target")
             .tabCompletor(playerName)
             .tabCompletor(crossHairTarget)
@@ -2472,7 +2478,7 @@ public class MovTasks {
         TpaCommandEvent event = tpaRequest.context.getValue();
         switch (event.mode) {
             case TAB -> {
-                var result = entityTargetArgumentType.getTab(event.player, event.inputs);
+                var result = entityAtArgumentType.getTab(event.player, event.inputs);
                 if (result != null) {
                     result.forEach(((TpaTabCompletor) event).tab::add);
                 }
@@ -2482,25 +2488,25 @@ public class MovTasks {
                 if (resolver.hasResolved()) return;
                 ArgumentReader reader = resolver.arguments;
                 if (reader.hasNext()) {
-                    String target = reader.peek();
-                    Entity entity = null;
-                    if (target.length() > 16) {
-                        try {
-                            UUID uid = UUID.fromString(target);
-                            entity = mc.world.getEntityLookup().get(uid);
-                        } catch (Throwable e) {
+                    String raw = reader.peek();
+                    if (!raw.startsWith("@")) {
+                        PlayerEntity player = mc.world == null ? null : EntityUtils.getPlayerByName(raw);
+                        if (player == null) {
+                            return;
                         }
-                    }
-                    if (entity == null) {
-                        entity = EntityUtils.getPlayerByName(target);
-                    }
-                    if (entity == null) {
-                        // can not parse
+                        reader.step();
+                        resolver.resolve = Optional.of(player.getPos());
                         return;
                     }
-                    // consume
-                    reader.step();
-                    resolver.resolve = Optional.ofNullable(entity.getPos());
+                    int startIndex = reader.cursor();
+                    var parsed = entityAtArgumentType.consume(event.player, event.inputs, reader);
+                    if (parsed == null || !parsed.isParseSuccess() || parsed.result() == null) {
+                        reader.setCursor(startIndex);
+                        return;
+                    }
+                    resolver.resolve = Optional.ofNullable(
+                            ((me.matl114.utils.commands.params.types.EntitySelector) parsed.result())
+                                    .pos(event.player));
                 }
             }
         }

@@ -56,6 +56,9 @@ public class ExtraTasks {
     @Getter
     public static BoatVClip boatVClip;
 
+    @Getter
+    public static IQBoost iqBoost;
+
     private static void initModules(ModuleManager m) {
         clientExtra = new ClientExtra().register(m);
         ;
@@ -71,6 +74,7 @@ public class ExtraTasks {
         autoReconnect = new AutoReconnect().register(m);
         warps = new Warps().register(m);
         boatVClip = new BoatVClip().register(m);
+        iqBoost = new IQBoost().register(m);
     }
 
     static {

@@ -88,21 +88,21 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     public void onVcUpdate(Event<EntityVelocityUpdateS2CPacket> event) {
         Vec3d velocity = VPacket.getVelocity(event.context);
         // todo: fix it
-        if (false && mc.player != null && event.context.getEntityId() == mc.player.getId()) {
-            //
-            //            if ((enable.get() && mc.player.isFallFlying()) || lastWorkingTick + 10 > Tasks.getTick()) {
-            //                if (mc.player.isFallFlying()) {
-            //                    if (velocity.horizontalLengthSquared() < 1E-4) {
-            //                        event.cancel();
-            //                    } else {
-            //                        Vec3d vec3d = mc.player.getVelocity();
-            //                        if (vec3d.horizontalLengthSquared() > 1E-4
-            //                                && vec3d.getHorizontal().dotProduct(velocity.getHorizontal()) < 0.0) {
-            //                            event.cancel();
-            //                        }
-            //                    }
-            //                }
-            //            }
+        if (mc.player != null && event.context.getEntityId() == mc.player.getId()) {
+
+            if ((enable.get() && mc.player.isFallFlying()) || lastWorkingTick + 10 > Tasks.getTick()) {
+                if (mc.player.isFallFlying()) {
+                    if (velocity.horizontalLengthSquared() < 1E-4) {
+                        event.cancel();
+                    } else {
+                        Vec3d vec3d = mc.player.getVelocity();
+                        if (vec3d.horizontalLengthSquared() > 1E-4
+                                && vec3d.getHorizontal().dotProduct(velocity.getHorizontal()) < 0.0) {
+                            event.cancel();
+                        }
+                    }
+                }
+            }
         }
 
         //        if(enable.get() && mc.player != null && event.context.getEntityId() == mc.player.getId() &&
@@ -214,7 +214,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> sendMovementPacketEvent) {
         if (currentTryWorking) {
             Vec3d velocity = mc.player.getVelocity();
-            double speed = velocity.horizontalLength();
+            double speed = velocity.length();
             if (currentWorking) {
                 if (speed > maxVelocityAccept.get()) {
                     currentWorking = false;

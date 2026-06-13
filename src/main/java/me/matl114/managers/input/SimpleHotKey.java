@@ -57,12 +57,10 @@ public class SimpleHotKey implements IHotKey {
         registeredManagers.add(manager);
     }
 
-    @Override
     public MultiKeyBind getDefaultKeyCodes() {
         return this.defaultKeyCode;
     }
 
-    @Override
     public MultiKeyBind getKeyCodes() {
         return keyCode;
     }

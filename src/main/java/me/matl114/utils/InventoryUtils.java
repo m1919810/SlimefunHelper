@@ -83,22 +83,37 @@ public class InventoryUtils {
             boolean acceptEmpty,
             boolean handPriority,
             boolean offHandPriority) {
+        return findPlayerInventory(
+                (val) -> predicate.test(val.val()),
+                doNotFSearchWhenOpenOtherScreen,
+                acceptEmpty,
+                handPriority,
+                offHandPriority);
+    }
+
+    public static IndexEntry<ItemStack> findPlayerInventory(
+            Predicate<IndexEntry<ItemStack>> predicate,
+            boolean doNotFSearchWhenOpenOtherScreen,
+            boolean acceptEmpty,
+            boolean handPriority,
+            boolean offHandPriority) {
         PlayerInventory pinv = mc.player.getInventory();
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
         // we assert player hold block while scaffold, or it will be really annoying
         // the holding block must be a full cube
         int selecedSlot = pinv.selectedSlot;
         IndexEntry<ItemStack> result = null;
-        if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
-            result = new IndexEntry<>(selecedSlot, item);
+        IndexEntry<ItemStack> test;
+        if ((acceptEmpty || !item.isEmpty()) && predicate.test((test = new IndexEntry<>(selecedSlot, item)))) {
+            result = test;
         }
         if (handPriority && result != null) {
             return result;
         }
         if (result == null && offHandPriority) {
             item = mc.player.getStackInHand(Hand.OFF_HAND);
-            if ((acceptEmpty || !item.isEmpty()) && predicate.test(item)) {
-                result = new IndexEntry<>(40, item);
+            if ((acceptEmpty || !item.isEmpty()) && predicate.test((test = new IndexEntry<>(40, item)))) {
+                result = test;
             }
             if (result != null) {
                 return result;
@@ -112,7 +127,8 @@ public class InventoryUtils {
         }
         for (var i = 0; i < pinv.size(); ++i) {
             ItemStack stack = pinv.getStack(i);
-            if ((acceptEmpty || !stack.isEmpty()) && predicate.test(stack)) {
+            test = new IndexEntry<>(i, stack);
+            if ((acceptEmpty || !stack.isEmpty()) && predicate.test(test)) {
                 //                if(keepInHand.get()){
                 //                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 //                    OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(pinv, i);
@@ -166,6 +182,18 @@ public class InventoryUtils {
 
     public static IndexEntry<ItemStack> findBestPlayerItem(
             Function<ItemStack, Double> maxFunction, boolean doNotFSearchWhenOpenOtherScreen, boolean acceptEmpty) {
+        return findBestPlayerInventory(
+                s -> {
+                    return maxFunction.apply(s.val());
+                },
+                doNotFSearchWhenOpenOtherScreen,
+                acceptEmpty);
+    }
+
+    public static IndexEntry<ItemStack> findBestPlayerInventory(
+            Function<IndexEntry<ItemStack>, Double> maxFunction,
+            boolean doNotFSearchWhenOpenOtherScreen,
+            boolean acceptEmpty) {
         // while player is open Screen
         PlayerInventory pinv = mc.player.getInventory();
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
@@ -174,10 +202,12 @@ public class InventoryUtils {
         int selecedSlot = pinv.selectedSlot;
         Double maxValue = null;
         IndexEntry<ItemStack> result = null;
+        IndexEntry<ItemStack> test = null;
         if ((acceptEmpty || !item.isEmpty())) {
-            maxValue = maxFunction.apply(item);
+            test = new IndexEntry<>(selecedSlot, item);
+            maxValue = maxFunction.apply(test);
             if (maxValue != null) {
-                result = new IndexEntry<>(selecedSlot, item);
+                result = test;
             }
         }
         if (doNotFSearchWhenOpenOtherScreen
@@ -189,10 +219,11 @@ public class InventoryUtils {
         Double currentValue;
         for (var i = 0; i < pinv.size(); ++i) {
             ItemStack stack = pinv.getStack(i);
-            if ((acceptEmpty || !stack.isEmpty()) && (currentValue = maxFunction.apply(stack)) != null) {
+            test = new IndexEntry<>(i, stack);
+            if ((acceptEmpty || !stack.isEmpty()) && (currentValue = maxFunction.apply(test)) != null) {
                 if (maxValue == null || currentValue > maxValue) {
                     maxValue = currentValue;
-                    result = new IndexEntry<>(i, stack);
+                    result = test;
                 }
             }
         }

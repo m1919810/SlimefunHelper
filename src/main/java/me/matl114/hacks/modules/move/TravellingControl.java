@@ -650,8 +650,8 @@ public class TravellingControl extends BaseModule {
                         Vec3d towards = ti.pos0.subtract(currentPos);
                         // anti afk
                         if (Tasks.getTick() % 40 == 0) {
-                            randomOffsetPitch = (float) rand.nextDouble(-2.5, 2.5);
-                            randomOffsetYaw = (float) rand.nextDouble(1.0F);
+                            randomOffsetPitch = 0.0F; // (float) rand.nextDouble(-2.5, 2.5);
+                            randomOffsetYaw = 0.0F; // (float) rand.nextDouble(1.0F);
                         }
                         float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y + randomOffsetPitch;
                         counter2 += 1;

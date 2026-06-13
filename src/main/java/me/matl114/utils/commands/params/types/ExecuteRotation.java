@@ -1,94 +1,74 @@
 package me.matl114.utils.commands.params.types;
 
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.commands.params.api.CommandExecution;
-import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
-import org.joml.Vector3d;
+import org.joml.Vector2f;
 
 public interface ExecuteRotation {
-    Vec2f getRotation(CommandExecution execution);
+    Vector2f getRotation(CommandExecution execution);
 
-    String asString();
-
-    static ExecuteRotation look() {
-        return new Look();
+    default String asString() {
+        Vector2f value = getRotation(null);
+        return "%s %s".formatted(formatAbsolute(value.x()), formatAbsolute(value.y()));
     }
 
-    static ExecuteRotation fixed(float yaw, float pitch) {
-        return new Fixed(yaw, pitch);
+    static ExecuteRotation current() {
+        return new RelativePitchYaw(3, new Vec2f(0.0F, 0.0F));
     }
 
-    static ExecuteRotation pos(ExecutePos pos) {
-        return new Pos(pos);
+    static ExecuteRotation fixed(float pitch, float yaw) {
+        return new Fixed(new Vec2f(pitch, yaw));
     }
 
-    static ExecuteRotation entity(EntitySelector selector) {
-        return new EntityTarget(selector);
+    static ExecuteRotation of(Vec2f rotation) {
+        return new Fixed(rotation == null ? new Vec2f(0.0F, 0.0F) : rotation);
     }
 
-    record Look() implements ExecuteRotation {
+    static ExecuteRotation ofExecutor(CommandExecution execution) {
+        return new Fixed(currentRotation(execution));
+    }
+
+    static ExecuteRotation relative(int flag, float pitch, float yaw) {
+        return new RelativePitchYaw(flag, new Vec2f(pitch, yaw));
+    }
+
+    record Fixed(Vec2f rotation) implements ExecuteRotation {
         @Override
-        public Vec2f getRotation(CommandExecution execution) {
-            if (execution.getExecutor() instanceof Entity entity) {
-                return new Vec2f(entity.getPitch(), entity.getYaw());
-            }
-            return null;
+        public Vector2f getRotation(CommandExecution execution) {
+            return rotation == null ? new Vector2f(0.0F, 0.0F) : new Vector2f(rotation.x, rotation.y);
+        }
+    }
+
+    record RelativePitchYaw(int flag, Vec2f rotation) implements ExecuteRotation {
+        @Override
+        public Vector2f getRotation(CommandExecution execution) {
+            Vec2f base = currentRotation(execution);
+            Vec2f value = rotation == null ? new Vec2f(0.0F, 0.0F) : rotation;
+            return new Vector2f(
+                    (flag & 1) != 0 ? base.x + value.x : value.x, (flag & 2) != 0 ? base.y + value.y : value.y);
         }
 
         @Override
         public String asString() {
-            return "look";
+            Vec2f value = rotation == null ? new Vec2f(0.0F, 0.0F) : rotation;
+            return "%s %s".formatted(formatPart((flag & 1) != 0, value.x), formatPart((flag & 2) != 0, value.y));
         }
     }
 
-    record Fixed(float yaw, float pitch) implements ExecuteRotation {
-        @Override
-        public Vec2f getRotation(CommandExecution execution) {
-            return new Vec2f(pitch, yaw);
+    private static String formatPart(boolean relative, float value) {
+        if (relative) {
+            return value == 0.0F ? "~" : "~" + formatAbsolute(value);
         }
-
-        @Override
-        public String asString() {
-            return "%s %s".formatted(yaw, pitch);
-        }
+        return formatAbsolute(value);
     }
 
-    record Pos(ExecutePos pos) implements ExecuteRotation {
-        @Override
-        public Vec2f getRotation(CommandExecution execution) {
-            if (!(execution.getExecutor() instanceof Entity entity) || pos == null) {
-                return null;
-            }
-            Vector3d target = pos.getPosition(execution);
-            Vec3d delta = new Vec3d(target.x, target.y, target.z).subtract(entity.getEyePos());
-            return delta.lengthSquared() <= 1.0E-7 ? null : EntityUtils.rotationToPitchYaw(delta.normalize());
-        }
-
-        @Override
-        public String asString() {
-            return pos == null ? "pos" : "pos " + pos.asString();
-        }
+    private static String formatAbsolute(float value) {
+        return value == (long) value ? String.valueOf((long) value) : "%.1f".formatted(value);
     }
 
-    record EntityTarget(EntitySelector selector) implements ExecuteRotation {
-        @Override
-        public Vec2f getRotation(CommandExecution execution) {
-            if (!(execution.getExecutor() instanceof Entity entity) || selector == null) {
-                return null;
-            }
-            Entity target = selector.random(execution);
-            if (target == null) {
-                return null;
-            }
-            Vec3d delta = target.getEyePos().subtract(entity.getEyePos());
-            return delta.lengthSquared() <= 1.0E-7 ? null : EntityUtils.rotationToPitchYaw(delta.normalize());
-        }
-
-        @Override
-        public String asString() {
-            return selector == null ? "entity" : "entity " + selector.asString();
-        }
+    private static Vec2f currentRotation(CommandExecution execution) {
+        PlayerEntity executor = execution == null ? null : execution.getExecutor();
+        return executor == null ? new Vec2f(0.0F, 0.0F) : new Vec2f(executor.getPitch(), executor.getYaw());
     }
 }
