@@ -126,6 +126,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .defaultValue(ArmorFlyMode.TICK)
             .build();
 
+    public final FlagRef armorFlyBadPacketFix = flagBuilder(armorFlyPath.add("armor-fly-fix-grim-bad-packets-1"))
+            .show(() -> this.armorMode.get().isIn(ArmorFlyMode.TICK))
+            .build();
+
     public final FlagRef antiKick = builder(armorFlyPath.add("antikick"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -994,7 +998,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             thisTickHasStartFallFly = true;
                             flushRockets();
                             MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
-                            mc.getNetworkHandler().sendPacket(new CommonPongC2SPacket(Integer.MIN_VALUE));
+                            if (armorFlyBadPacketFix.get()) {
+                                mc.getNetworkHandler().sendPacket(new CommonPongC2SPacket(Integer.MIN_VALUE));
+                            }
                         } else {
                             clearRockets();
                             EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, false);
@@ -1477,6 +1483,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 maceFixMode.set(Configs.BypassMode.BYPASS_GRIM);
             }
             default -> maceFixMode.set(Configs.BypassMode.NO_BYPASS);
+        }
+        switch (presetEvent.context.getValue()) {
+            case AC_GRIM_LEGACY, AC_GRIM -> {
+                armorFlyBadPacketFix.set(true);
+            }
+            default -> {
+                armorFlyBadPacketFix.set(false);
+            }
         }
     }
 

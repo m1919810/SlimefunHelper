@@ -57,9 +57,10 @@ public abstract class ElytraCommandMixin extends Command {
                             Text.literal("[BaritoneFix]").formatted(Formatting.RED),
                             "Auto import the cached world seed",
                             ChatUtils.getDisplayedLong(seed));
-                    BaritoneAPI.getSettings().elytraNetherSeed.value = seed;
+                    BaritoneAPI.getSettings().elytraNetherSeed.value = (Long) seed;
                 }
             }
+            Debug.chat("[BaritoneFix] Using seed", BaritoneAPI.getSettings().elytraNetherSeed.value);
         }
         BaritoneFix.INSTANCE.checkFireworkSettings();
     }

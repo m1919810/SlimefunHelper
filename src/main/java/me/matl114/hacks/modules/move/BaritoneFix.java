@@ -8,6 +8,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -20,6 +21,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 
 public class BaritoneFix extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -58,6 +60,9 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     public final FlagRef enableBaritoneCommandProtect =
             flagBuilder(fix.add("enable-baritone-command-protect")).build();
 
+    public final FlagRef changeLandingToFreeze =
+            flagBuilder(fix.add("change-landing-to-elytra-flight")).build();
+
     public final FlagRef emergencyFixToLog =
             flagBuilder(fix.add("change-landing-to-log")).build();
 
@@ -86,6 +91,8 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
 
     public final FlagRef baritoneExperimental2 =
             flagBuilder(fix.add("baritone-experiment-2")).build();
+
+    public final FlagRef exp2LavaFix = flagBuilder(fix.add("exp-2-lava-fix")).build();
 
     public final DoubleRef exp2Min =
             doubleBuilder(fix.add("exp-2-min-height")).defaultValue(38.0D).build();
@@ -116,13 +123,9 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         ElytraExtra extra = ElytraExtra.INSTANCE;
         ItemStack stack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
         if (extra.isCurrentArmorGliding()) {
-            if (stack.getItem() != Items.ELYTRA) {
-                return true;
-            }
-        } else if (extra.shouldElytraUnbreakable()) {
-            if (extra.elytraUnbreakableSwitchSlot != -1) {
-                return true;
-            }
+            return true;
+        } else if (extra.enableUnbreakableElytra.get()) {
+            return true;
         }
         return stack.getItem() == Items.ELYTRA
                 && stack.getMaxDamage() - stack.getDamage() >= durabilitySetting.getValue();
@@ -191,6 +194,20 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         return false;
     }
 
+    public boolean handleFreeze(String situation) {
+        if (this.changeLandingToFreeze.get()) {
+            if (!MovTasks.getElytraFlight().enable.get()) {
+                Debug.chat(ChatUtils.stringToText(
+                        "&c[BaritoneFix] &fBaritone landing cancelled, reason: %s, turing on ElytraFlight..."
+                                .formatted(situation)));
+                FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                MovTasks.getElytraFlight().enable.set(true);
+            }
+            return true;
+        }
+        return false;
+    }
+
     public boolean shouldPauseBaritoneElytra() {
         if (pauseElytraProcess.get()) {
             // DO NOT use other modules judgement
@@ -224,9 +241,11 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        if (this.fixLavaFly.get()
+        if ((this.fixLavaFly.get() || (this.baritoneExperimental2.get() && this.exp2LavaFix.get()))
                 && mc.player.isFallFlying()
-                && BaritoneHooks.getInstance().isElytraProcessing()) {
+                && BaritoneHooks.getInstance().isElytraProcessing()
+        // do not freeze when in fluid
+        ) {
             // check condition
             var box = mc.player.getBoundingBox();
             Box box2 = null; // processBoxOfElytraFlight();
@@ -235,17 +254,34 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
             for (var block : blocks) {
                 BlockState state = mc.world.getBlockState(block);
                 if (state.isLiquid() || state.getFluidState().getFluid() != Fluids.EMPTY) {
-                    Debug.chat(ChatUtils.stringToText(
-                            "&c[BaritoneFix] &fBaritone flying into fluid detected, cancelling move..."));
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    movementManagerEvent.cancel();
+                    handleMayFlyIntoFluid(block, movementManagerEvent);
                     return;
                 }
             }
         }
     }
 
-    int cachedArmorFlyIndex = -1;
+    private int usingElytraFlightEmergency = 0;
+
+    private void handleMayFlyIntoFluid(BlockPos block, Event<LegalMovementManager> movementManagerEvent) {
+        if (fixLavaFly.get() && (PlayerStateManager.INSTANCE.lastInWall || PlayerStateManager.INSTANCE.lastInLava)) {
+            Debug.chat(ChatUtils.stringToText(
+                    "&c[BaritoneFix] &fBaritone flying into fluid detected, cancelling move..."));
+            movementManagerEvent.context.playerStatus.restorePos();
+            movementManagerEvent.cancel();
+        }
+        if (this.baritoneExperimental2.get() && exp2LavaFix.get() && ElytraExtra.INSTANCE.armorFly.get()) {
+            boolean usingArmorFly = ElytraExtra.INSTANCE.thisFallFlyingIsArmorFly != -1;
+            if (usingArmorFly) {
+                ElytraExtra.INSTANCE.endArmorFlyTransaction();
+                usingElytraFlightEmergency = Tasks.getTick() + 20;
+            }
+            if (Tasks.getTick() + 4 < usingElytraFlightEmergency) {
+                movementManagerEvent.context.playerStatus.restorePos();
+                movementManagerEvent.cancel();
+            }
+        }
+    }
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
@@ -254,11 +290,16 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
                 && BaritoneHooks.getInstance().isElytraProcessing()
                 && ElytraExtra.INSTANCE.armorFly.get()) {
             boolean usingArmorFly = ElytraExtra.INSTANCE.thisFallFlyingIsArmorFly != -1;
-            if (usingArmorFly && mc.player.getY() < exp2Min.get()) {
-
-                ElytraExtra.INSTANCE.endArmorFlyTransaction();
-            } else if (!usingArmorFly && mc.player.getY() > exp2Max.get()) {
-                ElytraExtra.INSTANCE.startArmorFlyTransaction(-1);
+            if (usingElytraFlightEmergency > Tasks.getTick()) {
+                if (usingArmorFly) {
+                    ElytraExtra.INSTANCE.endArmorFlyTransaction();
+                }
+            } else {
+                if (usingArmorFly && mc.player.getY() < exp2Min.get()) {
+                    ElytraExtra.INSTANCE.endArmorFlyTransaction();
+                } else if (!usingArmorFly && mc.player.getY() > exp2Max.get()) {
+                    ElytraExtra.INSTANCE.startArmorFlyTransaction(-1);
+                }
             }
         }
         return true;

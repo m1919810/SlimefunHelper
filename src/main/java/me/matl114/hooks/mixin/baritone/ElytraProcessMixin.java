@@ -76,6 +76,11 @@ public abstract class ElytraProcessMixin {
     private void hookAllowEmergencyLand(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.handleLog("Emergency Landing")) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
+            return;
+        }
+        if (BaritoneFix.INSTANCE.handleFreeze("Path Complete")) {
+            cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
+            return;
         }
     }
 
@@ -91,6 +96,11 @@ public abstract class ElytraProcessMixin {
     private void hookLogDirect(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.handleLog("Path Complete")) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
+            return;
+        }
+        if (BaritoneFix.INSTANCE.handleFreeze("Path Complete")) {
+            cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
+            return;
         }
     }
 

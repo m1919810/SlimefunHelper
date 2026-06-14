@@ -32,7 +32,12 @@ repositories {
 	maven {
 		url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots'
 	}
-
+	maven {
+		url "https://maven.meteordev.org/snapshots"
+	}
+	maven {
+		url = "https://maven.meteordev.org/releases"
+	}
 }
 sourceSets {
 	stubs{
@@ -62,9 +67,10 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	modCompileOnly files("libs/baritone-meteor-1.21.1.jar")
+	modCompileOnly "meteordevelopment:meteor-client:${project.meteor_version}"
+
 	// bridge
 	compileOnly sourceSets.stubs.output
-
 	// api
 	api 'com.github.houbb:pinyin:0.4.0'  // 拼音
 	api 'io.netty:netty-handler-proxy:4.1.97.Final' // proxy
