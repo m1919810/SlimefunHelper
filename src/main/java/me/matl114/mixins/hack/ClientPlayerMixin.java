@@ -8,7 +8,6 @@ import java.util.Objects;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.*;
-import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.move.MoveTimer;
 import me.matl114.hacks.modules.move.Sprint;
 import me.matl114.hacks.modules.render.RenderExtra;
@@ -280,14 +279,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         cir.setReturnValue(PermissionPredicate.ALL);
     }
 
-    @Override
-    public double getBlockInteractionRange() {
-        MineExtra mineExtra = MineExtra.INSTANCE;
-        if (true) {
-            return mineExtra.getReachDistance();
-        }
-        return super.getBlockInteractionRange();
-    }
     //
     //    @Override
     //    public double getEntityInteractionRange() {

@@ -720,6 +720,16 @@ public class ChatUtils {
     }
 
     @ApiMethod
+    public static ClickEvent getRunCommand(String command) {
+        return new ClickEvent.RunCommand(command);
+    }
+
+    @ApiMethod
+    public static ClickEvent getSuggestCommand(String name) {
+        return new ClickEvent.SuggestCommand(name);
+    }
+
+    @ApiMethod
     public static MutableText concatLineText(List<Text> texts) {
         int size = texts.size();
         MutableText text = Text.empty();

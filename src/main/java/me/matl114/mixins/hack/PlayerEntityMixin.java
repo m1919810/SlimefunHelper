@@ -5,6 +5,8 @@ import com.mojang.authlib.GameProfile;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.accessors.hacks.PlayerInternalAccess;
+import me.matl114.hacks.modules.combat.CombatExtra;
+import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.hacks.utils.entity.PredictorImpl;
 import net.fabricmc.api.EnvType;
@@ -18,6 +20,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(PlayerEntity.class)
@@ -77,5 +80,19 @@ public abstract class PlayerEntityMixin extends LivingEntity
             predictorImpl = new PredictorImpl(this);
         }
         return predictorImpl;
+    }
+
+    @Inject(method = "getBlockInteractionRange", at = @At("RETURN"), cancellable = true)
+    private void getBlockInteractionRange(CallbackInfoReturnable<Double> cir) {
+        if (MineExtra.INSTANCE.reachDistance.get() > 1E-6) {
+            cir.setReturnValue(MineExtra.INSTANCE.getReachDistance());
+        }
+    }
+
+    @Inject(method = "getEntityInteractionRange", at = @At("RETURN"), cancellable = true)
+    private void getEntityInteractionRange(CallbackInfoReturnable<Double> cir) {
+        if (CombatExtra.INSTANCE.range.get() > 0.1) {
+            cir.setReturnValue(CombatExtra.INSTANCE.getAttackRange());
+        }
     }
 }
