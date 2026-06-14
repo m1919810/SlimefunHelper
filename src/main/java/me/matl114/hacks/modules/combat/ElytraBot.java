@@ -94,8 +94,8 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
-    public final DoubleRef minimalAttackRange = builder(elytraBot.add("min-attack-range"), Double.class)
-            .defaultValue(2.0D)
+    public final DoubleRef minimalAttackHeight = builder(elytraBot.add("min-attack-height"), Double.class)
+            .defaultValue(4.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
@@ -124,6 +124,11 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef combatSmoothArg1 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-1"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(1.0D)
+            .build();
+
+    public final DoubleRef combatSmoothArg11 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-1-1"))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .defaultValue(0.0D)
             .build();
 
     public final FlagRef combatSmoothFlight2 = flagBuilder(elytraBot.add("combat-smooth-flight-2"))
@@ -607,12 +612,11 @@ public class ElytraBot extends BaseModule {
                 return STATE_PULL_UP;
             }
             // already reach the target
-            if (TargetSelector.INSTANCE.isWithinAttackRange(
-                    mc.player.getPos(),
-                    base.target.getBoundingBox(),
-                    Math.min(
-                            base.minimalAttackRange.get(),
-                            CombatTasks.getCombatExtra().getAttackRange()))) {
+            if ((mc.player.getY() < base.target.getY() + base.minimalAttackHeight.get())
+                    && TargetSelector.INSTANCE.isWithinAttackRange(
+                            mc.player.getPos(),
+                            base.target.getBoundingBox(),
+                            CombatTasks.getCombatExtra().getAttackRange())) {
                 setTargetToPlayer(true);
                 scheduleAttack();
                 machine.markForEndState();
@@ -649,6 +653,14 @@ public class ElytraBot extends BaseModule {
                     Vec3d vec3d = tangents.getFirst();
                     Vec3d vec3d2 = tangents.getSecond();
                     Vec3d vec3d3 = vec3d.y < vec3d2.y ? vec3d2 : vec3d;
+                    if (Math.abs(base.combatSmoothArg11.get()) > 1E-6
+                            && center.squaredDistanceTo(mc.player.getEyePos()) < MathUtils.s2(radius)) {
+                        // 垂线
+                        vec3d3 = vec3d3.normalize();
+                        Vec3d delta = mc.player.getEyePos().subtract(center);
+                        Vec3d horizontalMul = new Vec3d(delta.x, 0, delta.z).multiply(base.combatSmoothArg11.get());
+                        vec3d3 = vec3d3.add(horizontalMul).normalize();
+                    }
                     if (vec3d3.y > 0) {
                         movementDirection = vec3d3.multiply(10);
                         return;
@@ -730,9 +742,7 @@ public class ElytraBot extends BaseModule {
         private void smoothFlightAttack() {
 
             var re = MathUtils.getTangentWithSamePlate(
-                    Vec3d.ZERO,
-                    Math.max(0, Math.min(CombatExtra.INSTANCE.getAttackRange(), base.minimalAttackRange.get()) / 2.0D),
-                    movementDirection.negate());
+                    Vec3d.ZERO, Math.max(0, CombatExtra.INSTANCE.getAttackRange() / 2.0D), movementDirection.negate());
             var look = re.getFirst();
             movementDirection = look.normalize().multiply(movementDirection.length());
         }
@@ -768,9 +778,7 @@ public class ElytraBot extends BaseModule {
             if (TargetSelector.INSTANCE.isWithinAttackRange(
                     mc.player.getPos(),
                     base.target.getBoundingBox(),
-                    Math.min(
-                            base.minimalAttackRange.get(),
-                            CombatTasks.getCombatExtra().getAttackRange()))) {
+                    CombatTasks.getCombatExtra().getAttackRange())) {
                 scheduleAttack();
                 movementDirection = Vec3d.ZERO;
                 machine.markForEndState();

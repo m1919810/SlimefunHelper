@@ -22,10 +22,7 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.file.FileStorage;
-import me.matl114.utils.CommonUtils;
-import me.matl114.utils.Debug;
-import me.matl114.utils.MathUtils;
-import me.matl114.utils.RenderUtils;
+import me.matl114.utils.*;
 import me.matl114.utils.commands.CommandUtils;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
@@ -46,6 +43,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
 
 public class PathManager extends BaseModule {
     public static PathManager INSTANCE;
@@ -89,6 +87,7 @@ public class PathManager extends BaseModule {
         super.registerAll();
         registerCommandBootstrap(this::bootStrapPathCommand);
         registerListener(Listener.getPreGameTick(), this::onPreTick);
+        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnect);
         registerListener(Listener.getPacketPoint().getChannel(PlayerRespawnS2CPacket.class), this::onRespawn);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
@@ -131,6 +130,16 @@ public class PathManager extends BaseModule {
                         .name("pop")
                         .helper(" 移除上一个坐标点")
                         .post(s1 -> s1.executor(CommandContext.execute(this::onPop)))
+                        .complete()
+                        .subBuilder(SubCommand.taskBuilder())
+                        .name("pause")
+                        .helper(" 暂停当前记录")
+                        .post(s1 -> s1.executor(CommandContext.execute(this::onPause)))
+                        .complete()
+                        .subBuilder(SubCommand.taskBuilder())
+                        .name("continue")
+                        .helper(" 继续记录")
+                        .post(s1 -> s1.executor(CommandContext.execute(this::onContinue)))
                         .complete())
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
@@ -159,6 +168,8 @@ public class PathManager extends BaseModule {
                 .post(e -> e.executor(this::onRerun))
                 .complete();
     }
+
+    boolean pauseRecord = false;
 
     private boolean onStart(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
         if (checkNull()) {
@@ -211,6 +222,7 @@ public class PathManager extends BaseModule {
         }
         restartPath(pathFile, storage, loadedPath.bp());
         context.sendMessage("&a已载入历史路线记录，路径文件: " + pathFile);
+        onPause(context);
         return true;
     }
 
@@ -238,6 +250,25 @@ public class PathManager extends BaseModule {
         restartSnapshot();
         context.sendMessage("&a当前位置以添加");
         return;
+    }
+
+    public void onPause(CommandExecution context) {
+        if (recordingStorage == null || recordingPath == null) {
+            context.sendMessage("&c当前没有正在录制的路径");
+            return;
+        }
+        pauseRecord = true;
+        context.sendMessage(Text.literal("&a当前记录已暂停, 输入!!pathm modify continue (点击该文本以补全)继续录制")
+                .styled(s -> s.withClickEvent(ChatUtils.getSuggestCommand("/!!pathm modify continue"))));
+    }
+
+    public void onContinue(CommandExecution context) {
+        if (recordingStorage == null || recordingPath == null) {
+            context.sendMessage("&c当前没有正在录制的路径");
+            return;
+        }
+        pauseRecord = false;
+        context.sendMessage("&a当前记录已继续");
     }
 
     private boolean onStop(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
@@ -314,6 +345,10 @@ public class PathManager extends BaseModule {
                 recordCurrentPosition(player.getBlockPos());
             }
         }
+    }
+
+    private void onWorldSwitch(Event<World> event) {
+        finishPath("切换世界", null);
     }
 
     private void onDisconnect(Event<Void> event) {
@@ -446,6 +481,10 @@ public class PathManager extends BaseModule {
         if (path.isEmpty() || !path.getLast().equals(pos)) {
             path.add(pos.toImmutable());
         }
+        //
+        if (recordingStorage != null) {
+            recordingStorage.write(RecordPath.CODEC, recordingPath);
+        }
         recordingSnapshot = new RecordSnapshot(pos);
     }
 
@@ -501,20 +540,15 @@ public class PathManager extends BaseModule {
     }
 
     private boolean shouldWriteBeforeCurrent(RecordSnapshot snapshot, BlockPos current) {
-
-        double writeDistance = autoWriteDistance.get();
-        double disSqr = snapshot.snapshotPos().getSquaredDistance(current);
-        if (canSee(snapshot.lastPosition(), current)) {}
-        if (writeDistance > 0.0D && disSqr < MathUtils.s2(2 * writeDistance)) {
-            if (canSee(snapshot.snapshotPos(), snapshot.lastPosition())) {
-                if (disSqr < MathUtils.s2(writeDistance)) {
-                    return !canSee(snapshot.snapshotPos(), current);
-                }
-                return true;
-            }
+        if (pauseRecord) {
             return false;
         }
-        return false;
+        double writeDistance = autoWriteDistance.get();
+        double disSqr = snapshot.snapshotPos().getSquaredDistance(current);
+        if (disSqr < MathUtils.s2(writeDistance)) {
+            return !canSee(snapshot.snapshotPos(), current);
+        }
+        return true;
     }
 
     private boolean canSee(BlockPos from, BlockPos to) {
@@ -539,7 +573,8 @@ public class PathManager extends BaseModule {
         for (Vec3d corner : corners) {
             HitResult result = mc.world.raycast(new RaycastContext(
                     start, corner, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player));
-            if (result.getType() != HitResult.Type.MISS) {
+            // do not raycast entities
+            if (result.getType() == HitResult.Type.BLOCK) {
                 return false;
             }
         }

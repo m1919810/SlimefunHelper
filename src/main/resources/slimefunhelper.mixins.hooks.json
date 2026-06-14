@@ -12,6 +12,7 @@
 		"baritone.ElytraProcessMixin",
 		"baritone.InventoryBehaviourMixin",
 		"litematica.PlacementManagerDaemonFixMixin",
+		"meteor.BaritoneSettingsMixin",
 		"viaversion.PacketWrapperSendEvents"
 	],
 	"injectors": {
