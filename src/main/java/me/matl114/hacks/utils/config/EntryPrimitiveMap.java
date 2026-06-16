@@ -157,4 +157,11 @@ public class EntryPrimitiveMap<T, W> implements NBTParsable<EntryPrimitiveMap<T,
     public int hashCode() {
         return Objects.hash(keyType, valueType, defaultValue, map);
     }
+
+    public boolean isSameType(NBTParsable<?> type) {
+        return NBTParsable.super.isSameType(type)
+                && type instanceof EntryPrimitiveMap mm
+                && mm.keyType == keyType
+                && mm.valueType == valueType;
+    }
 }

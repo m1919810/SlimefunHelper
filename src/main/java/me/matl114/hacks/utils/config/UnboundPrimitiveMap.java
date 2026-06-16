@@ -129,4 +129,12 @@ public class UnboundPrimitiveMap<T, W> implements NBTParsable<UnboundPrimitiveMa
     public int hashCode() {
         return Objects.hash(keyType, valueType, map);
     }
+
+    @Override
+    public boolean isSameType(NBTParsable<?> type) {
+        return NBTParsable.super.isSameType(type)
+                && type instanceof UnboundPrimitiveMap<?, ?> unboundPrimitiveMap
+                && unboundPrimitiveMap.keyType == keyType
+                && unboundPrimitiveMap.valueType == valueType;
+    }
 }

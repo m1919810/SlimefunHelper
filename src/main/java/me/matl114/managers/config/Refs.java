@@ -1,6 +1,9 @@
 package me.matl114.managers.config;
 
 import com.google.common.collect.ImmutableList;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.Dynamic;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -95,4 +98,13 @@ public class Refs {
                 .add(new TypedReferenceBuilder<Object>(Object.class, List.of(ObjectRef.JustOnlyObjectRef::new)))
                 .build();
     }
+
+    public static final Codec<Ref<?>> CODEC = Codec.PASSTHROUGH.comapFlatMap(
+            (dynamic) -> {
+                Ref<?> nbtElement = dynamic.convert(ConfigOp.INSTANCE).getValue();
+                return DataResult.success(nbtElement);
+            },
+            (nbt) -> {
+                return new Dynamic<>(ConfigOp.INSTANCE, nbt);
+            });
 }

@@ -53,7 +53,8 @@ public abstract class ElytraBehaviourPathManagerMixin {
                 "Lbaritone/process/elytra/ElytraBehavior$PathManager;path0(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;Ljava/util/function/UnaryOperator;)Ljava/util/concurrent/CompletableFuture;"
             },
             at = @At("HEAD"),
-            cancellable = true)
+            cancellable = true,
+            require = 0)
     private void c(
             BlockPos var1,
             BlockPos var2,

@@ -135,6 +135,20 @@ public class MainCommand extends AbstractMainCommand {
         }
     }
 
+    public static void dispatchCommand(String[] args) {
+        if (mc.player != null) {
+            if (args.length == 0) return;
+            try {
+                if (REGISTERED_COMMANDS.onCommand(mc.player, "", args)) {
+                    return;
+                }
+            } catch (Throwable e) {
+                Debug.chat("Unexpected Error occurred :", e.getMessage());
+                Debug.info(e);
+            }
+        }
+    }
+
     public static List<String> callTabCompletion(String[] command) {
         if (mc.player != null) {
             List<String> val = REGISTERED_COMMANDS.onTabComplete(mc.player, "", command);

@@ -82,6 +82,10 @@ public class Config implements RefMap {
         });
     }
 
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(Config::configSaveTasks, "Config-Shutdown-Save"));
+    }
+
     public static void launchSaveTasks() {
         ScheduleService.launchAsyncDelayedTask(Config::configSaveTasks, 1000);
     }

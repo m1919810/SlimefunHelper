@@ -24,7 +24,7 @@ public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegiste
         registeredConfigs.put(type, maps);
     }
 
-    static String getConfigEnumType(Class<? extends Enum> configEnum) {
+    static String getConfigEnumType(Class<?> configEnum) {
         if (configEnum.getEnumConstants().length == 0) {
             return configEnum.getSimpleName().toLowerCase(Locale.ROOT);
         } else {
@@ -32,10 +32,10 @@ public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegiste
         }
     }
 
-    static void ensureRegistered(Class<? extends Enum> configEnum) {
+    static void ensureRegistered(Class<?> configEnum) {
         String configTypeName = getConfigEnumType(configEnum);
         if (!registeredConfigs.containsKey(configTypeName)) {
-            register(configTypeName, configEnum);
+            register(configTypeName, (Class) configEnum);
         }
     }
     //        public Text getDisplay();

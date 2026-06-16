@@ -61,4 +61,8 @@ public interface NBTParsable<T extends NBTParsable<T>> extends AutoRegisterType 
     default String getTypeName() {
         return type().typeName;
     }
+
+    default boolean isSameType(NBTParsable<?> type) {
+        return type.getClass() == this.getClass();
+    }
 }

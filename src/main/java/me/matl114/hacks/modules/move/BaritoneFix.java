@@ -211,7 +211,7 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean handleAutoJump() {
-        if (this.autoJumpFix.get()) {
+        if (this.autoJumpFix.get() && mc.player.isOnGround()) {
             if (!mc.player.isFallFlying()) {
                 Debug.chat(ChatUtils.stringToText("&c[BaritoneFix] &fBaritone autoJump takeOff"));
                 ElytraExtra.INSTANCE.autoTakeoff();
