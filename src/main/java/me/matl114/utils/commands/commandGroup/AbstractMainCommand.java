@@ -301,6 +301,7 @@ public class AbstractMainCommand implements SubCommand, InterruptionHandler {
      * @param sender The command sender to show help to
      */
     protected void showHelpCommand(CommandExecution sender, ArgumentReader command) {
+        command.stepAll();
         String already = command.getAlreadyReadArgStr();
         sender.sendMessage("/%s 全部指令".formatted(already));
         onCustomHelp(sender, new ArgumentReader(command.getAlreadyReadArgs()))

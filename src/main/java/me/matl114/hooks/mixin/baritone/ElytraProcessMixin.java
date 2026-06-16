@@ -78,7 +78,7 @@ public abstract class ElytraProcessMixin {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
             return;
         }
-        if (BaritoneFix.INSTANCE.handleFreeze("Path Complete")) {
+        if (BaritoneFix.INSTANCE.handleFreeze("Emergency Landing")) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
             return;
         }
@@ -167,6 +167,38 @@ public abstract class ElytraProcessMixin {
             Debug.chat(ChatUtils.stringToText(
                     "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (Pitch)"));
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+        }
+    }
+
+    @Inject(
+            method = "onTick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lbaritone/process/ElytraProcess;a()Z",
+                            shift = At.Shift.BEFORE,
+                            ordinal = 1),
+            cancellable = true,
+            require = 0)
+    private void onAutoJump(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
+        if (BaritoneFix.INSTANCE.handleAutoJump()) {
+            cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
+        }
+    }
+
+    @Inject(
+            method = "onTick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lbaritone/process/ElytraProcess;shouldLandForSafety()Z",
+                            shift = At.Shift.BEFORE,
+                            ordinal = 1),
+            cancellable = true,
+            require = 0)
+    private void onAutoJump2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
+        if (BaritoneFix.INSTANCE.handleAutoJump()) {
+            cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
         }
     }
 }

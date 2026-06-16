@@ -5,10 +5,13 @@ import baritone.api.IBaritone;
 import baritone.api.Settings;
 import baritone.api.event.events.ChatEvent;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Supplier;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.math.BlockPos;
 
 public abstract class BaritoneHooks implements IHooks {
 
@@ -33,9 +36,17 @@ public abstract class BaritoneHooks implements IHooks {
 
     public abstract boolean isElytraProcessing();
 
+    public abstract void setBaritoneNetherPathSupplier(Supplier<List<BlockPos>> blockPos);
+
+    public abstract void setBaritoneCurrentElytraDestination(BlockPos pos);
+
+    public abstract void cancelBaritone();
+
     public static class Impl extends BaritoneHooks {
         Settings settings;
         Map<String, ValueAccessor<?>> settingsMap = new LinkedHashMap<>();
+
+        public static Supplier<List<BlockPos>> netherPathSupplier;
 
         public Impl() {
             settings = BaritoneAPI.getSettings();
@@ -57,6 +68,8 @@ public abstract class BaritoneHooks implements IHooks {
 
         @Override
         public boolean handleCommand(String command) {
+            String pfx = BaritoneAPI.getSettings().prefix.value;
+            command = command.startsWith(pfx) ? command : (pfx + command);
             ChatEvent var4 = new ChatEvent(command);
             IBaritone var3;
             if ((var3 = BaritoneAPI.getProvider().getBaritoneForPlayer(mc.player)) != null) {
@@ -79,6 +92,21 @@ public abstract class BaritoneHooks implements IHooks {
                     .getPrimaryBaritone()
                     .getElytraProcess()
                     .isActive();
+        }
+
+        @Override
+        public void setBaritoneNetherPathSupplier(Supplier<List<BlockPos>> blockPos) {
+            netherPathSupplier = blockPos;
+        }
+
+        @Override
+        public void setBaritoneCurrentElytraDestination(BlockPos pos) {
+            BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().pathTo(pos);
+        }
+
+        @Override
+        public void cancelBaritone() {
+            BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
         }
     }
 
@@ -103,5 +131,14 @@ public abstract class BaritoneHooks implements IHooks {
         public boolean isElytraProcessing() {
             return false;
         }
+
+        @Override
+        public void setBaritoneNetherPathSupplier(Supplier<List<BlockPos>> blockPos) {}
+
+        @Override
+        public void setBaritoneCurrentElytraDestination(BlockPos pos) {}
+
+        @Override
+        public void cancelBaritone() {}
     }
 }

@@ -12,6 +12,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
@@ -111,6 +112,10 @@ public class AutoEat extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final FlagRef pauseInLava = builder(autoEat.add("pause-in-liquid"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
     private boolean eating;
     private Runnable restoreCallback = null;
     private int eatingSlot = -1;
@@ -163,6 +168,7 @@ public class AutoEat extends BaseModule {
     }
 
     private IndexEntry<ItemStack> findFood() {
+        // TODO VALIDATE
         boolean healthPriority = enableHealth.get() && mc.player.getHealth() <= healthLevel.get();
         return inv.get()
                 ? InventoryUtils.findBestPlayerItem(stack -> scoreFood(stack, healthPriority), true, false)
@@ -225,6 +231,10 @@ public class AutoEat extends BaseModule {
                     find_eat_condition:
                     {
                         if (eatingCooldownTick > Tasks.getTick()) {
+                            break find_eat_condition;
+                        }
+                        if (pauseInLava.get()
+                                && (PlayerStateManager.INSTANCE.lastInLava || PlayerStateManager.INSTANCE.lastInWall)) {
                             break find_eat_condition;
                         }
                         if (noEnemy.get()) {
@@ -292,13 +302,18 @@ public class AutoEat extends BaseModule {
             return null;
         }
         FoodComponent food = getFoodComponent(stack);
+
         double score;
         if (food != null) {
-            int hunger = food.nutrition();
-            if (hunger > 0) {
-                score = food.saturation() / hunger;
+            if (mc.player.canConsume(food.canAlwaysEat())) {
+                int hunger = food.nutrition();
+                if (hunger > 0) {
+                    score = food.saturation() / hunger;
+                } else {
+                    score = food.saturation();
+                }
             } else {
-                score = food.saturation();
+                return null;
             }
         } else {
             score = 0;
