@@ -104,6 +104,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::autoTakeoff))
             .build();
 
+    public final FlagRef autoTakeOffWhenJoinServer =
+            flagBuilder(elytraTweaks.add("auto-start-fly-join-server")).build();
+
     // public final FlagRef elytraAntiKB = flagBuilder(Configs.MOV_CONFIG, ELYTRA_ANTI_KB).build();
 
     public final FlagRef enableUnbreakableElytra =
@@ -202,6 +205,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::handleMaceAttack);
         registerListener(
                 Listener.getPacketPostSendPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::attackPost);
+        registerListener(Listener.getGameJoinPoint(), this::onGameJoinAutoStartFallFlying);
     }
 
     //    public void onHit(Event<WorldEventS2CPacket> event){
@@ -270,6 +274,31 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void autoTakeoff() {
         if (checkNull()) return;
         autoTakeOffFlag = true;
+    }
+
+    public void onGameJoinAutoStartFallFlying(Event<ClientPlayerEntity> joinServer) {
+        if (autoTakeOffWhenJoinServer.get()) {
+            Tasks.scheduleRepeated(
+                    () -> {
+                        if (mc.player == joinServer.context) {
+                            if (mc.player.networkHandler.isLoaded()
+                                    && mc.world.isChunkLoaded(mc.player.getBlockPos())) {
+                                if (!mc.player.isOnGround() && !mc.player.isFallFlying()) {
+                                    autoTakeoff();
+                                    return true;
+                                } else {
+                                    return true;
+                                }
+                            } else {
+                                return false;
+                            }
+                        } else {
+                            return true;
+                        }
+                    },
+                    10,
+                    1);
+        }
     }
 
     public boolean clickRocket() {

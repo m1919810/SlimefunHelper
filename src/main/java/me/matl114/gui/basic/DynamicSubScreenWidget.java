@@ -45,7 +45,7 @@ public class DynamicSubScreenWidget extends SubScreenWidget {
         }
         if (isMouseOver(mouseX, mouseY)) {
             // scroll up so other can see down below
-            yCoord.setValue(yCoord.getValue() + (int) (verticalAmount * 5.0D));
+            yCoord.setValue(yCoord.getValue() + (int) (verticalAmount * 10.0D));
             return true;
         }
         return false;
