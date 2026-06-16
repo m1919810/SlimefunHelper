@@ -43,7 +43,13 @@ public class EventCommand extends BaseModule {
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onTriggerTotem);
     }
 
-    public void onEventType(EventType type, Consumer<String> commandSender) {}
+    public void onEventType(EventType type, Consumer<String> commandSender) {
+        eventMap.get().forEach((eventType, s) -> {
+            if (eventType == type) {
+                commandSender.accept(s);
+            }
+        });
+    }
 
     private void executeDelayed(String s) {
         ChatTasks.sayMessage(s, false);
