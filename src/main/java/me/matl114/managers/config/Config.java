@@ -5,6 +5,9 @@ import com.mojang.serialization.Lifecycle;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -243,8 +246,14 @@ public class Config implements RefMap {
     }
 
     public void save(@Nonnull File file) {
-        if (!file.exists()) {
-            createFile();
+        File absoluteFile = file.getAbsoluteFile();
+        File parentDir = absoluteFile.getParentFile();
+        if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs() && !parentDir.exists()) {
+            this.logger.log(
+                    Level.SEVERE,
+                    "Exception while saving a Config file: failed to create parent directories for {0}",
+                    absoluteFile);
+            return;
         }
         Map savedData = (Map) this.ref.getAsPrimitive();
 
@@ -253,13 +262,45 @@ public class Config implements RefMap {
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK); // 使用块风格
         options.setPrettyFlow(true); // 启用漂亮的流式显示
         Yaml yaml = new Yaml(options);
-        try (FileOutputStream fout = new FileOutputStream(file);
+        File tempFile = new File(absoluteFile.getPath() + ".tmp");
+        boolean saved = false;
+        try (FileOutputStream fout = new FileOutputStream(tempFile);
                 OutputStreamWriter owrite = new OutputStreamWriter(fout, StandardCharsets.UTF_8)) {
             yaml.dump(savedData, owrite);
+            owrite.flush();
+            fout.getFD().sync();
         } catch (IOException e) {
             this.logger.log(Level.SEVERE, "Exception while saving a Config file", e);
+        }
+
+        if (!tempFile.exists()) {
+            return;
+        }
+
+        try {
+            replaceFile(tempFile, absoluteFile);
+            saved = true;
+        } catch (IOException e) {
+            this.logger.log(Level.SEVERE, "Exception while replacing a Config file", e);
         } finally {
-            markForSave = false;
+            if (!saved && tempFile.exists() && !tempFile.delete()) {
+                tempFile.deleteOnExit();
+            }
+            if (saved) {
+                markForSave = false;
+            }
+        }
+    }
+
+    private void replaceFile(File tempFile, File targetFile) throws IOException {
+        try {
+            Files.move(
+                    tempFile.toPath(),
+                    targetFile.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(tempFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

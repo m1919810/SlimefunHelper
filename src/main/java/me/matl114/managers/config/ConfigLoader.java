@@ -92,11 +92,11 @@ public class ConfigLoader {
     }
 
     public static HashMap<String, Object> loadYamlConfig(File file) {
-        try {
-            return loadYamlConfig(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+        try (var fileInput = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+            return loadYamlConfig(fileInput);
         } catch (Throwable e) {
             Debug.info("failed to load yaml config " + file.getName() + ".yml, Error: " + e.getMessage());
-            throw new RuntimeException();
+            throw new RuntimeException(e);
         }
     }
 

@@ -1349,6 +1349,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         mc.getNetworkHandler()
                                 .sendPacket(new ClientCommandC2SPacket(
                                         mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    } else {
+                        autoTakeOffFlag = false;
                     }
                 }
             }
