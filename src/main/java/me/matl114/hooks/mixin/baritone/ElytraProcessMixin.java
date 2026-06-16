@@ -5,6 +5,8 @@ import baritone.api.process.PathingCommandType;
 import baritone.process.ElytraProcess;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import me.matl114.hacks.modules.move.BaritoneFix;
 import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.utils.ChatUtils;
@@ -15,6 +17,7 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -170,6 +173,12 @@ public abstract class ElytraProcessMixin {
         }
     }
 
+    @Unique
+    private static final Field field = Arrays.stream(ElytraProcess.class.getFields())
+            .filter(s -> s.getType() == ElytraProcess.State.class)
+            .findAny()
+            .orElseThrow();
+
     @Inject(
             method = "onTick",
             at =
@@ -182,6 +191,10 @@ public abstract class ElytraProcessMixin {
             require = 0)
     private void onAutoJump(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.handleAutoJump()) {
+            try {
+                field.set(this, ElytraProcess.State.values()[3]);
+            } catch (Throwable e) {
+            }
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
         }
     }
@@ -198,6 +211,10 @@ public abstract class ElytraProcessMixin {
             require = 0)
     private void onAutoJump2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.handleAutoJump()) {
+            try {
+                field.set(this, ElytraProcess.State.values()[3]);
+            } catch (Throwable e) {
+            }
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
         }
     }

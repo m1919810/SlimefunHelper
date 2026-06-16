@@ -14,6 +14,7 @@ import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hooks.BaritoneHooks;
@@ -79,6 +80,12 @@ public class PathManager extends BaseModule {
             .defaultValue(Mode.ELYTRA_FLIGHT)
             .build();
 
+    public final DoubleRef goalDistance = doubleBuilder(pathManager.add("goal-distance"))
+            .defaultValue(400.0D)
+            .validator(Configs.doubleRange(100, 4e10))
+            .show(() -> this.rerunMode.get().isIn(Mode.BARITONE_GOAL))
+            .build();
+
     private FileStorage recordingStorage;
     private String recordingPathFile;
     private RecordPath recordingPath;
@@ -96,11 +103,12 @@ public class PathManager extends BaseModule {
         super.registerAll();
         registerCommandBootstrap(this::bootStrapPathCommand);
         registerListener(Listener.getPreGameTick(), this::onPreTick);
-        registerListener(Listener.getPreGameTick(), this::onTickRunning);
+        registerListener(Listener.getPreGameTick(), this::onTickRunningBaritone);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnect);
         registerListener(Listener.getPacketPoint().getChannel(PlayerRespawnS2CPacket.class), this::onRespawn);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(Listener.getPreGameTick(), this::onTickRunningBaritoneGoal);
     }
 
     @Override
@@ -368,7 +376,8 @@ public class PathManager extends BaseModule {
             Collections.reverse(loaded);
         }
         var alignLoaded = alignPathToNearest(loaded);
-        currentPath = createRerunContext(pathFile, alignLoaded);
+        boolean cutMode = rerunMode.get().isIn(Mode.BARITONE);
+        currentPath = createRerunContext(pathFile, alignLoaded, cutMode);
         stopCurrentRunningBaritone();
         context.sendMessage(
                 "&a已加载路径: " + pathFile + ", 当前位置 %d / %d".formatted(loaded.size() - alignLoaded.size(), loaded.size())
@@ -639,6 +648,9 @@ public class PathManager extends BaseModule {
                 RenderUtils.drawLineVirtual(matrices, lastPos, pointPos, color);
             }
             lastPos = pointPos;
+            if (lastPos.squaredDistanceTo(mc.player.getPos()) > MathUtils.s2(autoWriteDistance.get() * 8)) {
+                break;
+            }
         }
     }
 
@@ -648,6 +660,7 @@ public class PathManager extends BaseModule {
         recordingPath = new RecordPath(new ArrayList<>());
         recordingFlightStarted = false;
         recordingSnapshot = null;
+        pauseRecord = false;
     }
 
     private void restartPath(String pathFile, FileStorage storage, List<BlockPos> blockPos) {
@@ -800,12 +813,12 @@ public class PathManager extends BaseModule {
 
     private Box makeBodyBox(Vec3d bottomCenter) {
         return new Box(
-                bottomCenter.x - 0.5D,
+                bottomCenter.x - 0.4D,
                 bottomCenter.y,
-                bottomCenter.z - 0.5D,
-                bottomCenter.x + 0.5D,
-                bottomCenter.y + 2.0D,
-                bottomCenter.z + 0.5D);
+                bottomCenter.z - 0.4D,
+                bottomCenter.x + 0.4D,
+                bottomCenter.y + 1.9D,
+                bottomCenter.z + 0.4D);
     }
 
     private Vec3d[] makeBodyCorners(Box box) {
@@ -860,11 +873,11 @@ public class PathManager extends BaseModule {
         return List.copyOf(path.subList(nearest, path.size()));
     }
 
-    private PathRerunContext createRerunContext(String pathFile, List<BlockPos> path) {
-        return new PathRerunContext(pathFile, splitPathSegments(path));
+    private PathRerunContext createRerunContext(String pathFile, List<BlockPos> path, boolean cut) {
+        return new PathRerunContext(pathFile, splitPathSegments(path, cut));
     }
 
-    private List<PathSeg> splitPathSegments(List<BlockPos> path) {
+    private List<PathSeg> splitPathSegments(List<BlockPos> path, boolean cut) {
         if (path.isEmpty()) {
             return List.of();
         }
@@ -883,14 +896,14 @@ public class PathManager extends BaseModule {
                 continue;
             }
             if (previous.getSquaredDistance(immutable) > maxDistanceSquared) {
-                segments.add(new PathSeg(current));
+                segments.add(new PathSeg(current, cut));
                 current = new ArrayList<>();
             }
             current.add(immutable);
             previous = immutable;
         }
         if (!current.isEmpty()) {
-            segments.add(new PathSeg(current));
+            segments.add(new PathSeg(current, cut));
         }
         return List.copyOf(segments);
     }
@@ -899,12 +912,13 @@ public class PathManager extends BaseModule {
         return mc.world == null ? "" : mc.world.getRegistryKey().getValue().toString();
     }
 
-    public void onTickRunning(Event<ClientPlayerEntity> event) {
+    int lastUpdatedIndex = 0;
+
+    public void onTickRunningBaritone(Event<ClientPlayerEntity> event) {
         if (!rerunningBaritone || currentPath == null || checkNull()) {
             return;
         }
-        if (rerunMode.get().isIn(Mode.ELYTRA_FLIGHT)) {
-            stopCurrentRunningBaritone();
+        if (!rerunMode.get().isIn(Mode.BARITONE)) {
             return;
         }
         if (!BaritoneHooks.getInstance().isEnabled()) {
@@ -923,9 +937,10 @@ public class PathManager extends BaseModule {
         }
         BlockPos playerPos = event.context().getBlockPos();
         if (!currentSeg.started()) {
-            setBaritoneAutoGoal(currentSeg.start());
+            lastUpdatedIndex = 0;
+            setBaritoneGoal(currentSeg.start());
             currentSeg.markAutoGoalIssued();
-            if (canSee(playerPos, currentSeg.start())) {
+            if (currentSeg.start().getSquaredDistance(playerPos) < 10000) {
                 currentSeg.updateIndex(playerPos);
                 setBaritoneNetherPath(currentSeg.currentSubPath());
                 setBaritoneGoal(currentSeg.end());
@@ -933,12 +948,16 @@ public class PathManager extends BaseModule {
             }
             return;
         } else {
-            currentSeg.updateIndex(playerPos);
+            if (currentSeg.updateIndex(playerPos)) {
+                setBaritoneNetherPath(currentSeg.currentSubPath());
+                if (lastUpdatedIndex + 350 < currentSeg.currentIndex) {
+                    lastUpdatedIndex = currentSeg.currentIndex;
+                    setBaritoneGoal(currentSeg.end());
+                }
+            }
             if (currentSeg.tickStuck(playerPos) && rebuildCurrentSegmentFromStuckPoint(currentSeg)) {
                 return;
             }
-            setBaritoneNetherPath(currentSeg.currentSubPath());
-            setBaritoneAutoGoal(currentSeg.end());
         }
         if (playerPos.getSquaredDistance(currentSeg.end()) <= 10000) {
             endBaritonePathOverride();
@@ -946,9 +965,62 @@ public class PathManager extends BaseModule {
             var seg = currentPath.currentSegment();
             if (seg == null) {
                 stopCurrentRunningBaritone();
-                setBaritoneAutoGoal(currentSeg.end());
+                setBaritoneGoal(currentSeg.end());
+                Debug.chat(ChatUtils.stringToText("&c[PathManager] &fRerun完成,已抵达终点!"));
+                MovTasks.getElytraFlight().enable.set(true);
             } else {
-                setBaritoneAutoGoal(seg.start());
+                setBaritoneGoal(seg.start());
+            }
+        }
+    }
+
+    public void onTickRunningBaritoneGoal(Event<ClientPlayerEntity> event) {
+        if (!rerunningBaritone || currentPath == null || checkNull()) {
+            return;
+        }
+        if (!rerunMode.get().isIn(Mode.BARITONE_GOAL)) {
+            return;
+        }
+        if (!BaritoneHooks.getInstance().isEnabled()) {
+            stopCurrentRunningBaritone();
+            return;
+        }
+        //        if(!BaritoneHooks.getInstance().isElytraProcessing()){
+        //            BaritoneHooks.getInstance().handleCommand("elytra");
+        //            return;
+        //        }
+        PathSeg currentSeg = currentPath.currentSegment();
+        if (currentSeg == null) {
+            stopCurrentRunningBaritone();
+            return;
+        }
+        BlockPos playerPos = event.context().getBlockPos();
+        if (!currentSeg.started()) {
+            setBaritoneGoal(currentSeg.start());
+            currentSeg.markAutoGoalIssued();
+            if (currentSeg.start().getSquaredDistance(playerPos) < 10000) {
+                currentSeg.updateGoalIndex(playerPos, goalDistance.get());
+                setBaritoneGoal(currentSeg.currentBlockPos());
+                currentSeg.markStarted();
+            }
+            return;
+        } else {
+            if (playerPos.getSquaredDistance(currentSeg.currentBlockPos()) < 10000) {
+                currentSeg.updateGoalIndex(playerPos, goalDistance.get());
+                setBaritoneGoal(currentSeg.currentBlockPos());
+            }
+        }
+        if (playerPos.getSquaredDistance(currentSeg.end()) <= 10000) {
+            endBaritonePathOverride();
+            currentPath.advanceSegment();
+            var seg = currentPath.currentSegment();
+            if (seg == null) {
+                stopCurrentRunningBaritone();
+                setBaritoneGoal(currentSeg.end());
+                Debug.chat(ChatUtils.stringToText("&c[PathManager] &fRerun完成,已抵达终点!"));
+                MovTasks.getElytraFlight().enable.set(true);
+            } else {
+                setBaritoneGoal(seg.start());
             }
         }
     }
@@ -963,14 +1035,14 @@ public class PathManager extends BaseModule {
         endBaritonePathOverride();
         setBaritoneGoal(target);
         currentPath.replaceCurrentSegment(new PathSeg(
-                currentSeg.points().subList(targetIndex, currentSeg.points().size())));
+                currentSeg.points().subList(targetIndex, currentSeg.points().size()), currentSeg.cut));
         return true;
     }
 
     private int findFarthestUnloadedIndex(PathSeg currentSeg) {
         int currentIndex = currentSeg.currentIndex();
-        int endIndex = Math.min(currentIndex + 40, currentSeg.points().size() - 1);
-        for (int i = endIndex; i >= currentSeg.currentIndex(); --i) {
+        int endIndex = Math.min(currentIndex + 20, currentSeg.points().size() - 1);
+        for (int i = currentIndex; i <= endIndex; ++i) {
             if (!isChunkLoaded(currentSeg.points().get(i))) {
                 return i;
             }
@@ -993,7 +1065,6 @@ public class PathManager extends BaseModule {
         }
     }
     // baritone related
-    private void setBaritoneAutoGoal(BlockPos pos) {}
 
     List<BlockPos> currentPathingSegment;
 
@@ -1012,7 +1083,7 @@ public class PathManager extends BaseModule {
         if (path == null || path.isEmpty()) {
             return List.of();
         }
-        int end = Math.min(path.size(), PATH_SEG_NETHER_PATH_LIMIT);
+        int end = Math.min(path.size(), 400);
         List<BlockPos> adjusted = new ArrayList<>(end);
         for (BlockPos pos : path.subList(0, end)) {
             adjusted.add(adjustPathPointByEnvironment(pos));
@@ -1026,17 +1097,17 @@ public class PathManager extends BaseModule {
         }
         int above = firstNonAirDistance(pos, 1);
         int below = firstNonAirDistance(pos, -1);
-        if (above > 0 && below == 0) {
-            return pos.add(0, 1, 0).toImmutable();
+        if (above > below && below < 3) {
+            return pos.add(0, above, 0).toImmutable();
         }
-        if (below > 0 && above == 0) {
-            return pos.add(0, -1, 0).toImmutable();
+        if (below > above && above < 3) {
+            return pos.add(0, -below, 0).toImmutable();
         }
         return pos.toImmutable();
     }
 
     private int firstNonAirDistance(BlockPos pos, int direction) {
-        for (int distance = 1; distance <= 2; ++distance) {
+        for (int distance = 1; distance <= 3; ++distance) {
             BlockPos checkPos = pos.add(0, direction * distance, 0);
             if (isLoadedNonAir(checkPos)) {
                 return distance;
@@ -1053,6 +1124,8 @@ public class PathManager extends BaseModule {
         return !state.isAir() && !state.isLiquid();
     }
 
+    private void setBaritoneAutoGoal(BlockPos pos) {}
+
     private void setBaritoneGoal(BlockPos pos) {
         BaritoneHooks.getInstance().setBaritoneCurrentElytraDestination(pos);
     }
@@ -1064,6 +1137,7 @@ public class PathManager extends BaseModule {
 
     public enum Mode implements ConfigEnum {
         BARITONE,
+        BARITONE_GOAL,
         ELYTRA_FLIGHT;
 
         @Override
@@ -1206,13 +1280,30 @@ public class PathManager extends BaseModule {
         private boolean started;
         private BlockPos stuckReference;
         private int stuckTicks;
+        private final boolean cut;
 
-        private PathSeg(List<BlockPos> points) {
+        private PathSeg(List<BlockPos> points, boolean cut) {
+            this.cut = cut;
             List<BlockPos> immutablePoints = new ArrayList<>();
+            BlockPos lastPos = null;
             for (BlockPos pos : points) {
-                if (pos != null) {
-                    immutablePoints.add(pos.toImmutable());
+                if (lastPos != null && cut) {
+                    double distance = lastPos.getSquaredDistance(pos);
+                    if (distance > 25) {
+                        Vec3d vec3d1 = lastPos.toCenterPos();
+                        Vec3d vec3d2 = pos.toCenterPos();
+                        Vec3d delta = vec3d2.subtract(vec3d1);
+                        double len = delta.length();
+                        delta = delta.normalize();
+                        int seq = (((int) len - 1) / 5) + 1;
+                        for (var re = 1; re < seq; ++re) {
+                            immutablePoints.add(
+                                    BlockPos.ofFloored(vec3d1.add(delta.multiply(len * re / (double) seq))));
+                        }
+                    }
                 }
+                immutablePoints.add(pos.toImmutable());
+                lastPos = pos;
             }
             this.points = List.copyOf(immutablePoints);
             this.start = this.points.getFirst();
@@ -1240,7 +1331,12 @@ public class PathManager extends BaseModule {
         }
 
         private List<BlockPos> currentSubPath() {
-            return List.copyOf(points.subList(currentIndex, points.size()));
+
+            return List.copyOf(points.subList(Math.min(points.size() - 1, currentIndex + 1), points.size()));
+        }
+
+        private BlockPos currentBlockPos() {
+            return points.get(currentIndex);
         }
 
         private boolean tickStuck(BlockPos playerPos) {
@@ -1265,14 +1361,20 @@ public class PathManager extends BaseModule {
             stuckTicks = 0;
         }
 
-        private void updateIndex(BlockPos playerPos) {
+        private boolean updateIndex(BlockPos playerPos) {
             if (playerPos == null || currentIndex >= points.size() - 1) {
-                return;
+                return false;
             }
+            int lastIndex = currentIndex;
+
             int searchEnd = Math.min(points.size() - 1, currentIndex + PATH_SEG_PROGRESS_LOOKAHEAD);
-            int bestIndex = currentIndex;
+            int bestIndex = searchEnd;
             double bestDistance = Double.MAX_VALUE;
+
             for (int i = currentIndex; i <= searchEnd; ++i) {
+                //                if(mc.player.getPos().squaredDistanceTo(points.get(i).toCenterPos()) < 16){
+                //                    currentIndex = i + 1;
+                //                }
                 double distance = points.get(i).getSquaredDistance(playerPos);
                 if (distance < bestDistance) {
                     bestDistance = distance;
@@ -1280,6 +1382,21 @@ public class PathManager extends BaseModule {
                 }
             }
             currentIndex = bestIndex;
+
+            return currentIndex != lastIndex;
+        }
+
+        private boolean updateGoalIndex(BlockPos playerPos, double goalDistance) {
+            if (playerPos == null || currentIndex >= points.size() - 1) {
+                return false;
+            }
+            for (; currentIndex < points.size() - 1; ++currentIndex) {
+                double distance = points.get(currentIndex).getSquaredDistance(playerPos);
+                if (distance > MathUtils.s2(goalDistance)) {
+                    break;
+                }
+            }
+            return true;
         }
 
         private void markAutoGoalIssued() {
