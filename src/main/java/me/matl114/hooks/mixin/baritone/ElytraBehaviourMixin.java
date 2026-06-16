@@ -3,6 +3,7 @@ package me.matl114.hooks.mixin.baritone;
 import baritone.api.utils.IPlayerController;
 import baritone.behavior.InventoryBehavior;
 import baritone.process.elytra.ElytraBehavior;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.util.function.Predicate;
@@ -207,5 +208,17 @@ public abstract class ElytraBehaviourMixin {
                     "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (Pitch)"));
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
+    }
+
+    @ModifyExpressionValue(
+            method = {"a()V", "Lbaritone/process/elytra/ElytraBehavior;pathTo()V"},
+            at = @At(value = "FIELD", target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;"))
+    private Object onAutoJumpFix(Object original) {
+        if (original instanceof Boolean bl) {
+            if (BaritoneFix.INSTANCE.autoJumpFix.get()) {
+                return false;
+            }
+        }
+        return original;
     }
 }
