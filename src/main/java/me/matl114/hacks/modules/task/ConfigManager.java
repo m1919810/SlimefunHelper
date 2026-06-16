@@ -24,6 +24,7 @@ import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.TabResult;
 import me.matl114.utils.config.AttrKeyValue;
+import net.minecraft.loot.entry.LeafEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -90,6 +91,15 @@ public class ConfigManager extends BaseModule {
                                 CommandUtils.fileSupplier(FileManager.CONFIG_SAVE_FOLDER, (sx) -> {
                                     return sx.endsWith(".nbt") || sx.endsWith(".dat");
                                 })))
+                        .build())
+                .arg(SimpleCommandArgs.argumentBuilder()
+                        .name("config")
+                        .defaultValue("all")
+                        .select("all")
+                        .tabCompletor(TabResult.ofStreamSupplier(() -> Config.REGISTRY.stream()
+                                .map(Config::getRegistryKey)
+                                .filter(Objects::nonNull)
+                                .map(registryKey -> registryKey.getValue().toString())))
                         .build())
                 .post(e -> e.executor(CommandContext.run(this::onLoad)))
                 .complete()
@@ -244,6 +254,11 @@ public class ConfigManager extends BaseModule {
             promptSnapshotFolderImport();
             return;
         }
+        String name = args.nextNonnullString();
+        Config config = null;
+        if (!"all".equalsIgnoreCase(name)) {
+            config = Config.REGISTRY.get(Identifier.tryParse(name));
+        }
 
         try (FileStorage storage = FileManager.getInstance().getConfigStorage(fileName, true, false)) {
             if (storage == null) {
@@ -261,20 +276,34 @@ public class ConfigManager extends BaseModule {
             }
 
             ConfigSnapshot snapshot = decoded.result().get();
-            for (Map.Entry<Identifier, MapRef> entry : snapshot.snapSnot().entrySet()) {
-                Config config = Config.REGISTRY.get(entry.getKey());
-                if (config == null) {
-                    Debug.chat(Text.literal("跳过未注册配置: " + entry.getKey()).formatted(Formatting.YELLOW));
-                    continue;
-                }
-                for (LeafEntry leaf : flattenMapRef(entry.getValue())) {
-                    Ref<?> currentRef = config.get(leaf.path());
-                    if (currentRef == null) {
+            if (config == null) {
+                for (Map.Entry<Identifier, MapRef> entry : snapshot.snapSnot().entrySet()) {
+                    Config config2 = Config.REGISTRY.get(entry.getKey());
+                    if (config2 == null) {
+                        Debug.chat(Text.literal("跳过未注册配置: " + entry.getKey()).formatted(Formatting.YELLOW));
                         continue;
                     }
-                    leaf.value().copyValueTo(currentRef);
+                    for (LeafEntry leaf : flattenMapRef(entry.getValue())) {
+                        Ref<?> currentRef = config2.get(leaf.path());
+                        if (currentRef == null) {
+                            continue;
+                        }
+                        leaf.value().copyValueTo(currentRef);
+                    }
+                }
+            } else {
+                MapRef mapRef2 = snapshot.snapSnot().get(config.getRegistryKey().getValue());
+                if (mapRef2 != null) {
+                    for (LeafEntry leaf : flattenMapRef(mapRef2)) {
+                        Ref<?> currentRef = config.get(leaf.path());
+                        if (currentRef == null) {
+                            continue;
+                        }
+                        leaf.value().copyValueTo(currentRef);
+                    }
                 }
             }
+
             Debug.chat(Text.literal("成功加载配置快照" + fileName).formatted(Formatting.GREEN));
         }
     }

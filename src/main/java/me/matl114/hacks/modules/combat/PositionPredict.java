@@ -1,7 +1,9 @@
 package me.matl114.hacks.modules.combat;
 
+import com.google.common.hash.Hashing;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +25,9 @@ import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CodecUtils;
+import me.matl114.utils.ColorUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.EnumAttrKeyValue;
@@ -78,6 +82,15 @@ public class PositionPredict extends BaseModule {
 
     public final FlagRef debugRender =
             flagBuilder(attack.add("debug-render-prediction")).build();
+    Int2ObjectArrayMap<List<Vec3d>> recordedPoints = new Int2ObjectArrayMap<>();
+
+    public final FlagRef placeRecorder = flagBuilder(attBot.add("place-recorder"))
+            .updateListener(s -> this.recordedPoints.clear())
+            .build();
+
+    public final KeyBindRef placeRecorderHotkey = toggleHotkey(
+                    attBot.add("place-recorder-hotkey"), new MultiKeyBind(), attBot.add("place-recorder"))
+            .build();
 
     @Override
     public void registerAll() {
@@ -115,6 +128,29 @@ public class PositionPredict extends BaseModule {
                                 Color.MAGENTA.getRGB());
                     }
                 }));
+                for (var re : recordedPoints.int2ObjectEntrySet()) {
+                    var lst = re.getValue();
+                    int hash = ColorUtils.withAlphaInt(
+                            Hashing.sha256().hashInt(re.getIntKey()).hashCode(), 255);
+                    VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
+                        for (Vec3d box : lst) {
+                            box = box.add(camera);
+                            operation.drawOutlinedBox(
+                                    event.context,
+                                    vertexConsumer,
+                                    box.add(-0.2, -0.2, -0.2),
+                                    box.add(0.2, 0.2, 0.2),
+                                    hash);
+                        }
+                    }));
+                    VRender.getInstance().createLineStripLayer(((operation, vertexConsumer) -> {
+                        operation.drawLines(
+                                event.context,
+                                vertexConsumer,
+                                lst.stream().map(s -> s.add(camera)).toList(),
+                                hash);
+                    }));
+                }
             } finally {
                 RenderUtils.stopDrawVirtual(event.context);
             }
@@ -126,6 +162,7 @@ public class PositionPredict extends BaseModule {
         if (checkNull()) return;
         if (event.context.getEntity(mc.world) instanceof PlayerInternalAccess internal) {
             internal.getPredictorImpl().onEntityPositionMove(event);
+            onPlayerEntityUpdate((PlayerEntity) internal);
         }
     }
 
@@ -133,6 +170,7 @@ public class PositionPredict extends BaseModule {
         if (checkNull()) return;
         if (mc.world.getEntityById(event.context.entityId()) instanceof PlayerInternalAccess internal) {
             internal.getPredictorImpl().onEntityPositionPost(event);
+            onPlayerEntityUpdate((PlayerEntity) internal);
         }
     }
 
@@ -140,6 +178,15 @@ public class PositionPredict extends BaseModule {
         if (checkNull()) return;
         if (mc.world.getEntityById(event.context.id()) instanceof PlayerInternalAccess internal) {
             internal.getPredictorImpl().onEntityPositionSyncPost(event);
+            onPlayerEntityUpdate((PlayerEntity) internal);
+        }
+    }
+
+    public void onPlayerEntityUpdate(PlayerEntity player) {
+        if (placeRecorder.get()) {
+            recordedPoints
+                    .computeIfAbsent(player.getId(), (v) -> new ArrayList<>())
+                    .add(player.getPos());
         }
     }
 

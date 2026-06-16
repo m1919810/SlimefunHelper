@@ -82,6 +82,9 @@ public class ClientExtra extends BaseModule {
             .registerHotkey(HotKeyUtils.asHandler(this::onCursorLockSwitch))
             .build();
 
+    public final FlagRef paletteException =
+            flagBuilder(other.add("fix-palette-exception")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();

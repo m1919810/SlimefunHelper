@@ -55,6 +55,7 @@
 		"fix.AbstractElementButtonFixMixin",
 		"fix.ClientPlayerListLookupCMEFix",
 		"fix.EntityRenderStateFixMixin",
+		"fix.IdListPaletteFixMixin",
 		"fix.KeyboardDebugCrashFix",
 		"fix.LoginHelloPacketNameFixMixin",
 		"fix.PacketByteBufFixMixin",
@@ -85,9 +86,7 @@
 		"hack.GameRenderMixin",
 		"hack.InGameHudMixin",
 		"hack.InGameOverlayRendererMixin",
-		"versioned.ItemVersionedSpearMixin",
 		"hack.ItemStackMixin",
-		"versioned.LancingVersionedSpearMixin",
 		"hack.LightMapTextureMixin",
 		"hack.LivingEntityMixin",
 		"hack.PlayerAbilityMixin",
@@ -101,7 +100,9 @@
 		"hack.WorldRenderMixin",
 		"versioned.DrawContextMixin",
 		"versioned.GuiRenderStateLayerMixin",
-		"versioned.GuiRenderStateMixin"
+		"versioned.GuiRenderStateMixin",
+		"versioned.ItemVersionedSpearMixin",
+		"versioned.LancingVersionedSpearMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -9,6 +9,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.SlimefunHelper;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.hacks.PlayerInternalAccess;
 import me.matl114.events.Event;
@@ -32,6 +33,7 @@ import me.matl114.utils.*;
 import me.matl114.utils.algorithms.StateMachine;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -144,6 +146,18 @@ public class ElytraBot extends BaseModule {
             .defaultValue(2.5D)
             .build();
 
+    public final FlagRef flyAntiSpear = flagBuilder(elytraBot.add("fly-anti-spear"))
+            .show(() -> mode.get().isNotIn(Mode.SPEAR_ARUA))
+            .build();
+
+    public final FlagRef flyAntiSpearRandDir =
+            flagBuilder(elytraBot.add("fly-anti-spear-rand-dir")).build();
+
+    public final DoubleRef flyAntiSpearArg1 = doubleBuilder(elytraBot.add("fly-anti-spear-arg-1"))
+            .show(() -> mode.get().isNotIn(Mode.SPEAR_ARUA))
+            .defaultValue(0.0D)
+            .build();
+
     public final FlagRef spearAntiSpear = flagBuilder(elytraBot.add("spear-anti-spear"))
             .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
             .build();
@@ -179,6 +193,9 @@ public class ElytraBot extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onEntityStatus);
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        if (SlimefunHelper.DEV_ENV) {
+            registerListener(RenderListener.getRenderGameHudTasks(), this::onDebugRender);
+        }
         registerListener(Listener.getEntityPreTickListener().getChannel(EntityType.PLAYER), this::onEntityPreTick);
         registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityDamage);
     }
@@ -197,6 +214,10 @@ public class ElytraBot extends BaseModule {
     boolean currentInCombatRange;
     int afkTicker = 0;
     double speedMultiplier = 1.0D;
+
+    public boolean isTargetUsingSpear() {
+        return target instanceof PlayerEntity otherShit && SpearEnhance.isUsingSpear(otherShit);
+    }
 
     @Override
     public void onCreate() {
@@ -273,7 +294,7 @@ public class ElytraBot extends BaseModule {
                         int currentTick = Tasks.getTick();
                         // 1. 最早的点（索引0）是否在10 tick之前
                         PredictorImpl.KnownPosition oldest = knownPositions.get(0);
-                        if (currentTick - oldest.tick() > 10) {
+                        if (currentTick - oldest.tick() > 20) {
                             currentAction = TargetAction.AFK;
                         } else {
                             // 相邻点距离检查
@@ -285,7 +306,7 @@ public class ElytraBot extends BaseModule {
                             double dist12 = pos1.distanceTo(pos2);
 
                             // 2. 若相邻两点距离小于1.5，判定为SLOW_SPEED
-                            if (dist01 < 1.5 || dist12 < 1.5) {
+                            if (dist01 < 0.75 || dist12 < 0.75) {
                                 currentAction = TargetAction.SLOW_SPEED;
                             } else if (knownPositions.size() >= 3) {
                                 // 3. 计算向量 ab 和 bc 的夹角
@@ -297,7 +318,7 @@ public class ElytraBot extends BaseModule {
                                 double angleRad = Math.acos(Math.min(1.0, Math.max(-1.0, dot / (magAB * magBC))));
                                 double angleDeg = Math.toDegrees(angleRad);
 
-                                if (angleDeg < 30.0) {
+                                if (angleDeg < 60.0) {
                                     // 方向变化小，判断朝向玩家还是远离玩家
                                     Vec3d playerPos = mc.player.getPos();
                                     // 使用从最新点(pos2)指向玩家的向量
@@ -365,6 +386,22 @@ public class ElytraBot extends BaseModule {
             } finally {
                 RenderUtils.stopDrawVirtual(event.context);
             }
+        }
+    }
+
+    public void onDebugRender(Event<VDrawContext> eventVDraw) {
+        if (enable.get() && render.get() && currentBehaviour != null && target != null) {
+            var vdraw = eventVDraw.context;
+            vdraw.getMatrices().pushMatrix();
+            vdraw.getMatrices().translate(200, 200);
+            vdraw.drawText(
+                    mc.textRenderer,
+                    "Action: %s, Combating: %s".formatted(currentAction, String.valueOf(currentInCombatRange)),
+                    0,
+                    0,
+                    -1,
+                    true);
+            vdraw.getMatrices().popMatrix();
         }
     }
 
@@ -722,6 +759,27 @@ public class ElytraBot extends BaseModule {
                     }
                 }
             }
+            if (base.flyAntiSpear.get()
+                    && Math.abs(base.flyAntiSpearArg1.get()) > 1E-6
+                    && base.isTargetUsingSpear()
+                    && mc.player.getEyePos().squaredDistanceTo(base.target.getEyePos())
+                            < MathUtils.s2(base.combatRange.get() + 6.0D)) {
+                Vec3d originalLookHorizontal = movementDirection.getHorizontal();
+                Vec3d vertical = new Vec3d(0, 1, 0);
+                Vec3d side = vertical.crossProduct(originalLookHorizontal).normalize();
+                if (base.flyAntiSpearRandDir.get() && (Tasks.getTick() % 8 < 4)) {
+                    side = side.negate();
+                }
+                Vec3d origin = movementDirection.normalize();
+                Vec3d originHorizontalNormal = origin.getHorizontal();
+                Vec3d multiply = side.multiply(base.flyAntiSpearArg1.get());
+                movementDirection = originHorizontalNormal
+                        .add(multiply)
+                        .normalize()
+                        .multiply(originHorizontalNormal.length())
+                        .withAxis(Direction.Axis.Y, origin.y)
+                        .multiply(10);
+            }
         }
         // compat delay attack shit, add cd,
         public int onStateWaitAttack(StateMachine machine) {
@@ -948,11 +1006,7 @@ public class ElytraBot extends BaseModule {
         }
 
         public int onStateFollow(StateMachine machine) {
-            if (base.currentInCombatRange || base.currentAction == TargetAction.TOWARDS) {
-                if (!SpearEnhance.canSpearKineticAttack()) {
-                    return STATE_PULL_OVER;
-                }
-            }
+
             if (mc.player
                             .getEyePos()
                             .squaredDistanceTo(base.target.getBoundingBox().getCenter())
@@ -972,9 +1026,7 @@ public class ElytraBot extends BaseModule {
         }
 
         private boolean canAdjustMovement() {
-            return base.spearAntiSpear.get()
-                    && base.target instanceof PlayerEntity otherShit
-                    && SpearEnhance.isUsingSpear(otherShit);
+            return base.spearAntiSpear.get() && base.isTargetUsingSpear();
         }
 
         private boolean adjustMovementForSpear(PlayerEntity otherShit, Vec3d originalLook, boolean expand) {
@@ -1054,8 +1106,11 @@ public class ElytraBot extends BaseModule {
         }
 
         public int onStateNearFollow(StateMachine machine) {
-            if (!SpearEnhance.canSpearKineticAttack()) {
-                return STATE_PULL_OVER;
+            if ((base.currentInCombatRange && base.currentAction != TargetAction.ESCAPING)
+                    || base.currentAction == TargetAction.TOWARDS) {
+                if (!SpearEnhance.canSpearKineticAttack()) {
+                    return STATE_PULL_OVER;
+                }
             }
             if (mc.player
                             .getEyePos()
@@ -1068,12 +1123,6 @@ public class ElytraBot extends BaseModule {
                 //                    state = STATE_PULL_OVER;
                 //                    nearFollowTimer = 0;
                 //                }
-                if (mc.player
-                                .getEyePos()
-                                .squaredDistanceTo(base.target.getBoundingBox().getCenter())
-                        <= MathUtils.s2(getMinRange())) {
-                    return STATE_PULL_OVER;
-                }
                 machine.markForEndState();
                 Vec3d look = getTargetPosition().subtract(mc.player.getEyePos());
                 if (canAdjustMovement()) {
@@ -1160,7 +1209,7 @@ public class ElytraBot extends BaseModule {
 
         public double getActiveRange() {
 
-            return 6.0D;
+            return 8.0D;
         }
 
         public double getMinRange() {

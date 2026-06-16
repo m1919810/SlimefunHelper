@@ -242,6 +242,7 @@ public class ItemESP extends BaseModule {
             int color = ColorUtils.withAlphaInt(this.color.get().asRGB(), 1.0F);
             int specialColor = ColorUtils.withAlphaInt(this.specialColor.get().asRGB(), 1.0F);
             TracingOption op = option.get();
+            TracingOption specialOp = specialOptions.get();
             if (special || common) {
                 for (var entity : mc.world.getEntities()) {
                     if ((entity instanceof ItemEntity i || (enableFrame.get() && entity instanceof ItemFrameEntity))) {
@@ -249,10 +250,10 @@ public class ItemESP extends BaseModule {
                                 && entity instanceof EntityAccess<?> access
                                 && !access.isMetaEmpty()
                                 && access.getMetadata().get(this, ITEM_ESP_METADATA_KEY) != null) {
-                            if (op.box()) {
+                            if (specialOp.box()) {
                                 boxCollector.submit(entity.getBoundingBox(), specialColor);
                             }
-                            if (op.line()) {
+                            if (specialOp.line()) {
                                 tracerCollector.submit(entity.getBoundingBox().getCenter(), specialColor);
                             }
                             continue;

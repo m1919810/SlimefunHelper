@@ -63,6 +63,8 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     public final FlagRef changeLandingToFreeze =
             flagBuilder(fix.add("change-landing-to-elytra-flight")).build();
 
+    public final FlagRef autoJumpFix = flagBuilder(fix.add("auto-jump-fix")).build();
+
     public final FlagRef emergencyFixToLog =
             flagBuilder(fix.add("change-landing-to-log")).build();
 
@@ -208,6 +210,17 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         return false;
     }
 
+    public boolean handleAutoJump() {
+        if (this.autoJumpFix.get()) {
+            if (!mc.player.isFallFlying()) {
+                Debug.chat(ChatUtils.stringToText("&c[BaritoneFix] &fBaritone autoJump takeOff"));
+                ElytraExtra.INSTANCE.autoTakeoff();
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean shouldPauseBaritoneElytra() {
         if (pauseElytraProcess.get()) {
             // DO NOT use other modules judgement
@@ -264,13 +277,16 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     private int usingElytraFlightEmergency = 0;
 
     private void handleMayFlyIntoFluid(BlockPos block, Event<LegalMovementManager> movementManagerEvent) {
-        if (fixLavaFly.get() && (PlayerStateManager.INSTANCE.lastInWall || PlayerStateManager.INSTANCE.lastInLava)) {
+        if (fixLavaFly.get() && !(PlayerStateManager.INSTANCE.lastInWall || PlayerStateManager.INSTANCE.lastInLava)) {
             Debug.chat(ChatUtils.stringToText(
                     "&c[BaritoneFix] &fBaritone flying into fluid detected, cancelling move..."));
             movementManagerEvent.context.playerStatus.restorePos();
             movementManagerEvent.cancel();
         }
-        if (this.baritoneExperimental2.get() && exp2LavaFix.get() && ElytraExtra.INSTANCE.armorFly.get()) {
+        if (this.baritoneExperimental2.get()
+                && !(PlayerStateManager.INSTANCE.lastInWall || PlayerStateManager.INSTANCE.lastInLava)
+                && exp2LavaFix.get()
+                && ElytraExtra.INSTANCE.armorFly.get()) {
             boolean usingArmorFly = ElytraExtra.INSTANCE.thisFallFlyingIsArmorFly != -1;
             if (usingArmorFly) {
                 ElytraExtra.INSTANCE.endArmorFlyTransaction();
