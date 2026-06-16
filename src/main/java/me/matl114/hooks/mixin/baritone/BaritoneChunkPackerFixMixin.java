@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Pseudo
-@Mixin(ChunkPacker.class)
+@Mixin(value = ChunkPacker.class, remap = false)
 @Environment(EnvType.CLIENT)
 public abstract class BaritoneChunkPackerFixMixin {
     @Unique

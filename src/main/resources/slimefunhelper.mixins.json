@@ -55,6 +55,7 @@
 		"fix.AbstractElementButtonFixMixin",
 		"fix.ClientPlayerListLookupCMEFix",
 		"fix.EntityRenderStateFixMixin",
+		"fix.IdListPaletteFixMixin",
 		"fix.KeyboardDebugCrashFix",
 		"fix.LoginHelloPacketNameFixMixin",
 		"fix.PacketByteBufFixMixin",
