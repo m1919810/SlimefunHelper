@@ -728,12 +728,12 @@ public class ChatUtils {
 
     @ApiMethod
     public static ClickEvent getRunCommand(String command) {
-        return new ClickEvent.RunCommand(command);
+        return new ClickEvent(ClickEvent.Action.RUN_COMMAND, command);
     }
 
     @ApiMethod
     public static ClickEvent getSuggestCommand(String name) {
-        return new ClickEvent.SuggestCommand(name);
+        return new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, name);
     }
 
     @ApiMethod

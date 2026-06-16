@@ -11,6 +11,9 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.hacks.modules.move.BaritoneFix;
 import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.utils.ChatUtils;
@@ -185,10 +188,14 @@ public abstract class ElytraProcessMixin {
 
     @WrapOperation(
             method = "onTick",
-            at = @At(value = "FIELD", target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;", ordinal = 12),
+            at =
+                    @At(
+                            value = "FIELD",
+                            target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;", ordinal = 12),
+
             require = 0)
     private Object onAutoJump(Settings.Setting instance, Operation<Object> original) {
-        if (instance == BaritoneAPI.getSettings().elytraAutoJump) {
+        if(instance == BaritoneAPI.getSettings().elytraAutoJump){
             if (BaritoneAPI.getSettings().elytraAutoJump.value && BaritoneFix.INSTANCE.handleAutoJump()) {
                 return false;
             }
