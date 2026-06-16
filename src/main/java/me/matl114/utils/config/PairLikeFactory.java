@@ -1,5 +1,6 @@
 package me.matl114.utils.config;
 
+import com.mojang.datafixers.util.Pair;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -36,6 +37,13 @@ public interface PairLikeFactory<A, B, P> {
     // 可选：交换 first 和 second 的角色（要求 P 支持互换，这里返回新工厂，但 P 类型不变，需谨慎使用）
     default PairLikeFactory<B, A, P> swap() {
         return of((b, a) -> create(a, b), this::getSecond, this::getFirst);
+    }
+
+    public static final PairLikeFactory<?, ?, Pair<?, ?>> PAIR_FACTORY =
+            new BasePairLikeFactory<>(Pair::of, Pair::getFirst, Pair::getSecond);
+
+    public static <A, B> PairLikeFactory<A, B, Pair<A, B>> pair() {
+        return (PairLikeFactory) PAIR_FACTORY;
     }
 
     @AllArgsConstructor

@@ -31,6 +31,7 @@ import me.matl114.utils.commands.commandGroup.*;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.tasks.LimitedSpeedExecutor;
 import me.matl114.versioned.api.VEntity;
 import me.matl114.versioned.api.VRecord;
@@ -52,6 +53,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 public class ChatTasks {
     public static void init() {}
@@ -863,6 +865,95 @@ public class ChatTasks {
                 }
             }
             Config.launchSaveTasks();
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                    .name("runtask")
+                    .helper("<delay> <args> 将后面的指令延时执行")
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("delay")
+                            .intValue()
+                            .build())
+                    .post(e -> e.executor(new CommandContext() {
+                        @Override
+                        public boolean execute(
+                                CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
+                            int delay = streamArgs.nextInt();
+                            String[] args = argsReader.getRemainingArgs();
+                            Tasks.scheduleDelayed(
+                                    () -> {
+                                        MainCommand.dispatchCommand(args);
+                                    },
+                                    delay);
+                            return true;
+                        }
+
+                        @Override
+                        public List<String> supplyTab(
+                                CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
+                            ArgumentReader reader = new ArgumentReader(argsReader.getRemainingArgs());
+                            reader.stepAll();
+                            return onCustomTabComplete(var1, argsReader);
+                        }
+                    }))
+                    .complete();
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                    .name("runrepeat")
+                    .helper("<period> <time> <args> 将后面的指令延时执行")
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("period")
+                            .intValue()
+                            .build())
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("time")
+                            .intValue()
+                            .build())
+                    .post(e -> e.executor(new CommandContext() {
+                        @Override
+                        public boolean execute(
+                                CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
+                            int delay = streamArgs.nextInt();
+                            int time = streamArgs.nextInt();
+                            String[] args = argsReader.getRemainingArgs();
+                            MutableInt counter = new MutableInt(0);
+                            Tasks.scheduleRepeatedPre(
+                                    () -> {
+                                        if (mc.world == null || mc.player == null) return true;
+                                        MainCommand.dispatchCommand(args);
+                                        if (counter.incrementAndGet() >= time) {
+                                            return true;
+                                        }
+                                        return false;
+                                    },
+                                    0,
+                                    delay);
+                            return true;
+                        }
+
+                        @Override
+                        public List<String> supplyTab(
+                                CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
+                            ArgumentReader reader = new ArgumentReader(argsReader.getRemainingArgs());
+                            reader.stepAll();
+                            return onCustomTabComplete(var1, argsReader);
+                        }
+                    }))
+                    .complete();
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                    .name("say")
+                    .helper("<args> 说话")
+                    .post(e -> e.executor((a, b, c) -> {
+                        ChatTasks.sayMessage(c.getRemainingArgStr(), false);
+                        return true;
+                    }))
+                    .complete();
         }
 
         // todo not complete

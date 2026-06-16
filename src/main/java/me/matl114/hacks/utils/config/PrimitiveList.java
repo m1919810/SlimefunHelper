@@ -102,4 +102,11 @@ public class PrimitiveList<W> implements NBTParsable<PrimitiveList<W>> {
     public int hashCode() {
         return Objects.hash(elementType, list);
     }
+
+    @Override
+    public boolean isSameType(NBTParsable<?> type) {
+        return NBTParsable.super.isSameType(type)
+                && type instanceof PrimitiveList<?> that
+                && that.elementType == elementType;
+    }
 }

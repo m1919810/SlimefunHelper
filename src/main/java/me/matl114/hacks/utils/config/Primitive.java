@@ -62,4 +62,11 @@ public record Primitive<T>(NBTType<T> valueType, @Nonnull T value, String valueS
     public NBTType<Primitive<T>> type() {
         return TYPE.cast();
     }
+
+    @Override
+    public boolean isSameType(NBTParsable<?> type) {
+        return NBTParsable.super.isSameType(type)
+                && type instanceof Primitive<?> primitive
+                && valueType == primitive.valueType;
+    }
 }
