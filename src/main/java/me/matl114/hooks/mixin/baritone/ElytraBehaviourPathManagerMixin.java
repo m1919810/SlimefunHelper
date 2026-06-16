@@ -48,10 +48,8 @@ public abstract class ElytraBehaviourPathManagerMixin {
     }
 
     @Inject(
-            method = {
-                "Lbaritone/process/elytra/ElytraBehavior$PathManager;a(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/BlockPos;Ljava/util/function/UnaryOperator;)Ljava/util/concurrent/CompletableFuture;",
-                "Lbaritone/process/elytra/ElytraBehavior$PathManager;path0(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;Ljava/util/function/UnaryOperator;)Ljava/util/concurrent/CompletableFuture;"
-            },
+            method =
+                    "Lbaritone/process/elytra/ElytraBehavior$PathManager;path0(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;Ljava/util/function/UnaryOperator;)Ljava/util/concurrent/CompletableFuture;",
             at = @At("HEAD"),
             cancellable = true,
             require = 0)
@@ -65,6 +63,33 @@ public abstract class ElytraBehaviourPathManagerMixin {
             if (lst != null) {
                 UnpackedSegment segment = new UnpackedSegment(lst.stream().map(BetterBlockPos::from), true);
                 var segment2 = var3.apply(segment);
+
+                cir.setReturnValue(CompletableFuture.supplyAsync(
+                        () -> {
+                            this.a(segment2);
+                            return null;
+                        },
+                        MinecraftClient.getInstance()));
+            }
+        }
+    }
+
+    @Inject(
+            method =
+                    "Lbaritone/process/elytra/ElytraBehavior$PathManager;a(Lbaritone/api/utils/BetterBlockPos;Lbaritone/api/utils/BetterBlockPos;Ljava/util/function/UnaryOperator;)Ljava/util/concurrent/CompletableFuture;",
+            at = @At("HEAD"),
+            cancellable = true,
+            require = 0)
+    private void c2(
+            BetterBlockPos par1,
+            BetterBlockPos par2,
+            UnaryOperator<UnpackedSegment> par3,
+            CallbackInfoReturnable<CompletableFuture<Void>> cir) {
+        if (BaritoneHooks.Impl.netherPathSupplier != null) {
+            var lst = BaritoneHooks.Impl.netherPathSupplier.get();
+            if (lst != null) {
+                UnpackedSegment segment = new UnpackedSegment(lst.stream().map(BetterBlockPos::from), true);
+                var segment2 = par3.apply(segment);
 
                 cir.setReturnValue(CompletableFuture.supplyAsync(
                         () -> {
