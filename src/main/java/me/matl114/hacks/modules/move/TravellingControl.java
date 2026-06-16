@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.move;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -18,6 +19,8 @@ import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
+import me.matl114.managers.input.HotKeyUtils;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.commands.commandGroup.CommandContext;
@@ -49,6 +52,11 @@ public class TravellingControl extends BaseModule {
     }
 
     //    public FlagRef enable = flagBuilder(travellingControl.add("enable")).build();
+
+    public KeyBindRef hotkey = hotkey(travellingControl.add("toggle-auto-speed"))
+            .defaultValue(new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleTravelAuto))
+            .build();
 
     public EnumRef<Type> controlType = builder(travellingControl.add("control-type"), Type.class)
             .defaultValue(Type.MOV_VOID)
@@ -154,9 +162,14 @@ public class TravellingControl extends BaseModule {
                             .post(e -> e.executor(this::onTravelTo))
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
+                            .name("auto")
+                            .helper("执行可手动控制的定向飞行")
+                            .post(e -> e.executor(CommandContext.execute(this::onTravelAuto)))
+                            .complete()
+                            .subBuilder(SubCommand.taskBuilder())
                             .name("cancel")
                             .helper("中断传送旅行")
-                            .post(e -> e.executor(CommandContext.run(this::onTravelCancelCommand)))
+                            .post(e -> e.executor(CommandContext.run(this::onTravelCancel)))
                             .complete())
                     .complete();
         }
@@ -178,54 +191,85 @@ public class TravellingControl extends BaseModule {
         }
         if (travelTask == null) {
             if (parsedCoord == null) return;
-            Type type = controlType.get();
-            Debug.chat("当前运动类型: " + type.getDisplay().getString());
-            TravelInfo info = new TravelInfo();
-            info.pos0 = parsedCoord;
-            info.currentPlayer = mc.player;
-            info.startingTime = System.currentTimeMillis();
-            info.startPos = mc.player.getPos();
-            info.stop = false;
-            info.instance = this;
-            travelTask = info;
-            double initY = mc.player.getY();
-            if (initY < minHeight.get()) {
-                info.state = TravelState.TOO_LOW;
-            } else if (initY > maxHeight.get()) {
-                info.state = TravelState.TOO_HIGH;
-            } else {
-                info.state = TravelState.STABLE;
-            }
-            if (type == Type.ELYTRASKY) {
-                Debug.chat("注意: Elytra_sky 模式需要配合启用鞘翅飞行控制才能正常 travel");
-                Tasks.scheduleRepeated(this::onTravelTickElytra, 20, 2);
-            } else if (type == Type.MOV_VOID) {
-                Tasks.scheduleRepeated(this::onTravelTickMovVoid, 20, 2);
-            } else if (type == Type.MOV_VOID_2) {
-                catchResyncPackets = false;
-                Listener.addPostPacketCatcher(new PacketCatcherImpl<>(PlayerPositionLookS2CPacket.class, (event -> {
-                    catchResyncPackets = true;
-                    return travelTask != info || info.stop;
-                })));
-                Tasks.scheduleRepeated(this::onTravelTickMovVoid2, 20, 2);
-            } else if (type == Type.ELYTRA_PITCH40) {
-                ClientPlayerAccess.of(mc.player)
-                        .getLegalMovementManager()
-                        .addMovementModifier(this.createTravelPitch40Controller(info));
-                // fuck...
-                Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
-            } else if (type == Type.ELYTRA_GRIM_FLY40) {
-                ClientPlayerAccess.of(mc.player)
-                        .getLegalMovementManager()
-                        .addMovementModifier(this.createTravelGrimFly40Controller(info));
-                // fuck...
-                Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
-            } else {
-                travelTask.stop = true;
-                travelTask = null;
-            }
+            travelMode(Optional.of(parsedCoord));
         } else {
             Debug.chat("上一个travel task仍旧在执行,使用travel cancel取消");
+        }
+    }
+
+    public void toggleTravelAuto() {
+        if (checkNull()) return;
+        if (travelTask != null && travelTask.instance != this) {
+            travelTask.stop = true;
+            travelTask = null;
+        }
+        if (travelTask == null) {
+            Debug.chat("启动Auto飞行模式");
+            travelMode(Optional.empty());
+        } else {
+            Debug.chat("上一个travel task仍旧在执行,自动取消中...");
+            onTravelCancel();
+        }
+    }
+
+    public void onTravelAuto(CommandExecution var1) {
+        if (travelTask != null && travelTask.instance != this) {
+            travelTask.stop = true;
+            travelTask = null;
+        }
+        if (travelTask == null) {
+            travelMode(Optional.empty());
+        } else {
+            Debug.chat("上一个travel task仍旧在执行,自动取消中...");
+        }
+    }
+
+    public void travelMode(Optional<Vec3d> traget) {
+        Type type = controlType.get();
+        Debug.chat("当前运动类型: " + type.getDisplay().getString());
+        TravelInfo info = new TravelInfo();
+        info.pos0 = traget;
+        info.currentPlayer = mc.player;
+        info.startingTime = System.currentTimeMillis();
+        info.startPos = mc.player.getPos();
+        info.stop = false;
+        info.instance = this;
+        travelTask = info;
+        double initY = mc.player.getY();
+        if (initY < minHeight.get()) {
+            info.state = TravelState.TOO_LOW;
+        } else if (initY > maxHeight.get()) {
+            info.state = TravelState.TOO_HIGH;
+        } else {
+            info.state = TravelState.STABLE;
+        }
+        if (type == Type.ELYTRASKY) {
+            Debug.chat("注意: Elytra_sky 模式需要配合启用鞘翅飞行控制才能正常 travel");
+            Tasks.scheduleRepeated(this::onTravelTickElytra, 20, 2);
+        } else if (type == Type.MOV_VOID) {
+            Tasks.scheduleRepeated(this::onTravelTickMovVoid, 20, 2);
+        } else if (type == Type.MOV_VOID_2) {
+            catchResyncPackets = false;
+            Listener.addPostPacketCatcher(new PacketCatcherImpl<>(PlayerPositionLookS2CPacket.class, (event -> {
+                catchResyncPackets = true;
+                return travelTask != info || info.stop;
+            })));
+            Tasks.scheduleRepeated(this::onTravelTickMovVoid2, 20, 2);
+        } else if (type == Type.ELYTRA_PITCH40) {
+            ClientPlayerAccess.of(mc.player)
+                    .getLegalMovementManager()
+                    .addMovementModifier(this.createTravelPitch40Controller(info));
+            // fuck...
+            Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
+        } else if (type == Type.ELYTRA_GRIM_FLY40) {
+            ClientPlayerAccess.of(mc.player)
+                    .getLegalMovementManager()
+                    .addMovementModifier(this.createTravelGrimFly40Controller(info));
+            // fuck...
+            Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
+        } else {
+            travelTask.stop = true;
+            travelTask = null;
         }
     }
 
@@ -277,7 +321,7 @@ public class TravellingControl extends BaseModule {
         double horizontalSpeed = speed.get();
 
         if (ti.state == TravelState.STABLE) {
-            Vec3d towards = ti.pos0.subtract(mc.player.getPos());
+            Vec3d towards = ti.getCurrentFlyingTarget().subtract(mc.player.getPos());
             Vec3d towardsHorizontal = new Vec3d(towards.x, 0, towards.z).normalize();
 
             if (moveAndCheckFinish(
@@ -332,7 +376,7 @@ public class TravellingControl extends BaseModule {
             if (checkFinish(ti)) {
                 return true;
             }
-            Vec3d towards = ti.pos0.subtract(mc.player.getPos());
+            Vec3d towards = ti.getCurrentFlyingTarget().subtract(mc.player.getPos());
             towards = new Vec3d(towards.x, 0, towards.z);
             double len = towards.horizontalLengthSquared();
             Vec3d towardsHorizontal = towards.normalize();
@@ -384,7 +428,7 @@ public class TravellingControl extends BaseModule {
         if (travelTask != ti
                 || ti.instance != this
                 || mc.player != ti.currentPlayer
-                || mc.player.getPos().subtract(ti.pos0).horizontalLengthSquared() < 900) {
+                || mc.player.getPos().subtract(ti.getCurrentFlyingTarget()).horizontalLengthSquared() < 900) {
             outputTravelStats(ti);
             if (mc.player != null) {
                 mc.player.setOnGround(false);
@@ -430,7 +474,7 @@ public class TravellingControl extends BaseModule {
                 return true;
             }
             Vec3d currentPos = mc.player.getPos();
-            Vec3d towards = ti.pos0.subtract(currentPos);
+            Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
             Vec3d direction = towards.normalize()
                     .withAxis(Direction.Axis.Y, 0)
                     .multiply(elySpeed)
@@ -496,7 +540,7 @@ public class TravellingControl extends BaseModule {
                     if (mc.player.isFallFlying()) {
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         Vec3d currentPos = mc.player.getPos();
-                        Vec3d towards = ti.pos0.subtract(currentPos);
+                        Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
                         // anti afk
                         if (Tasks.getTick() % 40 == 0) {
                             randomOffsetPitch = (float) rand.nextDouble(-2.5, 2.5);
@@ -647,7 +691,7 @@ public class TravellingControl extends BaseModule {
                     if (mc.player.isFallFlying()) {
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         Vec3d currentPos = mc.player.getPos();
-                        Vec3d towards = ti.pos0.subtract(currentPos);
+                        Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
                         // anti afk
                         if (Tasks.getTick() % 40 == 0) {
                             randomOffsetPitch = 0.0F; // (float) rand.nextDouble(-2.5, 2.5);
@@ -845,7 +889,7 @@ public class TravellingControl extends BaseModule {
         velocity.x(towards.x).y(towards.y).z(towards.z);
     }
 
-    public void onTravelCancelCommand() {
+    public void onTravelCancel() {
         if (travelTask != null) {
             travelTask.stop = true;
             travelTask.stopManually = true;
@@ -858,7 +902,7 @@ public class TravellingControl extends BaseModule {
     public static TravelInfo travelTask;
 
     public static class TravelInfo {
-        public Vec3d pos0;
+        public Optional<Vec3d> pos0;
         public ClientPlayerEntity currentPlayer;
         public long startingTime;
         public Vec3d startPos;
@@ -867,6 +911,14 @@ public class TravellingControl extends BaseModule {
         public boolean stop = false;
         public TravellingControl instance;
         public boolean stopManually = false;
+
+        public Vec3d getCurrentFlyingTarget() {
+            return pos0.orElseGet(() -> {
+                Vec3d playerPos = mc.player.getPos();
+                Vec3d horizontal = EntityUtils.pitchYawToRotation(0, mc.player.getYaw());
+                return playerPos.add(horizontal.multiply(100000)).withAxis(Direction.Axis.Y, playerPos.getY());
+            });
+        }
     }
 
     public static enum TravelState {
