@@ -111,8 +111,10 @@ public class AutoLogout extends BaseModule {
             Entity entity = statusS2CPacket.getEntity(mc.world);
             if (entity != null && entity.getId() == mc.player.getId()) {
                 int leftTotem = totemTriggerCheckLeftTotem.get();
+                // minus one, because one is going to consume
                 double cnt = InventoryUtils.computeInventory(
-                        (v) -> v.getItem() == Items.TOTEM_OF_UNDYING ? (double) v.getCount() : null, false);
+                                (v) -> v.getItem() == Items.TOTEM_OF_UNDYING ? (double) v.getCount() : null, false)
+                        - 1;
                 if (cnt <= leftTotem) {
                     MainTasks.scheduleDisconnect();
                     return;

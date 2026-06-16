@@ -38,6 +38,8 @@ public abstract class BaritoneHooks implements IHooks {
 
     public abstract void setBaritoneNetherPathSupplier(Supplier<List<BlockPos>> blockPos);
 
+    public abstract void updateBaritoneNetherPath();
+
     public abstract void setBaritoneCurrentElytraDestination(BlockPos pos);
 
     public abstract void cancelBaritone();
@@ -100,6 +102,11 @@ public abstract class BaritoneHooks implements IHooks {
         }
 
         @Override
+        public void updateBaritoneNetherPath() {
+            BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().resetState();
+        }
+
+        @Override
         public void setBaritoneCurrentElytraDestination(BlockPos pos) {
             BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().pathTo(pos);
         }
@@ -134,6 +141,9 @@ public abstract class BaritoneHooks implements IHooks {
 
         @Override
         public void setBaritoneNetherPathSupplier(Supplier<List<BlockPos>> blockPos) {}
+
+        @Override
+        public void updateBaritoneNetherPath() {}
 
         @Override
         public void setBaritoneCurrentElytraDestination(BlockPos pos) {}
