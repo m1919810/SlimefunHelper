@@ -59,7 +59,7 @@ public abstract class LazilyRegisterTypeRef<T, W> extends ObjectRef<T> {
     }
 
     @Override
-    public final <W> boolean isSameTypeWith(Ref<W> ref) {
+    public <W> boolean isSameTypeWith(Ref<W> ref) {
         if (ref instanceof LazilyRegisterTypeRef what
                 && what.getClass() == this.getClass()
                 && Objects.equals(what.enumType, enumType)) {

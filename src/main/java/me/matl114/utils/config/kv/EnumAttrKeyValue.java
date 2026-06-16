@@ -1,5 +1,6 @@
 package me.matl114.utils.config.kv;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
 import com.google.common.util.concurrent.Runnables;
 import com.mojang.datafixers.util.Pair;
@@ -66,7 +67,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
     };
 
     public static <T extends Enum<T>> CustomWidgetFactory<T> createEnumWidgetFactory(Class<T> enumClass) {
-        List<Pair<String, Supplier<Text>>> flattenMap;
+
         Map<String, T> map;
         if (ConfigEnum.class.isAssignableFrom(enumClass)) {
             map = ConfigEnum.getMap(enumClass);
@@ -74,6 +75,13 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
             map = ReflectUtils.getEnumMap(enumClass);
         }
 
+        return createFiniteLookupWidgetFactory(map);
+    }
+
+    public static <T> CustomWidgetFactory<T> createFiniteLookupWidgetFactory(Map<String, T> map) {
+        Preconditions.checkArgument(!map.isEmpty());
+        Class<?> enumClass = map.values().iterator().next().getClass();
+        List<Pair<String, Supplier<Text>>> flattenMap;
         if (Displayable.class.isAssignableFrom(enumClass)) {
             Map<String, Displayable> valueMap = (Map) map;
             flattenMap = valueMap.entrySet().stream()

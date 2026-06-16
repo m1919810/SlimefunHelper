@@ -105,4 +105,11 @@ public record Holder<T>(Registry<T> registry, @Nullable T entry, String asString
     }
 
     public static final NBTType<Holder<Object>> TYPE = Holder.create();
+
+    @Override
+    public boolean isSameType(NBTParsable<?> type) {
+        return NBTParsable.super.isSameType(type)
+                && type instanceof Holder<?> holder
+                && holder.registry == ((Holder<?>) holder).registry;
+    }
 }

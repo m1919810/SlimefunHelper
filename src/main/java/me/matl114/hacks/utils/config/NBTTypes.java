@@ -20,15 +20,12 @@ import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.presets.choices.ColorSelectIcon;
 import me.matl114.gui.presets.lists.NBTBoundedListScreen;
 import me.matl114.gui.presets.lists.NBTListModifyScreen;
-import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.config.NBTType;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.CodecUtils;
 import me.matl114.utils.collections.InitializationTask;
 import me.matl114.utils.config.*;
-import me.matl114.utils.config.kv.AttrKeyValues;
-import me.matl114.utils.config.kv.RegistryAttrKeyValue;
-import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
-import me.matl114.utils.config.kv.WrapperAttrKeyValue;
+import me.matl114.utils.config.kv.*;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.Registries;
@@ -398,6 +395,16 @@ public interface NBTTypes {
                 },
                 stringifyFactory,
                 Optional.empty());
+    }
+
+    public static <T> NBTType<T> createEnumLike(
+            String targetClass, Map<String, T> finiteLookup, Function<T, String> string) {
+        return new NBTType<>(
+                targetClass,
+                CodecUtils.finiteMapCodec(finiteLookup, string),
+                EnumAttrKeyValue.createFiniteLookupWidgetFactory(finiteLookup),
+                EnumAttrKeyValue.createFiniteMapLookup(finiteLookup),
+                finiteLookup.values().iterator().next());
     }
 
     public static <W> DrawableWidget generateListModifyButton(

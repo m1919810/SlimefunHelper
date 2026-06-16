@@ -135,4 +135,12 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
     public int hashCode() {
         return Objects.hash(firstType, secondType, list);
     }
+
+    @Override
+    public boolean isSameType(NBTParsable<?> type) {
+        return NBTParsable.super.isSameType(type)
+                && type instanceof PrimitivePairList pairList
+                && pairList.firstType == firstType
+                && pairList.secondType == secondType;
+    }
 }

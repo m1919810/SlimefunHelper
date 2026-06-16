@@ -123,4 +123,11 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
     public int hashCode() {
         return Objects.hash(registry, parent);
     }
+
+    @Override
+    public boolean isSameType(NBTParsable<?> type) {
+        return NBTParsable.super.isSameType(type)
+                && type instanceof RegistryRegex<?> registryRegex
+                && registryRegex.registry == registry;
+    }
 }
