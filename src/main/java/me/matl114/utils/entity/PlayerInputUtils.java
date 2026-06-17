@@ -41,10 +41,10 @@ public class PlayerInputUtils {
 
     public static Input of(PlayerInputC2SPacket packet) {
         return new Input(
-                packet.getForward() >= 0,
-                packet.getForward() <= 0,
-                packet.getSideways() >= 0,
-                packet.getSideways() <= 0,
+                packet.getForward() > 0,
+                packet.getForward() < 0,
+                packet.getSideways() > 0,
+                packet.getSideways() < 0,
                 packet.isJumping(),
                 packet.isSneaking(),
                 MinecraftClient.getInstance().options.sprintKey.isPressed());

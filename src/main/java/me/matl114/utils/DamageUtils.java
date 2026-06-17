@@ -39,11 +39,11 @@ public class DamageUtils {
     }
 
     public static double getArmorValue(PlayerEntity player, ItemStack stack, EquipmentSlot slot) {
-        return getAttributeValue(EntityAttributes.ARMOR, player, stack, slot);
+        return getAttributeValue(EntityAttributes.GENERIC_ARMOR, player, stack, slot);
     }
 
     public static double getArmorToughnessValue(PlayerEntity player, ItemStack stack, EquipmentSlot slot) {
-        return getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS, player, stack, slot);
+        return getAttributeValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS, player, stack, slot);
     }
 
     public static double getAttackSpeed(PlayerEntity player, ItemStack stack) {

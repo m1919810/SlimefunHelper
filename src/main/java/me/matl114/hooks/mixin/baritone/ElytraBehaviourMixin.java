@@ -212,7 +212,8 @@ public abstract class ElytraBehaviourMixin {
 
     @ModifyExpressionValue(
             method = {"a()V", "Lbaritone/process/elytra/ElytraBehavior;pathTo()V"},
-            at = @At(value = "FIELD", target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;"), require = 0)
+            at = @At(value = "FIELD", target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;"),
+            require = 0)
     private Object onAutoJumpFix(Object original) {
         if (original instanceof Boolean bl) {
             if (BaritoneFix.INSTANCE.autoJumpFix.get()) {

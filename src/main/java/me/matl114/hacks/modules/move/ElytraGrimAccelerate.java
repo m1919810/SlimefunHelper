@@ -18,6 +18,7 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraGrimAccelerate extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -97,7 +98,9 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                     } else {
                         Vec3d vec3d = mc.player.getVelocity();
                         if (vec3d.horizontalLengthSquared() > 1E-4
-                                && vec3d.getHorizontal().dotProduct(velocity.getHorizontal()) < 0.0) {
+                                && vec3d.withAxis(Direction.Axis.Y, 0)
+                                                .dotProduct(velocity.withAxis(Direction.Axis.Y, 0))
+                                        < 0.0) {
                             event.cancel();
                         }
                     }

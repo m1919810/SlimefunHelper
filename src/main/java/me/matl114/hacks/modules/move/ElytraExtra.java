@@ -281,7 +281,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             Tasks.scheduleRepeated(
                     () -> {
                         if (mc.player == joinServer.context) {
-                            if (mc.player.isLoaded() && mc.world.isChunkLoaded(mc.player.getBlockPos())) {
+                            if (mc.world.isChunkLoaded(mc.player.getBlockPos())) {
                                 if (!mc.player.isOnGround() && !mc.player.isFallFlying()) {
                                     autoTakeoff();
                                     return true;
@@ -847,7 +847,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                                     // do not use chest item
                                     var item = entry.val();
                                     if (item.isEmpty()) return -3.0D;
-                                    if (mc.player.canEquip(item, EquipmentSlot.CHEST)) {
+                                    if (mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST) {
                                         return DamageUtils.getArmorValue(mc.player, item, EquipmentSlot.CHEST)
                                                 * DamageUtils.getArmorToughnessValue(
                                                         mc.player, item, EquipmentSlot.CHEST);

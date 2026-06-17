@@ -250,9 +250,8 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         ItemStack itemStack = player.getStackInHand(hand);
         if (!itemStack.isEmpty()) {
             ActionResult actionResult3 = this.interactionManager.interactItem(this.player, hand);
-            if (actionResult3 instanceof ActionResult.Success) {
-                ActionResult.Success success3 = (ActionResult.Success) actionResult3;
-                if (success3.swingSource() == ActionResult.SwingSource.CLIENT) {
+            if (actionResult3.isAccepted()) {
+                if (actionResult3.shouldSwingHand()) {
                     this.player.swingHand(hand);
                 }
             }

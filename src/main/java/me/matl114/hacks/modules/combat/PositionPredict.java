@@ -170,14 +170,6 @@ public class PositionPredict extends BaseModule {
         }
     }
 
-    public void onPostEntityTeleport(Event<EntityPositionSyncS2CPacket> event) {
-        if (checkNull()) return;
-        if (mc.world.getEntityById(event.context.id()) instanceof PlayerInternalAccess internal) {
-            internal.getPredictorImpl().onEntityPositionSyncPost(event);
-            onPlayerEntityUpdate((PlayerEntity) internal);
-        }
-    }
-
     public void onPlayerEntityUpdate(PlayerEntity player) {
         if (placeRecorder.get()) {
             recordedPoints

@@ -764,14 +764,14 @@ public class ElytraBot extends BaseModule {
                     && base.isTargetUsingSpear()
                     && mc.player.getEyePos().squaredDistanceTo(base.target.getEyePos())
                             < MathUtils.s2(base.combatRange.get() + 6.0D)) {
-                Vec3d originalLookHorizontal = movementDirection.getHorizontal();
+                Vec3d originalLookHorizontal = new Vec3d(movementDirection.x, 0, movementDirection.z);
                 Vec3d vertical = new Vec3d(0, 1, 0);
                 Vec3d side = vertical.crossProduct(originalLookHorizontal).normalize();
                 if (base.flyAntiSpearRandDir.get() && (Tasks.getTick() % 8 < 4)) {
                     side = side.negate();
                 }
                 Vec3d origin = movementDirection.normalize();
-                Vec3d originHorizontalNormal = origin.getHorizontal();
+                Vec3d originHorizontalNormal = new Vec3d(origin.x, 0, origin.z);
                 Vec3d multiply = side.multiply(base.flyAntiSpearArg1.get());
                 movementDirection = originHorizontalNormal
                         .add(multiply)
