@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.mine;
 
+import com.google.common.util.concurrent.Runnables;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
@@ -62,6 +63,9 @@ public class PacketMine extends BaseModule {
 
     public final FlagRef autoTool = flagBuilder(packetMine.add("auto-pickaxe")).build();
 
+    public final FlagRef autoToolDoubleBreak =
+            flagBuilder(packetMine.add("auto-pickaxe-double-break")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -100,9 +104,17 @@ public class PacketMine extends BaseModule {
         }
     }
 
+    Runnable switchCallback = null;
+
     public void tickMine() {
         if (mc.interactionManager != null && mc.player != null) {
             BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+            if (switchCallback != null) {
+                switchCallback.run();
+                switchCallback = null;
+            }
+            Runnable currentTickCallback = null;
+            boolean postMineCallback = false;
             // todo: add predicted speed
             if (pos != null) {
                 double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
@@ -133,13 +145,39 @@ public class PacketMine extends BaseModule {
                                 PlayerInteractionAccess.of(mc.interactionManager)
                                         .sendBreakPacket(pos, dir);
                             }
-                            if (callback != null) {
-                                callback.run();
-                            }
-                            Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
+                            currentTickCallback = callback;
+                            postMineCallback = true;
                         }
                     }
                 }
+            }
+            if (autoToolDoubleBreak.get()
+                    && PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
+                BlockPos failPos =
+                        PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
+                BlockState blockState = mc.world.getBlockState(failPos);
+                IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
+                ItemStack currentTool = currentItemSlot.val();
+                if (canMineFailBreak(blockState, currentTool)) {
+                    Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
+                    Runnable currentCallback =
+                            currentTickCallback == null ? Runnables.doNothing() : currentTickCallback;
+                    switchCallback = () -> {
+                        callback.run();
+                        currentCallback.run();
+                    };
+                } else {
+                    if (currentTickCallback != null) {
+                        currentTickCallback.run();
+                    }
+                }
+            } else {
+                if (currentTickCallback != null) {
+                    currentTickCallback.run();
+                }
+            }
+            if (postMineCallback) {
+                Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
             }
         }
     }
@@ -180,6 +218,17 @@ public class PacketMine extends BaseModule {
                 return access.predictCurrentMiningProgressWithTool(tool) > Math.min(0.98, mineThreshold.get());
             }
             return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean canMineFailBreak(BlockState state, ItemStack tool) {
+        // do not mine liquid, that's a disaster
+        // do not mine air, shit
+        if (isMineable(state)) {
+            var access = PlayerInteractionAccess.of(mc.interactionManager);
+            return access.predictFailMiningProgressWithTool(tool, 0) > 0.99;
         } else {
             return false;
         }

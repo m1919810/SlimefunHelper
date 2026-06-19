@@ -12,13 +12,29 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 @ApiMethod
 public class ItemStackHelper {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    public static ItemStack createStack(Object object, int num) {
+        if (object instanceof ItemStack stack) {
+            return stack.copyWithCount(num);
+        } else if (object instanceof ItemConvertible item) {
+            return new ItemStack(item, num);
+        } else if (object instanceof String str) {
+            Item item = Registries.ITEM.get(Identifier.tryParse(str));
+            return new ItemStack(item, num);
+        } else {
+            throw new IllegalArgumentException(object + " is not a stack related argument");
+        }
+    }
 
     public static Map<String, Object> saveItemToMap(Object itemStack) {
         ItemStack itemStack1 = JsHelper.unwrap(itemStack, ItemStack.class);

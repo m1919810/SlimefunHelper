@@ -196,7 +196,8 @@ public class LegalMovementManager {
             return;
         }
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, true, false);
-        Iterator<MovementModifier> iter = this.hacks.iterator();
+        // in case someone add a task during a destroying postModify
+        Iterator<MovementModifier> iter = new ArrayList<>(this.hacks).iterator();
         int goingCurrentTickEnables = 0;
         while (iter.hasNext()) {
             var hack = iter.next();
@@ -208,6 +209,7 @@ public class LegalMovementManager {
             }
             if (!hack.postModify(movementManagerEvent, enabled)) {
                 iter.remove();
+                this.hacks.remove(hack);
             }
         }
         if (resetPos) {

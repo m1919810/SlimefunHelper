@@ -98,13 +98,11 @@ public class SimpleInputManager implements IInputManager {
         // fire event to ask if the input is consumed
         Event<Keyboard> hardWareInput = new Event<>(mc.keyboard, true, false, keyCode, scanCode, action, modifiers);
         Listener.getKeyboardInput().handleValue(hardWareInput);
-        if (hardWareInput.isCancelled()) {
-            return true;
-        }
+        boolean canceled = hardWareInput.isCancelled();
 
         // will trigger Click handler
         boolean isKeyClicking = action != GLFW.GLFW_RELEASE;
-        boolean canceled = checkKeyBindsForChanges(keyCode, stateChange, isKeyClicking);
+        canceled = checkKeyBindsForChanges(keyCode, stateChange, isKeyClicking) || canceled;
 
         return canceled;
     }
@@ -118,10 +116,8 @@ public class SimpleInputManager implements IInputManager {
             boolean stateChange = onKeyInputPre(transferedKeyCode, 0, 0, action);
             Event<Mouse> hardWareInput = new Event<>(mc.mouse, true, false, eventButton, action, mode);
             Listener.getMouseButton().handleValue(hardWareInput);
-            if (hardWareInput.isCancelled()) {
-                return true;
-            }
-            cancel = this.checkKeyBindsForChanges(transferedKeyCode, stateChange, isMouseClicked);
+            cancel = this.checkKeyBindsForChanges(transferedKeyCode, stateChange, isMouseClicked)
+                    || hardWareInput.isCancelled();
         }
         return cancel;
     }

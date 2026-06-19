@@ -60,6 +60,10 @@ public class MathUtils {
         return new Box(pos);
     }
 
+    public static Box createBox(Vec3d vec3d, double ra) {
+        return new Box(vec3d.subtract(ra), vec3d.add(ra));
+    }
+
     public static List<BlockPos> getOccupiedBlockPositions(Box box) {
         int minX = (int) Math.floor(box.minX);
         int maxX = (int) Math.ceil(box.maxX) - 1;

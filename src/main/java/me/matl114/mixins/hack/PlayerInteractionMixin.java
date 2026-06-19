@@ -8,9 +8,9 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.modules.mine.MineExtra;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.WorldUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -25,6 +25,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -126,22 +128,12 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         return currentFailBreakPos == null;
     }
 
-    /**
-     * 用指定工具预测当前主挖掘位的理论进度。
-     *
-     * <p>这个方法不读取当前手持物，而是假设“如果现在使用 tool 继续挖”，服务端从最近一次 start 开始，
-     * 理论上已经累计了多少进度。它服务于切工具收益估算，而不是本地动画显示。
-     */
-    @Override
-    public float predictCurrentMiningProgressWithTool(ItemStack tool) {
-        BlockState block = this.client.world.getBlockState(currentBreakingPos);
-        if (block.isAir()) {
-            return -1.0F;
-        }
-        float miningSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(this.client.player, block, tool);
-        float speed = WorldUtils.calcBlockBreakingDelta(block, this.client.world, currentBreakingPos, miningSpeed);
-        int ticksSinceLastStart = Tasks.getTick() - MineExtra.INSTANCE.lastStartMineBreakingProgressResetTick;
-        return speed * ticksSinceLastStart;
+    public int getCurrentMiningTicks() {
+        return Tasks.getTick() - MineExtra.INSTANCE.lastStartMineBreakingProgressResetTick;
+    }
+
+    public int getFailBreakMiningTicks() {
+        return Tasks.getTick() - failBreakStartTick;
     }
 
     /**
@@ -176,28 +168,6 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 currentBreakingPos);
         int ticksSinceLastStart = Tasks.getTick() - MineExtra.INSTANCE.lastStartMineBreakingProgressResetTick;
         return speed * ticksSinceLastStart;
-    }
-
-    /**
-     * 读取 failBreak 槽位按当前 tick 推导出的理论进度。
-     *
-     * <p>这条支线不依赖原版 {@code currentBreakingProgress}，因为 failBreak 本质上是“主挖掘位切走后仍然
-     * 继续复用的一段服务端上下文”，其可信来源是 start tick 与当前方块速度。
-     */
-    @Override
-    public float getFailBreakMiningProgress() {
-        if (currentFailBreakPos == null) {
-            return -1.0F;
-        }
-        BlockState block = MinecraftClient.getInstance().world.getBlockState(currentFailBreakPos);
-        if (block.isAir()) {
-            return -1.0F;
-        }
-        float speed = block.calcBlockBreakingDelta(
-                MinecraftClient.getInstance().player,
-                MinecraftClient.getInstance().player.getWorld(),
-                currentBreakingPos);
-        return (Tasks.getTick() - failBreakStartTick) * speed;
     }
 
     /**
@@ -381,7 +351,8 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         }
         float speed = state.calcBlockBreakingDelta(
                 MinecraftClient.getInstance().player, MinecraftClient.getInstance().world, currentFailBreakPos);
-        if (speed > 0.0F && ((Tasks.getTick() - failBreakStartTick) * speed > 1.0F)) {
+        // in the case of server lag
+        if (speed > 0.0F && ((Tasks.getTick() - failBreakStartTick - 1) * speed > 1.0F)) {
             return true;
         }
         return client.player != null
@@ -797,5 +768,25 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         // completely ignore the damage change
         cir.setReturnValue(Objects.equals(pos, currentBreakingPos)
                 && ItemStackUtils.matchItemMiningAbility(this.client.player.getMainHandStack(), this.selectedStack));
+    }
+
+    @Inject(
+            method = "interactItem",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;syncSelectedSlot()V",
+                            shift = At.Shift.AFTER),
+            order = -114514)
+    private void onInteractPreSend(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
+        LegacySnapRotManager.INSTANCE.betweenViaPacket = true;
+    }
+
+    @Inject(
+            method = "interactItem",
+            at = @At(value = "INVOKE", target = "Lorg/apache/commons/lang3/mutable/MutableObject;<init>()V"),
+            order = 114514)
+    private void onInteractPostSend(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
+        LegacySnapRotManager.INSTANCE.betweenViaPacket = false;
     }
 }

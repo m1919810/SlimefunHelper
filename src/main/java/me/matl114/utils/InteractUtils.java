@@ -1,16 +1,15 @@
 package me.matl114.utils;
 
 import javax.annotation.Nullable;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -81,5 +80,12 @@ public class InteractUtils {
                 mc.player.swingHand(hand);
             }
         }
+    }
+
+    public static boolean canHoldUse(ItemStack stack) {
+        return stack.contains(DataComponentTypes.CONSUMABLE)
+                || stack.contains(DataComponentTypes.BLOCKS_ATTACKS)
+                || VItem.getInstance().isSpear(stack)
+                || stack.getMaxUseTime(mc.player) > 0;
     }
 }

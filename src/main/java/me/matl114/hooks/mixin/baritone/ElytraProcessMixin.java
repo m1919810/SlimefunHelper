@@ -1,7 +1,5 @@
 package me.matl114.hooks.mixin.baritone;
 
-import baritone.api.BaritoneAPI;
-import baritone.api.Settings;
 import baritone.api.process.PathingCommand;
 import baritone.api.process.PathingCommandType;
 import baritone.process.ElytraProcess;
@@ -11,19 +9,26 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import me.matl114.events.Event;
 import me.matl114.hacks.modules.move.BaritoneFix;
 import me.matl114.hacks.modules.move.FloatingUtils;
+import me.matl114.hooks.BaritoneHooks;
+import me.matl114.hooks.impl.BaritoneFuture;
+import me.matl114.hooks.impl.BaritoneLanding;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
@@ -71,6 +76,9 @@ public abstract class ElytraProcessMixin {
         return original;
     }
 
+    @Unique
+    private BaritoneFuture landingFuture;
+
     @Inject(
             method = "onTick",
             at =
@@ -81,14 +89,15 @@ public abstract class ElytraProcessMixin {
             cancellable = true,
             require = 0)
     private void hookAllowEmergencyLand(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
-        if (BaritoneFix.INSTANCE.handleLog("Emergency Landing")) {
+        BaritoneFuture future = new BaritoneFuture();
+        Event<BaritoneFuture> event = new Event<>(future, true, false, BaritoneLanding.EMERGENCY);
+        BaritoneHooks.getLandingEvent().handleValue(event);
+        if (event.isCancelled()) {
+            future.onCancel();
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
             return;
         }
-        if (BaritoneFix.INSTANCE.handleFreeze("Emergency Landing")) {
-            cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
-            return;
-        }
+        landingFuture = future;
     }
 
     @Inject(
@@ -101,14 +110,31 @@ public abstract class ElytraProcessMixin {
             cancellable = true,
             require = 0)
     private void hookLogDirect(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
-        if (BaritoneFix.INSTANCE.handleLog("Path Complete")) {
+        BaritoneFuture future = new BaritoneFuture();
+        Event<BaritoneFuture> event = new Event<>(future, true, false, BaritoneLanding.PATH_COMPLETE);
+        BaritoneHooks.getLandingEvent().handleValue(event);
+        if (event.isCancelled()) {
+            future.onCancel();
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
             return;
         }
-        if (BaritoneFix.INSTANCE.handleFreeze("Path Complete")) {
-            cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
-            return;
+        landingFuture = future;
+    }
+
+    @WrapWithCondition(
+            method = "onTick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lbaritone/process/ElytraProcess;logDirect(Ljava/lang/String;)V",
+                            ordinal = 9),
+            require = 0)
+    private boolean hookLanding(ElytraProcess instance, String s) {
+        if (landingFuture != null) {
+            landingFuture.onComplete();
+            landingFuture = null;
         }
+        return true;
     }
 
     @Inject(method = "onTick", at = @At("HEAD"), cancellable = true, require = 0)
@@ -185,34 +211,17 @@ public abstract class ElytraProcessMixin {
 
     @WrapOperation(
             method = "onTick",
-            at = @At(value = "FIELD", target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;", ordinal = 12),
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isOnGround()Z"),
             require = 0)
-    private Object onAutoJump(Settings.Setting instance, Operation<Object> original) {
-        if (instance == BaritoneAPI.getSettings().elytraAutoJump) {
-            if (BaritoneAPI.getSettings().elytraAutoJump.value && BaritoneFix.INSTANCE.handleAutoJump()) {
-                return false;
-            }
+    private boolean onAutoJumpRewrite(ClientPlayerEntity instance, Operation<Boolean> original) {
+        if (BaritoneFix.INSTANCE.handleAutoJump()) {
+            return false;
         }
         return original.call(instance);
     }
 
-    @Inject(
-            method = "onTick",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lbaritone/process/ElytraProcess;shouldLandForSafety()Z",
-                            shift = At.Shift.BEFORE,
-                            ordinal = 1),
-            cancellable = true,
-            require = 0)
-    private void onAutoJump2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
-        if (BaritoneFix.INSTANCE.handleAutoJump()) {
-            try {
-                field.set(this, ElytraProcess.State.values()[3]);
-            } catch (Throwable e) {
-            }
-            cir.setReturnValue(new PathingCommand(null, PathingCommandType.CANCEL_AND_SET_GOAL));
-        }
+    @Inject(method = "pathTo(Lnet/minecraft/util/math/BlockPos;)V", at = @At("RETURN"))
+    private void pathTo(BlockPos par1, CallbackInfo ci) {
+        BaritoneHooks.getElytraPathingEvent().broadcast(par1);
     }
 }

@@ -13,6 +13,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import me.matl114.utils.containers.MetaData;
@@ -38,10 +39,7 @@ import net.minecraft.item.Items;
 import net.minecraft.item.consume.ApplyEffectsConsumeEffect;
 import net.minecraft.item.consume.ClearAllEffectsConsumeEffect;
 import net.minecraft.item.consume.RemoveEffectsConsumeEffect;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
-import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.particle.ParticleEffect;
@@ -100,6 +98,10 @@ public class PlayerStateManager extends BaseModule {
         super.registerAll();
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMove, Integer.MAX_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInputC2SPacket.class),
+                this::onPlayerInput,
+                Integer.MAX_VALUE);
         registerListener(Listener.getPlayerWebSlowPoint(), this::handleInWeb);
         registerListener(Listener.getPreGameTick(), this::onPreGameTick);
         registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityAttackEvent);
@@ -159,8 +161,17 @@ public class PlayerStateManager extends BaseModule {
             lastKnownMovementSpeed = new Vec3d(lastX - oldMove.x, lastY - oldMove.y, lastZ - oldMove.z);
             lastTickHasMovement = true;
         }
-        // update input here
-        lastInput = PlayerInputUtils.of(mc.player);
+        // update input here , low version
+        if (!ViaFabricPlusHooks.isSupportEndTick()) {
+            lastInput = PlayerInputUtils.of(mc.player);
+        }
+    }
+
+    public void onPlayerInput(Event<PlayerInputC2SPacket> eventInput) {
+        if (eventInput.isCancelled()) return;
+        if (ViaFabricPlusHooks.isSupportEndTick()) {
+            lastInput = PlayerInputUtils.of(eventInput.context);
+        }
     }
 
     public void onPlayerInitialize(Event<ClientPlayerEntity> event) {

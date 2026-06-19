@@ -2,14 +2,12 @@ package me.matl114.hacks.modules.move;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
-import me.matl114.events.catchers.PacketCatcherImpl;
 import me.matl114.events.catchers.TimedPacketCatcherImpl;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
@@ -36,23 +34,28 @@ import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
+import net.minecraft.network.packet.s2c.play.EnterReconfigurationS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
 
-public class TravellingControl extends BaseModule {
+public class TravellingControl extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath travellingControl = makePath(Configs.MOV_CONFIG, "travelling-control");
+    static LegalMovementManager.DelegateMovementModifier instance;
 
     public TravellingControl() {
         super("Travel");
+        if (instance == null) {
+            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
+        }
+        instance.setDelegate(this::cast);
     }
 
     //    public FlagRef enable = flagBuilder(travellingControl.add("enable")).build();
-
+    private TravelDelegate travelDelegate = (v) -> true;
     public KeyBindRef hotkey = hotkey(travellingControl.add("toggle-auto-speed"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleTravelAuto))
@@ -60,6 +63,14 @@ public class TravellingControl extends BaseModule {
 
     public EnumRef<Type> controlType = builder(travellingControl.add("control-type"), Type.class)
             .defaultValue(Type.MOV_VOID)
+            .updateListener((tt) -> {
+                if (this.travelDelegate == null || this.travelDelegate.getType() != tt) {
+                    if (this.travelDelegate != null) {
+                        this.travelDelegate.onStop();
+                    }
+                    this.travelDelegate = updateMode(tt);
+                }
+            })
             .build();
 
     public DoubleRef speed = builder(travellingControl.add("speed"), DoubleRef.TYPE)
@@ -90,6 +101,14 @@ public class TravellingControl extends BaseModule {
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
 
+    public FlagRef pitch40SafeKick = flagBuilder(travellingControl.add("pitch-40-end-kick"))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
+            .build();
+
+    public FlagRef pitch40SafeHeightAutoPullup = flagBuilder(travellingControl.add("pitch-40-auto-pull-up"))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
+            .build();
+
     public IntRef pitch40Pitch = builder(travellingControl.add("pitch-40-pitch-positive"), IntRef.TYPE)
             .defaultValue(15)
             .validator(Configs.INT_POSITIVE)
@@ -107,8 +126,27 @@ public class TravellingControl extends BaseModule {
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
 
-    private boolean doingTp = false;
-    private boolean exempt = false;
+    public FlagRef clearTargetWhenExit =
+            flagBuilder(travellingControl.add("clear-target-when-exit")).build();
+
+    @Override
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+        if (travelTask != null
+                && !travelTask.shouldNotRun()
+                && travelDelegate instanceof LegalMovementManager.MovementModifier movementModifier) {
+            movementModifier.applyPreTickModify(movementManagerEvent);
+        }
+    }
+
+    @Override
+    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        if (travelTask != null
+                && !travelTask.shouldNotRun()
+                && travelDelegate instanceof LegalMovementManager.MovementModifier movementModifier) {
+            movementModifier.postModify(movementManagerEvent, enabledThisTick);
+        }
+        return true;
+    }
 
     public static enum Type implements ConfigEnum {
         ELYTRASKY, // 原 ELYTRA
@@ -129,23 +167,64 @@ public class TravellingControl extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerCommandBootstrap(this::bootStrapTravelCommand);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMove);
         registerListener(Listener.getCustomListener().getChannel(FlightVelocity.class), this::onElytraVelocity);
-        registerListener(Listener.getPacketPoint().getChannel(TeleportConfirmC2SPacket.class), this::onTeleportConfirm);
+        registerListener(
+                Listener.getPacketPreHandlePoint().getChannel(EnterReconfigurationS2CPacket.class),
+                this::onReconfiguration);
+        registerListener(
+                Listener.getPacketPreHandlePoint().getChannel(PlayerPositionLookS2CPacket.class),
+                this::onPlayerPositionLook);
+        registerListener(Listener.getPreTick(), this::onTick);
     }
 
-    private void onPlayerMove(Event<PlayerMoveC2SPacket> event) {
-        if (doingTp) {
-            if (exempt) {
-                exempt = false;
-            } else {
-                event.cancel();
-            }
+    private TravelDelegate updateMode(Type type) {
+        return switch (type) {
+            case ELYTRASKY -> new TravelMoveVelocity();
+            case ELYTRA_PITCH40 -> new TravelPitch40(this);
+            case ELYTRA_GRIM_FLY40 -> new TravelPitch40Grim(this);
+            case MOV_VOID -> new TravelMoveVoid();
+            case MOV_VOID_2 -> new TravelMoveVoid2();
+            default -> (eve) -> {
+                return true;
+            };
+        };
+    }
+
+    private void onPlayerPositionLook(Event<PlayerPositionLookS2CPacket> eventPosition) {
+        if (travelDelegate instanceof TravelMoveVoid2 void2) {
+            void2.onPlayerPositionLook(eventPosition);
         }
     }
 
-    public void onTeleportConfirm(Event<TeleportConfirmC2SPacket> packetEvent) {
-        exempt = true;
+    boolean currentReconfiguration = false;
+
+    private void onReconfiguration(Event<EnterReconfigurationS2CPacket> eventKick) {
+        currentReconfiguration = true;
+    }
+
+    private void onTick(Event<Void> event) {
+        if (currentReconfiguration && mc.player != null) {
+            currentReconfiguration = false;
+        }
+        if (travelTask != null) {
+            if (checkState(travelTask)) {
+                return;
+            }
+            if (mc.player != null && travelDelegate != null) {
+                var info = travelTask;
+                if (info.pause) {
+                    Debug.chat("重新加载上一个Travel task中...");
+                    info.onStart(this, mc.player.getPos());
+                    travelDelegate.onStop();
+                    travelDelegate.onStart(info);
+                    Debug.chat("上一个travel task重新加载完成,使用travel cancel取消");
+                }
+                if (info.shouldNotRun()) return;
+                if (travelDelegate.onTick(event)) {
+                    onStop(info);
+                }
+            }
+        }
     }
 
     public void bootStrapTravelCommand(MainCommand mainCommand) {
@@ -175,6 +254,13 @@ public class TravellingControl extends BaseModule {
         }
     }
 
+    private void checkSelf() {
+        if (travelTask != null && travelTask.instance != this) {
+            travelTask.stop = true;
+            travelTask = null;
+        }
+    }
+
     public boolean onTravelTo(CommandExecution var1, ArgumentInputStream streamArgs, ArgumentReader argsReader) {
         ExecutePos pos = streamArgs.nextArg();
         if (pos != null) {
@@ -185,10 +271,7 @@ public class TravellingControl extends BaseModule {
     }
 
     public void onTravel(PlayerEntity var1, Vec3d parsedCoord) {
-        if (travelTask != null && travelTask.instance != this) {
-            travelTask.stop = true;
-            travelTask = null;
-        }
+        checkSelf();
         if (travelTask == null) {
             if (parsedCoord == null) return;
             travelMode(Optional.of(parsedCoord));
@@ -199,10 +282,7 @@ public class TravellingControl extends BaseModule {
 
     public void toggleTravelAuto() {
         if (checkNull()) return;
-        if (travelTask != null && travelTask.instance != this) {
-            travelTask.stop = true;
-            travelTask = null;
-        }
+        checkSelf();
         if (travelTask == null) {
             Debug.chat("启动Auto飞行模式");
             travelMode(Optional.empty());
@@ -213,10 +293,7 @@ public class TravellingControl extends BaseModule {
     }
 
     public void onTravelAuto(CommandExecution var1) {
-        if (travelTask != null && travelTask.instance != this) {
-            travelTask.stop = true;
-            travelTask = null;
-        }
+        checkSelf();
         if (travelTask == null) {
             travelMode(Optional.empty());
         } else {
@@ -229,11 +306,9 @@ public class TravellingControl extends BaseModule {
         Debug.chat("当前运动类型: " + type.getDisplay().getString());
         TravelInfo info = new TravelInfo();
         info.pos0 = traget;
-        info.currentPlayer = mc.player;
-        info.startingTime = System.currentTimeMillis();
-        info.startPos = mc.player.getPos();
-        info.stop = false;
-        info.instance = this;
+
+        info.onStart(this, mc.player.getPos());
+
         travelTask = info;
         double initY = mc.player.getY();
         if (initY < minHeight.get()) {
@@ -243,30 +318,8 @@ public class TravellingControl extends BaseModule {
         } else {
             info.state = TravelState.STABLE;
         }
-        if (type == Type.ELYTRASKY) {
-            Debug.chat("注意: Elytra_sky 模式需要配合启用鞘翅飞行控制才能正常 travel");
-            Tasks.scheduleRepeated(this::onTravelTickElytra, 20, 2);
-        } else if (type == Type.MOV_VOID) {
-            Tasks.scheduleRepeated(this::onTravelTickMovVoid, 20, 2);
-        } else if (type == Type.MOV_VOID_2) {
-            catchResyncPackets = false;
-            Listener.addPostPacketCatcher(new PacketCatcherImpl<>(PlayerPositionLookS2CPacket.class, (event -> {
-                catchResyncPackets = true;
-                return travelTask != info || info.stop;
-            })));
-            Tasks.scheduleRepeated(this::onTravelTickMovVoid2, 20, 2);
-        } else if (type == Type.ELYTRA_PITCH40) {
-            ClientPlayerAccess.of(mc.player)
-                    .getLegalMovementManager()
-                    .addMovementModifier(this.createTravelPitch40Controller(info));
-            // fuck...
-            Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
-        } else if (type == Type.ELYTRA_GRIM_FLY40) {
-            ClientPlayerAccess.of(mc.player)
-                    .getLegalMovementManager()
-                    .addMovementModifier(this.createTravelGrimFly40Controller(info));
-            // fuck...
-            Tasks.scheduleRepeated(this::onTravelPitch40DaemonTask, 20, 1);
+        if (travelDelegate != null) {
+            travelDelegate.onStart(info);
         } else {
             travelTask.stop = true;
             travelTask = null;
@@ -293,124 +346,603 @@ public class TravellingControl extends BaseModule {
         }
     }
 
+    private void onStop(TravelInfo info) {
+        if (info != null) info.stop = true;
+        travelTask = null;
+        travelDelegate.onStop();
+    }
+
+    private void onPause(TravelInfo info) {
+        if (info == null) {
+            onStop(info);
+        } else {
+            info.pause = true;
+            travelDelegate.onStop();
+        }
+    }
+
     private boolean checkState(TravelInfo ti) {
-        if (checkNull() || ti == null || ti.stop || ti.instance != this) {
-            if (ti != null) ti.stop = true;
-            travelTask = null;
-            MovTasks.doingTp = false; // 原 cancel() 中的逻辑
-            elytraPos = null;
+        if (ti != null && ti.pause) {
+            return false;
+        } else if (checkNull()) {
+            if (clearTargetWhenExit.get()) {
+                onStop(ti);
+                return true;
+            } else {
+                onPause(ti);
+                return true;
+            }
+        } else if (ti == null || ti.stop || ti.instance != this) {
+            onStop(ti);
             return true;
         }
         return false;
     }
 
-    boolean catchResyncPackets = false;
+    private class TravelMoveVoid implements TravelDelegate {
+        int delay = 0;
+        int tickCNT;
 
-    private boolean onTravelTickMovVoid() {
-        MovTasks.doingTp = false;
-        TravelInfo ti = travelTask;
-        if (checkState(ti)) {
-            return true;
+        @Override
+        public Type getType() {
+            return Type.MOV_VOID;
         }
-        mc.player.setOnGround(false);
-        ti.tickCNT += 1;
 
-        double currentY = mc.player.getY();
-        updateState(ti, currentY);
-
-        double horizontalSpeed = speed.get();
-
-        if (ti.state == TravelState.STABLE) {
-            Vec3d towards = ti.getCurrentFlyingTarget().subtract(mc.player.getPos());
-            Vec3d towardsHorizontal = new Vec3d(towards.x, 0, towards.z).normalize();
-
-            if (moveAndCheckFinish(
-                    ti, towardsHorizontal.multiply(horizontalSpeed).add(0, -0.05, 0))) {
-                return true;
+        @Override
+        public boolean onTick(Event<Void> event) {
+            MovTasks.doingTp = false;
+            TravelInfo ti = travelTask;
+            mc.player.setOnGround(false);
+            if (++delay < 2) {
+                return false;
             }
-            if (moveAndCheckFinish(
-                    ti, towardsHorizontal.multiply(horizontalSpeed).add(0, -0.05, 0))) {
-                return true;
-            }
-            if (ti.tickCNT % 3 == 0) {
+            delay = 0;
+            tickCNT += 1;
+
+            double currentY = mc.player.getY();
+            updateState(ti, currentY);
+
+            double horizontalSpeed = speed.get();
+
+            if (ti.state == TravelState.STABLE) {
+                Vec3d towards = ti.getCurrentFlyingTarget().subtract(mc.player.getPos());
+                Vec3d towardsHorizontal = new Vec3d(towards.x, 0, towards.z).normalize();
+
                 if (moveAndCheckFinish(
                         ti, towardsHorizontal.multiply(horizontalSpeed).add(0, -0.05, 0))) {
                     return true;
                 }
-            }
-        } else {
-            double targetY = ti.state == TravelState.TOO_LOW ? maxHeight.get() : minHeight.get();
-            double deltaY;
-            if ((ti.tickCNT % 20) < 18) {
-                double direction = Math.signum(targetY - currentY);
-                deltaY = direction * speed.get();
+                if (moveAndCheckFinish(
+                        ti, towardsHorizontal.multiply(horizontalSpeed).add(0, -0.05, 0))) {
+                    return true;
+                }
+                if (tickCNT % 3 == 0) {
+                    if (moveAndCheckFinish(
+                            ti, towardsHorizontal.multiply(horizontalSpeed).add(0, -0.05, 0))) {
+                        return true;
+                    }
+                }
             } else {
-                deltaY = -0.3;
+                double targetY = ti.state == TravelState.TOO_LOW ? maxHeight.get() : minHeight.get();
+                double deltaY;
+                if ((tickCNT % 20) < 18) {
+                    double direction = Math.signum(targetY - currentY);
+                    deltaY = direction * speed.get();
+                } else {
+                    deltaY = -0.3;
+                }
+
+                Vec3d delta = new Vec3d(0, deltaY, 0);
+                if (moveAndCheckFinish(ti, delta)) {
+                    return true;
+                }
             }
 
-            Vec3d delta = new Vec3d(0, deltaY, 0);
-            if (moveAndCheckFinish(ti, delta)) {
-                return true;
-            }
+            MovTasks.doingTp = true;
+            return false;
         }
 
-        MovTasks.doingTp = true;
-        return false;
+        @Override
+        public void onStop() {
+            MovTasks.doingTp = false;
+        }
     }
 
-    private boolean onTravelTickMovVoid2() {
-        MovTasks.doingTp = false;
-        TravelInfo ti = travelTask;
-        if (checkState(ti)) {
+    private class TravelMoveVoid2 implements TravelDelegate {
+        boolean catchResyncPackets = false;
+        TravelInfo info;
+        int tickCNT = 0;
+
+        @Override
+        public Type getType() {
+            return Type.MOV_VOID_2;
+        }
+
+        @Override
+        public void onStart(TravelInfo state) {
+            this.info = state;
+        }
+
+        public void onPlayerPositionLook(Event<PlayerPositionLookS2CPacket> event) {
+            catchResyncPackets = true;
+        }
+
+        int delay = 0;
+
+        @Override
+        public boolean onTick(Event<Void> event) {
+            MovTasks.doingTp = false;
+            TravelInfo ti = travelTask;
+
+            mc.player.setOnGround(false);
+            if (++delay < 2) {
+                return false;
+            }
+            delay = 0;
+            tickCNT += 1;
+
+            double currentY = mc.player.getY();
+            updateState(ti, currentY);
+
+            double horizontalSpeed = speed.get() - 0.05;
+
+            if (ti.state == TravelState.STABLE) {
+                if (checkFinish(ti)) {
+                    return true;
+                }
+                Vec3d towards = ti.getCurrentFlyingTarget().subtract(mc.player.getPos());
+                towards = new Vec3d(towards.x, 0, towards.z);
+                double len = towards.horizontalLengthSquared();
+                Vec3d towardsHorizontal = towards.normalize();
+                Vec3d delta = towardsHorizontal
+                        .multiply(horizontalSpeed)
+                        .add(0, -0.05, 0)
+                        .multiply(void2Arg.get());
+                if (delta.horizontalLengthSquared() > len) {
+                    delta = towards;
+                }
+                Vec3d targetPos = mc.player.getPos().add(delta);
+                if (catchResyncPackets) {
+                    catchResyncPackets = false;
+                } else {
+                    MovTasks.executeTp(targetPos, 200, false, false);
+                    MovTasks.setupAutoResync(targetPos);
+                }
+
+            } else {
+                double targetY = ti.state == TravelState.TOO_LOW ? maxHeight.get() : minHeight.get();
+                double deltaY;
+                if ((tickCNT % 20) < 18) {
+                    double direction = Math.signum(targetY - currentY);
+                    deltaY = direction * speed.get();
+                } else {
+                    deltaY = -0.3;
+                }
+
+                Vec3d delta = new Vec3d(0, deltaY, 0);
+                if (moveAndCheckFinish(ti, delta)) {
+                    return true;
+                }
+            }
+
+            MovTasks.doingTp = true;
+            return false;
+        }
+
+        @Override
+        public void onStop() {
+            MovTasks.doingTp = false;
+        }
+    }
+
+    private class TravelMoveVelocity implements TravelDelegate {
+        private Vec3d elytraPos = null;
+        int tickCNT = 0;
+
+        @Override
+        public Type getType() {
+            return Type.ELYTRASKY;
+        }
+
+        @Override
+        public boolean onTick(Event<Void> event) {
+            TravelInfo ti = travelTask;
+            mc.player.setOnGround(false);
+            tickCNT += 1;
+
+            double currentY = mc.player.getY();
+            double elySpeed = elytraSpeed.get() * 10;
+
+            // 初始化持久化状态（如果为null）
+            if (ti.state == null) {
+                if (currentY < minHeight.get()) {
+                    ti.state = TravelState.TOO_LOW;
+                } else if (currentY > maxHeight.get()) {
+                    ti.state = TravelState.TOO_HIGH;
+                } else {
+                    ti.state = TravelState.STABLE;
+                }
+            }
+
+            // 状态更新逻辑（与 MOV_VOID 相同）
+            updateState(ti, currentY);
+
+            // 根据状态计算目标位置 elytraPos
+            if (ti.state == TravelState.STABLE) {
+                if (checkFinish(ti)) {
+                    return true;
+                }
+                Vec3d currentPos = mc.player.getPos();
+                Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
+                Vec3d direction = towards.normalize()
+                        .withAxis(Direction.Axis.Y, 0)
+                        .multiply(elySpeed)
+                        .add(0, -0.05, 0);
+                elytraPos = currentPos.add(direction.multiply(10));
+            } else {
+                // 高度修正目标
+                double targetY;
+                if (ti.state == TravelState.TOO_LOW) {
+                    targetY = maxHeight.get();
+                } else { // TOO_HIGH
+                    targetY = minHeight.get();
+                }
+
+                double deltaY;
+                if ((tickCNT % 20) < 18) {
+                    double direction = Math.signum(targetY - currentY);
+                    deltaY = direction * elytraSpeed.get() * 10; // 使用鞘翅速度
+                } else {
+                    deltaY = -0.3;
+                }
+
+                elytraPos = mc.player.getPos().add(0, deltaY, 0);
+            }
+
+            return false;
+        }
+
+        public void onElytra(Event<EventContainer<FlightVelocity>> event) {
+            if (elytraPos == null) {
+                return;
+            }
+            EventContainer<FlightVelocity> eventContainer = event.context();
+            if (eventContainer.getValue().mode() != FlightVelocity.Mode.ELYTRA_FLIGHT) return;
+            FlightVelocity velocity = eventContainer.getValue();
+            Vec3d towards = elytraPos.subtract(mc.player.getPos()).normalize().multiply(speed.get());
+            velocity.x(towards.x).y(towards.y).z(towards.z);
+        }
+    }
+
+    private abstract static class AbstractPitch40 implements TravelDelegate, LegalMovementManager.MovementModifier {
+        TravellingControl control;
+
+        public AbstractPitch40(TravellingControl control) {
+            this.control = control;
+        }
+
+        TravelInfo ti = null;
+        boolean startWork = false;
+        int counter = 0;
+        int counter2 = 0;
+        int dangerousNoFallFlyingTick = 0;
+        double[] last3Y = {-999, -999, -999, -999, -999};
+        int last3YIndex = 0;
+
+        @Override
+        public void onStart(TravelInfo state) {
+            this.ti = state;
+            this.ti.state = TravelState.TOO_LOW;
+            startWork = false;
+            counter = 0;
+            counter2 = 0;
+            dangerousNoFallFlyingTick = 0;
+            last3Y = new double[] {-999, -999, -999, -999, -999, -999, -999, -999, -999, -999};
+            last3YIndex = 0;
+        }
+
+        protected void checkNotStart() {
+            if (!startWork && mc.player.isFallFlying()) {
+                if (ti.state == TravelState.TOO_HIGH) {
+                    startWork = true;
+                    Debug.chat("[Pitch440] 开始工作!");
+                } else {
+                    if (control.pitch40SafeHeightAutoPullup.get()) {
+                        handlePullUp();
+                    }
+                    if (++counter % 60 == 0) {
+                        Debug.chat("[Pitch40] 请拉升到MaxHeight以启动:", control.maxHeight.get());
+                    }
+                }
+            }
+        }
+
+        protected void handlePullUp() {
+            EntityUtils.setEntityPitchSafe(mc.player, -control.pitch40Negative.get());
+            if (!ElytraExtra.INSTANCE.canFireworkControlMotion() && Tasks.getTick() % 5 == 0) {
+                ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
+            }
+        }
+
+        protected void handleReFly() {
+            if (dangerousNoFallFlyingTick > 20) {
+                dangerousNoFallFlyingTick = 0;
+            }
+            if (dangerousNoFallFlyingTick == 0) {
+                // reset fucking jump input
+                MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                // launch event from this method
+                if (mc.player.checkGliding()) {
+                    mc.getNetworkHandler()
+                            .sendPacket(new ClientCommandC2SPacket(
+                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                }
+
+                // start counting down, if not startflying in 20 tick(1sec), auto logout
+                dangerousNoFallFlyingTick = 1;
+                MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
+            }
+        }
+
+        protected boolean handlePostHeight() {
+            if (control.pitch40SafeHeightAutoPullup.get() && mc.player.getY() < control.minHeight.get() - 16) {
+                handlePullUp();
+            }
+            if (control.pitch40SafeHeight.get() && mc.player.getY() < control.minHeight.get() - 64) {
+                // emergency
+                Debug.chat("[Pitch40] 滑翔失控了");
+                if (control.pitch40SafeHeight.get()) {
+                    Debug.info("Pitch40 out of control!");
+                    MainTasks.scheduleDisconnect();
+                }
+                startWork = false;
+                control.onStop(ti);
+                return false;
+                // return immediately.
+            }
+            if (mc.player != null && !mc.player.isFallFlying()) {
+                // start counting down
+                if (dangerousNoFallFlyingTick > 0) {
+                    dangerousNoFallFlyingTick += 1;
+                }
+            } else {
+                dangerousNoFallFlyingTick = 0;
+            }
             return true;
         }
-        mc.player.setOnGround(false);
-        ti.tickCNT += 1;
 
-        double currentY = mc.player.getY();
-        updateState(ti, currentY);
-
-        double horizontalSpeed = speed.get() - 0.05;
-
-        if (ti.state == TravelState.STABLE) {
-            if (checkFinish(ti)) {
-                return true;
+        protected void handleFinishCheck() {
+            if (control.checkFinish(ti)) {
+                if (!ti.stopManually && control.pitch40SafeHeight.get()) {
+                    Debug.chat("[Pitch40] 当前处于虚空维度, 我们需要确保你不会掉下去!");
+                    Debug.chat("[Pitch40] 我们需要自动断线");
+                    MainTasks.scheduleDisconnect();
+                }
+                control.onStop(ti);
             }
-            Vec3d towards = ti.getCurrentFlyingTarget().subtract(mc.player.getPos());
-            towards = new Vec3d(towards.x, 0, towards.z);
-            double len = towards.horizontalLengthSquared();
-            Vec3d towardsHorizontal = towards.normalize();
-            Vec3d delta =
-                    towardsHorizontal.multiply(horizontalSpeed).add(0, -0.05, 0).multiply(void2Arg.get());
-            if (delta.horizontalLengthSquared() > len) {
-                delta = towards;
-            }
-            Vec3d targetPos = mc.player.getPos().add(delta);
-            if (catchResyncPackets) {
-                catchResyncPackets = false;
-            } else {
-                MovTasks.executeTp(targetPos, 200, false, false);
-                MovTasks.setupAutoResync(targetPos);
-            }
-
-        } else {
-            double targetY = ti.state == TravelState.TOO_LOW ? maxHeight.get() : minHeight.get();
-            double deltaY;
-            if ((ti.tickCNT % 20) < 18) {
-                double direction = Math.signum(targetY - currentY);
-                deltaY = direction * speed.get();
-            } else {
-                deltaY = -0.3;
-            }
-
-            Vec3d delta = new Vec3d(0, deltaY, 0);
-            if (moveAndCheckFinish(ti, delta)) {
-                return true;
+            if (mc.player != null) {
+                last3Y[last3YIndex] = mc.player.getY();
+                last3YIndex = (last3YIndex + 1) % last3Y.length;
             }
         }
 
-        MovTasks.doingTp = true;
-        return false;
+        @Override
+        public void onStop() {
+            ti = null;
+            startWork = false;
+        }
+
+        @Override
+        public int priority() {
+            return PRIORITY_LOW;
+        }
+
+        @Override
+        public boolean onTick(Event<Void> event) {
+            if (mc.player != null && travelTask == null) {
+                return true;
+            }
+            if (control.currentReconfiguration) {
+                if (control.pitch40SafeKick.get()) {
+                    Tasks.scheduleRepeated(
+                            () -> {
+                                if (mc.player != null) {
+                                    Debug.chat("Disconnect because of safety");
+                                    MainTasks.scheduleDisconnect();
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            },
+                            1,
+                            1);
+                }
+                // cancel or pause the task here
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            if (ti == null || ti.shouldNotRun()) return true;
+            if (startWork) {
+                // main logic, just logout for safety
+                // movementManagerEvent.context.playerStatus.restoreRotation();
+                if (!handlePostHeight()) {
+                    return true;
+                }
+            }
+            handleFinishCheck();
+            return true;
+        }
+    }
+
+    private static class TravelPitch40 extends AbstractPitch40 {
+
+        public TravelPitch40(TravellingControl control) {
+            super(control);
+        }
+
+        @Override
+        public Type getType() {
+            return Type.ELYTRA_PITCH40;
+        }
+
+        @Override
+        public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+            if (ti == null || ti.shouldNotRun()) return;
+            ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+            control.updateState(ti, player.getY());
+            checkNotStart();
+            if (startWork) {
+                if (mc.player.isFallFlying()) {
+                    movementManagerEvent.context.pushImportantRotation(true, true);
+                    Vec3d currentPos = mc.player.getPos();
+                    Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
+                    // anti afk
+
+                    float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y;
+                    counter2 += 1;
+
+                    switch (ti.state) {
+                        case STABLE, TOO_HIGH -> {
+                            EntityUtils.setEntityYawSafe(player, yaw);
+                            double y = mc.player.getY();
+                            double last3YY = this.last3Y[last3YIndex];
+                            boolean goingDown = (y < last3YY);
+                            if (goingDown) {
+                                if (counter2 > 1) {
+                                    Debug.chat("[Pitch40] Current Height", player.getY());
+                                }
+                                counter2 = 0;
+                                EntityUtils.setEntityPitchSafe(player, control.pitch40Pitch.get());
+                            } else {
+                                // fly higher..
+                                EntityUtils.setEntityPitchSafe(
+                                        player,
+                                        Math.min(
+                                                -control.pitch40Negative.get()
+                                                        + counter2 * (float) control.negativeArgument.get(),
+                                                control.pitch40Pitch.get()));
+                            }
+                        }
+                        case TOO_LOW -> {
+                            EntityUtils.setEntityYawSafe(player, yaw);
+                            EntityUtils.setEntityPitchSafe(
+                                    player,
+                                    Math.min(
+                                            -control.pitch40Negative.get()
+                                                    + counter2 * (float) control.negativeArgument.get(),
+                                            control.pitch40Pitch.get()));
+                        }
+                    }
+                } else {
+                    handleReFly();
+                }
+            }
+        }
+    }
+
+    private static class TravelPitch40Grim extends AbstractPitch40 {
+
+        public TravelPitch40Grim(TravellingControl control) {
+            super(control);
+        }
+
+        @Override
+        public Type getType() {
+            return Type.ELYTRA_GRIM_FLY40;
+        }
+
+        boolean currentFlyingHigh = false;
+        boolean useGrimPacketFly = false;
+
+        @Override
+        public void onStart(TravelInfo state) {
+            super.onStart(state);
+            currentFlyingHigh = false;
+            useGrimPacketFly = false;
+        }
+
+        @Override
+        public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+            if (ti == null || ti.shouldNotRun()) return;
+            ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+            control.updateState(ti, player.getY());
+            checkNotStart();
+            final int pitch40 = control.pitch40Pitch.get();
+            if (startWork) {
+                if (mc.player.isFallFlying()) {
+                    movementManagerEvent.context.pushImportantRotation(true, true);
+                    Vec3d currentPos = mc.player.getPos();
+                    Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
+                    // anti afk
+                    float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y;
+                    counter2 += 1;
+
+                    switch (ti.state) {
+                        case STABLE, TOO_HIGH -> {
+                            EntityUtils.setEntityYawSafe(player, yaw);
+                            double y = mc.player.getY();
+                            double last3YY = this.last3Y[last3YIndex];
+                            boolean goingDown = (y < last3YY);
+                            if (currentFlyingHigh && goingDown) {
+                                currentFlyingHigh = false;
+                                Debug.chat("[Pitch40] Current Height", last3YY);
+                            }
+                            if (!currentFlyingHigh) {
+                                counter2 = 0;
+                                useGrimPacketFly = true;
+                                EntityUtils.setEntityPitchSafe(player, pitch40);
+                            } else {
+                                EntityUtils.setEntityPitchSafe(
+                                        player,
+                                        Math.min(
+                                                -control.pitch40Negative.get()
+                                                        + counter2 * (float) control.negativeArgument.get(),
+                                                control.pitch40Pitch.get()));
+                            }
+                        }
+                        case TOO_LOW -> {
+                            if (!currentFlyingHigh) {
+                                // at this tick, we launch a PacketCatcher
+                                AtomicInteger counter = new AtomicInteger(20);
+                                AtomicDouble max = new AtomicDouble(-999);
+                                Listener.addPostPacketCatcher(new TimedPacketCatcherImpl<>(
+                                        EntityVelocityUpdateS2CPacket.class, 200, (event) -> {
+                                            Vec3d velocity = VPacket.getVelocity(event.context);
+                                            //  Debug.chat("check velocity", velocity);
+                                            if (velocity.y <= max.get()
+                                                    || velocity.y > 3.0F
+                                                    || counter.getAndDecrement() < 0) {
+                                                Tasks.scheduleDelayed(() -> useGrimPacketFly = false, 0);
+                                                // useGrimPacketFly = false;
+
+                                                return true;
+                                            }
+                                            max.set(velocity.y);
+                                            return false;
+                                        }));
+                            }
+                            currentFlyingHigh = true;
+                            EntityUtils.setEntityYawSafe(player, yaw);
+                            EntityUtils.setEntityPitchSafe(
+                                    player,
+                                    Math.min(
+                                            -control.pitch40Negative.get()
+                                                    + counter2 * (float) control.negativeArgument.get(),
+                                            control.pitch40Pitch.get()));
+                        }
+                    }
+                } else {
+                    handleReFly();
+                }
+            }
+            if (useGrimPacketFly) {
+                MovTasks.getElytraGrimAccelerate().setTryWorkingTick();
+            }
+        }
     }
 
     // 封装原 move() 和 finish() 逻辑，返回 true 表示任务结束
@@ -427,7 +959,6 @@ public class TravellingControl extends BaseModule {
     private boolean checkFinish(TravelInfo ti) {
         if (travelTask != ti
                 || ti.instance != this
-                || mc.player != ti.currentPlayer
                 || mc.player.getPos().subtract(ti.getCurrentFlyingTarget()).horizontalLengthSquared() < 900) {
             outputTravelStats(ti);
             if (mc.player != null) {
@@ -436,421 +967,6 @@ public class TravellingControl extends BaseModule {
             }
             travelTask = null;
             MovTasks.doingTp = false; // 合并 cancel 清理
-            return true;
-        }
-        return false;
-    }
-
-    private Vec3d elytraPos = null;
-
-    private boolean onTravelTickElytra() {
-        TravelInfo ti = travelTask;
-        if (checkState(ti)) {
-            return true;
-        }
-        mc.player.setOnGround(false);
-        ti.tickCNT += 1;
-
-        double currentY = mc.player.getY();
-        double elySpeed = elytraSpeed.get() * 10;
-
-        // 初始化持久化状态（如果为null）
-        if (ti.state == null) {
-            if (currentY < minHeight.get()) {
-                ti.state = TravelState.TOO_LOW;
-            } else if (currentY > maxHeight.get()) {
-                ti.state = TravelState.TOO_HIGH;
-            } else {
-                ti.state = TravelState.STABLE;
-            }
-        }
-
-        // 状态更新逻辑（与 MOV_VOID 相同）
-        updateState(ti, currentY);
-
-        // 根据状态计算目标位置 elytraPos
-        if (ti.state == TravelState.STABLE) {
-            if (checkFinish(ti)) {
-                return true;
-            }
-            Vec3d currentPos = mc.player.getPos();
-            Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
-            Vec3d direction = towards.normalize()
-                    .withAxis(Direction.Axis.Y, 0)
-                    .multiply(elySpeed)
-                    .add(0, -0.05, 0);
-            elytraPos = currentPos.add(direction.multiply(10));
-        } else {
-            // 高度修正目标
-            double targetY;
-            if (ti.state == TravelState.TOO_LOW) {
-                targetY = maxHeight.get();
-            } else { // TOO_HIGH
-                targetY = minHeight.get();
-            }
-
-            double deltaY;
-            if ((ti.tickCNT % 20) < 18) {
-                double direction = Math.signum(targetY - currentY);
-                deltaY = direction * elytraSpeed.get() * 10; // 使用鞘翅速度
-            } else {
-                deltaY = -0.3;
-            }
-
-            elytraPos = mc.player.getPos().add(0, deltaY, 0);
-        }
-
-        return false;
-    }
-    // 总结 一定要 1. 及时断线 2. 断线之后要开自动鞘翅或者甲飞+平飞拉回来 3. 看情况 可以考虑不下降， 继续飞
-    private LegalMovementManager.MovementModifier createTravelPitch40Controller(TravelInfo state) {
-        state.state = TravelState.TOO_LOW;
-        return new LegalMovementManager.MovementModifier() {
-
-            final TravelInfo ti = state;
-            boolean startWork = false;
-            boolean stillWork = true;
-            int counter = 0;
-            int counter2 = 0;
-            float randomOffsetPitch = 0.0F;
-            float randomOffsetYaw = 0.0F;
-            Random rand = new Random();
-            int dangerousNoFallFlyingTick = 0;
-            double[] last3Y = {-999, -999, -999, -999, -999};
-            int last3YIndex = 0;
-
-            @Override
-            public int priority() {
-                return PRIORITY_LOW;
-            }
-
-            @Override
-            public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-                updateState(ti, player.getY());
-                if (!startWork && mc.player.isFallFlying()) {
-                    if (ti.state == TravelState.TOO_HIGH) {
-                        startWork = true;
-                        Debug.chat("[Pitch440] 开始工作!");
-                    } else if (++counter % 60 == 0) {
-                        Debug.chat("[Pitch40] 请拉升到MaxHeight以启动:", maxHeight.get());
-                    }
-                }
-                if (startWork) {
-                    if (mc.player.isFallFlying()) {
-                        movementManagerEvent.context.pushImportantRotation(true, true);
-                        Vec3d currentPos = mc.player.getPos();
-                        Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
-                        // anti afk
-                        if (Tasks.getTick() % 40 == 0) {
-                            randomOffsetPitch = (float) rand.nextDouble(-2.5, 2.5);
-                            randomOffsetYaw = (float) rand.nextDouble(1.0F);
-                        }
-                        float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y + randomOffsetPitch;
-                        counter2 += 1;
-
-                        switch (ti.state) {
-                            case STABLE, TOO_HIGH -> {
-                                EntityUtils.setEntityYawSafe(player, yaw);
-                                double y = mc.player.getY();
-                                double last3YY = this.last3Y[last3YIndex];
-                                boolean goingDown = (y < last3YY);
-                                if (goingDown) {
-                                    if (counter2 > 1) {
-                                        Debug.chat("[Pitch40] Current Height", player.getY());
-                                    }
-                                    counter2 = 0;
-                                    EntityUtils.setEntityPitchSafe(player, pitch40Pitch.get() + randomOffsetYaw);
-                                } else {
-                                    // fly higher..
-                                    EntityUtils.setEntityPitchSafe(
-                                            player,
-                                            Math.min(
-                                                            -pitch40Negative.get()
-                                                                    + counter2 * (float) negativeArgument.get(),
-                                                            pitch40Pitch.get())
-                                                    + randomOffsetYaw);
-                                }
-                            }
-                            case TOO_LOW -> {
-                                EntityUtils.setEntityYawSafe(player, yaw);
-                                EntityUtils.setEntityPitchSafe(
-                                        player,
-                                        Math.min(
-                                                        -pitch40Negative.get()
-                                                                + counter2 * (float) negativeArgument.get(),
-                                                        pitch40Pitch.get())
-                                                + randomOffsetYaw);
-                            }
-                        }
-                    } else {
-                        if (dangerousNoFallFlyingTick > 20) {
-                            dangerousNoFallFlyingTick = 0;
-                        }
-                        if (dangerousNoFallFlyingTick == 0) {
-                            // reset fucking jump input
-                            MovTasks.getMovExtra().sendPacketsForInventoryAction();
-                            // launch event from this method
-                            if (mc.player.checkGliding()) {
-                                mc.getNetworkHandler()
-                                        .sendPacket(new ClientCommandC2SPacket(
-                                                mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                            }
-
-                            // start counting down, if not startflying in 20 tick(1sec), auto logout
-                            dangerousNoFallFlyingTick = 1;
-                            MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                if (startWork) {
-                    // main logic, just logout for safety
-                    // movementManagerEvent.context.playerStatus.restoreRotation();
-                    ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-                    if (pitch40SafeHeight.get() && player.getY() < minHeight.get() - 16) {
-                        // emergency
-                        Debug.chat("[Pitch40] 滑翔失控了");
-                        if (pitch40SafeHeight.get()) {
-                            Debug.info("Pitch40 out of control!");
-                            MainTasks.scheduleDisconnect();
-                        }
-                        startWork = false;
-                        stillWork = false;
-                        // return immediately.
-                        return false;
-                    }
-                    if (mc.player != null && !mc.player.isFallFlying()) {
-                        // start counting down
-                        if (dangerousNoFallFlyingTick > 0) {
-                            dangerousNoFallFlyingTick += 1;
-                        }
-                    } else {
-                        dangerousNoFallFlyingTick = 0;
-                    }
-                }
-                if (checkFinish(ti)) {
-                    if (!ti.stopManually && pitch40SafeHeight.get()) {
-                        Debug.chat("[Pitch40] 当前处于虚空维度, 我们需要确保你不会掉下去!");
-                        Debug.chat("[Pitch40] 我们需要自动断线");
-                        MainTasks.scheduleDisconnect();
-                    }
-                    stillWork = false;
-                }
-                if (mc.player != null) {
-                    last3Y[last3YIndex] = mc.player.getY();
-                    last3YIndex = (last3YIndex + 1) % last3Y.length;
-                }
-                return stillWork;
-            }
-        };
-    }
-
-    private LegalMovementManager.MovementModifier createTravelGrimFly40Controller(TravelInfo state) {
-        state.state = TravelState.TOO_LOW;
-        return new LegalMovementManager.MovementModifier() {
-
-            final TravelInfo ti = state;
-            boolean startWork = false;
-            boolean stillWork = true;
-            int counter = 0;
-            int counter2 = 0;
-            float randomOffsetPitch = 0.0F;
-            float randomOffsetYaw = 0.0F;
-            Random rand = new Random();
-            int dangerousNoFallFlyingTick = 0;
-
-            @Override
-            public int priority() {
-                return PRIORITY_LOW;
-            }
-            // avoid setbacks
-            double[] last3Y = {-999, -999, -999, -999, -999, -999, -999, -999, -999, -999};
-            int last3YIndex = 0;
-            boolean currentFlyingHigh = false;
-            boolean useGrimPacketFly = false;
-
-            @Override
-            public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-                updateState(ti, player.getY());
-                if (!startWork && mc.player.isFallFlying()) {
-                    if (ti.state == TravelState.TOO_HIGH) {
-                        startWork = true;
-                        Debug.chat("[Pitch440] 开始工作!");
-                    } else if (++counter % 60 == 0) {
-                        Debug.chat("[Pitch40] 请拉升到MaxHeight以启动:", maxHeight.get());
-                    }
-                }
-                final int pitch40 = pitch40Pitch.get();
-                final int pitchn40 = -pitch40Negative.get();
-                if (startWork) {
-                    if (mc.player.isFallFlying()) {
-                        movementManagerEvent.context.pushImportantRotation(true, true);
-                        Vec3d currentPos = mc.player.getPos();
-                        Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
-                        // anti afk
-                        if (Tasks.getTick() % 40 == 0) {
-                            randomOffsetPitch = 0.0F; // (float) rand.nextDouble(-2.5, 2.5);
-                            randomOffsetYaw = 0.0F; // (float) rand.nextDouble(1.0F);
-                        }
-                        float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y + randomOffsetPitch;
-                        counter2 += 1;
-
-                        switch (ti.state) {
-                            case STABLE, TOO_HIGH -> {
-                                EntityUtils.setEntityYawSafe(player, yaw);
-                                double y = mc.player.getY();
-                                double last3YY = this.last3Y[last3YIndex];
-                                boolean goingDown = (y < last3YY);
-                                if (currentFlyingHigh && goingDown) {
-                                    currentFlyingHigh = false;
-                                    Debug.chat("[Pitch40] Current Height", last3YY);
-                                }
-                                if (!currentFlyingHigh) {
-                                    counter2 = 0;
-                                    useGrimPacketFly = true;
-                                    EntityUtils.setEntityPitchSafe(player, pitch40 + randomOffsetYaw);
-                                } else {
-                                    EntityUtils.setEntityPitchSafe(
-                                            player,
-                                            Math.min(
-                                                            -pitch40Negative.get()
-                                                                    + counter2 * (float) negativeArgument.get(),
-                                                            pitch40Pitch.get())
-                                                    + randomOffsetYaw);
-                                }
-                            }
-                            case TOO_LOW -> {
-                                if (!currentFlyingHigh) {
-                                    // at this tick, we launch a PacketCatcher
-                                    AtomicInteger counter = new AtomicInteger(20);
-                                    AtomicDouble max = new AtomicDouble(-999);
-                                    Listener.addPostPacketCatcher(new TimedPacketCatcherImpl<>(
-                                            EntityVelocityUpdateS2CPacket.class, 200, (event) -> {
-                                                Vec3d velocity = VPacket.getVelocity(event.context);
-                                                //  Debug.chat("check velocity", velocity);
-                                                if (velocity.y <= max.get()
-                                                        || velocity.y > 3.0F
-                                                        || counter.getAndDecrement() < 0) {
-                                                    Tasks.scheduleDelayed(() -> useGrimPacketFly = false, 0);
-                                                    // useGrimPacketFly = false;
-
-                                                    return true;
-                                                }
-                                                max.set(velocity.y);
-                                                return false;
-                                            }));
-                                }
-                                currentFlyingHigh = true;
-                                EntityUtils.setEntityYawSafe(player, yaw);
-                                EntityUtils.setEntityPitchSafe(
-                                        player,
-                                        Math.min(
-                                                        -pitch40Negative.get()
-                                                                + counter2 * (float) negativeArgument.get(),
-                                                        pitch40Pitch.get())
-                                                + randomOffsetYaw);
-                            }
-                        }
-                    } else {
-                        if (dangerousNoFallFlyingTick > 20) {
-                            dangerousNoFallFlyingTick = 0;
-                        }
-                        if (dangerousNoFallFlyingTick == 0) {
-                            // reset fucking jump input
-                            MovTasks.getMovExtra().sendPacketsForInventoryAction();
-                            // launch event from this method
-                            if (mc.player.checkGliding()) {
-                                mc.getNetworkHandler()
-                                        .sendPacket(new ClientCommandC2SPacket(
-                                                mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                            }
-
-                            // start counting down, if not startflying in 20 tick(1sec), auto logout
-                            dangerousNoFallFlyingTick = 1;
-                            MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
-                        }
-                    }
-                }
-                if (useGrimPacketFly) {
-                    MovTasks.getElytraGrimAccelerate().setTryWorkingTick();
-                }
-            }
-
-            @Override
-            public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                if (startWork) {
-                    // main logic, just logout for safety
-                    // movementManagerEvent.context.playerStatus.restoreRotation();
-                    ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-                    if (player.getY() < minHeight.get() - 16) {
-                        // emergency
-                        Debug.chat("[Pitch40] 滑翔失控了");
-                        if (pitch40SafeHeight.get()) {
-                            Debug.info("Pitch40 out of control!");
-                            MainTasks.scheduleDisconnect();
-                        }
-                        startWork = false;
-                        stillWork = false;
-                        // return immediately.
-                        return false;
-                    }
-
-                    if (mc.player != null && !mc.player.isFallFlying()) {
-                        // start counting down
-                        if (dangerousNoFallFlyingTick > 0) {
-                            dangerousNoFallFlyingTick += 1;
-                        }
-                    } else {
-                        dangerousNoFallFlyingTick = 0;
-                    }
-                }
-                if (checkFinish(ti)) {
-                    if (!ti.stopManually && pitch40SafeHeight.get()) {
-                        Debug.chat("[Pitch40] 当前处于虚空维度, 我们需要确保你不会掉下去!");
-                        Debug.chat("[Pitch40] 我们需要自动断线");
-                        MainTasks.scheduleDisconnect();
-                    }
-                    stillWork = false;
-                }
-                if (mc.player != null) {
-                    last3Y[last3YIndex] = mc.player.getY();
-                    last3YIndex = (last3YIndex + 1) % last3Y.length;
-                }
-                return stillWork;
-            }
-        };
-    }
-
-    private boolean onTravelPitch40DaemonTask() {
-        // player cancel it by hand
-        if (mc.player != null && travelTask == null) {
-            return true;
-        }
-        if (mc.player == null) {
-            if (pitch40SafeHeight.get()) {
-                Tasks.scheduleRepeated(
-                        () -> {
-                            if (mc.player != null) {
-                                Debug.chat("Disconnect because of safety");
-                                MainTasks.scheduleDisconnect();
-                                return true;
-                            } else {
-                                return false;
-                            }
-                        },
-                        1,
-                        1);
-            }
-            // cancel the task automatically
-            if (travelTask != null) {
-                travelTask.stop = true;
-                travelTask = null;
-            }
             return true;
         }
         return false;
@@ -879,38 +995,41 @@ public class TravellingControl extends BaseModule {
     }
 
     private void onElytraVelocity(Event<EventContainer<FlightVelocity>> event) {
-        if (elytraPos == null) {
-            return;
+        if (travelDelegate instanceof TravelMoveVelocity velocity) {
+            velocity.onElytra(event);
         }
-        EventContainer<FlightVelocity> eventContainer = event.context();
-        if (eventContainer.getValue().mode() != FlightVelocity.Mode.ELYTRA_FLIGHT) return;
-        FlightVelocity velocity = eventContainer.getValue();
-        Vec3d towards = elytraPos.subtract(mc.player.getPos()).normalize().multiply(speed.get());
-        velocity.x(towards.x).y(towards.y).z(towards.z);
     }
 
     public void onTravelCancel() {
         if (travelTask != null) {
             travelTask.stop = true;
             travelTask.stopManually = true;
-            travelTask = null;
         }
-        doingTp = false;
-        elytraPos = null;
+        onStop(travelTask);
+        outputTravelStats(travelTask);
+        travelTask = null;
     }
 
     public static TravelInfo travelTask;
 
     public static class TravelInfo {
         public Optional<Vec3d> pos0;
-        public ClientPlayerEntity currentPlayer;
         public long startingTime;
         public Vec3d startPos;
-        public int tickCNT = 0;
         public TravelState state;
         public boolean stop = false;
         public TravellingControl instance;
         public boolean stopManually = false;
+        public boolean pause;
+
+        public void onStart(TravellingControl instance, Vec3d startPos) {
+            startingTime = System.currentTimeMillis();
+            stop = false;
+            stopManually = false;
+            pause = false;
+            this.instance = instance;
+            this.startPos = startPos;
+        }
 
         public Vec3d getCurrentFlyingTarget() {
             return pos0.orElseGet(() -> {
@@ -918,6 +1037,22 @@ public class TravellingControl extends BaseModule {
                 Vec3d horizontal = EntityUtils.pitchYawToRotation(0, mc.player.getYaw());
                 return playerPos.add(horizontal.multiply(100000)).withAxis(Direction.Axis.Y, playerPos.getY());
             });
+        }
+
+        public boolean shouldNotRun() {
+            return mc.player == null || pause || stop;
+        }
+    }
+
+    public static interface TravelDelegate {
+        default void onStart(TravelInfo state) {}
+
+        public boolean onTick(Event<Void> event);
+
+        default void onStop() {}
+
+        default Type getType() {
+            return Type.TEST;
         }
     }
 
