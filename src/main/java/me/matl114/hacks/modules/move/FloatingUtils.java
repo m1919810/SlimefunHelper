@@ -38,8 +38,8 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                     grimFloating.addHotkey(), new MultiKeyBind(), grimFloating.addEnable())
             .build();
 
-//    public final FlagRef onGroundFloat =
-//            flagBuilder(grimFloating.add("on-ground-float")).build();
+    //    public final FlagRef onGroundFloat =
+    //            flagBuilder(grimFloating.add("on-ground-float")).build();
 
     boolean forceFloatingThisTick = false;
     boolean forceOnGroundVia1205 = false;

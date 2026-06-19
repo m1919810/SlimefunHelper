@@ -81,7 +81,7 @@ public class InteractUtils {
 
     public static boolean canHoldUse(ItemStack stack) {
         return stack.contains(DataComponentTypes.CONSUMABLE)
-                || stack.contains(DataComponentTypes.BLOCKS_ATTACKS)
+                || stack.getItem() instanceof ShieldItem
                 || VItem.getInstance().isSpear(stack)
                 || stack.getMaxUseTime(mc.player) > 0;
     }
