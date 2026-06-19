@@ -35,6 +35,9 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.decoration.DisplayEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -42,7 +45,7 @@ import net.minecraft.util.math.Vec3d;
 public class ChestHistory extends BaseModule {
     public final ModulePath invCache = makePath(Configs.INV_CONFIG, "inv-cache");
 
-    private final int MAX_INV_CACHE_SIZE = 256;
+    private final int MAX_INV_CACHE_SIZE = 512;
     private final int AUTO_REFRESH_RANGE = 64;
     private final LinkedHashMap<ContainerPosition, MutableEntry<BlockState, HandledScreen<?>>> screens =
             new LinkedHashMap<>();
@@ -151,6 +154,10 @@ public class ChestHistory extends BaseModule {
         while (iterator.hasNext()) {
             var entry = iterator.next();
             if (entry.getKey().isInRenderRange(location, AUTO_REFRESH_RANGE)) {
+                var chunkPos = entry.getKey().getChunk();
+                if (!mc.world.isChunkLoaded(chunkPos.x, chunkPos.z)) {
+                    continue;
+                }
                 if (!entry.getKey().isDouble()) {
                     Block block = mc.world
                             .getBlockState(entry.getKey().getFirst().getPos())
@@ -217,12 +224,20 @@ public class ChestHistory extends BaseModule {
                             // 我希望他看向我
                             stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
                             stack.scale(0.03125F, 0.03125F, 1);
+                            int items = (int) entry.getValue().getValue().getScreenHandler().slots.stream()
+                                    .filter(s -> !(s.inventory instanceof PlayerInventory)
+                                            && !s.getStack().isEmpty())
+                                    .count();
+                            Text text = entry.getValue()
+                                    .getValue()
+                                    .getTitle()
+                                    .copy()
+                                    .append(Text.literal("(x%d)".formatted(items))
+                                            .formatted(Formatting.YELLOW));
+
                             VRender.getInstance()
                                     .drawTextCameraCoord(
-                                            entry.getValue()
-                                                    .getValue()
-                                                    .getTitle()
-                                                    .asOrderedText(),
+                                            text.asOrderedText(),
                                             stack,
                                             Vec3d.ZERO,
                                             POSITION_FLAG,

@@ -81,9 +81,7 @@ public class GuiMove extends BaseModule {
             int keyCode = eventInput.getArgs(0);
             int action = eventInput.getArgs(2);
             for (var re : getBindings()) {
-                if (handle(re, keyCode, action)) {
-                    eventInput.cancel();
-                }
+                if (handle(re, keyCode, action)) {}
             }
         }
     }

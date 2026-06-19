@@ -20,6 +20,14 @@ import net.minecraft.text.Text;
 public class ScreenHelper {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
+    public static boolean isServerScreenOpen() {
+        return mc.player.currentScreenHandler != mc.player.playerScreenHandler;
+    }
+
+    public static boolean isScreenOpen() {
+        return mc.currentScreen instanceof HandledScreen<?>;
+    }
+
     @Nonnull
     public static Object createInventoryView(HandledScreen s) {
         return JsMacrosBridge.getInstance().wrap(s);
@@ -74,8 +82,20 @@ public class ScreenHelper {
         return unwrapHandler(handled).slots;
     }
 
+    public static Slot getScreenSlot(Object handled, int index) {
+        return unwrapHandler(handled).slots.get(index);
+    }
+
+    public static ItemStack getScreenStack(Object handled, int index) {
+        return unwrapHandler(handled).slots.get(index).getStack();
+    }
+
+    public static void setScreenStack(Object handled, int index, ItemStack stack) {
+        unwrapHandler(handled).slots.get(index).setStack(stack == null ? ItemStack.EMPTY : stack);
+    }
+
     public static void setSlotItem(Slot slot, ItemStack stack) {
-        slot.setStack(stack);
+        slot.setStack(stack == null ? ItemStack.EMPTY : stack);
     }
 
     public static ItemStack getSlotItem(Slot slot) {

@@ -6,9 +6,11 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VPacket;
@@ -39,6 +41,10 @@ public class BadPacketsFix extends BaseModule {
 
     public final FlagRef exemptDupRot = builder(badPackets.add("exempt-dup-rot"), Boolean.class)
             .defaultValue(true)
+            .build();
+
+    public final FlagRef filterDupRot = builder(badPackets.add("filter-dup-rot"), Boolean.class)
+            .defaultValue(false)
             .build();
 
     public final FlagRef enableFly = builder(badPackets.add("fix-fly-packets"), Boolean.class)
@@ -163,6 +169,20 @@ public class BadPacketsFix extends BaseModule {
             if (packet instanceof PlayerMoveC2SPacket.Full fullPacket) {
                 // 懒得核验了，直接过吧
                 exempt = true;
+            }
+        }
+        if (filterDupRot.get() && ViaFabricPlusHooks.isSupportDupRot()) {
+            if (packet instanceof PlayerMoveC2SPacket.Full fullPacket
+                    && LegacySnapRotManager.INSTANCE.betweenViaPacket
+                    && fullPacket instanceof PlayerMoveC2SPacketAccess access
+                    && access.getCause() == PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
+                if (!EntityUtils.isRotationDifferent(serverPitch, this.serverPitch, serverYaw, this.serverYaw)) {
+                    this.serverPitch = serverPitch;
+                    this.serverYaw = serverYaw;
+                    exempt = false;
+                    packetEvent.cancel();
+                    return;
+                }
             }
         }
         if (exempt) {

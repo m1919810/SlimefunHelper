@@ -201,7 +201,7 @@ public class MultiBlockHelper extends BaseModule {
                 switch (legalMode.get()) {
                     case USEITEM_PACKET -> clickUsePacket(result, pitchYaw, rateLimit);
                     case LEGACY_SLIENT_ROT -> clickSnap(result, pitchYaw, rateLimit);
-                    case DELAY_MOVEMENT -> clickDelayMovement(result, pitchYaw, rateLimit);
+                    case DELAY_MOVEMENT, MOVEMENT_POST -> clickDelayMovement(result, pitchYaw, rateLimit);
                 }
             } else {
                 Debug.chat(Text.literal("[AC] 你点的太快了,可能无法通过反作弊"));

@@ -78,6 +78,7 @@ public class BlockRotate extends BaseModule {
 
     // can not bypass
     public void onPreSendInteractBlockRotate(Event<PlayerInteractBlockC2SPacket> e) {
+        if (e.isCancelled()) return;
         if (enableBlockRotateModify()) {
             if (e.context instanceof PlayerInteractBlockC2SPacketAccess paccess
                     && paccess.hasUseContext()

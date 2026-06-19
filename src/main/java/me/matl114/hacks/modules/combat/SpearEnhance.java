@@ -227,21 +227,26 @@ public class SpearEnhance extends BaseModule {
     public void onPostTick(Event<ClientPlayerEntity> eventPostTick) {
         if (checkNull()) return;
         if (eventPostTick.context == mc.player && spearSpeedReset.get() && ViaFabricPlusHooks.isSupportDupRot()) {
-            Entity targetEntity =
-                    TargetSelector.INSTANCE.searchAttackEntity(10, true, pl -> pl instanceof PlayerEntity);
-            Vec3d look;
-            if (targetEntity != null) {
-                look = targetEntity
-                        .dimensions
-                        .getBoxAt(PositionPredict.INSTANCE
-                                .spearPredictArgument
-                                .get()
-                                .predict(targetEntity))
-                        .getCenter()
-                        .subtract(mc.player.getEyePos());
-            } else {
+
+            Vec3d look = null;
+            if (isUsingSpear(mc.player)) {
+                Entity targetEntity =
+                        TargetSelector.INSTANCE.searchAttackEntity(10, true, pl -> pl instanceof PlayerEntity);
+                if (targetEntity != null) {
+                    look = targetEntity
+                            .dimensions
+                            .getBoxAt(PositionPredict.INSTANCE
+                                    .spearPredictArgument
+                                    .get()
+                                    .predict(targetEntity))
+                            .getCenter()
+                            .subtract(mc.player.getEyePos());
+                }
+            }
+            if (look == null) {
                 look = mc.player.getRotationVector();
             }
+
             // reset speed and rotation
             LegacySnapRotManager.INSTANCE.snapAt(look, true);
         }

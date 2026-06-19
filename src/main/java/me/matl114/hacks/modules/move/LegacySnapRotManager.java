@@ -4,6 +4,7 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.utils.EntityUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.entity.EntityType;
@@ -25,6 +26,10 @@ public class LegacySnapRotManager extends BaseModule {
         super.registerAll();
         registerListener(Listener.getEntityPreTickListener().getChannel(EntityType.PLAYER), this::onPrePlayerTick);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onInteractItem);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class),
+                this::onSendPlayerPosRotPacket,
+                Integer.MIN_VALUE);
     }
 
     Vec2f lastSnapPitchYaw;
@@ -32,6 +37,17 @@ public class LegacySnapRotManager extends BaseModule {
     public void onPrePlayerTick(Event<PlayerEntity> eventPre) {
         if (mc.player != null && eventPre.context == mc.player) {
             resyncSnap();
+        }
+    }
+
+    public boolean betweenViaPacket;
+
+    public void onSendPlayerPosRotPacket(Event<PlayerMoveC2SPacket> event) {
+        if (betweenViaPacket
+                && ViaFabricPlusHooks.isSupportDupRot()
+                && event.context instanceof PlayerMoveC2SPacket.Full move
+                && move instanceof PlayerMoveC2SPacketAccess acc) {
+            acc.setCause(PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);
         }
     }
 

@@ -5,6 +5,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -37,10 +38,18 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                     grimFloating.addHotkey(), new MultiKeyBind(), grimFloating.addEnable())
             .build();
 
+//    public final FlagRef onGroundFloat =
+//            flagBuilder(grimFloating.add("on-ground-float")).build();
+
     boolean forceFloatingThisTick = false;
+    boolean forceOnGroundVia1205 = false;
 
     public void setGrimFloatingTick(boolean t) {
-        forceFloatingThisTick = true;
+        forceFloatingThisTick = t;
+    }
+
+    public void setForceOnGroundVia(boolean t) {
+        forceOnGroundVia1205 = t;
     }
 
     @Override
@@ -80,16 +89,25 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             movementManagerEvent.cancel();
             movementManagerEvent.context.playerStatus.restorePos();
             // also reset onground status to avoid false flag
-            mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
-            storedPacket = VPacket.newLookAndOnGround(
-                    mc.player.getYaw(), mc.player.getPitch(), mc.player.isOnGround(), mc.player.horizontalCollision);
+            boolean useOnGroundFloat = (false && !mc.player.isFallFlying()) || (forceOnGroundVia1205);
+            if (useOnGroundFloat && ViaFabricPlusHooks.isSupportDupRot()) {
+                mc.player.setOnGround(true);
+                storedPacket = LegacySnapRotManager.INSTANCE.createSnapAt(mc.player.getPitch(), mc.player.getYaw());
+            } else {
+                mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
+                storedPacket = VPacket.newLookAndOnGround(
+                        mc.player.getYaw(),
+                        mc.player.getPitch(),
+                        mc.player.isOnGround(),
+                        mc.player.horizontalCollision);
+            }
         }
     }
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
         forceFloatingThisTick = false;
-
+        forceOnGroundVia1205 = false;
         if (storedPacket != null) {
             // optimize current, only if rotation different, send duplicate packet
             if (!hasNoPosition || PlayerStateManager.INSTANCE.isRotationDifferent()) {

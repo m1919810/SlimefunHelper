@@ -147,6 +147,7 @@ public class DisablerManager extends BaseModule {
     }
 
     public void onPlace(Event<PlayerInteractBlockC2SPacket> blockPlace) {
+        if (blockPlace.isCancelled()) return;
         BlockHitResult hitResult = blockPlace.context.getBlockHitResult();
         Direction direction = hitResult.getSide();
         Vec3d cursor = hitResult.getPos();

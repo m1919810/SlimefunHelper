@@ -170,12 +170,13 @@ public class TargetSelector extends BaseModule {
         return playerPos;
     }
 
-    public void onAddFriend() {
+    public boolean onAddFriend() {
         if (mc.crosshairTarget.getType() == HitResult.Type.ENTITY
                 && ((EntityHitResult) mc.crosshairTarget).getEntity() instanceof PlayerEntity player
                 && player != mc.player) {
             addFriend(player.getNameForScoreboard());
         }
+        return false;
     }
 
     public void addFriend(String friends) {

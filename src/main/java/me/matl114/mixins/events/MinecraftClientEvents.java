@@ -100,6 +100,7 @@ public abstract class MinecraftClientEvents {
                     (this.currentScreen)
                             .init(getWindow().getScaledWidth(), getWindow().getScaledHeight());
                 }
+                Listener.getPostSetScreen().broadcast(this.currentScreen);
                 return;
             }
         }

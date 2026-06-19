@@ -924,14 +924,18 @@ public class Listener {
 
     static {
         Listener.getPacketPreHandlePoint()
-                .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(preCatchers, ev));
+                .registerHandler(
+                        (Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(preCatchers, ev), Integer.MIN_VALUE);
         Listener.getPacketSendPoint()
-                .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(preCatchers, ev));
+                .registerHandler(
+                        (Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(preCatchers, ev), Integer.MIN_VALUE);
 
         Listener.getPacketPostHandlePoint()
-                .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
+                .registerHandler(
+                        (Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev), Integer.MIN_VALUE);
         Listener.getPacketPostSendPoint()
-                .registerHandler((Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev));
+                .registerHandler(
+                        (Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev), Integer.MIN_VALUE);
         Listener.getConnectionEstablish()
                 .registerHandler((Consumer<Event<ClientConnection>>) Listener::onClientConnectionEstablish);
     }

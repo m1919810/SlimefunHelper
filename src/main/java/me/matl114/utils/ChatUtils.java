@@ -98,96 +98,7 @@ public class ChatUtils {
         //        // Object currentStyle = ChatEnum.STYLE_EMPTY;
         //        Style currentStyle = EMPTY;
         TextBuilder builder = new TextBuilder();
-        Matcher matcher = FORMAT_PATTERN.matcher(value);
-        String match = null;
-        StringBuilder hexColor = null;
-        int currentIndex = 0;
-        boolean hasReset = false;
-        boolean needsAdd = false;
-        find_any:
-        while (matcher.find()) {
-            int groupId = 0;
-            while ((match = matcher.group(++groupId)) == null) {}
-            int index = matcher.start(groupId);
-            if (index > currentIndex) {
-                builder.with(value.substring(currentIndex, index));
-                needsAdd = false;
-                //                Text addition =
-                //                        Text.literal(value.substring(currentIndex, index)).setStyle(currentStyle);
-                currentIndex = index;
-                // base.append(addition);
-            }
-            switch (groupId) {
-                case 1:
-                    char c = match.toLowerCase(java.util.Locale.ENGLISH).charAt(1);
-                    if (c == 'x') {
-                        hexColor = new StringBuilder("#");
-                    } else if (hexColor != null) {
-                        hexColor.append(c);
-                        if (hexColor.length() == 7) {
-                            builder.withStyle(RESET.withColor(TextColor.parse(hexColor.toString())
-                                    .result()
-                                    .get()));
-                            //                            currentStyle =
-                            // RESET.withColor(TextColor.parse(hexColor.toString())
-                            //                                    .result()
-                            //                                    .get());
-                            hexColor = null;
-                        }
-                    } else {
-                        Formatting format = formatMap.get(c);
-                        if (format.isModifier() && format != Formatting.RESET) {
-                            switch (format) {
-                                case BOLD:
-                                    builder.withBold(true);
-                                    // currentStyle = currentStyle.withBold(Boolean.TRUE);
-                                    break;
-                                case ITALIC:
-                                    builder.withItalic(true);
-                                    // currentStyle = currentStyle.withItalic(Boolean.TRUE);
-                                    break;
-                                case STRIKETHROUGH:
-                                    builder.withStrikethrough(true);
-                                    // currentStyle = currentStyle.withStrikethrough(Boolean.TRUE);
-                                    break;
-                                case UNDERLINE:
-                                    builder.withUnderline(true);
-                                    // currentStyle = currentStyle.withUnderline(Boolean.TRUE);
-                                    break;
-                                case OBFUSCATED:
-                                    builder.withObfuscated(true);
-                                    // currentStyle = currentStyle.withObfuscated(Boolean.TRUE);
-                                    break;
-                                default:
-                                    throw new AssertionError("Unexpected message format");
-                            }
-                        } else { // Color resets formatting
-                            // Paper start - Improve Legacy Component serialization size
-                            builder.withReset(format, hasReset);
-                            hasReset = true;
-                            // Paper end - Improve Legacy Component serialization size
-                        }
-                    }
-                    needsAdd = true;
-                    break;
-                case 2:
-                    if (needsAdd) {
-                        builder.with(value.substring(currentIndex, index));
-                        // Text addition = Text.literal(value.substring(currentIndex, index))
-                        //         .setStyle(currentStyle);
-                        //                        base.append(addition);
-                    }
-                    // ignore \n
-                    // return base;
-            }
-            currentIndex = matcher.end(groupId);
-        }
-        int len = value.length();
-        if (currentIndex < value.length() || needsAdd) {
-            builder.with(value.substring(currentIndex, len));
-            //            Text addition = Text.literal(value.substring(currentIndex, len)).setStyle(currentStyle);
-            //            base.append(addition);
-        }
+        builder.withLegacy(value);
         return builder.end().build();
     }
 
@@ -825,6 +736,11 @@ public class ChatUtils {
         return new TextBuilder();
     }
 
+    //    @ApiMethod
+    //    public static TextBuilder asBuilder(Text text) {
+    //        var builder =  new TextBuilder()
+    //    }
+
     public static class TextBuilder
             implements StringVisitable.StyledVisitor<Unit>, CharacterVisitor, StringVisitable.Visitor<Unit> {
         Style style = Style.EMPTY;
@@ -908,8 +824,114 @@ public class ChatUtils {
             return text;
         }
 
+        public TextBuilder withGlobal(Style parent) {
+            empty.setStyle(empty.getStyle().withParent(parent));
+            return this;
+        }
+
         public MutableText peek() {
             return empty;
+        }
+
+        public TextBuilder withColorString(String value) {
+            if (value == null) return this;
+            return withLegacy(translateAlternateColorCodes('&', '§', value));
+        }
+
+        public TextBuilder withLegacy(String value) {
+            if (value == null) return this;
+            TextBuilder builder = this;
+            Matcher matcher = FORMAT_PATTERN.matcher(value);
+            String match = null;
+            StringBuilder hexColor = null;
+            int currentIndex = 0;
+            boolean hasReset = false;
+            boolean needsAdd = false;
+            find_any:
+            while (matcher.find()) {
+                int groupId = 0;
+                while ((match = matcher.group(++groupId)) == null) {}
+                int index = matcher.start(groupId);
+                if (index > currentIndex) {
+                    builder.with(value.substring(currentIndex, index));
+                    needsAdd = false;
+                    //                Text addition =
+                    //                        Text.literal(value.substring(currentIndex, index)).setStyle(currentStyle);
+                    currentIndex = index;
+                    // base.append(addition);
+                }
+                switch (groupId) {
+                    case 1:
+                        char c = match.toLowerCase(java.util.Locale.ENGLISH).charAt(1);
+                        if (c == 'x') {
+                            hexColor = new StringBuilder("#");
+                        } else if (hexColor != null) {
+                            hexColor.append(c);
+                            if (hexColor.length() == 7) {
+                                builder.withStyle(RESET.withColor(TextColor.parse(hexColor.toString())
+                                        .result()
+                                        .get()));
+                                //                            currentStyle =
+                                // RESET.withColor(TextColor.parse(hexColor.toString())
+                                //                                    .result()
+                                //                                    .get());
+                                hexColor = null;
+                            }
+                        } else {
+                            Formatting format = formatMap.get(c);
+                            if (format.isModifier() && format != Formatting.RESET) {
+                                switch (format) {
+                                    case BOLD:
+                                        builder.withBold(true);
+                                        // currentStyle = currentStyle.withBold(Boolean.TRUE);
+                                        break;
+                                    case ITALIC:
+                                        builder.withItalic(true);
+                                        // currentStyle = currentStyle.withItalic(Boolean.TRUE);
+                                        break;
+                                    case STRIKETHROUGH:
+                                        builder.withStrikethrough(true);
+                                        // currentStyle = currentStyle.withStrikethrough(Boolean.TRUE);
+                                        break;
+                                    case UNDERLINE:
+                                        builder.withUnderline(true);
+                                        // currentStyle = currentStyle.withUnderline(Boolean.TRUE);
+                                        break;
+                                    case OBFUSCATED:
+                                        builder.withObfuscated(true);
+                                        // currentStyle = currentStyle.withObfuscated(Boolean.TRUE);
+                                        break;
+                                    default:
+                                        throw new AssertionError("Unexpected message format");
+                                }
+                            } else { // Color resets formatting
+                                // Paper start - Improve Legacy Component serialization size
+                                builder.withReset(format, hasReset);
+                                hasReset = true;
+                                // Paper end - Improve Legacy Component serialization size
+                            }
+                        }
+                        needsAdd = true;
+                        break;
+                    case 2:
+                        if (needsAdd) {
+                            builder.with(value.substring(currentIndex, index));
+                            // Text addition = Text.literal(value.substring(currentIndex, index))
+                            //         .setStyle(currentStyle);
+                            //                        base.append(addition);
+                        }
+                        // ignore \n
+                        // return base;
+                }
+                currentIndex = matcher.end(groupId);
+            }
+            int len = value.length();
+            if (currentIndex < value.length() || needsAdd) {
+                builder.with(value.substring(currentIndex, len));
+                //            Text addition = Text.literal(value.substring(currentIndex, len)).setStyle(currentStyle);
+                //            base.append(addition);
+            }
+            return this;
         }
 
         public TextBuilder withText(StringVisitable text) {

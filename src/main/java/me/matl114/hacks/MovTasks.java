@@ -2252,6 +2252,9 @@ public class MovTasks {
     public static ElytraGrimAccelerate elytraGrimAccelerate;
 
     @Getter
+    public static ElytraJump elytraJump;
+
+    @Getter
     public static Velocity velocity;
 
     @Getter
@@ -2301,7 +2304,7 @@ public class MovTasks {
         elytraExtra = new ElytraExtra().register(m);
         elytraFlight = new ElytraFlight().register(m);
         elytraGrimAccelerate = new ElytraGrimAccelerate().register(m);
-
+        elytraJump = new ElytraJump().register(m);
         // elytraFlightLegit = new ElytraFlightLegit().register(m);
         velocity = new Velocity().register(m);
         floatingUtils = new FloatingUtils().register(m);

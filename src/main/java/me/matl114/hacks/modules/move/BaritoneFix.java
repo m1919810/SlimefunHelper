@@ -7,6 +7,8 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hooks.BaritoneHooks;
+import me.matl114.hooks.impl.BaritoneFuture;
+import me.matl114.hooks.impl.BaritoneLanding;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -211,12 +213,10 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean handleAutoJump() {
-        if (this.autoJumpFix.get() && mc.player.isOnGround()) {
-            if (!mc.player.isFallFlying()) {
-                Debug.chat(ChatUtils.stringToText("&c[BaritoneFix] &fBaritone autoJump takeOff"));
-                ElytraExtra.INSTANCE.autoTakeoff();
-                return true;
-            }
+        if (this.autoJumpFix.get() && !mc.player.isFallFlying()) {
+            Debug.chat(ChatUtils.stringToText("&c[BaritoneFix] &fBaritone autoJump takeOff"));
+            ElytraExtra.INSTANCE.autoTakeoff();
+            return true;
         }
         return false;
     }
@@ -319,5 +319,33 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
             }
         }
         return true;
+    }
+
+    public void onBaritoneComplete(Event<BaritoneFuture> event) {
+        if (event.context.getOnCompleteFutures().isEmpty()) {
+            BaritoneLanding landingType = event.getArgs(0);
+            switch (landingType) {
+                case EMERGENCY -> {
+                    if (handleLog("Emergency Landing")) {
+                        event.cancel();
+                        return;
+                    }
+                    if (handleFreeze("Emergency Landing")) {
+                        event.cancel();
+                        return;
+                    }
+                }
+                case PATH_COMPLETE -> {
+                    if (handleLog("Path Complete")) {
+                        event.cancel();
+                        return;
+                    }
+                    if (handleFreeze("Path Complete")) {
+                        event.cancel();
+                        return;
+                    }
+                }
+            }
+        }
     }
 }

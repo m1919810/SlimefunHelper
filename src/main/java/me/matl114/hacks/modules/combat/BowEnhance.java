@@ -144,7 +144,7 @@ public class BowEnhance extends BaseModule {
                 }
                 switch (mode.get()) {
                     case LEGACY_SLIENT_ROT -> bowActionMovement(actionEvent, targetEntity, velocity);
-                    case DELAY_MOVEMENT -> bowActionDelayMovement(actionEvent, targetEntity, velocity);
+                    case DELAY_MOVEMENT, MOVEMENT_POST -> bowActionDelayMovement(actionEvent, targetEntity, velocity);
                     case USEITEM_PACKET -> bowActionInteractItem(actionEvent, targetEntity, velocity);
                     default -> bowActionInteractItem(actionEvent, targetEntity, velocity);
                 }
