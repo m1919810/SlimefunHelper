@@ -7,7 +7,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.util.ActionResult;
@@ -80,7 +79,8 @@ public class InteractUtils {
     }
 
     public static boolean canHoldUse(ItemStack stack) {
-        return stack.contains(DataComponentTypes.CONSUMABLE)
+        return VItem.getInstance().isEatable(stack)
+                || stack.getItem() instanceof PotionItem
                 || stack.getItem() instanceof ShieldItem
                 || VItem.getInstance().isSpear(stack)
                 || stack.getMaxUseTime(mc.player) > 0;

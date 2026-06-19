@@ -770,7 +770,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public static boolean hasGlidingItem() {
-        return InventoryUtils.findPlayerItem((vv) -> mc.player.getPreferredEquipmentSlot(vv) == EquipmentSlot.CHEST, false, false)
+        return InventoryUtils.findPlayerItem(
+                        (vv) -> mc.player.getPreferredEquipmentSlot(vv) == EquipmentSlot.CHEST, false, false)
                 != null;
     }
 
@@ -1100,7 +1101,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 if (canContinueGliding()) {
                     Debug.chat(ChatUtils.stringToText(
                             "&c[ElytraExtra] &fUnexpected UnbreakableElytra state, may caused by mod conflict or lag"));
-                    mc.player.startGliding();
+                    mc.player.startFallFlying();
                     mc.getNetworkHandler()
                             .sendPacket(new ClientCommandC2SPacket(
                                     mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));

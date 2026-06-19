@@ -59,7 +59,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                     mc.player.setSprinting(false);
                 }
                 if (!mc.player.isFallFlying()) {
-                    if (mc.player.checkGliding()) {
+                    if (mc.player.checkFallFlying()) {
                         MovTasks.getMovExtra().sendPacketsForPreStartFallFlying();
                         mc.getNetworkHandler()
                                 .sendPacket(new ClientCommandC2SPacket(

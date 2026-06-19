@@ -61,7 +61,7 @@ public class MathUtils {
     }
 
     public static Box createBox(Vec3d vec3d, double ra) {
-        return new Box(vec3d.subtract(ra), vec3d.add(ra));
+        return new Box(vec3d.subtract(ra, ra, ra), vec3d.add(ra, ra, ra));
     }
 
     public static List<BlockPos> getOccupiedBlockPositions(Box box) {
