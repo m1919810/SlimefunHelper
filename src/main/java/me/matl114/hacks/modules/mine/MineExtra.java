@@ -137,6 +137,9 @@ public class MineExtra extends BaseModule {
     public final FlagRef mineRender =
             flagBuilder(fastbreak.add("render-current-break-pos")).build();
 
+    public final FlagRef renderOnlyWhenMine =
+            flagBuilder(fastbreak.add("render-only-when-mine")).build();
+
     public final FlagRef grimBadPacketFix1 = flagBuilder(fastbreak.add("grim-badpackets-1"))
             .show(() -> fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS)
             .build();
@@ -511,8 +514,25 @@ public class MineExtra extends BaseModule {
         return false;
     }
 
+    private boolean shouldRenderMine() {
+        if (!renderOnlyWhenMine.get()) return true;
+        if (!mc.interactionManager.isBreakingBlock() && !PacketMine.INSTANCE.autoEnable.get()) {
+            if (!optimizeOneBlock.get()) {
+                return false;
+            }
+            BlockPos blockPos =
+                    PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+            BlockState state = mc.world.getBlockState(blockPos);
+            if (state.isAir()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void onRender(Event<MatrixStack> renderEvent) {
         if (mineRender.get()) {
+
             RenderUtils.startDrawVirtual(renderEvent.context);
             try {
                 if (mc.interactionManager != null && mc.player != null && mc.world != null) {
@@ -520,7 +540,7 @@ public class MineExtra extends BaseModule {
                             PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
                     Vec3d pos = Vec3d.of(blockPos);
                     // 超过200格的不渲染
-                    if (mc.player.getPos().squaredDistanceTo(pos) < 40000) {
+                    if (mc.player.getPos().squaredDistanceTo(pos) < 40000 && shouldRenderMine()) {
                         RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0), Color.BLUE);
                         float progress = PlayerInteractionAccess.of(mc.interactionManager)
                                 .getCurrentMiningProgress(false);

@@ -5,10 +5,7 @@ import me.matl114.utils.MathUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 
 public record ContainerPosition(RegistryKey<World> world, int doubleX, int y, int doubleZ) {
@@ -66,5 +63,9 @@ public record ContainerPosition(RegistryKey<World> world, int doubleX, int y, in
 
     public BlockLocation getSecond() {
         return new BlockLocation(world, doubleX - (doubleX >> 1), y, doubleZ - (doubleZ >> 1));
+    }
+
+    public ChunkPos getChunk() {
+        return new ChunkPos(doubleX >> 4, doubleZ >> 4);
     }
 }

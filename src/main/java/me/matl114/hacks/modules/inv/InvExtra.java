@@ -81,6 +81,7 @@ public class InvExtra extends BaseModule {
                                 SlotActionType.SWAP,
                                 mc.player);
                         return () -> {
+                            MovTasks.getMovExtra().sendPacketsForInventoryAction();
                             mc.interactionManager.clickSlot(
                                     mc.player.currentScreenHandler.syncId,
                                     swapped,
@@ -116,6 +117,7 @@ public class InvExtra extends BaseModule {
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
                     return () -> {
+                        MovTasks.getMovExtra().sendPacketsForInventoryAction();
                         mc.interactionManager.clickSlot(
                                 mc.player.currentScreenHandler.syncId,
                                 swapped,
@@ -145,6 +147,7 @@ public class InvExtra extends BaseModule {
                 mc.interactionManager.clickSlot(
                         mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
                 return () -> {
+                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
                 };
@@ -175,6 +178,7 @@ public class InvExtra extends BaseModule {
             int target = targetSlotInstance.getIndex();
             mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
             return () -> {
+                MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
             };
         } else {
@@ -184,12 +188,14 @@ public class InvExtra extends BaseModule {
                 int target = armorSlotInstance.getIndex();
                 mc.interactionManager.clickSlot(handler.syncId, targetSlot, target, SlotActionType.SWAP, mc.player);
                 return () -> {
+                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     mc.interactionManager.clickSlot(handler.syncId, targetSlot, target, SlotActionType.SWAP, mc.player);
                 };
             } else {
                 // fuck, do not kick me.
                 swapTwoIdiotSlot(handler, targetSlot, armorSlot);
                 return () -> {
+                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     swapTwoIdiotSlot(handler, targetSlot, armorSlot);
                 };
             }

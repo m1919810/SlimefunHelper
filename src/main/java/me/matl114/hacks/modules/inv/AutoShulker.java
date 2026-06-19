@@ -57,6 +57,7 @@ public class AutoShulker extends BaseModule {
     }
 
     public void onClickShulkerBoxOrPlaceShulkerBox(Event<PlayerInteractBlockC2SPacket> event) {
+        if (event.isCancelled()) return;
         if (autoShulker.get()) {
             PlayerInteractBlockC2SPacket packet = event.context;
             BlockHitResult hitResult = packet.getBlockHitResult();

@@ -9,6 +9,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
+import lombok.Getter;
+import me.matl114.events.annotations.Broadcast;
+import me.matl114.events.annotations.Cancelable;
+import me.matl114.events.annotations.ExtraArgs;
+import me.matl114.events.channels.EventChannel;
+import me.matl114.hooks.impl.BaritoneFuture;
+import me.matl114.hooks.impl.BaritoneLanding;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
@@ -43,6 +50,15 @@ public abstract class BaritoneHooks implements IHooks {
     public abstract void setBaritoneCurrentElytraDestination(BlockPos pos);
 
     public abstract void cancelBaritone();
+
+    @Getter
+    @Cancelable
+    @ExtraArgs({BaritoneLanding.class})
+    public static final EventChannel<BaritoneFuture> landingEvent = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    public static final EventChannel<BlockPos> elytraPathingEvent = new EventChannel<>();
 
     public static class Impl extends BaritoneHooks {
         Settings settings;

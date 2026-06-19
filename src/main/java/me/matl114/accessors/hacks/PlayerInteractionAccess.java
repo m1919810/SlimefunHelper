@@ -1,6 +1,8 @@
 package me.matl114.accessors.hacks;
 
 import javax.annotation.Nullable;
+import me.matl114.utils.WorldUtils;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.item.ItemStack;
@@ -105,20 +107,73 @@ public interface PlayerInteractionAccess {
      */
     public void clearFailBreak();
 
+    public int getCurrentMiningTicks();
     /**
-     * 读取 failBreak 槽位按当前 tick 推算得到的进度。
+     * 假设使用给定工具，预测当前主挖掘位的理论进度。
      *
-     * <p>这个值是基于服务端 start 时刻和当前方块速度做的推演值，不是客户端原生的破坏动画进度。
-     * 当槽位为空、方块已失效或空气化时，返回负值表示不可用。
+     * <p>主要用于切工具后的收益评估与策略决策，不会直接修改本地挖掘状态。
      */
-    public float getFailBreakMiningProgress();
+    /**
+     * 用指定工具预测当前主挖掘位的理论进度。
+     *
+     * <p>这个方法不读取当前手持物，而是假设“如果现在使用 tool 继续挖”，服务端从最近一次 start 开始，
+     * 理论上已经累计了多少进度。它服务于切工具收益估算，而不是本地动画显示。
+     */
+    default float predictCurrentMiningProgressWithTool(ItemStack tool) {
+        BlockPos currentBreakingPos = getCurrentMiningPos();
+        BlockState block = MinecraftClient.getInstance().world.getBlockState(currentBreakingPos);
+        if (block.isAir()) {
+            return -1.0F;
+        }
+        float miningSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                MinecraftClient.getInstance().player, block, tool);
+        float speed = WorldUtils.calcBlockBreakingDelta(
+                block, MinecraftClient.getInstance().world, currentBreakingPos, miningSpeed);
+        int ticksSinceLastStart = getCurrentMiningTicks();
+        return speed * ticksSinceLastStart;
+    }
+
+    public int getFailBreakMiningTicks();
+    /**
+     * 读取 failBreak 槽位按当前 tick 推导出的理论进度。
+     *
+     * <p>这条支线不依赖原版 {@code currentBreakingProgress}，因为 failBreak 本质上是“主挖掘位切走后仍然
+     * 继续复用的一段服务端上下文”，其可信来源是 start tick 与当前方块速度。
+     */
+    default float getFailBreakMiningProgress() {
+        BlockPos currentFailBreakPos = getCurrentFailBreakPos();
+        if (currentFailBreakPos == null) {
+            return -1.0F;
+        }
+        BlockState block = MinecraftClient.getInstance().world.getBlockState(currentFailBreakPos);
+        if (block.isAir()) {
+            return -1.0F;
+        }
+        float speed = block.calcBlockBreakingDelta(
+                MinecraftClient.getInstance().player,
+                MinecraftClient.getInstance().player.getEntityWorld(),
+                currentFailBreakPos);
+        return getFailBreakMiningTicks() * speed;
+    }
 
     /**
      * 假设使用给定工具，预测当前主挖掘位的理论进度。
      *
      * <p>主要用于切工具后的收益评估与策略决策，不会直接修改本地挖掘状态。
      */
-    public float predictCurrentMiningProgressWithTool(ItemStack tool);
+    default float predictFailMiningProgressWithTool(ItemStack tool, int extraTick) {
+        BlockPos currentBreakingPos = getCurrentFailBreakPos();
+        BlockState block = MinecraftClient.getInstance().world.getBlockState(currentBreakingPos);
+        if (block.isAir()) {
+            return -1.0F;
+        }
+        float miningSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                MinecraftClient.getInstance().player, block, tool);
+        float speed = WorldUtils.calcBlockBreakingDelta(
+                block, MinecraftClient.getInstance().world, currentBreakingPos, miningSpeed);
+        int ticksSinceLastStart = getFailBreakMiningTicks() + extraTick;
+        return speed * ticksSinceLastStart;
+    }
 
     /**
      * 读取当前主挖掘位的进度。

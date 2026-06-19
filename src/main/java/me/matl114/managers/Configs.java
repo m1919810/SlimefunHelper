@@ -68,7 +68,7 @@ public class Configs {
 
     public enum LegalInteractMode implements ConfigEnum {
         NONE,
-        // MOVEMENT,
+        MOVEMENT_POST,
         DELAY_MOVEMENT,
         USEITEM_PACKET,
         LEGACY_SLIENT_ROT;

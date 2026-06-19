@@ -505,7 +505,9 @@ public class ElytraBot extends BaseModule {
 
         // todo: calculate reachable, if entity can reach reach distance
         public void onElytra(Event<EventContainer<FlightVelocity>> event) {
-            if (movementDirection != null && event.context.getValue().mode() == FlightVelocity.Mode.ELYTRA_FLIGHT) {
+            if (movementDirection != null
+                    && event.context.getValue().mode() == FlightVelocity.Mode.ELYTRA_FLIGHT
+                    && movementDirection.lengthSquared() > 1E-9) {
                 Vec3d targetVec = movementDirection;
                 double targetVecVelocity = targetVec.length();
                 targetVec = targetVec
@@ -773,12 +775,7 @@ public class ElytraBot extends BaseModule {
                 Vec3d origin = movementDirection.normalize();
                 Vec3d originHorizontalNormal = new Vec3d(origin.x, 0, origin.z);
                 Vec3d multiply = side.multiply(base.flyAntiSpearArg1.get());
-                movementDirection = originHorizontalNormal
-                        .add(multiply)
-                        .normalize()
-                        .multiply(originHorizontalNormal.length())
-                        .withAxis(Direction.Axis.Y, origin.y)
-                        .multiply(10);
+                movementDirection = origin.add(multiply).normalize().multiply(10);
             }
         }
         // compat delay attack shit, add cd,
@@ -788,7 +785,7 @@ public class ElytraBot extends BaseModule {
                 machine.markForEndState();
                 return STATE_PULL_UP;
             }
-            if (++startWaitAttack > 2) {
+            if (++startWaitAttack > 1) {
                 return STATE_NONE;
             }
             machine.markForEndState();
@@ -1040,7 +1037,7 @@ public class ElytraBot extends BaseModule {
             //            }
             if (otherShit.squaredDistanceTo(mc.player.getPos())
                     < MathUtils.s2(getActiveRange() * 2 + base.spearAntiSpearExtraDistance.get() * 2)) {
-                if (Tasks.getTick() % 4 < 2) {
+                if (Tasks.getTick() % 6 < 3) {
                     return moveAdjust(originalLook);
                 } else {
                     return movementPredictAdjust(originalLook);

@@ -1502,23 +1502,25 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         @Override
         public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
             ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-            boolean needOnGround = args.getY() <= module.lastOnGroundHeight - module.safeDistance;
-            if (mc.player.isOnGround()) {
-                nextTickReset = false;
-            }
-            if (needOnGround && !args.isOnGround()) {
-                movementManagerEvent.context.playerStatus.restorePos();
-                nextTickReset = true;
-                module.lastOnGroundHeight = args.getY();
-                Vec3d look = args.getRotationVector();
-                mc.player.setOnGround(true);
-                mc.player.setPosition(mc.player.getPos().add(0, 9E-8, 0));
-                LegacySnapRotManager.INSTANCE.snapAt(look, true);
-                movementManagerEvent.cancel();
-            }
+            if (module.isActive()) {
+                boolean needOnGround = args.getY() <= module.lastOnGroundHeight - module.safeDistance;
+                if (mc.player.isOnGround()) {
+                    nextTickReset = false;
+                }
+                if (needOnGround && !args.isOnGround()) {
+                    movementManagerEvent.context.playerStatus.restorePos();
+                    nextTickReset = true;
+                    module.lastOnGroundHeight = args.getY();
+                    Vec3d look = args.getRotationVector();
+                    mc.player.setOnGround(true);
+                    mc.player.setPosition(mc.player.getPos().add(0, 9E-8, 0));
+                    LegacySnapRotManager.INSTANCE.snapAt(look, true);
+                    movementManagerEvent.cancel();
+                }
 
-            if (nextTickReset) {
-                mc.player.setOnGround(true);
+                if (nextTickReset) {
+                    mc.player.setOnGround(true);
+                }
             }
         }
 

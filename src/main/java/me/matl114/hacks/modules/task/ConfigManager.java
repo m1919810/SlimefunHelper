@@ -54,6 +54,16 @@ public class ConfigManager extends BaseModule {
                         .filter(Objects::nonNull)
                         .map(registryKey -> registryKey.getValue().toString())))
                 .build();
+
+        SimpleCommandArgs.Argument configOrAllNameArgument = SimpleCommandArgs.argumentBuilder()
+                .name("config_name")
+                .defaultValue("all")
+                .select("all")
+                .tabCompletor(TabResult.ofStreamSupplier(() -> Config.REGISTRY.stream()
+                        .map(Config::getRegistryKey)
+                        .filter(Objects::nonNull)
+                        .map(registryKey -> registryKey.getValue().toString())))
+                .build();
         SimpleCommandArgs.Argument pathArgument = SimpleCommandArgs.argumentBuilder()
                 .name("path")
                 .tabCompletor(TabResult.ofDispatcher((sender, configName) -> {
@@ -80,6 +90,7 @@ public class ConfigManager extends BaseModule {
                 .name("save")
                 .helper("<path> 保存当前配置快照")
                 .arg(SimpleCommandArgs.argumentBuilder().name("path").build())
+                .arg(configOrAllNameArgument)
                 .post(e -> e.executor(CommandContext.run(this::onSave)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
@@ -92,15 +103,7 @@ public class ConfigManager extends BaseModule {
                                     return sx.endsWith(".nbt") || sx.endsWith(".dat");
                                 })))
                         .build())
-                .arg(SimpleCommandArgs.argumentBuilder()
-                        .name("config")
-                        .defaultValue("all")
-                        .select("all")
-                        .tabCompletor(TabResult.ofStreamSupplier(() -> Config.REGISTRY.stream()
-                                .map(Config::getRegistryKey)
-                                .filter(Objects::nonNull)
-                                .map(registryKey -> registryKey.getValue().toString())))
-                        .build())
+                .arg(configOrAllNameArgument)
                 .post(e -> e.executor(CommandContext.run(this::onLoad)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
@@ -117,6 +120,17 @@ public class ConfigManager extends BaseModule {
                 .arg(configNameArgument)
                 .arg(pathArgument)
                 .post(e -> e.executor(CommandContext.run(this::onReset)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("resetall")
+                .helper("<config_name> <all> 重置某个配置文件为默认值")
+                .arg(configOrAllNameArgument)
+                .arg(SimpleCommandArgs.argumentBuilder()
+                        .name("confirm")
+                        .defaultValue("")
+                        .select("--confirm")
+                        .build())
+                .post(e -> e.executor(CommandContext.run(this::onResetAll)))
                 .complete();
     }
 
@@ -180,6 +194,43 @@ public class ConfigManager extends BaseModule {
         Debug.chat(Text.literal("成功重置配置项: " + configName + "." + rawPath).formatted(Formatting.GREEN));
     }
 
+    public void onResetAll(ArgumentInputStream args) {
+        String configName = args.nextNonnullString();
+        String confirm = args.nextNonnullString();
+        if ("--confirm".equals(confirm)) {
+            if ("all".equalsIgnoreCase(configName)) {
+                for (var config : Config.REGISTRY) {
+                    for (var path : config.getVisiblePaths()) {
+                        var ref = config.get(path);
+                        if (ref != null && ref.hasDefaultValue()) {
+                            ref.resetValue();
+                        }
+                    }
+                }
+            } else {
+                var config = Config.REGISTRY.get(Identifier.tryParse(configName));
+                if (config == null) {
+                    Debug.chat(Text.literal("未找到配置文件: " + configName).formatted(Formatting.RED));
+                    return;
+                }
+                for (var path : config.getVisiblePaths()) {
+                    var ref = config.get(path);
+                    if (ref != null && ref.hasDefaultValue()) {
+                        ref.resetValue();
+                    }
+                }
+            }
+        } else {
+            Debug.chat(
+                    ChatUtils.stringToText("&c该指令将会重置部分配置文件,是否确认? "),
+                    Text.literal("[确认]")
+                            .formatted(Formatting.RED)
+                            .formatted(Formatting.BOLD)
+                            .styled(style -> style.withClickEvent(
+                                    ChatUtils.getSuggestCommand("/!!config resetall " + configName + " --confirm"))));
+        }
+    }
+
     public static final Codec<MapRef> CONFIG_CODEC = Codec.PASSTHROUGH.comapFlatMap(
             dynamic -> {
                 Object value = dynamic.convert(ConfigOp.INSTANCE).getValue();
@@ -204,24 +255,38 @@ public class ConfigManager extends BaseModule {
             Debug.chat(Text.literal(e.getMessage()).formatted(Formatting.RED));
             return;
         }
+        String allName = args.nextNonnullString();
+        ConfigSnapshot snapshot;
+        if ("all".equalsIgnoreCase(allName)) {
+            List<String> privacyKeywords = privacyPathKeywords.get();
 
-        List<String> privacyKeywords = privacyPathKeywords.get();
-
-        Map<Identifier, MapRef> snapshotMap = new LinkedHashMap<>();
-        for (Config config : Config.REGISTRY) {
-            if (config.getRegistryKey() == null) {
-                continue;
+            Map<Identifier, MapRef> snapshotMap = new LinkedHashMap<>();
+            for (Config config : Config.REGISTRY) {
+                if (config.getRegistryKey() == null) {
+                    continue;
+                }
+                Identifier identifier = config.getRegistryKey().getValue();
+                if (isPrivacyConfig(identifier, privacyKeywords)) {
+                    Debug.chat(Text.literal("保存时跳过配置: " + identifier + " 以避免隐私信息泄露(可在设置中调整关键词)")
+                            .formatted(Formatting.YELLOW));
+                    continue;
+                }
+                snapshotMap.put(identifier, config.asRef());
             }
+
+            snapshot = new ConfigSnapshot(snapshotMap);
+        } else {
+            Config config = Config.REGISTRY.get(Identifier.tryParse(allName));
+            if (config == null) {
+                Debug.chat(Text.literal("未找到配置文件: " + allName).formatted(Formatting.RED));
+                return;
+            }
+            Map<Identifier, MapRef> snapshotMap = new LinkedHashMap<>();
             Identifier identifier = config.getRegistryKey().getValue();
-            if (isPrivacyConfig(identifier, privacyKeywords)) {
-                Debug.chat(Text.literal("保存时跳过配置: " + identifier + " 以避免隐私信息泄露(可在设置中调整关键词)")
-                        .formatted(Formatting.YELLOW));
-                continue;
-            }
             snapshotMap.put(identifier, config.asRef());
+            snapshot = new ConfigSnapshot(snapshotMap);
         }
 
-        ConfigSnapshot snapshot = new ConfigSnapshot(snapshotMap);
         DataResult<me.matl114.managers.config.Ref<?>> encoded =
                 ConfigSnapshot.CODEC.encodeStart(ConfigOp.INSTANCE, snapshot);
         if (encoded.isError()) {
@@ -258,6 +323,10 @@ public class ConfigManager extends BaseModule {
         Config config = null;
         if (!"all".equalsIgnoreCase(name)) {
             config = Config.REGISTRY.get(Identifier.tryParse(name));
+            if (config == null) {
+                Debug.chat(Text.literal("未找到配置文件: " + name).formatted(Formatting.RED));
+                return;
+            }
         }
 
         try (FileStorage storage = FileManager.getInstance().getConfigStorage(fileName, true, false)) {

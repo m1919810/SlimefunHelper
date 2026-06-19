@@ -1,30 +1,33 @@
 package me.matl114.hacks;
 
 import com.google.common.util.concurrent.Runnables;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
+import me.matl114.events.Listener;
+import me.matl114.events.catchers.PacketCatcherImpl;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.interact.*;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.managers.Configs;
-import me.matl114.utils.ApiMethod;
-import me.matl114.utils.EntityUtils;
-import me.matl114.utils.InventoryUtils;
+import me.matl114.utils.*;
 import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.ApiStatus;
 
 public class InteractionTasks {
@@ -63,22 +66,34 @@ public class InteractionTasks {
                         return true;
                     }
 
+                    Vec2f py;
+
                     @Override
                     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
                         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+
                         Vec2f rotation = EntityUtils.rotationToPitchYaw(
-                                look3d.subtract(mc.player.getEyePos()).normalize());
+                                look3d.subtract(mc.player.getEyePos().add(mc.player.getVelocity()))
+                                        .normalize());
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityYawSafe(player, rotation.y);
                         EntityUtils.setEntityPitchSafe(player, rotation.x);
+                        //                        py = rotation;
                         movementManagerEvent.context.tryMarkForMoveFix();
                         movementManagerEvent.context.markForResetRot();
+                        // RenderTasks.drawBox(MathUtils.createBox(look3d, 0.2D), 300, Color.MAGENTA);
                     }
 
                     @Override
                     public boolean postModify(
                             Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
                         callback.run();
+                        //                        if(py != null){
+                        //                            Vec3d vec3d1 = mc.player.getEyePos();;
+                        //                            Vec3d vec3d2 = EntityUtils.pitchYawToRotation(py.x, py.y);
+                        //                            RenderTasks.drawLine(vec3d1, vec3d2, 300, Color.MAGENTA);
+                        //
+                        //                        }
                         return false;
                     }
                 });
@@ -98,6 +113,22 @@ public class InteractionTasks {
             case DELAY_MOVEMENT -> {
                 InteractionTasks.placeBlock(hand, result);
                 InteractionTasks.addPostRotationCorrectTask(result.getBlockPos().toCenterPos(), Runnables.doNothing());
+            }
+            case MOVEMENT_POST -> {
+                MutableObject<PlayerInteractBlockC2SPacket> catcher = new MutableObject<>();
+                Listener.addPrePacketCatcher(new PacketCatcherImpl<>(PlayerInteractBlockC2SPacket.class, (eve) -> {
+                    if (eve.isCancelled()) return true;
+                    catcher.setValue(eve.context);
+                    eve.cancel();
+                    return true;
+                }));
+                InteractionTasks.placeBlock(hand, result);
+                if (catcher.get() != null) {
+                    var pkt = catcher.get();
+                    InteractionTasks.addPostRotationCorrectTask(
+                            result.getBlockPos().toCenterPos(),
+                            () -> mc.getNetworkHandler().sendPacket(pkt));
+                }
             }
             case LEGACY_SLIENT_ROT -> {
                 Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
@@ -258,6 +289,9 @@ public class InteractionTasks {
     @Getter
     public static InteractExtra interactExtra;
 
+    @Getter
+    public static GuiInteract guiInteract;
+
     @ApiStatus.Experimental
     public static AutoInteract autoInteract;
 
@@ -296,7 +330,7 @@ public class InteractionTasks {
 
     private static void initModules(ModuleManager m) {
         interactExtra = new InteractExtra().register(m);
-
+        guiInteract = new GuiInteract().register(m);
         scaffold = new Scaffold().register(m);
         tpInteract = new TpInteract().register(m);
         airplace = new Airplace().register(m);

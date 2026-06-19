@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.render;
 
+import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import me.matl114.events.Event;
@@ -14,6 +15,8 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
 
 public class EquipmentHud extends BaseModule {
     public final ModulePath invHud = makePath(Configs.RENDER_CONFIG, "in-game-hud.equipment-hud");
@@ -21,6 +24,9 @@ public class EquipmentHud extends BaseModule {
     public final FlagRef enable = flagBuilder(invHud.addEnable()).build();
 
     public KeyBindRef keyBind = toggleHotkey(invHud.add("hotkey"), new MultiKeyBind(), invHud.add("enable"))
+            .build();
+    public EnumRef<DamageDisplay> damageDisplay = builder(invHud.add("damage-display"), DamageDisplay.class)
+            .defaultValue(DamageDisplay.NONE)
             .build();
     public NBTRef<Vec2> pos = builder(invHud.add("pos"), Vec2.class)
             .defaultValue(new Vec2(0.5D, 0.8D))
@@ -99,6 +105,7 @@ public class EquipmentHud extends BaseModule {
                         if (!stack.isEmpty()) {
                             vdraw.drawItem(stack, startX, startY, 999, 0);
                             vdraw.drawItemInSlot(mc.textRenderer, stack, startX, startY, null);
+                            drawDamageIfAbsent(vdraw, stack, startX, startY);
                         } else {
                             vdraw.drawGuiTexture(
                                     Constants.EMPTY_SLOT_TO_SPRITE.get(re.getKey()), startX, startY, 16, 16);
@@ -108,6 +115,66 @@ public class EquipmentHud extends BaseModule {
             } finally {
                 vdraw.popMatrix();
             }
+        }
+    }
+
+    private void drawDamageIfAbsent(VDrawContext vdraw, ItemStack stack, int startX, int startY) {
+        DamageDisplay display = damageDisplay.get();
+        if (display == DamageDisplay.NONE) return;
+        var damage = stack.getMaxDamage();
+        if (damage > 0) {
+            int damage2 = stack.getDamage();
+            int damageLeft = damage - damage2;
+            Text text =
+                    switch (display) {
+                        case DAMAGE -> {
+                            yield Text.literal("-%d".formatted(damage2));
+                        }
+                        case DAMAGE_LEFT -> {
+                            yield Text.literal("%d".formatted(damageLeft));
+                        }
+                        case PERCENTAGE -> {
+                            yield Text.literal("%d%%".formatted((damageLeft * 100) / damage));
+                        }
+                        default -> {
+                            yield null;
+                        }
+                    };
+            if (text != null) {
+                float len = mc.textRenderer.getTextHandler().getWidth(text);
+                int startXX = (int) (startX + 8 - ((len - 1) / 2.0F));
+                int startYY = startY + 15;
+                vdraw.drawText(
+                        mc.textRenderer,
+                        text.asOrderedText(),
+                        startXX,
+                        startYY,
+                        getDamageDisplayColor(damage2, damage),
+                        true);
+            }
+        }
+    }
+
+    public int getDamageDisplayColor(int damage, int damageMax) {
+        damage = damageMax - damage;
+        if (damage < damageMax * 0.33) {
+            return Colors.RED;
+        } else if (damage < damageMax * 0.66) {
+            return Colors.YELLOW;
+        } else {
+            return Colors.GREEN;
+        }
+    }
+
+    public static enum DamageDisplay implements ConfigEnum {
+        NONE,
+        DAMAGE_LEFT,
+        DAMAGE,
+        PERCENTAGE;
+
+        @Override
+        public String getConfigEnumType() {
+            return "equipment_hud_damage_display_type";
         }
     }
 }

@@ -105,6 +105,7 @@ public class AutoUse extends BaseModule {
                 if (useHand != null) {
                     ClientAccess.of(mc).simulateUseItem(useHand);
                     if (mc.player.isUsingItem() && mc.player.getActiveHand() == useHand) {
+                        mc.options.useKey.setPressed(true);
                         if (log.get()) {
                             Debug.chat(
                                     ChatUtils.stringToText("&c[Use] &fStart to use"),

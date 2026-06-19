@@ -103,6 +103,7 @@ public class PlayerInputUtils {
     @Setter
     @Getter
     @With
+    @EqualsAndHashCode
     public static class Input implements Cloneable {
         boolean forward;
         boolean backward;

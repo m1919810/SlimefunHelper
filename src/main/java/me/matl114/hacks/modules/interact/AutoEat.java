@@ -21,6 +21,7 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VItem;
@@ -62,6 +63,9 @@ public class AutoEat extends BaseModule {
 
     public final FlagRef inv =
             builder(autoEat.add("inv"), Boolean.class).defaultValue(true).build();
+
+    public final FlagRef forceEatLeftClick =
+            flagBuilder(autoEat.add("left-click-tool-force-eat")).build();
 
     public final FlagRef enableHealth = builder(autoEat.add("enable-health"), Boolean.class)
             .defaultValue(true)
@@ -188,6 +192,7 @@ public class AutoEat extends BaseModule {
             if (mc.player.isUsingItem()
                     && ((mc.player.getActiveHand() == Hand.OFF_HAND) == offHand)
                     && ItemStack.areItemsAndComponentsEqual(re.val(), mc.player.getActiveItem())) {
+                mc.options.useKey.setPressed(true);
                 eating = true;
                 restoreCallback = cbb;
                 eatingSlot = offHand ? 40 : InventoryUtils.getSelectedSlot();
@@ -228,6 +233,16 @@ public class AutoEat extends BaseModule {
                 if (!mc.player.isUsingItem()) {
                     find_eat_condition:
                     {
+                        if (forceEatLeftClick.get() && mc.options.useKey.isPressed()) {
+                            ItemStack stack = mc.player.getMainHandStack();
+                            if ((VItem.getInstance().isTool(stack)
+                                            || VItem.getInstance().isWeapon(stack))
+                                    && !VItem.getInstance().isSpear(stack)
+                                    && !InteractUtils.canHoldUse(mc.player.getOffHandStack())) {
+                                canStartEat = true;
+                                break find_eat_condition;
+                            }
+                        }
                         if (eatingCooldownTick > Tasks.getTick()) {
                             break find_eat_condition;
                         }

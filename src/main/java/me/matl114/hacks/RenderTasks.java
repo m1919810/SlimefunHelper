@@ -107,6 +107,10 @@ public class RenderTasks {
                 new RenderTasks.RenderTask(tick, new BoxMoveTarget(box, move, color, color)));
     }
 
+    public static void drawLine(Vec3d from, Vec3d deltaMove, int timeTick, Color color) {
+        RenderTasks.registerVirtualRenderTask(new RenderTask(timeTick, new LineObject(from, deltaMove).color(color)));
+    }
+
     // the visit to renderBlocks need synchronized for thread safety, as they involved for-loop and remove
     private static final Set<VirtualRenderTask> renderBlocks = new LinkedHashSet<>();
 

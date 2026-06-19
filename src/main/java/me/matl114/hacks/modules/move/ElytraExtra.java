@@ -19,6 +19,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -90,10 +91,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleLockRot))
             .build();
 
-    public final FlagRef liquidFix = builder(elytraTweaks.add("liquid-fallflying-fix"), FlagRef.TYPE)
-            .defaultValue(true)
-            .build();
-
     public final FlagRef noFallLanding =
             flagBuilder(elytraTweaks.add("no-fall-when-landing")).build();
 
@@ -107,10 +104,17 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef autoTakeOffWhenJoinServer =
             flagBuilder(elytraTweaks.add("auto-start-fly-join-server")).build();
 
+    public final FlagRef elytraResyncBadPacketFix =
+            flagBuilder(elytraTweaks.add("fix-duplicate-elytra-state-sync")).build();
+
     // public final FlagRef elytraAntiKB = flagBuilder(Configs.MOV_CONFIG, ELYTRA_ANTI_KB).build();
 
     public final FlagRef enableUnbreakableElytra =
             flagBuilder(unbreakableElytra.add("enable")).build();
+
+    public final KeyBindRef unbreakableHotkey = toggleHotkey(
+                    unbreakableElytra.addHotkey(), new MultiKeyBind(), unbreakableElytra.addEnable())
+            .build();
 
     public final IntRef period = intBuilder(unbreakableElytra.add("period"))
             .defaultValue(16)
@@ -206,6 +210,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         registerListener(
                 Listener.getPacketPostSendPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::attackPost);
         registerListener(Listener.getGameJoinPoint(), this::onGameJoinAutoStartFallFlying);
+        registerListener(Listener.getPlayerSwitchFallFlying(), this::onMonitorFallFlying, Integer.MAX_VALUE - 1);
     }
 
     //    public void onHit(Event<WorldEventS2CPacket> event){
@@ -271,9 +276,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     boolean autoTakeOffFlag = false;
 
-    public void autoTakeoff() {
-        if (checkNull()) return;
+    public boolean autoTakeoff() {
+        if (checkNull()) return false;
         autoTakeOffFlag = true;
+        return false;
     }
 
     public void onGameJoinAutoStartFallFlying(Event<ClientPlayerEntity> joinServer) {
@@ -338,18 +344,24 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && canContinueGliding()
                 && mc.player != null
                 && mc.player.isFallFlying()) {
-            elytraUnbreakableSwitchSlot = findElytraUnbreakableSwitchSlot();
-            if (elytraUnbreakableSwitchSlot == -1) {
-                mc.getNetworkHandler()
-                        .sendPacket(
-                                new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                //                Debug.info("send stop glide");
-                nextTimeLaunchElytraUnbreakable = true;
+            // fix bug: do not override current waiting unbreakable transaction if lagggggg
+            if (nextTimeLaunchElytraUnbreakable) {
+                // what is wrong with the wifi
                 tickEvent.context(0);
             } else {
-                switchSlotToArmor(elytraUnbreakableSwitchSlot);
-                nextTimeLaunchElytraUnbreakable = true;
-                tickEvent.context(0);
+                elytraUnbreakableSwitchSlot = findElytraUnbreakableSwitchSlot();
+                if (elytraUnbreakableSwitchSlot == -1) {
+                    mc.getNetworkHandler()
+                            .sendPacket(new ClientCommandC2SPacket(
+                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    //                Debug.info("send stop glide");
+                    nextTimeLaunchElytraUnbreakable = true;
+                    tickEvent.context(0);
+                } else {
+                    switchSlotToArmor(elytraUnbreakableSwitchSlot);
+                    nextTimeLaunchElytraUnbreakable = true;
+                    tickEvent.context(0);
+                }
             }
         }
     }
@@ -368,7 +380,30 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && (serializedEntryUpdateEvent.context.id() == VDataFlag.ID_FLAGS
                         || serializedEntryUpdateEvent.context.id() == VDataFlag.ID_POSE)
                 && player.isFallFlying()) {
-            if (canContinueGliding()) {
+            // transaction:
+            if (Tasks.getTick() <= this.manuallySwitchTick && elytraResyncBadPacketFix.get()) {
+                var val = serializedEntryUpdateEvent.context();
+                if (val.id() == VDataFlag.ID_FLAGS) {
+                    byte data = (byte) val.value();
+                    if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
+                        // this may cause by some factor which cancel the flight: for example
+                        // tick 1 we land
+                        // tick 2 we jump
+                        // tick 3 we send start_flying
+                        // tick 3 we send stopFlying sync
+                        // tick 4 we send another start_flying -> which cause ElytraA because the stopFlying which
+                        // caused by start_flying , hasn't come yet, the idiot grimac will think that we are currently
+                        // flying
+                        serializedEntryUpdateEvent.cancel();
+                        return;
+                        //                        serializedEntryUpdateEvent.context(
+                        //                            new DataTracker.SerializedEntry(val.id(), val.handler(), (byte)
+                        //                                (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX))));
+                    }
+                }
+            }
+            //            if (canContinueGliding()) {
+            {
                 if (nextPacketResetFallFlying) {
                     var val = serializedEntryUpdateEvent.context();
                     if (val.id() == VDataFlag.ID_FLAGS) {
@@ -376,15 +411,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
                             // try start
                             nextPacketResetFallFlying = false;
-                            if (hasGlidingEquipments()) {
+                            if (canContinueGliding() && hasGlidingEquipments()) {
                                 MovTasks.getMovExtra().sendPacketsForPreStartFallFlying();
                                 mc.getNetworkHandler()
                                         .sendPacket(new ClientCommandC2SPacket(
                                                 mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
                                 MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
-                                serializedEntryUpdateEvent.context(
-                                        new DataTracker.SerializedEntry(val.id(), val.handler(), (byte)
-                                                (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX))));
                             }
                         }
                     }
@@ -424,7 +456,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         }
                     } else if (val.id() == VDataFlag.ID_POSE) {
                         // standing pose
-                        if (val.value() instanceof EntityPose pos && pos != EntityPose.FALL_FLYING) {
+                        if (canContinueGliding()
+                                && val.value() instanceof EntityPose pos
+                                && pos != EntityPose.FALL_FLYING) {
                             serializedEntryUpdateEvent.context(
                                     new DataTracker.SerializedEntry(val.id(), val.handler(), EntityPose.FALL_FLYING));
                         }
@@ -490,28 +524,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         }
                     } else if (val.id() == VDataFlag.ID_POSE) {
                         // this is a vanilla operation, we handle this to make fluent flying
-                        if (thisFallFlyingIsArmorFly != -1
+                        if (canContinueGliding()
+                                && thisFallFlyingIsArmorFly != -1
                                 && val.value() instanceof EntityPose pos
                                 && pos != EntityPose.FALL_FLYING
                                 && !poseFix.get()) {
                             serializedEntryUpdateEvent.context(
                                     new DataTracker.SerializedEntry(val.id(), val.handler(), EntityPose.FALL_FLYING));
-                        }
-                    }
-                }
-            }
-            {
-                // read only tasks
-                // handle these tasks after the auto handle above
-                var val = serializedEntryUpdateEvent.context();
-                if (val.id() == VDataFlag.ID_FLAGS) {
-                    // handle switch armor when end fallflying
-                    if (thisFallFlyingIsAutoSwitch != -1) {
-                        // update
-                        byte data = (byte) val.value();
-                        if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
-                            switchSlotToArmor(thisFallFlyingIsAutoSwitch);
-                            thisFallFlyingIsAutoSwitch = -1;
                         }
                     }
                 }
@@ -598,12 +617,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public int findEmptyPlaceForElytra() {
 
         if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
-            var re = InventoryUtils.findPlayerItem(
-                    item -> item.isEmpty()
-                            || (!VItem.getInstance().canGlide(item)
-                                    && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST),
+            var re = InventoryUtils.findPlayerInventory(
+                    item -> (item.index() < 36 || item.index() == 40)
+                                    && item.val().isEmpty()
+                            || (!VItem.getInstance().canGlide(item.val())
+                                    && mc.player.getPreferredEquipmentSlot(item.val()) == EquipmentSlot.CHEST),
                     true,
                     true,
+                    false,
                     false);
             if (re != null) {
                 return mc.player
@@ -736,16 +757,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    private static boolean checkLiquid() {
-        if (INSTANCE.liquidFix.get()) {
-            return !mc.player.isInLava() && !mc.player.isTouchingWater();
-        } else {
-            return !mc.player.isTouchingWater();
-        }
-    }
-
     public static boolean canContinueGliding() {
-        return checkLiquid()
+        return !mc.player.isTouchingWater()
                 && !mc.player.getAbilities().flying
                 && !mc.player.isOnGround()
                 && !mc.player.hasVehicle()
@@ -756,12 +769,22 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return VItem.getInstance().canGlide(mc.player.getEquippedStack(EquipmentSlot.CHEST));
     }
 
+    public static boolean hasGlidingItem() {
+        return InventoryUtils.findPlayerItem((vv) -> mc.player.getPreferredEquipmentSlot(vv) == EquipmentSlot.CHEST, false, false)
+                != null;
+    }
+
+    public static boolean hasFireworks() {
+        return InventoryUtils.findPlayerItem(ElytraExtra.INSTANCE::canBeUsedAsFireworks, false, false) != null;
+    }
+
+    int manuallySwitchTick = 0;
+
     public void onStartFallFlying(Event<Boolean> booleanEvent) {
         // not fallFlying, and not suitable for gliding
         // check armor fly
         // reset fly transaction
         // this is a check during the flying
-
         if ((Boolean) booleanEvent.getArgs(0) || booleanEvent.isCancelled()) {
             return;
         }
@@ -785,6 +808,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     }
                 }
             }
+        }
+    }
+
+    public void onMonitorFallFlying(Event<Boolean> booleanEvent) {
+        if (booleanEvent.isCancelled()) return;
+        if (booleanEvent.context) {
+            manuallySwitchTick = Tasks.getTick();
         }
     }
 
@@ -1005,7 +1035,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (armorFly.get() && player.isFallFlying()) {
-            if (canContinueGliding()) {
+            boolean canGlide = canContinueGliding();
+            if (canGlide) {
                 ++lastFlushRocketTick;
                 // EntityAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
                 // no reset and find Elytra at equipmentSlot, maybe a desync in inventory
@@ -1015,25 +1046,28 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     // trigger flush rockets
                     shouldFlushRocketsThisTick = true;
                 }
-                if (armorMode.get() != ArmorFlyMode.LAZY && this.thisTickSwitchingIndex == -1) {
-                    if (thisTickTickStartFallFly) {
-                        thisTickTickStartFallFly = false;
-                        if (onSwitchItemArmorFallFlying()) {
+            }
+            if (armorMode.get() != ArmorFlyMode.LAZY && this.thisTickSwitchingIndex == -1) {
+                if (thisTickTickStartFallFly) {
+                    thisTickTickStartFallFly = false;
+                    if (onSwitchItemArmorFallFlying()) {
 
-                            mc.getNetworkHandler()
-                                    .sendPacket(new ClientCommandC2SPacket(
-                                            mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                            thisTickHasStartFallFly = true;
-                            flushRockets();
-                            MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
-                            if (armorFlyBadPacketFix.get()) {
-                                mc.getNetworkHandler().sendPacket(new CommonPongC2SPacket(Integer.MIN_VALUE));
-                            }
-                        } else {
-                            clearRockets();
-                            EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, false);
+                        mc.getNetworkHandler()
+                                .sendPacket(new ClientCommandC2SPacket(
+                                        mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                        thisTickHasStartFallFly = true;
+                        flushRockets();
+                        MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
+                        if (armorFlyBadPacketFix.get()) {
+                            mc.getNetworkHandler().sendPacket(new CommonPongC2SPacket(Integer.MIN_VALUE));
                         }
-                    } else if (armorMode.get() == ArmorFlyMode.TICK_LEGACY) {
+                    } else {
+                        clearRockets();
+                        EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, false);
+                        thisFallFlyingIsArmorFly = -1;
+                    }
+                } else if (armorMode.get() == ArmorFlyMode.TICK_LEGACY) {
+                    if (canGlide) {
                         if (!VItem.getInstance().canGlide(player.getEquippedStack(EquipmentSlot.CHEST))) {
                             int idx = findElytra();
                             if (idx != -1) {
@@ -1045,17 +1079,42 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             // switch to origin armor
                             this.thisTickSwitchingIndex = thisFallFlyingIsArmorFly;
                         }
+                    } else {
+                        thisFallFlyingIsArmorFly = -1;
                     }
                 }
-
-            } else {
-                // EntityAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, false);
-                // let the server sync our gliding state
-                thisFallFlyingIsArmorFly = -1;
             }
 
         } else {
             thisFallFlyingIsArmorFly = -1;
+        }
+        // todo handle this
+        if (!mc.player.isFallFlying() && nextTimeLaunchElytraUnbreakable) {
+            nextTimeLaunchElytraUnbreakable = false;
+            // unexpected behaviour:
+            if (shouldElytraUnbreakable()) {
+                if (elytraUnbreakableSwitchSlot != -1) {
+                    switchSlotToArmor(elytraUnbreakableSwitchSlot);
+                }
+                // cancel stop fallflying only when can continue
+                if (canContinueGliding()) {
+                    Debug.chat(ChatUtils.stringToText(
+                            "&c[ElytraExtra] &fUnexpected UnbreakableElytra state, may caused by mod conflict or lag"));
+                    mc.player.startGliding();
+                    mc.getNetworkHandler()
+                            .sendPacket(new ClientCommandC2SPacket(
+                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    thisTickHasStartFallFly = true;
+                    if (elytraUnbreakableSwitchSlot != -1) {
+                        flushRockets();
+                    }
+                    MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
+                } else {
+                    clearRockets();
+                }
+            }
+
+            elytraUnbreakableSwitchSlot = -1;
         }
         if (thisFallFlyingIsAutoSwitch != -1) {
             if (!player.isFallFlying()) {
@@ -1063,7 +1122,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 thisFallFlyingIsAutoSwitch = -1;
             }
         }
-        if (player.isFallFlying() && rocketBoost.get() && canFireworkControlMotion()) {
+        if (player.isFallFlying()
+                && rocketBoost.get()
+                && canFireworkControlMotion()
+                && !BaritoneHooks.getInstance().isElytraProcessing()) {
             // Vec3d vec3d = player.getVelocity();
             player.setVelocity(player.getRotationVector().multiply(rocketBoostSpeed.get()));
         }
@@ -1237,6 +1299,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             onRemoveFirework(lastFireworkRocket);
         }
         lastFireworkRocket = null;
+        delayQueue.clear();
     }
 
     private void onRemoveFirework(FireworkRocketEntity rocket) {
@@ -1362,7 +1425,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (thisFallFlyingIsArmorFly != -1) {
-            // fix grimac multiaction c
+            // fix grimac multiaction c, fix grimac elytra c,
+            // ??
             PlayerInputUtils.of(player).sprint(false).applyInput(player);
             player.setSprinting(false);
         }
@@ -1377,7 +1441,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         mc.getNetworkHandler()
                                 .sendPacket(new ClientCommandC2SPacket(
                                         mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    } else {
+                        // optimize water fly
+                    } else if (!mc.player.isTouchingWater()) {
                         autoTakeOffFlag = false;
                     }
                 }

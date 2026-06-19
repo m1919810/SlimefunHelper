@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.move;
 
+import java.util.Objects;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
@@ -70,21 +71,13 @@ public class MovExtra extends BaseModule {
         if (fuckGrimAC.get()) {
             ClientPlayerEntity player = mc.player;
             // only sprint need to be toggled
-            if (player.isSprinting()) {
+            if (PlayerStateManager.INSTANCE.lastSprint) {
                 mc.getNetworkHandler()
                         .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
                 ClientPlayerAccess.of(player).resyncSprint();
             }
             if (ViaFabricPlusHooks.isSupportEndTick()) {
-                PlayerInputUtils.Input input = PlayerInputUtils.of(player);
-                input.right(false)
-                        .left(false)
-                        .forward(false)
-                        .backward(false)
-                        .jump(false)
-                        .sprint(false)
-                        .sendPlayerInputPacket();
-                ClientPlayerAccess.of(player).resyncInput();
+                sendNoMultiActionInputPacket(player);
             }
         }
     }
@@ -92,13 +85,20 @@ public class MovExtra extends BaseModule {
     public void sendInputPacketsForInventoryAction() {
         if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
             ClientPlayerEntity player = mc.player;
-            PlayerInputUtils.Input input = PlayerInputUtils.of(player);
-            input.right(false)
-                    .left(false)
-                    .forward(false)
-                    .backward(false)
-                    .jump(false)
-                    .sendPlayerInputPacket();
+            sendNoMultiActionInputPacket(player);
+        }
+    }
+
+    private void sendNoMultiActionInputPacket(ClientPlayerEntity player) {
+        PlayerInputUtils.Input input = PlayerInputUtils.of(player);
+        input.right(false)
+                .left(false)
+                .forward(false)
+                .backward(false)
+                .jump(false)
+                .sprint(false);
+        if (!Objects.equals(PlayerStateManager.INSTANCE.lastInput, input)) {
+            input.sendPlayerInputPacket();
             ClientPlayerAccess.of(player).resyncInput();
         }
     }

@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
+import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
@@ -14,11 +15,12 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.EntityUtils;
-import me.matl114.utils.InteractUtils;
-import me.matl114.utils.InventoryUtils;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
@@ -39,9 +41,12 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.potion.Potion;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -58,6 +63,7 @@ public class InteractManager extends BaseModule {
     private static final List<String> HAND_TABS = List.of("mainhand", "offhand");
     private static final List<String> SCHEDULE_TABS = List.of("once", "inf", "1", "4", "10", "20");
     private static final List<String> USE_TARGET_HEAD_TABS = List.of("look", "pos", "entity");
+    private static final List<String> HELP_DISPATCH_TABS = List.of("useitem", "attack", "holduse");
     private static final String USEITEM_HELP =
             "[hand|item_id] [once|inf|interval] [delay] <look|pos|entity> [pitch yaw|pos参数|@entity] 提交使用物品请求";
     private static final String ATTACK_HELP = "entity|block 提交攻击请求";
@@ -68,6 +74,7 @@ public class InteractManager extends BaseModule {
     private static final String LIST_HELP = "显示当前循环交互请求";
     private static final String CANCEL_HELP = "<id|all> 取消指定或全部循环交互请求";
     private static final String CLEAR_HELP = "取消全部循环交互请求";
+    private static final String HELP_HELP = "[useitem|attack|holduse] 显示交互指令帮助";
 
     public final ModulePath module = makePath(Configs.INTERACT_CONFIG, "interaction-tweaks.interact-manager");
 
@@ -79,8 +86,25 @@ public class InteractManager extends BaseModule {
 
     public final FlagRef swing = flagBuilder(module.add("swing-hand")).build();
 
+    public final FlagRef logU = flagBuilder(module.add("log-command")).build();
+
+    public final FlagRef logA = flagBuilder(module.add("log-action")).build();
+
+    public final FlagRef keepTaskWhenExit =
+            flagBuilder(module.add("keep-task-when-exit")).build();
+
     public final FlagRef disableLowVersionSpeedReset =
             flagBuilder(module.add("disable-low-version-speed-reset")).build();
+
+    public final KeyBindRef disableLowVersionSpeedHotkey = moduleEntry(
+                    module.add("disable-low-version-speed-reset-hotkey"),
+                    new MultiKeyBind(),
+                    module.add("disable-low-version-speed-reset"))
+            .build();
+
+    public final FlagRef disableLowVersionWhenUse = flagBuilder(
+                    module.add("disable-low-version-speed-reset-when-command"))
+            .build();
 
     private final Map<String, InteractRequest> runningRequests = new LinkedHashMap<>();
     private long requestCounter = 0L;
@@ -89,13 +113,15 @@ public class InteractManager extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerCommandBootstrap(this::bootstrapCommands);
-        registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
+        registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent, Integer.MAX_VALUE - 1);
         registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
-        registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
+        registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent, Integer.MIN_VALUE);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMoveC2SPacket);
     }
 
     boolean duringInput = false;
+    boolean duringCommand = false;
 
     @Override
     public void onDisableModule() {
@@ -112,35 +138,63 @@ public class InteractManager extends BaseModule {
     }
 
     int holdUseTick = -1;
+    Runnable holdUseCallback = null;
 
     public void onInputEvent(Event<Void> event) {
         duringInput = true;
         if (checkNull()) return;
-        var iter = runningRequests.entrySet().iterator();
-        while (iter.hasNext()) {
-            var entry = iter.next();
-            var request = entry.getValue();
-            Countdown countdown = request.countdown();
-            if (countdown.canRun()) {
-                if (countdown.countDown()) {
-                    request.context().execute(this, mc.player);
+        duringCommand = true;
+        try {
+            var iter = runningRequests.entrySet().iterator();
+            while (iter.hasNext()) {
+                var entry = iter.next();
+                var request = entry.getValue();
+                Countdown countdown = request.countdown();
+                if (countdown.canRun()) {
+                    int cnt = countdown.countDown();
+                    for (var i = 0; i < cnt; ++i) {
+                        request.context().execute(this, mc.player);
+                    }
+                } else {
+                    iter.remove();
                 }
-            } else {
-                iter.remove();
             }
-        }
-        // hold use actions
-        if (holdUseTick > 0) {
-            holdUseTick--;
-            mc.options.useKey.setPressed(true);
-        } else if (holdUseTick == 0) {
-            holdUseTick = -1;
-            KeyBindAccess.of(mc.options.useKey).resetKeyState();
+            // hold use actions
+            if (holdUseTick == 0 || (holdUseTick > 0 && !mc.player.isUsingItem())) {
+                holdUseTick = -1;
+                KeyBindAccess.of(mc.options.useKey).resetKeyState();
+                if (holdUseCallback != null) {
+                    holdUseCallback.run();
+                    holdUseCallback = null;
+                }
+            } else if (holdUseTick > 0) {
+                holdUseTick--;
+                mc.options.useKey.setPressed(true);
+            }
+        } finally {
+            duringCommand = false;
         }
     }
 
     public void onPostInputEvent(Event<Void> event) {
         duringInput = false;
+    }
+
+    public void onPlayerMoveC2SPacket(Event<PlayerMoveC2SPacket> eventPacket) {
+        if (((disableLowVersionSpeedReset.get() && duringInput) || (disableLowVersionWhenUse.get() && duringCommand))
+                && ViaFabricPlusHooks.isSupportDupRot()
+                && eventPacket.context instanceof PlayerMoveC2SPacket.Full fullPacket) {
+            if (fullPacket instanceof PlayerMoveC2SPacketAccess access
+                    && access.getCause() == PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
+                eventPacket.cancel();
+            }
+            //            Vec3d vec3d1 = new Vec3d(fullPacket.getX(0), fullPacket.getY(0), fullPacket.getZ(0));
+            //            Vec3d lastOut = new Vec3d(PlayerStateManager.INSTANCE.lastX,
+            // PlayerStateManager.INSTANCE.lastY, PlayerStateManager.INSTANCE.lastZ);
+            //            if(MathUtils.isInBox(vec3d1, lastOut, 2E-5)){
+            //                eventPacket.cancel();
+            //            }
+        }
     }
 
     private void bootstrapCommands(MainCommand mainCommand) {
@@ -187,8 +241,12 @@ public class InteractManager extends BaseModule {
                 .post(cmd -> cmd.executor((this::onHoldUseItem)))
                 .complete();
 
-        TreeSubCommand interactMan =
-                mainCommand.mainBuilder().name("interactman").build();
+        registerInteractManCommands(mainCommand, "interactman");
+        registerInteractManCommands(mainCommand, "iman");
+    }
+
+    private void registerInteractManCommands(MainCommand mainCommand, String name) {
+        TreeSubCommand interactMan = mainCommand.subMainBuilder().name(name).build();
         interactMan
                 .subBuilder(SubCommand.taskBuilder())
                 .name("list")
@@ -210,6 +268,19 @@ public class InteractManager extends BaseModule {
                 .name("clear")
                 .helper(CLEAR_HELP)
                 .post(cmd -> cmd.executor((this::onClearRequests)))
+                .complete();
+        interactMan
+                .subBuilder(SubCommand.taskBuilder())
+                .name("help")
+                .helper(HELP_HELP)
+                .arg(new OptionalArgumentType<>(
+                        "dispatch",
+                        SimpleCommandArgs.argumentBuilder()
+                                .name("dispatch")
+                                .select(HELP_DISPATCH_TABS)
+                                .build(),
+                        "all"))
+                .post(cmd -> cmd.executor((this::onShowInteractHelp)))
                 .complete();
     }
 
@@ -283,7 +354,7 @@ public class InteractManager extends BaseModule {
 
     private boolean checkNoRemainingArgs(ArgumentReader reader, CommandExecution context, String usage) {
         if (reader.hasNext()) {
-            context.sendMessage("&c[Interact] 参数多余:" + reader.getRemainingArgStr());
+            context.sendMessage("&c[Interact] &e参数多余:" + reader.getRemainingArgStr());
             sendUsage(context, usage);
             return false;
         }
@@ -295,14 +366,14 @@ public class InteractManager extends BaseModule {
         var htd = parseHandTaskContext(streamArgs);
         String typed = streamArgs.nextNonnullString();
         if (!USE_TARGET_HEAD_TABS.contains(typed)) {
-            context.sendMessage("&c[Interact] 不存在的目标类型: " + typed);
+            context.sendMessage("&c[Interact] &e不存在的目标类型: " + typed);
             sendUsage(context, USEITEM_HELP);
             return true;
         }
         InputArgument<?> target = streamArgs.next();
         LookSupplier supplier = LookSupplier.of(target);
         if (supplier == null) {
-            context.sendMessage("&c[Interact] 缺少或无效使用目标");
+            context.sendMessage("&c[Interact] &e缺少或无效使用目标");
             sendUsage(context, USEITEM_HELP);
             return true;
         }
@@ -319,7 +390,7 @@ public class InteractManager extends BaseModule {
         InputArgument<EntitySelector> targetArg = streamArgs.next();
         EntitySelector selector = targetArg.result();
         if (selector == null) {
-            context.sendMessage("&c[Interact] 缺少或无效使用目标");
+            context.sendMessage("&c[Interact] &e缺少或无效使用目标");
             sendUsage(context, USEITEM_HELP);
             return true;
         }
@@ -333,10 +404,10 @@ public class InteractManager extends BaseModule {
     private boolean onMineBlock(CommandExecution context, ArgumentInputStream streamArgs, ArgumentReader reader) {
         if (!canSubmit(context)) return true;
         var htd = parseHandTaskContext(streamArgs);
-        InputArgument<ExecutePos> targetArg = streamArgs.nextNonnull();
+        InputArgument<ExecutePos> targetArg = streamArgs.next();
         ExecutePos selector = targetArg.result();
         if (selector == null) {
-            context.sendMessage("&c[Interact] 缺少或无效使用目标");
+            context.sendMessage("&c[Interact] &e缺少或无效使用目标");
             sendUsage(context, USEITEM_HELP);
             return true;
         }
@@ -359,10 +430,10 @@ public class InteractManager extends BaseModule {
 
     private boolean onListRequests(CommandExecution context, ArgumentInputStream streamArgs, ArgumentReader reader) {
         if (runningRequests.isEmpty()) {
-            context.sendMessage("&e[Interact] 当前没有循环请求");
+            context.sendMessage("&c[Interact] &e当前没有循环请求");
             return true;
         }
-        context.sendMessage("&a[Interact] 当前循环请求:");
+        context.sendMessage("&c[Interact] &f当前循环请求:");
         runningRequests.values().forEach(request -> context.sendMessage("&7- " + request.id()));
         return true;
     }
@@ -371,40 +442,160 @@ public class InteractManager extends BaseModule {
         String rawId = streamArgs.nextNonnullString();
         if ("all".equalsIgnoreCase(rawId)) {
             int size = runningRequests.size();
-            clearRunningRequests(null);
-            context.sendMessage("&a[Interact] 已取消全部 " + size + " 个循环请求");
+            clearRunningRequests(context);
+            context.sendMessage("&c[Interact] &f已取消全部 " + size + " 个循环请求");
             return true;
         }
         String id = findRequestId(context, rawId);
         if (id == null) return true;
         InteractRequest removed = runningRequests.remove(id);
         if (removed == null) {
-            context.sendMessage("&c[Interact] 找不到请求: " + rawId);
+            context.sendMessage("&c[Interact] &e找不到请求: " + rawId);
             return true;
         }
-        context.sendMessage("&a[Interact] 已取消请求 " + removed.id());
+        context.sendMessage("&c[Interact] &f已取消请求 " + removed.id());
         return true;
     }
 
     private boolean onClearRequests(CommandExecution context, ArgumentInputStream streamArgs, ArgumentReader reader) {
         int size = runningRequests.size();
         clearRunningRequests(context);
-        context.sendMessage("&a[Interact] 已清空 " + size + " 个循环请求");
+        context.sendMessage("&c[Interact] &f已清空 " + size + " 个循环请求");
         return true;
+    }
+
+    private boolean onShowInteractHelp(
+            CommandExecution context, ArgumentInputStream streamArgs, ArgumentReader reader) {
+        String dispatch = streamArgs.nextNonnullString().toLowerCase(Locale.ROOT);
+        if (!checkNoRemainingArgs(reader, context, HELP_HELP)) return true;
+        switch (dispatch) {
+            case "useitem" -> sendUseItemHelp(context);
+            case "attack" -> sendAttackHelp(context);
+            case "holduse" -> sendHoldUseHelp(context);
+            default -> {
+                context.sendMessage("&c[Interact] &e不存在的帮助: " + dispatch);
+                sendUsage(context, HELP_HELP);
+            }
+        }
+        return true;
+    }
+
+    private void sendUseItemHelp(CommandExecution context) {
+        context.sendMessage(
+                "&c[Interact] &fuseitem 用法: !!useitem [hand|item_id] [once|inf|interval] [delay] <look|pos|entity> [pitch yaw|pos参数|@entity]");
+        context.sendMessage("&c[Interact] &fhand 可填 mainhand / offhand，也可直接填物品 id");
+        context.sendMessage("&c[Interact] &finterval 可填 once(执行一次)、inf(一直执行)，或具体循环次数");
+        context.sendMessage("&c[Interact] &fdelay 填非负整数,代表执行的间隔.若为0,则一次性执行至多9次");
+        context.sendMessage("&c[Interact] &ftarget 可填 look(转头视角)、pos(看向的位置)、entity(目标实体)");
+        context.sendMessage("&c[Interact] &f使用示例&e(可以点击直接拷贝):");
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("1. 向上90度使用二级神龟喷溅药水: &e/!!useitem splash_potion[strong_turtle_master] look -90 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText("/!!useitem splash_potion[strong_turtle_master] look -90 ~")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("2. 向上90度使用延时神龟喷溅药水: &e/!!useitem splash_potion[long_turtle_master] look -90 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText("/!!useitem splash_potion[long_turtle_master] look -90 ~")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("3. 向下90度使用9个经验瓶,一次使用行完: &e/!!useitem experience_bottle 9 0 look 90 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText("/!!useitem experience_bottle 9 0 look 90 ~")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("4. 向下90度使用9个经验瓶,一gt使用一次: &e/!!useitem experience_bottle 9 1 look 90 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText("/!!useitem experience_bottle 9 1 look 90 ~")))
+                .end()
+                .build());
+        context.sendMessage("&c[Interact] &f指令建议配合BindCmd模块一起使用,通过快捷键自动发送");
+    }
+
+    private void sendAttackHelp(CommandExecution context) {
+        context.sendMessage("&c[Interact] &fattack 用法分两支: entity / block");
+        context.sendMessage(
+                "&c[Interact] &fentity: !!attack entity [hand|item_id] [once|inf|interval] [delay] <@entity>");
+        context.sendMessage("&c[Interact] &fblock: !!attack block [hand|item_id] [once|inf|interval] [delay] <pos参数>");
+        context.sendMessage("&c[Interact] &fhand 可填 mainhand / offhand，也可直接填物品 id");
+        context.sendMessage("&c[Interact] &finterval 可填 once(执行一次)、inf(一直执行)，或具体循环次数");
+        context.sendMessage("&c[Interact] &fdelay 填非负整数,代表执行的间隔.若为0,则一次性执行至多9次");
+        context.sendMessage("&c[Interact] &f使用示例&e(可以点击直接拷贝):");
+        context.sendMessage(ChatUtils.builder()
+                .withColorString(
+                        "1. 攻击距离玩家超过0.01的最近实体一次: &e/!!attack entity mainhand once 1 @e[distance=0.1..,limit=1,sort=nearest]")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        "/!!attack entity mainhand once 1 @e[distance=0.1..,limit=1,sort=nearest]")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString(
+                        "2. 攻击距离玩家超过0.01的最近实体16次,间隔10gt: &e/!!attack entity mainhand 16 10 @e[distance=1..,limit=1,sort=nearest]")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        "/!!attack entity mainhand 16 10 @e[distance=1..,limit=1,sort=nearest]")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("3. 攻击脚下方块30次,1gt攻击一次: &e/!!attack block 30 1 ~ ~-1 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText("/!!attack block 30 1 ~ ~-1 ~")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("2. 攻击脚下方块2次,100gt攻击一次(?): &e/!!attack block 2 200 ~ ~-1 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText("/!!attack block 2 200 ~ ~-1 ~")))
+                .end()
+                .build());
+        context.sendMessage("&c[Interact] &f指令建议配合BindCmd模块一起使用,通过快捷键自动发送");
+    }
+
+    private void sendHoldUseHelp(CommandExecution context) {
+        context.sendMessage(
+                "&c[Interact] &fholduseitem 用法: !!holduseitem [hand|item_id] [once|inf|interval] [delay] [release_ticks]");
+        context.sendMessage("&c[Interact] &fhand 可填 mainhand / offhand，也可直接填物品 id");
+        context.sendMessage("&c[Interact] &finterval 可填 once(执行一次)、inf(一直执行)，或具体循环次数");
+        context.sendMessage("&c[Interact] &fdelay 填非负整数,代表执行的间隔.若为0,则一次性执行至多9次");
+        context.sendMessage("&c[Interact] &frelease_ticks 表示按住使用后多少 tick 松开，默认 20");
+        context.sendMessage("&c[Interact] &f注:该模式中,使用物品将直接把物品长时间换到主手或副手,直到使用完毕");
+        context.sendMessage("&c[Interact] &f使用示例&e(可以点击直接拷贝):");
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("1. 使用下界合金矛3次,一次30gt,40gt使用一次: &e/!!holduseitem netherite_spear 3 40 30")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText("/!!holduseitem netherite_spear 3 40 30")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("2. 使用下界合金矛3次,一次3gt,40gt使用一次: &e/!!holduseitem netherite_spear 3 40 3")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText("/!!holduseitem netherite_spear 3 40 32")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("3. 喝延时神龟药水3次,40gt喝一次: &e/!!holduseitem potion[long_turtle_master] 3 40 32")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText("/!!holduseitem potion[long_turtle_master] 3 40 32")))
+                .end()
+                .build());
     }
 
     private boolean submitRequest(CommandExecution context, InteractRequest request) {
         runningRequests.put(request.id(), request);
-        context.sendMessage("&a[Interact] 已提交请求 " + request.id());
+        if (logU.get()) {
+            context.sendMessage("&c[Interact] &f已提交请求 " + request.id());
+        }
         return true;
     }
 
     private void clearRunningRequests(CommandExecution reporter) {
-        if (runningRequests.isEmpty()) return;
+        holdUseCallback = null;
+        holdUseTick = -1;
+        if (runningRequests.isEmpty() || (reporter == null && keepTaskWhenExit.get())) return;
         List<String> ids = List.copyOf(runningRequests.keySet());
         runningRequests.clear();
         if (reporter != null) {
-            reporter.sendMessage("&a[Interact] 已清理 " + ids.size() + " 个循环请求");
+            reporter.sendMessage("&c[Interact] &f已清理 " + ids.size() + " 个循环请求");
         }
     }
 
@@ -475,7 +666,7 @@ public class InteractManager extends BaseModule {
     }
 
     private static Stream<String> itemIdTabs() {
-        return Registries.ITEM.stream().map(Registries.ITEM::getId).flatMap(s -> Stream.of(s.toString(), s.getPath()));
+        return Registries.ITEM.stream().map(Registries.ITEM::getId).map(Identifier::getPath);
     }
 
     private static Stream<String> potionMetaTabs(String raw, int metaStart) {
@@ -493,7 +684,7 @@ public class InteractManager extends BaseModule {
         return Registries.POTION.stream()
                 .map(Registries.POTION::getId)
                 .filter(Objects::nonNull)
-                .flatMap(s -> Stream.of(s.toString(), s.getPath()));
+                .map(Identifier::getPath);
     }
 
     private static boolean hasPotionComponent(Item itemId) {
@@ -559,7 +750,7 @@ public class InteractManager extends BaseModule {
     private static Integer parsePositiveInt(String raw) {
         try {
             int val = Integer.parseInt(raw);
-            return val > 0 ? val : null;
+            return val >= 0 ? val : null;
         } catch (Throwable ignored) {
             return null;
         }
@@ -578,7 +769,7 @@ public class InteractManager extends BaseModule {
 
         boolean canRun();
 
-        boolean countDown();
+        int countDown();
     }
 
     public abstract static class AbstractCountdown implements Countdown {
@@ -587,11 +778,12 @@ public class InteractManager extends BaseModule {
 
         public AbstractCountdown(int delay) {
             this.delay = delay;
-            this.currentDelay = 0;
+            this.currentDelay = delay;
         }
 
-        public boolean countDown() {
+        public final boolean countDownTimer() {
             if (++currentDelay >= delay) {
+                currentDelay = 0;
                 return true;
             }
             return false;
@@ -603,6 +795,7 @@ public class InteractManager extends BaseModule {
 
         public OnceCountdown(int delay) {
             super(delay);
+            currentDelay = 0;
         }
 
         @Override
@@ -616,13 +809,13 @@ public class InteractManager extends BaseModule {
         }
 
         @Override
-        public boolean countDown() {
-            if (hasRun) return false;
-            if (super.countDown()) {
+        public int countDown() {
+            if (hasRun) return 0;
+            if (super.countDownTimer()) {
                 hasRun = true;
-                return true;
+                return 1;
             }
-            return false;
+            return 0;
         }
     }
 
@@ -646,15 +839,21 @@ public class InteractManager extends BaseModule {
 
         @Override
         public boolean canRun() {
-            return repeatLeft >= 0;
+            return repeatLeft > 0;
         }
 
-        public boolean countDown() {
-            if (super.countDown()) {
-                repeatLeft--;
-                return true;
+        public int countDown() {
+            if (delay <= 0) {
+                int re = Math.min(9, repeatLeft);
+                repeatLeft -= re;
+                return re;
+            } else {
+                if (super.countDownTimer()) {
+                    repeatLeft--;
+                    return 1;
+                }
+                return 0;
             }
-            return false;
         }
     }
 
@@ -681,6 +880,10 @@ public class InteractManager extends BaseModule {
                 Runnable runnable = InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
                 if (runnable != null) {
                     CombatTasks.getAttack().attackEntity(entitySelect);
+                    if (InteractManager.INSTANCE.logA.get()) {
+                        Text text = EntityUtils.getEntityDisplayable(entitySelect);
+                        Debug.chat(ChatUtils.stringToText("&c[Interact] &f攻击了").append(text));
+                    }
                     runnable.run();
                 }
             }
@@ -703,6 +906,10 @@ public class InteractManager extends BaseModule {
                 if (runnable != null) {
                     mc.interactionManager.attackBlock(
                             blockPos, Direction.getFacing(mc.player.getEyePos().subtract(blockPos.toCenterPos())));
+                    if (InteractManager.INSTANCE.logA.get()) {
+                        Debug.chat(ChatUtils.stringToText("&c[Interact] &f挖掘了")
+                                .append(ChatUtils.getDisplayedLocation(Vec3d.of(blockPos))));
+                    }
                     runnable.run();
                 }
             }
@@ -719,9 +926,9 @@ public class InteractManager extends BaseModule {
         public void execute(InteractManager manager, PlayerEntity player) {
             Vec2f supply = target.getLook(player);
             if (supply != null) {
-                boolean shouldUseOffHand = InteractManager.shouldUseOffhandByDefault();
                 var entry = hand.getUseContext();
                 if (entry != null) {
+                    boolean shouldUseOffHand = InteractManager.shouldUseOffhandByDefault() || entry.index() == 40;
                     var runnable = shouldUseOffHand
                             ? (InvExtra.INSTANCE.swapInventoryIndexToOffhand(entry.index()))
                             : InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
@@ -731,6 +938,11 @@ public class InteractManager extends BaseModule {
                         player.setYaw(supply.y);
                         Hand hand = shouldUseOffHand ? Hand.OFF_HAND : Hand.MAIN_HAND;
                         var result = mc.interactionManager.interactItem(player, hand);
+                        if (InteractManager.INSTANCE.logA.get()) {
+                            Text text = entry.val().getName();
+                            Debug.chat(
+                                    ChatUtils.stringToText("&c[Interact] &f使用了").append(text));
+                        }
                         if (shouldSwingHandAfterUse()) {
                             InteractUtils.swingHandIfSuccess(result, hand);
                         }
@@ -762,17 +974,22 @@ public class InteractManager extends BaseModule {
         public void execute(InteractManager manager, PlayerEntity player) {
             var entry = hand.getUseContext();
             if (entry != null) {
-                boolean offhand = (entry.index() == 40);
+                boolean offhand = (InteractManager.shouldUseOffhandByDefault() || entry.index() == 40);
                 var runnable = offhand
                         ? (InvExtra.INSTANCE.swapInventoryIndexToOffhand(entry.index()))
                         : InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
                 if (runnable != null) {
                     Hand hand = offhand ? Hand.OFF_HAND : Hand.MAIN_HAND;
                     var result = mc.interactionManager.interactItem(player, hand);
+                    if (InteractManager.INSTANCE.logA.get()) {
+                        Text text = entry.val().getName();
+                        Debug.chat(ChatUtils.stringToText("&c[Interact] &f使用了").append(text));
+                    }
                     manager.holdUseTick = releaseTicks;
                     if (shouldSwingHandAfterUse()) {
                         InteractUtils.swingHandIfSuccess(result, hand);
                     }
+                    InteractManager.INSTANCE.holdUseCallback = runnable;
                 }
             }
         }
