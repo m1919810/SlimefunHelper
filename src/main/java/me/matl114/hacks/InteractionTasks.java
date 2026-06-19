@@ -123,8 +123,8 @@ public class InteractionTasks {
                     return true;
                 }));
                 InteractionTasks.placeBlock(hand, result);
-                if (catcher.get() != null) {
-                    var pkt = catcher.get();
+                if (catcher.getValue() != null) {
+                    var pkt = catcher.getValue();
                     InteractionTasks.addPostRotationCorrectTask(
                             result.getBlockPos().toCenterPos(),
                             () -> mc.getNetworkHandler().sendPacket(pkt));
