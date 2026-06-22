@@ -114,12 +114,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     public Input input;
 
     @Shadow
-    private boolean lastSprinting;
-
-    @Shadow
-    private boolean lastSneaking;
-
-    @Shadow
     public abstract boolean isSneaking();
 
     @Shadow
@@ -130,9 +124,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Shadow
     private boolean usingItem;
-
-    @Shadow
-    private boolean lastOnGround;
 
     @Getter
     @Unique
@@ -307,22 +298,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     //        }
     //        return super.getEntityInteractionRange();
     //    }
-
-    @Override
-    @Unique
-    public void setLastSprintFlag(boolean lastSprint) {
-        this.lastSprinting = lastSprint;
-    }
-
-    public void setLastSneakFlag(boolean lastSprint) {
-        this.lastSneaking = lastSprint;
-    }
-
-    @Unique
-    @Override
-    public void setLastOnGroundFlag(boolean lastOnGround) {
-        this.lastOnGround = lastOnGround;
-    }
 
     @Unique
     @Override

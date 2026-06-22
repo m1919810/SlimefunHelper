@@ -80,6 +80,9 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Shadow
     private float lastYaw;
 
+    @Shadow
+    private boolean lastSneaking;
+
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
     }
@@ -107,6 +110,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                 this.lastPlayerInput.jump(),
                 lastSprint,
                 this.lastPlayerInput.sprint());
+        lastSneaking = lastSprint;
     }
 
     @Unique
