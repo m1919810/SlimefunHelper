@@ -15,7 +15,7 @@ public class AbstractElement implements ElementHandler {
 
     @Setter
     @Getter
-    boolean showTooltips = true;
+    protected boolean showTooltips = true;
 
     public AbstractElement combineRender(RenderHandler handler) {
         if (extraRender == null) {

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.PlateElement;
+import me.matl114.gui.elements.SlotElement;
 import me.matl114.hacks.InvTasks;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;

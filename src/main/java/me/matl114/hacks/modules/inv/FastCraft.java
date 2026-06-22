@@ -7,6 +7,7 @@ import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.other.TradeInformationSubScreen;
 import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.SlotElement;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RecipeTasks;
 import me.matl114.hacks.api.BaseModule;

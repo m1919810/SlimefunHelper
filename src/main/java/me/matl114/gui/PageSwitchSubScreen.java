@@ -3,6 +3,8 @@ package me.matl114.gui;
 import java.util.List;
 import java.util.function.IntConsumer;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.LabelElement;
+import me.matl114.gui.elements.PageButtonElement;
 import me.matl114.gui.presets.single.IntFastInputWidget;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.text.Text;

@@ -1,6 +1,7 @@
 package me.matl114.gui.elements;
 
 import me.matl114.gui.basic.*;
+import me.matl114.gui.complex.BoxElement;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.OrderedText;
 import net.minecraft.util.Colors;

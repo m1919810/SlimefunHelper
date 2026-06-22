@@ -695,6 +695,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 stack.applyChanges(stackOrigin.components.getChanges());
                 if (canBeUsedAsFireworks(stack)) {
                     // 40-> offhand
+                    if (stack.isOf(Items.FIREWORK_ROCKET)) {
+                        delayQueue.removeIf(s -> s.isEmpty() || s.isOf(Items.FIREWORK_ROCKET));
+                    }
                     delayQueue.add(stack);
                     packet.cancel();
                     NetworkUtils.restoreSequence(packet.context.getSequence());
@@ -709,6 +712,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public void sendCustomUseFireworkPacket(float pitch, float yaw) {
         if (thisFallFlyingIsArmorFly != -1 || elytraUnbreakableSwitchSlot != -1) {
+            delayQueue.clear();
             delayQueue.add(ItemStack.EMPTY);
         } else {
             sendUsePacket(pitch, yaw);
@@ -753,6 +757,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     private void sendUsePacket(float pitch, float yaw) {
+        timerVanilla.fire();
+        timerCustom.fire();
         ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
         if (canBeUsedAsFireworks(stack)) {
             mc.interactionManager.sendSequencedPacket(
@@ -1440,7 +1446,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 }
                 if (use) {
                     // reset the tick even if is from vanilla operation
-                    timer.fire(level);
+                    timer.fire();
                     ACTasks.addPostTransactionAction((s) -> {
                         sendCustomUseFireworkPacket(pitch, yaw);
                     });
@@ -1728,7 +1734,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             lastTimeWasAuto = true;
         }
 
-        public void fire(int level) {
+        public void fire() {
             lastTimeWasAuto = false;
             lastTimeFire = Tasks.getTick();
         }

@@ -9,6 +9,7 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.SlotElement;
 import me.matl114.gui.presets.grids.GridSelectSubScreen;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RenderTasks;
