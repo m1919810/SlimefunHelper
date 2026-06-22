@@ -4,7 +4,9 @@ import io.netty.buffer.ByteBuf;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntSupplier;
+import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -23,8 +25,8 @@ import me.matl114.utils.ColorUtils;
 import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.ResourceUtils;
-import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.SupportVersion;
+import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
@@ -304,7 +306,7 @@ public class SpearEnhance extends BaseModule {
     public void onUsePiercing(Event<PlayerActionC2SPacket> eventPiercing) {
         if (fixOldVersionPiercing.get()
                 && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 9)
-                && eventPiercing.context.getAction() == PlayerActionC2SPacket.Action.STAB) {
+                && eventPiercing.context.getAction().ordinal() == 7) {
             if (onPiercing(() -> eventPiercing.context.getSequence())) {
                 eventPiercing.cancel();
             }
