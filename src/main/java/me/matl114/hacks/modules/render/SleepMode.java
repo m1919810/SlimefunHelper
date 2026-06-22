@@ -8,6 +8,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.LabelElement;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;

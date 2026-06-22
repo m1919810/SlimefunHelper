@@ -4,6 +4,9 @@ import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import baritone.api.Settings;
 import baritone.api.event.events.ChatEvent;
+import baritone.api.utils.BetterBlockPos;
+import baritone.process.ElytraProcess;
+import baritone.process.elytra.ElytraBehavior;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -63,12 +66,20 @@ public abstract class BaritoneHooks implements IHooks {
     public static class Impl extends BaritoneHooks {
         Settings settings;
         Map<String, ValueAccessor<?>> settingsMap = new LinkedHashMap<>();
-
+        boolean supportedVersion;
         public static Supplier<List<BlockPos>> netherPathSupplier;
 
         public Impl() {
             settings = BaritoneAPI.getSettings();
             buildMap();
+            try {
+                Class<?> clazz = ElytraProcess.class;
+                clazz = ElytraBehavior.class;
+                clazz = BetterBlockPos.class;
+                supportedVersion = true;
+            } catch (Throwable e) {
+                supportedVersion = false;
+            }
         }
 
         private void buildMap() {

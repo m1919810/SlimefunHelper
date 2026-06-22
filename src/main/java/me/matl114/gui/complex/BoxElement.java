@@ -1,5 +1,8 @@
-package me.matl114.gui.basic;
+package me.matl114.gui.complex;
 
+import me.matl114.gui.basic.AbstractElement;
+import me.matl114.gui.basic.ButtonAction;
+import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.utils.ScreenUtils;
 
 public class BoxElement extends AbstractElement {

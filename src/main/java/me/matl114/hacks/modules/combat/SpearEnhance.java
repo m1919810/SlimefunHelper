@@ -274,7 +274,7 @@ public class SpearEnhance extends BaseModule {
     public void onUsePiercing(Event<PlayerActionC2SPacket> eventPiercing) {
         if (fixOldVersionPiercing.get()
                 && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 9)
-                && eventPiercing.context.getAction() == PlayerActionC2SPacket.Action.STAB) {
+                && eventPiercing.context.getAction().ordinal() == 7) {
             if (onPiercing(() -> eventPiercing.context.getSequence())) {
                 eventPiercing.cancel();
             }

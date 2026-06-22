@@ -2,6 +2,7 @@ package me.matl114.gui.presets.choices;
 
 import java.awt.*;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.complex.RawTextElement;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.config.ValueAccessor;
 import me.matl114.versioned.api.VDrawContext;

@@ -14,7 +14,6 @@ import me.matl114.hacks.utils.entity.CameraEntity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.HotKeyUtils;
-import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.commandGroup.CommandContext;
@@ -77,7 +76,7 @@ public class TargetSelector extends BaseModule {
             .build();
 
     public final KeyBindRef addFriend = hotkey(attack.add("add-friend-hotkey"))
-            .defaultValue(new MultiKeyBind(KeyCode.MOUSE_BUTTON_3))
+            .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onAddFriend))
             .build();
 

@@ -9,6 +9,7 @@ import me.matl114.api.Displayable;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.PlateElement;
 import me.matl114.gui.presets.choices.RegistrySelectScreen;
 import me.matl114.gui.presets.grids.GridSelectSubScreen;
 import me.matl114.utils.ChatUtils;

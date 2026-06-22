@@ -6,6 +6,7 @@ import lombok.Getter;
 import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.elements.LabelElement;
 import net.minecraft.text.Text;
 
 public class QuestionScreen extends GenericBackGroundScreen {
