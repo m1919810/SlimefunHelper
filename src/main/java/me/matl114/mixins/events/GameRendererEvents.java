@@ -13,10 +13,9 @@ import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(GameRenderer.class)
 @Environment(EnvType.CLIENT)
@@ -91,11 +90,11 @@ public abstract class GameRendererEvents {
     }
 
     @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
-    public void onGetFov(CallbackInfoReturnable<Float> cir) {
-        float fov = cir.getReturnValueF();
+    public void onGetFov(CallbackInfoReturnable<Double> cir) {
+        float fov = (float) cir.getReturnValueD();
         Event<Float> fovEvent = new Event<>(fov, false, true);
         RenderListener.getFovGetListener().handleValue(fovEvent);
-        float fov2 = fovEvent.context;
+        double fov2 = fovEvent.context;
         if (fov2 != fov) {
             cir.setReturnValue(fov2);
             return;

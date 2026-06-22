@@ -202,7 +202,7 @@ public class SpearEnhance extends BaseModule {
         // 钻石
         materialSwordToSpearMap.put(Items.DIAMOND_SWORD, new Identifier("slimefunhelper", "spear/diamond_spear"));
         // 下界合金
-        materialSwordToSpearMap.put(Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "netherite_spear"));
+        materialSwordToSpearMap.put(Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "spear/netherite_spear"));
     }
 
     public void onAtlas(Event<Set<Identifier>> event) {
