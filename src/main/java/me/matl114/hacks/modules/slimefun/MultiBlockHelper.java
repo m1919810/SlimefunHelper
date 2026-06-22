@@ -240,11 +240,6 @@ public class MultiBlockHelper extends BaseModule {
                     }
 
                     @Override
-                    public boolean mayModifyRotation() {
-                        return true;
-                    }
-
-                    @Override
                     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
                         ClientPlayerEntity args = movementManagerEvent.context().playerStatus.entity;
                         //                        float pitch = args.getPitch();

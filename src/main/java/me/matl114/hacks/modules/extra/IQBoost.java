@@ -10,7 +10,9 @@ import me.matl114.managers.input.MultiKeyBind;
 import net.minecraft.text.Text;
 
 public class IQBoost extends BaseModule {
-    public IQBoost() {}
+    public IQBoost() {
+        bindFlag(enable);
+    }
 
     ModulePath path = makePath(Configs.MISC_CONFIG, "iq-boost");
 

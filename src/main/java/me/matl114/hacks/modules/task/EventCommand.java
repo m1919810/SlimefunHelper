@@ -20,7 +20,9 @@ import net.minecraft.world.World;
 
 public class EventCommand extends BaseModule {
 
-    public EventCommand() {}
+    public EventCommand() {
+        bindFlag(enable);
+    }
 
     public final ModulePath cmd = makePath(Configs.MISC_CONFIG, "event-command");
 

@@ -202,4 +202,8 @@ public class RenderListener {
     @Getter
     @Setter
     private static Matrix4f worldProjectionMatrix = new Matrix4f().identity();
+
+    @Getter
+    @Modifiable
+    private static final EventChannel<Float> fovGetListener = new EventChannel<>();
 }

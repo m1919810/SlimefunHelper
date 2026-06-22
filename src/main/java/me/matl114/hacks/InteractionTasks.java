@@ -62,13 +62,6 @@ public class InteractionTasks {
                     }
 
                     @Override
-                    public boolean mayModifyRotation() {
-                        return true;
-                    }
-
-                    Vec2f py;
-
-                    @Override
                     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
                         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
 

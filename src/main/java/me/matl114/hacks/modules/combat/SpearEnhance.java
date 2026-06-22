@@ -1,8 +1,10 @@
 package me.matl114.hacks.modules.combat;
 
+import io.netty.buffer.ByteBuf;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.IntSupplier;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -11,13 +13,16 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hooks.ViaFabricPlusHooks;
+import me.matl114.hooks.ViaProtocols;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
+import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
@@ -28,9 +33,16 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.encoding.VarInts;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.PlayPackets;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class SpearEnhance extends BaseModule {
@@ -55,6 +67,11 @@ public class SpearEnhance extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef fixOldVersionPiercing = builder(
+                    spearModule.add("fix-old-version-spear-piercing"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final NBTRef<WrapColor> renderColor = builder(
                     spearModule.add("render-kinetic-players-color"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
@@ -76,6 +93,8 @@ public class SpearEnhance extends BaseModule {
         registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onUsePiercing);
+        registerListener(Listener.getAttackAction(), this::onUsingStab);
     }
 
     public static boolean isUsingSpear(PlayerEntity player) {
@@ -250,5 +269,67 @@ public class SpearEnhance extends BaseModule {
             // reset speed and rotation
             LegacySnapRotManager.INSTANCE.snapAt(look, true);
         }
+    }
+
+    public void onUsePiercing(Event<PlayerActionC2SPacket> eventPiercing) {
+        if (fixOldVersionPiercing.get()
+                && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 9)
+                && eventPiercing.context.getAction() == PlayerActionC2SPacket.Action.STAB) {
+            if (onPiercing(() -> eventPiercing.context.getSequence())) {
+                eventPiercing.cancel();
+            }
+        }
+    }
+
+    public void onUsingStab(Event<HitResult> eventStab) {
+        if (fixOldVersionPiercing.get()
+                && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 9)
+                && VItem.getInstance().isSpear(mc.player.getStackInHand(Hand.MAIN_HAND))
+                && !mc.interactionManager.isFlyingLocked()) {
+            if (onPiercing(() -> 0)) {
+                mc.player.swingHand(Hand.MAIN_HAND);
+                eventStab.cancel();
+            }
+        }
+    }
+
+    public boolean onPiercing(IntSupplier seq) {
+        if (VItem.getInstance().isSpear(mc.player.getStackInHand(Hand.MAIN_HAND))
+                && ViaFabricPlusHooks.getInstance().isViaEnabled()) {
+            if (SupportVersion.CURRENT.isHigherOrEqualTo(21, 6)) {
+                var wrapper = ViaFabricPlusHooks.getInstance().createViaPacket();
+                wrapper.writePacketType(ViaProtocols.V1_21_5_TO_1_21_6, PlayPackets.PLAYER_ACTION);
+                wrapper.write("VAR_INT", 7);
+                wrapper.write("LONG", 0L);
+                wrapper.write("BYTE", (byte) 0);
+                wrapper.write("VAR_INT", seq.getAsInt());
+                wrapper.scheduleSendToServer(ViaProtocols.V1_21_6_TO_1_21_7, true);
+            } else {
+                // todo: need test
+                PlayerActionC2SPacket actionPacket = new PlayerActionC2SPacket(
+                        PlayerActionC2SPacket.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.DOWN);
+                ByteBuf buf = NetworkUtils.createBytebuf();
+                Listener.getConnectionAccess().getOutboundState().codec().encode(buf, (Packet) actionPacket);
+                int id = VarInts.read(buf);
+                VarInts.read(buf);
+                long pos = buf.readLong();
+                short sh = buf.readUnsignedByte();
+                int sequence = VarInts.read(buf);
+                buf.release();
+                buf = NetworkUtils.createBytebuf();
+                try {
+                    VarInts.write(buf, id);
+                    VarInts.write(buf, 7);
+                    buf.writeLong(pos);
+                    buf.writeByte(sh);
+                    VarInts.write(buf, sequence);
+                    Listener.getConnectionAccess().sendByteBuf(buf.retain());
+                } finally {
+                    buf.release();
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }

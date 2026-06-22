@@ -93,7 +93,7 @@ public abstract class ClientPlayerInteractionManagerEvents {
     @Inject(method = "clickSlot", at = @At("HEAD"), cancellable = true)
     public void onClickSlot(
             int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
-        Event<SlotActionType> eventClickSlot = new Event<>(actionType, true, false, slotId, slotId, button);
+        Event<SlotActionType> eventClickSlot = new Event<>(actionType, true, false, syncId, slotId, button);
         Listener.getPreClickSlot().handleValue(eventClickSlot);
         if (eventClickSlot.isCancelled()) {
             ci.cancel();

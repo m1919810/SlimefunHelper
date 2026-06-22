@@ -28,6 +28,8 @@ import me.matl114.gui.elements.ColorBoxElement;
 import me.matl114.gui.elements.ColorLabelTextElement;
 import me.matl114.gui.elements.ColorSplitterElement;
 import me.matl114.gui.presets.single.CenterScreen;
+import me.matl114.gui.presets.single.SimpleScreen;
+import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModulePath;
@@ -46,6 +48,8 @@ import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.option.SimpleOption;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
@@ -57,9 +61,20 @@ import org.jetbrains.annotations.NotNull;
 public class ClickGui extends BaseModule {
     public ClickGui() {}
 
+    public final ModulePath hotkeys = makePath(Configs.MISC_CONFIG, "hotkeys");
+    public final ModulePath config = makePath(Configs.MISC_CONFIG, "hotkeys");
     public ModulePath clickGui = makePath(Configs.MISC_CONFIG, "click-gui");
+    public final KeyBindRef keyBindConfigScreen = hotkey(hotkeys.add("open-menu"))
+            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_G))
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::openConfigMenu))
+            .build();
 
-    public KeyBindRef keyBind = hotkey(clickGui.add("hotkey"))
+    public final KeyBindRef optionsKeyBind = hotkey(hotkeys.add("open-options-menu"))
+            .defaultValue(new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.asHandler(this::openGameOptionsMenu))
+            .build();
+
+    public KeyBindRef keyBindClickGui = hotkey(clickGui.add("hotkey"))
             .defaultValue(new MultiKeyBind(KeyCode.KEY_RIGHT_ALT))
             .registerHotkey(this::onHotkey)
             .build();
@@ -101,6 +116,50 @@ public class ClickGui extends BaseModule {
         super.registerAll();
         registerListener(
                 Listener.getPostInitializeScreen().getChannel(MultiplayerScreen.class), this::onScreenInitialize);
+    }
+
+    public void openConfigScreen(Config config) {
+        MainTasks.openConfigScreen(config);
+    }
+
+    public void openGameOptionsMenu() {
+        GameOptions options = mc.options;
+        List<SimpleOption<?>> options1 = new ArrayList<>();
+        for (var field : GameOptions.class.getDeclaredFields()) {
+            field.setAccessible(true);
+            if (field.getType().isAssignableFrom(SimpleOption.class)) {
+                try {
+                    SimpleOption<?> option = (SimpleOption<?>) field.get(options);
+                    if (option != null) {
+                        options1.add(option);
+                    }
+                } catch (Throwable e) {
+
+                }
+            }
+        }
+        ScrollableListWidget widget = new ScrollableListWidget(20, 20, 360, 280);
+        int yLevel = 0;
+        for (var sim : options1) {
+            var re = sim.createWidget(mc.options);
+            widget.addScrollingWidget(new ContentDelegateWidget<>(20, yLevel, 320, 40).setContentDelegate(re));
+            //                SubScreenWidget.instance(20, 0 , 320, 40)
+            //                    .addDrawableChild(
+            ////                        DisplayWidget.instance(0,0, 150, 40)
+            ////                            .setRenderHandler(
+            ////                                new ButtonElement(TextProvider.of(sim.))
+            ////                            )
+            //                    )
+            //            )
+            yLevel += re.getHeight();
+        }
+        SimpleScreen screen = new SimpleScreen(Text.literal("Options Screen"), 400, 320, widget);
+
+        ScreenAccess.of(screen).openFromCurrent();
+    }
+
+    public void openConfigMenu() {
+        MainTasks.openConfigNewStyleScreen();
     }
 
     private WeakReference<ContentDelegateWidget<ExecutableWidget>> delegateWidget = null;
@@ -288,7 +347,7 @@ public class ClickGui extends BaseModule {
     private static final int buttonHeight = 18;
     private static final int buttonBlank = 2;
 
-    private void openConfigurateScreen(BaseModule baseModule) {
+    public void openConfigurateScreen(BaseModule baseModule) {
         int width = indexWidth + blankWidth + buttonWidth;
         DynamicListWidget listWidget = new DynamicListWidget(0, 0, width);
 

@@ -21,7 +21,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 
 public class InvHud extends BaseModule {
-    public InvHud() {}
+    public InvHud() {
+        bindFlag(enable);
+    }
 
     public final ModulePath invHud = makePath(Configs.RENDER_CONFIG, "in-game-hud.inv-hud");
 

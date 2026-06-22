@@ -55,6 +55,10 @@ public class BadPacketsFix extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef enableFullRot = builder(badPackets.add("fix-full-dup-rot"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
     public final FlagRef enableViewDistance = builder(badPackets.add("fix-illegal-server-view-distance"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -194,7 +198,8 @@ public class BadPacketsFix extends BaseModule {
 
         if (serverPitch == this.serverPitch && serverYaw == this.serverYaw) {
             if (packet.changesLook() && enableRot.get()) {
-                if (packet instanceof PlayerMoveC2SPacket.Full full) {
+                // do not handle full packet
+                if (enableFullRot.get() && packet instanceof PlayerMoveC2SPacket.Full full) {
                     packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(
                             VPacket.newPositionAndOnGround(
                                     packet.getX(mc.player.getX()),

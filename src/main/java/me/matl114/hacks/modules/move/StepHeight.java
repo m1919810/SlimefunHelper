@@ -85,11 +85,6 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
     }
 
     @Override
-    public boolean mayModifyPos() {
-        return isActive() && runTicks >= ticksEnd - 1;
-    }
-
-    @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
 
         if (isActive()) {

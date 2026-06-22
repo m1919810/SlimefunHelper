@@ -16,12 +16,14 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
 import net.minecraft.entity.EntityPosition;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
@@ -37,6 +39,9 @@ public class AutoResync extends BaseModule {
 
     public final FlagRef autoResyncRot =
             flagBuilder(moveSafety.add("auto-resync-rotation")).build();
+
+    public final FlagRef modifyPacketRot =
+            flagBuilder(moveSafety.add("auto-resync-rot-modify-packet")).build();
 
     public final FlagRef noVelocitySetback =
             flagBuilder(moveSafety.add("auto-resync-velocity")).build();
@@ -72,6 +77,10 @@ public class AutoResync extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetBack);
+        registerListener(
+                Listener.getPacketPreHandlePoint().getChannel(PlayerPositionLookS2CPacket.class), this::onPreSetBack);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class), this::onPostSetBack);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
     }
@@ -81,6 +90,8 @@ public class AutoResync extends BaseModule {
     public void onWorldSwitch(Event<World> event) {
         worldSwitchTick = Tasks.getTick();
     }
+
+    public Vec2f restoreRot = null;
 
     public void onSetBack(Event<PlayerPositionLookS2CPacket> event) {
         if (event.isCancelled()) return;
@@ -148,14 +159,16 @@ public class AutoResync extends BaseModule {
         float yaw = pos.yaw();
         float pitch = pos.pitch();
         if (autoResyncRot.get()) {
-            recreate = true;
-            if (newFlags == null) {
-                newFlags = new HashSet<>(flags);
+            if (modifyPacketRot.get()) {
+                recreate = true;
+                if (newFlags == null) {
+                    newFlags = new HashSet<>(flags);
+                }
+                newFlags.add(PositionFlag.X_ROT);
+                newFlags.add(PositionFlag.Y_ROT);
+                yaw = 0;
+                pitch = 0;
             }
-            newFlags.add(PositionFlag.X_ROT);
-            newFlags.add(PositionFlag.Y_ROT);
-            yaw = 0;
-            pitch = 0;
         }
         if (noVelocitySetback.get()) {
             recreate = true;
@@ -171,6 +184,23 @@ public class AutoResync extends BaseModule {
         if (recreate && newFlags != null) {
             event.context(new PlayerPositionLookS2CPacket(
                     packet.teleportId(), new EntityPosition(position, deltaMovement, yaw, pitch), newFlags));
+        }
+    }
+
+    public void onPreSetBack(Event<PlayerPositionLookS2CPacket> event) {
+        if (autoResyncRot.get() && !modifyPacketRot.get()) {
+            Set<PositionFlag> flags = event.context.relatives();
+            if (flags.contains(PositionFlag.X_ROT) || flags.contains(PositionFlag.Y_ROT)) {
+                restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+            }
+        }
+    }
+
+    public void onPostSetBack(Event<PlayerPositionLookS2CPacket> event) {
+        if (restoreRot != null) {
+            EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);
+            EntityUtils.setEntityYawSafe(mc.player, restoreRot.y);
+            restoreRot = null;
         }
     }
 

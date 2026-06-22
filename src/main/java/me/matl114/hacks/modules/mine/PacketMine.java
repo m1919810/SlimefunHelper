@@ -10,6 +10,9 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.move.FloatingUtils;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -17,6 +20,7 @@ import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -65,6 +69,12 @@ public class PacketMine extends BaseModule {
 
     public final FlagRef autoToolDoubleBreak =
             flagBuilder(packetMine.add("auto-pickaxe-double-break")).build();
+
+    public final FlagRef groundDeceive =
+            flagBuilder(packetMine.add("ground-deceive")).build();
+
+    public final FlagRef groundOnlyWhenNoControl =
+            flagBuilder(packetMine.add("ground-only-when-no-control")).build();
 
     @Override
     public void registerAll() {
@@ -119,7 +129,6 @@ public class PacketMine extends BaseModule {
             if (pos != null) {
                 double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
                 if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
-
                     BlockState blockState = mc.world.getBlockState(pos);
                     IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
 
@@ -129,6 +138,23 @@ public class PacketMine extends BaseModule {
                                 new Event<>(new EventContainer<>(Pre.class, Pre.INSTANCE), true, false, pos);
                         Listener.getCustomListener().handleValue(eventPre);
                         if (!eventPre.isCancelled()) {
+                            if (groundDeceive.get() && !mc.player.isOnGround()) {
+                                boolean shouldExecute = true;
+                                if (groundOnlyWhenNoControl.get()
+                                        && !PlayerInputUtils.of(mc.options).hasMovementControl()) {
+                                    shouldExecute = false;
+                                }
+                                if (shouldExecute) {
+                                    mc.player.setOnGround(true);
+                                    LegacySnapRotManager.INSTANCE.snapAt(
+                                            PlayerStateManager.INSTANCE.lastPitch,
+                                            PlayerStateManager.INSTANCE.lastYaw,
+                                            true);
+                                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                                    FloatingUtils.INSTANCE.setForceOnGroundVia(true);
+                                    mc.player.setOnGround(false);
+                                }
+                            }
                             Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
 
                             Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
@@ -215,7 +241,11 @@ public class PacketMine extends BaseModule {
         if (isMineable(state)) {
             if (mineThreshold.get() > 0) {
                 var access = PlayerInteractionAccess.of(mc.interactionManager);
-                return access.predictCurrentMiningProgressWithTool(tool) > Math.min(0.98, mineThreshold.get());
+                float speed = access.predictCurrentMiningProgressWithTool(tool);
+                if (groundDeceive.get() && !mc.player.isOnGround()) {
+                    speed *= 5;
+                }
+                return speed > Math.min(0.98, mineThreshold.get());
             }
             return true;
         } else {
@@ -228,7 +258,11 @@ public class PacketMine extends BaseModule {
         // do not mine air, shit
         if (isMineable(state)) {
             var access = PlayerInteractionAccess.of(mc.interactionManager);
-            return access.predictFailMiningProgressWithTool(tool, 0) > 0.99;
+            var speed = access.predictFailMiningProgressWithTool(tool, 0);
+            if (groundDeceive.get() && !mc.player.isOnGround()) {
+                speed *= 5;
+            }
+            return speed > 0.99;
         } else {
             return false;
         }

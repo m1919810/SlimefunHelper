@@ -10,12 +10,13 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 
 @Pseudo
-@Mixin(value = PlacementManagerDaemonHandler.class, remap = false)
+@Mixin(PlacementManagerDaemonHandler.class)
 @Environment(EnvType.CLIENT)
 public abstract class PlacementManagerDaemonFixMixin {
     @WrapMethod(
             method = "Lfi/dy/masa/litematica/schematic/placement/PlacementManagerDaemonHandler;ensureThreadSafety()V",
-            require = 0)
+            require = 0,
+            remap = false)
     private void fix(Operation<Void> original) {
         try {
             original.call();

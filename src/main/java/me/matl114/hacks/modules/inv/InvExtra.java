@@ -13,8 +13,8 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.InventoryUtils;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
@@ -35,17 +35,33 @@ public class InvExtra extends BaseModule {
     public final FlagRef invGrimFix =
             flagBuilder(inventory.add("move-click-grim-fix")).build();
 
+    public final FlagRef invSprintGrimFix =
+            flagBuilder(inventory.add("sprint-click-grim-fix")).build();
+
     public final FlagRef expandInventory =
             flagBuilder(inventory.add("expand-backpack-inventory")).build();
 
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPacketPoint().getChannel(ClickSlotC2SPacket.class), this::onClickSlot);
+        registerListener(Listener.getPreClickSlot(), this::onClickSlot);
         registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseScreen);
     }
 
-    public void onClickSlot(Event<ClickSlotC2SPacket> event) {
+    public void onClickSlot(Event<SlotActionType> event) {
+        onInvClick(event.getArgs(0));
+    }
+
+    public void onInvClick(int syncId) {
+        // check if it is manually clicked
+        if (mc.currentScreen instanceof HandledScreen<?> handled && handled.getScreenHandler().syncId == syncId) {
+            // do not fix all of them
+            // some module may use MultiAction to gain advantage
+            if (invSprintGrimFix.get()) {
+                // fix GuiMove situation
+                MovTasks.getMovExtra().sendSprintPacketsForInventoryAction();
+            }
+        }
         if (invGrimFix.get()) {
             // do not support viafabric, I guess
             // just send input packets, do not change sprint status

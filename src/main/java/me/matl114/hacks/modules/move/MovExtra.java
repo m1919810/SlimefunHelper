@@ -69,16 +69,20 @@ public class MovExtra extends BaseModule {
 
     public void sendPacketsForInventoryAction() {
         if (fuckGrimAC.get()) {
-            ClientPlayerEntity player = mc.player;
-            // only sprint need to be toggled
-            if (PlayerStateManager.INSTANCE.lastSprint) {
-                mc.getNetworkHandler()
-                        .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-                ClientPlayerAccess.of(player).resyncSprint();
-            }
+            sendSprintPacketsForInventoryAction();
             if (ViaFabricPlusHooks.isSupportEndTick()) {
-                sendNoMultiActionInputPacket(player);
+                sendNoMultiActionInputPacket(mc.player);
             }
+        }
+    }
+
+    public void sendSprintPacketsForInventoryAction() {
+        ClientPlayerEntity player = mc.player;
+        // only sprint need to be toggled
+        if (PlayerStateManager.INSTANCE.lastSprint) {
+            mc.getNetworkHandler()
+                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+            ClientPlayerAccess.of(player).setLastSprintFlag(false);
         }
     }
 

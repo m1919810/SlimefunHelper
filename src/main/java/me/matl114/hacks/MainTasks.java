@@ -217,6 +217,11 @@ public class MainTasks {
         ScreenAccess.of(newStyleScreen).openFromCurrent();
     }
 
+    @ApiMethod
+    public static void openModuleScreen(BaseModule module) {
+        clickGui.openConfigurateScreen(module);
+    }
+
     public static final Text QUITTING_MULTIPLAYER_TEXT = Text.translatable("multiplayer.status.quitting");
 
     @ApiMethod
@@ -248,9 +253,6 @@ public class MainTasks {
     private static final ModuleGroup moduleManager = new ModuleGroup("Tasks");
 
     @Getter
-    public static ConfigSystem configSystem;
-
-    @Getter
     public static ClickGui clickGui;
 
     @Getter
@@ -263,7 +265,6 @@ public class MainTasks {
     public static EventCommand eventCommand;
 
     private static void initModule(ModuleManager m) {
-        configSystem = new ConfigSystem().register(m);
         clickGui = new ClickGui().register(m);
         configManager = new ConfigManager().register(m);
         bindCommand = new BindCommand().register(m);

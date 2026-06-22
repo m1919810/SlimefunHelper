@@ -9,6 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.*;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
@@ -479,6 +480,49 @@ public class EntityUtils {
     public static Vec3d withStrafe(Vec3d self, double speed) {
 
         return withStrafe(self, speed, 1.0D);
+    }
+
+    public static double getEffectiveGravity(ClientPlayerEntity player) {
+        boolean bl = player.getVelocity().y <= 0.0;
+        return bl && player.hasStatusEffect(StatusEffects.SLOW_FALLING)
+                ? Math.min(player.getFinalGravity(), 0.01)
+                : player.getFinalGravity();
+    }
+
+    public static Vec3d calculateGlidingVelocity(
+            ClientPlayerEntity player, Vec3d oldVelocity, Vec3d rotationVector, boolean hasGravity) {
+        Vec3d look = rotationVector;
+        float pitch = rotationToPitch(rotationVector);
+        float pitchRad = pitch * 0.017453292F;
+        double lookHorizLen = Math.sqrt(look.x * look.x + look.z * look.z);
+        double initialHorizSpeed = oldVelocity.horizontalLength();
+        double gravity = hasGravity ? getEffectiveGravity(player) : 0;
+        double cosPitchSq = MathHelper.square(Math.cos(pitchRad));
+
+        // 1. 重力影响
+        double newY = oldVelocity.y + gravity * (cosPitchSq * 0.75 - 1.0);
+        Vec3d vel = new Vec3d(oldVelocity.x, newY, oldVelocity.z);
+
+        // 2. 下降时的抬升效应
+        if (newY < 0.0 && lookHorizLen > 0.0) {
+            double lift = newY * -0.1 * cosPitchSq;
+            vel = vel.add(look.x * lift / lookHorizLen, lift, look.z * lift / lookHorizLen);
+        }
+
+        // 3. 俯冲加速（向下看时）
+        if (pitchRad < 0.0F && lookHorizLen > 0.0) {
+            double dive = initialHorizSpeed * (-MathHelper.sin(pitchRad)) * 0.04;
+            vel = vel.add(-look.x * dive / lookHorizLen, dive * 3.2, -look.z * dive / lookHorizLen);
+        }
+
+        // 4. 水平速度向视线方向修正
+        if (lookHorizLen > 0.0) {
+            double targetScale = initialHorizSpeed / lookHorizLen;
+            vel = vel.add((look.x * targetScale - vel.x) * 0.1, 0.0, (look.z * targetScale - vel.z) * 0.1);
+        }
+
+        // 5. 空气阻力（水平0.99，垂直0.98）
+        return vel.multiply(0.99, 0.98, 0.99);
     }
 
     /**

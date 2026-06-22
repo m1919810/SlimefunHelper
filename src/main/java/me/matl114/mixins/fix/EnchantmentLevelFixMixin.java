@@ -10,7 +10,11 @@ import org.spongepowered.asm.mixin.injection.*;
 public abstract class EnchantmentLevelFixMixin {
     @Redirect(
             method = "<init>",
-            at = @At(value = "INVOKE", target = "Lit/unimi/dsi/fastutil/objects/Object2IntMap$Entry;getIntValue()I"))
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lit/unimi/dsi/fastutil/objects/Object2IntMap$Entry;getIntValue()I",
+                            remap = false))
     public int init(Object2IntMap.Entry instance) {
         return MathHelper.clamp(instance.getIntValue(), 0, 255);
     }
@@ -20,7 +24,8 @@ public abstract class EnchantmentLevelFixMixin {
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lcom/mojang/serialization/Codec;intRange(II)Lcom/mojang/serialization/Codec;"),
+                            target = "Lcom/mojang/serialization/Codec;intRange(II)Lcom/mojang/serialization/Codec;",
+                            remap = false),
             index = 1)
     private static int rewriteLevel(int maxInclusive) {
         return Integer.MAX_VALUE;

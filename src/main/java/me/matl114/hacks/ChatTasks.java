@@ -185,7 +185,7 @@ public class ChatTasks {
         }
 
         List<String> pageType =
-                List.of("guide", "rtype", "vanilla", "saved", "itemedit", "invcache", "config", "scanner");
+                List.of("guide", "rtype", "vanilla", "saved", "itemedit", "invcache", "config", "scanner", "clickgui");
 
         {
             main.subBuilder(SubCommand.taskBuilder())

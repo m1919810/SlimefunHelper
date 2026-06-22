@@ -5,6 +5,7 @@ import lombok.experimental.Accessors;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.utils.EntityUtils;
+import me.matl114.versioned.SupportVersion;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
@@ -153,7 +154,8 @@ public class PlayerInputUtils {
 
         public void sendPlayerSneakUpdatePacket() {
             if (ViaFabricPlusHooks.getInstance().isViaEnabled()
-                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)) {
+                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)
+                    && SupportVersion.CURRENT.isHigherOrEqualTo(21, 6)) {
                 // send sneak packet
                 ViaFabricPlusHooks.ViaPacketWrapper wrapper =
                         ViaFabricPlusHooks.getInstance().createViaPacket();

@@ -23,10 +23,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(value = ElytraBehavior.PathManager.class, remap = false)
+@Mixin(ElytraBehavior.PathManager.class)
 public abstract class ElytraBehaviourPathManagerMixin {
 
-    @Shadow(aliases = {"a", "setPath"})
+    @Shadow(
+            aliases = {"a", "setPath"},
+            remap = false)
     protected abstract void a(UnpackedSegment unpackedSegment);
 
     @WrapOperation(
@@ -52,7 +54,8 @@ public abstract class ElytraBehaviourPathManagerMixin {
                     "Lbaritone/process/elytra/ElytraBehavior$PathManager;path0(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;Ljava/util/function/UnaryOperator;)Ljava/util/concurrent/CompletableFuture;",
             at = @At("HEAD"),
             cancellable = true,
-            require = 0)
+            require = 0,
+            remap = false)
     private void c(
             BlockPos var1,
             BlockPos var2,
@@ -79,7 +82,8 @@ public abstract class ElytraBehaviourPathManagerMixin {
                     "Lbaritone/process/elytra/ElytraBehavior$PathManager;a(Lbaritone/api/utils/BetterBlockPos;Lbaritone/api/utils/BetterBlockPos;Ljava/util/function/UnaryOperator;)Ljava/util/concurrent/CompletableFuture;",
             at = @At("HEAD"),
             cancellable = true,
-            require = 0)
+            require = 0,
+            remap = false)
     private void c2(
             BetterBlockPos par1,
             BetterBlockPos par2,

@@ -10,6 +10,8 @@ import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(GameRenderer.class)
 @Environment(EnvType.CLIENT)
@@ -32,5 +34,17 @@ public abstract class GameRendererEvents {
             return !event.isCancelled();
         }
         return null;
+    }
+
+    @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
+    public void onGetFov(CallbackInfoReturnable<Float> cir) {
+        float fov = cir.getReturnValueF();
+        Event<Float> fovEvent = new Event<>(fov, false, true);
+        RenderListener.getFovGetListener().handleValue(fovEvent);
+        float fov2 = fovEvent.context;
+        if (fov2 != fov) {
+            cir.setReturnValue(fov2);
+            return;
+        }
     }
 }

@@ -16,10 +16,12 @@ import org.spongepowered.asm.mixin.Pseudo;
 
 @Environment(EnvType.CLIENT)
 @Pseudo
-@Mixin(value = PacketWrapperImpl.class, remap = false)
+@Mixin(PacketWrapperImpl.class)
 public abstract class PacketWrapperSendEvents implements PacketWrapper {
     @WrapMethod(
-            method = "Lcom/viaversion/viaversion/protocol/packet/PacketWrapperImpl;sendToServer0(Ljava/lang/Class;ZZ)V")
+            method = "Lcom/viaversion/viaversion/protocol/packet/PacketWrapperImpl;sendToServer0(Ljava/lang/Class;ZZ)V",
+            remap = false,
+            require = 0)
     public void onSendToServer(
             Class<?> protocol, boolean skipCurrentPipeline, boolean currentThread, Operation<Void> operation) {
         if (user() != null && user().getChannel() != null) {
@@ -42,10 +44,4 @@ public abstract class PacketWrapperSendEvents implements PacketWrapper {
             operation.call(protocol, skipCurrentPipeline, currentThread);
         }
     }
-    //
-    //    @WrapMethod(method = "sendToServer0")
-    //    public void onSendToServer0(Class<?> protocol, boolean skipCurrentPipeline, boolean currentThread,
-    // Operation<Void> operation) {
-    //
-    //    }
 }
