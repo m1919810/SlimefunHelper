@@ -93,7 +93,7 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
 
     @Inject(
             method =
-                    "connect(Ljava/lang/String;ILnet/minecraft/network/state/NetworkState;Lnet/minecraft/network/state/NetworkState;Lnet/minecraft/network/listener/ClientPacketListener;Lnet/minecraft/network/packet/c2s/handshake/ConnectionIntent;)V",
+                    "connect(Ljava/lang/String;ILnet/minecraft/network/NetworkState;Lnet/minecraft/network/NetworkState;Lnet/minecraft/network/listener/ClientPacketListener;Lnet/minecraft/network/packet/c2s/handshake/ConnectionIntent;)V",
             at = @At("HEAD"))
     private void onConnection(
             String address,
@@ -216,7 +216,7 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
     }
 
     @Inject(method = "sendImmediately", at = @At("RETURN"))
-    private void sendImmediately(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
+    private void sendImmediately(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
         // do not handle serverbound packet
         if (this.side == NetworkSide.SERVERBOUND) {
             return;
@@ -225,7 +225,7 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
     }
 
     @Inject(method = "sendInternal", at = @At("RETURN"))
-    private void sendPacketPost(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
+    private void sendPacketPost(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
         // do not handle serverbound packet
         if (this.side == NetworkSide.SERVERBOUND) {
             return;
