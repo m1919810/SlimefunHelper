@@ -1,7 +1,8 @@
-package me.matl114.gui.basic;
+package me.matl114.gui.elements;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.function.Supplier;
+import me.matl114.gui.basic.*;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.inventory.Inventory;

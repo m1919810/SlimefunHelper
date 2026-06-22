@@ -2,6 +2,8 @@ package me.matl114.gui;
 
 import java.util.List;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.LabelElement;
+import me.matl114.gui.elements.PlateElement;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 

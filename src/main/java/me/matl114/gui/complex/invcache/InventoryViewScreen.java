@@ -7,6 +7,8 @@ import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.GridSubScreen;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.LabelElement;
+import me.matl114.gui.elements.SlotElement;
 import me.matl114.hacks.InvTasks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;

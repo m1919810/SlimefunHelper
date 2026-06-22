@@ -167,8 +167,9 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
             .build();
 
-    public final FlagRef usePredictor =
-            flagBuilder(elytraBot.add("spear-use-predictor")).build();
+    public final FlagRef usePredictor = flagBuilder(elytraBot.add("spear-use-predictor"))
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .build();
 
     public final FlagRef render = flagBuilder(elytraBot.add("render")).build();
 
@@ -1036,8 +1037,8 @@ public class ElytraBot extends BaseModule {
             //                return false;
             //            }
             if (otherShit.squaredDistanceTo(mc.player.getPos())
-                    < MathUtils.s2(getActiveRange() * 2 + base.spearAntiSpearExtraDistance.get() * 2)) {
-                if (Tasks.getTick() % 6 < 3) {
+                    < MathUtils.s2(getActiveRange() * 2 + base.spearAntiSpearExtraDistance.get())) {
+                if (Tasks.getTick() % 5 < 2) {
                     return moveAdjust(originalLook);
                 } else {
                     return movementPredictAdjust(originalLook);

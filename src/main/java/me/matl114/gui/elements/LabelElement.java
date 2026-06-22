@@ -1,5 +1,9 @@
-package me.matl114.gui.basic;
+package me.matl114.gui.elements;
 
+import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.basic.RenderHandler;
+import me.matl114.gui.basic.TextProvider;
+import me.matl114.gui.complex.RawTextElement;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;

@@ -20,6 +20,8 @@ import me.matl114.gui.complex.config.KeyValueInputWidget;
 import me.matl114.gui.complex.config.ListModifyWidget;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.elements.LabelElement;
+import me.matl114.gui.elements.SlotElement;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.hacks.ChatTasks;

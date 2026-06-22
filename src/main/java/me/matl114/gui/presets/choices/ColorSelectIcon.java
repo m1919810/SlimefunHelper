@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.complex.BoxElement;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.ValueAccessor;

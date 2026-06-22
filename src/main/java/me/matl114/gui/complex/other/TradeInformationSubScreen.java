@@ -8,6 +8,8 @@ import me.matl114.accessors.access.MerchantScreenAccess;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.elements.LabelElement;
+import me.matl114.gui.elements.SlotElement;
 import me.matl114.hacks.InvTasks;
 import me.matl114.managers.task.ToggleManager;
 import me.matl114.utils.InventoryUtils;

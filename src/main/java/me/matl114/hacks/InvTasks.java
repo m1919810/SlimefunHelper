@@ -13,7 +13,7 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.gui.basic.SlotElement;
+import me.matl114.gui.elements.SlotElement;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;

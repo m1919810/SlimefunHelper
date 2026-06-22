@@ -1,6 +1,5 @@
 package me.matl114.gui.elements;
 
-import me.matl114.gui.basic.SlotElement;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;

@@ -1133,6 +1133,8 @@
 	"interaction-tweaks.interact-manager.keep-task-when-exit": "交互管理器: 退出时保留任务",
 	"interaction-tweaks.interact-manager.log-command": "交互管理器: 指令日志",
 	"interaction-tweaks.interact-manager.log-action": "交互管理器: 执行日志",
+	"interaction-tweaks.interact-manager.ignore-potion-level": "交互管理器: 物品药水效果弱匹配",
+	"interaction-tweaks.interact-manager.ignore-potion-level.tooltips": " 匹配弱药效,时长/等级不一样也可以使用\n优先使用相同的",
 	"interaction-tweaks.interact-manager.disable-low-version-speed-reset": "交互管理器: 禁用低版本速度重置",
 	"interaction-tweaks.interact-manager.disable-low-version-speed-reset-hotkey": "交互管理器: 禁用低版本速度重置快捷键",
 	"interaction-tweaks.interact-manager.disable-low-version-speed-reset-when-command": "交互管理器: 指令执行时禁用低版本速度重置",

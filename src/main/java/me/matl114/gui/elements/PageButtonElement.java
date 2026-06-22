@@ -1,10 +1,12 @@
-package me.matl114.gui.basic;
+package me.matl114.gui.elements;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
-import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.basic.TextProvider;
+import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;

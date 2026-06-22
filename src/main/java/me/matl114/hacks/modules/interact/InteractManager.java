@@ -2,7 +2,7 @@ package me.matl114.hacks.modules.interact;
 
 import com.mojang.datafixers.util.Pair;
 import java.util.*;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
@@ -37,6 +37,8 @@ import me.matl114.utils.commands.params.types.ExecuteRotation;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -54,6 +56,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.apache.commons.lang3.stream.Streams;
 import org.joml.Vector2f;
 import org.joml.Vector3d;
 
@@ -92,6 +95,9 @@ public class InteractManager extends BaseModule {
 
     public final FlagRef keepTaskWhenExit =
             flagBuilder(module.add("keep-task-when-exit")).build();
+
+    public final FlagRef ignorePotionLevel =
+            flagBuilder(module.add("ignore-potion-level")).build();
 
     public final FlagRef disableLowVersionSpeedReset =
             flagBuilder(module.add("disable-low-version-speed-reset")).build();
@@ -1028,17 +1034,35 @@ public class InteractManager extends BaseModule {
     public record ItemUseContextSelector(ItemStackSelector itemStack) implements UseContextSelector {
         @Override
         public IndexEntry<ItemStack> getUseContext() {
-            return itemStack == null ? null : findMatchingItem(itemStack::matches, preferredHand());
+            return itemStack == null ? null : InventoryUtils.findBestPlayerItem(itemStack::matches, true, false);
         }
     }
 
     public record ItemStackSelector(Item item, RegistryEntry<Potion> potionType) {
-        public boolean matches(ItemStack stack) {
-            if (stack == null || stack.isEmpty() || item == null) return false;
-            if (!item.equals(stack.getItem())) return false;
-            if (potionType == null) return true;
+        public Double matches(ItemStack stack) {
+            if (stack == null || stack.isEmpty() || item == null) return null;
+            if (!item.equals(stack.getItem())) return null;
+            if (potionType == null) return 10.0D;
             PotionContentsComponent contents = stack.get(DataComponentTypes.POTION_CONTENTS);
-            return contents != null && contents.matches(potionType);
+            if (InteractManager.INSTANCE.ignorePotionLevel.get()) {
+                if (contents == null) return null;
+                if (contents.matches(potionType)) {
+                    return 10.0D;
+                }
+                Set<RegistryEntry<StatusEffect>> effectSet = Streams.of(contents.getEffects())
+                        .map(StatusEffectInstance::getEffectType)
+                        .collect(Collectors.toSet());
+                Set<RegistryEntry<StatusEffect>> required = Streams.of(
+                                potionType.value().getEffects())
+                        .map(StatusEffectInstance::getEffectType)
+                        .collect(Collectors.toSet());
+                if (effectSet.containsAll(required)) {
+                    return 5.0D;
+                }
+                return null;
+            } else {
+                return (contents != null && contents.matches(potionType)) ? 10.0D : null;
+            }
         }
 
         public String asString() {
@@ -1103,19 +1127,5 @@ public class InteractManager extends BaseModule {
 
     private static boolean shouldSwingHandAfterUse() {
         return INSTANCE != null && INSTANCE.swing.get();
-    }
-
-    private static IndexEntry<ItemStack> findMatchingItem(Predicate<ItemStack> predicate, Hand preferredHand) {
-        if (mc.player == null) return null;
-        Hand normalized = normalizedHand(preferredHand);
-        if (normalized == Hand.MAIN_HAND && predicate.test(mc.player.getStackInHand(Hand.MAIN_HAND))) {
-            return currentHandContext(Hand.MAIN_HAND);
-        }
-        if (normalized == Hand.OFF_HAND && predicate.test(mc.player.getStackInHand(Hand.OFF_HAND))) {
-            return currentHandContext(Hand.OFF_HAND);
-        }
-        IndexEntry<ItemStack> found =
-                InventoryUtils.findPlayerItem(predicate, true, false, true, normalized == Hand.OFF_HAND);
-        return found == null ? null : new IndexEntry<>(found.index(), found.val());
     }
 }

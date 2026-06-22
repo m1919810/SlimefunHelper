@@ -112,7 +112,7 @@ public class AutoTotem extends BaseModule {
     private void handleTotemSwapSuccess() {
         noTotemMention = false;
         lastSwapTick = Tasks.getTick() + cooldown.get();
-        if (lastStartSwap114514 < Tasks.getTick() - 20) {
+        if (lastStartSwap114514 < Tasks.getTick() - 20 || mode.get().isIn(Configs.AutoInvMode.TICK)) {
             lastStartSwap114514 = Tasks.getTick();
             swapCnt1919810 = 1;
         } else {
