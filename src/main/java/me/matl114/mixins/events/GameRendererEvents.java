@@ -13,6 +13,8 @@ import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -86,5 +88,17 @@ public abstract class GameRendererEvents {
         // fixme: Event
 
         RenderListener.renderWorldTasks(matrixStack, tickDelta);
+    }
+
+    @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
+    public void onGetFov(CallbackInfoReturnable<Float> cir) {
+        float fov = cir.getReturnValueF();
+        Event<Float> fovEvent = new Event<>(fov, false, true);
+        RenderListener.getFovGetListener().handleValue(fovEvent);
+        float fov2 = fovEvent.context;
+        if (fov2 != fov) {
+            cir.setReturnValue(fov2);
+            return;
+        }
     }
 }

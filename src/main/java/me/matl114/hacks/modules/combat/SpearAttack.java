@@ -358,16 +358,6 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     }
 
     @Override
-    public boolean mayModifyRotation() {
-        return false;
-    }
-
-    @Override
-    public boolean mayModifyPos() {
-        return false;
-    }
-
-    @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
 
     @Override

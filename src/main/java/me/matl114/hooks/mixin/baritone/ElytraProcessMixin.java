@@ -7,8 +7,6 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import java.lang.reflect.Field;
-import java.util.Arrays;
 import me.matl114.events.Event;
 import me.matl114.hacks.modules.move.BaritoneFix;
 import me.matl114.hacks.modules.move.FloatingUtils;
@@ -33,14 +31,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(value = ElytraProcess.class, remap = false)
+@Mixin(ElytraProcess.class)
 public abstract class ElytraProcessMixin {
 
     @Inject(
             method = {"a()Z", "shouldLandForSafety()Z"},
             at = @At("HEAD"),
             require = 0,
-            cancellable = true)
+            cancellable = true,
+            remap = false)
     private void hookShouldLandForSafety(CallbackInfoReturnable<Boolean> ci) {
         if (BaritoneFix.INSTANCE.disableInventoryCheck.get()) {
             ci.setReturnValue(!BaritoneFix.INSTANCE.checkCanContinueFlyingCustom());
@@ -54,7 +53,8 @@ public abstract class ElytraProcessMixin {
                             value = "INVOKE",
                             target = "Lbaritone/process/ElytraProcess;logDirect(Ljava/lang/String;)V",
                             ordinal = 4),
-            require = 0)
+            require = 0,
+            remap = false)
     private boolean hookLogDirect(ElytraProcess instance, String string) {
         if (BaritoneFix.INSTANCE.enableEmergencyLandingFix.get()) {
             return false;
@@ -87,7 +87,8 @@ public abstract class ElytraProcessMixin {
                             target = "Lbaritone/api/Settings;elytraAllowEmergencyLand:Lbaritone/api/Settings$Setting;",
                             shift = At.Shift.BEFORE),
             cancellable = true,
-            require = 0)
+            require = 0,
+            remap = false)
     private void hookAllowEmergencyLand(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         BaritoneFuture future = new BaritoneFuture();
         Event<BaritoneFuture> event = new Event<>(future, true, false, BaritoneLanding.EMERGENCY);
@@ -108,7 +109,8 @@ public abstract class ElytraProcessMixin {
                             target = "Lbaritone/process/ElytraProcess;logDirect(Ljava/lang/String;)V",
                             ordinal = 5),
             cancellable = true,
-            require = 0)
+            require = 0,
+            remap = false)
     private void hookLogDirect(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         BaritoneFuture future = new BaritoneFuture();
         Event<BaritoneFuture> event = new Event<>(future, true, false, BaritoneLanding.PATH_COMPLETE);
@@ -128,7 +130,8 @@ public abstract class ElytraProcessMixin {
                             value = "INVOKE",
                             target = "Lbaritone/process/ElytraProcess;logDirect(Ljava/lang/String;)V",
                             ordinal = 9),
-            require = 0)
+            require = 0,
+            remap = false)
     private boolean hookLanding(ElytraProcess instance, String s) {
         if (landingFuture != null) {
             landingFuture.onComplete();
@@ -137,7 +140,7 @@ public abstract class ElytraProcessMixin {
         return true;
     }
 
-    @Inject(method = "onTick", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = "onTick", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
     private void hookPauseElytraProcess(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.shouldPauseBaritoneElytra()) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.REQUEST_PAUSE));
@@ -178,7 +181,8 @@ public abstract class ElytraProcessMixin {
                             value = "INVOKE",
                             target = "Lbaritone/process/elytra/ElytraBehavior;a(Ljava/lang/String;)V",
                             ordinal = 2),
-            require = 0)
+            require = 0,
+            remap = false)
     private void onNoSolution1(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
             Debug.chat(ChatUtils.stringToText(
@@ -194,7 +198,8 @@ public abstract class ElytraProcessMixin {
                             value = "INVOKE",
                             target = "Lbaritone/process/elytra/ElytraBehavior;a(Ljava/lang/String;)V",
                             ordinal = 3),
-            require = 0)
+            require = 0,
+            remap = false)
     private void onNoSolution2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
             Debug.chat(ChatUtils.stringToText(
@@ -202,12 +207,6 @@ public abstract class ElytraProcessMixin {
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
     }
-
-    @Unique
-    private static final Field field = Arrays.stream(ElytraProcess.class.getFields())
-            .filter(s -> s.getType() == ElytraProcess.State.class)
-            .findAny()
-            .orElseThrow();
 
     @WrapOperation(
             method = "onTick",
@@ -220,7 +219,7 @@ public abstract class ElytraProcessMixin {
         return original.call(instance);
     }
 
-    @Inject(method = "pathTo(Lnet/minecraft/util/math/BlockPos;)V", at = @At("RETURN"))
+    @Inject(method = "pathTo(Lnet/minecraft/util/math/BlockPos;)V", at = @At("RETURN"), require = 0)
     private void pathTo(BlockPos par1, CallbackInfo ci) {
         BaritoneHooks.getElytraPathingEvent().broadcast(par1);
     }

@@ -38,6 +38,7 @@ import net.minecraft.text.TextColor;
 public class PlayerStatistic extends BaseModule {
     public PlayerStatistic() {
         super("Statistic");
+        bindFlag(enable);
     }
 
     public final ModulePath hudRoot = makePath(Configs.RENDER_CONFIG, "in-game-hud");

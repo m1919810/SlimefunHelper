@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(value = ElytraBehavior.class, remap = false)
+@Mixin(ElytraBehavior.class)
 public abstract class ElytraBehaviourMixin {
     @WrapOperation(
             method = {
@@ -60,7 +60,8 @@ public abstract class ElytraBehaviourMixin {
                     @At(
                             value = "INVOKE",
                             target = "Lbaritone/behavior/InventoryBehavior;a(ZLjava/util/function/Predicate;)Z"),
-            require = 0)
+            require = 0,
+            remap = false)
     private boolean onCancelInventorySwap(
             InventoryBehavior instance,
             boolean b,
@@ -79,7 +80,8 @@ public abstract class ElytraBehaviourMixin {
                             value = "INVOKE",
                             target =
                                     "Lbaritone/behavior/InventoryBehavior;throwaway(ZLjava/util/function/Predicate;)Z"),
-            require = 0)
+            require = 0,
+            remap = false)
     private boolean onCancelInventorySwap2(
             InventoryBehavior instance,
             boolean b,
@@ -185,7 +187,8 @@ public abstract class ElytraBehaviourMixin {
                             value = "INVOKE",
                             target = "Lbaritone/process/elytra/ElytraBehavior;logVerbose(Ljava/lang/String;)V",
                             ordinal = 2),
-            require = 0)
+            require = 0,
+            remap = false)
     private void onNoSolution3(CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
             Debug.chat(ChatUtils.stringToText(
@@ -201,7 +204,8 @@ public abstract class ElytraBehaviourMixin {
                             value = "INVOKE",
                             target = "Lbaritone/process/elytra/ElytraBehavior;logVerbose(Ljava/lang/String;)V",
                             ordinal = 3),
-            require = 0)
+            require = 0,
+            remap = false)
     private void onNoSolution4(CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
             Debug.chat(ChatUtils.stringToText(
@@ -213,7 +217,8 @@ public abstract class ElytraBehaviourMixin {
     @ModifyExpressionValue(
             method = {"a()V", "Lbaritone/process/elytra/ElytraBehavior;pathTo()V"},
             at = @At(value = "FIELD", target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;"),
-            require = 0)
+            require = 0,
+            remap = false)
     private Object onAutoJumpFix(Object original) {
         if (original instanceof Boolean bl) {
             if (BaritoneFix.INSTANCE.autoJumpFix.get()) {

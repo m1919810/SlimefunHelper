@@ -83,11 +83,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     }
 
     @Override
-    public boolean mayModifyPos() {
-        return false;
-    }
-
-    @Override
     public void onCreate() {
         super.onCreate();
         initArguments();

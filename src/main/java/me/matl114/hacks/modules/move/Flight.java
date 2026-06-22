@@ -197,16 +197,6 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     }
 
     @Override
-    public boolean mayModifyPos() {
-        return false;
-    }
-
-    @Override
-    public boolean mayModifyRotation() {
-        return false;
-    }
-
-    @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (isActive()) {

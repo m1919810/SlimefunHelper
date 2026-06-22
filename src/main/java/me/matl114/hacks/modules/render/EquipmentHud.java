@@ -8,6 +8,7 @@ import me.matl114.events.RenderListener;
 import me.matl114.gui.Constants;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.Direction2d;
 import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -21,6 +22,10 @@ import net.minecraft.util.Colors;
 public class EquipmentHud extends BaseModule {
     public final ModulePath invHud = makePath(Configs.RENDER_CONFIG, "in-game-hud.equipment-hud");
 
+    public EquipmentHud() {
+        bindFlag(enable);
+    }
+
     public final FlagRef enable = flagBuilder(invHud.addEnable()).build();
 
     public KeyBindRef keyBind = toggleHotkey(invHud.add("hotkey"), new MultiKeyBind(), invHud.add("enable"))
@@ -28,6 +33,11 @@ public class EquipmentHud extends BaseModule {
     public EnumRef<DamageDisplay> damageDisplay = builder(invHud.add("damage-display"), DamageDisplay.class)
             .defaultValue(DamageDisplay.NONE)
             .build();
+
+    public EnumRef<Direction2d> displayDirection = builder(invHud.add("damage-display-position"), Direction2d.class)
+            .defaultValue(Direction2d.DOWN)
+            .build();
+
     public NBTRef<Vec2> pos = builder(invHud.add("pos"), Vec2.class)
             .defaultValue(new Vec2(0.5D, 0.8D))
             .validator((v) -> v.x() >= 0.0D && v.y() >= 0.0D && v.x() <= 1.0D && v.y() <= 1.0D)
@@ -142,8 +152,27 @@ public class EquipmentHud extends BaseModule {
                     };
             if (text != null) {
                 float len = mc.textRenderer.getTextHandler().getWidth(text);
-                int startXX = (int) (startX + 8 - ((len - 1) / 2.0F));
-                int startYY = startY + 15;
+                int startXX, startYY;
+                switch (displayDirection.get()) {
+                    case UP -> {
+                        startXX = (int) (startX + 8 - ((len - 1) / 2.0F));
+                        startYY = startY - 8;
+                    }
+                    case LEFT -> {
+                        startXX = (int) (startX - len);
+                        startYY = startY + 4;
+                    }
+                    case RIGHT -> {
+                        startXX = (int) (startX + 16);
+                        startYY = startY + 4;
+                    }
+                    default -> {
+                        // down
+                        startXX = (int) (startX + 8 - ((len - 1) / 2.0F));
+                        startYY = startY + 15;
+                    }
+                }
+
                 vdraw.drawText(
                         mc.textRenderer,
                         text.asOrderedText(),

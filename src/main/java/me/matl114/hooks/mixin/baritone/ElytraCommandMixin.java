@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(value = ElytraCommand.class, remap = false)
+@Mixin(ElytraCommand.class)
 public abstract class ElytraCommandMixin extends Command {
     public ElytraCommandMixin(IBaritone iBaritone, String... strings) {
         super(iBaritone, strings);
@@ -46,7 +46,7 @@ public abstract class ElytraCommandMixin extends Command {
         return original;
     }
 
-    @Inject(method = "execute", at = @At("HEAD"), require = 0)
+    @Inject(method = "execute", at = @At("HEAD"), require = 0, remap = false)
     private void onAutoImportSeedValue(String par1, IArgConsumer par2, CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.enableSeedAutoImport.get()) {
             SeedOre seedOre = SeedOre.INSTANCE;

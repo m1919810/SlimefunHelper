@@ -446,6 +446,10 @@ public class Listener {
 
     @Getter
     @ExtraArgs({ClientConnection.class})
+    public static final PacketEventChannel packetPostScheduleSendPoint = new PacketEventChannel();
+
+    @Getter
+    @ExtraArgs({ClientConnection.class})
     private static final PacketEventChannel packetPostSendPoint = new PacketEventChannel();
 
     @Getter // packet accept or send

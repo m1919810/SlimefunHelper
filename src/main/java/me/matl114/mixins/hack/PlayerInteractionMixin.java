@@ -784,7 +784,11 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
     @Inject(
             method = "interactItem",
-            at = @At(value = "INVOKE", target = "Lorg/apache/commons/lang3/mutable/MutableObject;<init>()V"),
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lorg/apache/commons/lang3/mutable/MutableObject;<init>()V",
+                            remap = false),
             order = 114514)
     private void onInteractPostSend(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         LegacySnapRotManager.INSTANCE.betweenViaPacket = false;

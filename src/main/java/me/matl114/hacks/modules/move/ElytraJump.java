@@ -23,6 +23,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
         }
         instance.setDelegate(this::cast);
+        bindFlag(enable);
     }
 
     ModulePath root = makePath(Configs.MOV_CONFIG, "elytra.elytra-flight-legit.elytra-jump");

@@ -16,9 +16,9 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Pseudo
 @Environment(EnvType.CLIENT)
-@Mixin(value = BaritoneSettings.class, remap = false)
+@Mixin(BaritoneSettings.class)
 public abstract class BaritoneSettingsMixin {
-    @Shadow
+    @Shadow(remap = false)
     private static String getDescription(String settingName) {
         return null;
     }
@@ -30,7 +30,9 @@ public abstract class BaritoneSettingsMixin {
                             value = "INVOKE",
                             target =
                                     "Lmeteordevelopment/meteorclient/settings/SettingGroup;add(Lmeteordevelopment/meteorclient/settings/Setting;)Lmeteordevelopment/meteorclient/settings/Setting;",
-                            ordinal = 4))
+                            ordinal = 4),
+            require = 0,
+            remap = false)
     private Setting<?> hookCreateWrappers(Setting<?> setting, @Local Settings.Setting baritoneSide) {
         if (setting instanceof IntSetting intSetting && baritoneSide.value instanceof Long) {
             return new StringSetting.Builder()

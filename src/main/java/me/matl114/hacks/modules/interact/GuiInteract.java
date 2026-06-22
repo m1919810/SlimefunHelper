@@ -19,6 +19,10 @@ import net.minecraft.client.option.KeyBinding;
 public class GuiInteract extends BaseModule {
     public final ModulePath other = makePath(Configs.INTERACT_CONFIG, "interact-fix.gui-interact");
 
+    public GuiInteract() {
+        bindFlag(enable);
+    }
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -30,7 +34,7 @@ public class GuiInteract extends BaseModule {
     public final Set<KeyBinding> sets = new HashSet<>();
     public final Supplier<KeyBinding[]> sticks = Suppliers.memoize(() -> {
         return new KeyBinding[] {
-            mc.options.useKey, mc.options.attackKey, mc.options.sneakKey, mc.options.sprintKey,
+            mc.options.useKey, mc.options.attackKey, mc.options.sprintKey,
         };
     });
 

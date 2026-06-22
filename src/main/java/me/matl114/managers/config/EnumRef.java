@@ -103,4 +103,11 @@ public class EnumRef<T extends ConfigEnum> extends LazilyRegisterTypeRef<T, Stri
             // return AttrKeyValue.enumMap(key, null, Map.of());
         }
     }
+
+    public void next() {
+        T val = get();
+        Enum enumValue = val.cast();
+        Enum[] values = enumValue.getClass().getEnumConstants();
+        set((T) values[(enumValue.ordinal() + 1) % values.length]);
+    }
 }
