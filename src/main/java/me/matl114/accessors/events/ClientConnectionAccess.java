@@ -2,8 +2,8 @@ package me.matl114.accessors.events;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.ClientConnection;
+import net.minecraft.network.NetworkState;
 import net.minecraft.network.packet.Packet;
-import net.minecraft.network.state.NetworkState;
 
 public interface ClientConnectionAccess {
     public void handlePacket(Packet<?> packet);
