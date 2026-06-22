@@ -99,13 +99,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         return PRIORITY_HIGHEST;
     }
 
-    @Override
-    public boolean mayModifyRotation() {
-        return directionalSprint.get()
-                && !mc.player.input.hasForwardMovement()
-                && directionalSprintMode.getValue() != Configs.BypassMode.NO_BYPASS;
-    }
-
     boolean lastTickLandingRotateJump = false;
 
     public boolean mayWorkSprint() {

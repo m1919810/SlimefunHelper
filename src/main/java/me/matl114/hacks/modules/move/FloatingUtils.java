@@ -5,7 +5,6 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -38,8 +37,8 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                     grimFloating.addHotkey(), new MultiKeyBind(), grimFloating.addEnable())
             .build();
 
-    //    public final FlagRef onGroundFloat =
-    //            flagBuilder(grimFloating.add("on-ground-float")).build();
+    public final FlagRef onGroundFloat =
+            flagBuilder(grimFloating.add("on-ground-float")).build();
 
     boolean forceFloatingThisTick = false;
     boolean forceOnGroundVia1205 = false;
@@ -83,24 +82,36 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
 
+    boolean lastUsingOnGroundDeceive;
+
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (workGrimFloatingThisTick()) {
             movementManagerEvent.cancel();
             movementManagerEvent.context.playerStatus.restorePos();
             // also reset onground status to avoid false flag
-            boolean useOnGroundFloat = (false && !mc.player.isFallFlying()) || (forceOnGroundVia1205);
-            if (useOnGroundFloat && ViaFabricPlusHooks.isSupportDupRot()) {
+            boolean useOnGroundFloat = ((onGroundFloat.get()) || (forceOnGroundVia1205))
+                    && !movementManagerEvent.context.playerStatus.onGround;
+            if (useOnGroundFloat) {
                 mc.player.setOnGround(true);
                 storedPacket = LegacySnapRotManager.INSTANCE.createSnapAt(mc.player.getPitch(), mc.player.getYaw());
+                lastUsingOnGroundDeceive = true;
             } else {
-                mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
-                storedPacket = VPacket.newLookAndOnGround(
-                        mc.player.getYaw(),
-                        mc.player.getPitch(),
-                        mc.player.isOnGround(),
-                        mc.player.horizontalCollision);
+                if (lastUsingOnGroundDeceive) {
+                    lastUsingOnGroundDeceive = false;
+                    mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
+                    storedPacket = LegacySnapRotManager.INSTANCE.createSnapAt(mc.player.getPitch(), mc.player.getYaw());
+                } else {
+                    mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
+                    storedPacket = VPacket.newLookAndOnGround(
+                            mc.player.getYaw(),
+                            mc.player.getPitch(),
+                            mc.player.isOnGround(),
+                            mc.player.horizontalCollision);
+                }
             }
+        } else {
+            lastUsingOnGroundDeceive = false;
         }
     }
 
@@ -114,6 +125,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                 mc.getNetworkHandler().sendPacket(storedPacket);
             }
             // Listener.sendPacketNoEvents(storedPacket);
+            mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
             storedPacket = null;
         }
         hasNoPosition = false;

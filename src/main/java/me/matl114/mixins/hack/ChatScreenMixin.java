@@ -122,7 +122,8 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lorg/apache/commons/lang3/StringUtils;normalizeSpace(Ljava/lang/String;)Ljava/lang/String;"))
+                                    "Lorg/apache/commons/lang3/StringUtils;normalizeSpace(Ljava/lang/String;)Ljava/lang/String;",
+                            remap = false))
     private String cancelNormalize(String actualChar) {
         if (!ChatTasks.getChatExtra().escapeNormalize.get()) {
             return StringUtils.normalizeSpace(actualChar);
@@ -149,8 +150,9 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/client/gui/widget/TextFieldWidget;setMaxLength(I)V",
-                            shift = At.Shift.BEFORE))
+                            target =
+                                    "Lnet/minecraft/client/gui/screen/ChatScreen$1;<init>(Lnet/minecraft/client/gui/screen/ChatScreen;Lnet/minecraft/client/font/TextRenderer;IIIILnet/minecraft/text/Text;)V",
+                            shift = At.Shift.AFTER))
     private void modifyTextFieldWidget(CallbackInfo ci) {
         this.chatField = new ChatScreenTextFieldWidget((ChatScreen) (Screen) this);
     }

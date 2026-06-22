@@ -507,6 +507,9 @@ public class RenderTasks {
     public static ProjectileESP projectileESP;
 
     @Getter
+    public static Zoom zoom;
+
+    @Getter
     public static SleepMode sleepMode;
 
     @Getter
@@ -546,6 +549,7 @@ public class RenderTasks {
         worldScanner = new WorldScanner().register(m);
         playerLog = new PlayerLog().register(m);
         projectileESP = new ProjectileESP().register(m);
+        zoom = new Zoom().register(m);
         sleepMode = new SleepMode().register(m);
         customOverlay = new CustomOverlay().register(m);
         freecam = new Freecam().register(m);

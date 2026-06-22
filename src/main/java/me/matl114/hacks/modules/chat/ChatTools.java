@@ -124,6 +124,7 @@ public class ChatTools extends BaseModule {
 
     private static final Identifier LOCK_ENABLE_SPRITE = Identifier.tryParse("slimefunhelper:gui/lock_enable");
     private static final Identifier LOCK_DISABLE_SPRITE = Identifier.tryParse("slimefunhelper:gui/lock_disable");
+    private static final List<Text> TOOLTIPS_CHAT_TOOLS = List.of(Text.literal("点击展开/关闭聊天框小工具栏"));
     private static final List<Text> TOOLTIPS_SEND_CACHE = List.of(Text.literal("发送缓存聊天框中的东西"));
     private static final List<Text> TOOLTIPS_AUTO_SEND =
             List.of(Text.literal("自动发送缓存聊天框中的东西"), Text.literal("查看配置界面以调整参数"));
@@ -134,7 +135,7 @@ public class ChatTools extends BaseModule {
     private static final List<Text> TOOLTIPS_INT_TO_CHAR = List.of(Text.literal("可以将旁边的小输入框中的数字和字符进行ascii转换"));
     private static final List<Text> TOOLTIPS_ENCRYPT =
             List.of(Text.literal("左击切换是否进行消息加密"), Text.literal("右击以打开配置文件"), Text.literal("按住ctrl发送可以禁用加密"));
-    private static final List<Text> TOOLTIPS_FORMAT = List.of(Text.literal("点卷切换是否进行聊天格式化"));
+    private static final List<Text> TOOLTIPS_FORMAT = List.of(Text.literal("左击切换是否进行聊天格式化"), Text.literal("右击以打开配置文件"));
     private static final List<Text> TOOLTIPS_SPECIAL_CHARS =
             List.of(Text.literal("点击展开/关闭特殊字符快捷键"), Text.literal("可以在配置界面中配置特殊字符列表"));
 
@@ -238,7 +239,7 @@ public class ChatTools extends BaseModule {
                                     if (i) {
                                         ChatTasks.getPlayerChat().encrypt.toggle();
                                     } else {
-                                        MainTasks.openConfigScreen(Configs.CHAT_CONFIG);
+                                        MainTasks.openModuleScreen(ChatTasks.getPlayerChat());
                                     }
                                 }),
                                 (el) -> ChatTasks.getPlayerChat().shouldEncryptSendMessage())
@@ -247,7 +248,13 @@ public class ChatTools extends BaseModule {
         ExecutableWidget.instance(20, 24, 20, 20)
                 .setElementHandler(new ButtonElement(
                                 TextProvider.of(Text.literal("F").formatted(Formatting.BOLD)),
-                                ButtonAction.run(ChatTasks.getChatExtra().enableFormat::toggle))
+                                ButtonAction.isLeft((i) -> {
+                                    if (i) {
+                                        ChatTasks.getChatExtra().enableFormat.toggle();
+                                    } else {
+                                        MainTasks.openModuleScreen(ChatTasks.getChatExtra());
+                                    }
+                                }))
                         .setActivePredicate(
                                 (el) -> ChatTasks.getChatExtra().enableFormat.get())
                         .withTooltips(TooltipHandler.of(TOOLTIPS_FORMAT)))
@@ -360,8 +367,9 @@ public class ChatTools extends BaseModule {
         }
         ExecutableWidget.instance(chat0.width - 20, chat0.height - 56, 20, 20)
                 .setElementHandler(new ButtonElement(
-                        (el) -> enableChatScreenTools.get() ? ENABLE_STATE : DISABLE_STATE,
-                        ButtonAction.run(enableChatScreenTools::toggle)))
+                                (el) -> enableChatScreenTools.get() ? ENABLE_STATE : DISABLE_STATE,
+                                ButtonAction.run(enableChatScreenTools::toggle))
+                        .withTooltips(TooltipHandler.of(TOOLTIPS_CHAT_TOOLS)))
                 .addTo(chat0);
         var content =
                 new ContentDelegateWidget<ContentDelegateWidget<SubScreenWidget>>(chat0.width, chat0.height - 36, 0, 0);

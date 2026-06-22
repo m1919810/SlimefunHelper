@@ -642,16 +642,22 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
 
         protected void checkNotStart() {
-            if (!startWork && mc.player.isFallFlying()) {
-                if (ti.state == TravelState.TOO_HIGH) {
-                    startWork = true;
-                    Debug.chat("[Pitch440] 开始工作!");
+            if (!startWork) {
+                if (mc.player.isFallFlying()) {
+                    if (ti.state == TravelState.TOO_HIGH) {
+                        startWork = true;
+                        Debug.chat("[Pitch440] 开始工作!");
+                    } else {
+                        if (control.pitch40SafeHeightAutoPullup.get()) {
+                            handlePullUp();
+                        }
+                        if (++counter % 60 == 0) {
+                            Debug.chat("[Pitch40] 请拉升到MaxHeight以启动:", control.maxHeight.get());
+                        }
+                    }
                 } else {
                     if (control.pitch40SafeHeightAutoPullup.get()) {
-                        handlePullUp();
-                    }
-                    if (++counter % 60 == 0) {
-                        Debug.chat("[Pitch40] 请拉升到MaxHeight以启动:", control.maxHeight.get());
+                        ElytraExtra.INSTANCE.autoTakeoff();
                     }
                 }
             }

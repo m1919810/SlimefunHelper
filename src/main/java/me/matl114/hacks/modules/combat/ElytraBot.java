@@ -178,11 +178,11 @@ public class ElytraBot extends BaseModule {
             .build();
 
     public void onSwitch() {
-        Mode mode1 = mode.get();
-        var values = Mode.values();
-        Mode mode2 = values[(mode1.ordinal() + 1) % values.length];
-        Debug.chat("[ElytraBot] Mode switch to", mode2.getDisplay());
-        mode.set(mode2);
+        mode.next();
+
+        Debug.chat(
+                ChatUtils.stringToText("&c[ElytraBot] &fMode switch to"),
+                mode.get().getDisplay());
     }
 
     public void registerAll() {
@@ -1103,7 +1103,7 @@ public class ElytraBot extends BaseModule {
         }
 
         public int onStateNearFollow(StateMachine machine) {
-            if ((base.currentInCombatRange && base.currentAction != TargetAction.ESCAPING)
+            if ((base.currentInCombatRange && base.currentAction == TargetAction.CIRCLING)
                     || base.currentAction == TargetAction.TOWARDS) {
                 if (!SpearEnhance.canSpearKineticAttack()) {
                     return STATE_PULL_OVER;

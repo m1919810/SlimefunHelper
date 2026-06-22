@@ -19,7 +19,9 @@ import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.Box;
 
 public class AutoRide extends BaseModule {
-    public AutoRide() {}
+    public AutoRide() {
+        bindFlag(enable);
+    }
 
     public final ModulePath autoRide = makePath(Configs.INTERACT_CONFIG, "interaction-tweaks.auto-ride");
     public final FlagRef enable = flagBuilder(autoRide.addEnable()).build();

@@ -349,11 +349,6 @@ public class BowEnhance extends BaseModule {
                     }
 
                     @Override
-                    public boolean mayModifyRotation() {
-                        return true;
-                    }
-
-                    @Override
                     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
                         ClientPlayerEntity player = movementManagerEvent.context().playerStatus.entity;
                         Vec3d targetAt =

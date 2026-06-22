@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Environment(EnvType.CLIENT)
-@Mixin(value = InventoryBehavior.class, remap = false)
+@Mixin(InventoryBehavior.class)
 public abstract class InventoryBehaviourMixin {
     @ModifyExpressionValue(
             method = {
@@ -17,7 +17,8 @@ public abstract class InventoryBehaviourMixin {
                 "Lbaritone/behavior/InventoryBehavior;throwaway(ZLjava/util/function/Predicate;)Z"
             },
             at = @At(value = "FIELD", target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;"),
-            require = 0)
+            require = 0,
+            remap = false)
     private Object modifyInventoryCheck(Object original) {
         if (BaritoneFix.INSTANCE.enableInventoryFireworks.get()) {
             return true;

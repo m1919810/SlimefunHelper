@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -29,6 +30,7 @@ import net.minecraft.network.packet.c2s.handshake.ConnectionIntent;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -52,6 +54,60 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
 
     @Shadow
     private boolean errored;
+
+    @Shadow
+    private int packetsSentCounter;
+
+    @Unique
+    NetworkState<?> currentInBoundState;
+
+    @Unique
+    NetworkState<?> currentOutBoundState;
+
+    public NetworkState<?> getOutboundState() {
+        return currentOutBoundState;
+    }
+
+    public NetworkState<?> getInboundState() {
+        return currentInBoundState;
+    }
+
+    public void sendByteBuf(ByteBuf buf) {
+        ++this.packetsSentCounter;
+        if (this.channel.eventLoop().inEventLoop()) {
+            this.channel.writeAndFlush(buf);
+        } else {
+            this.channel.eventLoop().execute(() -> {
+                this.channel.writeAndFlush(buf);
+            });
+        }
+    }
+
+    @Inject(method = "setPacketListener", at = @At("HEAD"))
+    private void onSetPacketListener(NetworkState<?> state, PacketListener listener, CallbackInfo ci) {
+        currentInBoundState = state;
+    }
+
+    @Inject(method = "transitionOutbound", at = @At("HEAD"))
+    private void onTransitionOutbound(NetworkState<?> newState, CallbackInfo ci) {
+        currentOutBoundState = newState;
+    }
+
+    @Inject(
+            method =
+                    "connect(Ljava/lang/String;ILnet/minecraft/network/state/NetworkState;Lnet/minecraft/network/state/NetworkState;Lnet/minecraft/network/listener/ClientPacketListener;Lnet/minecraft/network/packet/c2s/handshake/ConnectionIntent;)V",
+            at = @At("HEAD"))
+    private void onConnection(
+            String address,
+            int port,
+            NetworkState outboundState,
+            NetworkState inboundState,
+            ClientPacketListener prePlayStateListener,
+            ConnectionIntent intent,
+            CallbackInfo ci) {
+        currentInBoundState = inboundState;
+        currentOutBoundState = outboundState;
+    }
 
     @Inject(
             method = "exceptionCaught",
@@ -161,16 +217,23 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
         }
     }
 
-    @Inject(
-            method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V",
-            at = @At("RETURN"))
-    private void sendPacketPost(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
+    @Inject(method = "sendImmediately", at = @At("RETURN"))
+    private void sendImmediately(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
         // do not handle serverbound packet
         if (this.side == NetworkSide.SERVERBOUND) {
             return;
         }
-        Listener.getPacketPostSendPoint()
-                .handleValue(new Event<>(packet, false, false, (ClientConnection) (Object) this));
+        Listener.getPacketPostScheduleSendPoint().broadcast(packet, this);
+    }
+
+    @Inject(method = "sendInternal", at = @At("RETURN"))
+    private void sendPacketPost(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
+        // do not handle serverbound packet
+        if (this.side == NetworkSide.SERVERBOUND) {
+            return;
+        }
+        Listener.getPacketPostSendPoint().broadcast(packet, this);
+        // .handleValue(new Event<>(packet, false, false, (ClientConnection) (Object) this));
     }
 
     @WrapOperation(

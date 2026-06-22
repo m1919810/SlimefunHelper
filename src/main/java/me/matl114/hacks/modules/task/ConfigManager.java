@@ -76,6 +76,11 @@ public class ConfigManager extends BaseModule {
                             .sorted();
                 }))
                 .build();
+        SimpleCommandArgs.Argument pathPrefixArgument = SimpleCommandArgs.argumentBuilder()
+                .name("path_prefix")
+                .defaultValue("")
+                .tabCompletor(TabResult.ofDispatcher((sender, configName) -> getPathPrefixSuggestions(configName)))
+                .build();
         main.subBuilder(SubCommand.taskBuilder())
                 .name("open")
                 .helper("打开配置文件界面")
@@ -88,14 +93,15 @@ public class ConfigManager extends BaseModule {
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("save")
-                .helper("<path> 保存当前配置快照")
+                .helper("<path> <config_name=all> <path_prefix=\"\"> 保存当前配置快照")
                 .arg(SimpleCommandArgs.argumentBuilder().name("path").build())
                 .arg(configOrAllNameArgument)
+                .arg(pathPrefixArgument)
                 .post(e -> e.executor(CommandContext.run(this::onSave)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("load")
-                .helper("<path> 加载配置快照")
+                .helper("<path> <config_name=all> <path_prefix=\"\"> 加载配置快照")
                 .arg(SimpleCommandArgs.argumentBuilder()
                         .name("path")
                         .tabCompletor(TabResult.ofStreamSupplier(
@@ -104,6 +110,7 @@ public class ConfigManager extends BaseModule {
                                 })))
                         .build())
                 .arg(configOrAllNameArgument)
+                .arg(pathPrefixArgument)
                 .post(e -> e.executor(CommandContext.run(this::onLoad)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
@@ -256,6 +263,7 @@ public class ConfigManager extends BaseModule {
             return;
         }
         String allName = args.nextNonnullString();
+        String pathPrefix = args.nextNonnullString().trim();
         ConfigSnapshot snapshot;
         if ("all".equalsIgnoreCase(allName)) {
             List<String> privacyKeywords = privacyPathKeywords.get();
@@ -271,7 +279,7 @@ public class ConfigManager extends BaseModule {
                             .formatted(Formatting.YELLOW));
                     continue;
                 }
-                snapshotMap.put(identifier, config.asRef());
+                snapshotMap.put(identifier, filterSnapshotByPathPrefix(config, pathPrefix));
             }
 
             snapshot = new ConfigSnapshot(snapshotMap);
@@ -283,7 +291,7 @@ public class ConfigManager extends BaseModule {
             }
             Map<Identifier, MapRef> snapshotMap = new LinkedHashMap<>();
             Identifier identifier = config.getRegistryKey().getValue();
-            snapshotMap.put(identifier, config.asRef());
+            snapshotMap.put(identifier, filterSnapshotByPathPrefix(config, pathPrefix));
             snapshot = new ConfigSnapshot(snapshotMap);
         }
 
@@ -320,6 +328,7 @@ public class ConfigManager extends BaseModule {
             return;
         }
         String name = args.nextNonnullString();
+        String prefix = args.nextNonnullString();
         Config config = null;
         if (!"all".equalsIgnoreCase(name)) {
             config = Config.REGISTRY.get(Identifier.tryParse(name));
@@ -353,28 +362,68 @@ public class ConfigManager extends BaseModule {
                         continue;
                     }
                     for (LeafEntry leaf : flattenMapRef(entry.getValue())) {
-                        Ref<?> currentRef = config2.get(leaf.path());
-                        if (currentRef == null) {
-                            continue;
+                        String pathStr = String.join(".", leaf.path());
+                        if (pathStr.startsWith(prefix)) {
+                            Ref<?> currentRef = config2.get(leaf.path());
+                            if (currentRef == null) {
+                                continue;
+                            }
+                            leaf.value().copyValueTo(currentRef);
                         }
-                        leaf.value().copyValueTo(currentRef);
                     }
                 }
             } else {
                 MapRef mapRef2 = snapshot.snapSnot().get(config.getRegistryKey().getValue());
                 if (mapRef2 != null) {
                     for (LeafEntry leaf : flattenMapRef(mapRef2)) {
-                        Ref<?> currentRef = config.get(leaf.path());
-                        if (currentRef == null) {
-                            continue;
+                        String pathStr = String.join(".", leaf.path());
+                        if (pathStr.startsWith(prefix)) {
+                            Ref<?> currentRef = config.get(leaf.path());
+                            if (currentRef == null) {
+                                continue;
+                            }
+                            leaf.value().copyValueTo(currentRef);
                         }
-                        leaf.value().copyValueTo(currentRef);
                     }
                 }
             }
 
             Debug.chat(Text.literal("成功加载配置快照" + fileName).formatted(Formatting.GREEN));
         }
+    }
+
+    private Stream<String> getPathPrefixSuggestions(String configName) {
+        if ("all".equalsIgnoreCase(configName)) {
+            return Config.REGISTRY.stream()
+                    .flatMap(config -> config.getVisiblePaths().stream())
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .sorted();
+        }
+        Config config = Config.REGISTRY.get(Identifier.tryParse(configName));
+        if (config == null) {
+            return Stream.empty();
+        }
+        return config.getVisiblePaths().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted();
+    }
+
+    private MapRef filterSnapshotByPathPrefix(Config config, String pathPrefix) {
+        if (pathPrefix.isEmpty()) {
+            return config.asRef();
+        }
+        String normalizedPathPrefix =
+                pathPrefix.endsWith(".") ? pathPrefix.substring(0, pathPrefix.length() - 1) : pathPrefix;
+        MapRef filteredSnapshot = new MapRef();
+        for (LeafEntry leaf : flattenMapRef(config.asRef())) {
+            String leafPath = String.join(".", leaf.path());
+            if (leafPath.equals(normalizedPathPrefix) || leafPath.startsWith(normalizedPathPrefix + ".")) {
+                filteredSnapshot.setValue(leaf.value(), leaf.path());
+            }
+        }
+        return filteredSnapshot;
     }
 
     private boolean isPrivacyConfig(Identifier identifier, List<String> privacyKeywords) {

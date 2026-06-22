@@ -241,38 +241,12 @@ public class LegalMovementManager {
             return 0;
         }
 
-        default boolean mayModify() {
-            return mayModifyPos() || mayModifyRotation();
-        }
-
-        default boolean mayModifyPos() {
-            return false;
-        }
-
-        default boolean mayModifyRotation() {
-            return false;
-        }
-
-        default boolean conflictCheck(LegalMovementManager movementManager) {
-            //            if (mayModifyPos()
-            //                    &&
-            // movementManager.currentTickEnableHacks.stream().anyMatch(MovementModifier::mayModifyPos)) {
-            //                return false;
-            //            }
-            //            if (mayModifyRotation()
-            //                    &&
-            // movementManager.currentTickEnableHacks.stream().anyMatch(MovementModifier::mayModifyRotation)) {
-            //                return false;
-            //            }
-            return true;
-        }
-
         // return if available for current tick modify
         default boolean shouldApply(Event<LegalMovementManager> movementManagerEvent) {
             // two modifying hacks may clash with each other, so we
             preTick(movementManagerEvent);
             LegalMovementManager movementManager = movementManagerEvent.context();
-            if (!conflictCheck(movementManager)) {
+            if (false) {
                 return false;
             }
             applyPreTickModify(movementManagerEvent);
@@ -322,26 +296,6 @@ public class LegalMovementManager {
         @Override
         public int priority() {
             return delegate.get().priority();
-        }
-
-        @Override
-        public boolean mayModify() {
-            return delegate.get().mayModify();
-        }
-
-        @Override
-        public boolean mayModifyPos() {
-            return delegate.get().mayModifyPos();
-        }
-
-        @Override
-        public boolean mayModifyRotation() {
-            return delegate.get().mayModifyRotation();
-        }
-
-        @Override
-        public boolean conflictCheck(LegalMovementManager movementManager) {
-            return delegate.get().conflictCheck(movementManager);
         }
 
         @Override
@@ -438,26 +392,6 @@ public class LegalMovementManager {
         @Override
         public int priority() {
             return priority;
-        }
-
-        @Override
-        public boolean mayModifyPos() {
-            for (var pi : pipeline) {
-                if (pi.mayModifyPos()) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public boolean mayModifyRotation() {
-            for (var pi : pipeline) {
-                if (pi.mayModifyRotation()) {
-                    return true;
-                }
-            }
-            return false;
         }
 
         @Override

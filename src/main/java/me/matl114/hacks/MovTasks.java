@@ -1078,12 +1078,6 @@ public class MovTasks {
                     boolean resetThisTick;
 
                     @Override
-                    public boolean mayModifyPos() {
-                        // only collide with other when doing Tp
-                        return doingTp;
-                    }
-
-                    @Override
                     public int priority() {
                         // every negative can override this
                         // it can override nofall or something
@@ -1780,16 +1774,6 @@ public class MovTasks {
                 public int priority() {
                     return 0;
                 }
-
-                @Override
-                public boolean mayModifyPos() {
-                    return false;
-                }
-
-                @Override
-                public boolean mayModifyRotation() {
-                    return false;
-                }
             };
     // This pipeline will modify rot not pos
     //    public static final LegalMovementManager.ModifierPipeline PLAYER_PIPELINE_ROT =
@@ -2276,6 +2260,9 @@ public class MovTasks {
     public static TravellingControl travellingControl;
 
     @Getter
+    public static SearchControl searchControl;
+
+    @Getter
     public static PathManager pathManager;
 
     @Getter
@@ -2313,6 +2300,7 @@ public class MovTasks {
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);
         travellingControl = new TravellingControl().register(m);
+        searchControl = new SearchControl().register(m);
         pathManager = new PathManager().register(m);
         baritoneFix = new BaritoneFix().register(m);
         elytraFinder = new ElytraFinder().register(m);

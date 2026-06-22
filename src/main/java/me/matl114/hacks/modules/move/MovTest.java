@@ -47,11 +47,6 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
         return 10000000;
     }
 
-    @Override
-    public boolean mayModifyRotation() {
-        return false;
-    }
-
     public void onTransaction(Event<CommonPingS2CPacket> event) {
         if (enable()) {
             //            delayedPackets.add(event.context());

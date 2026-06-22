@@ -40,6 +40,9 @@ public class PacketManager {
 
     public static final WeakHashMap<Packet<?>, List<Consumer<Event<Packet<?>>>>> postSendQueue = new WeakHashMap<>();
 
+    public static final WeakHashMap<Packet<?>, List<Consumer<Event<Packet<?>>>>> postScheduleSendQueue =
+            new WeakHashMap<>();
+
     public static void schedulePostSendPacket(Packet<?> post, Packet<?> packet) {
         if (packet == null) return;
         schedulePostCallback(post, (ev) -> {
@@ -60,6 +63,18 @@ public class PacketManager {
         postSendQueue.computeIfAbsent(post, (kv) -> new ArrayList<>()).add((Consumer) packet);
     }
 
+    public static <T extends Packet<?>> void schedulePostScheduleCallback(T post, Runnable packet) {
+        if (packet == null) return;
+        schedulePostScheduleCallback(post, (ev) -> {
+            packet.run();
+        });
+    }
+
+    public static <T extends Packet<?>> void schedulePostScheduleCallback(T post, Consumer<Event<T>> packet) {
+        if (packet == null) return;
+        postScheduleSendQueue.computeIfAbsent(post, (kv) -> new ArrayList<>()).add((Consumer) packet);
+    }
+
     public static void onPostPacketSend(Event<Packet<?>> packet) {
         var lst = postSendQueue.remove(packet.context);
         if (lst != null && !lst.isEmpty()) {
@@ -69,8 +84,18 @@ public class PacketManager {
         }
     }
 
+    public static void onPostPacketScheduleSend(Event<Packet<?>> packet) {
+        var lst = postScheduleSendQueue.remove(packet.context);
+        if (lst != null && !lst.isEmpty()) {
+            for (var pkt : lst) {
+                pkt.accept(packet);
+            }
+        }
+    }
+
     static {
         Listener.getPacketPostSendPoint().registerHandler(PacketManager::onPostPacketSend);
+        Listener.getPacketPostScheduleSendPoint().registerHandler(PacketManager::onPostPacketScheduleSend);
     }
 
     public static boolean startFlushIn = false;

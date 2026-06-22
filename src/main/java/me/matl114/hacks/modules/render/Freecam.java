@@ -160,21 +160,6 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         velocity.x(0).y(0).z(0);
     }
 
-    @Override
-    public boolean mayModify() {
-        return false;
-    }
-
-    @Override
-    public boolean mayModifyPos() {
-        return false;
-    }
-
-    @Override
-    public boolean mayModifyRotation() {
-        return false;
-    }
-
     PlayerInputUtils.Input cachedInput;
 
     @Override
