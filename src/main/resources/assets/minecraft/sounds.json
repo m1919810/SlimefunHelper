@@ -1,0 +1,16 @@
+{
+    "item.spear.hit": {
+        "sounds": [
+            "item/spear/hit1",
+            "item/spear/hit2",
+            "item/spear/hit3"
+        ],
+        "subtitle": "subtitles.item.spear.hit"
+    },
+    "item.spear.use": {
+        "sounds": [
+            "item/spear/use"
+        ],
+        "subtitle": "subtitles.item.spear.use"
+    }
+}

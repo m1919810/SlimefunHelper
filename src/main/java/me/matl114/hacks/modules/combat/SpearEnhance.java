@@ -4,8 +4,8 @@ import io.netty.buffer.ByteBuf;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.IntSupplier;
 import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.events.Event;
@@ -43,11 +43,11 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -382,10 +382,19 @@ public class SpearEnhance extends BaseModule {
         return false;
     }
 
+    private static RegistryEntry<SoundEvent> tryRegisterSound(String sytr) {
+        try {
+            Identifier sound = Identifier.ofVanilla(sytr);
+            return Registry.registerReference(Registries.SOUND_EVENT, sound, SoundEvent.of(sound));
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
     private static final Optional<RegistryEntry<SoundEvent>> currentSpearHitSoundEvent =
-            Optional.of(SoundEvents.ITEM_SPEAR_HIT);
+            Optional.ofNullable(tryRegisterSound("item.spear.hit"));
     private static final Optional<RegistryEntry<SoundEvent>> currentSpearUseSoundEvent =
-            Optional.of(SoundEvents.ITEM_SPEAR_USE);
+            Optional.ofNullable(tryRegisterSound("item.spear.use"));
 
     public void onSpearEntity(Event<EntityStatusS2CPacket> eventPost) {
         if (checkNull()) return;
@@ -396,7 +405,7 @@ public class SpearEnhance extends BaseModule {
                 if (materialSwordToSpearMap.containsKey(stack.getItem())
                         && VItem.getInstance().isSpear(stack)) {
                     currentSpearHitSoundEvent.ifPresent((hitSound) -> {
-                        mc.world.playSoundFromEntityClient(lv, hitSound.value(), entity.getSoundCategory(), 1.0F, 1.0F);
+                        mc.world.playSoundFromEntity(lv, hitSound.value(), entity.getSoundCategory(), 1.0F, 1.0F);
                     });
                 }
             }

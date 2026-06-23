@@ -82,3 +82,5 @@ accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap ra
 accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap centerChunkX I
 accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap centerChunkZ I
 accessible method net/minecraft/client/world/ClientChunkManager$ClientChunkMap getIndex (II)I
+accessible field net/minecraft/entity/Entity touchingWater Z
+accessible field net/minecraft/entity/Entity submergedInWater Z
