@@ -12,11 +12,11 @@ import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.slimefun.SlimefunGuide;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.ListRef;
-import me.matl114.managers.task.ToggleManager;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.text.Text;
@@ -94,7 +94,7 @@ public class QuickButton extends BaseModule {
             final FlagRef flagRef = entry.getValue().orElse(null);
             String fullKey = TaskManagers.PREFIX_BUTTON_TOGGLE + "." + key;
             final Runnable stateChange =
-                    flagRef != null ? ToggleManager.wrapFlagAsToggle(fullKey, flagRef) : Runnables.doNothing();
+                    flagRef != null ? HotKeyUtils.wrapFlagAsToggle(fullKey, flagRef) : Runnables.doNothing();
             ExecutableWidget widget = ExecutableWidget.instance(
                             xv + x0 * (buttonWidth + 1), yv + y0, buttonWidth, buttonHeight)
                     .setElementHandler(

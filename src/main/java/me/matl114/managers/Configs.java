@@ -240,8 +240,6 @@ public class Configs {
                     "sfhelper-configs/interact.yml", "interact settings")
             .markForSave();
 
-    //    public static final String[] SLIMEFUN_MATCH_UP_AND_DOWN = {"multi-block-clicker","only-when-at-middle"};
-    //    public static final String[] SLIMEFUN_AUTO_CLICK_FACING = {"multi-block-clicker","auto-click-facing"};
     public static final Config SLIMEFUN_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/slimefun.yml", "slimefun settings")
             .markForSave();
@@ -249,9 +247,6 @@ public class Configs {
     public static final Config MODEL_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/models.yml", "model settings")
             .markForSave();
-
-    public static final String[] HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN =
-            new String[] {"hotkey-settings", "only-works-if-no-screen"};
 
     static {
         final File cfgFile = FabricLoader.getInstance()
@@ -277,14 +272,6 @@ public class Configs {
     public static final Config MISC_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/misc.yml", "misc settings")
             .markForSave();
-
-    static {
-        MISC_CONFIG
-                .builder(Boolean.class)
-                .path(HOTKEY_WORKS_ONLY_WHEN_NOT_AT_SCREEN)
-                .defaultValue(true)
-                .build();
-    }
 
     public static final Config TOGGLE_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/toggles.yml", "toggle settings")

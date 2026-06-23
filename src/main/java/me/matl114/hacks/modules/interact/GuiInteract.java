@@ -48,6 +48,7 @@ public class GuiInteract extends BaseModule {
 
     public void onStoreKeyBindState(Event<Screen> eventPre) {
         sets.clear();
+        if (checkNull()) return;
         if (enable.get() && !eventPre.isCancelled()) {
             for (var re : sticks.get()) {
                 if (re.isPressed()) {
@@ -58,6 +59,10 @@ public class GuiInteract extends BaseModule {
     }
 
     public void onResetKeyBind(Event<Screen> eventPost) {
+        if (checkNull()) {
+            sets.clear();
+            return;
+        }
         if (enable.get()) {
             if (eventPost.context != null) {
                 for (var re : sticks.get()) {
@@ -75,6 +80,7 @@ public class GuiInteract extends BaseModule {
     }
 
     public void onInput(Event<Void> event) {
+        if (checkNull()) return;
         if (enable.get() && mc.currentScreen != null) {
             if (useWhenScreenOpen.get()) {
                 if (event.isCancelled()) {

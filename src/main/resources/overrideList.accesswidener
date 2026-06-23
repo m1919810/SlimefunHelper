@@ -101,3 +101,5 @@ accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap ra
 accessible field net/minecraft/particle/TintedParticleEffect color I
 accessible field net/minecraft/client/gui/hud/debug/DebugHudProfile f3Enabled Z
 accessible field net/minecraft/client/render/item/ItemRenderState displayContext Lnet/minecraft/item/ItemDisplayContext;
+accessible field net/minecraft/entity/Entity touchingWater Z
+accessible field net/minecraft/entity/Entity submergedInWater Z

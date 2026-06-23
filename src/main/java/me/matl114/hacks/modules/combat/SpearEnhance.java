@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.IntSupplier;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -15,6 +16,7 @@ import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
@@ -23,12 +25,14 @@ import me.matl114.utils.ColorUtils;
 import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.versioned.SupportVersion;
+import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.KineticWeaponComponent;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -37,6 +41,11 @@ import net.minecraft.network.encoding.VarInts;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -44,6 +53,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 public class SpearEnhance extends BaseModule {
     public static SpearEnhance INSTANCE;
@@ -72,6 +82,11 @@ public class SpearEnhance extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef fixOldVersionSpearSound = builder(
+                    spearModule.add("fix-old-version-spear-sound"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final NBTRef<WrapColor> renderColor = builder(
                     spearModule.add("render-kinetic-players-color"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
@@ -95,6 +110,9 @@ public class SpearEnhance extends BaseModule {
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onUsePiercing);
         registerListener(Listener.getAttackAction(), this::onUsingStab);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onSpearEntity);
+        registerListener(Listener.getPostPlayerUseItem(), this::onSpearUse);
     }
 
     public static boolean isUsingSpear(PlayerEntity player) {
@@ -331,5 +349,67 @@ public class SpearEnhance extends BaseModule {
             return true;
         }
         return false;
+    }
+
+    private static final Optional<RegistryEntry<SoundEvent>> currentSpearHitSoundEvent =
+            Optional.of(SoundEvents.ITEM_SPEAR_HIT);
+    private static final Optional<RegistryEntry<SoundEvent>> currentSpearUseSoundEvent =
+            Optional.of(SoundEvents.ITEM_SPEAR_USE);
+
+    public void onSpearEntity(Event<EntityStatusS2CPacket> eventPost) {
+        if (checkNull()) return;
+        if (fixOldVersionSpearSound.get() && eventPost.context.getStatus() == VDataFlag.ENTITY_STATUS_KINETIC_ATTACK) {
+            Entity entity = eventPost.context.getEntity(mc.world);
+            if (entity instanceof LivingEntity lv && lv.isUsingItem()) {
+                ItemStack stack = lv.getActiveItem();
+                if (materialSwordToSpearMap.containsKey(stack.getItem())
+                        && VItem.getInstance().isSpear(stack)) {
+                    currentSpearHitSoundEvent.ifPresent((hitSound) -> {
+                        mc.world.playSoundFromEntityClient(lv, hitSound.value(), entity.getSoundCategory(), 1.0F, 1.0F);
+                    });
+                }
+            }
+        }
+    }
+
+    public void onSpearUse(Event<ActionResult> eventAction) {
+        if (checkNull()) return;
+        if (fixOldVersionSpearSound.get()) {
+            Hand hand = eventAction.getArgs(0);
+            ItemStack stack = mc.player.getStackInHand(hand);
+            if (materialSwordToSpearMap.containsKey(stack.getItem())
+                    && VItem.getInstance().isSpear(stack)) {
+                MutableInt mutableInt = new MutableInt(0);
+                Tasks.scheduleRepeatedPre(
+                        () -> {
+                            if (mutableInt.getAndIncrement() > 20) {
+                                return true;
+                            }
+                            if (mc.player.isUsingItem()) {
+                                if (mc.player.getActiveHand() == hand
+                                        && ItemStack.areItemsAndComponentsEqual(stack, mc.player.getActiveItem())) {
+                                    currentSpearUseSoundEvent.ifPresent((sound) -> {
+                                        mc.player
+                                                .getEntityWorld()
+                                                .playSound(
+                                                        mc.player,
+                                                        mc.player.getX(),
+                                                        mc.player.getY(),
+                                                        mc.player.getZ(),
+                                                        sound,
+                                                        mc.player.getSoundCategory(),
+                                                        1.0F,
+                                                        1.0F);
+                                    });
+                                }
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        },
+                        1,
+                        1);
+            }
+        }
     }
 }

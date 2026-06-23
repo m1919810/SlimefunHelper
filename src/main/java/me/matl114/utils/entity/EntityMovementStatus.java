@@ -25,6 +25,10 @@ public class EntityMovementStatus<T extends Entity> {
         speed = entity.speed;
         distanceTraveled = entity.distanceTraveled;
         sprinting = entity.isSprinting();
+        touchingWater = entity.isTouchingWater();
+        collidedSoftly = entity.collidedSoftly;
+        submergedInWater = entity.isSubmergedInWater();
+        inPowderSnow = entity.inPowderSnow;
     }
 
     public T entity;
@@ -32,20 +36,23 @@ public class EntityMovementStatus<T extends Entity> {
     public boolean horizontalCollision;
     public boolean verticalCollision;
     public boolean groundCollision;
+    public boolean collidedSoftly;
     public Vec3d pos;
     public float pitch;
     public float yaw;
     public Vec3d vec;
     public float speed;
-    public float horizontalSpeed;
     public float distanceTraveled;
     public boolean sprinting;
+    public boolean touchingWater;
+    public boolean submergedInWater;
+    public boolean inPowderSnow;
 
     public void restore() {
         this.entity.horizontalCollision = horizontalCollision;
         this.entity.verticalCollision = verticalCollision;
         this.entity.groundCollision = groundCollision;
-
+        this.entity.collidedSoftly = collidedSoftly;
         this.restorePosRot();
         this.restoreOnGround();
 
@@ -71,6 +78,9 @@ public class EntityMovementStatus<T extends Entity> {
 
     public void restorePos() {
         this.entity.setPosition(pos);
+        entity.touchingWater = touchingWater;
+        entity.submergedInWater = submergedInWater;
+        entity.inPowderSnow = inPowderSnow;
     }
 
     public Vec3d calculateLastMoveVelocity(int forward, int sideward) {

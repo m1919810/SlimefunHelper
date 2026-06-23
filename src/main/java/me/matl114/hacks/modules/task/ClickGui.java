@@ -34,6 +34,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;

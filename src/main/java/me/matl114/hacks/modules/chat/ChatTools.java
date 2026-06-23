@@ -14,13 +14,13 @@ import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hooks.IMBlockerHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.ScheduleService;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ScreenUtils;
@@ -203,7 +203,7 @@ public class ChatTools extends BaseModule {
                         .withTooltips(TooltipHandler.of(TOOLTIPS_SEND_CACHE)))
                 .addToSub(basicSubScreenWidget);
 
-        Runnable toggle = TaskManagers.getToggleTask(
+        Runnable toggle = HotKeyUtils.getToggleTask(
                 Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath());
         ExecutableWidget.instance(180, 48, 50, 20)
                 .setElementHandler(
@@ -212,7 +212,7 @@ public class ChatTools extends BaseModule {
                                 .withTooltips(TooltipHandler.of(TOOLTIPS_AUTO_SEND)))
                 .addToSub(basicSubScreenWidget);
 
-        Runnable toggle2 = TaskManagers.getToggleTask(
+        Runnable toggle2 = HotKeyUtils.getToggleTask(
                 Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath());
         ExecutableWidget.instance(180, 24, 70, 20)
                 .setElementHandler(

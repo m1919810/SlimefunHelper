@@ -253,6 +253,9 @@ public class MainTasks {
     private static final ModuleGroup moduleManager = new ModuleGroup("Tasks");
 
     @Getter
+    public static ModuleSettings moduleSettings;
+
+    @Getter
     public static ClickGui clickGui;
 
     @Getter
@@ -265,6 +268,7 @@ public class MainTasks {
     public static EventCommand eventCommand;
 
     private static void initModule(ModuleManager m) {
+        moduleSettings = new ModuleSettings().register(m);
         clickGui = new ClickGui().register(m);
         configManager = new ConfigManager().register(m);
         bindCommand = new BindCommand().register(m);

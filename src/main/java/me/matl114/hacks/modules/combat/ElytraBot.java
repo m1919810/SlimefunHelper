@@ -22,12 +22,12 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.entity.PredictorImpl;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.algorithms.StateMachine;
@@ -42,6 +42,7 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -415,9 +416,21 @@ public class ElytraBot extends BaseModule {
         }
         if (target == null) {
             target = CombatTasks.getTargetSelector()
-                    .searchAttackEntity(
-                            targetRange.get(), true, playerOnly.get() ? (e) -> e instanceof PlayerEntity : null);
+                    .searchAttackEntity(targetRange.get(), true, this::isConsideredAsAttackableEntity);
         }
+    }
+
+    private boolean isConsideredAsAttackableEntity(Entity entity) {
+        if (!(entity instanceof PlayerEntity) && playerOnly.get()) {
+            return false;
+        }
+        var raycastResult = RaycastUtils.raycastSolidBlockResult(mc.player, mc.player.getPos(), entity.getPos());
+        if (raycastResult == null || raycastResult.getType() == HitResult.Type.MISS) {
+            return true;
+        }
+        Vec3d hitPoint = raycastResult.getPos();
+        return TargetSelector.INSTANCE.isWithinAttackRange(
+                hitPoint, entity.getBoundingBox(), CombatExtra.INSTANCE.getAttackAtTargetRange(entity));
     }
 
     public void onElytraChase(Event<EventContainer<FlightVelocity>> event) {
