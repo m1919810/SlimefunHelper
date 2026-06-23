@@ -1,83 +1,15 @@
 package me.matl114.managers;
 
-import java.io.*;
 import lombok.Getter;
-import me.matl114.hacks.*;
-import me.matl114.managers.config.Config;
-import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.input.*;
 import me.matl114.managers.task.TaskManager;
 import me.matl114.managers.task.ToggleManager;
-import net.minecraft.client.network.ClientPlayerEntity;
 
 public class TaskManagers {
     public static void init() {
         KeyCode.init();
     }
 
-    public static Runnable getToggleTask(Config config, String... path) {
-        String commonPath = String.join(".", path);
-        var flag = config.getBoolean(path);
-        return ToggleManager.wrapFlagAsToggle(commonPath, flag);
-    }
-
-    public static SimpleHotKey.InputHandler getToggleHandler(String commonPath, FlagRef flagRef) {
-        Runnable toggleTask = ToggleManager.wrapFlagAsToggle(commonPath, flagRef);
-        return (ih, m) -> {
-            ClientPlayerEntity player = m.getClient().player;
-            if (player != null && HotKeyUtils.isValidState()) {
-                toggleTask.run();
-                return true;
-            }
-            return false;
-        };
-    }
-
-    public static SimpleHotKey.InputHandler getToggleHandler(Config config, String... path) {
-        String commonPath = String.join(".", path);
-        var flag = config.getBoolean(path);
-        if (flag != null) {
-            var toggleTask = ToggleManager.wrapFlagAsToggle(commonPath, flag);
-            return (ih, m) -> {
-                ClientPlayerEntity player = m.getClient().player;
-                if (player != null && HotKeyUtils.isValidState()) {
-                    toggleTask.run();
-                    return true;
-                }
-                return false;
-            };
-        } else {
-            throw new IllegalArgumentException("No Flag for " + commonPath);
-        }
-    }
-
-    //    public static SimpleHotKey.InputHandler getToggleHandlerLazily(Config config, String... path) {
-    //        String commonPath = String.join(".", path);
-    //        return new SimpleHotKey.InputHandler() {
-    //            Runnable toggleTask;
-    //
-    //            @Override
-    //            public boolean handle(IHotKey iHotKey, IInputManager manager) {
-    //                if (toggleTask == null) {
-    //                    var flag = config.getBoolean(path);
-    //                    if (flag != null) {
-    //                        toggleTask = ToggleManager.wrapFlagAsToggle(commonPath, flag);
-    //                    }
-    //                }
-    //                if (toggleTask != null) {
-    //                    ClientPlayerEntity player = manager.getClient().player;
-    //                    if (player != null && HotKeyUtils.isValidState()) {
-    //                        toggleTask.run();
-    //                        return true;
-    //                    }
-    //                    return false;
-    //                }
-    //                return false;
-    //            }
-    //        };
-    //    }
-
-    //    private static HashMap<String,Boolean> defaultToggles=new HashMap<>();
     public static final String PREFIX_BUTTON_TOGGLE = "button-toggle";
     public static final String PREFIX_BUTTON_TASKS = "button-task";
     public static final String PREFIX_HOTKEY = "hotkeys-toggle";

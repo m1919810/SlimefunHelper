@@ -1,5 +1,6 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -126,20 +127,17 @@ public abstract class MinecraftClientEvents {
         Listener.getServerLeavePoint().handleValue(new Event<>(null, false, false, false));
     }
 
-    @WrapOperation(
+    @WrapWithCondition(
             method = "render",
             at =
                     @At(
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/client/render/GameRenderer;render(Lnet/minecraft/client/render/RenderTickCounter;Z)V"))
-    private void onGameRenderer(
-            GameRenderer instance, RenderTickCounter tickCounter, boolean tick, Operation<Void> original) {
+    private boolean onGameRenderer(GameRenderer instance, RenderTickCounter tickCounter, boolean tick) {
         Event<GameRenderer> rendererEvent = new Event<>(instance, true, false, tickCounter, tick);
         Listener.getGameRender().handleValue(rendererEvent);
-        if (!rendererEvent.isCancelled()) {
-            original.call(instance, tickCounter, tick);
-        }
+        return !rendererEvent.isCancelled();
     }
 
     @WrapOperation(

@@ -12,10 +12,10 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RecipeTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.task.ToggleManager;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
@@ -179,7 +179,7 @@ public class FastCraft extends BaseModule {
                         .withTooltips(TooltipHandler.of(
                                 ChatUtils.parseTooltipsTranslation("widget.fast-craft.lock.tooltips", ""))))
                 .addToSub(recipeSubScreen);
-        Runnable toggle = ToggleManager.wrapFlagAsToggle("fast-craft.drop-craft", dropCraft);
+        Runnable toggle = HotKeyUtils.wrapFlagAsToggle("fast-craft.drop-craft", dropCraft);
 
         ExecutableWidget toggleDropButton = ExecutableWidget.instance(120, screen.height / 2 - 72, 24, 12)
                 .setElementHandler(new ButtonElement(
@@ -227,7 +227,7 @@ public class FastCraft extends BaseModule {
                         .withTooltips(TooltipHandler.of(
                                 ChatUtils.parseTooltipsTranslation("widget.fast-craft.lock.tooltips", ""))))
                 .addToSub(recipeSubScreen);
-        Runnable toggle = ToggleManager.wrapFlagAsToggle("fast-craft.drop-craft", dropCraft);
+        Runnable toggle = HotKeyUtils.wrapFlagAsToggle("fast-craft.drop-craft", dropCraft);
 
         ExecutableWidget toggleDropButton = ExecutableWidget.instance(150, screen.height / 2 - 72, 24, 12)
                 .setElementHandler(new ButtonElement(

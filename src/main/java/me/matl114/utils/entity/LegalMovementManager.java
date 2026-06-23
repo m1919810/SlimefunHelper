@@ -255,7 +255,7 @@ public class LegalMovementManager {
 
         default void preTick(Event<LegalMovementManager> movementManagerEvent) {}
 
-        public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent);
+        default void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
 
         default void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {}
 
@@ -271,7 +271,9 @@ public class LegalMovementManager {
         // return if this hack is still valid, if return false, we will remove it from hack list
         // tick both
         //
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick);
+        default boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            return true;
+        }
 
         default int compareTo(MovementModifier var1) {
             return this.priority() - var1.priority();

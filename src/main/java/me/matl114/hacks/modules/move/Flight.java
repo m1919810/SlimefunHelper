@@ -9,11 +9,11 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
@@ -261,7 +261,7 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     }
 
     public void dispatchAntiKick(ClientPlayerEntity player) {
-        boolean fakeGilde = MovTasks.getElytraExtra().shouldExcuteAntiKick();
+        boolean fakeGilde = false;
         if (((isActive() && doAntiKick.get()))) {
             antiKick(player, fakeGilde);
         }
@@ -364,7 +364,7 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     }
 
     public Vec3d dispatchAntiKickMotion(Vec3d controlMotion) {
-        boolean fakeGilde = MovTasks.getElytraExtra().shouldExcuteAntiKick();
+        boolean fakeGilde = false;
         if ((fakeGilde || (isActive() && doAntiKick.get()))) {
             return processAntiKickMotion(controlMotion, fakeGilde);
         }

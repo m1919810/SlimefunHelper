@@ -66,10 +66,7 @@ import net.minecraft.network.packet.s2c.query.PingResultS2CPacket;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Language;
-import net.minecraft.util.Util;
+import net.minecraft.util.*;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -659,13 +656,26 @@ public class Listener {
     @Broadcast
     private static final EventChannel<Void> postHandleInputEvents = new EventChannel<>();
 
+    @Getter
+    @Cancelable
+    @Modifiable
+    private static final EventChannel<Hand> prePlayerUseItem = new EventChannel<>();
+
+    @Getter
+    @Modifiable
+    @ExtraArgs({Hand.class})
+    private static final EventChannel<ActionResult> postPlayerUseItem = new EventChannel<>();
+
     @Getter // player interact at block
     @Cancelable
+    @Modifiable
+    @ExtraArgs({Hand.class})
     private static final EventChannel<BlockHitResult> prePlayerUseItemAtBlock = new EventChannel<>();
 
     @Getter
     @Broadcast
-    private static final EventChannel<BlockHitResult> postPlayerUseItemAtBlock = new EventChannel<>();
+    @ExtraArgs({BlockHitResult.class, Hand.class})
+    private static final EventChannel<ActionResult> postPlayerUseItemAtBlock = new EventChannel<>();
 
     @Getter // player attack at block
     @Cancelable
@@ -893,17 +903,6 @@ public class Listener {
     private static void sendInternal(Channel channel, Packet<?> packet) {
         ChannelFuture channelFuture = channel.writeAndFlush(packet);
         channelFuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-    }
-
-    public static boolean doItemUseAtBlockPre(Hand hand, BlockHitResult result) {
-        Event<BlockHitResult> event = new Event<>(result, true, false, hand);
-        prePlayerUseItemAtBlock.handleValue(event);
-        return !event.isCancelled();
-    }
-
-    public static void doItemUseAtBlockPost(Hand hand, BlockHitResult result) {
-        Event<BlockHitResult> event = new Event<>(result, false, false, hand);
-        postPlayerUseItemAtBlock.handleValue(event);
     }
 
     public static void onClientConnectionEstablish(Event<ClientConnection> event) {
