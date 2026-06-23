@@ -89,11 +89,15 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                     try {
                         String input = attr.getValue();
                         if (Objects.equals(input, "minecraft:default")) {
-                            icon.render(element, context, null);
+                            int startIndexX = (element.getTextureHeight() - 16) / 2;
+                            int startIndexY = startIndexX;
+                            icon.render(startIndexX, startIndexY, context, null);
                         } else {
                             Identifier identifier = Identifier.tryParse(attr.getValue());
                             T value = registry.get(identifier);
-                            icon.render(element, context, value);
+                            int startIndexX = (element.getTextureHeight() - 16) / 2;
+                            int startIndexY = startIndexX;
+                            icon.render(startIndexX, startIndexY, context, value);
                         }
                     } catch (Throwable e) {
                     }
