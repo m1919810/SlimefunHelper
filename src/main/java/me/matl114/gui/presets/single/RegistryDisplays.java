@@ -111,13 +111,6 @@ public class RegistryDisplays {
         public static IIcon<?> EMPTY = ((x, y, context, registerValue) -> {});
         public static ItemStack DEFAULT_NULL_ICON = new ItemStack(Items.BARRIER);
 
-        default void render(DrawableWidget element, VDrawContext context, T registerValue) {
-            // for default
-            int startIndexX = (element.getTextureWidth() - 16) / 2;
-            int startIndexY = (element.getTextureHeight() - 16) / 2;
-            render(startIndexX, startIndexY, context, registerValue);
-        }
-
         default void render(int startIndexX, int startIndexY, VDrawContext context, T registerValue) {
             if (registerValue == null) {
                 context.drawItem(DEFAULT_NULL_ICON, startIndexX, startIndexY, 114514, 0);
@@ -162,7 +155,9 @@ public class RegistryDisplays {
                 float delta,
                 float alpha,
                 boolean shouldHighlight) {
-            icon.render(element, context, value);
+            int startIndexX = (element.getTextureHeight() - 16) / 2;
+            int startIndexY = startIndexX;
+            icon.render(startIndexX, startIndexY, context, value);
             RenderHandler.drawScaledText0(context, mc.textRenderer, name, 20, 1, 200, 10, -16711936, -1);
             RenderHandler.drawScaledText0(
                     context, mc.textRenderer, Text.literal(identifier.toString()), 20, 10, 200, 19, -16711936, -1);
