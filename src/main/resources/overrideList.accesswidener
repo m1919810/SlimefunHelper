@@ -85,3 +85,5 @@ accessible field net/minecraft/client/world/ClientChunkManager$ClientChunkMap ce
 accessible method net/minecraft/client/world/ClientChunkManager$ClientChunkMap getIndex (II)I
 accessible method net/minecraft/nbt/NbtCompound entrySet ()Ljava/util/Set;
 accessible field net/minecraft/client/gui/hud/DebugHud showDebugHud Z
+accessible field net/minecraft/entity/Entity touchingWater Z
+accessible field net/minecraft/entity/Entity submergedInWater Z

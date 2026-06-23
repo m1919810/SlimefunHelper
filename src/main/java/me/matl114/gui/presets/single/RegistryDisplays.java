@@ -14,7 +14,7 @@ import me.matl114.utils.RegistryUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.client.texture.MissingSprite;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
@@ -28,7 +28,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
@@ -169,12 +168,7 @@ public class RegistryDisplays {
         }
     }
 
-    public static Identifier getEffectTexture(RegistryEntry<StatusEffect> effect) {
-        return (Identifier) effect.getKey()
-                .map(RegistryKey::getValue)
-                .map((id) -> {
-                    return id.withPrefixedPath("mob_effect/");
-                })
-                .orElseGet(MissingSprite::getMissingSpriteId);
+    public static Sprite getEffectTexture(RegistryEntry<StatusEffect> effect) {
+        return MinecraftClient.getInstance().getStatusEffectSpriteManager().getSprite(effect);
     }
 }
