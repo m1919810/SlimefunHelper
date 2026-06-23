@@ -39,6 +39,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -80,9 +81,9 @@ public class MultiBlockHelper extends BaseModule {
     private int lastChatTimestamp = 0;
     private int lastInteractTimestamp = 0;
 
-    public void onBlockClick(Event<BlockHitResult> result) {
+    public void onBlockClick(Event<ActionResult> result) {
         if (enableClicker.get()) {
-            onClickBlockExecute(result.context(), false, true);
+            onClickBlockExecute(result.getArgs(0), false, true);
         }
     }
 

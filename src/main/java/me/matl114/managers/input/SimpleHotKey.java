@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Tasks;
 
 public class SimpleHotKey implements IHotKey {

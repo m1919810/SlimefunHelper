@@ -15,6 +15,7 @@ import lombok.experimental.Accessors;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.Named;
 import me.matl114.hacks.utils.NamedConsumer;
 import me.matl114.hacks.utils.NamedPredicate;
@@ -298,7 +299,7 @@ public abstract class BaseModule implements ModuleListProvider {
         return builder(config, MultiKeyBind.class)
                 .path(path)
                 .defaultValue(defaultValue)
-                .registerHotkey(TaskManagers.getToggleHandler(Configs.TOGGLE_CONFIG, path));
+                .registerHotkey(HotKeyUtils.getToggleHandler(Configs.TOGGLE_CONFIG, path));
     }
 
     public WrapperSettingBuilder<MultiKeyBind> moduleEntry(
@@ -316,7 +317,7 @@ public abstract class BaseModule implements ModuleListProvider {
         return new WrapperModuleSettingBuilder(
                         config.asRef(), config, this, new ModuleEntry(config, togglePath, hotkeyPath))
                 .defaultValue(defaultValue)
-                .registerHotkey(TaskManagers.getToggleHandler(config, togglePath))
+                .registerHotkey(HotKeyUtils.getToggleHandler(config, togglePath))
                 .registerModuleEntry();
     }
 
@@ -332,7 +333,7 @@ public abstract class BaseModule implements ModuleListProvider {
                         this,
                         new MetaDataModuleEntry(config, togglePath, hotkeyPath, descriptor))
                 .defaultValue(defaultValue)
-                .registerHotkey(TaskManagers.getToggleHandler(config, togglePath))
+                .registerHotkey(HotKeyUtils.getToggleHandler(config, togglePath))
                 .registerModuleEntry();
     }
 
@@ -341,7 +342,7 @@ public abstract class BaseModule implements ModuleListProvider {
         return new WrapperSettingBuilder<>(config.asRef(), config, KeyBindRef.TYPE, this)
                 .path(path)
                 .defaultValue(defaultValue)
-                .registerHotkey(TaskManagers.getToggleHandler(config, togglePath));
+                .registerHotkey(HotKeyUtils.getToggleHandler(config, togglePath));
     }
 
     public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(

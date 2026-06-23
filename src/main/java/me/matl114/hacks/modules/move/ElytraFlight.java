@@ -7,13 +7,12 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.HotKeyUtils;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.managers.task.ToggleManager;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
@@ -34,7 +33,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public KeyBindRef hotkey = moduleEntry(
                     simpleFlightControl.add("enable-control-hotkey"),
                     new MultiKeyBind(),
-                    simpleFlightControl.add("enable-control"))
+                    simpleFlightControl.add("enable-control"),
+                    moduleMeta(() -> this.controlMode))
             .build();
 
     public final DoubleRef packetMotion = builder(customFireworks.add("motion-amount"), DoubleRef.TYPE)
@@ -58,26 +58,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef useFloatingUtils =
             flagBuilder(simpleFlightControl.add("use-floating-utils")).build();
-    boolean currentTakeOff = false;
-    public final FlagRef autoFly = flagBuilder(simpleFlightControl.add("auto-fly"))
-            .updateListener(s -> {
-                if (s) {
-                    enable.set(true);
-                    currentTakeOff = false;
-                    if (checkNull()) return;
-                    ElytraExtra.INSTANCE.autoTakeoff();
-                }
-            })
-            .build();
-
-    public final KeyBindRef autoFlyKey = toggleHotkey(
-                    simpleFlightControl.add("auto-fly-hotkey"), new MultiKeyBind(), simpleFlightControl.add("auto-fly"))
-            .build();
-
     public final FlagRef horizontalFlyNoGravity = builder(
                     simpleFlightControl.add("horizontal-no-gravity"), Boolean.class)
             .defaultValue(true)
             .build();
+
+    public final FlagRef landAutoClose =
+            flagBuilder(simpleFlightControl.add("land-auto-close")).build();
 
     public final DoubleRef motionArg = builder(simpleFlightControl.add("motion-lerp-argument"), DoubleRef.TYPE)
             .defaultValue(1.0D)
@@ -89,6 +76,19 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef useAutoRescale =
             flagBuilder(simpleFlightControl.add("use-auto-rescale")).build();
+    boolean currentTakeOff = false;
+    public final FlagRef autoFly =
+            flagBuilder(simpleFlightControl.add("auto-fly")).build();
+
+    public final KeyBindRef autoFlyKey = toggleHotkey(
+                    simpleFlightControl.add("auto-fly-hotkey"), new MultiKeyBind(), simpleFlightControl.add("auto-fly"))
+            .build();
+
+    public final FlagRef autoFlyAutoJumpOff =
+            flagBuilder(simpleFlightControl.add("auto-fly-auto-jump-off")).build();
+
+    public final FlagRef autoFlyLandAutoClose =
+            flagBuilder(simpleFlightControl.add("auto-fly-land-auto-close")).build();
 
     private static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -116,7 +116,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         controlMode.next();
         Debug.chat(
                 ChatUtils.stringToText("&c[ElytraFlight] &fMode switch to"),
-                motionMode.get().getDisplay());
+                controlMode.get().getDisplay());
         return false;
     }
 
@@ -135,9 +135,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+        if (player.isFallFlying()) {
+            currentTakeOff = true;
+        }
         if (enable.get()) {
             if (player.isFallFlying()) {
-                currentTakeOff = true;
                 if (lastVelocity == null) {
                     lastVelocity = Vec3d.ZERO;
                 }
@@ -204,10 +206,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     }
                 }
                 // add custom elytra event for bot to control elytra
-                boolean fakeGlideNoFall = MovTasks.getElytraExtra().shouldExcuteAntiKick();
-                if (fakeGlideNoFall) {
-                    realVector = MovTasks.getFlight().processAntiKickMotion(realVector, true);
-                }
                 FlightVelocity velocity =
                         new FlightVelocity(realVector, motionAmount, FlightVelocity.Mode.ELYTRA_FLIGHT);
                 Listener.getCustomListener().broadcast(new EventContainer<>(FlightVelocity.class, velocity));
@@ -271,27 +269,28 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 }
             } else {
                 lastVelocity = null;
-                if (currentTakeOff && mc.player.isOnGround() && autoFly.get()) {
-                    ToggleManager.wrapFlagAsToggle(
-                                    simpleFlightControl.add("auto-fly").toPath(), autoFly)
-                            .run();
-                }
-                if (autoFly.get()) {
+                if (autoFly.get() && autoFlyAutoJumpOff.get()) {
                     ElytraExtra.INSTANCE.autoTakeoff();
                 }
             }
         } else {
             lastVelocity = null;
         }
+        if (currentTakeOff && !mc.player.isFallFlying() && mc.player.isOnGround()) {
+            if (enable.get() && landAutoClose.get()) {
+                HotKeyUtils.wrapFlagAsToggle(
+                                simpleFlightControl.add("enable-control").toPath(), enable)
+                        .run();
+            }
+            if (autoFly.get() && autoFlyLandAutoClose.get()) {
+                HotKeyUtils.wrapFlagAsToggle(simpleFlightControl.add("auto-fly").toPath(), autoFly)
+                        .run();
+            }
+            currentTakeOff = false;
+        }
     }
 
-    // boolean controllingTick = false;
     Boolean modifyNoGravity = null;
-
-    @Override
-    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-    }
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {

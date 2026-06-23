@@ -3,10 +3,8 @@ package me.matl114.managers.task;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.Debug;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.NotNull;
 
 public interface ToggleManager extends TaskManager {
@@ -31,22 +29,6 @@ public interface ToggleManager extends TaskManager {
 
     public FlagRef getOrRegister(String value, boolean defaultValue);
 
-    public static Runnable wrapFlagAsToggle(String[] path, FlagRef flagRef) {
-        return wrapFlagAsToggle(String.join(".", path), flagRef);
-    }
-
-    public static Runnable wrapFlagAsToggle(String path, FlagRef flagRef) {
-        return () -> {
-            boolean result = !flagRef.get();
-            flagRef.set(result);
-            Debug.chat(
-                    Text.literal(result ? "[+]" : "[-]")
-                            .formatted(result ? Formatting.GREEN : Formatting.RED)
-                            .formatted(Formatting.BOLD),
-                    Text.translatableWithFallback(path, path));
-        };
-    }
-
     public static class ToggleManagerImpl implements ToggleManager {
         Map<String, FlagRef> flags;
 
@@ -67,7 +49,7 @@ public interface ToggleManager extends TaskManager {
 
         public Runnable getToggle(String value) {
             final FlagRef toggle = this.flags.getOrDefault(value, FALSE);
-            return toggle == FALSE ? () -> {} : wrapFlagAsToggle(value, toggle);
+            return toggle == FALSE ? () -> {} : HotKeyUtils.wrapFlagAsToggle(value, toggle);
         }
 
         @Override

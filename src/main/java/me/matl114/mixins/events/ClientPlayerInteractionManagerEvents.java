@@ -1,6 +1,7 @@
 package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -15,12 +16,14 @@ import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -43,12 +46,62 @@ public abstract class ClientPlayerInteractionManagerEvents {
         Listener.getClickCraftingRecipe().broadcast(recipeId);
     }
 
+    @Inject(
+            method = "interactItem",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;syncSelectedSlot()V",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void onCancelSend(
+            PlayerEntity player,
+            Hand hand,
+            CallbackInfoReturnable<ActionResult> cir,
+            @Local(argsOnly = true) LocalRef<Hand> hand2) {
+        Event<Hand> handEvent = new Event<>(hand, true, true);
+        Listener.getPrePlayerUseItem().handleValue(handEvent);
+        if (handEvent.isCancelled()) {
+            cir.setReturnValue(ActionResult.PASS);
+        } else {
+            Hand hand3 = handEvent.context;
+            if (hand3 != hand) {
+                hand2.set(hand3);
+            }
+        }
+    }
+
+    @Inject(method = "method_41929", at = @At("RETURN"))
+    public void onInteractItem(
+            Hand hand,
+            PlayerEntity playerEntity,
+            MutableObject<ActionResult> mutableObject,
+            int sequence,
+            CallbackInfoReturnable<Packet> cir) {
+        ActionResult acc = mutableObject.get();
+        Event<ActionResult> eventResult = new Event<>(mutableObject.get(), false, true, hand);
+        Listener.getPostPlayerUseItem().handleValue(eventResult);
+        if (eventResult.context != acc) {
+            mutableObject.setValue(eventResult.context);
+        }
+    }
+
     @Inject(method = "interactBlock", at = @At(value = "HEAD"))
     public void onPreInteractBlock(
-            ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir) {
-        // todo: can it be modifiable
-        if (!Listener.doItemUseAtBlockPre(hand, hitResult)) {
+            ClientPlayerEntity player,
+            Hand hand,
+            BlockHitResult hitResult,
+            CallbackInfoReturnable<ActionResult> cir,
+            @Local(argsOnly = true) LocalRef<BlockHitResult> hand2) {
+        Event<BlockHitResult> blockHitResultEvent = new Event<>(hitResult, true, true, hand);
+        Listener.getPrePlayerUseItemAtBlock().handleValue(blockHitResultEvent);
+        if (blockHitResultEvent.isCancelled()) {
             cir.setReturnValue(ActionResult.PASS);
+        } else {
+            BlockHitResult hitResult2 = blockHitResultEvent.context;
+            if (hitResult2 != hitResult) {
+                hand2.set(hitResult2);
+            }
         }
     }
 
@@ -61,8 +114,18 @@ public abstract class ClientPlayerInteractionManagerEvents {
                                     "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V",
                             shift = At.Shift.AFTER))
     public void onPostInteractBlock(
-            ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir) {
-        Listener.doItemUseAtBlockPost(hand, hitResult);
+            ClientPlayerEntity player,
+            Hand hand,
+            BlockHitResult hitResult,
+            CallbackInfoReturnable<ActionResult> cir,
+            @Local MutableObject<ActionResult> mutableObject) {
+        ActionResult acc = mutableObject.get();
+        Event<ActionResult> eventResult = new Event<>(acc, false, true, hitResult, hand);
+        Listener.getPostPlayerUseItemAtBlock().handleValue(eventResult);
+        ActionResult acc2 = eventResult.context;
+        if (acc2 != acc) {
+            mutableObject.setValue(acc2);
+        }
     }
 
     @ModifyArg(
