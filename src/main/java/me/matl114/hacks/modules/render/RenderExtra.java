@@ -75,7 +75,6 @@ public class RenderExtra extends BaseModule {
         super.registerAll();
         registerListener(
                 Listener.getPacketPoint().getChannel(ResourcePackSendS2CPacket.class), this::onResourceRequest);
-
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusEffectS2CPacket.class), this::doCancelEffect);
         registerListener(RenderListener.getApplyWorldBobView(), this::onApplyBobView);
     }
