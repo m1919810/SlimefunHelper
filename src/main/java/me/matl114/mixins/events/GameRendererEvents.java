@@ -37,7 +37,7 @@ public abstract class GameRendererEvents {
             RenderListener.getApplyWorldBobView().handleValue(event);
             return !event.isCancelled();
         }
-        return null;
+        return original;
     }
 
     @ModifyArg(

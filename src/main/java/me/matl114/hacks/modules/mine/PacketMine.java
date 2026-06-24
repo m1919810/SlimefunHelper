@@ -3,10 +3,16 @@ package me.matl114.hacks.modules.mine;
 import com.google.common.util.concurrent.Runnables;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+
+import lombok.Getter;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.annotations.Broadcast;
+import me.matl114.events.annotations.Cancelable;
+import me.matl114.events.annotations.ExtraArgs;
+import me.matl114.events.channels.EventChannel;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.InvExtra;
@@ -134,9 +140,8 @@ public class PacketMine extends BaseModule {
 
                     ItemStack currentTool = currentItemSlot.val();
                     if (canMine(blockState, currentTool)) {
-                        Event<EventContainer<?>> eventPre =
-                                new Event<>(new EventContainer<>(Pre.class, Pre.INSTANCE), true, false, pos);
-                        Listener.getCustomListener().handleValue(eventPre);
+                        Event<Pre> eventPre = new Event<>(Pre.INSTANCE, true, false, pos);
+                        prePacketMine.handleValue(eventPre);
                         if (!eventPre.isCancelled()) {
                             if (groundDeceive.get() && !mc.player.isOnGround()) {
                                 boolean shouldExecute = true;
@@ -203,7 +208,7 @@ public class PacketMine extends BaseModule {
                 }
             }
             if (postMineCallback) {
-                Listener.getCustomListener().broadcast(new EventContainer<>(Post.class, Post.INSTANCE));
+                postPacketMine.broadcast(Post.INSTANCE, pos);
             }
         }
     }
@@ -267,6 +272,15 @@ public class PacketMine extends BaseModule {
             return false;
         }
     }
+    @Getter
+    @Cancelable
+    @ExtraArgs({BlockPos.class})
+    public static final EventChannel<Pre> prePacketMine = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    @ExtraArgs({BlockPos.class})
+    public static final EventChannel<Post> postPacketMine = new EventChannel<>();
 
     public static class Pre {
         public static final Pre INSTANCE = new Pre();
