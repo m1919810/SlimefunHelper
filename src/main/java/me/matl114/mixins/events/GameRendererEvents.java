@@ -33,7 +33,7 @@ public abstract class GameRendererEvents {
             RenderListener.getApplyWorldBobView().handleValue(event);
             return !event.isCancelled();
         }
-        return null;
+        return original;
     }
 
     @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)

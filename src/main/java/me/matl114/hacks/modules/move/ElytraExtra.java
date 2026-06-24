@@ -150,6 +150,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef landAutoClose =
             flagBuilder(armorFlyPath.add("land-auto-close")).build();
 
+    public final FlagRef landAutoSneak = flagBuilder(armorFlyPath.add("land-auto-sneak"))
+        .build();
+
     public final FlagRef armorFlyBadPacketFix = flagBuilder(armorFlyPath.add("armor-fly-fix-grim-bad-packets-1"))
             .show(() -> this.armorMode.get().isIn(ArmorFlyMode.TICK))
             .build();
@@ -918,6 +921,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             HotKeyUtils.wrapFlagAsToggle(armorFlyPath.add("enable").toPath(), armorFly)
                     .run();
         }
+        if(landAutoSneak.get()){
+            nextLandingSneak = true;
+        }
     }
 
     public void startArmorFlyTransaction(int value) {
@@ -1513,7 +1519,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         return true;
     }
-
+    boolean nextLandingSneak;
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
@@ -1540,6 +1546,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     }
                 }
             }
+        }
+        if(!player.isFallFlying() && nextLandingSneak && !player.isSneaking()){
+            PlayerInputUtils.of(player).sneak(true).applyInput(player);
+            nextLandingSneak = false;
         }
 
         //        if(armorFly.get() && player.isFallFlying() && this.thisFallFlyingIsArmorFly != -1){
