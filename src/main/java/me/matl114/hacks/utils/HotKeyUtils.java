@@ -79,18 +79,6 @@ public class HotKeyUtils {
         return HotKeyUtils.wrapFlagAsToggle(commonPath, flag);
     }
 
-    public static SimpleHotKey.InputHandler getToggleHandler(String commonPath, FlagRef flagRef) {
-        Runnable toggleTask = wrapFlagAsToggle(commonPath, flagRef);
-        return (ih, m) -> {
-            ClientPlayerEntity player = m.getClient().player;
-            if (player != null && HotKeyUtils.isValidState()) {
-                toggleTask.run();
-                return true;
-            }
-            return false;
-        };
-    }
-
     public static SimpleHotKey.InputHandler getToggleHandler(Config config, String... path) {
         String commonPath = String.join(".", path);
         var flag = config.getBoolean(path);
@@ -100,7 +88,7 @@ public class HotKeyUtils {
                 ClientPlayerEntity player = m.getClient().player;
                 if (player != null && HotKeyUtils.isValidState()) {
                     toggleTask.run();
-                    return true;
+                    return ModuleSettings.INSTANCE.toggleKeysStopVanilla.get();
                 }
                 return false;
             };

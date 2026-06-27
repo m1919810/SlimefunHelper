@@ -52,7 +52,7 @@ public class MineBot extends BaseModule {
             .build();
 
     public final NBTRef<RegistryRegex<Block>> whiteListBlockRegex = builder(
-                    mineBot.add("whitelist"), NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
+                    mineBot.add("whitelist"), RegistryRegex.BLOCK_TYPE)
             .defaultValue(new RegistryRegex<>(new Regex("^(cobblestone|stone|.*ore)$"), Registries.BLOCK))
             .build();
 

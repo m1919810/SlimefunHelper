@@ -101,7 +101,7 @@ public class PositionPredict extends BaseModule {
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityPositionSyncS2CPacket.class),
                 this::onPostEntityTeleport);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
     public void onRender(Event<MatrixStack> event) {

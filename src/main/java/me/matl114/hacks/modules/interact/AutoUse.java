@@ -42,7 +42,7 @@ public class AutoUse extends BaseModule {
     public final FlagRef useFood = flagBuilder(path.add("use-food")).build();
 
     public final NBTRef<RegistryRegex<Item>> whiteList = builder(
-                    path.add("use-item-white-list"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
+                    path.add("use-item-white-list"), RegistryRegex.ITEM_TYPE)
             .defaultValue(new RegistryRegex<>(new Regex("^(.*spear|.*sword|shield)$"), Registries.ITEM))
             .build();
 

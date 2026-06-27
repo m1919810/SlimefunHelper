@@ -13,6 +13,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
@@ -96,14 +97,14 @@ public class PrinterRewrite extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetReload);
     }
 
     int countDown;
     //    final Set<BlockPos> placeFailureBlocks = new HashSet<>();
     //    final Set<BlockPos> placeSuccessBlocks = new HashSet<>();
-    final RenderCollector<Box> drawOutlines = RenderUtils.createBoxCollector(true, false, false);
+    final RenderCollector<Box> drawOutlines = RenderCollectors.createBoxCollector(true, false, false);
 
     public void onPreInputEvent(Event<Void> event) {
         if (++countDown > delay.get()) {
@@ -226,7 +227,7 @@ public class PrinterRewrite extends BaseModule {
         if (enable.get() && render.get()) {
             RenderUtils.startDrawVirtual(stack);
             try {
-                drawOutlines.render(stack);
+                drawOutlines.render3D(stack);
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }

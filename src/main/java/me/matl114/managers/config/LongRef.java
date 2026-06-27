@@ -2,6 +2,7 @@ package me.matl114.managers.config;
 
 import lombok.AllArgsConstructor;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.kv.AttrKeyValues;
 
 @AllArgsConstructor
 public class LongRef extends Ref<Long> {
@@ -49,9 +50,9 @@ public class LongRef extends Ref<Long> {
     }
 
     @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if (otherRef instanceof LongRef longRef) {
-            longRef.set(this.value);
+    public <W> boolean copyValueFrom(Ref<W> otherRef) {
+        if (otherRef instanceof LongRef lg) {
+            set(lg.get());
             return true;
         }
         return false;
@@ -59,8 +60,7 @@ public class LongRef extends Ref<Long> {
 
     @Override
     public AttrKeyValue<Long> _createKeyValue0(String key) {
-        return new me.matl114.utils.config.BaseAttrKeyValue<>(
-                key, this.value, me.matl114.utils.config.WrapperFactory.of(Long::parseLong, String::valueOf));
+        return new me.matl114.utils.config.BaseAttrKeyValue<>(key, this.value, AttrKeyValues.LONG_FACTORY);
     }
 
     public void set(long value) {

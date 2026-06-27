@@ -8,8 +8,11 @@ import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
+import me.matl114.hacks.utils.render.RenderCollectors;
+import me.matl114.hacks.utils.render.RenderElements;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
+import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ColorUtils;
@@ -17,6 +20,7 @@ import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDataFlag;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.ComponentChanges;
@@ -31,8 +35,8 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.predicate.NbtPredicate;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Unit;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
@@ -78,14 +82,13 @@ public class ItemESP extends BaseModule {
             .updateListener(s -> launchDelayUpdateTask())
             .build();
 
-    // 颜色（使用 WrapColor，默认绿色）
-    public NBTRef<WrapColor> color = builder(itemEsp.add("color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
-            .build();
+    public FlagRef drawName = flagBuilder(itemEsp.add("draw-name")).build();
 
     public NBTRef<TracingOption> option = builder(itemEsp.add("options"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
+
+    public FlagRef nameSimple = flagBuilder(itemEsp.add("name-display")).build();
 
     // NBT 谓词（字符串格式，默认为空）
     public NBTRef<PrimitiveList<NbtCompound>> nbtPredicate = builder(
@@ -96,8 +99,23 @@ public class ItemESP extends BaseModule {
 
     // 物品类型过滤器（默认识别所有物品）
     public NBTRef<RegistryRegex<Item>> itemType = builder(itemEsp.add("item-type"), RegistryRegex.<Item>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^(wither_skeleton_skull)$"), Registries.ITEM))
+            .defaultValue(new RegistryRegex<>(
+                    new Regex(
+                            "^(.*ton_skull|netherite.*|.*_star|.*_apple|.*potion|tot.*|end_c.*l|obsi.*|.*anchor|expe.*|mace|ely.*)$"),
+                    Registries.ITEM))
             .updateListener(this::updateSet)
+            .build();
+
+    public NBTRef<TracingOption> specialOptions = builder(itemEsp.add("special-options"), TracingOption.class)
+            .defaultValue(new TracingOption(true, true))
+            .build();
+
+    public FlagRef nameSpecial = builder(itemEsp.add("name-display-special"), Boolean.class)
+            .defaultValue(true)
+            .build();
+    // 颜色（使用 WrapColor，默认绿色）
+    public NBTRef<WrapColor> color = builder(itemEsp.add("color"), WrapColor.class)
+            .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
             .build();
 
     // 颜色（使用 WrapColor，默认绿色）
@@ -105,10 +123,12 @@ public class ItemESP extends BaseModule {
             .defaultValue(new WrapColor(ColorUtils.color("#ED0355")))
             .build();
 
-    public NBTRef<TracingOption> specialOptions = builder(itemEsp.add("special-options"), TracingOption.class)
-            .defaultValue(new TracingOption(true, true))
+    public NBTRef<WrapColor> nameColor = builder(itemEsp.add("name-display-color"), WrapColor.class)
+            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
             .build();
 
+    public DoubleRef nameScale =
+            doubleBuilder(itemEsp.add("name-scale")).defaultValue(0.75D).build();
     // 可选：热键（若需要可取消注释，并实现对应的 KeyBindRef）
     // public KeyBindRef hotkey = keyBindBuilder(Configs.RENDER_CONFIG, HOTKEY).build();
 
@@ -129,7 +149,8 @@ public class ItemESP extends BaseModule {
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.GLOW_ITEM_FRAME),
                 this::handleItemFrameItemData);
         registerListener(Listener.getPostTick(), this::onUpdate);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRenderEntity);
+        registerListener(RenderListener.getRender3DEvent(), this::onRenderEntity3D);
+        registerListener(RenderListener.getRender2DEvent(), this::onRenderEntity2D);
     }
 
     public boolean testItem(ItemStack stack) {
@@ -156,7 +177,11 @@ public class ItemESP extends BaseModule {
     private static final String ITEM_ESP_METADATA_KEY = "slimefunhelper:item_esp_show_key";
 
     public void markItemToRender(Entity entity) {
-        EntityAccess.of(entity).getMetadata().put(this, ITEM_ESP_METADATA_KEY, Unit.INSTANCE);
+        markItemToRender(entity, Text.empty());
+    }
+
+    public void markItemToRender(Entity entity, Text text) {
+        EntityAccess.of(entity).getMetadata().put(this, ITEM_ESP_METADATA_KEY, text);
     }
 
     public void removeItemFromRender(Entity entity) {
@@ -198,7 +223,7 @@ public class ItemESP extends BaseModule {
 
     public void onItemEntity(Entity itemEntity, ItemStack stack) {
         if (!stack.isEmpty() && testItem(stack)) {
-            markItemToRender(itemEntity);
+            markItemToRender(itemEntity, stack.getName());
         } else {
             removeItemFromRender(itemEntity);
         }
@@ -226,12 +251,15 @@ public class ItemESP extends BaseModule {
         }
     }
 
-    final RenderCollector<Box> boxCollector = RenderUtils.createBoxCollector(true, false, false);
-    final RenderCollector<Vec3d> tracerCollector = RenderUtils.createTracerCollector();
+    final RenderCollector<Box> boxCollector = RenderCollectors.createBoxCollector(true, false, false);
+    final RenderCollector<Vec3d> tracerCollector = RenderCollectors.createTracerCollector();
+
+    final RenderCollector<RenderElements.Text> textCollector = RenderCollectors.createTextCollector();
 
     public void onUpdate(Event<Void> eventVoid) {
         boxCollector.clear();
         tracerCollector.clear();
+        textCollector.clear();
         if (checkNull()) {
             return;
         }
@@ -239,8 +267,9 @@ public class ItemESP extends BaseModule {
         if (enable.get()) {
             boolean special = enableSpecial.get();
             boolean common = enableSimple.get();
-            int color = ColorUtils.withAlphaInt(this.color.get().asRGB(), 1.0F);
-            int specialColor = ColorUtils.withAlphaInt(this.specialColor.get().asRGB(), 1.0F);
+            int color = this.color.get().withAlpha(255);
+            int specialColor = this.specialColor.get().withAlpha(255);
+            int nameColor = this.nameColor.get().withAlpha(255);
             TracingOption op = option.get();
             TracingOption specialOp = specialOptions.get();
             if (special || common) {
@@ -249,12 +278,20 @@ public class ItemESP extends BaseModule {
                         if (special
                                 && entity instanceof EntityAccess<?> access
                                 && !access.isMetaEmpty()
-                                && access.getMetadata().get(this, ITEM_ESP_METADATA_KEY) != null) {
+                                && access.getMetadata().get(this, ITEM_ESP_METADATA_KEY) instanceof Text displayText) {
                             if (specialOp.box()) {
                                 boxCollector.submit(entity.getBoundingBox(), specialColor);
                             }
                             if (specialOp.line()) {
                                 tracerCollector.submit(entity.getBoundingBox().getCenter(), specialColor);
+                            }
+                            if (nameSpecial.get()) {
+                                textCollector.submit(
+                                        new RenderElements.Text(
+                                                displayText,
+                                                entity.getBoundingBox().getCenter(),
+                                                (float) nameScale.get()),
+                                        nameColor);
                             }
                             continue;
                         }
@@ -265,6 +302,27 @@ public class ItemESP extends BaseModule {
                             if (op.line()) {
                                 tracerCollector.submit(entity.getBoundingBox().getCenter(), color);
                             }
+                            if (nameSimple.get()) {
+                                Text text;
+                                if (entity instanceof ItemEntity entity1
+                                        && !entity1.getStack().isEmpty()) {
+                                    text = entity1.getStack().getName();
+                                } else if (entity instanceof ItemFrameEntity entity1
+                                        && !entity1.getHeldItemStack().isEmpty()) {
+                                    text = entity1.getHeldItemStack().getName();
+                                } else {
+                                    text = null;
+                                }
+                                if (text != null) {
+                                    textCollector.submit(
+                                            new RenderElements.Text(
+                                                    text,
+                                                    entity.getBoundingBox().getCenter(),
+                                                    (float) nameScale.get()),
+                                            nameColor);
+                                }
+                            }
+                            continue;
                         }
                     }
                 }
@@ -272,16 +330,23 @@ public class ItemESP extends BaseModule {
         }
     }
 
-    public void onRenderEntity(Event<MatrixStack> event) {
+    public void onRenderEntity3D(Event<MatrixStack> event) {
         if (enable.get()) {
             MatrixStack stack = event.context();
             RenderUtils.stopDrawVirtual(stack);
             try {
-                boxCollector.render(stack);
-                tracerCollector.render(stack);
+                boxCollector.render3D(stack);
+                tracerCollector.render3D(stack);
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }
+        }
+    }
+
+    public void onRenderEntity2D(Event<VDrawContext> vdrawEvent) {
+        if (enable.get()) {
+            // tracerCollector.render2D(vdrawEvent.context);
+            textCollector.render2D(vdrawEvent.context);
         }
     }
 }

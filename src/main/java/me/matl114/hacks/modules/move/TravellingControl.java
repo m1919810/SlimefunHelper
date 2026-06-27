@@ -14,6 +14,8 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -105,6 +107,10 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
 
+    public FlagRef pitch40SafeEnd = flagBuilder(travellingControl.add("pitch-40-end-safety-2"))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
+            .build();
+
     public FlagRef pitch40SafeHeightAutoPullup = flagBuilder(travellingControl.add("pitch-40-auto-pull-up"))
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
@@ -123,6 +129,12 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     public DoubleRef negativeArgument = builder(travellingControl.add("pitch-40-negative-delta"), DoubleRef.TYPE)
             .defaultValue(0.0)
             .validator(Configs.doubleRange(0, 90))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
+            .build();
+
+    public NBTRef<OptionalPrimitive<Double>> pitch40HeightLimit = builder(
+                    travellingControl.add("pitch-40-height-limit"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 900.0D))
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
 
@@ -694,7 +706,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             if (control.pitch40SafeHeightAutoPullup.get() && mc.player.getY() < control.minHeight.get() - 16) {
                 handlePullUp();
             }
-            if (control.pitch40SafeHeight.get() && mc.player.getY() < control.minHeight.get() - 64) {
+            if (control.pitch40SafeHeight.get() && mc.player.getY() < control.minHeight.get() - 32) {
                 // emergency
                 Debug.chat("[Pitch40] 滑翔失控了");
                 if (control.pitch40SafeHeight.get()) {
@@ -719,8 +731,8 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
         protected void handleFinishCheck() {
             if (control.checkFinish(ti)) {
-                if (!ti.stopManually && control.pitch40SafeHeight.get()) {
-                    Debug.chat("[Pitch40] 当前处于虚空维度, 我们需要确保你不会掉下去!");
+                if (!ti.stopManually && control.pitch40SafeEnd.get()) {
+                    Debug.chat("[Pitch40] 我们到达了目的地了");
                     Debug.chat("[Pitch40] 我们需要自动断线");
                     MainTasks.scheduleDisconnect();
                 }
@@ -817,6 +829,10 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                             double y = mc.player.getY();
                             double last3YY = this.last3Y[last3YIndex];
                             boolean goingDown = (y < last3YY);
+                            // height limit,
+                            if (control.pitch40HeightLimit.get().test(s -> y > s)) {
+                                goingDown = true;
+                            }
                             if (goingDown) {
                                 if (counter2 > 1) {
                                     Debug.chat("[Pitch40] Current Height", player.getY());
@@ -893,6 +909,10 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                             double y = mc.player.getY();
                             double last3YY = this.last3Y[last3YIndex];
                             boolean goingDown = (y < last3YY);
+                            // height limit,
+                            if (control.pitch40HeightLimit.get().test(s -> y > s)) {
+                                goingDown = true;
+                            }
                             if (currentFlyingHigh && goingDown) {
                                 currentFlyingHigh = false;
                                 Debug.chat("[Pitch40] Current Height", last3YY);

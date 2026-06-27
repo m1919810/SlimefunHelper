@@ -37,6 +37,8 @@ import net.minecraft.util.Identifier;
 public interface NBTTypes {
     public NBTType<Integer> INT_TYPE = new NBTType<>("int", Codec.INT, getWidgetFactory(), INT_FACTORY, 0);
 
+    public NBTType<Long> LONG_TYPE = new NBTType<>("long", Codec.LONG, getWidgetFactory(), LONG_FACTORY, 0L);
+
     public NBTType<Double> DOUBLE_TYPE =
             new NBTType<>("double", Codec.DOUBLE, getWidgetFactory(), DOUBLE_FACTORY, 0.0D);
 
@@ -104,6 +106,8 @@ public interface NBTTypes {
             BaseAttrKeyValue.<NbtCompound>getWidgetFactory(),
             NBT_COMPOUND_FACTORY,
             new NbtCompound());
+
+    public NBTType<WrapEnum<?>> CONFIG_ENUM_TYPE = WrapEnum.TYPE.cast();
 
     public static DrawableWidget generateColorInputWidget(
             AttrKeyValue<TextColor> keyValue, int x, int y, int dx, int dy) {

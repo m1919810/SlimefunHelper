@@ -63,7 +63,7 @@ public class BackTrack extends BaseModule {
         registerListener(PacketManager.getQueueShutdownEvent(), this::onShutdownQueue);
         registerListener(Listener.getPreTick(), this::onTick);
         registerListener(Listener.getPostGameTick(), this::onPostGameTick);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
     @Override

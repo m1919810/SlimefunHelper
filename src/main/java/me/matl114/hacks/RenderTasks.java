@@ -563,8 +563,8 @@ public class RenderTasks {
     }
 
     static {
-        RenderListener.getRenderLayerTasks().registerHandler(RenderTasks::onRenderVirtualTasks);
-        RenderListener.getRenderLayerTasks().registerHandler(RenderTasks::onDebugRenderTick);
+        RenderListener.getRender3DEvent().registerHandler(RenderTasks::onRenderVirtualTasks);
+        RenderListener.getRender3DEvent().registerHandler(RenderTasks::onDebugRenderTick);
         moduleManager.registerFactories(RenderTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
     }

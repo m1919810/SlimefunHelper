@@ -49,11 +49,15 @@ public class InvHud extends BaseModule {
     public IntRef line =
             intBuilder(invHud.add("count-per-line")).defaultValue(9).build();
 
+    public FlagRef showShulkerItems = builder(invHud.add("show-shulker-items"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostGameTick(), this::onPostTick);
-        registerListener(RenderListener.getRenderGameHudTasks(), this::onRender2D);
+        registerListener(RenderListener.getRender2DEvent(), this::onRender2D);
     }
 
     List<ItemStack> toShow;
@@ -62,7 +66,10 @@ public class InvHud extends BaseModule {
         if (enable.get()) {
             toShow = new ArrayList<>();
             Map<ItemStackSample, Integer> map;
-            if ((map = PlayerStateManager.INSTANCE.inventoryTotalSummary) != null) {
+            if ((map = (showShulkerItems.get()
+                            ? PlayerStateManager.INSTANCE.inventoryTotalSummary
+                            : PlayerStateManager.INSTANCE.inventorySummary))
+                    != null) {
                 for (var re : map.entrySet()) {
                     if (whiteList.get().test(re.getKey().sample().getItem())) {
                         ItemStack stack = re.getKey().sample().copyWithCount(re.getValue());

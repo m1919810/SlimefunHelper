@@ -20,9 +20,6 @@ import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.chat.*;
-import me.matl114.hacks.modules.combat.Attack;
-import me.matl114.hacks.modules.combat.BowEnhance;
-import me.matl114.hacks.modules.combat.ProjectileEnhance;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.utils.*;
@@ -781,89 +778,6 @@ public class ChatTasks {
                     .handleValue(new Event<>(new EventContainer<>(ModulePreset.class, preset1), false, false));
             //
             Debug.info("已经加载", preset1.name(), "配置预设");
-            Config.launchSaveTasks();
-        }
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
-                    .name("toggle")
-                    .helper("<toggle> <state> 针对某些配置项进行快捷切换")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("toggle")
-                            .select(List.of("tp-attack", "bow-tp-attack", "mace-attack", "pearl-tp"))
-                            .build())
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("state")
-                            .select(List.of("on", "off", "switch"), "switch")
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onToggle)))
-                    .complete();
-        }
-        // todo: rewrite toggle command, add custom keybind command
-        public void onToggle(ArgumentInputStream re) {
-            String toggle = re.nextNonnull();
-            String state = re.nextNonnull();
-            int stateCode =
-                    switch (state) {
-                        case "on" -> 1;
-                        case "off" -> 2;
-                        case "switch" -> 0;
-                        default -> 0;
-                    };
-            switch (toggle) {
-                case "tp-attack" -> {
-                    Attack attack = CombatTasks.getAttack();
-                    if (stateCode == 0) {
-                        attack.enableTp.set(!attack.enableTp.get());
-                    } else if (stateCode == 1) {
-                        attack.enableTp.set(true);
-                        if (attack.tpRange.get() < 0) {
-                            attack.tpRange.set(-attack.tpRange.get());
-                        }
-                    } else if (stateCode == 2) {
-                        attack.enableTp.set(false);
-                    }
-                }
-                case "bow-tp-attack" -> {
-                    BowEnhance attack = CombatTasks.getBowEnhance();
-                    if (stateCode == 0) {
-                        attack.enableTp.set(!attack.enableTp.get());
-                    } else if (stateCode == 1) {
-                        attack.enableTp.set(true);
-                        if (attack.tpDistance.get() < 0) {
-                            attack.tpDistance.set(-attack.tpDistance.get());
-                        }
-                    } else if (stateCode == 2) {
-                        attack.enableTp.set(false);
-                    }
-                }
-                case "pearl-tp" -> {
-                    ProjectileEnhance attack = CombatTasks.getProjectileEnhance();
-                    if (stateCode == 0) {
-                        attack.enableTp.set(!attack.enableTp.get());
-                    } else if (stateCode == 1) {
-                        attack.enableTp.set(true);
-                        if (attack.tpDistance.get() < 0) {
-                            attack.tpDistance.set(-attack.tpDistance.get());
-                        }
-                    } else if (stateCode == 2) {
-                        attack.enableTp.set(false);
-                    }
-                }
-                case "mace-attack" -> {
-                    Attack attack = CombatTasks.getAttack();
-                    if (stateCode == 0) {
-                        attack.enableMace.set(!attack.enableMace.get());
-                    } else if (stateCode == 1) {
-                        attack.enableMace.set(true);
-                        if (attack.maceHeight.get() < 0) {
-                            attack.maceHeight.set(-attack.maceHeight.get());
-                        }
-                    } else if (stateCode == 2) {
-                        attack.enableMace.set(false);
-                    }
-                }
-            }
             Config.launchSaveTasks();
         }
 

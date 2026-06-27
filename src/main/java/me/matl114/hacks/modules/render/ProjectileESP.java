@@ -66,7 +66,7 @@ public class ProjectileESP extends BaseModule {
         super.registerAll();
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVelocityFireball);
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVelocityArrow);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getServerEntitySpawnListener(), this::onEntitySpawn);
     }
 

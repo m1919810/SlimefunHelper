@@ -25,7 +25,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.ReflectUtils;
-import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.SimpleRegistry;
 import net.minecraft.registry.entry.RegistryEntryInfo;
@@ -113,40 +112,6 @@ public class Config implements RefMap {
     // todo: add CustomBindingsConfigurateScreen and CustomBindingsSelectScreen with a EDIT Button
     public static interface CustomSerializableConfig {}
 
-    @Deprecated
-    public static class RegistryRef<T> extends Ref<T> {
-        // todo not implement yet
-        @Override
-        public T getValue() {
-            return null;
-        }
-
-        @Override
-        public void setValue(T value) {}
-
-        @Override
-        public void addUpdateListener(Consumer<T> updateListener) {}
-
-        @Override
-        public Object getAsPrimitive() {
-            return "";
-        }
-
-        @Override
-        public <W> boolean isSameTypeWith(Ref<W> ref) {
-            return false;
-        }
-
-        @Override
-        public <W> boolean copyValueTo(Ref<W> otherRef) {
-            return false;
-        }
-
-        @Override
-        public AttrKeyValue<T> _createKeyValue0(String key) {
-            throw new UnsupportedOperationException();
-        }
-    }
     // todo : CustomRef, using JsonObject as base, use Codec to build upper object, add custom keyValue impl with custom
 
     //// TODO: RegistryRef
@@ -419,7 +384,7 @@ public class Config implements RefMap {
 
     public void reload() {
         if (this.file != null) {
-            Refs.transferConfig(ConfigLoader.loadYamlConfig(this.file)).copyValueTo(this.ref);
+            ref.copyValueFrom(Refs.transferConfig(ConfigLoader.loadYamlConfig(this.file)));
         }
     }
 

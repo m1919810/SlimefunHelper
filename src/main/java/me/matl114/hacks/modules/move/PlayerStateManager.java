@@ -34,6 +34,8 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.thrown.PotionEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.consume.ApplyEffectsConsumeEffect;
@@ -46,6 +48,7 @@ import net.minecraft.particle.ParticleEffect;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -65,12 +68,17 @@ public class PlayerStateManager extends BaseModule {
     public boolean lastOnGround;
     public boolean lastSprint;
     public Vec3d lastKnownMovementSpeed = Vec3d.ZERO;
+    public Vec3d lastKnownRealMovementSpeed = Vec3d.ZERO;
     public Vec3d lastAverageMovementSpeed = Vec3d.ZERO;
     public Vec3d lastSetBackPosition = Vec3d.ZERO;
     boolean lastTickHasMovement = false;
     public boolean lastClimbing;
     public boolean lastInLava;
     public boolean lastInWater;
+    public boolean lastWaterPush;
+    public boolean realInWater;
+    public boolean realInLava;
+    public boolean lastLavaPush;
     public boolean lastInWeb;
     private boolean inWeb;
     public boolean lastInWall;
@@ -103,6 +111,7 @@ public class PlayerStateManager extends BaseModule {
                 this::onPlayerInput,
                 Integer.MAX_VALUE);
         registerListener(Listener.getPlayerWebSlowPoint(), this::handleInWeb);
+        registerListener(Listener.getPlayerFluidVelocityPoint(), this::handleInFluid);
         registerListener(Listener.getPreGameTick(), this::onPreGameTick);
         registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityAttackEvent);
         registerListener(
@@ -159,6 +168,13 @@ public class PlayerStateManager extends BaseModule {
                 lastYaw = packet.getYaw(lastYaw);
             }
             lastKnownMovementSpeed = new Vec3d(lastX - oldMove.x, lastY - oldMove.y, lastZ - oldMove.z);
+            if (PlayerMoveC2SPacketAccess.of(packet).getCause() != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
+                if (PlayerMoveC2SPacketAccess.of(packet).getCause() == PlayerMoveC2SPacketAccess.Cause.SET_BACK) {
+                    lastKnownRealMovementSpeed = Vec3d.ZERO;
+                } else {
+                    lastKnownRealMovementSpeed = lastKnownMovementSpeed;
+                }
+            }
             lastTickHasMovement = true;
         }
         // update input here , low version
@@ -182,10 +198,45 @@ public class PlayerStateManager extends BaseModule {
         return Double.isNaN(x) || Double.isNaN(y) || Double.isNaN(z);
     }
 
+    public boolean checkRegionFluid(TagKey<Fluid> tag) {
+        if (mc.player.isRegionUnloaded()) {
+            return false;
+        } else {
+            Box box = mc.player.getBoundingBox().contract(0.001);
+            int i = MathHelper.floor(box.minX);
+            int j = MathHelper.ceil(box.maxX);
+            int k = MathHelper.floor(box.minY);
+            int l = MathHelper.ceil(box.maxY);
+            int m = MathHelper.floor(box.minZ);
+            int n = MathHelper.ceil(box.maxZ);
+            double d = 0.0;
+
+            boolean bl2 = false;
+            BlockPos.Mutable mutable = new BlockPos.Mutable();
+            find_liquid:
+            for (int p = i; p < j; ++p) {
+                for (int q = k; q < l; ++q) {
+                    for (int r = m; r < n; ++r) {
+                        mutable.set(p, q, r);
+                        FluidState fluidState = mc.world.getFluidState(mutable);
+                        if (fluidState.isIn(tag)) {
+                            double e = (double) ((float) q + fluidState.getHeight(mc.world, mutable));
+                            if (e >= box.minY) {
+                                bl2 = true;
+                                break find_liquid;
+                            }
+                        }
+                    }
+                }
+            }
+            return bl2;
+        }
+    }
+
     public void handleY(double y, boolean onGround) {
         // handle water
         if (!mc.player.isTouchingWater()) {
-            if (mc.player.updateMovementInFluid(FluidTags.WATER, 0.014)) {
+            if ((lastInWater = checkRegionFluid(FluidTags.WATER))) {
                 fallDistance = 0.0;
             }
         } else {
@@ -239,6 +290,18 @@ public class PlayerStateManager extends BaseModule {
         fallDistance = 0.0;
         lastInWeb = true;
         inWeb = true;
+    }
+
+    public void handleInFluid(Event<Vec3d> vec3dEvent) {
+        TagKey<Fluid> fluidTag = vec3dEvent.getArgs(0);
+        if (Objects.equals(FluidTags.WATER, fluidTag)) {
+            realInWater = true;
+            lastWaterPush = true;
+            // do not reset falldistance , because move may be reverted
+        } else if (Objects.equals(FluidTags.LAVA, fluidTag)) {
+            realInLava = true;
+            lastLavaPush = true;
+        }
     }
 
     public void onPreGameTick(Event<ClientPlayerEntity> event) {
@@ -296,10 +359,18 @@ public class PlayerStateManager extends BaseModule {
     public void handleTick() {
         // base flag ticks;
         lastInLava = mc.player.isInLava();
-        lastInWater = mc.player.isTouchingWater();
+        lastInWater = checkRegionFluid(FluidTags.WATER);
         lastClimbing = mc.player.isClimbing();
         lastInWeb = inWeb;
         inWeb = false;
+        lastWaterPush = realInWater;
+        realInWater = false;
+        // fix error fluid state caused by reverting
+        if (!lastInWater && mc.player.isTouchingWater()) {
+            mc.player.touchingWater = false;
+        }
+        lastLavaPush = realInLava;
+        realInLava = false;
         lastInWall = MovTasks.isCollidingWithEnvironment(mc.player);
         Box box = mc.player.getBoundingBox();
         lastUnderBlock = MovTasks.isCollidingWithEnvironment(

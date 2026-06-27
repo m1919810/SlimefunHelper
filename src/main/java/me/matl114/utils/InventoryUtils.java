@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.utils.collections.IndexEntry;
@@ -50,6 +52,10 @@ public class InventoryUtils {
 
     public static Inventory createInventory(int size, List<ItemStack> itemStackSupplier) {
         return new MutableInventory(size, itemStackSupplier);
+    }
+
+    public static Stream<ItemStack> streamInventory(Inventory inv) {
+        return IntStream.range(0, inv.size()).mapToObj(inv::getStack);
     }
 
     public static List<ItemStack> getContainerFromItem(ItemStack itemStack) {

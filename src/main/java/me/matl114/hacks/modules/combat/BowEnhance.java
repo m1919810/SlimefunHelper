@@ -89,7 +89,7 @@ public class BowEnhance extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onBowAction, 999);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRenderAimTarget);
+        registerListener(RenderListener.getRender3DEvent(), this::onRenderAimTarget);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 

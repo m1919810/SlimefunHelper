@@ -23,6 +23,10 @@ public class ModuleSettings extends BaseModule {
             .defaultValue(HotkeyPolicy.ONLY_WHEN_NO_SCREEN)
             .build();
 
+    public final FlagRef toggleKeysStopVanilla = builder(moduleSettings.add("toggle-keys-stop-vanilla"), FlagRef.TYPE)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef moduleToggleNotify = builder(moduleSettings.add("module-toggle-notify"), FlagRef.TYPE)
             .defaultValue(true)
             .build();

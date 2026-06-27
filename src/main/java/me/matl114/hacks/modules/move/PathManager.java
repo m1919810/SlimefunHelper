@@ -107,7 +107,7 @@ public class PathManager extends BaseModule {
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnect);
         registerListener(Listener.getPacketPoint().getChannel(PlayerRespawnS2CPacket.class), this::onRespawn);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getPreGameTick(), this::onTickRunningBaritoneGoal);
     }
 

@@ -82,7 +82,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(RenderListener.getRenderLayerTasks(), this::renderPlayerSpearTarget);
+        registerListener(RenderListener.getRender3DEvent(), this::renderPlayerSpearTarget);
         registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEnd);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
@@ -100,7 +100,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     }
     // todo: find out which flag determines the spear status
     public boolean canSpearAttack() {
-        return CombatTasks.getSpearEnhance().canSpearKineticAttack();
+        return SpearEnhance.canSpearKineticAttack();
     }
 
     public boolean spearAttack() {
@@ -109,7 +109,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             return false;
         }
         Entity target =
-                CombatTasks.getTargetSelector().searchAttackEntity(spearDistance.get(), true, this::isSpearable);
+                CombatTasks.getTargetSelector().searchAttackEntity(spearDistance.get(), true, SpearAttack::isSpearable);
         if (target == null) {
             currentWaitBackTick = 0;
             return false;
@@ -231,7 +231,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             try {
                 if (canSpearAttack()) {
                     Entity spearEntity = CombatTasks.getTargetSelector()
-                            .searchAttackEntity(spearDistance.get(), false, this::isSpearable);
+                            .searchAttackEntity(spearDistance.get(), false, SpearAttack::isSpearable);
                     if (spearEntity != null) {
                         float dist = spearEntity.distanceTo(mc.player);
                         float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
@@ -295,7 +295,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     //        stack.pop();
     //    }
 
-    private boolean isSpearable(Entity entity) {
+    public static boolean isSpearable(Entity entity) {
         // Vec3d pos = mc.player.getEyePos();
         if (mc.player.getEyePos().subtract(entity.getEyePos()).lengthSquared() <= MathUtils.s2(2.0D)) {
             return false;
