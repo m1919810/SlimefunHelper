@@ -6,7 +6,6 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.versioned.accessors.PlayerInputAccess;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.input.Input;
-import net.minecraft.client.input.KeyboardInput;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
@@ -25,7 +24,7 @@ public class PlayerInputUtils {
                 input.pressingRight,
                 input.jumping,
                 input.sneaking,
-                PlayerInputAccess.of((KeyboardInput) input).isPressingSprint());
+                PlayerInputAccess.of(input).isPressingSprint());
     }
 
     public static Input of(GameOptions options) {
@@ -156,7 +155,7 @@ public class PlayerInputUtils {
             input.pressingRight = this.right;
             input.jumping = this.jump;
             input.sneaking = this.sneak;
-            PlayerInputAccess.of((KeyboardInput) input).setPressingSprint(this.sprint);
+            PlayerInputAccess.of(input).setPressingSprint(this.sprint);
         }
 
         public void applyInput(GameOptions options) {

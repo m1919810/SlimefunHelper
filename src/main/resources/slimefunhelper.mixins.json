@@ -114,6 +114,7 @@
 		"fix.DecoderByteBufExceptionFixMixin",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
-		"fix.SignBlockEntityRendererFixMixin"
+		"fix.SignBlockEntityRendererFixMixin",
+		"versioned.PlayerInputSprintUpdateMixin"
 	]
 }
