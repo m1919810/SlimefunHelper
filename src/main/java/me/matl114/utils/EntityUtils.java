@@ -72,8 +72,11 @@ public class EntityUtils {
             var iter = collection.iterator();
             while (iter.hasNext()) {
                 EntityType<?> entityType = iter.next();
-                if (Pattern.matches(
-                        value, "!" + Registries.ENTITY_TYPE.getId(entityType).getPath())) {
+                if (!Pattern.matches(
+                                value, Registries.ENTITY_TYPE.getId(entityType).getPath())
+                        && Pattern.matches(
+                                value,
+                                "!" + Registries.ENTITY_TYPE.getId(entityType).getPath())) {
                     iter.remove();
                 }
             }

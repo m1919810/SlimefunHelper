@@ -21,6 +21,8 @@ public interface Constants {
 
     public static final Identifier LIST_TAG_SPRITE = new Identifier("slimefunhelper", "gui/list_tag");
 
+    public static final Identifier EDITOR_SPRITE = new Identifier("slimefunhelper", "gui/editor");
+
     public static final List<Text> SEARCH_REGISTRY_TOOLTIPS = List.of(Text.literal("从注册标中选择"), Text.literal("选择后点击确认"));
 
     public static final Text OPEN_LIST_EDIT_TEXT = Text.literal("点击编辑列表");

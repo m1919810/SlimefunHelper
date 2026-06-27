@@ -4,13 +4,14 @@ import com.google.common.collect.ImmutableList;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.DoubleStream;
 import me.matl114.commands.MainCommand;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.config.EntityTypeRegex;
+import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.entity.CameraEntity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -23,7 +24,6 @@ import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -49,26 +49,15 @@ public class TargetSelector extends BaseModule {
         INSTANCE = this;
     }
 
-    public Set<EntityType<?>> types = new LinkedHashSet<>();
-
-    public void parseEntityTypes(String regex) {
-        Set<EntityType<?>> va = new LinkedHashSet<>();
-        EntityUtils.parseEntityWhiteList(regex, va);
-        types = va;
-    }
-
     public final FlagRef grimExpandEyeHeight =
             flagBuilder(attack.add("use-grim-expand-eye-height")).build();
 
-    public final StringRef whiteListTypes = builder(attack.add("whitelist"), StringRef.TYPE)
-            .defaultValue("^(monster|!endermite|player)$")
-            .validator(Configs.REGEX_VALIDATOR)
-            .updateListener(this::parseEntityTypes)
+    public final NBTRef<EntityTypeRegex> whiteListTypes = builder(attack.add("whitelist"), EntityTypeRegex.class)
+            .defaultValue(new EntityTypeRegex(new Regex("^(monster|!endermite|player)$")))
             .build();
 
-    public final StringRef friendNameRegex = builder(attack.add("friends"), StringRef.TYPE)
-            .defaultValue("^(.*NPC.*|matl114)$")
-            .validator(Configs.REGEX_VALIDATOR)
+    public final NBTRef<Regex> friendNameRegex = builder(attack.add("friends"), Regex.class)
+            .defaultValue(new Regex("^(.*NPC.*)$"))
             .build();
 
     public final ListRef friendList = builder(attack.add("friend-list"), ListRef.TYPE)
@@ -102,23 +91,11 @@ public class TargetSelector extends BaseModule {
 
     public final DoubleRef multiplyPlayer = builder(attack.add("player-attack-multiply"), DoubleRef.TYPE)
             .defaultValue(0.0D)
+            .show(this.multiplyBackward::get)
             .build();
 
     public final FlagRef fakePlayerDetect =
             flagBuilder(attack.add("fake-player-and-npc-detect")).build();
-
-    {
-        if (Configs.COMBAT_CONFIG.get("att-bot", "whitelist") instanceof StringRef stringRef
-                && stringRef.get() != null) {
-            whiteListTypes.set(stringRef.get());
-            Configs.COMBAT_CONFIG.setValueNoNew(null, "att-bot", "whitelist");
-        }
-        if (Configs.COMBAT_CONFIG.get("att-bot", "friends") instanceof StringRef stringRef && stringRef.get() != null) {
-            friendNameRegex.set(stringRef.get());
-            Configs.COMBAT_CONFIG.setValueNoNew(null, "att-bot", "friends");
-        }
-        // todo: move whitelist
-    }
 
     @Override
     public void registerAll() {
@@ -210,7 +187,7 @@ public class TargetSelector extends BaseModule {
         if (target instanceof LivingEntity lv && lv.getHealth() <= 0) {
             return false;
         }
-        if (!types.contains(target.getType())) {
+        if (!whiteListTypes.get().test(target.getType())) {
             if (!passHostileCheck(target)) {
                 return false;
             }
@@ -245,8 +222,8 @@ public class TargetSelector extends BaseModule {
     public boolean isNotFriend(Entity e) {
         if (e instanceof PlayerEntity pl) {
             String name = pl.getNameForScoreboard();
-            String regex = friendNameRegex.get();
-            if (regex != null && Pattern.matches(regex, name)) {
+            Regex regex = friendNameRegex.get();
+            if (regex != null && regex.test(name)) {
                 // friend
                 return false;
             }
@@ -259,8 +236,8 @@ public class TargetSelector extends BaseModule {
         } else {
             if (e.hasCustomName()) {
                 if (attackNamedEntity.get()) {
-                    String regex = friendNameRegex.get();
-                    if (regex != null && Pattern.matches(regex, ChatUtils.textToString(e.getCustomName()))) {
+                    Regex regex = friendNameRegex.get();
+                    if (regex != null && regex.test(ChatUtils.textToString(e.getCustomName()))) {
                         return false;
                     }
                     return true;
@@ -391,10 +368,16 @@ public class TargetSelector extends BaseModule {
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect, int tickPredict, Predicate<Entity> predicate) {
-        if (mc.player == null) return null;
-        // when tp reach, also attack the targeted entity first
         Predicate<Entity> combinedPredicate =
                 predicate != null ? (e) -> canAttack(e) && predicate.test(e) : this::canAttack;
+        return searchAttack(nearby, autoSelect, tickPredict, combinedPredicate);
+    }
+
+    public Entity searchAttack(
+            double nearby, boolean autoSelect, int tickPredict, Predicate<Entity> combinedPredicate) {
+        if (mc.player == null) return null;
+        // when tp reach, also attack the targeted entity first
+
         if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
             Entity entityCheck = ((EntityHitResult) mc.crosshairTarget).getEntity();
             // fix: check attackable when not auto
@@ -440,11 +423,16 @@ public class TargetSelector extends BaseModule {
     }
 
     public Entity searchAimableEntity(boolean commonBow, Predicate<Entity> predicate) {
-        if (mc.player == null) return null;
-        // when tp reach, also attack the targeted entity first
         Predicate<Entity> originPredicate = commonBow ? this::canAttackWithBow : this::canAttack;
         Predicate<Entity> combinedPredicate =
                 predicate != null ? (e) -> originPredicate.test(e) && predicate.test(e) : originPredicate;
+        return searchAimable(combinedPredicate);
+    }
+
+    public Entity searchAimable(Predicate<Entity> combinedPredicate) {
+        if (mc.player == null) return null;
+        // when tp reach, also attack the targeted entity first
+
         if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
             Entity entity = ((EntityHitResult) mc.crosshairTarget).getEntity();
             if (combinedPredicate.test(entity)) {
@@ -500,7 +488,7 @@ public class TargetSelector extends BaseModule {
     //                + (e instanceof PlayerEntity ? multiplyPlayer.get() : 0.0D);
     //    }
 
-    private static boolean canPlayerDirectlySee(Entity entity) {
+    public static boolean canPlayerDirectlySee(Entity entity) {
         // 横向距离小于300
         return entity.getPos().subtract(mc.player.getPos()).horizontalLengthSquared() < 90000
                 && !RaycastUtils.raycastAnySolidBlock(mc.player, mc.player.getEyePos(), entity.getEyePos());

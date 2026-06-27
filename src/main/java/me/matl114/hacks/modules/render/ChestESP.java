@@ -11,6 +11,7 @@ import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
@@ -78,14 +79,14 @@ public class ChestESP extends BaseModule {
         super.registerAll();
         registerListener(RenderListener.getBlockEntityRenderListener(), this::onBlockEntityRender);
         registerListener(Listener.getPreGameTick(), this::onSwapRenderContent);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
     public void onBlockEntityRender(Event<BlockEntity> blockEntityEvent) {}
 
-    public final RenderCollector<Box> boxSolidCollector = RenderUtils.createBoxCollector(false, true, false);
-    public final RenderCollector<Box> boxOutlineCollector = RenderUtils.createBoxCollector(true, false, false);
-    public final RenderCollector<Vec3d> boxTraceLineCollector = RenderUtils.createTracerCollector();
+    public final RenderCollector<Box> boxSolidCollector = RenderCollectors.createBoxCollector(false, true, false);
+    public final RenderCollector<Box> boxOutlineCollector = RenderCollectors.createBoxCollector(true, false, false);
+    public final RenderCollector<Vec3d> boxTraceLineCollector = RenderCollectors.createTracerCollector();
 
     public void onSwapRenderContent(Event<ClientPlayerEntity> clientPlayerEntityEvent) {
         if (checkNull()) return;
@@ -109,9 +110,9 @@ public class ChestESP extends BaseModule {
             MatrixStack stack = render.context();
             RenderUtils.startDrawVirtual(stack);
             try {
-                boxSolidCollector.render(stack);
-                boxOutlineCollector.render(stack);
-                boxTraceLineCollector.render(stack);
+                boxSolidCollector.render3D(stack);
+                boxOutlineCollector.render3D(stack);
+                boxTraceLineCollector.render3D(stack);
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }

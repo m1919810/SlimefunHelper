@@ -49,6 +49,9 @@ public interface AttrKeyValues {
     public static WrapperFactory<String, Integer> INT_FACTORY =
             WrapperFactory.of(Integer::parseInt, s -> s != null ? String.valueOf(s) : "0");
 
+    public static WrapperFactory<String, Long> LONG_FACTORY =
+            me.matl114.utils.config.WrapperFactory.of(Long::parseLong, s -> s != null ? String.valueOf(s) : "0");
+
     public static WrapperFactory<String, Identifier> IDENTIFIER_FACTORY =
             WrapperFactory.of(Identifier::tryParse, Identifier::toString);
 

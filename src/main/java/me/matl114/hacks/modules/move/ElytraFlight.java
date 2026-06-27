@@ -74,8 +74,9 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             .defaultValue(false)
             .build();
 
-    public final FlagRef useAutoRescale =
-            flagBuilder(simpleFlightControl.add("use-auto-rescale")).build();
+    public final FlagRef useAutoRescale = flagBuilder(simpleFlightControl.add("use-auto-rescale"))
+            .show(() -> ElytraExtra.INSTANCE.autoRescale.get())
+            .build();
     boolean currentTakeOff = false;
     public final FlagRef autoFly =
             flagBuilder(simpleFlightControl.add("auto-fly")).build();
@@ -142,6 +143,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             if (player.isFallFlying()) {
                 if (lastVelocity == null) {
                     lastVelocity = Vec3d.ZERO;
+                }
+                if (MovTasks.getElytraGrimAccelerate().enable.get()) {
+                    // GrimAccelerate on
+                    // close
+                    return;
                 }
                 Vec3d controlMotion = new Vec3d(0, 0, 0);
                 boolean shouldControl = false;
@@ -234,8 +240,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     }
                     mc.player.setVelocity(
                             useAutoRescale.get()
-                                    ? ElytraExtra.INSTANCE.applyAxisLimit(
-                                            realVector, realVector.normalize(), !player.hasNoGravity())
+                                    ? ElytraExtra.INSTANCE.applyAxisLimit(realVector, realVector.normalize(), !mc.player.hasNoGravity())
                                     : realVector);
                 }
                 if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {

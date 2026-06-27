@@ -3,10 +3,8 @@ package me.matl114.utils;
 import java.awt.*;
 import java.util.List;
 import java.util.function.Function;
-import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
-import me.matl114.utils.render.RenderCollector;
 import me.matl114.utils.world.RegionPos;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
@@ -323,13 +321,17 @@ public class RenderUtils {
         }
     }
 
-    public static Vector2d translate3DTo2D(Matrix4f cameraMatrix, Matrix4f projectionMatrix, Vec3d camera, Vec3d pos) {
+    public static Vector2d translate3DTo2D(
+            Matrix4f cameraMatrix, Matrix4f projectionMatrix, Vec3d camera, Vec3d pos, boolean checkInScreen) {
         Vector4f vec =
                 new Vector4f((float) (pos.x - camera.x), (float) (pos.y - camera.y), (float) (pos.z - camera.z), 1.0f);
         vec.mul(cameraMatrix);
         vec.mul(projectionMatrix);
-        if (vec.w <= 0) {
+        if (checkInScreen && vec.w <= 0) {
             return null; // 在屏幕后面
+        }
+        if (vec.w < 0) {
+            vec.w = -vec.w;
         }
         // 透视除法
         float ndcX = vec.x / vec.w;
@@ -351,8 +353,12 @@ public class RenderUtils {
     }
 
     public static Function<Vec3d, Vector2d> createProjector(Matrix4f cam, Matrix4f proj) {
+        return createProjector(cam, proj, true);
+    }
+
+    public static Function<Vec3d, Vector2d> createProjector(Matrix4f cam, Matrix4f proj, boolean checkInScreen) {
         Vec3d cameraPos = getCameraPos();
-        return (v) -> translate3DTo2D(cam, proj, cameraPos, v);
+        return (v) -> translate3DTo2D(cam, proj, cameraPos, v, checkInScreen);
     }
 
     public static Vector2d translate2D(Vec3d pos, float tickProgress) {
@@ -361,69 +367,12 @@ public class RenderUtils {
         float g = mc.gameRenderer.getFov(mc.gameRenderer.getCamera(), tickProgress, true);
         Matrix4f projView = mc.gameRenderer.getBasicProjectionMatrix(g);
         Vec3d camera = getCameraPos();
-        return translate3DTo2D(modelView, projView, camera, pos);
+        return translate3DTo2D(modelView, projView, camera, pos, true);
     }
 
-    public static RenderCollector<Box> createBoxCollector(
-            boolean drawOutline, boolean drawSolid, boolean drawTraceLine) {
-        return new RenderCollector.Impl<Box>() {
-            @Override
-            public void render(MatrixStack matrices) {
-                if (entries.isEmpty()) return;
-                Vec3d cameraPos = getCameraPos().negate();
-                if (drawSolid) {
-                    VRender.getInstance()
-                            .createQuadsLayer(
-                                    (operation, vertexConsumer) -> {
-                                        if (!entries.isEmpty()) {
-                                            for (IndexEntry<Box> boxEntry : entries) {
-                                                var box = boxEntry.val().offset(cameraPos);
-                                                operation.drawSolidBoxQuad(
-                                                        matrices,
-                                                        vertexConsumer,
-                                                        box.getMinPos(),
-                                                        box.getMaxPos(),
-                                                        boxEntry.index());
-                                            }
-                                        }
-                                    },
-                                    true);
-                }
-                if (drawOutline || drawTraceLine) {
-                    VRender.getInstance().createLinesLayer((op, vtx) -> {
-                        if (drawOutline) {
-                            for (var re : entries) {
-                                var box = re.val().offset(cameraPos);
-                                op.drawOutlinedBox(matrices, vtx, box.getMinPos(), box.getMaxPos(), re.index());
-                            }
-                        }
-                        if (drawTraceLine) {
-                            Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
-                            for (var re : entries) {
-                                var box = re.val().getCenter().add(cameraPos);
-                                op.drawLine(matrices, vtx, traceOrigin, box, re.index());
-                            }
-                        }
-                    });
-                }
-            }
-        };
-    }
-
-    public static RenderCollector<Vec3d> createTracerCollector() {
-        return new RenderCollector.Impl<Vec3d>() {
-            @Override
-            public void render(MatrixStack matrices) {
-                if (entries.isEmpty()) return;
-                Vec3d cameraPos = getCameraPos().negate();
-                Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
-                VRender.getInstance().createLinesLayer((op, vtx) -> {
-                    for (var re : entries) {
-                        var box = re.val().add(cameraPos);
-                        op.drawLine(matrices, vtx, traceOrigin, box, re.index());
-                    }
-                });
-            }
-        };
+    public static Vector2d getScreenSize() {
+        int sizeX = mc.getWindow().getScaledWidth();
+        int sizeY = mc.getWindow().getScaledHeight();
+        return new Vector2d(sizeX, sizeY);
     }
 }

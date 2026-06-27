@@ -13,7 +13,7 @@ public class MapRef extends Ref<Map<String, Ref<?>>> implements RefMap {
                 Ref<?> oldValue = oldConfig.get(entry.getKey());
                 Ref<?> newValue = entry.getValue();
                 // syncTo is called recursively by MapRef.copyValueTo
-                if (!newValue.copyValueTo(oldValue)) {
+                if (!oldValue.copyValueFrom(newValue)) {
                     // value ref  not compate, remove the old and put the new
                     oldConfig.remove(entry.getKey());
                     oldConfig.put(entry.getKey(), newValue);
@@ -94,9 +94,9 @@ public class MapRef extends Ref<Map<String, Ref<?>>> implements RefMap {
     }
 
     @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
+    public <W> boolean copyValueFrom(Ref<W> otherRef) {
         if (otherRef instanceof MapRef map) {
-            map.setValue(this.map);
+            setValue(map.map);
             return true;
         }
         return false;
@@ -125,7 +125,7 @@ public class MapRef extends Ref<Map<String, Ref<?>>> implements RefMap {
                     }
                     var map0 = new LinkedHashMap<>(map);
 
-                    if (!value.copyValueTo(ref)) {
+                    if (!ref.copyValueFrom(value)) {
                         //
                         map0.put(path[index], value);
                     }
@@ -191,6 +191,10 @@ public class MapRef extends Ref<Map<String, Ref<?>>> implements RefMap {
                 return ref0;
             }
             var map0 = new LinkedHashMap<>(map);
+            // type convert
+            if (ref0 != null) {
+                ref.copyValueFrom(ref0);
+            }
             map0.put(path[index], ref);
             if (setValueNoCopy(map0)) {
                 return ref;

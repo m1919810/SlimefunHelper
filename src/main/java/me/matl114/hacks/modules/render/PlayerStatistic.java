@@ -6,23 +6,18 @@ import java.util.Map;
 import java.util.Objects;
 import me.matl114.api.Displayable;
 import me.matl114.events.Event;
-import me.matl114.events.RenderListener;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.presets.single.RegistryDisplays;
-import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.BoundedPrimitiveMap;
 import me.matl114.hacks.utils.config.NBTTypes;
-import me.matl114.hacks.utils.config.Vec2;
-import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CodecUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.component.DataComponentTypes;
@@ -33,96 +28,51 @@ import net.minecraft.item.Items;
 import net.minecraft.potion.Potions;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 
-public class PlayerStatistic extends BaseModule {
+public class PlayerStatistic extends IRender2DColoredModule {
     public PlayerStatistic() {
         super("Statistic");
-        bindFlag(enable);
+    }
+
+    @Override
+    protected ModulePath createRoot() {
+        return makePath(Configs.RENDER_CONFIG, "in-game-hud").add("player-statistic");
     }
 
     public final ModulePath hudRoot = makePath(Configs.RENDER_CONFIG, "in-game-hud");
     public final ModulePath hud = hudRoot.add("player-statistic");
-    public FlagRef enable = flagBuilder(hud.add("enable")).build();
-
-    public KeyBindRef keyBind = toggleHotkey(hud.add("hotkey"), new MultiKeyBind(), hud.add("enable"))
-            .build();
-
-    public FlagRef right = flagBuilder(hud.add("right")).build();
 
     public NBTRef<PlayerStatisticElementSelectSet> hudElementList = builder(
                     hud.add("elements"), PlayerStatisticElementSelectSet.class)
             .defaultValue(new PlayerStatisticElementSelectSet())
             .build();
 
-    public NBTRef<Vec2> pos = builder(hud.add("pos"), Vec2.class)
-            .defaultValue(new Vec2(0.5D, 0.5D))
-            .validator((v) -> v.x() >= 0.0D && v.y() >= 0.0D && v.x() <= 1.0D && v.y() <= 1.0D)
-            .build();
-
-    public NBTRef<WrapColor> color = builder(hud.add("color"), WrapColor.class)
-            .defaultValue(new WrapColor(TextColor.parse("#F05BDA").getOrThrow()))
-            .build();
-
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(RenderListener.getRenderGameHudTasks(), this::onRender);
     }
 
-    public void onRender(Event<VDrawContext> event) {
-        if (checkNull()) return;
-        if (enable.get() && !event.<Boolean>getArgs(1)) {
-            PlayerStatisticElementSelectSet set = hudElementList.get();
-            VDrawContext vdraw = event.context;
-            vdraw.pushMatrix();
-            try {
-                handleRenderPosition(vdraw);
-                //                vdraw.drawText(mc.textRenderer, "HelloWorld", 0,0,-1, false);
-                //                vdraw.getMatrices().translate(0, 9);
-                //                vdraw.drawText(mc.textRenderer, "HelloWorld2", 0,0,-1, true);
-                //                vdraw.getMatrices().translate(0, 9);
-                //
-                // vdraw.drawTexturedQuad(Identifier.tryParse("slimefunhelper:textures/custom/genshin_impact.png"),
-                // 0,30, 0, 20, 0, 0,1,0 , 1);
-                if (set.getState(StatisticElement.TOTEM)) {
-                    handleTotem(vdraw);
-                }
-                if (set.getState(StatisticElement.POP)) {
-                    handlePop(vdraw);
-                }
-                if (set.getState(StatisticElement.TURTLE)) {
-                    handleTurtle(vdraw);
-                }
-                if (set.getState(StatisticElement.FIREWORK)) {
-                    handleFirework(vdraw);
-                }
-                if (set.getState(StatisticElement.EFFECTS)) {
-                    handleEffects(vdraw);
-                }
-            } finally {
-                vdraw.popMatrix();
-            }
+    @Override
+    public void onUpdate(Event<Void> event) {}
+
+    @Override
+    public void render2D(VDrawContext vdraw, float partialTicks) {
+        PlayerStatisticElementSelectSet set = hudElementList.get();
+        if (set.getState(StatisticElement.TOTEM)) {
+            handleTotem(vdraw);
         }
-    }
-
-    public static final float HEIGHT = 9.0F;
-
-    public void drawText(VDrawContext vdraw, String text) {
-        drawText(vdraw, Text.literal(text).asOrderedText());
-    }
-
-    public void drawText(VDrawContext vdraw, OrderedText text) {
-        int rgb = color.get().withAlpha(255);
-
-        if (right.get()) {
-            int width = mc.textRenderer.getWidth(text);
-            vdraw.drawText(mc.textRenderer, text, -width, 0, rgb, true);
-        } else {
-            vdraw.drawText(mc.textRenderer, text, 0, 0, rgb, true);
+        if (set.getState(StatisticElement.POP)) {
+            handlePop(vdraw);
         }
-
-        vdraw.getMatrices().translate(0, HEIGHT);
+        if (set.getState(StatisticElement.TURTLE)) {
+            handleTurtle(vdraw);
+        }
+        if (set.getState(StatisticElement.FIREWORK)) {
+            handleFirework(vdraw);
+        }
+        if (set.getState(StatisticElement.EFFECTS)) {
+            handleEffects(vdraw);
+        }
     }
 
     public void handleTotem(VDrawContext vdraw) {
@@ -220,21 +170,6 @@ public class PlayerStatistic extends BaseModule {
             vdraw.popMatrix();
             vdraw.getMatrices().translate(0, HEIGHT);
         }
-    }
-
-    public void handleRenderPosition(VDrawContext vdraw) {
-        int sizeX = mc.getWindow().getScaledWidth();
-        int sizeY = mc.getWindow().getScaledHeight();
-        //        vdraw.pushMatrix();
-        //        vdraw.drawTexturedQuad(Identifier.tryParse("slimefunhelper:textures/custom/genshin_impact.png"), sizeX
-        // - 30,sizeX, sizeY - 20, sizeY, 0, 0,1,0 , 1);
-        //        vdraw.popMatrix();
-        var pp = pos.get();
-        double xPer = pp.x();
-        double yPer = pp.y();
-        int startX = (int) (right.get() ? (sizeX - xPer * sizeX) : xPer * sizeX);
-        int startY = (int) (yPer * sizeY);
-        vdraw.getMatrices().translate(startX, startY);
     }
 
     public static class PlayerStatisticElementSelectSet extends BoundedPrimitiveMap<StatisticElement, Boolean>

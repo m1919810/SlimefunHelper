@@ -108,7 +108,8 @@ public abstract class Ref<T> {
     // isSameTypeWith should return the same value as copyValueTo, but they don't do copy
     public abstract <W> boolean isSameTypeWith(Ref<W> ref);
     // copy this value to the argument
-    public abstract <W> boolean copyValueTo(Ref<W> otherRef);
+
+    public abstract <W> boolean copyValueFrom(Ref<W> otherRef);
 
     public final AttrKeyValue<T> createKeyValue(String key) {
         AttrKeyValue<T> keyValue = _createKeyValue0(key);

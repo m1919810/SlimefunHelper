@@ -49,7 +49,29 @@ public abstract class BoundedPrimitiveMap<W, T> {
         WrapperFactory<String, S> keyWrapper = WrapperFactory.fromCodec(keyCodec, JavaOps.INSTANCE);
         return new NBTType<>(
                 NBTType.<W>parameter(what),
-                CodecUtils.arrayMapCodec(keyCodec, ptype.typeCodec())
+                CodecUtils.arrayMapCodec(Codec.STRING, ptype.typeCodec())
+                        .xmap(
+                                map -> {
+                                    // add element filter
+                                    Map<S, T> re = new LinkedHashMap<>(map.size());
+                                    for (var r : map.entrySet()) {
+                                        var lookup = keyCodec.decode(JavaOps.INSTANCE, r.getKey());
+                                        if (lookup.isSuccess()) {
+                                            re.put(lookup.getOrThrow().getFirst(), r.getValue());
+                                        }
+                                    }
+                                    return re;
+                                },
+                                map -> {
+                                    Map<String, T> re = new LinkedHashMap<>(map.size());
+                                    for (var r : map.entrySet()) {
+                                        var lookup = keyCodec.encodeStart(JavaOps.INSTANCE, r.getKey());
+                                        if (lookup.isSuccess()) {
+                                            re.put((String) lookup.getOrThrow(), r.getValue());
+                                        }
+                                    }
+                                    return re;
+                                })
                         .xmap((map) -> creator.apply(baseLookup, map, ptype), BoundedPrimitiveMap::toMap),
                 (w, x, y, dx, dy) -> NBTTypes.generateBoundedListModifyButton(
                         new WrapperAttrKeyValue<>(w, wrapper),

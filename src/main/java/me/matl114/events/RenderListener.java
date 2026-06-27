@@ -96,12 +96,12 @@ public class RenderListener {
     @ExtraArgs(
             value = {float.class},
             names = {"ticksDelta"})
-    private static final EventChannel<MatrixStack> renderLayerTasks = new EventChannel<>();
+    private static final EventChannel<MatrixStack> render3DEvent = new EventChannel<>();
 
     @Getter
     @Broadcast
     @ExtraArgs(value = {float.class, boolean.class})
-    private static final EventChannel<VDrawContext> renderGameHudTasks = new EventChannel<>();
+    private static final EventChannel<VDrawContext> render2DEvent = new EventChannel<>();
 
     public static void renderWorldTasks(MatrixStack stack, float tickDelta) {
         // GL11.glEnable(GL11.GL_LINE_SMOOTH);
@@ -110,7 +110,7 @@ public class RenderListener {
             // This stack start with the position with RenderUtils.getCameraPose();
             Event<MatrixStack> renderEvent = new Event<>(stack, false, false, tickDelta);
 
-            renderLayerTasks.handleValue(renderEvent);
+            render3DEvent.handleValue(renderEvent);
         } catch (ConcurrentModificationException | NullPointerException | CrashException e) {
             Debug.info("Error while handling Render Event:", e.getMessage());
         } finally {

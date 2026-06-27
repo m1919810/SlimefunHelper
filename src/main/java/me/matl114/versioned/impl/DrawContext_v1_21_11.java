@@ -28,6 +28,7 @@ import net.minecraft.util.math.ColorHelper;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fc;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 public class DrawContext_v1_21_11 implements VDrawContext {
@@ -297,12 +298,65 @@ public class DrawContext_v1_21_11 implements VDrawContext {
             vertices.vertex(this.pose(), (float) this.x1(), (float) this.y1()).color(this.col3());
             vertices.vertex(this.pose(), (float) this.x1(), (float) this.y0()).color(this.col4());
         }
+    }
 
-        private static @Nullable ScreenRect createBounds(
-                int x0, int y0, int x1, int y1, Matrix3x2fc pose, @Nullable ScreenRect scissorArea) {
-            ScreenRect screenRect = (new ScreenRect(x0, y0, x1 - x0, y1 - y0)).transformEachVertex(pose);
-            return scissorArea != null ? scissorArea.intersection(screenRect) : screenRect;
+    public static record ColoredLine2DGuiElementRenderState(
+            RenderPipeline pipeline,
+            TextureSetup textureSetup,
+            Matrix3x2fc pose,
+            int x1,
+            int x2,
+            int y1,
+            int y2,
+            int color1,
+            int color2,
+            @Nullable ScreenRect scissorArea,
+            @Nullable ScreenRect bounds)
+            implements SimpleGuiElementRenderState {
+
+        public ColoredLine2DGuiElementRenderState(
+                RenderPipeline pipeline,
+                TextureSetup textureSetup,
+                Matrix3x2fc pose,
+                int x1,
+                int x2,
+                int y1,
+                int y2,
+                int color1,
+                int color2,
+                @Nullable ScreenRect scissorArea) {
+            this(
+                    pipeline,
+                    textureSetup,
+                    pose,
+                    x1,
+                    x2,
+                    y1,
+                    y2,
+                    color1,
+                    color2,
+                    scissorArea,
+                    createBounds(x1, y1, x2, y2, pose, scissorArea));
         }
+
+        @Override
+        public void setupVertices(VertexConsumer vertices) {
+            Vector3f normal = new Vector3f(x2() - x1(), y2() - y1(), 0).normalize();
+            vertices.vertex(this.pose(), (float) this.x1(), (float) this.y1())
+                    .color(this.color1())
+                    .normal(normal.x, normal.y, normal.z)
+                    .lineWidth(2);
+            vertices.vertex(this.pose(), (float) this.x2(), (float) this.y2())
+                    .color(this.color2())
+                    .normal(normal.x, normal.y, normal.z)
+                    .lineWidth(2);
+        }
+    }
+
+    private static @Nullable ScreenRect createBounds(
+            int x0, int y0, int x1, int y1, Matrix3x2fc pose, @Nullable ScreenRect scissorArea) {
+        ScreenRect screenRect = (new ScreenRect(x0, y0, x1 - x0, y1 - y0)).transformEachVertex(pose);
+        return scissorArea != null ? scissorArea.intersection(screenRect) : screenRect;
     }
 
     @Override
@@ -312,6 +366,29 @@ public class DrawContext_v1_21_11 implements VDrawContext {
         }
         try {
             this.drawContext.fill(x1, y1, x2, y2, getShaderRGB(color));
+        } finally {
+            if (z != 0) {
+                popLayer();
+            }
+        }
+    }
+
+    public void lineGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int z) {
+        if (z != 0) {
+            pushLayer(z);
+        }
+        try {
+            this.drawContext.state.addSimpleElement(new ColoredLine2DGuiElementRenderState(
+                    Render_v1_21_11.DEBUG_LINES,
+                    TextureSetup.empty(),
+                    new Matrix3x2f(this.drawContext.getMatrices()),
+                    x1,
+                    x2,
+                    y1,
+                    y2,
+                    color1,
+                    color2,
+                    this.drawContext.scissorStack.peekLast()));
         } finally {
             if (z != 0) {
                 popLayer();

@@ -267,12 +267,16 @@ public class MainTasks {
     @Getter
     public static EventCommand eventCommand;
 
+    @Getter
+    public static ServerStorage serverStorage;
+
     private static void initModule(ModuleManager m) {
         moduleSettings = new ModuleSettings().register(m);
         clickGui = new ClickGui().register(m);
         configManager = new ConfigManager().register(m);
         bindCommand = new BindCommand().register(m);
         eventCommand = new EventCommand().register(m);
+        serverStorage = new ServerStorage().register(m);
     }
 
     // TODO: add entity inspect in info command

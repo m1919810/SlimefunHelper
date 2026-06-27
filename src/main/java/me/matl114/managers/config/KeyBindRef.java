@@ -24,9 +24,9 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind> {
     }
 
     @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
+    public <W> boolean copyValueFrom(Ref<W> otherRef) {
         if (otherRef instanceof KeyBindRef stringRef) {
-            stringRef.set(this.get());
+            set(stringRef.get());
             return true;
         }
         return false;

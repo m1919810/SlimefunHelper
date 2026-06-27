@@ -19,12 +19,11 @@ public class StringRef extends ObjectRef<String> {
     }
 
     @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if (otherRef instanceof StringRef stringRef) {
-            stringRef.set(this.get());
+    public <W> boolean copyValueFrom(Ref<W> otherRef) {
+        if (otherRef instanceof StringRef ref) {
+            set(ref.get());
             return true;
-        }
-        return false;
+        } else return false;
     }
 
     @Override

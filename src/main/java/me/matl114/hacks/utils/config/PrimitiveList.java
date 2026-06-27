@@ -76,7 +76,6 @@ public class PrimitiveList<W> implements NBTParsable<PrimitiveList<W>> {
                     return new TypeConvertAttrKeyValue<>(w, wrapperFactory, widgetFactory, stringListWrapperFactory)
                             .generateValueWidget(x, y, dx, dy);
                 },
-                (WrapperFactory<String, PrimitiveList<W>>) null,
                 (PrimitiveList<W>) new PrimitiveList<>(List.of(), NBTTypes.STRING_TYPE));
     }
 

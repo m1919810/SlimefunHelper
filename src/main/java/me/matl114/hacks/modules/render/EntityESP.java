@@ -10,10 +10,13 @@ import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
+import me.matl114.hacks.utils.render.RenderCollectors;
+import me.matl114.hacks.utils.render.RenderMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
@@ -38,6 +41,10 @@ public class EntityESP extends BaseModule {
                     entityEsp.add("hotkey").toPath(),
                     new MultiKeyBind(),
                     entityEsp.add("enable").toPath())
+            .build();
+
+    public final EnumRef<RenderMode> renderMode = builder(entityEsp.add("render-mode"), RenderMode.class)
+            .defaultValue(RenderMode.RENDER_3D)
             .build();
 
     public final NBTRef<RegistryRegex<EntityType<?>>> whiteList = builder(
@@ -106,7 +113,8 @@ public class EntityESP extends BaseModule {
     public void registerAll() {
         super.registerAll();
 
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
+        registerListener(RenderListener.getRender2DEvent(), this::onRender2D);
         registerListener(Listener.getPostGameTick(), this::onTick);
     }
 
@@ -153,40 +161,58 @@ public class EntityESP extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> stackE) {
+    public void onRender3D(Event<MatrixStack> stackE) {
         if (checkNull()) return;
 
-        if (enable.get()) {
+        if (enable.get() && renderMode.get().isIn(RenderMode.RENDER_3D)) {
             var stack = stackE.context;
             float tickDelta = stackE.getArgs(0);
-            var lineMap = renderTraceSettings.get();
-            var boxMap = renderBoxSettings.get();
+
             RenderUtils.startDrawVirtual(stack);
             try {
-                var renderBox = RenderUtils.createBoxCollector(true, false, false);
-                var renderTrace = RenderUtils.createTracerCollector();
-                List<Entity> entities = this.entities;
-                for (var entity : entities) {
-                    Color color = getShaderColorByEntityType(entity);
-                    if (color != null) {
-
-                        Box box = RenderUtils.getLerpedBox(entity, tickDelta);
-                        if (boxMap.getOrWithDefault(entity.getType(), false)) {
-                            renderBox.submit(box, color.getRGB());
-                        }
-                        if (lineMap.getOrWithDefault(entity.getType(), false)) {
-                            renderTrace.submit(box.getCenter(), color.getRGB());
-                        }
-                    }
-                }
-                renderBox.render(stack);
-                renderTrace.render(stack);
-                renderBox.clear();
-                renderTrace.clear();
+                render(stack, tickDelta);
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }
         }
+    }
+
+    public void onRender2D(Event<VDrawContext> event) {
+        if (checkNull()) return;
+        if (enable.get() && renderMode.get().isIn(RenderMode.RENDER_2D)) {
+            float tickDelta = event.getArgs(0);
+            render(event.context, tickDelta);
+        }
+    }
+
+    public void render(Object object, float tickDelta) {
+        var lineMap = renderTraceSettings.get();
+        var boxMap = renderBoxSettings.get();
+        var renderBox = RenderCollectors.createBoxCollector(true, false, false);
+        var renderTrace = RenderCollectors.createTracerCollector();
+        List<Entity> entities = this.entities;
+        for (var entity : entities) {
+            Color color = getShaderColorByEntityType(entity);
+            if (color != null) {
+
+                Box box = RenderUtils.getLerpedBox(entity, tickDelta);
+                if (boxMap.getOrWithDefault(entity.getType(), false)) {
+                    renderBox.submit(box, color.getRGB());
+                }
+                if (lineMap.getOrWithDefault(entity.getType(), false)) {
+                    renderTrace.submit(box.getCenter(), color.getRGB());
+                }
+            }
+        }
+        if (object instanceof MatrixStack stack) {
+            renderBox.render3D(stack);
+            renderTrace.render3D(stack);
+        } else if (object instanceof VDrawContext vdraw) {
+            renderBox.render2D(vdraw);
+            renderTrace.render2D(vdraw);
+        }
+        renderBox.clear();
+        renderTrace.clear();
     }
 
     private Color getShaderColorByEntityType(Entity entity) {

@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.combat;
 
 import io.netty.buffer.ByteBuf;
-import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +12,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.managers.Configs;
@@ -105,7 +105,7 @@ public class SpearEnhance extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onUsePiercing);
@@ -141,7 +141,7 @@ public class SpearEnhance extends BaseModule {
             RenderUtils.startDrawVirtual(event.context);
             try {
                 int color = renderColor.get().withAlpha(64);
-                var render = RenderUtils.createBoxCollector(false, true, false);
+                var render = RenderCollectors.createBoxCollector(false, true, false);
                 for (var re : mc.world.getPlayers()) {
                     if (re != mc.getCameraEntity()) {
                         if (canSpearKineticAttack(re)) {
@@ -149,7 +149,7 @@ public class SpearEnhance extends BaseModule {
                         }
                     }
                 }
-                render.render(event.context);
+                render.render3D(event.context);
                 render.clear();
             } finally {
                 RenderUtils.stopDrawVirtual(event.context);

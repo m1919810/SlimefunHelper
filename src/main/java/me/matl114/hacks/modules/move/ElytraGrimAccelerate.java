@@ -90,16 +90,14 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
         // todo: fix it
         if (mc.player != null && event.context.getEntityId() == mc.player.getId()) {
 
-            if ((enable.get() && mc.player.isFallFlying()) || lastWorkingTick + 10 > Tasks.getTick()) {
-                if (mc.player.isFallFlying()) {
-                    if (velocity.horizontalLengthSquared() < 1E-4) {
+            if (mc.player.isFallFlying() && ((enable.get()) || lastWorkingTick + 10 > Tasks.getTick())) {
+                if (velocity.horizontalLengthSquared() < 1E-2) {
+                    event.cancel();
+                } else {
+                    Vec3d vec3d = mc.player.getVelocity();
+                    if (vec3d.horizontalLengthSquared() > 1E-2
+                            && vec3d.getHorizontal().dotProduct(velocity.getHorizontal()) < 0.0) {
                         event.cancel();
-                    } else {
-                        Vec3d vec3d = mc.player.getVelocity();
-                        if (vec3d.horizontalLengthSquared() > 1E-4
-                                && vec3d.getHorizontal().dotProduct(velocity.getHorizontal()) < 0.0) {
-                            event.cancel();
-                        }
                     }
                 }
             }
@@ -139,38 +137,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     boolean currentTryWorking = false;
     boolean currentWorking = false;
 
-    public void onTeleportConfirm(Event<PlayerPositionLookS2CPacket> event) {
-        // grim setback
-        if (mc.player != null
-                && currentWorking
-                && event.context.teleportId() < 0
-                && mc.player.isFallFlying()
-                && !mc.player.hasVehicle()
-                && false) {
-            //            var pp = event.context;
-            //            ClientPlayNetworkHandler.setPosition(pp.change(), pp.relatives(), mc.player, false);
-            //            event.cancel();
-            //            mc.getNetworkHandler()
-            //                .sendPacket(new TeleportConfirmC2SPacket(pp.teleportId()));
-            //            mc.getNetworkHandler()
-            //                .sendPacket(PlayerMoveC2SPacketAccess.setCause(
-            //                    new PlayerMoveC2SPacket.Full(
-            //                        mc.player.getX(),
-            //                        mc.player.getY(),
-            //                        mc.player.getZ(),
-            //                        mc.player.getYaw(),
-            //                        mc.player.getPitch(),
-            //                        false,
-            //                        false),
-            //                    PlayerMoveC2SPacketAccess.Cause.SET_BACK));
-            createStorePacket();
-            if (storedPacket != null) {
-                // mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(-rand.nextInt(0, Integer.MAX_VALUE -
-                // 1)));
-                mc.getNetworkHandler().sendPacket(storedPacket);
-            }
-        }
-    }
+    public void onTeleportConfirm(Event<PlayerPositionLookS2CPacket> event) {}
 
     private void createStorePacket() {
         switch (mode.get()) {

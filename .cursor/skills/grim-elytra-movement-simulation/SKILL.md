@@ -30,9 +30,9 @@ Grim 对 Elytra 的处理不是“看到滑翔就单独硬判”，而是把玩�
 ### 1. Elytra 是怎样进入检测链的
 - 客户端发送 `START_FLYING_WITH_ELYTRA`。
 - `PacketEntityAction` 先做起飞合法性门槛：
-  - 地面或近地起飞会直接 resync。
-  - 低版本起飞状态更偏服务端控制。
-  - 没有合法 Elytra 条件时会被当成 ghost 状态并 resync。
+    - 地面或近地起飞会直接 resync。
+    - 低版本起飞状态更偏服务端控制。
+    - 没有合法 Elytra 条件时会被当成 ghost 状态并 resync。
 - 一旦 `player.isGliding` 成立，后续移动包不会走普通地面预测，而是进入 Elytra 预测分支。
 - `MovementCheckRunner` 接收位置更新，整理实际位移与当前状态。
 - `MovementTicker` 在状态分支里识别 `player.isGliding`，交给 `PredictionEngineElytra`。
@@ -54,6 +54,28 @@ Elytra 分支的核心不是 WASD 推进，而是“当前速度 + 视角 + 重�
 直接结论：
 - Elytra 不是普通输入模型，`PredictionEngineElytra` 里输入被视为零输入。
 - 玩家“能不能这样飞”，主要看视角、已有速度、重力、阻力这条链能不能生成接近实际位移的候选结果。
+
+#### 2.1 下一 tick 继续使用的是哪一层速度
+Grim 明确把两层速度拆开处理：
+- `clientVelocity` = 碰撞前速度，会被带入下一 tick。
+- `predictedVelocity` = 碰撞后速度，只用于当前 tick 预测结果，不直接作为下一 tick 延续速度。
+
+这意味着 Elytra 的速度承接不是“每 tick 从头算一个全新速度”，而是：
+- 先从上一 tick 延续下来的 `clientVelocity` 出发；
+- 再套本 tick 的 Elytra 演化；
+- 再得到新的候选结果。
+
+所以只要玩家还处于合法滑翔链路里，Elytra 动量就是连续承接的，不是每 tick 清零重建。
+
+#### 2.2 Elytra 起步不是从 0 动量开始
+`START_FLYING_WITH_ELYTRA` 这条包只负责切换到 gliding 状态，不负责把速度清零。
+
+实际结果是：
+- 合法起飞必须发生在离地状态；
+- 玩家进入滑翔前已经存在的下落速度、横向速度、击退速度、前一状态残留速度，都可以成为 Elytra 第一个预测 tick 的起始速度；
+- 然后这份已有速度再进入 `PredictionEngineElytra` 的公式继续演化。
+
+所以 Elytra 的起步更接近“把当前空中动量接管进滑翔模型”，不是“切状态后从 0 速重新开始”。
 
 ### 3. Grim 对烟花的处理不是精确重放，而是扩大允许空间
 `CompensatedFireworks` 只做一件事：记录“当前最多可能还有多少枚烟花在作用”。
@@ -78,8 +100,8 @@ Elytra 分支的核心不是 WASD 推进，而是“当前速度 + 视角 + 重�
 #### 第一层：固定基础阈值
 Grim 里有固定的基础移动阈值：
 - `GrimPlayer.getMovementThreshold()`
-  - `1.18.2` 以下的 point-three 客户端：`0.03`
-  - 更新版本：`0.0002`
+    - `1.18.2` 以下的 point-three 客户端：`0.03`
+    - 更新版本：`0.0002`
 
 这层阈值的用途是：
 - 处理 `0.03` / point-three 粒度问题。
@@ -106,8 +128,8 @@ Grim 里有固定的基础移动阈值：
 
 2. 如果 `fireworksBox != null`  
    Grim 不会把它当成最终答案，而是先计算：
-   - `fireworksBox` 相对原始起始速度 `originalVec` 的最小/最大差值
-   - 再把这些差值并入当前不确定性盒的 `min/max`
+    - `fireworksBox` 相对原始起始速度 `originalVec` 的最小/最大差值
+    - 再把这些差值并入当前不确定性盒的 `min/max`
 
 3. 盒子被扩张后，Grim 用 `cutBoxToVector()`  
    从这块更大的允许空间里，裁出一个“最接近实际移动”的允许向量。
@@ -181,13 +203,292 @@ Grim 里有固定的基础移动阈值：
 
 所以 `1.7` 限制的是：
 - 烟花容错盒每个轴的最大扩张幅度；
-不是：
+  不是：
 - 玩家滑翔总速度上限；
 - Elytra 本体最大飞行速度；
 - 最终 offset 阈值。
 
 ### 6. offset / setback 是怎样接在 Elytra 预测后面的
 Elytra 分支生成候选结果后，Grim 会把“实际位移”和“最佳允许结果”的差距当成 offset 基础量，再进入统一处罚链。
+
+#### 6.1 用 `v1 / v2 / v3 / box` 写成完整公式
+先统一变量：
+- `v1` = 当前 tick 开始时，Grim 手里延续下来的客户端动量基线
+- `v2` = 玩家这个 tick 实际发送的移动量，也就是实际位移
+- `v3` = 对 `v1` 套完 Elytra 本体递推后得到的主模拟结果
+- `box` = 烟花容错盒 `fireworksBox`
+
+注意两点：
+- `v3` 不是最终比较值，它只是 Elytra 本体递推产物。
+- 真正和 `v2` 比较的是“裁进允许空间、再过碰撞修正之后”的最终候选结果。
+
+#### 6.2 Elytra 本体递推
+设当前视角单位向量为 `L = (lx, ly, lz)`，其水平长度为：
+
+\[
+h = \sqrt{lx^2 + lz^2}
+\]
+
+设 `v1` 的水平长度为：
+
+\[
+s = \sqrt{v1_x^2 + v1_z^2}
+\]
+
+设俯仰角为 `pitch`，重力项为 `g'`，其中：
+- 正常情况 `g' = gravity`
+- Slow Falling 生效且当前竖直速度不大于 0 时，`g'` 会被压到更小值
+
+再定义：
+
+\[
+c = \cos^2(pitch) \cdot \min(1, \|L\| / 0.4)
+\]
+
+那么 Elytra 本体递推可以写成下面 4 段。
+
+第一段，先显式加入重力：
+
+\[
+u_1 = v1 + (0,\ g'(-1 + 0.75c),\ 0)
+\]
+
+第二段，如果正在下落，就把一部分下落量转成沿朝向的推进：
+
+\[
+\text{若 } u_{1y} < 0 \text{ 且 } h > 0,
+\quad d_f = -0.1 \cdot u_{1y} \cdot c
+\]
+
+\[
+u_2 = u_1 + \left(\frac{lx}{h}d_f,\ d_f,\ \frac{lz}{h}d_f\right)
+\]
+
+否则 `u2 = u1`。
+
+第三段，如果抬头角度允许俯冲推进，就再加一次朝向耦合：
+
+\[
+\text{若 } pitch < 0 \text{ 且 } h > 0,
+\quad d_p = s \cdot (-\sin(pitch)) \cdot 0.04
+\]
+
+\[
+u_3 = u_2 + \left(-\frac{lx}{h}d_p,\ 3.2d_p,\ -\frac{lz}{h}d_p\right)
+\]
+
+否则 `u3 = u2`。
+
+第四段，把水平速度往当前朝向对齐：
+
+\[
+\text{若 } h > 0,
+\quad u_4 = u_3 + \left(\left(\frac{lx}{h}s - u_{3x}\right)0.1,\ 0,\ \left(\frac{lz}{h}s - u_{3z}\right)0.1\right)
+\]
+
+否则 `u4 = u3`。
+
+最后乘 Elytra 阻力：
+
+\[
+v3 = (0.99u_{4x},\ 0.98u_{4y},\ 0.99u_{4z})
+\]
+
+这一步已经说明：
+- Elytra 本体递推显式包含重力；
+- `v3` 不是无重力模型；
+- 烟花不是替代这条递推，而是在这条递推之后扩张允许空间。
+
+#### 6.3 烟花盒 `box` 的计算
+设当前 tick 视角为 `L_now`，上一 tick 视角为 `L_prev`。
+
+设：
+- 如果是 point-three 客户端，则 `a = 0`
+- 否则 `a = 0.05`
+
+对每个轴 `i ∈ {x, y, z}`，烟花盒边界是：
+
+\[
+box_{min,i} = \max\left(-1.7,\ 1.7\bigl(\min(-a, L_{now,i}) + \min(-a, L_{prev,i})\bigr)\right)
+\]
+
+\[
+box_{max,i} = \min\left(1.7,\ 1.7\bigl(\max(a, L_{now,i}) + \max(a, L_{prev,i})\bigr)\right)
+\]
+
+所以 `box` 本质是一个三维 AABB，不是球，不是欧氏半径阈值。
+
+#### 6.4 `box` 怎么并到 `v3`
+Grim 不是直接拿 `box` 和 `v2` 比较，而是先围绕 `v3` 造一个基础允许盒，再用 `box` 去扩张这块允许盒。
+
+先把普通误差层记成：
+- `Δ-` = 基础负向误差
+- `Δ+` = 基础正向误差
+
+这里面已经包含 point-three、流体、bubble、活塞、碰撞、潜行隐藏速度等普通不确定性。
+
+于是围绕 `v3` 的基础允许盒是：
+
+\[
+U_0 = [v3 + \Delta^-,\ v3 + \Delta^+]
+\]
+
+然后烟花盒不是直接加在 `v3` 上，而是先相对 `v1` 取差值。
+
+对每个轴 `i`：
+
+\[
+e^-_i = \min(0,\ box_{min,i} - v1_i)
+\]
+
+\[
+e^+_i = \max(0,\ box_{max,i} - v1_i)
+\]
+
+于是扩张后的允许盒是：
+
+\[
+U = [U_{0,min} + e^-,\ U_{0,max} + e^+]
+\]
+
+这就是为什么更准确的理解不是“把阈值直接改大”，而是：
+- 先有 `v3`；
+- 再围绕 `v3` 生成允许盒；
+- 再用 `box` 把允许盒按轴扩张。
+
+#### 6.5 真正和 `v2` 比较的不是 `v3`，而是裁剪后的候选结果
+Grim 接下来会把 `v2` 按轴裁回允许盒 `U` 内，得到最接近 `v2` 的合法候选：
+
+\[
+c = clamp_{box}(v2, U)
+\]
+
+这里的 `clamp_box` 就是三轴分别裁剪，不是球形距离。
+
+然后这份候选还要经过碰撞修正，得到最终可比较结果：
+
+\[
+p = collide(c)
+\]
+
+所以真正和 `v2` 比较的是 `p`，不是裸 `v3`，也不是裸 `box`。
+
+#### 6.6 多候选分支里怎么选最优解释
+实际运行时 Grim 不只试一条链，而是会试很多候选分支。
+
+对每一条候选分支 `k`，都会得到：
+
+\[
+p_k = collide(clamp_{box}(v2, U_k))
+\]
+
+然后按平方距离选最接近 `v2` 的那一条：
+
+\[
+k^* = \arg\min_k \|p_k - v2\|^2
+\]
+
+最终留下：
+
+\[
+p^* = p_{k^*}
+\]
+
+这就是本 tick 被 Grim 采纳的“最佳解释”。
+
+#### 6.7 `offset` 怎么生成
+进入处罚链之前，先把最终距离变成 offset：
+
+\[
+offset_{raw} = \|p^* - v2\|
+\]
+
+然后再过一次保守削减层：
+
+\[
+offset = reduceOffset(offset_{raw})
+\]
+
+可以把 `reduceOffset` 理解成：
+
+\[
+offset = \max(0,\ offset_{raw} - \lambda_{boat} - \lambda_{glitch} - \lambda_{stuck} - \lambda_{bounce} - \lambda_{boost})
+\]
+
+其中这些 `\lambda` 只在对应异常场景成立时才扣减，否则就是 0。
+
+所以最终传给 `PredictionComplete.offset` 的，不是平方距离，而是：
+- 先取欧氏距离
+- 再过 `reduceOffset`
+- 得到最终 `offset`
+
+#### 6.8 最终怎样判成违法
+进入 `OffsetHandler` 后，判定链可以写成：
+
+如果：
+
+\[
+offset \ge threshold \quad \text{或} \quad offset \ge immediateSetbackThreshold
+\]
+
+则：
+
+\[
+advantage := advantage + offset
+\]
+
+并进入 flag 链。
+
+之后如果满足：
+
+\[
+(advantage \ge maxAdvantage \ \text{或} \ offset \ge immediateSetbackThreshold)
+\]
+
+并且：
+
+\[
+violations \ge setbackViolationThreshold
+\]
+
+并且玩家没有豁免权限，那么触发 setback。
+
+如果本 tick 没过阈值，则：
+
+\[
+advantage := advantage \cdot setbackDecayMultiplier
+\]
+
+所以把整条链压成一句话，就是：
+
+\[
+v1 \xrightarrow{Elytra递推} v3 \xrightarrow{box扩张允许空间} U \xrightarrow{按轴裁剪} c \xrightarrow{碰撞修正} p^* \xrightarrow{与v2比较} offset \xrightarrow{OffsetHandler} flag/setback
+\]
+
+#### 6.9 下一 tick 继承的不是 `v2`
+当前 tick 结束后，Grim 会同时保留两层结果：
+- 下一 tick 延续用的是碰撞前最佳候选
+- 当前 tick 对外判定用的是碰撞后最佳候选
+
+用式子写就是：
+
+\[
+v1_{next} = c^*
+\]
+
+而不是：
+
+\[
+v1_{next} = v2
+\]
+
+也不是：
+
+\[
+v1_{next} = p^*
+\]
+
+所以“这一 tick 没被立刻拉回”不等于“下一 tick 会直接继承玩家真实发送的 `v2`”。
 
 处罚链的主逻辑：
 - `OffsetHandler` 读取 offset。
@@ -207,9 +508,9 @@ Elytra 分支生成候选结果后，Grim 会把“实际位移”和“最佳�
 2. 触发 `executeViolationSetback()` 后，`blockMovementsUntilResync()` 会从这个安全点拿回 `clientVel`。
 3. 如果这次 setback 选择 `simulateNextTickPosition=true`，Grim 会先做一次碰撞，再调用 `simulateFriction(clientVel)`。
 4. 在 gliding 状态下，`simulateFriction()` 不走普通地面摩擦，而是再次调用 Elytra 运动更新：
-   - `PredictionEngineElytra.getElytraMovement(...)`
-   - 再乘 `0.99 / 0.98 / 0.99`
-   - 再额外做一次 `Y - 0.05`
+    - `PredictionEngineElytra.getElytraMovement(...)`
+    - 再乘 `0.99 / 0.98 / 0.99`
+    - 再额外做一次 `Y - 0.05`
 
 这就意味着：
 - 安全点里保存的速度，本来就已经很接近“上一 tick 结束后可继续沿用的 Elytra 末速度”；
@@ -261,8 +562,8 @@ Elytra 分支生成候选结果后，Grim 会把“实际位移”和“最佳�
 
 ## 使用约束
 - 回答时始终区分三件事：
-  - Elytra 本体物理
-  - 烟花带来的预测空间扩张
-  - offset / setback 的后置处罚
+    - Elytra 本体物理
+    - 烟花带来的预测空间扩张
+    - offset / setback 的后置处罚
 - 不要把 `1.7`、`movementThreshold`、`OffsetHandler.threshold` 说成同一层东西。
 - 解释 `fireworksBox` 时，默认使用“基础阈值没变，但有效容错空间变宽”这套表述。

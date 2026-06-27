@@ -104,7 +104,7 @@ public class AutoEat extends BaseModule {
             intBuilder(autoEat.add("cooldown")).defaultValue(20).build();
 
     public final NBTRef<RegistryRegex<Item>> whiteListItem = builder(
-                    autoEat.add("white-list-item"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
+                    autoEat.add("white-list-item"), RegistryRegex.ITEM_TYPE)
             .defaultValue(new RegistryRegex<>(new Regex("^(golden_apple|potion|golden_carrot)$"), Registries.ITEM))
             .build();
 

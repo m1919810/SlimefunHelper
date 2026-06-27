@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.render;
 
 import static me.matl114.utils.ColorUtils.*;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
@@ -14,6 +13,7 @@ import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -87,7 +87,7 @@ public class WorldScanner extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPostGameTick(), this::onTick);
 
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getPreWorldScannListener(), this::onRequestScann);
         registerListener(Listener.getResetWorldScannListener(), this::onResetWorldScanner);
         registerListener(Listener.getWorldScannChunkBlockFilterList(), this::onChunkScannPredicate);
@@ -195,9 +195,9 @@ public class WorldScanner extends BaseModule {
 
     int resultUpdate = 0;
     // List<IndexEntry<Box>> boxes = new ArrayList<>();
-    final RenderCollector<Box> boxOutlineCollector = RenderUtils.createBoxCollector(true, false, false);
-    final RenderCollector<Box> boxSolidCollector = RenderUtils.createBoxCollector(false, true, false);
-    final RenderCollector<Vec3d> traceLineCollector = RenderUtils.createTracerCollector();
+    final RenderCollector<Box> boxOutlineCollector = RenderCollectors.createBoxCollector(true, false, false);
+    final RenderCollector<Box> boxSolidCollector = RenderCollectors.createBoxCollector(false, true, false);
+    final RenderCollector<Vec3d> traceLineCollector = RenderCollectors.createTracerCollector();
     int lastLogTick = 0;
     final int MAX_RENDER_BLOCKS = 10_000;
 
@@ -281,9 +281,9 @@ public class WorldScanner extends BaseModule {
             MatrixStack stack = event.context();
             RenderUtils.startDrawVirtual(stack);
             try {
-                boxSolidCollector.render(stack);
-                boxOutlineCollector.render(stack);
-                traceLineCollector.render(stack);
+                boxSolidCollector.render3D(stack);
+                boxOutlineCollector.render3D(stack);
+                traceLineCollector.render3D(stack);
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }

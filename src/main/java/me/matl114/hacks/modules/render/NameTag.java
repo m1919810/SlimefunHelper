@@ -50,7 +50,7 @@ public class NameTag extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(RenderListener.getRenderGameHudTasks(), this::onRender);
+        registerListener(RenderListener.getRender2DEvent(), this::onRender);
         registerListener(Listener.getPostTick(), this::onUpdate);
     }
 

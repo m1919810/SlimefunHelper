@@ -48,13 +48,21 @@ public class FlagRef extends Ref<Boolean> {
     }
 
     @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if (otherRef instanceof FlagRef flagRef) {
-            flagRef.set(this.flag);
+    public <W> boolean copyValueFrom(Ref<W> otherRef) {
+        if (otherRef instanceof FlagRef flag) {
+            set(flag.get());
             return true;
-        } else {
+        } else if (otherRef instanceof IntRef intRef) {
+            if (intRef.get() == 1) {
+                set(true);
+                return true;
+            } else if (intRef.get() == 0) {
+                set(false);
+                return true;
+            }
             return false;
         }
+        return false;
     }
 
     @Override

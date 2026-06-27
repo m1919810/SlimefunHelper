@@ -90,7 +90,7 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
         registerListener(
                 Listener.getWorldScannBlockResult().getChannel(Blocks.DRAGON_WALL_HEAD), this::onDragonHeadLoad);
         registerListener(Listener.getWorldScannChunkResult(), this::onDragonHeadChunkLoad);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
     BlockPos currentShipStructure;
