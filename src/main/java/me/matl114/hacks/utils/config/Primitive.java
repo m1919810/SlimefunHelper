@@ -2,9 +2,9 @@ package me.matl114.hacks.utils.config;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import java.util.Optional;
 import javax.annotation.Nonnull;
-import me.matl114.managers.config.NBTParsable;
-import me.matl114.managers.config.NBTType;
+import me.matl114.managers.config.*;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
@@ -68,5 +68,29 @@ public record Primitive<T>(NBTType<T> valueType, @Nonnull T value, String valueS
         return NBTParsable.super.isSameType(type)
                 && type instanceof Primitive<?> primitive
                 && valueType == primitive.valueType;
+    }
+
+    @Override
+    public <W> Optional<Primitive<T>> tryTypeConvert(Ref<W> ref) {
+        return (Optional) convertPrimitives(ref);
+    }
+
+    public static Optional<Primitive<?>> convertPrimitives(Ref<?> ref) {
+        if (ref instanceof FlagRef flag) {
+            return Optional.of(Primitive.of(NBTTypes.BOOLEAN_TYPE, flag.get()));
+        } else if (ref instanceof IntRef intRef) {
+            return Optional.of(Primitive.of(NBTTypes.INT_TYPE, intRef.get()));
+        } else if (ref instanceof LongRef longRef) {
+            return Optional.of(Primitive.of(NBTTypes.LONG_TYPE, longRef.get()));
+        } else if (ref instanceof DoubleRef doubleRef) {
+            return Optional.of(Primitive.of(NBTTypes.DOUBLE_TYPE, doubleRef.get()));
+        } else if (ref instanceof StringRef strRef) {
+            return Optional.of(Primitive.of(NBTTypes.STRING_TYPE, strRef.get()));
+        } else if (ref instanceof KeyBindRef keyBindRef) {
+            return Optional.of(Primitive.of(NBTTypes.KEY_BIND_TYPE, keyBindRef.get()));
+        } else if (ref instanceof EnumRef enumRef) {
+            return Optional.of(Primitive.of(NBTTypes.CONFIG_ENUM_TYPE, new WrapEnum<>(enumRef)));
+        }
+        return Optional.empty();
     }
 }

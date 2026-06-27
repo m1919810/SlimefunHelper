@@ -1,9 +1,12 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.hacks.MovTasks;
+import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.utils.EntityUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -39,6 +42,15 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
 
     @Shadow
     protected abstract float getJumpVelocity(float st);
+
+    @Shadow
+    protected abstract void travelGliding(Vec3d movementInput);
+
+    @Shadow
+    public abstract boolean isFallFlying();
+
+    @Shadow
+    public abstract void remove(RemovalReason reason);
 
     @Unique
     @Override
@@ -87,5 +99,28 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
         } else {
             return original;
         }
+    }
+
+    @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
+    private void onWaterGlide(Vec3d movementInput, CallbackInfo ci) {
+        if (ElytraExtra.INSTANCE.ignoreLiquidPushFly.get() && isFallFlying()) {
+            ci.cancel();
+            travelGliding(movementInput);
+        }
+    }
+
+    @WrapOperation(
+            method = "travelGliding",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/entity/LivingEntity;calcGlidingVelocity(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;"))
+    private Vec3d travelGliding(LivingEntity instance, Vec3d oldVelocity, Operation<Vec3d> original) {
+        Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
+        if (overriding != null) {
+            return overriding;
+        }
+        return original.call(instance, oldVelocity);
     }
 }

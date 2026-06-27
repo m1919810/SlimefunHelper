@@ -3,18 +3,19 @@ package me.matl114.managers.config;
 import com.google.common.base.Preconditions;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.versioned.api.VNbt;
 import net.minecraft.nbt.NbtElement;
 
-public class NBTRef<T extends NBTParsable<T>> extends LazilyRegisterTypeRef<T, NbtElement> {
+public class NBTRef<T extends NBTParsable<?>> extends LazilyRegisterTypeRef<T, NbtElement> {
 
     private NBTType<T> type;
 
     public NBTRef(T nbtR) {
         super(nbtR.type().typeName(), (T) nbtR);
-        this.type = nbtR.type();
+        this.type = (NBTType<T>) nbtR.type();
     }
 
     public NBTRef(String value) {
@@ -61,6 +62,7 @@ public class NBTRef<T extends NBTParsable<T>> extends LazilyRegisterTypeRef<T, N
             this.resolved = true;
             this.set(val);
         } catch (Throwable e) {
+            Debug.info(e);
             throw new RuntimeException("Raw NBT value could not be parsed into type " + type.typeName
                     + ", which may be caused by a corrupted config file: "
                     + (this.configReference == null ? "Unknown" : this.configReference.getConfigName()));
@@ -125,5 +127,17 @@ public class NBTRef<T extends NBTParsable<T>> extends LazilyRegisterTypeRef<T, N
             throw new IllegalStateException("Access to a nbt type before it is registered");
             // return (AttrKeyValue<T>)(AttrKeyValue) new NbtAttrKeyValue<>(key, nbtValue, this::validateNBTRaw);
         }
+    }
+
+    public <R> boolean tryConvert(Ref<R> ref) {
+        if (!resolved) {
+            tryResolve();
+        }
+        if (resolved) {
+            Optional<T> re = (Optional<T>) get().tryTypeConvert(ref);
+            re.ifPresent(this::set);
+            return re.isPresent();
+        }
+        return false;
     }
 }

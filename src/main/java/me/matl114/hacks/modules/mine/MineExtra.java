@@ -151,7 +151,7 @@ public class MineExtra extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
         registerListener(Listener.getGameJoinPoint(), this::onGameJoin);
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onMine);

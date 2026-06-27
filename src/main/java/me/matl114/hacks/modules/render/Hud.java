@@ -3,194 +3,70 @@ package me.matl114.hacks.modules.render;
 import java.util.*;
 import me.matl114.api.Displayable;
 import me.matl114.events.Event;
-import me.matl114.events.Listener;
-import me.matl114.events.RenderListener;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
-import me.matl114.hacks.api.BaseModule;
-import me.matl114.hacks.api.ModuleEntry;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.BoundedPrimitiveMap;
 import me.matl114.hacks.utils.config.NBTTypes;
-import me.matl114.hacks.utils.config.Vec2;
-import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
-public class Hud extends BaseModule {
+public class Hud extends IRender2DColoredModule {
     public final ModulePath hudRoot = makePath(Configs.RENDER_CONFIG, "in-game-hud");
     public final ModulePath hud = hudRoot.add("hud");
 
-    public Hud() {
-        bindFlag(enable);
+    public Hud() {}
+
+    @Override
+    protected ModulePath createRoot() {
+        return makePath(Configs.RENDER_CONFIG, "in-game-hud").add("hud");
     }
-
-    public FlagRef enable = flagBuilder(hud.add("enable")).build();
-
-    public KeyBindRef keyBind = toggleHotkey(hud.add("hotkey"), new MultiKeyBind(), hud.add("enable"))
-            .build();
-
-    public FlagRef right = flagBuilder(hud.add("right")).build();
 
     public NBTRef<HudElementSelectSet> hudElementList = builder(hud.add("elements"), HudElementSelectSet.class)
             .defaultValue(new HudElementSelectSet())
             .build();
 
-    public NBTRef<Vec2> pos = builder(hud.add("pos"), Vec2.class)
-            .defaultValue(new Vec2(0.0D, 0.0D))
-            .validator((v) -> v.x() >= 0.0D && v.y() >= 0.0D && v.x() <= 1.0D && v.y() <= 1.0D)
-            .build();
-
-    public NBTRef<WrapColor> color = builder(hud.add("color"), WrapColor.class)
-            .defaultValue(new WrapColor(TextColor.parse("#F05BDA").getOrThrow()))
-            .build();
-
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(RenderListener.getRenderGameHudTasks(), this::onRender);
-        registerListener(Listener.getPostTick(), this::onUpdate);
     }
 
-    List<HudModuleEntry> moduleEntries = null;
-    List<HudModuleEntry> moduleListRender = null;
+    @Override
+    public void onUpdate(Event<Void> event) {}
 
-    public void initializeModuleEntryList() {
-        moduleEntries = new ArrayList<>();
-        for (var re : HackModules.getModuleGroups()) {
-            for (var module : re.registered) {
-                module.getModuleEntries().map(HudModuleEntry::new).forEach(moduleEntries::add);
-            }
+    @Override
+    public void render2D(VDrawContext vdraw, float partialTicks) {
+        HudElementSelectSet set = hudElementList.get();
+        if (set.getState(HudElement.ICON)) {
+            handleIcon(vdraw);
         }
-        for (var module : moduleEntries) {
-            if (!ChatUtils.hasTranslation(module.moduleEntry.getTranslationKey())) {
-                Debug.info("Missing translation key for", module.moduleEntry.getTranslationKey());
-            }
+        if (set.getState(HudElement.COMMON_INFO)) {
+            handleCommonInfo(vdraw);
         }
-        sortModuleEntries();
-    }
-
-    private void sortModuleEntries() {
-        moduleEntries.sort(Comparator.comparingDouble(
-                s -> -mc.textRenderer.getTextHandler().getWidth(s.getDisplay())));
-    }
-
-    public void onUpdate(Event<Void> event) {
-
-        if (!checkNull() && enable.get() && hudElementList.get().getState(HudElement.MODULE_LIST)) {
-            if (moduleEntries == null) {
-                initializeModuleEntryList();
-                moduleListRender = moduleEntries.stream()
-                        .filter(HudModuleEntry::shouldRender)
-                        .toList();
-            }
-            boolean val = false;
-            for (var re : moduleEntries) {
-                if (re.tickUpdate()) {
-                    val = true;
-                }
-            }
-            if (val) {
-                sortModuleEntries();
-                moduleListRender = moduleEntries.stream()
-                        .filter(HudModuleEntry::shouldRender)
-                        .toList();
-            }
-        } else {
-            moduleEntries = null;
-            moduleListRender = null;
+        if (set.getState(HudElement.CONNECTION_INFO)) {
+            handleConnectionInfo(vdraw);
         }
-    }
-
-    public void onRender(Event<VDrawContext> event) {
-        if (checkNull()) return;
-        if (enable.get() && !event.<Boolean>getArgs(1)) {
-            HudElementSelectSet set = hudElementList.get();
-            VDrawContext vdraw = event.context;
-            vdraw.pushMatrix();
-            try {
-                handleRenderPosition(vdraw);
-                //                vdraw.drawText(mc.textRenderer, "HelloWorld", 0,0,-1, false);
-                //                vdraw.getMatrices().translate(0, 9);
-                //                vdraw.drawText(mc.textRenderer, "HelloWorld2", 0,0,-1, true);
-                //                vdraw.getMatrices().translate(0, 9);
-                //
-                // vdraw.drawTexturedQuad(Identifier.tryParse("slimefunhelper:textures/custom/genshin_impact.png"),
-                // 0,30, 0, 20, 0, 0,1,0 , 1);
-                if (set.getState(HudElement.ICON)) {
-                    handleIcon(vdraw);
-                }
-                if (set.getState(HudElement.COMMON_INFO)) {
-                    handleCommonInfo(vdraw);
-                }
-                if (set.getState(HudElement.CONNECTION_INFO)) {
-                    handleConnectionInfo(vdraw);
-                }
-                if (set.getState(HudElement.POSITION)) {
-                    handlePosition(vdraw);
-                }
-                if (set.getState(HudElement.ROTATION)) {
-                    handleRotation(vdraw);
-                }
-                if (set.getState(HudElement.FALL_DISTANCE)) {
-                    handleFallDistance(vdraw);
-                }
-                if (set.getState(HudElement.SPEED)) {
-                    handleSpeed(vdraw);
-                }
-                if (set.getState(HudElement.MODULE_LIST)) {
-                    handleModuleList(vdraw);
-                }
-            } finally {
-                vdraw.popMatrix();
-            }
+        if (set.getState(HudElement.POSITION)) {
+            handlePosition(vdraw);
         }
-    }
-
-    public static final float HEIGHT = 9;
-
-    public void handleRenderPosition(VDrawContext vdraw) {
-        int sizeX = mc.getWindow().getScaledWidth();
-        int sizeY = mc.getWindow().getScaledHeight();
-        //        vdraw.pushMatrix();
-        //        vdraw.drawTexturedQuad(Identifier.tryParse("slimefunhelper:textures/custom/genshin_impact.png"), sizeX
-        // - 30,sizeX, sizeY - 20, sizeY, 0, 0,1,0 , 1);
-        //        vdraw.popMatrix();
-        var pp = pos.get();
-        double xPer = pp.x();
-        double yPer = pp.y();
-        int startX = (int) (right.get() ? (sizeX - xPer * sizeX) : xPer * sizeX);
-        int startY = (int) (yPer * sizeY);
-        vdraw.getMatrices().translate(startX, startY);
-    }
-
-    public void drawText(VDrawContext vdraw, String text) {
-        drawText(vdraw, Text.literal(text).formatted(Formatting.BOLD).asOrderedText());
-    }
-
-    public void drawText(VDrawContext vdraw, OrderedText text) {
-        int rgb = color.get().withAlpha(255);
-        if (right.get()) {
-            int width = mc.textRenderer.getWidth(text);
-            vdraw.drawText(mc.textRenderer, text, -width, 0, rgb, true);
-        } else {
-            vdraw.drawText(mc.textRenderer, text, 0, 0, rgb, true);
+        if (set.getState(HudElement.ROTATION)) {
+            handleRotation(vdraw);
         }
-        vdraw.getMatrices().translate(0, HEIGHT);
+        if (set.getState(HudElement.FALL_DISTANCE)) {
+            handleFallDistance(vdraw);
+        }
+        if (set.getState(HudElement.SPEED)) {
+            handleSpeed(vdraw);
+        }
     }
 
     public void handleIcon(VDrawContext vdraw) {
@@ -273,30 +149,6 @@ public class Hud extends BaseModule {
                         manager.lastAverageMovementSpeed.length() * 20, manager.lastKnownMovementSpeed.length() * 20));
     }
 
-    public void handleModuleList(VDrawContext vdraw) {
-        if (moduleListRender != null) {
-            int cnt = 0;
-            int size = moduleListRender.size();
-            for (int i = 0; i < size; ++i) {
-                var text = moduleListRender.get(i);
-                if (cnt >= 20) {
-                    drawText(vdraw, "...%d more".formatted(moduleListRender.size() - cnt));
-                    break;
-                }
-                double height = text.getAnimationHeight();
-                if (height < 0 || i == size - 1) {
-                    if (text.lastState) {
-                        drawText(vdraw, text.getDisplay().asOrderedText());
-                        cnt += 1;
-                    }
-                } else {
-                    vdraw.getMatrices().translate(0.0F, (float) height);
-                    cnt += 1;
-                }
-            }
-        }
-    }
-
     public static enum HudElement implements Displayable {
         ICON,
         COMMON_INFO,
@@ -304,8 +156,7 @@ public class Hud extends BaseModule {
         POSITION,
         ROTATION,
         FALL_DISTANCE,
-        SPEED,
-        MODULE_LIST;
+        SPEED;
 
         @Override
         public Text getDisplay() {
@@ -348,64 +199,6 @@ public class Hud extends BaseModule {
         @Override
         public NBTType<HudElementSelectSet> type() {
             return TYPE.cast();
-        }
-    }
-
-    public static class HudModuleEntry implements Displayable {
-        ModuleEntry moduleEntry;
-        boolean lastState;
-        double switchCountDown;
-
-        public HudModuleEntry(ModuleEntry moduleEntry) {
-            this.moduleEntry = moduleEntry;
-            this.lastState = moduleEntry.getActiveState();
-            this.switchCountDown = -1;
-            this.lastDisplay = moduleEntry.getDisplay().formatted(Formatting.BOLD);
-        }
-
-        Text lastDisplay;
-        Text lastMeta;
-
-        public boolean tickUpdate() {
-            boolean update = false;
-            if (lastState != moduleEntry.getActiveState()) {
-                lastState = moduleEntry.getActiveState();
-                switchCountDown = HEIGHT + 1.0D;
-                update = true;
-            }
-            if (switchCountDown >= 0.0D) {
-                switchCountDown -= 1.5D;
-            }
-
-            if (!Objects.equals(lastMeta, moduleEntry.getMetaData())) {
-                lastMeta = moduleEntry.getMetaData();
-                lastDisplay = ((lastMeta != null
-                                        && mc.textRenderer.getTextHandler().getWidth(lastMeta) > 0.0F)
-                                ? (moduleEntry
-                                        .getDisplay()
-                                        .append(Text.literal("["))
-                                        .append(lastMeta)
-                                        .append(Text.literal("]")))
-                                : moduleEntry.getDisplay())
-                        .formatted(Formatting.BOLD);
-                update = true;
-            }
-            return update;
-        }
-
-        public double getAnimationHeight() {
-            return switchCountDown < 0.0D
-                    ? switchCountDown
-                    : (lastState ? (HEIGHT - switchCountDown) : switchCountDown);
-        }
-
-        public boolean shouldRender() {
-            return lastState || switchCountDown >= 0.0D;
-        }
-
-        @Override
-        public Text getDisplay() {
-            return lastDisplay;
         }
     }
 }

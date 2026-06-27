@@ -511,6 +511,12 @@ public class Listener {
     private static final EventChannel<Vec3d> playerWebSlowPoint = new EventChannel<>();
 
     @Getter
+    @Cancelable
+    @Modifiable
+    @ExtraArgs(TagKey.class)
+    private static final EventChannel<Vec3d> playerFluidVelocityPoint = new EventChannel<>();
+
+    @Getter
     @Modifiable
     private static final EventChannel<MovTasks.MovInfo> teleportConfirmResponsePoint = new EventChannel<>();
 

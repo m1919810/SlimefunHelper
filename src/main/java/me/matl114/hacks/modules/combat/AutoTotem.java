@@ -63,7 +63,7 @@ public class AutoTotem extends BaseModule {
     public final FlagRef smartTotem = flagBuilder(totem.add("smart-auto-totem")).build();
 
     public final NBTRef<RegistryRegex<Item>> enableHandItems = builder(
-                    totem.add("enable-hand-items"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
+                    totem.add("enable-hand-items"), RegistryRegex.ITEM_TYPE)
             .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.ITEM))
             .build();
 

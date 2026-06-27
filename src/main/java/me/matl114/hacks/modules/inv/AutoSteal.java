@@ -10,7 +10,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
-import me.matl114.managers.config.NBTType;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
@@ -47,13 +46,12 @@ public class AutoSteal extends BaseModule {
             .build();
 
     // 标题正则（NBTRef 类型，存储正则表达式）
-    public final NBTRef<Regex> titleRegex = builder(steal.add("title-regex"), NBTType.<Regex>parameter(Regex.class))
+    public final NBTRef<Regex> titleRegex = builder(steal.add("title-regex"), Regex.class)
             .defaultValue(new Regex(".*")) // 默认匹配所有标题
             .build();
 
     // 物品过滤器（RegistryRegex 类型，基于物品注册表过滤）
-    public final NBTRef<RegistryRegex<Item>> itemFilter = builder(
-                    steal.add("item-filter"), NBTType.<RegistryRegex<Item>>parameter(RegistryRegex.class))
+    public final NBTRef<RegistryRegex<Item>> itemFilter = builder(steal.add("item-filter"), RegistryRegex.ITEM_TYPE)
             .defaultValue(new RegistryRegex<>(new Regex(".*"), Registries.ITEM))
             .build();
 

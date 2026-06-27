@@ -50,6 +50,8 @@ public class AttackArua extends BaseModule {
     public final FlagRef doNotAttackWhenEat =
             flagBuilder(attBot.add("stop-attack-when-eat")).build();
 
+    public final FlagRef doNotAttackWhenSpear = flagBuilder(attBot.add("stop-attack-when-spear")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -70,6 +72,9 @@ public class AttackArua extends BaseModule {
                 if (doNotAttackWhenEat.get()
                         && mc.player.isUsingItem()
                         && VItem.getInstance().isEatable(mc.player.getActiveItem())) {
+                    return;
+                }
+                if(doNotAttackWhenSpear.get() && mc.player.isUsingItem() && VItem.getInstance().isSpear(mc.player.getActiveItem())) {
                     return;
                 }
                 if (attack.legalMode.get()

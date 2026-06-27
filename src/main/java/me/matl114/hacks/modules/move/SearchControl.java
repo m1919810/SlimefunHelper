@@ -39,7 +39,7 @@ public class SearchControl extends BaseModule {
             .build();
 
     public final DoubleRef rangeSpiral = doubleBuilder(searchControl.add("range-spiral"))
-            .defaultValue(192.0D)
+            .defaultValue(32.0D)
             .show(() -> mode.get().isIn(Mode.SPIRAL))
             .build();
 

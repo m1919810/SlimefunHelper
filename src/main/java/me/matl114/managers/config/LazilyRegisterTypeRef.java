@@ -81,21 +81,37 @@ public abstract class LazilyRegisterTypeRef<T, W> extends ObjectRef<T> {
     }
 
     @Override
-    public final <W> boolean copyValueTo(Ref<W> otherRef) {
+    public <R> boolean copyValueFrom(Ref<R> otherRef) {
         if (otherRef instanceof LazilyRegisterTypeRef what
                 && what.getClass() == this.getClass()
                 && Objects.equals(what.enumType, this.enumType)) {
-            if (!this.resolved) {
-                tryResolve();
-            }
-            if (this.resolved) {
-                what.set(this.get());
-            } else {
-                what.enumValue = this.enumValue;
-            }
+            try {
+                if (!what.resolved) {
+                    what.tryResolve();
+                }
+                if (!this.resolved) {
+                    this.tryResolve();
+                }
 
-            return true;
+                if (this.resolved) {
+                    this.set((T) what.get());
+
+                } else {
+                    this.enumValue = (W) what.enumValue;
+                }
+
+                return true;
+            } catch (Throwable e) {
+            }
         }
+        try {
+            return tryConvert(otherRef);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    public <R> boolean tryConvert(Ref<R> ref) {
         return false;
     }
 

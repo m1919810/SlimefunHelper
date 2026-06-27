@@ -12,6 +12,7 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
@@ -85,10 +86,10 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         if (autoSprintLegal.get()) {
             if (!mc.options.sprintKey.isPressed()
                     && PlayerInputUtils.of(mc.options).hasWASDMovement()) {
-                if (logSprint.get()) {
-                    Debug.chat("[Sprint] toggle sprint on");
-                }
                 mc.options.sprintKey.setPressed(true);
+                if (logSprint.get()) {
+                    Debug.chat(ChatUtils.stringToText("&c[Sprint] &fToggle sprint on"));
+                }
             }
         }
     }

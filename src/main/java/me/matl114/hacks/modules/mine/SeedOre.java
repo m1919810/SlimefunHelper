@@ -134,7 +134,7 @@ public class SeedOre extends BaseModule {
         // this needs run on main thread to ensure the chunk is accessible
         registerListener(Listener.getPacketPostHandlePoint().getChannel(ChunkDataS2CPacket.class), this::onChunkUpdate);
         registerListener(Listener.getPacketPoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRenderOreSimulation);
+        registerListener(RenderListener.getRender3DEvent(), this::onRenderOreSimulation);
     }
 
     @Override

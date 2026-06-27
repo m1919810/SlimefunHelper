@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import lombok.Getter;
+import lombok.val;
 import me.matl114.utils.config.AttrKeyValue;
 
 public class ListRef extends ObjectRef<List<String>> {
@@ -49,9 +50,9 @@ public class ListRef extends ObjectRef<List<String>> {
     }
 
     @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
+    public <W> boolean copyValueFrom(Ref<W> otherRef) {
         if (otherRef instanceof ListRef listRef) {
-            listRef.set(new ArrayList<>(this.get()));
+            set(new ArrayList<>(listRef.get()));
             return true;
         }
         return false;

@@ -4,11 +4,13 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import me.matl114.commands.MainCommand;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.HackModules;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.Tasks;
@@ -76,10 +78,24 @@ public class ConfigManager extends BaseModule {
                             .sorted();
                 }))
                 .build();
+        SimpleCommandArgs.Argument moduleArgument = SimpleCommandArgs.argumentBuilder()
+                .name("module")
+                .tabCompletor(TabResult.ofStreamSupplier(() -> {
+                    return HackModules.getModuleGroups().stream()
+                            .flatMap(s -> s.getModules().stream().map(BaseModule::getName));
+                }))
+                .build();
         SimpleCommandArgs.Argument pathPrefixArgument = SimpleCommandArgs.argumentBuilder()
                 .name("path_prefix")
                 .defaultValue("")
                 .tabCompletor(TabResult.ofDispatcher((sender, configName) -> getPathPrefixSuggestions(configName)))
+                .build();
+        SimpleCommandArgs.Argument fileLoadArgument = SimpleCommandArgs.argumentBuilder()
+                .name("path")
+                .tabCompletor(
+                        TabResult.ofStreamSupplier(CommandUtils.fileSupplier(FileManager.CONFIG_SAVE_FOLDER, (sx) -> {
+                            return sx.endsWith(".nbt") || sx.endsWith(".dat");
+                        })))
                 .build();
         main.subBuilder(SubCommand.taskBuilder())
                 .name("open")
@@ -100,18 +116,28 @@ public class ConfigManager extends BaseModule {
                 .post(e -> e.executor(CommandContext.run(this::onSave)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
+                .name("savemodule")
+                .helper("<path> <module> <path_prefix=\"\"> 将单独一个模块的配置保存为快照")
+                .arg(SimpleCommandArgs.argumentBuilder().name("path").build())
+                .arg(moduleArgument)
+                .arg(pathPrefixArgument)
+                .post(e -> e.executor(CommandContext.run(this::onSaveModule)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
                 .name("load")
                 .helper("<path> <config_name=all> <path_prefix=\"\"> 加载配置快照")
-                .arg(SimpleCommandArgs.argumentBuilder()
-                        .name("path")
-                        .tabCompletor(TabResult.ofStreamSupplier(
-                                CommandUtils.fileSupplier(FileManager.CONFIG_SAVE_FOLDER, (sx) -> {
-                                    return sx.endsWith(".nbt") || sx.endsWith(".dat");
-                                })))
-                        .build())
+                .arg(fileLoadArgument)
                 .arg(configOrAllNameArgument)
                 .arg(pathPrefixArgument)
                 .post(e -> e.executor(CommandContext.run(this::onLoad)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("loadmodule")
+                .helper("<path> <module> <path_prefix=\"\"> 加载配置快照中单独一个模块的配置")
+                .arg(fileLoadArgument)
+                .arg(moduleArgument)
+                .arg(pathPrefixArgument)
+                .post(e -> e.executor(CommandContext.run(this::onLoadModule)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("set")
@@ -297,6 +323,56 @@ public class ConfigManager extends BaseModule {
 
         DataResult<me.matl114.managers.config.Ref<?>> encoded =
                 ConfigSnapshot.CODEC.encodeStart(ConfigOp.INSTANCE, snapshot);
+        save(fileName, snapshot);
+    }
+
+    public void onSaveModule(ArgumentInputStream args) {
+        String rawPath = args.nextNonnullString();
+        String fileName;
+        try {
+            fileName = normalizeSnapshotFileName(rawPath);
+        } catch (IllegalArgumentException e) {
+            Debug.chat(Text.literal(e.getMessage()).formatted(Formatting.RED));
+            return;
+        }
+        String moduleName = args.nextNonnullString();
+        String pathPrefix = args.nextNonnullString().trim();
+        Map<String, BaseModule> moduleMap = HackModules.getModuleGroups().stream()
+                .flatMap(s -> s.getModules().stream())
+                .collect(Collectors.toMap(s -> s.getName().toLowerCase(Locale.ROOT), b -> b));
+        BaseModule baseModule = moduleMap.get(moduleName.toLowerCase(Locale.ROOT));
+        if (baseModule == null) {
+            Debug.chat(Text.literal("未找到模块: " + moduleName).formatted(Formatting.RED));
+            return;
+        }
+        Map<Identifier, MapRef> snapshotMap = new LinkedHashMap<>();
+        for (var entry : baseModule.getEditableConfig()) {
+            var config = entry.config();
+            var path = entry.path();
+            var ff = entry.ref();
+            String pathS = String.join(".", path);
+            if (pathS.startsWith(pathPrefix)) {
+                snapshotMap
+                        .computeIfAbsent(config.getRegistryKey().getValue(), k -> new MapRef())
+                        .setValue(ff, path);
+            }
+        }
+
+        List<String> privacyKeywords = privacyPathKeywords.get();
+        for (var entry : new HashSet<>(snapshotMap.keySet())) {
+            if (isPrivacyConfig(entry, privacyKeywords)) {
+                Debug.chat(Text.literal("保存时跳过配置: " + entry + " 以避免隐私信息泄露(可在设置中调整关键词)")
+                        .formatted(Formatting.YELLOW));
+                snapshotMap.remove(entry);
+            }
+        }
+        ConfigSnapshot snapshot = new ConfigSnapshot(snapshotMap);
+        save(fileName, snapshot);
+    }
+
+    public void save(String fileName, ConfigSnapshot snapshot) {
+        DataResult<me.matl114.managers.config.Ref<?>> encoded =
+                ConfigSnapshot.CODEC.encodeStart(ConfigOp.INSTANCE, snapshot);
         if (encoded.isError()) {
             String message = encoded.error().map(DataResult.Error::message).orElse("未知编码错误");
             Debug.chat(Text.literal("保存配置快照失败: " + message).formatted(Formatting.RED));
@@ -337,12 +413,51 @@ public class ConfigManager extends BaseModule {
                 return;
             }
         }
+        var snapshot = load(fileName);
+        if (snapshot == null) return;
+        if (config == null) {
+            for (Map.Entry<Identifier, MapRef> entry : snapshot.snapSnot().entrySet()) {
+                Config config2 = Config.REGISTRY.get(entry.getKey());
+                if (config2 == null) {
+                    Debug.chat(Text.literal("跳过未注册配置: " + entry.getKey()).formatted(Formatting.YELLOW));
+                    continue;
+                }
+                for (LeafEntry leaf : flattenMapRef(entry.getValue())) {
+                    String pathStr = String.join(".", leaf.path());
+                    if (pathStr.startsWith(prefix)) {
+                        Ref<?> currentRef = config2.get(leaf.path());
+                        if (currentRef == null) {
+                            continue;
+                        }
+                        currentRef.copyValueFrom(leaf.value());
+                    }
+                }
+            }
+        } else {
+            MapRef mapRef2 = snapshot.snapSnot().get(config.getRegistryKey().getValue());
+            if (mapRef2 != null) {
+                for (LeafEntry leaf : flattenMapRef(mapRef2)) {
+                    String pathStr = String.join(".", leaf.path());
+                    if (pathStr.startsWith(prefix)) {
+                        Ref<?> currentRef = config.get(leaf.path());
+                        if (currentRef == null) {
+                            continue;
+                        }
+                        currentRef.copyValueFrom(leaf.value());
+                    }
+                }
+            }
+        }
 
+        Debug.chat(Text.literal("成功加载配置快照" + fileName).formatted(Formatting.GREEN));
+    }
+
+    public ConfigSnapshot load(String fileName) {
         try (FileStorage storage = FileManager.getInstance().getConfigStorage(fileName, true, false)) {
             if (storage == null) {
                 Debug.chat(Text.literal("配置快照不存在: " + fileName).formatted(Formatting.RED));
                 promptSnapshotFolderImport();
-                return;
+                return null;
             }
             storage.read();
             Ref<?> rawSnapshot = storage.asReadOnly(ConfigOp.INSTANCE);
@@ -350,46 +465,56 @@ public class ConfigManager extends BaseModule {
             if (decoded.isError()) {
                 String message = decoded.error().map(DataResult.Error::message).orElse("未知解码错误");
                 Debug.chat(Text.literal("加载配置快照失败: " + message).formatted(Formatting.RED));
-                return;
+                return null;
             }
 
-            ConfigSnapshot snapshot = decoded.result().get();
-            if (config == null) {
-                for (Map.Entry<Identifier, MapRef> entry : snapshot.snapSnot().entrySet()) {
-                    Config config2 = Config.REGISTRY.get(entry.getKey());
-                    if (config2 == null) {
-                        Debug.chat(Text.literal("跳过未注册配置: " + entry.getKey()).formatted(Formatting.YELLOW));
-                        continue;
-                    }
-                    for (LeafEntry leaf : flattenMapRef(entry.getValue())) {
-                        String pathStr = String.join(".", leaf.path());
-                        if (pathStr.startsWith(prefix)) {
-                            Ref<?> currentRef = config2.get(leaf.path());
-                            if (currentRef == null) {
-                                continue;
-                            }
-                            leaf.value().copyValueTo(currentRef);
-                        }
-                    }
-                }
-            } else {
-                MapRef mapRef2 = snapshot.snapSnot().get(config.getRegistryKey().getValue());
-                if (mapRef2 != null) {
-                    for (LeafEntry leaf : flattenMapRef(mapRef2)) {
-                        String pathStr = String.join(".", leaf.path());
-                        if (pathStr.startsWith(prefix)) {
-                            Ref<?> currentRef = config.get(leaf.path());
-                            if (currentRef == null) {
-                                continue;
-                            }
-                            leaf.value().copyValueTo(currentRef);
-                        }
-                    }
-                }
-            }
-
-            Debug.chat(Text.literal("成功加载配置快照" + fileName).formatted(Formatting.GREEN));
+            return decoded.result().get();
         }
+    }
+
+    public void onLoadModule(ArgumentInputStream args) {
+        String rawPath = args.nextArg();
+        if (rawPath == null) {
+            promptSnapshotFolderImport();
+            return;
+        }
+        String fileName;
+        try {
+            fileName = normalizeSnapshotFileName(rawPath);
+        } catch (IllegalArgumentException e) {
+            Debug.chat(Text.literal(e.getMessage()).formatted(Formatting.RED));
+            promptSnapshotFolderImport();
+            return;
+        }
+        String moduleName = args.nextNonnullString();
+        String prefix = args.nextNonnullString();
+        Map<String, BaseModule> moduleMap = HackModules.getModuleGroups().stream()
+                .flatMap(s -> s.getModules().stream())
+                .collect(Collectors.toMap(s -> s.getName().toLowerCase(Locale.ROOT), b -> b));
+        BaseModule baseModule = moduleMap.get(moduleName.toLowerCase(Locale.ROOT));
+        if (baseModule == null) {
+            Debug.chat(Text.literal("未找到模块: " + moduleName).formatted(Formatting.RED));
+            return;
+        }
+
+        var snapshot = load(fileName);
+        if (snapshot == null) return;
+        for (var entry : baseModule.getEditableConfig()) {
+            var config = entry.config();
+            var path = entry.path();
+            var ff = entry.ref();
+            String pathStr = String.join(".", path);
+            if (pathStr.startsWith(prefix)) {
+                var refMap = snapshot.snapSnot.get(config.getRegistryKey().getValue());
+                if (refMap != null) {
+                    var ref = refMap.get(path);
+                    if (ref != null) {
+                        ff.copyValueFrom(ref);
+                    }
+                }
+            }
+        }
+        Debug.chat(Text.literal("成功加载配置快照" + fileName).formatted(Formatting.GREEN));
     }
 
     private Stream<String> getPathPrefixSuggestions(String configName) {

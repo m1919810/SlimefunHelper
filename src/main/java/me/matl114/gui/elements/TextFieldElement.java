@@ -12,7 +12,6 @@ import me.matl114.gui.basic.AbstractElement;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
-import me.matl114.gui.basic.InputHandler;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.PropertyTracker;
 import me.matl114.versioned.api.VDrawContext;
@@ -21,6 +20,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.cursor.StandardCursors;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -479,7 +479,7 @@ public class TextFieldElement extends AbstractElement {
         if (!this.focused) {
             return false;
         }
-        if (mc.options.inventoryKey.matchesKey(keyCode, scanCode)) {
+        if (mc.options.inventoryKey.matchesKey(new KeyInput(keyCode, scanCode, modifiers))) {
             return true;
         }
         boolean ctrlOrCmd = hasCtrlOrCmd(modifiers);
@@ -563,7 +563,8 @@ public class TextFieldElement extends AbstractElement {
     protected int calculateCursorPos(double mouseX) {
         int innerX = Math.min(MathHelper.floor(mouseX) - this.textX, this.getInnerWidth());
         String string = this.text.substring(this.firstCharacterIndex);
-        return this.firstCharacterIndex + this.textRenderer.trimToWidth(string, innerX).length();
+        return this.firstCharacterIndex
+                + this.textRenderer.trimToWidth(string, innerX).length();
     }
 
     protected void selectWord(int cursor) {
@@ -582,8 +583,10 @@ public class TextFieldElement extends AbstractElement {
         if (this.drawsBackground()) {
             innerX -= 4;
         }
-        String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
-        this.setCursor(this.textRenderer.trimToWidth(string, innerX).length() + this.firstCharacterIndex, shiftDownAction);
+        String string =
+                this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
+        this.setCursor(
+                this.textRenderer.trimToWidth(string, innerX).length() + this.firstCharacterIndex, shiftDownAction);
     }
 
     @Override
@@ -606,7 +609,14 @@ public class TextFieldElement extends AbstractElement {
             if (this.drawsBackground()) {
                 if (this.borderColorProvider != null) {
                     McWidgetHelpers.drawTextWidgetBox(
-                            element, drawContext, 0, 0, this.width, this.height, this.focused, this.borderColorProvider);
+                            element,
+                            drawContext,
+                            0,
+                            0,
+                            this.width,
+                            this.height,
+                            this.focused,
+                            this.borderColorProvider);
                 } else {
                     context.drawGuiTexture(
                             this.focused ? TEXT_FIELD_HIGHLIGHTED_TEXTURE : TEXT_FIELD_TEXTURE,
@@ -619,13 +629,15 @@ public class TextFieldElement extends AbstractElement {
 
             int color = this.editable ? this.editableColor : this.uneditableColor;
             int cursorOffset = this.selectionStart - this.firstCharacterIndex;
-            String visibleText = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
+            String visibleText =
+                    this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
             boolean cursorInVisibleRange = cursorOffset >= 0 && cursorOffset <= visibleText.length();
             boolean showBlink = this.focused
                     && (Util.getMeasuringTimeMs() - this.lastSwitchFocusTime) / 300L % 2L == 0L
                     && cursorInVisibleRange;
             int drawX = this.textX;
-            int selectionOffset = MathHelper.clamp(this.selectionEnd - this.firstCharacterIndex, 0, visibleText.length());
+            int selectionOffset =
+                    MathHelper.clamp(this.selectionEnd - this.firstCharacterIndex, 0, visibleText.length());
             if (!visibleText.isEmpty()) {
                 String beforeCursor = cursorInVisibleRange ? visibleText.substring(0, cursorOffset) : visibleText;
                 OrderedText orderedText = this.format(beforeCursor, this.firstCharacterIndex);
@@ -657,7 +669,8 @@ public class TextFieldElement extends AbstractElement {
             }
 
             if (!hasMoreChars && this.suggestion != null) {
-                drawContext.drawText(this.textRenderer, this.suggestion, cursorX - 1, this.textY, -8355712, this.textShadow);
+                drawContext.drawText(
+                        this.textRenderer, this.suggestion, cursorX - 1, this.textY, -8355712, this.textShadow);
             }
 
             if (selectionOffset != cursorOffset) {
@@ -674,7 +687,8 @@ public class TextFieldElement extends AbstractElement {
                 if (hasMoreChars) {
                     drawContext.fill(cursorX, this.textY - 1, cursorX + 1, this.textY + 10, color);
                 } else {
-                    drawContext.drawText(this.textRenderer, HORIZONTAL_CURSOR, cursorX, this.textY, color, this.textShadow);
+                    drawContext.drawText(
+                            this.textRenderer, HORIZONTAL_CURSOR, cursorX, this.textY, color, this.textShadow);
                 }
             }
 
@@ -688,33 +702,11 @@ public class TextFieldElement extends AbstractElement {
 
     @Override
     public boolean onClick(ExecutableWidget element, double mouseX, double mouseY, int button) {
-        syncWidgetState(element);
-        double translatedMouseX = translateMouseX(element, mouseX);
-        double translatedMouseY = translateMouseY(element, mouseY);
-        if (!this.visible || button != 0 || !this.canStartDrag(translatedMouseX, translatedMouseY)) {
-            return false;
-        }
-        int cursor = this.calculateCursorPos(translatedMouseX);
-        long now = Util.getMeasuringTimeMs();
-        boolean doubled = this.lastClickButton == button
-                && this.lastClickCursor == cursor
-                && now - this.lastClickTime <= DOUBLE_CLICK_INTERVAL;
-        if (doubled) {
-            this.selectWord(cursor);
-        } else {
-            this.setCursor(cursor, ScreenUtils.hasShiftDown());
-        }
-        this.lastClickTime = now;
-        this.lastClickCursor = cursor;
-        this.lastClickButton = button;
-        return true;
+        throw new UnsupportedOperationException("Use onAction(Type.MOUSE_CLICK) instead");
     }
 
     @Override
-    public boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, InputHandler.Type type) {
-        if (type == InputHandler.Type.MOUSE_CLICK) {
-            return super.onAction(element, mouseX, mouseY, button, type);
-        }
+    public boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, Type type) {
         if (super.onAction(element, mouseX, mouseY, button, type)) {
             return true;
         }
@@ -726,6 +718,25 @@ public class TextFieldElement extends AbstractElement {
         double translatedMouseX = translateMouseX(element, mouseX);
         double translatedMouseY = translateMouseY(element, mouseY);
         return switch (type) {
+            case MOUSE_CLICK -> {
+                if (button != 0 || !this.canStartDrag(translatedMouseX, translatedMouseY)) {
+                    yield false;
+                }
+                int cursor = this.calculateCursorPos(translatedMouseX);
+                long now = Util.getMeasuringTimeMs();
+                boolean doubled = this.lastClickButton == button
+                        && this.lastClickCursor == cursor
+                        && now - this.lastClickTime <= DOUBLE_CLICK_INTERVAL;
+                if (doubled) {
+                    this.selectWord(cursor);
+                } else {
+                    this.setCursor(cursor, ScreenUtils.hasShiftDown());
+                }
+                this.lastClickTime = now;
+                this.lastClickCursor = cursor;
+                this.lastClickButton = button;
+                yield true;
+            }
             case MOUSE_RELEASE -> {
                 boolean wasDragging = this.draggingSelection;
                 this.draggingSelection = false;
@@ -779,7 +790,8 @@ public class TextFieldElement extends AbstractElement {
     }
 
     protected void updateTextPosition() {
-        String visibleText = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
+        String visibleText =
+                this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
         this.textX = this.centered
                 ? (this.width - this.textRenderer.getWidth(visibleText)) / 2
                 : (this.drawsBackground ? 4 : 0);
@@ -792,7 +804,8 @@ public class TextFieldElement extends AbstractElement {
         String visibleText = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), innerWidth);
         int visibleEnd = visibleText.length() + this.firstCharacterIndex;
         if (cursor == this.firstCharacterIndex) {
-            this.firstCharacterIndex -= this.textRenderer.trimToWidth(this.text, innerWidth, true).length();
+            this.firstCharacterIndex -=
+                    this.textRenderer.trimToWidth(this.text, innerWidth, true).length();
         }
         if (cursor > visibleEnd) {
             this.firstCharacterIndex += cursor - visibleEnd;
@@ -812,6 +825,7 @@ public class TextFieldElement extends AbstractElement {
 
     @FunctionalInterface
     public interface Formatter {
-        @Nullable OrderedText format(String string, int firstCharacterIndex);
+        @Nullable
+        OrderedText format(String string, int firstCharacterIndex);
     }
 }

@@ -20,6 +20,8 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -64,24 +66,19 @@ public class Attack extends BaseModule {
 
     public final FlagRef legalMode = flagBuilder(attack.add("legal-mode")).build();
 
-    public final FlagRef enableTp = flagBuilder(attack.add("tp-enable")).build();
-
-    public final DoubleRef tpRange = doubleBuilder(attack.add("tp-reach"))
-            .defaultValue(0.0D)
-            .show(enableTp::get)
+    public final NBTRef<OptionalPrimitive<Double>> tpRange = builder(
+                    attack.add("tp-reach"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(true, NBTTypes.DOUBLE_TYPE, 0.0D))
             .build();
 
-    public final FlagRef enableMace =
-            flagBuilder(attack.add("mace-enable")).show(() -> !legalMode.get()).build();
-
-    public final DoubleRef maceHeight = doubleBuilder(attack.add("mace-height-multiply"))
-            .defaultValue(30.0D)
-            .validator(Configs.doubleRange(-200.0D, 200.0D))
-            .show(() -> !legalMode.get() && enableMace.get())
+    public final NBTRef<OptionalPrimitive<Double>> maceHeight = builder(
+                    attack.add("mace-height-multiply"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 30.0d))
+            .show(() -> !legalMode.get())
             .build();
 
     public final FlagRef exactAttack = flagBuilder(attack.add("exact-tp"))
-            .show(() -> !legalMode.get() && enableTp.get())
+            .show(() -> !legalMode.get() && tpRange.get().isPresent())
             .build();
 
     public final EnumRef<Configs.LegalTargetingMode> legalTargetingMode = builder(
@@ -121,11 +118,11 @@ public class Attack extends BaseModule {
     private final Random attackOffsetRand = new Random();
 
     public boolean canUseTp() {
-        return enableTp.get() && tpRange.get() > 1E-7;
+        return tpRange.get().positive();
     }
 
     public boolean canUseMaceTp() {
-        return enableMace.get() && maceHeight.get() > 1E-7;
+        return tpRange.get().positive();
     }
 
     @Override
@@ -133,7 +130,7 @@ public class Attack extends BaseModule {
         super.registerAll();
         // should be in high priority
         registerListener(Listener.getAttackAction(), this::onAttack, -999);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRenderTarget);
+        registerListener(RenderListener.getRender3DEvent(), this::onRenderTarget);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 
@@ -237,7 +234,8 @@ public class Attack extends BaseModule {
     }
 
     public double getTpSelectRange() {
-        return CombatTasks.getCombatExtra().getAttackRange() + (canUseTp() ? Math.max(0.0d, tpRange.get()) : 0.0D);
+        return CombatTasks.getCombatExtra().getAttackRange()
+                + (canUseTp() ? Math.max(0.0d, tpRange.get().getValue()) : 0.0D);
     }
 
     private static boolean canEntityUseShieldBlockMe(LivingEntity target, PlayerEntity player) {
@@ -483,7 +481,7 @@ public class Attack extends BaseModule {
                                         mc.player.getVelocity()); // predictedEyePos.add(mc.player.getVelocity());
                             }
                             Vec3d vec3d = args.getPos();
-                            if (tpRange.get() > 1E-7
+                            if (tpRange.get().positive()
                                     && target.getBoundingBox().squaredMagnitude(predictedEyePos)
                                             > MathUtils.s2(attackRange)) {
                                 // need tp attack
@@ -662,7 +660,7 @@ public class Attack extends BaseModule {
         Vec3d predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(vec3d, target.getBoundingBox());
         boolean distancePassAttack =
                 TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player.getBoundingBox(), attackRange);
-        if (tpRange.get() > 1E-7 && !distancePassAttack) {
+        if (tpRange.get().positive() && !distancePassAttack) {
 
             Vec3d vec3d1 = MovTasks.tpAttackSearch(vec3d, target.getBoundingBox(), attackRange, 9.9, 1).stream()
                     .findFirst()
@@ -759,7 +757,7 @@ public class Attack extends BaseModule {
             if (processMaceAttack(player, target, movementStack, shouldMoveBackStack, settings)) {
                 maceAttack = true;
                 int maceThreshold = (useExactAttack ? 100 : 140);
-                if (maceHeight.get() > maceThreshold) {
+                if (maceHeight.get().getValue() > maceThreshold) {
                     Debug.chat(Text.literal("[Attack Bot] 当前参数中,不建议将MaceHack范围设置在%d以上!".formatted(maceThreshold)));
                 }
             }
@@ -894,7 +892,7 @@ public class Attack extends BaseModule {
         //
         //        }
         if (attackSettings.maceVClip() && willUseMaceAttack(attackSettings.maceSwap())) {
-            double maxMace = maceHeight.get();
+            double maxMace = maceHeight.get().getValue();
             player.setOnGround(false);
             Vec3d playerPos = movementStack.peekLast().vec3d();
             // do not mace attack into water, water will reset fall distance
@@ -1083,14 +1081,14 @@ public class Attack extends BaseModule {
         switch (preset) {
             case HACKING, VANILLA -> {
                 legalMode.set(false);
-                if (tpRange.get() < 0) {
-                    tpRange.set(-tpRange.get());
+                if (tpRange.get().getValue() < 0) {
+                    tpRange.set(tpRange.get().withValue(-tpRange.get().getValue()));
                 }
             }
             default -> {
                 legalMode.set(true);
-                if (tpRange.get() > 0) {
-                    tpRange.set(-tpRange.get());
+                if (tpRange.get().getValue() > 0) {
+                    tpRange.set(tpRange.get().withValue(-tpRange.get().getValue()));
                 }
             }
         }

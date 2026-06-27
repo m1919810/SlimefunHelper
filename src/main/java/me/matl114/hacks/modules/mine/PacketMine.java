@@ -3,11 +3,9 @@ package me.matl114.hacks.modules.mine;
 import com.google.common.util.concurrent.Runnables;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-
 import lombok.Getter;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.annotations.Cancelable;
@@ -272,6 +270,7 @@ public class PacketMine extends BaseModule {
             return false;
         }
     }
+
     @Getter
     @Cancelable
     @ExtraArgs({BlockPos.class})

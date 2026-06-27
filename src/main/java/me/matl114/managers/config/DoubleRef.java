@@ -46,9 +46,9 @@ public class DoubleRef extends Ref<Double> {
     }
 
     @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if (otherRef instanceof DoubleRef ref) {
-            ref.set(this.value);
+    public <W> boolean copyValueFrom(Ref<W> otherRef) {
+        if (otherRef instanceof DoubleRef db) {
+            this.set(db.get());
             return true;
         } else return false;
     }

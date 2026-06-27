@@ -1,10 +1,15 @@
 package me.matl114.hacks.modules.inv;
 
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
+import lombok.Getter;
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.TileInventoryScreen;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
@@ -13,15 +18,17 @@ import me.matl114.events.RenderListener;
 import me.matl114.gui.complex.invcache.InventorySelectScreen;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.task.ServerStorage;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.world.BlockStorage;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.CommonUtils;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.MutableEntry;
 import me.matl114.utils.world.BlockLocation;
@@ -36,7 +43,11 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.inventory.StackWithSlot;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -45,10 +56,8 @@ import net.minecraft.util.math.Vec3d;
 public class ChestHistory extends BaseModule {
     public final ModulePath invCache = makePath(Configs.INV_CONFIG, "inv-cache");
 
-    private final int MAX_INV_CACHE_SIZE = 512;
     private final int AUTO_REFRESH_RANGE = 64;
-    private final LinkedHashMap<ContainerPosition, MutableEntry<BlockState, HandledScreen<?>>> screens =
-            new LinkedHashMap<>();
+    private final LinkedHashMap<ContainerPosition, MutableEntry<BlockState, Entry>> screens = new LinkedHashMap<>();
     private final List<HandledScreen<?>> virtualScreens = new ArrayList<>();
 
     public ChestHistory() {}
@@ -65,6 +74,9 @@ public class ChestHistory extends BaseModule {
     public final FlagRef enableTitle =
             flagBuilder(invCache.add("show-title")).defaultValue(false).build();
 
+    public final FlagRef enablePersistent =
+            flagBuilder(invCache.add("enable-persistent-storage")).build();
+
     public List<HandledScreen<?>> getCachedInventories() {
         return (List) Stream.concat(screens.values().stream().map(MutableEntry::getValue), virtualScreens.stream())
                 .toList();
@@ -76,12 +88,14 @@ public class ChestHistory extends BaseModule {
         registerListener(Listener.getPostOpenHandledScreen(), this::onOpenHandledScreen);
         registerListener(Listener.getGameJoinPoint(), this::onServerJoin);
         registerListener(Listener.getPostGameTick(), this::onTick);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRender);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
+
+    public Entry currentEntry;
 
     public void onOpenHandledScreen(Event<HandledScreen<?>> screenEvent) {
         HandledScreen<?> screen = screenEvent.context();
-        if (screen instanceof CreativeInventoryScreen creativeInventoryScreen) return;
+        if (screen instanceof CreativeInventoryScreen) return;
         Pair<ClientWorld, BlockPos> data;
         String title = screen.getTitle().getString();
         if (title != null) {
@@ -95,31 +109,43 @@ public class ChestHistory extends BaseModule {
             ContainerPosition containerPosition = tile.getContainerPosition();
             BlockPos pos = tile.getPos();
             var state = mc.world.getBlockState(pos);
-            if (containerPosition.isDouble()) {
-                screens.remove(ContainerPosition.ofPosition(containerPosition.getFirst()));
-                screens.remove(ContainerPosition.ofPosition(containerPosition.getSecond()));
-            }
-            MutableEntry<BlockState, HandledScreen<?>> entry = screens.get(containerPosition);
-            if (entry != null) {
-                entry.key = state;
-                entry.value = screen;
-            } else {
-                // remove related single chests
-                screens.put(containerPosition, new MutableEntry<>(state, screen));
-                if (screens.size() > MAX_INV_CACHE_SIZE) {
-                    var iter = screens.entrySet().iterator();
-                    if (iter.hasNext()) {
-                        iter.next();
-                        iter.remove();
-                    }
-                }
-            }
-
+            var newEntry = new Entry(screen, containerPosition.isDouble());
+            currentEntry = newEntry;
+            onAddEntry(containerPosition, state, newEntry);
         } else {
             virtualScreens.add(screen);
-            if (virtualScreens.size() > MAX_INV_CACHE_SIZE) {
-                virtualScreens.remove(0);
-            }
+        }
+    }
+
+    public static String KEY_INV_STORAGE = "slimefunhelper:chesthistory/inventory_content";
+
+    public void onAddEntry(ContainerPosition containerPosition, BlockState state, Entry newEntry) {
+        if (containerPosition.isDouble()) {
+            removeEntry(ContainerPosition.ofPosition(containerPosition.getFirst()));
+            removeEntry(ContainerPosition.ofPosition(containerPosition.getSecond()));
+        }
+        MutableEntry<BlockState, Entry> entry = screens.get(containerPosition);
+        if (entry != null) {
+            entry.key = state;
+            entry.value = newEntry;
+        } else {
+            // remove related single chests
+            screens.put(containerPosition, new MutableEntry<>(state, newEntry));
+        }
+    }
+
+    public void removeEntry(ContainerPosition containerPosition) {
+        screens.remove(containerPosition);
+        onRemoveEntry(containerPosition);
+    }
+
+    public void onRemoveEntry(ContainerPosition containerPosition) {
+        screens.remove(containerPosition);
+        var blockStorage =
+                ServerStorage.getBlockStorage(containerPosition.getFirst().getPos());
+        if (blockStorage != null) {
+            blockStorage.put(KEY_INV_STORAGE, null);
+            ServerStorage.update(blockStorage, true);
         }
     }
 
@@ -132,7 +158,7 @@ public class ChestHistory extends BaseModule {
     private static String lastServerName = null;
 
     private void onServerJoin(Event<ClientPlayerEntity> v) {
-        String serverName = CommonUtils.getServerName();
+        String serverName = ServerStorage.getCurrentServerName();
         if (!Objects.equals(serverName, lastServerName)) {
             // refresh
             screens.clear();
@@ -148,6 +174,14 @@ public class ChestHistory extends BaseModule {
         if (++interval < REFRESH_RATE) {
             return;
         }
+        if (currentEntry != null && currentEntry.optionalScreen != null) {
+            if (ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId
+                    == currentEntry.optionalScreen.getScreenHandler().syncId) {
+                currentEntry.dirty = true;
+            } else {
+                currentEntry = null;
+            }
+        }
         interval = 0;
         BlockLocation location = BlockLocation.of(event.context());
         var iterator = screens.entrySet().iterator();
@@ -158,12 +192,17 @@ public class ChestHistory extends BaseModule {
                 if (!mc.world.isChunkLoaded(chunkPos.x, chunkPos.z)) {
                     continue;
                 }
+                if (entry.getValue().getKey().isAir()) {
+                    continue;
+                }
                 if (!entry.getKey().isDouble()) {
+
                     Block block = mc.world
                             .getBlockState(entry.getKey().getFirst().getPos())
                             .getBlock();
                     if (block != entry.getValue().getKey().getBlock()) {
                         iterator.remove();
+                        onRemoveEntry(entry.getKey());
                         continue;
                     }
                 } else if (entry.getKey() instanceof ContainerPosition d) {
@@ -171,11 +210,13 @@ public class ChestHistory extends BaseModule {
                     BlockState block = mc.world.getBlockState(pos);
                     if (!(block.getBlock() instanceof ChestBlock)) {
                         iterator.remove();
+                        onRemoveEntry(entry.getKey());
                         continue;
                     }
                     // not a bigchest
                     if (block.get(ChestBlock.CHEST_TYPE) == ChestType.SINGLE) {
                         iterator.remove();
+                        onRemoveEntry(entry.getKey());
                         continue;
                     }
                     Direction direction = ChestBlock.getFacing(block);
@@ -184,12 +225,14 @@ public class ChestHistory extends BaseModule {
                     // direction change
                     if (!twoPos.equals(anotherBlock)) {
                         iterator.remove();
+                        onRemoveEntry(entry.getKey());
                         continue;
                     }
                     // not a chest
                     Block block2 = mc.world.getBlockState(twoPos).getBlock();
                     if (!(block2 instanceof ChestBlock)) {
                         iterator.remove();
+                        onRemoveEntry(entry.getKey());
                         continue;
                     }
                 }
@@ -217,20 +260,21 @@ public class ChestHistory extends BaseModule {
                             } else {
                                 bigChestsPositions.add(renderPos);
                             }
-                            Vec3d delta = renderPos.subtract(cameraPos);
+                            Vec3d delta = renderPos.add(0, 0.25, 0).subtract(cameraPos);
                             stack.push();
-                            stack.translate(delta.x, delta.y + 0.25, delta.z);
+                            stack.translate(delta.x, delta.y, delta.z);
                             // title的高度是9 我们希望这个9在 0.75 ~ 1.0之间
                             // 我希望他看向我
                             stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
                             stack.scale(0.03125F, 0.03125F, 1);
-                            int items = (int) entry.getValue().getValue().getScreenHandler().slots.stream()
-                                    .filter(s -> !(s.inventory instanceof PlayerInventory)
-                                            && !s.getStack().isEmpty())
+                            int items = (int) InventoryUtils.streamInventory(
+                                            entry.getValue().value.getInventory())
+                                    .filter(s -> !s.isEmpty())
                                     .count();
                             Text text = entry.getValue()
                                     .getValue()
                                     .getTitle()
+                                    .orElse(Text.empty())
                                     .copy()
                                     .append(Text.literal("(x%d)".formatted(items))
                                             .formatted(Formatting.YELLOW));
@@ -251,6 +295,117 @@ public class ChestHistory extends BaseModule {
                     RenderUtils.stopDrawVirtual(stack);
                 }
             }
+        }
+    }
+
+    public void onLoad(Event<ServerStorage.Meta> metaLoad) {
+        List<BlockStorage> blockStorageList = metaLoad.context.toBlockList();
+        CompletableFuture.runAsync(() -> {
+            for (BlockStorage blockStorage : blockStorageList) {
+                if (blockStorage.contains(KEY_INV_STORAGE)) {
+                    Entry entry = blockStorage.get(KEY_INV_STORAGE, Entry.CODEC);
+                    if (entry != null) {}
+                }
+            }
+        });
+    }
+
+    public static class Entry {
+        public static final Codec<Entry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                        Codec.list(StackWithSlot.CODEC).fieldOf("contents").forGetter(Entry::toSlots),
+                        Codec.INT.fieldOf("size").forGetter(Entry::getSize),
+                        Codec.BOOL.fieldOf("double-chest").forGetter(Entry::isDoubleChest),
+                        TextCodecs.CODEC.optionalFieldOf("title").forGetter(Entry::getTitle))
+                .apply(instance, Entry::new));
+
+        boolean dirty = false;
+
+        @Getter
+        Inventory inventory;
+
+        @Getter
+        int size;
+
+        @Getter
+        boolean doubleChest;
+
+        @Getter
+        HandledScreen<?> optionalScreen;
+
+        @Getter
+        Optional<Text> title;
+
+        BlockState blockState;
+
+        public Entry(List<StackWithSlot> slots, int size, boolean doubleChest, Optional<Text> title) {
+            inventory = new SimpleInventory(size);
+            this.title = title;
+            this.size = size;
+            this.doubleChest = doubleChest;
+            for (StackWithSlot slot : slots) {
+                if (slot.isValidSlot(size)) {
+                    inventory.setStack(slot.slot(), slot.stack());
+                }
+            }
+        }
+
+        public Entry(Inventory inventory, boolean doubleChest) {
+            this(List.of(), inventory.size(), doubleChest, Optional.empty());
+            update(inventory, doubleChest);
+        }
+
+        public Entry(HandledScreen<?> handled, boolean doubleChest) {
+            this(guessInventory(handled), doubleChest);
+            this.title = Optional.ofNullable(handled.getTitle());
+        }
+
+        public void update(Inventory inventory, boolean doubleChest) {
+            this.inventory = inventory;
+            ;
+            this.size = inventory.size();
+            this.doubleChest = doubleChest;
+            dirty = true;
+        }
+
+        public static Inventory guessInventory(HandledScreen<?> handledScreen) {
+            return handledScreen.getScreenHandler().slots.stream()
+                    .filter(s -> s.inventory != null && !(s.inventory instanceof PlayerInventory))
+                    .findAny()
+                    .map(s -> s.inventory)
+                    .orElseGet(() -> {
+                        int size = 0;
+                        for (var re : handledScreen.getScreenHandler().slots) {
+                            if (re.inventory instanceof PlayerInventory) {
+                                break;
+                            } else {
+                                size += 1;
+                            }
+                        }
+                        var inv = new SimpleInventory(size);
+                        for (var idx = 0; idx < size; ++idx) {
+                            var slot = handledScreen.getScreenHandler().slots.get(idx);
+                            inv.setStack(idx, slot.getStack());
+                        }
+                        return inv;
+                    });
+        }
+
+        public void update(HandledScreen<?> handledScreen, boolean doubleChest) {
+            this.doubleChest = doubleChest;
+            this.optionalScreen = handledScreen;
+            var guessInventory = guessInventory(handledScreen);
+            update(guessInventory, doubleChest);
+            this.title = Optional.ofNullable(handledScreen.getTitle());
+            dirty = true;
+        }
+
+        public List<StackWithSlot> toSlots() {
+            List<StackWithSlot> slots = new ArrayList<>();
+            for (var re = 0; re < inventory.size(); ++re) {
+                var st = inventory.getStack(re);
+                slots.add(new StackWithSlot(re, st));
+            }
+            return slots;
         }
     }
 }

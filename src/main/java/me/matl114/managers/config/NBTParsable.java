@@ -6,6 +6,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import me.matl114.utils.Debug;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
@@ -15,11 +16,6 @@ public interface NBTParsable<T extends NBTParsable<T>> extends AutoRegisterType 
 
     default void registerNBTType() {
         registerNBTType(type());
-    }
-
-    public static void registerNBTType(Class<?> clazz) {
-        String name = clazz.getSimpleName().toLowerCase(Locale.ROOT);
-        if (!registeredParsableTypes.containsKey(name)) {}
     }
 
     public static void onLoad(Class<?> c) {
@@ -39,7 +35,7 @@ public interface NBTParsable<T extends NBTParsable<T>> extends AutoRegisterType 
     }
 
     public static void registerNBTType(NBTType<?> type) {
-        if (!registeredParsableTypes.containsKey(type.typeName.toLowerCase(Locale.ROOT))) {
+        if (!registeredParsableTypes.containsKey(type.typeName)) {
             registeredParsableTypes.put(type.typeName, type);
         }
     }
@@ -64,5 +60,9 @@ public interface NBTParsable<T extends NBTParsable<T>> extends AutoRegisterType 
 
     default boolean isSameType(NBTParsable<?> type) {
         return type.getClass() == this.getClass();
+    }
+
+    default <W> Optional<T> tryTypeConvert(Ref<W> ref) {
+        return Optional.empty();
     }
 }

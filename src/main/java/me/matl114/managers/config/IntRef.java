@@ -47,17 +47,12 @@ public class IntRef extends Ref<Integer> {
     }
 
     @Override
-    public <W> boolean copyValueTo(Ref<W> otherRef) {
-        if (otherRef instanceof IntRef integer) {
-            integer.set(this.value);
+    public <W> boolean copyValueFrom(Ref<W> otherRef) {
+        if (otherRef instanceof IntRef intRef) {
+            set(intRef.get());
             return true;
-        } else if (otherRef instanceof FlagRef flag) {
-            if (this.value == 0 || this.value == 1) {
-                flag.set(this.value == 1);
-                return true;
-            }
-            return false;
-        } else return false;
+        }
+        return false;
     }
 
     @Override

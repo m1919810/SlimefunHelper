@@ -25,9 +25,6 @@ public abstract class ObjectRef<T> extends Ref<T> {
     public abstract Object getAsPrimitive();
 
     @Override
-    public abstract <W> boolean copyValueTo(Ref<W> otherRef);
-
-    @Override
     public abstract AttrKeyValue<T> _createKeyValue0(String key);
 
     protected abstract T validateAndCast(Object val);
@@ -72,6 +69,16 @@ public abstract class ObjectRef<T> extends Ref<T> {
         @Override
         public <W> boolean isSameTypeWith(Ref<W> ref) {
             return ref.getClass() == JustOnlyObjectRef.class;
+        }
+
+        @Override
+        public <W> boolean copyValueFrom(Ref<W> otherRef) {
+            if (otherRef.getClass() == JustOnlyObjectRef.class) {
+                set(((JustOnlyObjectRef) otherRef).get());
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 }

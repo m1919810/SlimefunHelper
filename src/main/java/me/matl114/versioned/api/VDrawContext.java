@@ -214,6 +214,12 @@ public interface VDrawContext {
 
     public void fill(int x1, int y1, int x2, int y2, int z, int color);
 
+    default void lineGui(int x1, int y1, int x2, int y2, int color2, int depth) {
+        lineGuiGradient(x1, y1, x2, y2, color2, color2, depth);
+    }
+
+    public void lineGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth);
+
     public void drawTooltip(TextRenderer textRenderer, List<Text> text, Optional<TooltipData> data, int x, int y);
 
     public void drawItem(ItemStack stack, int x, int y, int seed, int z);

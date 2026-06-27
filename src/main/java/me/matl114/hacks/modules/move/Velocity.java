@@ -93,6 +93,9 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     public final FlagRef noEntityPush =
             flagBuilder(antiKb.add("no-entity-push")).build();
 
+    public final FlagRef noWaterPush =
+            flagBuilder(antiKb.add("no-liquid-flow-push")).build();
+
     public static LegalMovementManager.DelegateMovementModifier instance;
 
     public Velocity() {
@@ -120,6 +123,13 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
         registerListener(Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class), this::onExplosionPre);
+        registerListener(Listener.getPlayerFluidVelocityPoint(), this::onElytraLiquidPush);
+    }
+
+    public void onElytraLiquidPush(Event<Vec3d> velocity) {
+        if (noWaterPush.get()) {
+            velocity.cancel();
+        }
     }
 
     public int lastHurtTick = 0;

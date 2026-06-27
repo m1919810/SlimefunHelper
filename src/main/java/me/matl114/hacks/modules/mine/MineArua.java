@@ -39,7 +39,7 @@ public class MineArua extends BaseModule {
             .build();
 
     public NBTRef<RegistryRegex<Block>> whiteListRegex = builder(
-                    mineArua.add("block-whitelist"), NBTType.<RegistryRegex<Block>>parameter(RegistryRegex.class))
+                    mineArua.add("block-whitelist"), RegistryRegex.BLOCK_TYPE)
             .defaultValue(new RegistryRegex<>(new Regex("^(.*bed)$"), Registries.BLOCK))
             .build();
 

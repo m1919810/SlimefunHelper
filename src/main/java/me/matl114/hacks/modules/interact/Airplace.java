@@ -83,7 +83,7 @@ public class Airplace extends BaseModule {
         super.registerAll();
         registerListener(Listener.getItemUseAction(), this::onInteract);
         registerListener(Listener.getPreHandleInputEvents(), this::onInput);
-        registerListener(RenderListener.getRenderLayerTasks(), this::onRenderPos);
+        registerListener(RenderListener.getRender3DEvent(), this::onRenderPos);
         registerListener(
                 PacketManager.getPacketQueueEvent().getChannel(NetworkSide.CLIENTBOUND), this::onPacketAcceptQueue);
         registerListener(Listener.getPostTick(), this::onPostTick);

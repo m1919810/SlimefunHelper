@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import java.util.Locale;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.utils.config.AttrKeyValue;
@@ -37,8 +38,13 @@ public class NBTType<T> implements WrapperFactory<NbtElement, T> {
 
     final String typeName;
     final Codec<T> typeCodec;
+
+    @Setter
     AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory;
+
+    @Setter
     WrapperFactory<String, T> stringifyFactory;
+
     final T empty;
 
     public T parse(NbtElement element) {

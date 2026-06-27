@@ -43,7 +43,11 @@ public class CodecUtils {
 
     public static <T> Codec<T> finiteMapCodec(Map<String, T> map, Function<T, String> stringFunction) {
         Map<String, T> map2 = new LinkedHashMap<>(map.size());
+        T val = null;
         for (var entry : map.entrySet()) {
+            if (val == null) {
+                val = entry.getValue();
+            }
             map2.put(entry.getKey().toLowerCase(Locale.ROOT), entry.getValue());
         }
         return Codec.STRING.comapFlatMap(

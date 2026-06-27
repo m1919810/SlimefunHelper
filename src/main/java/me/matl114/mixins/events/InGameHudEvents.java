@@ -24,7 +24,7 @@ public abstract class InGameHudEvents {
         VDrawContext vdraw = VDrawContext.of(context);
         vdraw.pushMatrix();
         try {
-            RenderListener.getRenderGameHudTasks()
+            RenderListener.getRender2DEvent()
                     .broadcast(vdraw, tickCounter.getTickDelta(false), client.options.hudHidden);
         } finally {
             vdraw.popMatrix();

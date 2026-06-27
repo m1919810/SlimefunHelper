@@ -154,15 +154,6 @@ public class BaritoneFix extends BaseModule {
         }
     }
 
-    public void checkFireworkSettings() {
-        if (ElytraExtra.INSTANCE.rocketBoost.get()) {
-            Debug.chat(
-                    ChatUtils.stringToText(
-                            "&c[BaritoneFix] &fLooks like you are using Baritone commands #elytra, So we turn off the ElytraExtra.rocketBoost to avoid conflict with Baritone"));
-            ElytraExtra.INSTANCE.rocketBoost.set(false);
-        }
-    }
-
     public void onChatCommand(Event<String> eventCommandSay) {
         if (BaritoneHooks.getInstance().isEnabled() && eventCommandSay.context.startsWith("/")) {
             // handle baritone with comand prefix;

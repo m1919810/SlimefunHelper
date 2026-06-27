@@ -9,7 +9,6 @@ import me.matl114.hacks.utils.config.RegexList;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
-import me.matl114.managers.config.NBTType;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import net.minecraft.client.gui.hud.MessageIndicator;
@@ -25,8 +24,7 @@ public class ChatSpamFix extends BaseModule {
 
     public final FlagRef enable = flagBuilder(chatSpamFix.add("enable")).build();
 
-    public final NBTRef<RegexList> regexList = builder(
-                    chatSpamFix.add("regex-list"), NBTType.<RegexList>parameter(RegexList.class))
+    public final NBTRef<RegexList> regexList = builder(chatSpamFix.add("regex-list"), RegexList.class)
             .defaultValue(new RegexList(List.of()))
             .build();
 

@@ -62,6 +62,5 @@ public abstract class ElytraCommandMixin extends Command {
             }
             Debug.chat("[BaritoneFix] Using seed", BaritoneAPI.getSettings().elytraNetherSeed.value);
         }
-        BaritoneFix.INSTANCE.checkFireworkSettings();
     }
 }

@@ -43,7 +43,7 @@ public class FileManager {
         ScheduleService.launchAsyncRepeatTask(this::onScheduleSave, 15 * 1000, 15 * 1000);
     }
 
-    private void checkFile(File file) {
+    public void checkFile(File file) {
         if (!file.exists() || !file.isDirectory()) {
             Preconditions.checkArgument(file.mkdirs(), "File create failure");
         }
