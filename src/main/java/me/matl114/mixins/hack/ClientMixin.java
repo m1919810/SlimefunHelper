@@ -155,18 +155,18 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
         return flag;
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "handleBlockBreaking",
             at =
                     @At(
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z",
                             ordinal = 0))
-    public boolean onAllowingPlayerBreakingWhenUseItem(ClientPlayerEntity player) {
+    public boolean onAllowingPlayerBreakingWhenUseItem(ClientPlayerEntity instance, Operation<Boolean> original) {
         if (CombatExtra.INSTANCE.useAttack.get()) {
             return false;
         } else {
-            return player.isUsingItem();
+            return original.call(instance);
         }
     }
 
@@ -176,14 +176,14 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     //
     //    }
 
-    @Redirect(
+    @WrapOperation(
             method = "doItemUse",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isRiding()Z"))
-    public boolean onAllowRidingUse(ClientPlayerEntity instance) {
+    public boolean onAllowRidingUse(ClientPlayerEntity instance, Operation<Boolean> original) {
         if (InteractExtra.INSTANCE.rideUse.get()) {
             return false;
         }
-        return instance.isRiding();
+        return original.call(instance);
     }
 
     @Shadow

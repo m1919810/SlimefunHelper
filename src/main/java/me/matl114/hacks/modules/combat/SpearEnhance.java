@@ -101,6 +101,9 @@ public class SpearEnhance extends BaseModule {
                     spearModule.add("reset-spear-speed-rot-enable"))
             .build();
 
+    public final FlagRef spearSpeedResetAuto =
+            flagBuilder(spearModule.add("reset-spear-speed-auto")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -264,28 +267,36 @@ public class SpearEnhance extends BaseModule {
     public void onPostTick(Event<ClientPlayerEntity> eventPostTick) {
         if (checkNull()) return;
         if (eventPostTick.context == mc.player && spearSpeedReset.get() && ViaFabricPlusHooks.isSupportDupRot()) {
-
-            Vec3d look = null;
-            if (isUsingSpear(mc.player)) {
-                Entity targetEntity =
-                        TargetSelector.INSTANCE.searchAttackEntity(10, true, pl -> pl instanceof PlayerEntity);
-                if (targetEntity != null) {
-                    look = targetEntity
-                            .dimensions
-                            .getBoxAt(PositionPredict.INSTANCE
-                                    .spearPredictArgument
-                                    .get()
-                                    .predict(targetEntity))
-                            .getCenter()
-                            .subtract(mc.player.getEyePos());
+            boolean autoCondition = true;
+            if (spearSpeedResetAuto.get()) {
+                // 长矛使用时自动关闭啥比玩意免得我忘了
+                if (isUsingSpear(mc.player)) {
+                    autoCondition = false;
                 }
             }
-            if (look == null) {
-                look = mc.player.getRotationVector();
-            }
+            if (autoCondition) {
+                Vec3d look = null;
+                if (isUsingSpear(mc.player)) {
+                    Entity targetEntity =
+                            TargetSelector.INSTANCE.searchAttackEntity(10, true, pl -> pl instanceof PlayerEntity);
+                    if (targetEntity != null) {
+                        look = targetEntity
+                                .dimensions
+                                .getBoxAt(PositionPredict.INSTANCE
+                                        .spearPredictArgument
+                                        .get()
+                                        .predict(targetEntity))
+                                .getCenter()
+                                .subtract(mc.player.getEyePos());
+                    }
+                }
+                if (look == null) {
+                    look = mc.player.getRotationVector();
+                }
 
-            // reset speed and rotation
-            LegacySnapRotManager.INSTANCE.snapAt(look, true);
+                // reset speed and rotation
+                LegacySnapRotManager.INSTANCE.snapAt(look, true);
+            }
         }
     }
 

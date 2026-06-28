@@ -55,20 +55,11 @@ public abstract class ClientPlayerInteractionManagerEvents {
                             target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;syncSelectedSlot()V",
                             shift = At.Shift.BEFORE),
             cancellable = true)
-    private void onCancelSend(
-            PlayerEntity player,
-            Hand hand,
-            CallbackInfoReturnable<ActionResult> cir,
-            @Local(argsOnly = true) LocalRef<Hand> hand2) {
-        Event<Hand> handEvent = new Event<>(hand, true, true);
+    private void onCancelSend(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
+        Event<ActionResult> handEvent = new Event<>(ActionResult.PASS, true, true, hand);
         Listener.getPrePlayerUseItem().handleValue(handEvent);
         if (handEvent.isCancelled()) {
-            cir.setReturnValue(ActionResult.PASS);
-        } else {
-            Hand hand3 = handEvent.context;
-            if (hand3 != hand) {
-                hand2.set(hand3);
-            }
+            cir.setReturnValue(handEvent.context);
         }
     }
 
@@ -97,7 +88,7 @@ public abstract class ClientPlayerInteractionManagerEvents {
         Event<BlockHitResult> blockHitResultEvent = new Event<>(hitResult, true, true, hand);
         Listener.getPrePlayerUseItemAtBlock().handleValue(blockHitResultEvent);
         if (blockHitResultEvent.isCancelled()) {
-            cir.setReturnValue(ActionResult.PASS);
+            cir.setReturnValue(ActionResult.SUCCESS);
         } else {
             BlockHitResult hitResult2 = blockHitResultEvent.context;
             if (hitResult2 != hitResult) {

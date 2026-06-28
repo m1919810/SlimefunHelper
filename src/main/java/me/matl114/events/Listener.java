@@ -666,7 +666,8 @@ public class Listener {
     @Getter
     @Cancelable
     @Modifiable
-    private static final EventChannel<Hand> prePlayerUseItem = new EventChannel<>();
+    @ExtraArgs({Hand.class})
+    private static final EventChannel<ActionResult> prePlayerUseItem = new EventChannel<>();
 
     @Getter
     @Modifiable
