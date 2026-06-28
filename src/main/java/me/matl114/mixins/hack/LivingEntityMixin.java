@@ -40,14 +40,14 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     @Shadow
     protected abstract float getJumpVelocity(float st);
 
-    @Shadow
-    protected abstract void travelGliding(Vec3d movementInput);
 
     @Shadow
     public abstract boolean isFallFlying();
 
     @Shadow
     public abstract void remove(RemovalReason reason);
+
+    @Shadow protected abstract void travelGliding();
 
     @Unique
     @Override
@@ -102,7 +102,7 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     private void onWaterGlide(Vec3d movementInput, CallbackInfo ci) {
         if (ElytraExtra.INSTANCE.ignoreLiquidPushFly.get() && isFallFlying()) {
             ci.cancel();
-            travelGliding(movementInput);
+            travelGliding();
         }
     }
 
