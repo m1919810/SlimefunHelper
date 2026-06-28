@@ -14,6 +14,7 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.inventory.ImmutableInventory;
 import me.matl114.utils.inventory.ImmutableListInventory;
 import me.matl114.utils.inventory.MutableInventory;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
@@ -48,7 +49,7 @@ public class InventoryUtils {
     public static final Codec<IndexEntry<ItemStack>> STACK_WITH_SLOT_CODEC = RecordCodecBuilder.create((instance) -> {
         return instance.group(
                         Codecs.UNSIGNED_BYTE.fieldOf("Slot").orElse(0).forGetter(IndexEntry::index),
-                        ItemStack.MAP_CODEC.forGetter(IndexEntry::val))
+                VItem.ITEM_STACK_MAP_CODEC.forGetter(IndexEntry::val))
                 .apply(instance, IndexEntry::new);
     });
 
