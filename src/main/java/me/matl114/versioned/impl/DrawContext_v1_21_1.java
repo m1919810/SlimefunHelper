@@ -250,6 +250,11 @@ public class DrawContext_v1_21_1 implements VDrawContext {
         this.drawContext.fill(x1, y1, x2, y2, z, color);
     }
 
+    @Override
+    public void lineGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth) {
+
+    }
+
     private void addInternal(Runnable runnable) {
         if (this.delayedDrawing != null) {
             final Runnable prev = this.delayedDrawing;
