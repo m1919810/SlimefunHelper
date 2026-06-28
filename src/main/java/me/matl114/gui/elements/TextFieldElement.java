@@ -17,10 +17,9 @@ import me.matl114.utils.config.PropertyTracker;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -478,7 +477,7 @@ public class TextFieldElement extends AbstractElement {
         if (!this.focused) {
             return false;
         }
-        if (mc.options.inventoryKey.matchesKey(new KeyInput(keyCode, scanCode, modifiers))) {
+        if (mc.options.inventoryKey.matchesKey(keyCode, scanCode)) {
             return true;
         }
         boolean ctrlOrCmd = hasCtrlOrCmd(modifiers);
@@ -590,10 +589,10 @@ public class TextFieldElement extends AbstractElement {
 
     public void drawSelection(DrawContext context, int x1, int y1, int x2, int y2, boolean invert) {
         if (invert) {
-            context.fill(RenderPipelines.GUI_INVERT, x1, y1, x2, y2, -1);
+            context.fill(RenderLayer.getGui(), x1, y1, x2, y2, -1);
         }
 
-        context.fill(RenderPipelines.GUI_TEXT_HIGHLIGHT, x1, y1, x2, y2, -16776961);
+        context.fill(RenderLayer.getGuiTextHighlight(), x1, y1, x2, y2, -16776961);
     }
 
     @Override
