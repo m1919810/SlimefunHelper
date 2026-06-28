@@ -10,9 +10,11 @@ import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.utils.EntityUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -41,13 +43,13 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     protected abstract float getJumpVelocity(float st);
 
     @Shadow
+    protected abstract void travelGliding(Vec3d movementInput);
+
+    @Shadow
     public abstract boolean isFallFlying();
 
     @Shadow
     public abstract void remove(RemovalReason reason);
-
-    @Shadow
-    protected abstract void travelGliding();
 
     @Unique
     @Override
@@ -100,9 +102,14 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
 
     @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
     private void onWaterGlide(Vec3d movementInput, CallbackInfo ci) {
-        if (ElytraExtra.INSTANCE.ignoreLiquidPushFly.get() && isFallFlying()) {
-            ci.cancel();
-            travelGliding();
+        if (checkClientPlayer()) {
+            if (ElytraExtra.INSTANCE.ignoreLiquidPushFly.get() && isFallFlying()) {
+                ci.cancel();
+                Vec3d vec3d = this.getVelocity();
+                this.setVelocity(EntityUtils.calculateGlidingVelocity(
+                        (ClientPlayerEntity) (Entity) this, vec3d, this.getRotationVector(), !this.hasNoGravity()));
+                this.move(MovementType.SELF, this.getVelocity());
+            }
         }
     }
 
@@ -114,9 +121,11 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
                             target =
                                     "Lnet/minecraft/entity/LivingEntity;calcGlidingVelocity(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;"))
     private Vec3d travelGliding(LivingEntity instance, Vec3d oldVelocity, Operation<Vec3d> original) {
-        Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
-        if (overriding != null) {
-            return overriding;
+        if (checkClientPlayer()) {
+            Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
+            if (overriding != null) {
+                return overriding;
+            }
         }
         return original.call(instance, oldVelocity);
     }
