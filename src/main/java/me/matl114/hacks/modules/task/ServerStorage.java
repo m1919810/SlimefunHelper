@@ -38,7 +38,6 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
-import org.jspecify.annotations.Nullable;
 
 public class ServerStorage extends BaseModule {
     public static ServerStorage INSTANCE;
@@ -142,7 +141,7 @@ public class ServerStorage extends BaseModule {
         }
     }
 
-    private static <W, T> T _getFromSSSSMap(W key, @Nullable Function<W, T> supplier, Map<W, T> mmm) {
+    private static <W, T> T _getFromSSSSMap(W key, Function<W, T> supplier, Map<W, T> mmm) {
         var block = mmm.get(key);
         if (block != null) {
             return block;
