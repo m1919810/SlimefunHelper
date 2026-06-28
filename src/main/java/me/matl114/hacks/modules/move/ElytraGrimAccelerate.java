@@ -97,7 +97,8 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                 } else {
                     Vec3d vec3d = mc.player.getVelocity();
                     if (vec3d.horizontalLengthSquared() > 1E-2
-                            && vec3d.withAxis(Direction.Axis.Y, 0).dotProduct(velocity.getHorizontal()) < 0.0) {
+                            && vec3d.withAxis(Direction.Axis.Y, 0).dotProduct(velocity.withAxis(Direction.Axis.Y, 0))
+                                    < 0.0) {
                         event.cancel();
                     }
                 }

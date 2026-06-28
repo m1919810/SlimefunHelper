@@ -29,6 +29,7 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -818,13 +819,13 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     public ActionResult simulateInteractItem(Hand hand) {
         var player = this.client.player;
         ItemStack itemStack = player.getStackInHand(hand);
-        if (player.getItemCooldownManager().isCoolingDown(itemStack)) {
+        if (player.getItemCooldownManager().isCoolingDown(itemStack.getItem())) {
             return ActionResult.PASS;
         } else {
-            ActionResult actionResult = itemStack.use(this.client.world, player, hand);
+            TypedActionResult<ItemStack> actionResult = itemStack.use(this.client.world, player, hand);
             // restore
             player.setStackInHand(hand, itemStack);
-            return actionResult;
+            return actionResult.getResult();
         }
     }
 }

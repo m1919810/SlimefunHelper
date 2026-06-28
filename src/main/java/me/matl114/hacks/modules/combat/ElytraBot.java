@@ -579,7 +579,7 @@ public class ElytraBot extends BaseModule {
                     && base.isTargetUsingSpear()
                     && mc.player.getEyePos().squaredDistanceTo(base.target.getEyePos())
                             < MathUtils.s2(base.combatRange.get() + 6.0D)) {
-                Vec3d originalLookHorizontal = movementDirection.getHorizontal();
+                Vec3d originalLookHorizontal = movementDirection.withAxis(Direction.Axis.Y, 0);
                 Vec3d vertical = new Vec3d(0, 1, 0);
                 Vec3d side = vertical.crossProduct(originalLookHorizontal).normalize();
                 Vec3d origin = movementDirection.normalize();

@@ -253,12 +253,18 @@ public class DrawContext_v1_21_1 implements VDrawContext {
 
     @Override
     public void lineGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth) {
-        VertexConsumer vertexConsumer = this.drawContext.vertexConsumers.getBuffer(Render_v1_21_4.LINES);
+        VertexConsumer vertexConsumer = this.drawContext.getVertexConsumers().getBuffer(RenderLayer.LINES);
         var matrix4f = this.drawContext.getMatrices().peek();
         Vector3f normal = new Vector3f(x2 - x1, y2 - y1, 0).normalize();
-        vertexConsumer.vertex(matrix4f, (float) x1, (float) y1, (float) depth).color(color1).normal(matrix4f, normal.x, normal.y, normal.z);
-        vertexConsumer.vertex(matrix4f, (float) x2, (float) y2, (float) depth).color(color2).normal(matrix4f, normal.x, normal.y, normal.z);
-        this.drawContext.vertexConsumers.draw(Render_v1_21_4.LINES);
+        vertexConsumer
+                .vertex(matrix4f, (float) x1, (float) y1, (float) depth)
+                .color(color1)
+                .normal(matrix4f, normal.x, normal.y, normal.z);
+        vertexConsumer
+                .vertex(matrix4f, (float) x2, (float) y2, (float) depth)
+                .color(color2)
+                .normal(matrix4f, normal.x, normal.y, normal.z);
+        this.drawContext.getVertexConsumers().draw(RenderLayer.LINES);
     }
 
     private void addInternal(Runnable runnable) {

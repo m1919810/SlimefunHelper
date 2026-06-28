@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import me.matl114.versioned.api.VNbt;
+import me.matl114.versioned.impl.VCodec;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.ChunkPos;
@@ -15,7 +16,7 @@ import net.minecraft.world.World;
 public class ChunkStorage extends IStorage {
     public static final Codec<ChunkStorage> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                     World.CODEC.fieldOf("dim").forGetter(ChunkStorage::getDimension),
-                    ChunkPos.CODEC.fieldOf("chunk-pos").forGetter(ChunkStorage::getChunkPos),
+                    VCodec.CHUNK_POS_CODEC.fieldOf("chunk-pos").forGetter(ChunkStorage::getChunkPos),
                     Codec.unboundedMap(Codec.STRING, VNbt.CODEC)
                             .fieldOf("storage")
                             .forGetter(v -> v.storage))
