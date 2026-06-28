@@ -49,7 +49,7 @@ public class InventoryUtils {
     public static final Codec<IndexEntry<ItemStack>> STACK_WITH_SLOT_CODEC = RecordCodecBuilder.create((instance) -> {
         return instance.group(
                         Codecs.UNSIGNED_BYTE.fieldOf("Slot").orElse(0).forGetter(IndexEntry::index),
-                VItem.ITEM_STACK_MAP_CODEC.forGetter(IndexEntry::val))
+                        VItem.ITEM_STACK_MAP_CODEC.forGetter(IndexEntry::val))
                 .apply(instance, IndexEntry::new);
     });
 
