@@ -1,5 +1,7 @@
 package me.matl114.utils;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -20,6 +22,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
+import net.minecraft.util.dynamic.Codecs;
 
 @ApiMethod
 public class InventoryUtils {
@@ -41,6 +44,13 @@ public class InventoryUtils {
             }
         };
     }
+
+    public static final Codec<IndexEntry<ItemStack>> STACK_WITH_SLOT_CODEC = RecordCodecBuilder.create((instance) -> {
+        return instance.group(
+                        Codecs.UNSIGNED_BYTE.fieldOf("Slot").orElse(0).forGetter(IndexEntry::index),
+                        ItemStack.MAP_CODEC.forGetter(IndexEntry::val))
+                .apply(instance, IndexEntry::new);
+    });
 
     public static Inventory createReadOnlyInventory(List<ItemStack> itemStackSupplier) {
         return new ImmutableListInventory(itemStackSupplier);

@@ -30,6 +30,7 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.collections.MutableEntry;
 import me.matl114.utils.world.BlockLocation;
 import me.matl114.utils.world.ContainerPosition;
@@ -45,7 +46,7 @@ import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.inventory.StackWithSlot;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Formatting;
@@ -304,7 +305,9 @@ public class ChestHistory extends BaseModule {
             for (BlockStorage blockStorage : blockStorageList) {
                 if (blockStorage.contains(KEY_INV_STORAGE)) {
                     Entry entry = blockStorage.get(KEY_INV_STORAGE, Entry.CODEC);
-                    if (entry != null) {}
+                    if (entry != null) {
+                        // ? todo complete
+                    }
                 }
             }
         });
@@ -312,7 +315,9 @@ public class ChestHistory extends BaseModule {
 
     public static class Entry {
         public static final Codec<Entry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                        Codec.list(StackWithSlot.CODEC).fieldOf("contents").forGetter(Entry::toSlots),
+                        Codec.list(InventoryUtils.STACK_WITH_SLOT_CODEC)
+                                .fieldOf("contents")
+                                .forGetter(Entry::toSlots),
                         Codec.INT.fieldOf("size").forGetter(Entry::getSize),
                         Codec.BOOL.fieldOf("double-chest").forGetter(Entry::isDoubleChest),
                         TextCodecs.CODEC.optionalFieldOf("title").forGetter(Entry::getTitle))
@@ -337,14 +342,14 @@ public class ChestHistory extends BaseModule {
 
         BlockState blockState;
 
-        public Entry(List<StackWithSlot> slots, int size, boolean doubleChest, Optional<Text> title) {
+        public Entry(List<IndexEntry<ItemStack>> slots, int size, boolean doubleChest, Optional<Text> title) {
             inventory = new SimpleInventory(size);
             this.title = title;
             this.size = size;
             this.doubleChest = doubleChest;
-            for (StackWithSlot slot : slots) {
-                if (slot.isValidSlot(size)) {
-                    inventory.setStack(slot.slot(), slot.stack());
+            for (IndexEntry<ItemStack> slot : slots) {
+                if (slot.index() >= 0 && slot.index() < size) {
+                    inventory.setStack(slot.index(), slot.val());
                 }
             }
         }
@@ -399,11 +404,11 @@ public class ChestHistory extends BaseModule {
             dirty = true;
         }
 
-        public List<StackWithSlot> toSlots() {
-            List<StackWithSlot> slots = new ArrayList<>();
+        public List<IndexEntry<ItemStack>> toSlots() {
+            List<IndexEntry<ItemStack>> slots = new ArrayList<>();
             for (var re = 0; re < inventory.size(); ++re) {
                 var st = inventory.getStack(re);
-                slots.add(new StackWithSlot(re, st));
+                slots.add(new IndexEntry<>(re, st));
             }
             return slots;
         }
