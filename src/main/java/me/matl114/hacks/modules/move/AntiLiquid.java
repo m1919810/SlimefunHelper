@@ -106,7 +106,7 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
             if (mc.player.isFallFlying()) {
                 if (isWater && autoArmorFlyControl.get() && ElytraExtra.INSTANCE.armorFly.get()) {
                     if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-                        ElytraExtra.INSTANCE.endArmorFlyTransaction();
+                        ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
                         eventMove.cancel();
                         eventMove.context.markForResetPos();
                         currentArmorGlidingSaveState = true;

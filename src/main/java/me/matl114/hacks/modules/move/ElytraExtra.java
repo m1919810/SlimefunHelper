@@ -155,6 +155,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef landAutoSneak =
             flagBuilder(armorFlyPath.add("land-auto-sneak")).build();
 
+    public final FlagRef closeContinueFly = builder(armorFlyPath.add("close-continue-fly"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef armorFlyBadPacketFix = flagBuilder(armorFlyPath.add("armor-fly-fix-grim-bad-packets-1"))
             .show(() -> this.armorMode.get().isIn(ArmorFlyMode.TICK))
             .build();
@@ -187,12 +191,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final DoubleRef autoRescaleAmount = doubleBuilder(customFireworksPath.add("auto-rescale-firework-amount"))
             .defaultValue(1.65D)
-            .show(() -> this.autoRescale.get())
+            .show(this.autoRescale::get)
             .build();
 
     public final EnumRef<Al> autoRescaleAl = builder(customFireworksPath.add("auto-rescale-firework-al"), Al.class)
             .defaultValue(Al.V1)
-            .show(() -> this.autoRescale.get())
+            .show(this.autoRescale::get)
             .build();
 
     public final FlagRef rocketBoost =
@@ -210,7 +214,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .build();
 
     public final FlagRef rocketBoostUseRescale = flagBuilder(customFireworksPath.add("firework-boost-use-rescale"))
-            .show(() -> this.autoRescale.get())
+            .show(this.autoRescale::get)
             .build();
 
     public final FlagRef flyRocketOnFirstOff =
@@ -922,14 +926,16 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    public void endArmorFlyTransaction() {
+    public void endArmorFlyTransaction(boolean continueFly) {
         if (thisFallFlyingIsArmorFly != -1) {
             // current ArmoFly
             // switch Elytra on
-            switchSlotToArmor(thisFallFlyingIsArmorFly);
-            nextPacketResetFallFlying += 1;
+            if (continueFly) {
+                switchSlotToArmor(thisFallFlyingIsArmorFly);
+                nextPacketResetFallFlying += 1;
+                this.autoTakeOffFlag = true;
+            }
             onEndArmorFlyTransaction();
-            this.autoTakeOffFlag = true;
         }
     }
 
@@ -941,6 +947,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             }
             if (landAutoSneak.get() && !mc.player.isSneaking()) {
                 nextLandingSneak = 2;
+            }
+            // use autoSwitch for
+            if (autoSwitch.get() && mc.player.isFallFlying()) {
+                thisFallFlyingIsAutoSwitch = thisFallFlyingIsArmorFly;
             }
         }
         thisFallFlyingIsArmorFly = -1;
@@ -999,7 +1009,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void onToggleArmorFly(boolean armorFly) {
         if (mc.player != null && mc.player.isFallFlying()) {
             if (!armorFly) {
-                endArmorFlyTransaction();
+                endArmorFlyTransaction(closeContinueFly.get());
             } else {
                 startArmorFlyTransaction(-1);
             }
