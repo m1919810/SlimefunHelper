@@ -46,6 +46,9 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     protected abstract float getJumpVelocity(float st);
 
     @Shadow
+    protected abstract void travelGliding(Vec3d movementInput);
+
+    @Shadow
     public abstract boolean isFallFlying();
 
     @Shadow
@@ -103,11 +106,14 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
 
     @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
     private void onWaterGlide(Vec3d movementInput, CallbackInfo ci) {
-        if (ElytraExtra.INSTANCE.ignoreLiquidPushFly.get() && isFallFlying()) {
-            ci.cancel();
-            Vec3d vec3d = this.getVelocity();
-            this.setVelocity(EntityUtils.calculateGlidingVelocity((ClientPlayerEntity)(Entity) this, vec3d, getRotationVector(), !hasNoGravity()));
-            this.move(MovementType.SELF, this.getVelocity());
+        if (checkClientPlayer()) {
+            if (ElytraExtra.INSTANCE.ignoreLiquidPushFly.get() && isFallFlying()) {
+                ci.cancel();
+                Vec3d vec3d = this.getVelocity();
+                this.setVelocity(EntityUtils.calculateGlidingVelocity(
+                        (ClientPlayerEntity) (Entity) this, vec3d, this.getRotationVector(), !this.hasNoGravity()));
+                this.move(MovementType.SELF, this.getVelocity());
+            }
         }
     }
 
@@ -119,10 +125,12 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
                             target = "Lnet/minecraft/entity/LivingEntity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V",
                             ordinal = 6))
     private void travelGliding(LivingEntity instance, Vec3d oldVelocity, Operation<Vec3d> original) {
-        Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
-        if (overriding != null) {
-            original.call(instance, overriding);
-            return;
+        if(checkClientPlayer()){
+            Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
+            if (overriding != null) {
+                original.call(instance, overriding);
+                return;
+            }
         }
         original.call(instance, oldVelocity);
     }
