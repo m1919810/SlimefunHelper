@@ -46,14 +46,10 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     protected abstract float getJumpVelocity(float st);
 
     @Shadow
-    protected abstract void travelGliding(Vec3d movementInput);
-
-    @Shadow
     public abstract boolean isFallFlying();
 
     @Shadow
     public abstract void remove(RemovalReason reason);
-
 
     @Unique
     @Override
@@ -125,7 +121,7 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
                             target = "Lnet/minecraft/entity/LivingEntity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V",
                             ordinal = 6))
     private void travelGliding(LivingEntity instance, Vec3d oldVelocity, Operation<Vec3d> original) {
-        if(checkClientPlayer()){
+        if (checkClientPlayer()) {
             Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
             if (overriding != null) {
                 original.call(instance, overriding);
