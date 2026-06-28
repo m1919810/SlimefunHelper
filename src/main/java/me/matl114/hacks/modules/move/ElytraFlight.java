@@ -23,6 +23,7 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraFlight extends BaseModule implements LegalMovementManager.MovementModifier {
+    public static ElytraFlight INSTANCE;
     public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
     public final ModulePath simpleFlightControl = elytra.add("simple-flight-control");
     public final ModulePath customFireworks = elytra.add("custom-fireworks");
@@ -100,6 +101,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         }
         instance.setDelegate(this::cast);
         bindFlag(enable);
+        INSTANCE = this;
     }
 
     @Override
@@ -240,7 +242,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     }
                     mc.player.setVelocity(
                             useAutoRescale.get()
-                                    ? ElytraExtra.INSTANCE.applyAxisLimit(realVector, realVector.normalize(), !mc.player.hasNoGravity())
+                                    ? ElytraExtra.INSTANCE.applyAxisLimit(
+                                            realVector, realVector.normalize(), !mc.player.hasNoGravity())
                                     : realVector);
                 }
                 if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {

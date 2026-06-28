@@ -947,6 +947,11 @@ public class ChatUtils {
             return this;
         }
 
+        public TextBuilder withText(StringVisitable text, Style style) {
+            text.visit(this, style);
+            return this;
+        }
+
         public TextBuilder withContent(TextContent content) {
             content.visit(this, style.withParent(Style.EMPTY));
             return this;
@@ -1008,12 +1013,6 @@ public class ChatUtils {
         // 追加任意 CharSequence（如 String、StringBuilder 等）
         public TextBuilder with(CharSequence cs) {
             builder.append(cs);
-            return this;
-        }
-
-        // 追加任意对象（调用 String.valueOf）
-        public TextBuilder with(Object obj) {
-            builder.append(obj);
             return this;
         }
 

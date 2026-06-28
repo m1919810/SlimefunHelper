@@ -525,6 +525,9 @@ public class RenderTasks {
     public static Hud hud;
 
     @Getter
+    public static ModuleListHud moduleListHud;
+
+    @Getter
     public static InvHud invHud;
 
     @Getter
@@ -555,6 +558,7 @@ public class RenderTasks {
         freecam = new Freecam().register(m);
         renderOptimize = new RenderOptimize().register(m);
         hud = new Hud().register(m);
+        moduleListHud = new ModuleListHud().register(m);
         invHud = new InvHud().register(m);
         playerStatistic = new PlayerStatistic().register(m);
         equipmentHud = new EquipmentHud().register(m);

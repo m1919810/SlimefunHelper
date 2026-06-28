@@ -1,6 +1,8 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -27,6 +29,7 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -34,7 +37,6 @@ import net.minecraft.world.GameMode;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
@@ -504,28 +506,31 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         }
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "cancelBlockBreaking",
             at =
                     @At(
                             value = "FIELD",
                             target =
                                     "Lnet/minecraft/client/network/ClientPlayerInteractionManager;currentBreakingProgress:F"))
-    private void sameBlockOptimizeDoNotResetProgress(ClientPlayerInteractionManager instance, float value) {
+    private void sameBlockOptimizeDoNotResetProgress(
+            ClientPlayerInteractionManager instance, float value, Operation<Void> original) {
         // do not set the fucking value
         if (!MineExtra.INSTANCE.optimizeOneBlock.get()) {
             ((PlayerInteractionMixin) (Object) instance).currentBreakingProgress = value;
+        } else {
+            original.call(instance, value);
         }
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "cancelBlockBreaking",
             at =
                     @At(
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
-    private void onDoubleBreak(ClientPlayNetworkHandler instance, Packet packet) {
+    private void onDoubleBreak(ClientPlayNetworkHandler instance, Packet packet, Operation<Void> original) {
 
         if (!MineExtra.INSTANCE.optimizeOneBlock.get()) {
             // we make optimizeOneBlockMine delay its destroy packet to changing the currentPosition in method
@@ -534,8 +539,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 return;
             }
         }
-
-        instance.sendPacket(packet);
+        original.call(instance, packet);
     }
 
     @Unique
@@ -554,7 +558,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         return false;
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "attackBlock",
             at =
                     @At(
@@ -562,7 +566,10 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             target =
                                     "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
     private void onDoubleBreak2(
-            ClientPlayNetworkHandler instance, Packet packet, @Local(argsOnly = true) Direction direction) {
+            ClientPlayNetworkHandler instance,
+            Packet packet,
+            Operation<Void> original,
+            @Local(argsOnly = true) Direction direction) {
         // conflict with optimizeOneBlock
 
         if (!MineExtra.INSTANCE.optimizeOneBlock.get()) {
@@ -572,8 +579,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                 return;
             }
         }
-
-        instance.sendPacket(packet);
+        original.call(instance, packet);
     }
 
     @Shadow
@@ -587,6 +593,10 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
 
     @Shadow
     protected abstract void syncSelectedSlot();
+
+    @Shadow
+    protected abstract ActionResult interactBlockInternal(
+            ClientPlayerEntity player, Hand hand, BlockHitResult hitResult);
 
     @Inject(
             method = "attackBlock",
@@ -720,7 +730,7 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
         MineExtra.INSTANCE.onPostStopMiningLegally(pos);
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "updateBlockBreakingProgress",
             at =
                     @At(
@@ -728,9 +738,12 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                             target =
                                     "Lnet/minecraft/client/network/ClientPlayerInteractionManager;currentBreakingProgress:F",
                             ordinal = 4))
-    private void onSameBlockDoNotResetProgress(ClientPlayerInteractionManager instance, float value) {
+    private void onSameBlockDoNotResetProgress(
+            ClientPlayerInteractionManager instance, float value, Operation<Void> original) {
         if (!MineExtra.INSTANCE.optimizeOneBlock.get()) {
             ((PlayerInteractionMixin) (Object) instance).currentBreakingProgress = value;
+        } else {
+            original.call(instance, value);
         }
     }
 
@@ -792,5 +805,26 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             order = 114514)
     private void onInteractPostSend(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         LegacySnapRotManager.INSTANCE.betweenViaPacket = false;
+    }
+
+    @Override
+    @Unique
+    public ActionResult simulateInteractBlock(Hand hand, BlockHitResult hitResult) {
+        return interactBlockInternal(this.client.player, hand, hitResult);
+    }
+
+    @Override
+    @Unique
+    public ActionResult simulateInteractItem(Hand hand) {
+        var player = this.client.player;
+        ItemStack itemStack = player.getStackInHand(hand);
+        if (player.getItemCooldownManager().isCoolingDown(itemStack)) {
+            return ActionResult.PASS;
+        } else {
+            ActionResult actionResult = itemStack.use(this.client.world, player, hand);
+            // restore
+            player.setStackInHand(hand, itemStack);
+            return actionResult;
+        }
     }
 }

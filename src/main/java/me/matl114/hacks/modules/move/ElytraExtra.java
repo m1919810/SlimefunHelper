@@ -25,6 +25,7 @@ import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.WrapEnum;
 import me.matl114.hooks.BaritoneHooks;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -190,9 +191,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .build();
 
     public final EnumRef<Al> autoRescaleAl = builder(customFireworksPath.add("auto-rescale-firework-al"), Al.class)
-        .defaultValue(Al.V1)
-        .show(() -> this.autoRescale.get())
-        .build();
+            .defaultValue(Al.V1)
+            .show(() -> this.autoRescale.get())
+            .build();
 
     public final FlagRef rocketBoost =
             flagBuilder(customFireworksPath.add("firework-boost-enable")).build();
@@ -1716,9 +1717,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return null;
     }
 
-    public Vec3d applyAxisLimit(Vec3d currentMotion, Vec3d currentRotation, boolean applyGravity){
-        if(!autoRescale.get())return currentMotion;
-        return switch (autoRescaleAl.get()){
+    public Vec3d applyAxisLimit(Vec3d currentMotion, Vec3d currentRotation, boolean applyGravity) {
+        if (!autoRescale.get()) return currentMotion;
+        return switch (autoRescaleAl.get()) {
             case V1 -> applyAxisLimit1(currentMotion, currentRotation, applyGravity);
             case V2 -> applyAxisLimit2(currentMotion, currentRotation);
         };
@@ -1731,8 +1732,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         // 傻逼grim又发力了，神特么检测三轴运动量，这是人能想出来的?
         if (currentMotion.lengthSquared() < 1E-6) return currentMotion;
         Vec3d lastTickVelocity = PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed;
-        Vec3d thisTickSimulationVelocity = EntityUtils.calculateGlidingVelocity(mc.player, lastTickVelocity,
- currentRotation, true);
+        Vec3d thisTickSimulationVelocity =
+                EntityUtils.calculateGlidingVelocity(mc.player, lastTickVelocity, currentRotation, true);
 
         Vec3d resultMotion =
                 EntityUtils.calculateGlidingVelocity(mc.player, currentMotion, currentRotation, applyGravity);
@@ -1741,18 +1742,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         double antiTickSkipping = 0.05; // With 0.03, let that handle tick skipping
         Vec3d currentLook = currentRotation.normalize();
         Vec3d lastLook = lastPitchYaw.normalize();
-        double minX = Math.min(-antiTickSkipping, currentLook.getX()) + Math.min(-antiTickSkipping,
- lastLook.getX());
-        double minY = Math.min(-antiTickSkipping, currentLook.getY()) + Math.min(-antiTickSkipping,
- lastLook.getY());
-        double minZ = Math.min(-antiTickSkipping, currentLook.getZ()) + Math.min(-antiTickSkipping,
- lastLook.getZ());
-        double maxX = Math.max(antiTickSkipping, currentLook.getX()) + Math.max(antiTickSkipping,
- lastLook.getX());
-        double maxY = Math.max(antiTickSkipping, currentLook.getY()) + Math.max(antiTickSkipping,
- lastLook.getY());
-        double maxZ = Math.max(antiTickSkipping, currentLook.getZ()) + Math.max(antiTickSkipping,
- lastLook.getZ());
+        double minX = Math.min(-antiTickSkipping, currentLook.getX()) + Math.min(-antiTickSkipping, lastLook.getX());
+        double minY = Math.min(-antiTickSkipping, currentLook.getY()) + Math.min(-antiTickSkipping, lastLook.getY());
+        double minZ = Math.min(-antiTickSkipping, currentLook.getZ()) + Math.min(-antiTickSkipping, lastLook.getZ());
+        double maxX = Math.max(antiTickSkipping, currentLook.getX()) + Math.max(antiTickSkipping, lastLook.getX());
+        double maxY = Math.max(antiTickSkipping, currentLook.getY()) + Math.max(antiTickSkipping, lastLook.getY());
+        double maxZ = Math.max(antiTickSkipping, currentLook.getZ()) + Math.max(antiTickSkipping, lastLook.getZ());
         double threshold = Math.min(autoRescaleAmount.get(), currentMotion.length());
         minX *= threshold;
         minY *= threshold;
@@ -1768,7 +1763,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         maxZ = Math.min(threshold, maxZ);
         Box box = new Box(minX, minY, minZ, maxX, maxY, maxZ);
         double gravity = EntityUtils.getEffectiveGravity(mc.player);
-        Vec3d usingMotion = currentMotion.add(0, -gravity, 0);//resultMotion;
+        Vec3d usingMotion = currentMotion.add(0, -gravity, 0); // resultMotion;
         double scale1 = Math.abs(usingMotion.y) < 1E-6
                 ? 0
                 : ((usingMotion.y < 0
@@ -1797,6 +1792,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         // ClientPlayerAccess.of(mc.player).resyncRot();
         return currentMotion;
     }
+
     public Vec3d applyAxisLimit2(Vec3d currentMotion, Vec3d currentRotation) {
         if (!autoRescale.get()) {
             setOverridingFireworkVelocity(null);
@@ -1806,7 +1802,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             setOverridingFireworkVelocity(null);
             return currentMotion;
         }
-
         Vec3d lastTickVelocity = PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed;
         Vec3d thisTickSimulationVelocity =
                 EntityUtils.calculateGlidingVelocity(mc.player, lastTickVelocity, currentRotation, true);
@@ -1846,13 +1841,24 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         double eMaxY = Math.max(0, maxY - v1.y);
         double eMinZ = Math.min(0, minZ - v1.z);
         double eMaxZ = Math.max(0, maxZ - v1.z);
+
         double uMinX = v3.x + eMinX;
         double uMaxX = v3.x + eMaxX;
         double uMinY = v3.y + eMinY;
         double uMaxY = v3.y + eMaxY;
         double uMinZ = v3.z + eMinZ;
         double uMaxZ = v3.z + eMaxZ;
-
+        // I dont understand.
+        if (!ViaFabricPlusHooks.isSupportEndTick() && uMaxY > 0) {
+            double len = currentMotion.length();
+            double horizontalLen = currentMotion.horizontalLength();
+            if (horizontalLen < 0.04 * currentMotion.y) {
+                double max = EntityUtils.calculateGlidingVelocity(
+                                mc.player, currentMotion.multiply((len + 0.03) / len), currentRotation, true)
+                        .y;
+                uMaxY = Math.max(uMaxY, max);
+            }
+        }
         double dx = currentMotion.x, dy = currentMotion.y, dz = currentMotion.z;
         double exceedX = 0.0, exceedY = 0.0, exceedZ = 0.0;
 
@@ -1875,9 +1881,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             setOverridingFireworkVelocity(null);
             return currentMotion;
         }
-
+        Vec3d predictedMotion = EntityUtils.calculateGlidingVelocity(mc.player, currentMotion, currentRotation, true);
+        double limitScale = currentMotion.length() / predictedMotion.length();
         // 已在盒内，无需缩放
-        if (maxScale > 1) {
+        if (maxScale >= limitScale) {
             setOverridingFireworkVelocity(null);
             return currentMotion;
         }
