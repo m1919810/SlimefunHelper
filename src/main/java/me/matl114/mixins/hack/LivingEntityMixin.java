@@ -40,14 +40,14 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     @Shadow
     protected abstract float getJumpVelocity(float st);
 
-
     @Shadow
     public abstract boolean isFallFlying();
 
     @Shadow
     public abstract void remove(RemovalReason reason);
 
-    @Shadow protected abstract void travelGliding();
+    @Shadow
+    protected abstract void travelGliding();
 
     @Unique
     @Override

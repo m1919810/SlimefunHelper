@@ -243,9 +243,7 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     }
 
     @Override
-    public void lineGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth) {
-
-    }
+    public void lineGuiGradient(int x1, int y1, int x2, int y2, int color1, int color2, int depth) {}
 
     private void addInternal(Runnable runnable) {
         if (this.delayedDrawing != null) {
