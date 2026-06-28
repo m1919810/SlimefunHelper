@@ -223,7 +223,7 @@ public class BaritoneFix extends BaseModule {
                     && ElytraExtra.INSTANCE.armorFly.get()) {
                 boolean usingArmorFly = ElytraExtra.INSTANCE.thisFallFlyingIsArmorFly != -1;
                 if (usingArmorFly && mc.player.getY() < exp2Min.get()) {
-                    ElytraExtra.INSTANCE.endArmorFlyTransaction();
+                    ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
                 } else if (!usingArmorFly && mc.player.getY() > exp2Max.get()) {
                     ElytraExtra.INSTANCE.startArmorFlyTransaction(-1);
                 }

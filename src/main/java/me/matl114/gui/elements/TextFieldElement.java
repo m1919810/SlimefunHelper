@@ -17,8 +17,8 @@ import me.matl114.utils.config.PropertyTracker;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.cursor.StandardCursors;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.OrderedText;
@@ -29,7 +29,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.StringHelper;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-import org.jspecify.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 @Accessors(chain = true)
@@ -88,12 +87,12 @@ public class TextFieldElement extends AbstractElement {
     private int selectionEnd;
     private int editableColor = DEFAULT_EDITABLE_COLOR;
     private int uneditableColor = DEFAULT_UNEDITABLE_COLOR;
-    private @Nullable String suggestion;
-    private @Nullable Consumer<String> changedListener;
-    private @Nullable PropertyTracker<TextFieldAccess, String> tracker;
+    private String suggestion;
+    private Consumer<String> changedListener;
+    private PropertyTracker<TextFieldAccess, String> tracker;
     private Predicate<String> textPredicate = Objects::nonNull;
     private final List<Formatter> formatters = new ArrayList<>();
-    private @Nullable Text placeholder;
+    private Text placeholder;
     private long lastSwitchFocusTime = Util.getMeasuringTimeMs();
     private int textX;
     private int textY;
@@ -101,7 +100,7 @@ public class TextFieldElement extends AbstractElement {
     private int height;
     private boolean draggingSelection;
     private boolean focused;
-    private @Nullable ColorProvider borderColorProvider;
+    private ColorProvider borderColorProvider;
     private long lastClickTime;
     private int lastClickCursor = -1;
     private int lastClickButton = -1;
@@ -224,7 +223,7 @@ public class TextFieldElement extends AbstractElement {
         return this;
     }
 
-    public TextFieldElement setSuggestion(@Nullable String suggestion) {
+    public TextFieldElement setSuggestion(String suggestion) {
         this.suggestion = suggestion;
         return this;
     }
@@ -589,6 +588,14 @@ public class TextFieldElement extends AbstractElement {
                 this.textRenderer.trimToWidth(string, innerX).length() + this.firstCharacterIndex, shiftDownAction);
     }
 
+    public void drawSelection(DrawContext context, int x1, int y1, int x2, int y2, boolean invert) {
+        if (invert) {
+            context.fill(RenderPipelines.GUI_INVERT, x1, y1, x2, y2, -1);
+        }
+
+        context.fill(RenderPipelines.GUI_TEXT_HIGHLIGHT, x1, y1, x2, y2, -16776961);
+    }
+
     @Override
     public void renderCentered0(
             DrawableWidget element,
@@ -675,7 +682,8 @@ public class TextFieldElement extends AbstractElement {
 
             if (selectionOffset != cursorOffset) {
                 int selectionX = this.textX + this.textRenderer.getWidth(visibleText.substring(0, selectionOffset));
-                drawContext.drawSelection(
+                drawSelection(
+                        drawContext,
                         Math.min(cursorX, this.width),
                         this.textY - 1,
                         Math.min(selectionX - 1, this.width),
@@ -690,10 +698,6 @@ public class TextFieldElement extends AbstractElement {
                     drawContext.drawText(
                             this.textRenderer, HORIZONTAL_CURSOR, cursorX, this.textY, color, this.textShadow);
                 }
-            }
-
-            if (shouldHighlight) {
-                drawContext.setCursor(this.isEditable() ? StandardCursors.IBEAM : StandardCursors.NOT_ALLOWED);
             }
         } finally {
             context.popMatrix();
@@ -825,7 +829,6 @@ public class TextFieldElement extends AbstractElement {
 
     @FunctionalInterface
     public interface Formatter {
-        @Nullable
         OrderedText format(String string, int firstCharacterIndex);
     }
 }
