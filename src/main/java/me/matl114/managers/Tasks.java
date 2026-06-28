@@ -129,6 +129,10 @@ public class Tasks {
         postTaskQueue.addLast(new RepeatTask.Impl(task, delay, period));
     }
 
+    public static void scheduleRepeated(BooleanSupplier task, int delay, int period, int time) {
+        postTaskQueue.addLast(new RepeatTask.CountDown(task, delay, period, time));
+    }
+
     @ApiMethod
     public static void scheduleTaskPre(Task task) {
         preTaskQueue.addLast(task);
@@ -142,6 +146,10 @@ public class Tasks {
     @ApiMethod
     public static void scheduleRepeatedPre(BooleanSupplier task, int delay, int period) {
         preTaskQueue.addLast(new RepeatTask.Impl(task, delay, period));
+    }
+
+    public static void scheduleRepeatedPre(BooleanSupplier task, int delay, int period, int time) {
+        preTaskQueue.addLast(new RepeatTask.CountDown(task, delay, period, time));
     }
 
     static {

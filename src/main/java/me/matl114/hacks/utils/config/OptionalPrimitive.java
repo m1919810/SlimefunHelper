@@ -59,6 +59,10 @@ public class OptionalPrimitive<T> implements NBTParsable<OptionalPrimitive<T>> {
         return false;
     }
 
+    public T orElse(T val) {
+        return isPresent() ? value : val;
+    }
+
     public static final NBTType<OptionalPrimitive> TYPE = new NBTType<>(
             OptionalPrimitive.class,
             RecordCodecBuilder.create(oInstance -> oInstance

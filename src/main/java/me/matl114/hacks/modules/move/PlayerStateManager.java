@@ -68,6 +68,7 @@ public class PlayerStateManager extends BaseModule {
     public Vec3d lastKnownRealMovementSpeed = Vec3d.ZERO;
     public Vec3d lastAverageMovementSpeed = Vec3d.ZERO;
     public Vec3d lastSetBackPosition = Vec3d.ZERO;
+    public boolean lastMovementContainsPosition = false;
     boolean lastTickHasMovement = false;
     public boolean lastClimbing;
     public boolean lastInLava;
@@ -147,6 +148,8 @@ public class PlayerStateManager extends BaseModule {
         if (event.isCancelled()) return;
         PlayerMoveC2SPacket packet = event.context;
         if (PlayerMoveC2SPacketAccess.of(packet).getCause() != PlayerMoveC2SPacketAccess.Cause.TRIGGER_SIMULATION) {
+            lastMovementContainsPosition = packet.changesPosition();
+
             // will not be intercepted by antiCheat
             Vec3d oldMove = new Vec3d(lastX, lastY, lastZ);
 
@@ -502,6 +505,7 @@ public class PlayerStateManager extends BaseModule {
     public void onTickEnd(Event<ClientPlayerEntity> tickEndPacket) {
         if (!lastTickHasMovement) {
             lastKnownMovementSpeed = Vec3d.ZERO;
+            lastMovementContainsPosition = false;
         }
         lastTickHasMovement = false;
     }

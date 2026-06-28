@@ -41,6 +41,7 @@ import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.stream.Streams;
@@ -122,6 +123,7 @@ public class AutoEat extends BaseModule {
     private Runnable restoreCallback = null;
     private int eatingSlot = -1;
     private int eatingCooldownTick = 0;
+    private int nextTickStartEat = 0;
 
     @Override
     public void registerAll() {
@@ -130,6 +132,7 @@ public class AutoEat extends BaseModule {
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onStatusConsumed);
+        registerListener(Listener.getPrePlayerUseItem(), this::onRightClick);
     }
 
     @Override
@@ -169,23 +172,23 @@ public class AutoEat extends BaseModule {
         return off != null ? new IndexEntry<>(40, stackOffhand) : null;
     }
 
-    private IndexEntry<ItemStack> findFood() {
+    private IndexEntry<ItemStack> findFood(boolean useInv) {
         // TODO VALIDATE
         boolean healthPriority = enableHealth.get() && mc.player.getHealth() <= healthLevel.get();
-        return inv.get()
+        return useInv
                 ? InventoryUtils.findBestPlayerItem(stack -> scoreFood(stack, healthPriority), true, false)
                 : findHandStack(healthPriority);
     }
 
-    private void tryStartEating(@Nonnull IndexEntry<ItemStack> re) {
+    private void tryStartEating(@Nonnull IndexEntry<ItemStack> re, boolean offHand) {
 
         if (log.get()) {
             Text text = re.val().getName();
             Debug.chat(ChatUtils.stringToText("&c[Eat] &fStart to eat"), text);
         }
-        boolean offHand = re.index() == 40;
+        offHand = offHand || re.index() == 40;
         Runnable cbb = offHand
-                ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(40)
+                ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(re.index())
                 : InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
         if (cbb != null) {
             ClientAccess.of(mc).simulateUseItem(offHand ? Hand.OFF_HAND : Hand.MAIN_HAND);
@@ -230,18 +233,17 @@ public class AutoEat extends BaseModule {
         if (enable.get()) {
             if (!eating) {
                 boolean canStartEat = false;
+                boolean useInv = inv.get();
+                boolean offHand = false;
                 if (!mc.player.isUsingItem()) {
                     find_eat_condition:
                     {
-                        if (forceEatLeftClick.get() && mc.options.useKey.isPressed()) {
-                            ItemStack stack = mc.player.getMainHandStack();
-                            if ((VItem.getInstance().isTool(stack)
-                                            || VItem.getInstance().isWeapon(stack))
-                                    && !VItem.getInstance().isSpear(stack)
-                                    && !InteractUtils.canHoldUse(mc.player.getOffHandStack())) {
-                                canStartEat = true;
-                                break find_eat_condition;
-                            }
+                        if (nextTickStartEat != 0) {
+                            canStartEat = true;
+                            useInv = true;
+                            offHand = nextTickStartEat > 1;
+                            nextTickStartEat = 0;
+                            break find_eat_condition;
                         }
                         if (eatingCooldownTick > Tasks.getTick()) {
                             break find_eat_condition;
@@ -271,7 +273,7 @@ public class AutoEat extends BaseModule {
                 }
                 if (canStartEat) {
                     boolean canStartNow = true;
-                    var re = findFood();
+                    var re = findFood(useInv);
                     if (re == null) {
                         return;
                     }
@@ -290,7 +292,7 @@ public class AutoEat extends BaseModule {
                     }
                     if (canStartNow) {
                         lastAutoFireworkIsDone = false;
-                        tryStartEating(re);
+                        tryStartEating(re, false);
                     }
                 }
             }
@@ -302,6 +304,49 @@ public class AutoEat extends BaseModule {
                         Debug.chat(ChatUtils.stringToText("&c[Eat] &fStop Eating"));
                     }
                     stopEating();
+                }
+            }
+        }
+    }
+
+    public void onRightClick(Event<ActionResult> event) {
+        Hand hand = event.getArgs(0);
+        if (eating) {
+            event.cancel();
+            return;
+        }
+        if (enable.get() && forceEatLeftClick.get() && mc.options.useKey.isPressed() && !eating) {
+            ItemStack stack = mc.player.getStackInHand(hand);
+            Hand offhand = hand == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
+            ItemStack offhandStack = mc.player.getStackInHand(offhand);
+            if ((VItem.getInstance().isTool(stack) || VItem.getInstance().isWeapon(stack))
+                    && !VItem.getInstance().isSpear(stack)
+                    && !InteractUtils.canHoldUse(offhandStack)) {
+                var re = findFood(true);
+                if (re == null) {
+                    return;
+                }
+                boolean canStartEat = true;
+                if (fireworkFix.get() && mc.player.isFallFlying()) {
+                    // using
+                    if (ElytraExtra.INSTANCE.getTicksSinceLastFireworkSpawn() > 10) {
+                        canStartEat = false;
+                    }
+                }
+                if (autoFireworks.get() && mc.player.isFallFlying() && !canStartEat) {
+                    // fresh
+                    if (!lastAutoFireworkIsDone) {
+                        ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
+                        lastAutoFireworkIsDone = true;
+                    }
+                }
+                if (canStartEat) {
+                    lastAutoFireworkIsDone = false;
+                    tryStartEating(re, hand == Hand.OFF_HAND);
+                    if (eating) {
+                        event.cancel();
+                        event.context(ActionResult.SUCCESS);
+                    }
                 }
             }
         }

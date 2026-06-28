@@ -64,4 +64,34 @@ public abstract class RepeatTask implements Task {
             return task.getAsBoolean();
         }
     }
+
+    public static class CountDown extends RepeatTask {
+        BooleanSupplier task;
+
+        int repeat;
+
+        public CountDown(BooleanSupplier runnable, int delay, int period, int repeat) {
+            super(delay, period);
+            this.task = runnable;
+            this.repeat = repeat;
+        }
+
+        public CountDown(Runnable runnable, int delay, int period, int repeat) {
+            super(delay, period);
+            this.task = () -> {
+                runnable.run();
+                return false;
+            };
+        }
+
+        @Override
+        public boolean runTask() {
+            if (repeat > 0) {
+                repeat -= 1;
+                return task.getAsBoolean();
+            } else {
+                return true;
+            }
+        }
+    }
 }

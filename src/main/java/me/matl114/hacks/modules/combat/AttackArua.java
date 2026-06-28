@@ -50,7 +50,8 @@ public class AttackArua extends BaseModule {
     public final FlagRef doNotAttackWhenEat =
             flagBuilder(attBot.add("stop-attack-when-eat")).build();
 
-    public final FlagRef doNotAttackWhenSpear = flagBuilder(attBot.add("stop-attack-when-spear")).build();
+    public final FlagRef doNotAttackWhenSpear =
+            flagBuilder(attBot.add("stop-attack-when-spear")).build();
 
     @Override
     public void registerAll() {
@@ -59,6 +60,22 @@ public class AttackArua extends BaseModule {
     }
 
     private int interval;
+
+    public boolean checkEating() {
+        return doNotAttackWhenEat.get()
+                && mc.player.isUsingItem()
+                && VItem.getInstance().isEatable(mc.player.getActiveItem());
+    }
+
+    public boolean checkSpear() {
+        return doNotAttackWhenSpear.get()
+                && mc.player.isUsingItem()
+                && VItem.getInstance().isSpear(mc.player.getActiveItem());
+    }
+
+    public boolean checkUsing() {
+        return checkEating() || checkSpear();
+    }
 
     public void onTick(Event<ClientPlayerEntity> tickEvent) {
         if (mc.player == null) return;
@@ -69,18 +86,11 @@ public class AttackArua extends BaseModule {
             interval += 1;
             int custom = customRate.get();
             if (custom <= interval) {
-                if (doNotAttackWhenEat.get()
-                        && mc.player.isUsingItem()
-                        && VItem.getInstance().isEatable(mc.player.getActiveItem())) {
-                    return;
-                }
-                if(doNotAttackWhenSpear.get() && mc.player.isUsingItem() && VItem.getInstance().isSpear(mc.player.getActiveItem())) {
-                    return;
-                }
+
                 if (attack.legalMode.get()
                         || ((holdingWeapon && cooldownWeapon.get()) || (!holdingWeapon && cooldownHand.get()))) {
                     // do not attack because of legal mode
-
+                    if (checkUsing()) return;
                     if (mc.player.getAttackCooldownProgress(0.5F) > 0.98) {
                         // ready for attack
                         // force attack

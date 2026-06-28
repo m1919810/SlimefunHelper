@@ -6,6 +6,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -218,6 +221,10 @@ public interface PlayerInteractionAccess {
     }
 
     public boolean sendFailBreakCurrentPos(@Nullable Direction direction);
+
+    public ActionResult simulateInteractBlock(Hand hand, BlockHitResult hitResult);
+
+    public ActionResult simulateInteractItem(Hand hand);
 
     /**
      * 把原版 {@link ClientPlayerInteractionManager} 视为本接口语义边界。

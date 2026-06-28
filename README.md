@@ -27,7 +27,9 @@
 
 但是该模组与以下模组均有关联,推荐同时安装
 
-- ViaFabricPlus
+注: 不是必须安装
+
+- ViaFabricPlus(强烈推荐安装)
 - Litematica
 - JsMacros
 - Baritone

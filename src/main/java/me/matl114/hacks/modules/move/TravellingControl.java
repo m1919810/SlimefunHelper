@@ -677,7 +677,10 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
         protected void handlePullUp() {
             EntityUtils.setEntityPitchSafe(mc.player, -control.pitch40Negative.get());
-            if (!ElytraExtra.INSTANCE.canFireworkControlMotion() && Tasks.getTick() % 5 == 0) {
+            // fire only when down wards, make full use of travel
+            if (!ElytraExtra.INSTANCE.canFireworkControlMotion()
+                    && Tasks.getTick() % 5 == 0
+                    && mc.player.getVelocity().y < 0) {
                 ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
             }
         }

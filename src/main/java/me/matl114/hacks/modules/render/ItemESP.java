@@ -15,6 +15,7 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.RenderUtils;
@@ -223,7 +224,9 @@ public class ItemESP extends BaseModule {
 
     public void onItemEntity(Entity itemEntity, ItemStack stack) {
         if (!stack.isEmpty() && testItem(stack)) {
-            markItemToRender(itemEntity, stack.getName());
+            markItemToRender(
+                    itemEntity,
+                    stack.getName().copy().append(ChatUtils.stringToText("&ex%d".formatted(stack.getCount()))));
         } else {
             removeItemFromRender(itemEntity);
         }
@@ -306,7 +309,11 @@ public class ItemESP extends BaseModule {
                                 Text text;
                                 if (entity instanceof ItemEntity entity1
                                         && !entity1.getStack().isEmpty()) {
-                                    text = entity1.getStack().getName();
+                                    ItemStack stack = entity1.getStack();
+                                    text = entity1.getStack()
+                                            .getName()
+                                            .copy()
+                                            .append(ChatUtils.stringToText("&ex%d".formatted(stack.getCount())));
                                 } else if (entity instanceof ItemFrameEntity entity1
                                         && !entity1.getHeldItemStack().isEmpty()) {
                                     text = entity1.getHeldItemStack().getName();
