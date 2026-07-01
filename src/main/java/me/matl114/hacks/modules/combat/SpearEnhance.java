@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntSupplier;
+import me.matl114.accessors.hacks.PlayerInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -103,6 +104,9 @@ public class SpearEnhance extends BaseModule {
 
     public final FlagRef spearSpeedResetAuto =
             flagBuilder(spearModule.add("reset-spear-speed-auto")).build();
+
+    public final FlagRef spearSpeedResetTargetJudge =
+            flagBuilder(spearModule.add("reset-spear-speed-only-combat")).build();
 
     @Override
     public void registerAll() {
@@ -268,9 +272,26 @@ public class SpearEnhance extends BaseModule {
         if (checkNull()) return;
         if (eventPostTick.context == mc.player && spearSpeedReset.get() && ViaFabricPlusHooks.isSupportDupRot()) {
             boolean autoCondition = true;
+
             if (spearSpeedResetAuto.get()) {
                 // 长矛使用时自动关闭啥比玩意免得我忘了
                 if (isUsingSpear(mc.player)) {
+                    autoCondition = false;
+                }
+            }
+            if (spearSpeedResetTargetJudge.get()) {
+                boolean mayHit = false;
+                for (var en : TargetSelector.INSTANCE.getAttackableEntities(16)) {
+                    if (en instanceof PlayerEntity pl && pl instanceof PlayerInternalAccess internal) {
+                        var predictor = internal.getPredictorImpl();
+                        Vec3d vec3d = predictor.getKnownDeltaMovement();
+                        if (vec3d.lengthSquared() > 1E-2 && vec3d.dotProduct(mc.player.getVelocity()) > 0) {
+                            mayHit = true;
+                            break;
+                        }
+                    }
+                }
+                if (mayHit) {
                     autoCondition = false;
                 }
             }
@@ -278,7 +299,7 @@ public class SpearEnhance extends BaseModule {
                 Vec3d look = null;
                 if (isUsingSpear(mc.player)) {
                     Entity targetEntity =
-                            TargetSelector.INSTANCE.searchAttackEntity(10, true, pl -> pl instanceof PlayerEntity);
+                            TargetSelector.INSTANCE.searchAttackEntity(16, true, pl -> pl instanceof PlayerEntity);
                     if (targetEntity != null) {
                         look = targetEntity
                                 .dimensions

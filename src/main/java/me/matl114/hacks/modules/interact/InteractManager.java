@@ -93,6 +93,9 @@ public class InteractManager extends BaseModule {
 
     public final FlagRef logA = flagBuilder(module.add("log-action")).build();
 
+    public final FlagRef offHandHoldUsage =
+            flagBuilder(module.add("offhand-hold-use")).build();
+
     public final FlagRef keepTaskWhenExit =
             flagBuilder(module.add("keep-task-when-exit")).build();
 
@@ -892,6 +895,10 @@ public class InteractManager extends BaseModule {
                     }
                     runnable.run();
                 }
+            } else {
+                if (InteractManager.INSTANCE.logA.get()) {
+                    Debug.chat(ChatUtils.stringToText("&c[Interact] &f找不到物品: " + hand.toString()));
+                }
             }
         }
     }
@@ -917,6 +924,10 @@ public class InteractManager extends BaseModule {
                                 .append(ChatUtils.getDisplayedLocation(Vec3d.of(blockPos))));
                     }
                     runnable.run();
+                }
+            } else {
+                if (InteractManager.INSTANCE.logA.get()) {
+                    Debug.chat(ChatUtils.stringToText("&c[Interact] &f找不到物品: " + hand.toString()));
                 }
             }
         }
@@ -956,6 +967,10 @@ public class InteractManager extends BaseModule {
                         player.setYaw(vec2f.y);
                         runnable.run();
                     }
+                } else {
+                    if (InteractManager.INSTANCE.logA.get()) {
+                        Debug.chat(ChatUtils.stringToText("&c[Interact] &f找不到物品: " + hand.toString()));
+                    }
                 }
             }
         }
@@ -980,7 +995,7 @@ public class InteractManager extends BaseModule {
         public void execute(InteractManager manager, PlayerEntity player) {
             var entry = hand.getUseContext();
             if (entry != null) {
-                boolean offhand = (InteractManager.shouldUseOffhandByDefault() || entry.index() == 40);
+                boolean offhand = InteractManager.INSTANCE.offHandHoldUsage.get() || entry.index() == 40;
                 var runnable = offhand
                         ? (InvExtra.INSTANCE.swapInventoryIndexToOffhand(entry.index()))
                         : InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
@@ -996,6 +1011,10 @@ public class InteractManager extends BaseModule {
                         InteractUtils.swingHandIfSuccess(result, hand);
                     }
                     InteractManager.INSTANCE.holdUseCallback = runnable;
+                }
+            } else {
+                if (InteractManager.INSTANCE.logA.get()) {
+                    Debug.chat(ChatUtils.stringToText("&c[Interact] &f找不到物品: " + hand.toString()));
                 }
             }
         }
@@ -1022,6 +1041,10 @@ public class InteractManager extends BaseModule {
         public IndexEntry<ItemStack> getUseContext() {
             return currentHandContext(preferredHand());
         }
+
+        public String toString() {
+            return "Any";
+        }
     }
 
     public record FixedUseContextSelector(Hand hand) implements UseContextSelector {
@@ -1029,12 +1052,20 @@ public class InteractManager extends BaseModule {
         public IndexEntry<ItemStack> getUseContext() {
             return currentHandContext(normalizedHand(hand));
         }
+
+        public String toString() {
+            return "Fixed:" + hand;
+        }
     }
 
     public record ItemUseContextSelector(ItemStackSelector itemStack) implements UseContextSelector {
         @Override
         public IndexEntry<ItemStack> getUseContext() {
             return itemStack == null ? null : InventoryUtils.findBestPlayerItem(itemStack::matches, true, false);
+        }
+
+        public String toString() {
+            return "Item:" + itemStack.asString();
         }
     }
 
@@ -1067,8 +1098,7 @@ public class InteractManager extends BaseModule {
 
         public String asString() {
             Identifier itemId = item == null ? null : Registries.ITEM.getId(item);
-            return (itemId == null ? "itemstack" : itemId.toString())
-                    + (potionType == null ? "" : "[" + potionType + "]");
+            return (itemId == null ? "air" : itemId.toString()) + (potionType == null ? "" : "[" + potionType + "]");
         }
     }
 

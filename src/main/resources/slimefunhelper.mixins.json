@@ -81,6 +81,7 @@
 		"hack.DarknessEffectFogModifierMixin",
 		"hack.DispenserCraftScreenMixin",
 		"hack.EntityMixin",
+		"hack.EntityRenderDisplayNameMixin",
 		"hack.EntityRenderStateMixin",
 		"hack.FogRendererMixin",
 		"hack.GameRenderMixin",

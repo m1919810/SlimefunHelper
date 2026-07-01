@@ -453,9 +453,10 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
         }
     }
-
-    int postSlot2 = -1;
-    int postHotbar2 = -1;
+    //
+    //    int postSlot2 = -1;
+    //    int postHotbar2 = -1;
+    Runnable postCallBack = null;
 
     public void preSwap() {
         // ClientPlayerAccess.of(mc.player).resyncMovementPacket();
@@ -487,14 +488,14 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
         // try find a empty slot to switch
         if (!stackEmpty.isEmpty()) {
-            postHotbar2 = selectedIdx;
+            int postHotbar2 = selectedIdx;
             ItemStack stackHand = mc.player.getInventory().getStack(selectedIdx);
             var slot = InventoryUtils.findBestScreenSlot(
                     handler.slots,
                     (sl) -> {
                         if (sl.getStack().isEmpty() && sl.canInsert(stackHand)) {
                             // prior inv slot
-                            return sl.inventory instanceof PlayerInventory ? 1.0D : 0.0D;
+                            return sl.inventory instanceof PlayerInventory ? 1.0D : null;
                         } else return null;
                     },
                     true); //  mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), selected);
@@ -503,11 +504,72 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                 mc.interactionManager.clickSlot(
                         handler.syncId, slot.index(), selectedIdx, SlotActionType.SWAP, mc.player);
                 // any flying packet
-                postSlot2 = slot.index();
+                int postSlot2 = slot.index();
+                postCallBack = () -> {
+                    // may use MultiActionsC to resync inventory, wierd
+                    // MovTasks.getMovExtra().sendInputPacketsForInventoryAction();
+                    mc.interactionManager.clickSlot(
+                            handler.syncId, postSlot2, postHotbar2, SlotActionType.SWAP, mc.player);
+                };
+            } else {
+                if (mc.player.currentScreenHandler.getCursorStack().isEmpty()) {
+                    //                    var idx =
+                    // mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), selectedIdx);
+                    int hotbarShot = selectedIdx == 8 ? 7 : 8;
+
+                    var hbSlot2 = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hotbarShot);
+                    // 何意味...
+                    if (hbSlot2.isPresent()) {
+                        // NO FUCKING USE
+                        //                        mc.interactionManager.clickSlot(handler.syncId, idx.getAsInt(), 0,
+                        // SlotActionType.PICKUP, mc.player);
+                        //                        postCallBack =
+                        //                            ()->{
+                        //                            mc.interactionManager.clickSlot(handler.syncId, idx.getAsInt(), 0,
+                        // SlotActionType.PICKUP, mc.player);
+                        //                        };
+                        mc.interactionManager.clickSlot(
+                                handler.syncId, hbSlot2.getAsInt(), 0, SlotActionType.PICKUP, mc.player);
+                        mc.interactionManager.clickSlot(
+                                handler.syncId, hbSlot2.getAsInt(), selectedIdx, SlotActionType.SWAP, mc.player);
+                        postCallBack = () -> {
+                            mc.interactionManager.clickSlot(
+                                    handler.syncId, hbSlot2.getAsInt(), selectedIdx, SlotActionType.SWAP, mc.player);
+                            mc.interactionManager.clickSlot(
+                                    handler.syncId, hbSlot2.getAsInt(), 0, SlotActionType.PICKUP, mc.player);
+                        };
+                    }
+                } else {
+                    // todo: swap other item to
+                    int hotbarShot = selectedIdx == 8 ? 7 : 8;
+                    var slotEmpty = InventoryUtils.findScreenSlot(
+                            handler.slots,
+                            (sl) -> {
+                                if (sl.getStack().isEmpty()
+                                        && sl.canInsert(stackHand)
+                                        && !(sl.inventory instanceof PlayerInventory)) {
+                                    // prior inv slot
+                                    return true;
+                                } else return false;
+                            },
+                            true);
+                    var idx = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hotbarShot);
+                    if (slotEmpty != null && idx.isPresent()) {
+                        mc.interactionManager.clickSlot(
+                                handler.syncId, slotEmpty.index(), hotbarShot, SlotActionType.SWAP, mc.player);
+                        mc.interactionManager.clickSlot(
+                                handler.syncId, idx.getAsInt(), selectedIdx, SlotActionType.SWAP, mc.player);
+                        postCallBack = () -> {
+                            mc.interactionManager.clickSlot(
+                                    handler.syncId, idx.getAsInt(), selectedIdx, SlotActionType.SWAP, mc.player);
+                            mc.interactionManager.clickSlot(
+                                    handler.syncId, slotEmpty.index(), hotbarShot, SlotActionType.SWAP, mc.player);
+                        };
+                    }
+                }
             }
         } else {
-            postHotbar2 = selectedEmpty;
-            postSlot2 = -1;
+            int postHotbar2 = selectedEmpty;
             var result = handler.getSlotIndex(mc.player.getInventory(), selectedIdx);
             if (result.isPresent()) {
                 mc.interactionManager.clickSlot(
@@ -518,6 +580,14 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                         mc.player);
                 // any flying packet
                 ClientPlayerAccess.of(mc.player).resyncPos();
+                postCallBack = () -> {
+                    mc.interactionManager.clickSlot(
+                            mc.player.currentScreenHandler.syncId,
+                            result.getAsInt(),
+                            postHotbar2,
+                            SlotActionType.SWAP,
+                            mc.player);
+                };
             }
         }
     }
@@ -525,32 +595,10 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public void postSwap() {
         // restore sprint
         // may use MultiActionsC to resync inventory, wierd
-        if (postHotbar2 != -1) {
-            var handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
-            // may use MultiActionsC to resync inventory, wierd
-            // MovTasks.getMovExtra().sendInputPacketsForInventoryAction();
-            if (postSlot2 != -1) {
-                mc.interactionManager.clickSlot(handler.syncId, postSlot2, postHotbar2, SlotActionType.SWAP, mc.player);
-            } else {
-                int selectedIdx;
-                if (mc.player.getActiveHand() == Hand.MAIN_HAND) {
-                    selectedIdx = InventoryUtils.getSelectedSlot();
-                } else {
-                    selectedIdx = 40;
-                }
-                var result = handler.getSlotIndex(mc.player.getInventory(), selectedIdx);
-                if (result.isPresent()) {
-                    mc.interactionManager.clickSlot(
-                            mc.player.currentScreenHandler.syncId,
-                            result.getAsInt(),
-                            postHotbar2,
-                            SlotActionType.SWAP,
-                            mc.player);
-                }
-            }
+        if (postCallBack != null) {
+            postCallBack.run();
+            postCallBack = null;
         }
-        postHotbar2 = -1;
-        postSlot2 = -1;
     }
 
     public void setPreAttackUseTick() {

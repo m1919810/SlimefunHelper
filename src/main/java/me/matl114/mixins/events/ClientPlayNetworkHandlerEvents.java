@@ -234,6 +234,15 @@ public abstract class ClientPlayNetworkHandlerEvents {
         Listener.getOtherPlayerExitPoint().broadcast(playerListEntry);
     }
 
+    @Inject(method = "handlePlayerListAction", at = @At("RETURN"))
+    private void onPlayerListUpdate(
+            PlayerListS2CPacket.Action action,
+            PlayerListS2CPacket.Entry receivedEntry,
+            PlayerListEntry currentEntry,
+            CallbackInfo ci) {
+        Listener.getOtherPlayerEntryUpdate().broadcast(currentEntry, action);
+    }
+
     @WrapOperation(
             method = "onEntityVelocityUpdate",
             at =
