@@ -109,6 +109,12 @@ public interface NBTTypes {
 
     public NBTType<WrapEnum<?>> CONFIG_ENUM_TYPE = WrapEnum.TYPE.cast();
 
+    public NBTType<Vec2> VEC2_TYPE = Vec2.TYPE;
+
+    public NBTType<Vec3> VEC3_TYPE = Vec3.TYPE;
+
+    public NBTType<Pos3> POS3_TYPE = Pos3.TYPE;
+
     public static DrawableWidget generateColorInputWidget(
             AttrKeyValue<TextColor> keyValue, int x, int y, int dx, int dy) {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);

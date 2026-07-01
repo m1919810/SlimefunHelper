@@ -105,7 +105,9 @@ public class NBTRef<T extends NBTParsable<?>> extends LazilyRegisterTypeRef<T, N
     }
 
     public final <W> boolean isSameTypeWith(Ref<W> ref) {
-        if (super.isSameTypeWith(ref)) {
+        if (super.isSameTypeWith(ref) && ref instanceof NBTRef nbtRef) {
+            tryResolve();
+            nbtRef.tryResolve();
             if (resolved && ref instanceof NBTRef<?> nbtref && nbtref.resolved) {
                 NBTParsable parsable = nbtref.get();
                 if (!get().isSameType(parsable)) {

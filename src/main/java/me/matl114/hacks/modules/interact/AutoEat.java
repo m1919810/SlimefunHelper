@@ -7,6 +7,7 @@ import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
@@ -128,7 +129,8 @@ public class AutoEat extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPreHandleInputEvents(), this::onTick);
+        registerListener(Listener.getPreHandleInputEvents(), this::onTickPre);
+        registerListener(Listener.getPostHandleInputEvents(), this::onTickPost);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onStatusConsumed);
@@ -219,23 +221,56 @@ public class AutoEat extends BaseModule {
         restoreCallback = null;
         eating = false;
         eatingSlot = -1;
+        eatingCooldownTick = Tasks.getTick() + cooldown.get();
     }
 
     boolean lastAutoFireworkIsDone = false;
 
-    public void onTick(Event<Void> event) {
+    public void onTickPre(Event<Void> event) {
         ClientPlayerEntity player = mc.player;
         if (checkNull()) {
             if (eating) {
                 stopEating();
             }
         }
+        if (eating) {
+            if (canContinueEat()) {
+                mc.options.useKey.setPressed(true);
+            } else {
+                if (log.get()) {
+                    Debug.chat(ChatUtils.stringToText("&c[Eat] &fStop Eating"));
+                }
+                stopEating();
+            }
+        }
+    }
+
+    public boolean mayUseItem() {
+        if (mc.player.isUsingItem()) {
+            return true;
+        } else if ((VItem.getInstance().isSpear(mc.player.getStackInHand(Hand.MAIN_HAND))
+                || VItem.getInstance().isSpear(mc.player.getStackInHand(Hand.OFF_HAND)))) {
+            if (mc.options.useKey.isPressed()) {
+                return true;
+            }
+            if (InteractionTasks.getAutoUse().lastAutoUsingSpear) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void onTickPost(Event<Void> event) {
+        if (checkNull()) {
+            return;
+        }
+        ClientPlayerEntity player = mc.player;
         if (enable.get()) {
             if (!eating) {
                 boolean canStartEat = false;
                 boolean useInv = inv.get();
                 boolean offHand = false;
-                if (!mc.player.isUsingItem()) {
+                if (!mayUseItem()) {
                     find_eat_condition:
                     {
                         if (nextTickStartEat != 0) {
@@ -294,16 +329,6 @@ public class AutoEat extends BaseModule {
                         lastAutoFireworkIsDone = false;
                         tryStartEating(re, false);
                     }
-                }
-            }
-            if (eating) {
-                if (canContinueEat()) {
-                    mc.options.useKey.setPressed(true);
-                } else {
-                    if (log.get()) {
-                        Debug.chat(ChatUtils.stringToText("&c[Eat] &fStop Eating"));
-                    }
-                    stopEating();
                 }
             }
         }
