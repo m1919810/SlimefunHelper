@@ -32,6 +32,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -39,6 +40,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 public class EntityLog extends BaseModule {
@@ -84,6 +86,9 @@ public class EntityLog extends BaseModule {
     public final FlagRef renderFaraway =
             flagBuilder(entityLog.add("render-reason-faraway")).build();
 
+    public final FlagRef logLogReconnect =
+            flagBuilder(entityLog.add("log-log-reconnect")).build();
+
     public Map<UUID, Entry> offLinePos = new LinkedHashMap<>();
 
     public void registerAll() {
@@ -95,6 +100,8 @@ public class EntityLog extends BaseModule {
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
         registerListener(Listener.getPostTick(), this::onUpdate);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
+        registerListener(Listener.getOtherPlayerJoinPoint(), this::onPlayerListEntryAdd);
+        registerListener(Listener.getOtherPlayerEntryUpdate(), this::onPlayerListEntryModify);
     }
 
     public void onEntitySpawn(Event<EntitySpawnS2CPacket> packetEvent) {
@@ -117,6 +124,7 @@ public class EntityLog extends BaseModule {
                         }
 
                         Debug.chat(
+                                Text.literal("[Entity]").formatted(Formatting.RED),
                                 "Player ",
                                 text == null ? "" : text,
                                 "spawn at position ",
@@ -131,6 +139,7 @@ public class EntityLog extends BaseModule {
                     // only log the living Entity; the common Entities are mostly functional and are noisy
                     if (chatLog.get()) {
                         Debug.chat(
+                                Text.literal("[Entity]").formatted(Formatting.RED),
                                 "Entity",
                                 packet.getEntityType().getName(),
                                 "spawn at position ",
@@ -169,6 +178,7 @@ public class EntityLog extends BaseModule {
                     if (entity instanceof PlayerEntity pl) {
                         if (chatLog.get()) {
                             Debug.chat(
+                                    Text.literal("[Entity]").formatted(Formatting.RED),
                                     "Player",
                                     pl.getDisplayName(),
                                     "disappear at position ",
@@ -180,6 +190,7 @@ public class EntityLog extends BaseModule {
                     } else {
                         if (chatLog.get()) {
                             Debug.chat(
+                                    Text.literal("[Entity]").formatted(Formatting.RED),
                                     "Entity",
                                     entity.getType().getName(),
                                     (entity.hasCustomName() ? entity.getCustomName() : ""),
@@ -243,7 +254,7 @@ public class EntityLog extends BaseModule {
         offLinePos.clear();
     }
 
-    static final String[] LEAVE_REASON = {"Log", "Faraway", "Teleport"};
+    static final String[] LEAVE_REASON = {"Log", "Faraway", "Teleport", "ReLogin"};
 
     RenderCollector<Box> boxing = RenderCollectors.createBoxCollector(false, true, false);
     RenderCollector<Box> boxingFrame = RenderCollectors.createBoxCollector(true, false, false);
@@ -259,7 +270,7 @@ public class EntityLog extends BaseModule {
             var color = this.color.get();
             for (var re : offLinePos.values()) {
                 switch (re.exitCode) {
-                    case 0 -> {
+                    case 0, 3 -> {
                         if (!renderLog.get()) continue;
                     }
                     case 1 -> {
@@ -297,6 +308,39 @@ public class EntityLog extends BaseModule {
             boxing.render3D(eventMatrixStack.context);
             tracing.render3D(eventMatrixStack.context);
             texting.render3D(eventMatrixStack.context);
+        }
+    }
+
+    public void onPlayerListEntryAdd(Event<PlayerListEntry> event) {
+        UUID uid = event.context.getProfile().id();
+        GameMode gameMode = event.context.getGameMode();
+        if (gameMode != GameMode.SPECTATOR) {
+            handleReLogin(uid);
+        }
+    }
+
+    public void onPlayerListEntryModify(Event<PlayerListEntry> event) {
+        if (event.getArgs(0) == PlayerListS2CPacket.Action.UPDATE_GAME_MODE) {
+            UUID uid = event.context.getProfile().id();
+            GameMode gameMode = event.context.getGameMode();
+            if (gameMode != GameMode.SPECTATOR) {
+                handleReLogin(uid);
+            }
+        }
+    }
+
+    public void handleReLogin(UUID uuid) {
+        var entry = offLinePos.remove(uuid);
+        if (entry != null) {
+            entry.exitCode = 3;
+            if (logLogReconnect.get()) {
+                Debug.chat(
+                        Text.literal("[Entity]").formatted(Formatting.RED),
+                        "Player",
+                        entry.displayName,
+                        "reLogin, last position:",
+                        ChatUtils.getDisplayedLocation(entry.leavePos.x, entry.leavePos.y, entry.leavePos.z));
+            }
         }
     }
 

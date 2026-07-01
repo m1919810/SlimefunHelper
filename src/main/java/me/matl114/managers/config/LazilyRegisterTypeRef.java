@@ -84,7 +84,8 @@ public abstract class LazilyRegisterTypeRef<T, W> extends ObjectRef<T> {
     public <R> boolean copyValueFrom(Ref<R> otherRef) {
         if (otherRef instanceof LazilyRegisterTypeRef what
                 && what.getClass() == this.getClass()
-                && Objects.equals(what.enumType, this.enumType)) {
+                && Objects.equals(what.enumType, this.enumType)
+                && isSameTypeWith(what)) {
             try {
                 if (!what.resolved) {
                     what.tryResolve();

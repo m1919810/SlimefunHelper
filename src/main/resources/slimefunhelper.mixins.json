@@ -78,6 +78,7 @@
 		"hack.CobwebBlockMixin",
 		"hack.DispenserCraftScreenMixin",
 		"hack.EntityMixin",
+		"hack.EntityRenderDisplayNameMixin",
 		"hack.EntityRenderStateMixin",
 		"hack.GameRenderMixin",
 		"hack.InGameHudMixin",

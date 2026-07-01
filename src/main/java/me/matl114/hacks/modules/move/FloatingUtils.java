@@ -99,10 +99,10 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             } else {
                 if (lastUsingOnGroundDeceive) {
                     lastUsingOnGroundDeceive = false;
-                    mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
+                    mc.player.setOnGround(PlayerStateManager.INSTANCE.lastPlayerOnGround);
                     storedPacket = LegacySnapRotManager.INSTANCE.createSnapAt(mc.player.getPitch(), mc.player.getYaw());
                 } else {
-                    mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
+                    mc.player.setOnGround(PlayerStateManager.INSTANCE.lastPlayerOnGround);
                     storedPacket = VPacket.newLookAndOnGround(
                             mc.player.getYaw(),
                             mc.player.getPitch(),
@@ -125,7 +125,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                 mc.getNetworkHandler().sendPacket(storedPacket);
             }
             // Listener.sendPacketNoEvents(storedPacket);
-            mc.player.setOnGround(movementManagerEvent.context.playerStatus.onGround);
+            mc.player.setOnGround(PlayerStateManager.INSTANCE.lastPlayerOnGround);
             storedPacket = null;
         }
         hasNoPosition = false;
