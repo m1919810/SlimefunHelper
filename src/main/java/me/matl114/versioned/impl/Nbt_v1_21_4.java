@@ -17,9 +17,7 @@ public class Nbt_v1_21_4 implements VNbt {
     @Override
     public NbtElement readNbt(String element) {
         try {
-            return new StringNbtReader(
-                            new StringReader(element.replace("\\n", "\n").replace("\\s", "\s")))
-                    .parseElement();
+            return new StringNbtReader(new StringReader(element.replace("\\n", "\n"))).parseElement();
         } catch (CommandSyntaxException e) {
             throw new RuntimeException("Could not deserialize nbt element ", e);
         }
