@@ -677,8 +677,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
             Predicate<ItemStack> canUnbreakablePredicate = (item) -> {
-                return ((!VItem.getInstance().canGlide(item.val())
-                    && mc.player.getPreferredEquipmentSlot(item.val()) == EquipmentSlot.CHEST));
+                return item.isEmpty()
+                        || (!VItem.getInstance().canGlide(item) && mc.player.canEquip(item, EquipmentSlot.CHEST));
             };
             // use cached autoSwitch slot
             if (thisFallFlyingIsAutoSwitch != -1
@@ -691,17 +691,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 return thisFallFlyingIsAutoSwitch;
             }
             var re = InventoryUtils.findBestPlayerInventory(
-                item -> {
-                    if ((item.index() < 36 || item.index() == 40)
-                        && item.val().isEmpty()
-                        || (!VItem.getInstance().canGlide(item.val())
-                        && mc.player.canEquip(item.val(), EquipmentSlot.CHEST))) {
-                        return DamageUtils.getArmorValue(mc.player, item.val(), EquipmentSlot.CHEST)
-                            * DamageUtils.getArmorToughnessValue(mc.player, item.val(), EquipmentSlot.CHEST);
-                    } else return null;
-                },
-                true,
-                true);
+                    item -> {
+                        if ((item.index() < 36 || item.index() == 40) && (canUnbreakablePredicate.test(item.val()))) {
+                            return DamageUtils.getArmorValue(mc.player, item.val(), EquipmentSlot.CHEST)
+                                    * DamageUtils.getArmorToughnessValue(mc.player, item.val(), EquipmentSlot.CHEST);
+                        } else return null;
+                    },
+                    true,
+                    true);
             if (re != null) {
                 return mc.player
                         .playerScreenHandler
