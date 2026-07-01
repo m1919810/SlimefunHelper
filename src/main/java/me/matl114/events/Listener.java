@@ -576,6 +576,10 @@ public class Listener {
     @Broadcast
     private static final EventChannel<PlayerListEntry> otherPlayerExitPoint = new EventChannel<>();
 
+    @Getter
+    @Broadcast
+    private static final EventChannel<PlayerListEntry> otherPlayerEntryUpdate = new EventChannel<>();
+
     @Getter // vc update
     @Cancelable
     @Modifiable

@@ -83,6 +83,7 @@
 		"hack.DispenserCraftScreenMixin",
 		"hack.EntityElytraModelMixin",
 		"hack.EntityMixin",
+		"hack.EntityRenderDisplayNameMixin",
 		"hack.EntityRenderStateMixin",
 		"hack.GameRenderMixin",
 		"hack.InGameHudMixin",
