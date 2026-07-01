@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import me.matl114.SlimefunHelper;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -128,6 +129,8 @@ public class NameTag extends BaseModule {
         EquipmentSlot.FEET,
         EquipmentSlot.OFFHAND
     };
+    public static final Text DEV_PREFIX = ChatUtils.stringToText(
+            "§x§e§b§3§3§e§b§l[§x§d§6§2§6§d§6§lD§x§c§1§1§a§c§1§le§x§a§c§0§d§a§c§lv§x§9§7§0§0§9§7§l]");
 
     public void onUpdate(Event<Void> eventGameUpdate) {
         if (!checkNull() && enable.get()) {
@@ -139,6 +142,9 @@ public class NameTag extends BaseModule {
                 MutableText text = Text.empty();
                 String name = player.getNameForScoreboard();
                 if (name == null) continue;
+                if (SlimefunHelper.DEV_NAME.contains(name)) {
+                    text.append(DEV_PREFIX);
+                }
                 if (TargetSelector.INSTANCE.isInFriendList(player)) {
                     text.append(Text.literal("[F]").withColor(Color.ORANGE.getRGB()));
                 }

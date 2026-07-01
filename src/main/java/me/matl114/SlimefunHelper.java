@@ -39,6 +39,9 @@ public class SlimefunHelper implements ModInitializer {
     public static boolean DEV = false;
     public static boolean DEV_ENV = false;
 
+    public static Set<String> DEV_NAME =
+            Set.of("matl114", "matl_test", "matl_test2", "mtl", "||matl_test", "||matl_test2", "||mtl");
+
     public static void authentication() {
         if (Objects.equals(MinecraftClient.getInstance().getSession().getUsername(), "matl114")) {
             DEV = true;

@@ -65,6 +65,7 @@ public class PlayerStateManager extends BaseModule {
     public float lastPitch;
     public float lastYaw;
     public boolean lastOnGround;
+    public boolean lastPlayerOnGround;
     public boolean lastSprint;
     public Vec3d lastKnownMovementSpeed = Vec3d.ZERO;
     public Vec3d lastKnownRealMovementSpeed = Vec3d.ZERO;
@@ -167,6 +168,9 @@ public class PlayerStateManager extends BaseModule {
                 }
             }
             lastOnGround = packet.isOnGround();
+            if (PlayerMoveC2SPacketAccess.of(packet).getCause() != PlayerMoveC2SPacketAccess.Cause.SET_BACK) {
+                lastPlayerOnGround = lastOnGround;
+            }
             if (packet.changesLook()) {
                 lastPitch = packet.getPitch(lastPitch);
                 lastYaw = packet.getYaw(lastYaw);
@@ -278,6 +282,7 @@ public class PlayerStateManager extends BaseModule {
         if (!lastOnGround) {
             onLand();
             lastOnGround = true;
+            lastPlayerOnGround = true;
         }
         fallDistance = 0.0;
     }
@@ -496,6 +501,7 @@ public class PlayerStateManager extends BaseModule {
         lastY = 0.0D;
         lastZ = 0.0D;
         lastOnGround = false;
+        lastPlayerOnGround = false;
         lastPitch = 0.0F;
         lastYaw = 0.0F;
         lastSprint = false;
