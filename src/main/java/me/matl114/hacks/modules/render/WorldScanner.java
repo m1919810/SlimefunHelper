@@ -172,7 +172,6 @@ public class WorldScanner extends BaseModule {
 
     public void validateAndClearSearchResult(boolean strict) {
         if (checkNull()) return;
-        Set<ChunkPos> blocks = new HashSet<>(currentSearchingResult.keySet());
         var iter = currentSearchingResult.entrySet().iterator();
         while (iter.hasNext()) {
             var entry = iter.next();

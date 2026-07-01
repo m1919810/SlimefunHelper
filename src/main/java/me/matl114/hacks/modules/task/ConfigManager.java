@@ -78,12 +78,9 @@ public class ConfigManager extends BaseModule {
                             .sorted();
                 }))
                 .build();
-        SimpleCommandArgs.Argument moduleArgument = SimpleCommandArgs.argumentBuilder()
-                .name("module")
-                .tabCompletor(TabResult.ofStreamSupplier(() -> {
-                    return HackModules.getModuleGroups().stream()
-                            .flatMap(s -> s.getModules().stream().map(BaseModule::getName));
-                }))
+        SimpleCommandArgs.Argument manualPathArgument = SimpleCommandArgs.argumentBuilder()
+                .name("path")
+                .tabCompletor(TabResult.ofStreamSupplier(() -> Stream.of("<填写路径>")))
                 .build();
         SimpleCommandArgs.Argument pathPrefixArgument = SimpleCommandArgs.argumentBuilder()
                 .name("path_prefix")
@@ -92,6 +89,7 @@ public class ConfigManager extends BaseModule {
                 .build();
         SimpleCommandArgs.Argument fileLoadArgument = SimpleCommandArgs.argumentBuilder()
                 .name("path")
+                .tabCompletor(TabResult.ofStreamSupplier(() -> Stream.of("<填写路径>")))
                 .tabCompletor(
                         TabResult.ofStreamSupplier(CommandUtils.fileSupplier(FileManager.CONFIG_SAVE_FOLDER, (sx) -> {
                             return sx.endsWith(".nbt") || sx.endsWith(".dat");
@@ -110,18 +108,38 @@ public class ConfigManager extends BaseModule {
                 .subBuilder(SubCommand.taskBuilder())
                 .name("save")
                 .helper("<path> <config_name=all> <path_prefix=\"\"> 保存当前配置快照")
-                .arg(SimpleCommandArgs.argumentBuilder().name("path").build())
+                .arg(manualPathArgument)
                 .arg(configOrAllNameArgument)
                 .arg(pathPrefixArgument)
                 .post(e -> e.executor(CommandContext.run(this::onSave)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("savemodule")
-                .helper("<path> <module> <path_prefix=\"\"> 将单独一个模块的配置保存为快照")
-                .arg(SimpleCommandArgs.argumentBuilder().name("path").build())
-                .arg(moduleArgument)
-                .arg(pathPrefixArgument)
-                .post(e -> e.executor(CommandContext.run(this::onSaveModule)))
+                .helper("<path> <module...> 将若干模块的配置保存为快照")
+                .arg(manualPathArgument)
+                .post(e -> e.executor(new CommandContext() {
+                    @Override
+                    public boolean execute(
+                            me.matl114.utils.commands.params.api.CommandExecution sender,
+                            ArgumentInputStream streamArgs,
+                            me.matl114.utils.commands.params.ArgumentReader argsReader) {
+                        onSaveModule(streamArgs, argsReader);
+                        return true;
+                    }
+
+                    @Override
+                    public List<String> supplyTab(
+                            me.matl114.utils.commands.params.api.CommandExecution sender,
+                            ArgumentInputStream streamArgs,
+                            me.matl114.utils.commands.params.ArgumentReader argsReader) {
+                        String[] remainingArgs = argsReader.getRemainingArgs();
+                        ;
+                        String lastArg = remainingArgs.length > 0 ? remainingArgs[remainingArgs.length - 1] : "";
+                        return getModuleNameSuggestions()
+                                .filter(s -> s.toLowerCase(Locale.ROOT).startsWith(lastArg.toLowerCase(Locale.ROOT)))
+                                .toList();
+                    }
+                }))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("load")
@@ -133,11 +151,31 @@ public class ConfigManager extends BaseModule {
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("loadmodule")
-                .helper("<path> <module> <path_prefix=\"\"> 加载配置快照中单独一个模块的配置")
+                .helper("<path> <module...> 加载配置快照中若干模块的配置")
                 .arg(fileLoadArgument)
-                .arg(moduleArgument)
-                .arg(pathPrefixArgument)
-                .post(e -> e.executor(CommandContext.run(this::onLoadModule)))
+                .post(e -> e.executor(new CommandContext() {
+                    @Override
+                    public boolean execute(
+                            me.matl114.utils.commands.params.api.CommandExecution sender,
+                            ArgumentInputStream streamArgs,
+                            me.matl114.utils.commands.params.ArgumentReader argsReader) {
+                        onLoadModule(streamArgs, argsReader);
+                        return true;
+                    }
+
+                    @Override
+                    public List<String> supplyTab(
+                            me.matl114.utils.commands.params.api.CommandExecution sender,
+                            ArgumentInputStream streamArgs,
+                            me.matl114.utils.commands.params.ArgumentReader argsReader) {
+                        String[] remainingArgs = argsReader.getRemainingArgs();
+                        ;
+                        String lastArg = remainingArgs.length > 0 ? remainingArgs[remainingArgs.length - 1] : "";
+                        return getModuleNameSuggestions()
+                                .filter(s -> s.toLowerCase(Locale.ROOT).startsWith(lastArg.toLowerCase(Locale.ROOT)))
+                                .toList();
+                    }
+                }))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("set")
@@ -326,7 +364,7 @@ public class ConfigManager extends BaseModule {
         save(fileName, snapshot);
     }
 
-    public void onSaveModule(ArgumentInputStream args) {
+    public void onSaveModule(ArgumentInputStream args, me.matl114.utils.commands.params.ArgumentReader argsReader) {
         String rawPath = args.nextNonnullString();
         String fileName;
         try {
@@ -335,23 +373,16 @@ public class ConfigManager extends BaseModule {
             Debug.chat(Text.literal(e.getMessage()).formatted(Formatting.RED));
             return;
         }
-        String moduleName = args.nextNonnullString();
-        String pathPrefix = args.nextNonnullString().trim();
-        Map<String, BaseModule> moduleMap = HackModules.getModuleGroups().stream()
-                .flatMap(s -> s.getModules().stream())
-                .collect(Collectors.toMap(s -> s.getName().toLowerCase(Locale.ROOT), b -> b));
-        BaseModule baseModule = moduleMap.get(moduleName.toLowerCase(Locale.ROOT));
-        if (baseModule == null) {
-            Debug.chat(Text.literal("未找到模块: " + moduleName).formatted(Formatting.RED));
+        List<BaseModule> baseModules = readModuleArguments(argsReader);
+        if (baseModules.isEmpty()) {
             return;
         }
         Map<Identifier, MapRef> snapshotMap = new LinkedHashMap<>();
-        for (var entry : baseModule.getEditableConfig()) {
-            var config = entry.config();
-            var path = entry.path();
-            var ff = entry.ref();
-            String pathS = String.join(".", path);
-            if (pathS.startsWith(pathPrefix)) {
+        for (BaseModule baseModule : baseModules) {
+            for (var entry : baseModule.getEditableConfig()) {
+                var config = entry.config();
+                var path = entry.path();
+                var ff = entry.ref();
                 snapshotMap
                         .computeIfAbsent(config.getRegistryKey().getValue(), k -> new MapRef())
                         .setValue(ff, path);
@@ -472,7 +503,7 @@ public class ConfigManager extends BaseModule {
         }
     }
 
-    public void onLoadModule(ArgumentInputStream args) {
+    public void onLoadModule(ArgumentInputStream args, me.matl114.utils.commands.params.ArgumentReader argsReader) {
         String rawPath = args.nextArg();
         if (rawPath == null) {
             promptSnapshotFolderImport();
@@ -486,25 +517,18 @@ public class ConfigManager extends BaseModule {
             promptSnapshotFolderImport();
             return;
         }
-        String moduleName = args.nextNonnullString();
-        String prefix = args.nextNonnullString();
-        Map<String, BaseModule> moduleMap = HackModules.getModuleGroups().stream()
-                .flatMap(s -> s.getModules().stream())
-                .collect(Collectors.toMap(s -> s.getName().toLowerCase(Locale.ROOT), b -> b));
-        BaseModule baseModule = moduleMap.get(moduleName.toLowerCase(Locale.ROOT));
-        if (baseModule == null) {
-            Debug.chat(Text.literal("未找到模块: " + moduleName).formatted(Formatting.RED));
+        List<BaseModule> baseModules = readModuleArguments(argsReader);
+        if (baseModules.isEmpty()) {
             return;
         }
 
         var snapshot = load(fileName);
         if (snapshot == null) return;
-        for (var entry : baseModule.getEditableConfig()) {
-            var config = entry.config();
-            var path = entry.path();
-            var ff = entry.ref();
-            String pathStr = String.join(".", path);
-            if (pathStr.startsWith(prefix)) {
+        for (BaseModule baseModule : baseModules) {
+            for (var entry : baseModule.getEditableConfig()) {
+                var config = entry.config();
+                var path = entry.path();
+                var ff = entry.ref();
                 var refMap = snapshot.snapSnot.get(config.getRegistryKey().getValue());
                 if (refMap != null) {
                     var ref = refMap.get(path);
@@ -515,6 +539,37 @@ public class ConfigManager extends BaseModule {
             }
         }
         Debug.chat(Text.literal("成功加载配置快照" + fileName).formatted(Formatting.GREEN));
+    }
+
+    private List<BaseModule> readModuleArguments(me.matl114.utils.commands.params.ArgumentReader argsReader) {
+        Map<String, BaseModule> moduleMap = HackModules.getModuleGroups().stream()
+                .flatMap(s -> s.getModules().stream())
+                .collect(Collectors.toMap(s -> s.getName().toLowerCase(Locale.ROOT), b -> b));
+        List<BaseModule> result = new ArrayList<>();
+        for (String moduleName : argsReader.getRemainingArgs()) {
+            if (moduleName != null && !moduleName.isBlank()) {
+                addModuleArgument(result, moduleMap, moduleName);
+            }
+        }
+        return result;
+    }
+
+    private void addModuleArgument(List<BaseModule> result, Map<String, BaseModule> moduleMap, String moduleName) {
+        BaseModule baseModule = moduleMap.get(moduleName.toLowerCase(Locale.ROOT));
+        if (baseModule == null) {
+            Debug.chat(Text.literal("未找到模块: " + moduleName).formatted(Formatting.RED));
+            return;
+        }
+        if (!result.contains(baseModule)) {
+            result.add(baseModule);
+        }
+    }
+
+    private Stream<String> getModuleNameSuggestions() {
+        return HackModules.getModuleGroups().stream()
+                .flatMap(s -> s.getModules().stream().map(BaseModule::getName))
+                .distinct()
+                .sorted();
     }
 
     private Stream<String> getPathPrefixSuggestions(String configName) {

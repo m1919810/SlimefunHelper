@@ -62,6 +62,9 @@ public class Regex implements NBTParsable<Regex>, Predicate<String> {
     private Predicate<String> predicate;
 
     public Regex(String regex) {
+        if (regex.length() > 1024) {
+            throw new IllegalArgumentException("Too long for a regex");
+        }
         this.pattern = Pattern.compile(regex.replace(",", "|"));
         this.regex = regex;
     }
@@ -96,7 +99,7 @@ public class Regex implements NBTParsable<Regex>, Predicate<String> {
 
     @Override
     public <W> Optional<Regex> tryTypeConvert(Ref<W> ref) {
-        if (ref instanceof StringRef str) {
+        if (ref instanceof StringRef str && !str.get().startsWith("nbt:")) {
             try {
                 return Optional.of(new Regex(str.get()));
             } catch (Throwable e) {

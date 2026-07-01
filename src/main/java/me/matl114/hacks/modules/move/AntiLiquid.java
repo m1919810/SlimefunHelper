@@ -63,15 +63,17 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (currentArmorGlidingSaveState) {
-            if (ElytraExtra.INSTANCE.nextPacketResetFallFlying > 0) {
+            if (!ElytraExtra.INSTANCE.nextPacketResetFallFlying.isEmpty()) {
                 if (Tasks.getTick() >= switchElytraGt.get() + taskLast) {
-                    ElytraExtra.INSTANCE.nextPacketResetFallFlying = 0;
+                    ElytraExtra.INSTANCE.nextPacketResetFallFlying.clear();
                 } else {
                     movementManagerEvent.cancel();
                     movementManagerEvent.context.markForResetPos();
                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                     return;
                 }
+            } else {
+                taskLast = 0;
             }
         }
         if (enable.get() && mode.get() != Mode.NONE) {
@@ -80,17 +82,17 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
             var blocks = MathUtils.getOccupiedBlockPositions(box);
             for (var block : blocks) {
                 BlockState state = mc.world.getBlockState(block);
-                if (state.isLiquid()) {
-                    Fluid fluid = state.getFluidState().getFluid();
-                    boolean isWater = fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER;
-                    boolean isLava = fluid == Fluids.LAVA || fluid == Fluids.FLOWING_LAVA;
-                    Mode mode = this.mode.get();
-                    boolean lava = (mode.isAntiLava() && isLava);
-                    boolean water = (mode.isAntiWater() && isWater);
-                    if (lava || water) {
-                        handleMayFlyIntoFluid(movementManagerEvent, lava, water);
-                        return;
-                    }
+                // remove liquid check because of kelp
+                // if(state.isLiquid())
+                Fluid fluid = state.getFluidState().getFluid();
+                boolean isWater = fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER;
+                boolean isLava = fluid == Fluids.LAVA || fluid == Fluids.FLOWING_LAVA;
+                Mode mode = this.mode.get();
+                boolean lava = (mode.isAntiLava() && isLava);
+                boolean water = (mode.isAntiWater() && isWater);
+                if (lava || water) {
+                    handleMayFlyIntoFluid(movementManagerEvent, lava, water);
+                    return;
                 }
             }
             handleOutOfWater();
@@ -106,11 +108,15 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
             if (mc.player.isFallFlying()) {
                 if (isWater && autoArmorFlyControl.get() && ElytraExtra.INSTANCE.armorFly.get()) {
                     if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-                        ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
+                        // firstly reset the pos, so that player can continue gliding
                         eventMove.cancel();
-                        eventMove.context.markForResetPos();
-                        currentArmorGlidingSaveState = true;
-                        taskLast = Tasks.getTick();
+                        // restore now!
+                        eventMove.context.playerStatus.restorePos();
+                        ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
+                        if (!ElytraExtra.INSTANCE.nextPacketResetFallFlying.isEmpty()) {
+                            currentArmorGlidingSaveState = true;
+                            taskLast = Tasks.getTick();
+                        }
                         FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                         return;
                     }

@@ -19,6 +19,7 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
@@ -229,14 +230,26 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     shouldCheckRocket = false;
                 } else if (useFloatingUtils.get() && realVector.lengthSquared() < 1e-4) {
                     if (!MovTasks.getElytraExtra().canFireworkControlMotion()) {
-                        realVector = Vec3d.ZERO;
-                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                        if (PlayerStateManager.INSTANCE.lastPlayerOnGround) {
+                            shouldControl = true;
+                            shouldCheckRocket = false;
+                        } else {
+                            realVector = Vec3d.ZERO;
+                            FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                            shouldControl = true;
+                            shouldCheckRocket = false;
+                        }
+                    } else {
+                        shouldControl = true;
+                        shouldCheckRocket = false;
                     }
-                    shouldControl = true;
-                    shouldCheckRocket = false;
+                }
+                // ground check
+                if (mc.player.isOnGround() && realVector.y < 0) {
+                    realVector = realVector.withAxis(Direction.Axis.Y, 0);
                 }
                 if (shouldControl) {
-                    if (Math.abs(realVector.y) <= 1e-2 && horizontalFlyNoGravity.get()) {
+                    if (Math.abs(realVector.y) <= 1e-2 && horizontalFlyNoGravity.get() && !mc.player.isOnGround()) {
                         modifyNoGravity = player.hasNoGravity();
                         player.setNoGravity(true);
                     }
@@ -321,17 +334,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     packetMotion.set(2.5F);
                 }
             }
-            case AC_GRIM_LEGACY -> {
+            case AC_GRIM_LEGACY, AC_GRIM, AC_MATRIX -> {
                 motionMode.set(ElytraExtra.MotionMode.FIRE_WORKS);
-                if (packetMotion.get() > 1.73F) {
-                    packetMotion.set(1.73F);
-                }
-            }
-            case AC_GRIM, AC_MATRIX -> {
-                motionMode.set(ElytraExtra.MotionMode.FIRE_WORKS);
-                if (packetMotion.get() > 1.7F) {
-                    packetMotion.set(1.7F);
-                }
             }
         }
     }
