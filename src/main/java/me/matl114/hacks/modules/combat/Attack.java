@@ -52,10 +52,12 @@ import net.minecraft.util.math.*;
 import org.jetbrains.annotations.ApiStatus;
 
 public class Attack extends BaseModule {
+    public static Attack INSTANCE;
     public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "att-bot");
 
     public Attack() {
         bindFlag(enable);
+        INSTANCE = this;
     }
 
     public final FlagRef enable = flagBuilder(attack.add("always-att")).build();
@@ -242,6 +244,10 @@ public class Attack extends BaseModule {
         return true; // player.getEyePos().subtract(target.getEyePos()).dotProduct(target.getRotationVector()) > 0;
     }
 
+    private static IndexEntry<ItemStack> findAntiShieldWeapon() {
+        return InventoryUtils.findPlayerItem((ex) -> VItem.getInstance().isAxe(ex), false, false);
+    }
+
     public AttackSettings createAttackSettings() {
         boolean useTp = canUseTp();
         boolean maceSwap = autoMaceSwap.get();
@@ -261,7 +267,8 @@ public class Attack extends BaseModule {
         return target instanceof LivingEntity lv
                 && lv.isUsingItem()
                 && lv.getActiveItem().getItem() instanceof ShieldItem sh
-                && canEntityUseShieldBlockMe(lv, mc.player);
+                && canEntityUseShieldBlockMe(lv, mc.player)
+                && findAntiShieldWeapon() != null;
     }
 
     public static void attackWithSettings(PlayerEntity player, Entity target, AttackSettings attackSettings) {
@@ -280,9 +287,7 @@ public class Attack extends BaseModule {
         IndexEntry<ItemStack> invResult;
         if (attackSettings.antiShieldSwap()
                 && shouldUseAntiShield(target)
-                && (invResult = InventoryUtils.findPlayerItem(
-                                (ex) -> VItem.getInstance().isAxe(ex), false, false))
-                        != null) {
+                && (invResult = findAntiShieldWeapon()) != null) {
             callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
         } else if (attackSettings.invSwap()
                 && !VItem.getInstance().isWeapon(mc.player.getStackInHand(Hand.MAIN_HAND))
@@ -369,7 +374,11 @@ public class Attack extends BaseModule {
         }
     }
 
-    private boolean willUseMaceAttack(boolean autoMace) {
+    public boolean willUseMaceAttack() {
+        return willUseMaceAttack(autoMaceSwap.get());
+    }
+
+    public boolean willUseMaceAttack(boolean autoMace) {
         return mc.player.getMainHandStack().getItem() instanceof MaceItem mace
                 || (autoMace
                         && InventoryUtils.findPlayerItem((ex) -> ex.getItem() == Items.MACE, false, false) != null);

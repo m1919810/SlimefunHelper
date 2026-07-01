@@ -150,7 +150,7 @@ public class WorldTasks {
             BlockUpdateS2CPacket blockUpdateS2CPacket = updateS2CPacketEvent.context();
             BlockPos blockPos = blockUpdateS2CPacket.getPos();
             ChunkPos chunkPos = CommonUtils.toChunk(blockPos);
-            scheduleChunkTask(chunkPos, () -> onSingleBlockValueChange(blockPos.toImmutable()), false);
+            scheduleChunkTask(chunkPos, () -> onSingleBlockValueChange(blockPos.toImmutable()), true);
         }
     }
 
@@ -192,7 +192,7 @@ public class WorldTasks {
                             onSingleBlockValueChange(bp.toImmutable());
                         });
                     },
-                    false);
+                    true);
         }
     }
 

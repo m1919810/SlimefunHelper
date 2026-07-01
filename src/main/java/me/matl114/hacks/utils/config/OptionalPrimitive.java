@@ -26,6 +26,10 @@ public class OptionalPrimitive<T> implements NBTParsable<OptionalPrimitive<T>> {
         return (Class) OptionalPrimitive.class;
     }
 
+    public static <T> Class<OptionalPrimitive<T>> type(Class<T> clazz) {
+        return (Class) OptionalPrimitive.class;
+    }
+
     boolean present;
     NBTType<T> type;
     T value;

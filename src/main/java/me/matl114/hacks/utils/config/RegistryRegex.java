@@ -92,8 +92,7 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
         subScreenWidget.addDrawableChild(attrKeyValue.generateValueWidget(0, 0, width - height, height));
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(width - height, 0, height, height)
                 .setElementHandler(IconElement.fixedGui(
-                                Constants.LIST_TAG_SPRITE,
-                                ButtonAction.run(() -> openRegexListView(registry, attrKeyValue, originValue)))
+                                Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> openRegexListView(registry, attr)))
                         .withTooltips(TooltipHandler.of(Streams.concat(
                                         originValue.getRules().stream(), Constants.OPEN_LIST_PREVIEW_TOOLTIPS.stream())
                                 .toList()))));
@@ -101,23 +100,26 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
     }
 
     private static <T, W extends RegistryRegex<T>> void openRegexListView(
-            Registry<T> registry, AttrKeyValue<Regex> attr, W predicate) {
-        AttrKeyValue<Regex> copy = attr.copy();
+            Registry<T> registry, AttrKeyValue<W> original) {
+        AttrKeyValue<W> originalCopy = original.copy();
+        var originalValue = originalCopy.getOriginValue();
+        AttrKeyValue<Regex> regexWrapper = new TypeConvertAttrKeyValue<W, Regex>(
+                originalCopy,
+                WrapperFactory.<Regex, W>of(originalValue::<W>withParent, RegistryRegex::getParent),
+                Regex.TYPE);
         ScreenAccess.of(
                         new RegistryChooseScreen<T>(registry, (v) -> {
-                            attr.valueChange(null, copy.getValue());
+                            original.valueChange(null, originalCopy.getValue());
                         }) {
                             {
                                 selectSubScreen.modifiable(false);
-                                selectSubScreen.filter((v) -> copy.isValidate()
-                                        && predicate
-                                                .withParent(copy.getOriginValue())
-                                                .test(registry.get(v.getB())));
-                                copy.addListener(s -> selectSubScreen.updateFilterList());
+                                selectSubScreen.filter((v) -> originalCopy.isValidate()
+                                        && originalCopy.getOriginValue().test(v.getC()));
+                                originalCopy.addListener(s -> selectSubScreen.updateFilterList());
                                 SubScreenWidget subScreenWidget = selectSubScreen.getScrollableBorder();
                                 subScreenWidget.clearChildren();
                                 subScreenWidget.addDrawableChild(
-                                        copy.generateValueWidget(0, -20, subScreenWidget.getWidth(), 20));
+                                        regexWrapper.generateValueWidget(0, -20, subScreenWidget.getWidth(), 20));
                                 subScreenWidget.addDrawableChild(generateInformationButton(subScreenWidget));
                             }
 
@@ -125,12 +127,13 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
                                 return ExecutableWidget.instance(subScreenWidget.getWidth(), -20, 20, 20)
                                         .setElementHandler(IconElement.fixedGui(
                                                         Constants.EDITOR_SPRITE, ButtonAction.run(() -> {}))
-                                                .withTooltips(TooltipHandler.of(predicate.getRules())));
+                                                .withTooltips(TooltipHandler.of(original.getOriginValue()
+                                                        .getRules())));
                             }
 
                             @Override
                             protected boolean canConfirm(ElementHandler elementHandler) {
-                                return copy.isValidate();
+                                return originalCopy.isValidate();
                             }
                         })
                 .openFromCurrent();
