@@ -10,6 +10,7 @@ import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
@@ -62,6 +63,9 @@ public class PacketDebugger extends BaseModule {
             .updateListener((v) -> typesDebug = getDebugTypes(v))
             .build();
 
+    public final FlagRef debugTime =
+            flagBuilder(packetDebugger.add("debug-time")).build();
+
     public final FlagRef interceptPacket =
             flagBuilder(packetDebugger.add("intercept-packet")).build();
 
@@ -90,6 +94,7 @@ public class PacketDebugger extends BaseModule {
         if (enable.get() && debugIn.get()) {
             Packet<?> type = packetEvent.context();
             if (typesDebug.contains(type.getPacketId())) {
+                String timeStr = debugTime.get() ? (", Tick: " + Tasks.getTick()) : "";
                 if (type instanceof PlayerPositionLookS2CPacket positionLookS2CPacket) {
                     Vec3d vec3d = new Vec3d(
                             positionLookS2CPacket.getX(), positionLookS2CPacket.getY(), positionLookS2CPacket.getZ());
@@ -102,9 +107,10 @@ public class PacketDebugger extends BaseModule {
                             ", Pitch:",
                             positionLookS2CPacket.getPitch(),
                             ", Yaw:",
-                            positionLookS2CPacket.getYaw());
+                            positionLookS2CPacket.getYaw(),
+                            timeStr);
                 } else {
-                    ExtraTasks.debug("Accept", simplifyId(type.getPacketId().id()));
+                    ExtraTasks.debug("Accept", simplifyId(type.getPacketId().id()), timeStr);
                 }
             }
         }
@@ -115,6 +121,7 @@ public class PacketDebugger extends BaseModule {
         if (enable.get() && debugOut.get()) {
             Packet<?> type = packetEvent.context();
             if (typesDebug.contains(type.getPacketId())) {
+                String timeStr = debugTime.get() ? (", Tick: " + Tasks.getTick()) : "";
                 if (type instanceof PlayerMoveC2SPacket moveC2SPacket) {
                     ExtraTasks.debug(
                             "Send",
@@ -127,30 +134,34 @@ public class PacketDebugger extends BaseModule {
                             ", Yaw:",
                             moveC2SPacket.getYaw(0.0F),
                             ", onGround:",
-                            moveC2SPacket.isOnGround());
+                            moveC2SPacket.isOnGround(),
+                            timeStr);
                 } else if (type instanceof PlayerInputC2SPacket playerInputC2SPacket) {
                     PlayerInputUtils.Input input = PlayerInputUtils.of(playerInputC2SPacket);
-                    ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()), input);
+                    ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()), input, timeStr);
                 } else if (type instanceof PlayerActionC2SPacket actionC2SPacket) {
                     ExtraTasks.debug(
                             "Send",
                             simplifyId(type.getPacketId().id()),
                             actionC2SPacket.getAction().name(),
                             actionC2SPacket.getPos(),
-                            actionC2SPacket.getSequence());
+                            actionC2SPacket.getSequence(),
+                            timeStr);
                 } else if (type instanceof PlayerInteractEntityC2SPacket interact) {
                     ExtraTasks.debug(
                             "Send",
                             simplifyId(type.getPacketId().id()),
                             ((Enum) interact.type.getType()).name(),
-                            interact.entityId);
+                            interact.entityId,
+                            timeStr);
                 } else if (type instanceof ClientCommandC2SPacket ccmd) {
                     ExtraTasks.debug(
                             "Send",
                             simplifyId(type.getPacketId().id()),
-                            ccmd.getMode().name());
+                            ccmd.getMode().name(),
+                            timeStr);
                 } else {
-                    ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()));
+                    ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()), timeStr);
                 }
             }
         }
