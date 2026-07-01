@@ -312,7 +312,7 @@ public class EntityLog extends BaseModule {
     }
 
     public void onPlayerListEntryAdd(Event<PlayerListEntry> event) {
-        UUID uid = event.context.getProfile().id();
+        UUID uid = VRecord.getId(event.context.getProfile());
         GameMode gameMode = event.context.getGameMode();
         if (gameMode != GameMode.SPECTATOR) {
             handleReLogin(uid);
@@ -321,7 +321,7 @@ public class EntityLog extends BaseModule {
 
     public void onPlayerListEntryModify(Event<PlayerListEntry> event) {
         if (event.getArgs(0) == PlayerListS2CPacket.Action.UPDATE_GAME_MODE) {
-            UUID uid = event.context.getProfile().id();
+            UUID uid = VRecord.getId(event.context.getProfile());
             GameMode gameMode = event.context.getGameMode();
             if (gameMode != GameMode.SPECTATOR) {
                 handleReLogin(uid);
