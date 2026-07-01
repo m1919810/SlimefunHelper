@@ -43,9 +43,6 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     protected abstract float getJumpVelocity(float st);
 
     @Shadow
-    protected abstract void travelGliding(Vec3d movementInput);
-
-    @Shadow
     public abstract boolean isFallFlying();
 
     @Shadow
