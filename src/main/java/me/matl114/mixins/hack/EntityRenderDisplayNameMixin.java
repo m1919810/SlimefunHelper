@@ -12,19 +12,19 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(EntityRenderer.class)
 public abstract class EntityRenderDisplayNameMixin {
     @WrapOperation(
-            method = "updateRenderState",
+            method = "render",
             at =
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/entity/EntityRenderer;hasLabel(Lnet/minecraft/entity/Entity;D)Z"))
+                                    "Lnet/minecraft/client/render/entity/EntityRenderer;hasLabel(Lnet/minecraft/entity/Entity;)Z"))
     private boolean hasLabel(
-            EntityRenderer instance, Entity entity, double squaredDistanceToCamera, Operation<Boolean> original) {
+        EntityRenderer instance, Entity entity, Operation<Boolean> original) {
         if (entity instanceof PlayerEntity pl) {
             if (RenderTasks.getNameTag().hideName.get()) {
                 return false;
             }
         }
-        return original.call(instance, entity, squaredDistanceToCamera);
+        return original.call(instance, entity);
     }
 }

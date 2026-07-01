@@ -678,16 +678,17 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
             Predicate<ItemStack> canUnbreakablePredicate = (item) -> {
                 return item.isEmpty()
-                        || (!VItem.getInstance().canGlide(item) && mc.player.canEquip(item, EquipmentSlot.CHEST));
+                        || (!VItem.getInstance().canGlide(item)
+                                && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST);
             };
             // use cached autoSwitch slot
             if (thisFallFlyingIsAutoSwitch != -1
-                && mc.player.playerScreenHandler.slots.size() > thisFallFlyingIsAutoSwitch
-                && canUnbreakablePredicate.test(mc.player
-                .playerScreenHandler
-                .slots
-                .get(thisFallFlyingIsAutoSwitch)
-                .getStack())) {
+                    && mc.player.playerScreenHandler.slots.size() > thisFallFlyingIsAutoSwitch
+                    && canUnbreakablePredicate.test(mc.player
+                            .playerScreenHandler
+                            .slots
+                            .get(thisFallFlyingIsAutoSwitch)
+                            .getStack())) {
                 return thisFallFlyingIsAutoSwitch;
             }
             var re = InventoryUtils.findBestPlayerInventory(
