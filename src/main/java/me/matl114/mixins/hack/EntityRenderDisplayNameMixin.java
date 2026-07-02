@@ -18,8 +18,7 @@ public abstract class EntityRenderDisplayNameMixin {
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/client/render/entity/EntityRenderer;hasLabel(Lnet/minecraft/entity/Entity;)Z"))
-    private boolean hasLabel(
-        EntityRenderer instance, Entity entity, Operation<Boolean> original) {
+    private boolean hasLabel(EntityRenderer instance, Entity entity, Operation<Boolean> original) {
         if (entity instanceof PlayerEntity pl) {
             if (RenderTasks.getNameTag().hideName.get()) {
                 return false;
