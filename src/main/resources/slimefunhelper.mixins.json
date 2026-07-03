@@ -87,6 +87,7 @@
 		"hack.EntityRenderStateMixin",
 		"hack.GameRenderMixin",
 		"hack.InGameHudMixin",
+		"hack.InGameOverlayRendererMixin",
 		"hack.ItemStackMixin",
 		"hack.LightMapTextureMixin",
 		"hack.LivingEntityMixin",
