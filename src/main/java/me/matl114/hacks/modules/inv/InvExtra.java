@@ -12,6 +12,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
+import me.matl114.utils.AttributeUtils;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -40,6 +41,9 @@ public class InvExtra extends BaseModule {
 
     public final FlagRef expandInventory =
             flagBuilder(inventory.add("expand-backpack-inventory")).build();
+
+    public final FlagRef ghostHandAttribute =
+            flagBuilder(inventory.add("ghost-hand-attribute-sync")).build();
 
     @Override
     public void registerAll() {
@@ -76,13 +80,21 @@ public class InvExtra extends BaseModule {
         }
     }
 
+    public void syncAttr() {
+        if (ghostHandAttribute.get()) {
+            AttributeUtils.updateAttribute(mc.player);
+        }
+    }
+
     public Runnable switchOrSwapInventoryIndexToHand(int hand) {
         int selected = InventoryUtils.getSelectedSlot();
         if (selected != hand) {
             if (hand < 9) {
                 PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
+                syncAttr();
                 return () -> {
                     PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
+                    syncAttr();
                 };
             } else {
                 OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
@@ -96,6 +108,7 @@ public class InvExtra extends BaseModule {
                                 selected,
                                 SlotActionType.SWAP,
                                 mc.player);
+                        syncAttr();
                         return () -> {
                             MovTasks.getMovExtra().sendPacketsForInventoryAction();
                             mc.interactionManager.clickSlot(
@@ -104,6 +117,7 @@ public class InvExtra extends BaseModule {
                                     selected,
                                     SlotActionType.SWAP,
                                     mc.player);
+                            syncAttr();
                         };
                     } else {
                         return null;
@@ -132,6 +146,7 @@ public class InvExtra extends BaseModule {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
+                    syncAttr();
                     return () -> {
                         MovTasks.getMovExtra().sendPacketsForInventoryAction();
                         mc.interactionManager.clickSlot(
@@ -140,6 +155,7 @@ public class InvExtra extends BaseModule {
                                 selected,
                                 SlotActionType.SWAP,
                                 mc.player);
+                        syncAttr();
                     };
                 } else {
                     return null;
@@ -162,10 +178,12 @@ public class InvExtra extends BaseModule {
 
                 mc.interactionManager.clickSlot(
                         mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
+                syncAttr();
                 return () -> {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
+                    syncAttr();
                 };
             } else {
                 return null;
@@ -178,6 +196,26 @@ public class InvExtra extends BaseModule {
     //    public Runnable swapInventoryIndex(int a, int b){
     //
     //    }
+
+    public Runnable swapInventorySlotToHand(int slot) {
+        int selected = InventoryUtils.getSelectedSlot();
+        OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), selected);
+        if (slotIndex.isPresent()) {
+            return swapInventorySlots(slot, slotIndex.getAsInt());
+        } else {
+            return null;
+        }
+    }
+
+    public Runnable swapInventorySlotToOffhand(int slot) {
+        int selected = 40;
+        OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), selected);
+        if (slotIndex.isPresent()) {
+            return swapInventorySlots(slot, slotIndex.getAsInt());
+        } else {
+            return null;
+        }
+    }
 
     public Runnable swapInventorySlots(int armorSlot, int targetSlot) {
         if (armorSlot == targetSlot) return Runnables.doNothing();
@@ -193,9 +231,11 @@ public class InvExtra extends BaseModule {
             // use number operation
             int target = targetSlotInstance.getIndex();
             mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
+            syncAttr();
             return () -> {
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
+                syncAttr();
             };
         } else {
             var armorSlotInstance = handler.slots.get(armorSlot);
@@ -203,16 +243,20 @@ public class InvExtra extends BaseModule {
                     && (armorSlotInstance.getIndex() < 9 || armorSlotInstance.getIndex() == 40)) {
                 int target = armorSlotInstance.getIndex();
                 mc.interactionManager.clickSlot(handler.syncId, targetSlot, target, SlotActionType.SWAP, mc.player);
+                syncAttr();
                 return () -> {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     mc.interactionManager.clickSlot(handler.syncId, targetSlot, target, SlotActionType.SWAP, mc.player);
+                    syncAttr();
                 };
             } else {
                 // fuck, do not kick me.
                 swapTwoIdiotSlot(handler, targetSlot, armorSlot);
+                syncAttr();
                 return () -> {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     swapTwoIdiotSlot(handler, targetSlot, armorSlot);
+                    syncAttr();
                 };
             }
         }

@@ -64,6 +64,8 @@ import net.minecraft.network.packet.s2c.play.ChunkSentS2CPacket;
 import net.minecraft.network.packet.s2c.play.StartChunkSendS2CPacket;
 import net.minecraft.network.packet.s2c.query.PingResultS2CPacket;
 import net.minecraft.recipe.NetworkRecipeId;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
@@ -298,6 +300,7 @@ public class Listener {
             }));
 
     // basic events
+    // configurations
     @Getter
     @Broadcast
     private static final EventChannel<ClientPlayerEntity> gameJoinPoint = new EventChannel<>();
@@ -321,6 +324,15 @@ public class Listener {
     @Modifiable
     @ExtraArgs({ServerInfo.class})
     private static final EventChannel<ServerAddress> serverPreConnectPoint = new EventChannel<>();
+
+    @Getter
+    @Modifiable
+    @ExtraArgs({RegistryKey.class})
+    @Dispatch(by = "RegistryKey")
+    private static final EventChannelDispatcher<Map<TagKey<?>, List<RegistryEntry<?>>>> registryTagKeyReload =
+            new EventChannelDispatcher<>((mapEvent -> mapEvent.getArgs(0)), true);
+
+    // play
 
     @Getter // cancelable
     @Broadcast

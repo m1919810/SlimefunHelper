@@ -1,6 +1,6 @@
 package me.matl114.hacks.modules.extra;
 
-import java.util.Objects;
+import java.util.*;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -14,18 +14,25 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VPacket;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.ChunkLoadDistanceS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.World;
 
 public class BadPacketsFix extends BaseModule {
+    public static BadPacketsFix INSTANCE;
     public final ModulePath badPackets = makePath(Configs.TEST_CONFIG, "bad-packets");
 
     public BadPacketsFix() {
         super("BadPackets");
+        INSTANCE = this;
     }
 
     public final FlagRef enableSprint = builder(badPackets.add("fix-dup-sprint"), Boolean.class)
@@ -63,6 +70,10 @@ public class BadPacketsFix extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef fixIncorrectTools = builder(badPackets.add("fix-bad-block-tags"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -79,6 +90,8 @@ public class BadPacketsFix extends BaseModule {
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
         registerListener(
                 Listener.getPacketPoint().getChannel(ChunkLoadDistanceS2CPacket.class), this::onRepackViewDistance);
+        registerListener(
+                Listener.getRegistryTagKeyReload().getChannel(Registries.BLOCK.getKey()), this::fixTagsBadPackets);
     }
 
     boolean serverSprint = false;
@@ -237,6 +250,30 @@ public class BadPacketsFix extends BaseModule {
             ChunkLoadDistanceS2CPacket packet = eventChunkLoad.context();
             if (packet.getDistance() > 32) {
                 eventChunkLoad.context(new ChunkLoadDistanceS2CPacket(32));
+            }
+        }
+    }
+
+    public void fixTagsBadPackets(Event<Map<TagKey<?>, List<RegistryEntry<?>>>> event) {
+        var registryKey = event.getArgs(0);
+        if (fixIncorrectTools.get() && Objects.equals(registryKey, Registries.BLOCK.getKey())) {
+            var original = event.context;
+
+            Map<TagKey<?>, List<RegistryEntry<?>>> recreateMap = null;
+            var lst = original.get(BlockTags.PICKAXE_MINEABLE);
+            if (lst != null) {
+                int idx = lst.indexOf(Blocks.CHEST.getRegistryEntry());
+                if (idx != -1) {
+                    if (recreateMap == null) {
+                        recreateMap = new HashMap<>(original);
+                    }
+                    var lstCopy = new ArrayList<>(lst);
+                    lstCopy.remove(idx);
+                    recreateMap.put(BlockTags.PICKAXE_MINEABLE, lstCopy);
+                }
+            }
+            if (recreateMap != null) {
+                event.context(recreateMap);
             }
         }
     }

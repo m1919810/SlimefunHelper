@@ -230,7 +230,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     shouldCheckRocket = false;
                 } else if (useFloatingUtils.get() && realVector.lengthSquared() < 1e-4) {
                     if (!MovTasks.getElytraExtra().canFireworkControlMotion()) {
-                        if (PlayerStateManager.INSTANCE.lastPlayerOnGround) {
+                        if (ElytraExtra.INSTANCE.shouldApplyOnGroundFly()
+                                && PlayerStateManager.INSTANCE.lastHasGroundSupport) {
                             shouldControl = true;
                             shouldCheckRocket = false;
                         } else {
@@ -245,23 +246,14 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     }
                 }
                 // ground check
-                if (mc.player.isOnGround() && realVector.y < 0) {
+                if (ElytraExtra.INSTANCE.shouldApplyOnGroundFly()
+                        && PlayerStateManager.INSTANCE.lastHasGroundSupport
+                        && realVector.y < 0) {
                     realVector = realVector.withAxis(Direction.Axis.Y, 0);
                 }
-                if (shouldControl) {
-                    if (Math.abs(realVector.y) <= 1e-2 && horizontalFlyNoGravity.get() && !mc.player.isOnGround()) {
-                        modifyNoGravity = player.hasNoGravity();
-                        player.setNoGravity(true);
-                    }
-                    mc.player.setVelocity(
-                            useAutoRescale.get()
-                                    ? ElytraExtra.INSTANCE.applyAxisLimit(
-                                            realVector, realVector.normalize(), !mc.player.hasNoGravity())
-                                    : realVector);
-                }
-                if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
+                if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS && realVector.lengthSquared() > 5e-3) {
                     // fliter zero control
-                    if (realVector.lengthSquared() > 5e-3 && !movementManagerEvent.context.hasImportantRotation()) {
+                    if (!movementManagerEvent.context.hasImportantRotation()) {
                         if (realVector.horizontalLengthSquared() > 5E-3) {
                             movementManagerEvent.context.pushImportantRotation(true, true);
                             Vec2f py = EntityUtils.rotationToPitchYaw(realVector.normalize());
@@ -274,17 +266,29 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                             movementManagerEvent.context.markForResetRot();
                             EntityUtils.setEntityPitchSafe(mc.player, pitch);
                         }
-                        // pitch reset to trigger grim lastPitch lastYaw update
-                        if (useAutoRescale.get()) {
-                            float yaw = mc.player.getYaw();
-                            if (Tasks.getTick() % 2 == 0) {
-                                EntityUtils.setEntityYawSafe(mc.player, yaw + 0.01F);
-                            } else {
-                                EntityUtils.setEntityYawSafe(mc.player, yaw - 0.01F);
-                            }
+                    }
+                    // pitch reset to trigger grim lastPitch lastYaw update
+                    if (useAutoRescale.get()) {
+                        float yaw = mc.player.getYaw();
+                        if (Tasks.getTick() % 2 == 0) {
+                            EntityUtils.setEntityYawSafe(mc.player, yaw + 0.01F);
+                        } else {
+                            EntityUtils.setEntityYawSafe(mc.player, yaw - 0.01F);
                         }
                     }
                 }
+                if (shouldControl) {
+                    if (Math.abs(realVector.y) <= 1e-2 && horizontalFlyNoGravity.get() && !mc.player.isOnGround()) {
+                        modifyNoGravity = player.hasNoGravity();
+                        player.setNoGravity(true);
+                    }
+                    mc.player.setVelocity(
+                            (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS && useAutoRescale.get())
+                                    ? ElytraExtra.INSTANCE.applyAxisLimit(
+                                            realVector, mc.player.getRotationVector(), !mc.player.hasNoGravity())
+                                    : realVector);
+                }
+
                 if (shouldCheckRocket) {
                     MovTasks.getElytraExtra().launchFirework(mc.player.getPitch(), mc.player.getYaw());
                 }

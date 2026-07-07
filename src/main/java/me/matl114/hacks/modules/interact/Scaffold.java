@@ -75,6 +75,9 @@ public class Scaffold extends BaseModule {
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
+    public final IntRef delay =
+            intBuilder(scaffold.add("delay")).defaultValue(1).build();
+
     public final FlagRef offhand = flagBuilder(scaffold.add("offhand-enable")).build();
 
     public final FlagRef swapHand = flagBuilder(scaffold.add("swap-hand")).build();
@@ -102,6 +105,8 @@ public class Scaffold extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onRightClick);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetReload);
     }
+
+    int delayTick = 0;
 
     private void placeBlockLegally(int hand, BlockHitResult result) {
         boolean offhandOk = offhand.get() || hand == 40;
@@ -167,6 +172,10 @@ public class Scaffold extends BaseModule {
         // todo: check this
         if (mc.player != null && enable.get()) {
             // check hand item
+            if (++delayTick <= delay.get()) {
+                return;
+            }
+            delayTick = 0;
             int idx = supplyBlock();
 
             if (idx < 0) {

@@ -4,12 +4,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import lombok.With;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
-import net.minecraft.text.Text;
 
 @With
 public record Vec3(double x, double y, double z) implements NBTParsable<Vec3> {
@@ -31,21 +29,12 @@ public record Vec3(double x, double y, double z) implements NBTParsable<Vec3> {
                         WrapperFactory.of((d) -> s.getOriginValue().withZ(d), Vec3::z);
 
                 return subScreenWidget
-                        .addDrawableChild(DisplayWidget.instance(0, 0, dy, dy)
-                                .setRenderHandler(
-                                        new ButtonElement(TextProvider.of(Text.literal("X:")), ButtonAction.empty())))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(dy, 0, half - dy, dy))
-                        .addDrawableChild(DisplayWidget.instance(half, 0, dy, dy)
-                                .setRenderHandler(
-                                        new ButtonElement(TextProvider.of(Text.literal("Y:")), ButtonAction.empty())))
+                                .generateValueWidget(0, 0, half, dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(half + dy, 0, half - dy, dy))
-                        .addDrawableChild(DisplayWidget.instance(2 * half, 0, dy, dy)
-                                .setRenderHandler(
-                                        new ButtonElement(TextProvider.of(Text.literal("Z:")), ButtonAction.empty())))
+                                .generateValueWidget(half, 0, half, dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, thirdWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(2 * half + dy, 0, half - dy, dy));
+                                .generateValueWidget(2 * half, 0, half, dy));
             },
             new Vec3(0, 0, 0));
 

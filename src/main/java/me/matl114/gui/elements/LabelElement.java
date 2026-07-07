@@ -18,6 +18,10 @@ public class LabelElement extends RawTextElement {
         return new LabelElement(text, Colors.WHITE);
     }
 
+    public LabelElement(int color) {
+        this(Text.empty(), color);
+    }
+
     public LabelElement(Text text, int color) {
         this(text, color, 0);
     }

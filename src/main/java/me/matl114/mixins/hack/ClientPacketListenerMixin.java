@@ -1,5 +1,6 @@
 package me.matl114.mixins.hack;
 
+import java.util.*;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
