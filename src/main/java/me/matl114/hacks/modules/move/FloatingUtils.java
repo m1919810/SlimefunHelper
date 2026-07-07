@@ -90,19 +90,18 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             movementManagerEvent.cancel();
             movementManagerEvent.context.playerStatus.restorePos();
             // also reset onground status to avoid false flag
-            boolean useOnGroundFloat = ((onGroundFloat.get()) || (forceOnGroundVia1205))
-                    && !movementManagerEvent.context.playerStatus.onGround;
+            boolean useOnGroundFloat = ((onGroundFloat.get()) || (forceOnGroundVia1205));
             if (useOnGroundFloat) {
+                storedPacket =
+                        LegacySnapRotManager.INSTANCE.createSnapAt(mc.player.getPitch(), mc.player.getYaw(), true);
                 mc.player.setOnGround(true);
-                storedPacket = LegacySnapRotManager.INSTANCE.createSnapAt(mc.player.getPitch(), mc.player.getYaw());
                 lastUsingOnGroundDeceive = true;
             } else {
                 if (lastUsingOnGroundDeceive) {
                     lastUsingOnGroundDeceive = false;
-                    mc.player.setOnGround(PlayerStateManager.INSTANCE.lastPlayerOnGround);
-                    storedPacket = LegacySnapRotManager.INSTANCE.createSnapAt(mc.player.getPitch(), mc.player.getYaw());
+                    storedPacket = LegacySnapRotManager.INSTANCE.createSnapAt(
+                            mc.player.getPitch(), mc.player.getYaw(), PlayerStateManager.INSTANCE.lastHasGroundSupport);
                 } else {
-                    mc.player.setOnGround(PlayerStateManager.INSTANCE.lastPlayerOnGround);
                     storedPacket = VPacket.newLookAndOnGround(
                             mc.player.getYaw(),
                             mc.player.getPitch(),
@@ -125,7 +124,6 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                 mc.getNetworkHandler().sendPacket(storedPacket);
             }
             // Listener.sendPacketNoEvents(storedPacket);
-            mc.player.setOnGround(PlayerStateManager.INSTANCE.lastPlayerOnGround);
             storedPacket = null;
         }
         hasNoPosition = false;

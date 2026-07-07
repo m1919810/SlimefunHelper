@@ -357,9 +357,7 @@ public class Attack extends BaseModule {
         mc.interactionManager.attackEntity(mc.player, target);
         mc.player.swingHand(Hand.MAIN_HAND);
         // we use event to handle shield predict
-        if (criticSprint) {
-            ClientPlayerAccess.of(mc.player).resyncSprint();
-        }
+
     }
 
     public boolean attackEntity(Entity target) {
@@ -557,6 +555,7 @@ public class Attack extends BaseModule {
                             // there is no need for fall flying player to correct this
                             if (lookVec != null && !args.isFallFlying()) {
                                 // rewrite input to fit lookVec
+                                PlayerInputUtils.of(mc.player).sprint(false).applyInput(mc.player);
                                 movementManagerEvent.context.markForMoveFix();
                             }
                         }
@@ -649,9 +648,11 @@ public class Attack extends BaseModule {
     }
 
     private boolean processLegacySnapAttack(Entity target, AttackSettings settings) {
-        ElytraExtra elytraExtra = MovTasks.getElytraExtra();
-        boolean useMaceAttack =
-                false && elytraExtra.shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(settings.maceSwap());
+        //        ElytraExtra elytraExtra = MovTasks.getElytraExtra();
+        boolean sprintFlag = mc.player.isSprinting();
+        //        boolean useMaceAttack =
+        //                false && elytraExtra.shouldUseDelayMovementAttackMaceFix() &&
+        // willUseMaceAttack(settings.maceSwap());
         double attackRange = CombatTasks.getCombatExtra().getAttackAtTargetRange(target);
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
@@ -710,6 +711,7 @@ public class Attack extends BaseModule {
             attackWithSettings(mc.player, target, settings);
         }
 
+        mc.player.setSprinting(sprintFlag);
         return false;
     }
 

@@ -2,6 +2,7 @@ package me.matl114.hacks.utils.config;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import lombok.Getter;
@@ -120,5 +121,11 @@ public class OptionalPrimitive<T> implements NBTParsable<OptionalPrimitive<T>> {
             return Optional.ofNullable(this.withValue((T) optional.get().value()));
         }
         return Optional.empty();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof OptionalPrimitive<?> pmt
+                && (pmt.type == this.type && pmt.present == this.present && Objects.equals(pmt.value, this.value));
     }
 }

@@ -1,5 +1,6 @@
 package me.matl114.utils;
 
+import java.util.Set;
 import javax.annotation.Nullable;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.block.Block;
@@ -85,4 +86,8 @@ public class InteractUtils {
                 || VItem.getInstance().isSpear(stack)
                 || stack.getMaxUseTime(mc.player) > 0;
     }
+
+    public static Set<Block> STATE_MAY_INTERACT = null;
+
+    public static void isInteractable(BlockState state) {}
 }

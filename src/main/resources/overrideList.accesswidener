@@ -87,3 +87,6 @@ accessible method net/minecraft/nbt/NbtCompound entrySet ()Ljava/util/Set;
 accessible field net/minecraft/client/gui/hud/DebugHud showDebugHud Z
 accessible field net/minecraft/entity/Entity touchingWater Z
 accessible field net/minecraft/entity/Entity submergedInWater Z
+accessible field net/minecraft/screen/ScreenHandler revision I
+accessible method net/minecraft/entity/LivingEntity getEquipmentChanges ()Ljava/util/Map;
+accessible method net/minecraft/enchantment/effect/AttributeEnchantmentEffect getModifiers (ILnet/minecraft/entity/EquipmentSlot;)Lcom/google/common/collect/HashMultimap;

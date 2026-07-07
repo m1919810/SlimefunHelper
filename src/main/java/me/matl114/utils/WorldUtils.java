@@ -12,12 +12,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
-import net.minecraft.entity.attribute.DefaultAttributeRegistry;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
@@ -99,6 +95,10 @@ public class WorldUtils {
                 .orElse(null);
     }
 
+    public static float getPlayerBlockBreakingSpeedAt(BlockState state) {
+        return getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, state, mc.player.getMainHandStack());
+    }
+
     public static float getPlayerBlockBreakingSpeedWithCanMineMultiply(
             PlayerEntity player, BlockState state, ItemStack stack) {
         float f = stack.getMiningSpeedMultiplier(state);
@@ -144,6 +144,11 @@ public class WorldUtils {
         }
         int i = canToolHarvest(state, stack) ? 30 : 100;
         return f / i;
+    }
+
+    public static float calcBlockBreakingDelta(BlockState state, BlockView world, BlockPos pos) {
+        var playerBreakSpeed = getPlayerBlockBreakingSpeedAt(state);
+        return calcBlockBreakingDelta(state, world, pos, playerBreakSpeed);
     }
 
     public static float calcBlockBreakingDelta(

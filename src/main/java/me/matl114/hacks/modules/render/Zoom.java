@@ -5,10 +5,13 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import net.minecraft.client.Mouse;
 
@@ -35,6 +38,11 @@ public class Zoom extends BaseModule {
     public DoubleRef minZoom = doubleBuilder(zoom.add("min-zoom-scale"))
             .defaultValue(1.0D)
             .validator(Configs.doubleRange(0, 114514))
+            .build();
+
+    public NBTRef<OptionalPrimitive<Double>> overrideCommonZoom = builder(
+                    zoom.add("override-common-fov"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 1.0D))
             .build();
 
     @Override

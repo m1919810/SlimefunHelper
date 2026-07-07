@@ -1,7 +1,6 @@
 package me.matl114;
 
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
@@ -22,7 +21,6 @@ import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlu
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.fabric.impl.client.model.loading.ModelLoadingPluginManager;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
@@ -36,16 +34,12 @@ public class SlimefunHelper implements ModInitializer {
     @Getter
     public static SlimefunHelper instance;
 
-    public static boolean DEV = false;
     public static boolean DEV_ENV = false;
 
     public static Set<String> DEV_NAME =
             Set.of("matl114", "matl_test", "matl_test2", "mtl", "||matl_test", "||matl_test2", "||mtl");
 
     public static void authentication() {
-        if (Objects.equals(MinecraftClient.getInstance().getSession().getUsername(), "matl114")) {
-            DEV = true;
-        }
         try {
             Class.forName("net.minecraft.client.MinecraftClient");
             DEV_ENV = true;
@@ -62,6 +56,7 @@ public class SlimefunHelper implements ModInitializer {
         // Proceed with mild caution.
         authentication();
         Debug.info("SlimefunHelper, start!");
+        Debug.info("SlimefunHelper start loading!");
         reloadModConfig();
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES)
                 .registerReloadListener(new SimpleSynchronousResourceReloadListener() {
@@ -100,6 +95,7 @@ public class SlimefunHelper implements ModInitializer {
         MainTasks.init();
         BridgeMain.init();
         SlimefunHelperApi.init();
+        Debug.info("SlimefunHelper loading finish");
     }
 
     public static void reloadModConfig() {
