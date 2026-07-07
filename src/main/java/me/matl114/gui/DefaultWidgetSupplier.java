@@ -18,13 +18,13 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public final class DefaultWidgetFactory implements WidgetFactory {
-    public static final DefaultWidgetFactory INSTANCE = new DefaultWidgetFactory();
+public final class DefaultWidgetSupplier implements WidgetSupplier {
+    public static final DefaultWidgetSupplier INSTANCE = new DefaultWidgetSupplier();
 
-    private DefaultWidgetFactory() {}
+    private DefaultWidgetSupplier() {}
 
     @Override
-    public ElementHandler create(WidgetFactory.ButtonBuilder builder) {
+    public ElementHandler create(WidgetSupplier.ButtonBuilder builder) {
         ButtonElement element = new ButtonElement(safeTextProvider(builder.textProvider), safeAction(builder.action));
         if (builder.inactiveId != null) {
             element.setInactiveId(builder.inactiveId);
@@ -47,12 +47,12 @@ public final class DefaultWidgetFactory implements WidgetFactory {
     }
 
     @Override
-    public ElementHandler create(WidgetFactory.IconBuilder builder) {
+    public ElementHandler create(WidgetSupplier.IconBuilder builder) {
         return buildIcon(builder);
     }
 
     @Override
-    public ElementHandler create(WidgetFactory.RawTextBuilder builder) {
+    public ElementHandler create(WidgetSupplier.RawTextBuilder builder) {
         RawTextElement element = new RawTextElement(
                 safeTextProvider(builder.textProvider),
                 builder.color == null ? ColorSampler.WHITE : builder.color,
@@ -61,7 +61,7 @@ public final class DefaultWidgetFactory implements WidgetFactory {
     }
 
     @Override
-    public ElementHandler create(WidgetFactory.TextFieldBuilder builder) {
+    public ElementHandler create(WidgetSupplier.TextFieldBuilder builder) {
         TextFieldWidget textFieldWidget = builder.textFieldWidget != null
                 ? builder.textFieldWidget
                 : new TextFieldWidget(
@@ -117,7 +117,7 @@ public final class DefaultWidgetFactory implements WidgetFactory {
         return applyCommon(element, builder);
     }
 
-    private ElementHandler buildIcon(WidgetFactory.AbstractIconBuilder<?> builder) {
+    private ElementHandler buildIcon(WidgetSupplier.AbstractIconBuilder<?> builder) {
         Identifier activeId = builder.activeId != null ? builder.activeId : builder.inactiveId;
         Identifier inactiveId = builder.inactiveId != null ? builder.inactiveId : builder.activeId;
         IconElement.SimpleIconElement element =
@@ -135,7 +135,7 @@ public final class DefaultWidgetFactory implements WidgetFactory {
         return applyCommon(element, builder);
     }
 
-    private ElementHandler applyCommon(AbstractElement element, WidgetFactory.AbstractElementBuilder<?> builder) {
+    private ElementHandler applyCommon(AbstractElement element, WidgetSupplier.AbstractElementBuilder<?> builder) {
         element.setShowTooltips(builder.showTooltips);
         if (builder.tooltipHandler != null) {
             element.withTooltips(builder.tooltipHandler);

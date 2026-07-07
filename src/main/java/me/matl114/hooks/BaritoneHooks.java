@@ -54,6 +54,8 @@ public abstract class BaritoneHooks implements IHooks {
 
     public abstract void cancelBaritone();
 
+    public abstract String getCommandPrefix();
+
     @Getter
     @Cancelable
     @ExtraArgs({BaritoneLanding.class})
@@ -113,6 +115,12 @@ public abstract class BaritoneHooks implements IHooks {
         @Override
         public <T> ValueAccessor<T> getSetting(String name) {
             return (ValueAccessor<T>) settingsMap.get(name.toLowerCase(Locale.ROOT));
+        }
+
+        ValueAccessor<String> prefix = getSetting("prefix");
+
+        public String getCommandPrefix() {
+            return prefix.getValue();
         }
 
         @Override
@@ -177,5 +185,10 @@ public abstract class BaritoneHooks implements IHooks {
 
         @Override
         public void cancelBaritone() {}
+
+        @Override
+        public String getCommandPrefix() {
+            return "#";
+        }
     }
 }

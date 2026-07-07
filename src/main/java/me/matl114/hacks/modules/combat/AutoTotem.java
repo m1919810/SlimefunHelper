@@ -143,7 +143,7 @@ public class AutoTotem extends BaseModule {
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;
             for (var i = 0; i < slots.size(); ++i) {
-                if (slots.get(i).inventory instanceof PlayerInventory
+                if ((slots.get(i).inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
                         && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(i, toSlot, SlotActionType.SWAP);
@@ -164,7 +164,7 @@ public class AutoTotem extends BaseModule {
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;
             for (var i = 0; i < slots.size(); ++i) {
-                if (slots.get(i).inventory instanceof PlayerInventory
+                if ((slots.get(i).inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
                         && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING
                         && i != 40) {
                     totemList.add(i);
@@ -197,7 +197,8 @@ public class AutoTotem extends BaseModule {
             List<Slot> slots = handled.slots;
             for (var i = 0; i < slots.size(); ++i) {
                 if (i != consumeSlot
-                        && slots.get(i).inventory instanceof PlayerInventory
+                        && (slots.get(i).inventory instanceof PlayerInventory
+                                || handled == mc.player.playerScreenHandler)
                         && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(i, consumeSlot, SlotActionType.SWAP);

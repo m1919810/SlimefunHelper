@@ -16,6 +16,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.task.*;
+import me.matl114.hacks.modules.task.ConnectionProxy;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
@@ -270,6 +271,9 @@ public class MainTasks {
     @Getter
     public static ServerStorage serverStorage;
 
+    @Getter
+    public static ConnectionProxy connectionProxy;
+
     private static void initModule(ModuleManager m) {
         moduleSettings = new ModuleSettings().register(m);
         clickGui = new ClickGui().register(m);
@@ -277,6 +281,7 @@ public class MainTasks {
         bindCommand = new BindCommand().register(m);
         eventCommand = new EventCommand().register(m);
         serverStorage = new ServerStorage().register(m);
+        connectionProxy = new ConnectionProxy().register(m);
     }
 
     // TODO: add entity inspect in info command
@@ -291,7 +296,6 @@ public class MainTasks {
         CombatTasks.init();
         WorldTasks.init();
         MovTasks.init();
-        NetworksTasks.init();
         InteractionTasks.init();
         SlimefunTasks.init();
         ModelTasks.init();

@@ -40,6 +40,14 @@ public class MathUtils {
         return Integer.compare(t, 0);
     }
 
+    public static double sgn(double t) {
+        return Double.compare(t, 0.0D);
+    }
+
+    public static double sgn(double t, double threshold) {
+        return Math.abs(t) > threshold ? sgn(t) : 0.0D;
+    }
+
     public static boolean isInBox(Vec3d a, Vec3d b, double range) {
         return isInBox(a.subtract(b), range);
     }

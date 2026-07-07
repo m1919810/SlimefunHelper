@@ -1,6 +1,7 @@
 package me.matl114.gui;
 
 import java.util.Iterator;
+import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
 import net.minecraft.client.gui.DrawContext;
@@ -161,5 +162,9 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
             }
         }
         return false;
+    }
+
+    public ScreenAccess access() {
+        return ScreenAccess.of(this);
     }
 }

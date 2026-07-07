@@ -148,14 +148,14 @@ public class PacketMine extends BaseModule {
                                     shouldExecute = false;
                                 }
                                 if (shouldExecute) {
-                                    mc.player.setOnGround(true);
-                                    LegacySnapRotManager.INSTANCE.snapAt(
-                                            PlayerStateManager.INSTANCE.lastPitch,
-                                            PlayerStateManager.INSTANCE.lastYaw,
-                                            true);
+
+                                    mc.getNetworkHandler()
+                                            .sendPacket(LegacySnapRotManager.INSTANCE.createSnapAt(
+                                                    PlayerStateManager.INSTANCE.lastPitch,
+                                                    PlayerStateManager.INSTANCE.lastYaw,
+                                                    true));
                                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                                     FloatingUtils.INSTANCE.setForceOnGroundVia(true);
-                                    mc.player.setOnGround(false);
                                 }
                             }
                             Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
@@ -164,7 +164,7 @@ public class PacketMine extends BaseModule {
                             Direction dir = Direction.getFacing(shouldFacing).getOpposite();
                             if (considerAirState.get()
                                     && PlayerInteractionAccess.of(mc.interactionManager)
-                                                    .getCurrentMiningProgress(true)
+                                                    .getCurrentMiningProgress(currentTool)
                                             > 0.98F) {
                                 mc.interactionManager.breakBlock(pos);
                             }

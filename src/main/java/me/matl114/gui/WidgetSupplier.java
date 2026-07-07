@@ -24,8 +24,8 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public interface WidgetFactory {
-    WidgetFactory DEFAULT = DefaultWidgetFactory.INSTANCE;
+public interface WidgetSupplier {
+    WidgetSupplier DEFAULT = DefaultWidgetSupplier.INSTANCE;
 
     static ButtonBuilder button() {
         return ButtonBuilder.builder();
@@ -54,7 +54,7 @@ public interface WidgetFactory {
     @Setter
     @Accessors(chain = true, fluent = true)
     abstract class AbstractElementBuilder<B extends AbstractElementBuilder<B>> {
-        public WidgetFactory factory = DEFAULT;
+        public WidgetSupplier factory = DEFAULT;
         public boolean showTooltips = true;
         public TooltipHandler tooltipHandler;
         public List<RenderHandler> extraRenders = new ArrayList<>();
@@ -63,7 +63,7 @@ public interface WidgetFactory {
         public Predicate<ElementHandler> presentCondition;
         public Predicate<ElementHandler> activeActionCondition;
 
-        protected final WidgetFactory resolveFactory() {
+        protected final WidgetSupplier resolveFactory() {
             return factory == null ? DEFAULT : factory;
         }
 
@@ -76,7 +76,7 @@ public interface WidgetFactory {
             return build(resolveFactory());
         }
 
-        public abstract ElementHandler build(WidgetFactory factory);
+        public abstract ElementHandler build(WidgetSupplier factory);
 
         public B tooltips(List<Text> tooltips) {
             this.tooltipHandler = tooltips == null ? null : TooltipHandler.of(tooltips);
@@ -171,7 +171,7 @@ public interface WidgetFactory {
         }
 
         @Override
-        public ElementHandler build(WidgetFactory factory) {
+        public ElementHandler build(WidgetSupplier factory) {
             return factory.create(this);
         }
     }
@@ -197,7 +197,7 @@ public interface WidgetFactory {
         }
 
         @Override
-        public ElementHandler build(WidgetFactory factory) {
+        public ElementHandler build(WidgetSupplier factory) {
             return factory.create(this);
         }
     }
@@ -224,7 +224,7 @@ public interface WidgetFactory {
         }
 
         @Override
-        public ElementHandler build(WidgetFactory factory) {
+        public ElementHandler build(WidgetSupplier factory) {
             return factory.create(this);
         }
     }
@@ -254,7 +254,7 @@ public interface WidgetFactory {
         }
 
         @Override
-        public ElementHandler build(WidgetFactory factory) {
+        public ElementHandler build(WidgetSupplier factory) {
             return factory.create(this);
         }
     }

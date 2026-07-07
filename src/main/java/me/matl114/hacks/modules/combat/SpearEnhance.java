@@ -311,18 +311,9 @@ public class SpearEnhance extends BaseModule {
                 }
             }
             if (spearSpeedResetTargetJudge.get()) {
-                boolean mayHit = false;
-                for (var en : TargetSelector.INSTANCE.getAttackableEntities(16)) {
-                    if (en instanceof PlayerEntity pl && pl instanceof PlayerInternalAccess internal) {
-                        var predictor = internal.getPredictorImpl();
-                        Vec3d vec3d = predictor.getKnownDeltaMovement();
-                        if (vec3d.lengthSquared() > 1E-2 && vec3d.dotProduct(mc.player.getVelocity()) > 0) {
-                            mayHit = true;
-                            break;
-                        }
-                    }
-                }
-                if (mayHit) {
+                boolean anyMatch = TargetSelector.INSTANCE.getAttackableEntities(25).stream()
+                        .anyMatch(s -> s instanceof PlayerEntity pl && isUsingSpear(pl));
+                if (!anyMatch) {
                     autoCondition = false;
                 }
             }
@@ -330,7 +321,7 @@ public class SpearEnhance extends BaseModule {
                 Vec3d look = null;
                 if (isUsingSpear(mc.player)) {
                     Entity targetEntity =
-                            TargetSelector.INSTANCE.searchAttackEntity(16, true, pl -> pl instanceof PlayerEntity);
+                            TargetSelector.INSTANCE.searchAttackEntity(20, true, pl -> pl instanceof PlayerEntity);
                     if (targetEntity != null) {
                         look = targetEntity
                                 .dimensions

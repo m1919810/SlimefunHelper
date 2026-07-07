@@ -14,10 +14,8 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.ConfigEnum;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.Tasks;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.LegalMovementManager;
@@ -70,6 +68,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onInteractSend);
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
         registerListener(Listener.getPlayerWebSlowPoint(), this::onWeb);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onStartUse);
         //        registerListener(Listener.getPacketPoint().getChannel(SupportVersion.CURRENT.isHigherOrEqualTo(21,2) ?
         // ClientTickEndC2SPacket.class : PlayerMoveC2SPacket.class), this::onSendMovePreNoSlowUse);
         //
@@ -101,6 +100,11 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     public final EnumRef<UseBypassMode> useItemBypass = builder(noSlowdown.add("use-item-bypass"), UseBypassMode.class)
             .defaultValue(UseBypassMode.NO_BYPASS)
+            .build();
+
+    public final IntRef swapDelay = builder(noSlowdown.add("use-item-swap-item-delay"), Integer.class)
+            .show(() -> useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY, UseBypassMode.BYPASS_GRIM_LAZY_V3))
+            .defaultValue(1)
             .build();
 
     public final EnumRef<Configs.BypassMode> blockInBypass = builder(
@@ -155,7 +159,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
             case AC_GRIM, AC_GRIM_LEGACY -> {
                 useItem.set(true);
-                useItemBypass.set(UseBypassMode.BYPASS_GRIM_LAZY);
+                useItemBypass.set(UseBypassMode.BYPASS_GRIM_LAZY_V3);
             }
             default -> {
                 useItem.set(false);
@@ -402,7 +406,17 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     public boolean shouldNoSlowUseItem() {
-        return useItem.get();
+        if (useItem.get()) {
+            switch (useItemBypass.get()) {
+                case BYPASS_GRIM_LAZY_V3 -> {
+                    return true;
+                }
+                default -> {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public boolean shouldFakeSneakStatus() {
@@ -453,12 +467,30 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
         }
     }
+
+    public void onStartUse(Event<PlayerInteractItemC2SPacket> event) {
+        if (useItem.get()) {
+            lastNoSlowUseTick = 0;
+        }
+        //        if(useItem.get() && useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_TICK)) {
+        //            ItemStack stack = mc.player.getStackInHand(event.context.getHand());
+        //            if(mc.player.isUsingItem() || VItem.getInstance().isSpear(stack)){
+        //                PlayerStateManager.INSTANCE.sendSprintStatus(true);
+        //                preSwap(false);
+        //                PacketManager.schedulePostScheduleCallback(event.context, ()->{
+        //                    postSwap();
+        //                    PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
+        //                });
+        //            }
+        //        }
+    }
+
     //
     //    int postSlot2 = -1;
     //    int postHotbar2 = -1;
     Runnable postCallBack = null;
 
-    public void preSwap() {
+    public void preSwap(boolean v3) {
         // ClientPlayerAccess.of(mc.player).resyncMovementPacket();
         var re = InventoryUtils.findPlayerHotBarItem(ItemStack::isEmpty, true, true);
         int selectedIdx;
@@ -485,7 +517,13 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         // save current server sprinting status
         // use MultiActionsC to create ghost inventory and bypass useItem NoSlow
         // pre, send sprint
-        PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
+        if (v3) {
+            PlayerStateManager.INSTANCE.sendSprintStatus(true);
+        } else {
+            PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
+        }
+
+        postCallBack = null;
         // try find a empty slot to switch
         if (!stackEmpty.isEmpty()) {
             int postHotbar2 = selectedIdx;
@@ -590,12 +628,22 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                 };
             }
         }
+        if (v3) {
+            // mc.player.setSprinting();
+            PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
+        }
     }
 
-    public void postSwap() {
+    public void preSwap2() {}
+
+    public void postSwap(boolean v3) {
         // restore sprint
         // may use MultiActionsC to resync inventory, wierd
         if (postCallBack != null) {
+            if (v3) {
+                PlayerStateManager.INSTANCE.sendSprintStatus(true);
+                ClientPlayerAccess.of(mc.player).setLastSprintFlag(true);
+            }
             postCallBack.run();
             postCallBack = null;
         }
@@ -606,18 +654,31 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     boolean preAttackUseTick;
+    int lastNoSlowUseTick = 0;
+    boolean v3Tick;
 
     public boolean noSlowUseItemGrim() {
-        if (mc.player.isUsingItem()) {
+        if (mc.player.isUsingItem() && useItem.get()) {
             if (preAttackUseTick) {
                 return true;
             }
             return switch (useItemBypass.get()) {
                 case NO_BYPASS -> false;
-                case BYPASS_GRIM_LAZY -> !mc.player.isFallFlying()
-                        && PlayerInputUtils.of(mc.player).hasWASDMovement()
-                        && getActiveItemSpeedMultiplier() < 0.99F;
-                case BYPASS_GRIM_TICK -> true;
+                case BYPASS_GRIM_LAZY, BYPASS_GRIM_LAZY_V3 -> {
+                    if (!mc.player.isFallFlying()
+                            && !mc.player.hasVehicle()
+                            && PlayerInputUtils.of(mc.player).hasWASDMovement()
+                            && getActiveItemSpeedMultiplier() < 0.99F) {
+                        if (lastNoSlowUseTick >= Tasks.getTick() - swapDelay.get()) {
+                            yield false;
+                        } else {
+                            lastNoSlowUseTick = Tasks.getTick();
+                            yield true;
+                        }
+                    } else {
+                        yield false;
+                    }
+                }
             };
         }
         return false;
@@ -625,12 +686,19 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     public void onSendMovePreNoSlowUse(Event<Packet<?>> event) {
         if (noSlowUseItemGrim()) {
-            preSwap();
+            if (useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY_V3)) {
+                v3Tick = PlayerInputUtils.of(mc.player).forward()
+                        && mc.player.getHungerManager().canSprint()
+                        && !mc.player.hasBlindnessEffect();
+            } else {
+                v3Tick = false;
+            }
+            preSwap(v3Tick);
         }
     }
 
     public void onSendMovePostNoSlowUse(Event<Packet<?>> event) {
-        postSwap();
+        postSwap(v3Tick);
     }
 
     @Override
@@ -883,7 +951,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public static enum UseBypassMode implements ConfigEnum {
         NO_BYPASS,
         BYPASS_GRIM_LAZY,
-        BYPASS_GRIM_TICK;
+        BYPASS_GRIM_LAZY_V3;
 
         @Override
         public String getConfigEnumType() {

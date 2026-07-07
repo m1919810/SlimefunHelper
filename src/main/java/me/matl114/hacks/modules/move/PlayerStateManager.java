@@ -20,8 +20,10 @@ import me.matl114.utils.containers.MetaData;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.inventory.ItemStackSample;
 import me.matl114.versioned.api.VDataFlag;
+import me.matl114.versioned.api.VRecord;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.*;
 import net.minecraft.enchantment.Enchantments;
@@ -85,6 +87,7 @@ public class PlayerStateManager extends BaseModule {
     private boolean inWeb;
     public boolean lastInWall;
     public boolean lastUnderBlock;
+    public boolean lastHasGroundSupport;
     public PlayerInputUtils.Input lastInput = PlayerInputUtils.EMPTY.clone();
     public boolean serverSideCanFly;
     public Deque<Vec3d> last40Positions = new ArrayDeque<>();
@@ -145,6 +148,7 @@ public class PlayerStateManager extends BaseModule {
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusEffectS2CPacket.class),
                 this::onEntityEffect);
+        registerListener(Listener.getOtherPlayerExitPoint(), this::onPlayerLeave);
     }
 
     public void onMove(Event<PlayerMoveC2SPacket> event) {
@@ -383,6 +387,7 @@ public class PlayerStateManager extends BaseModule {
         Box box = mc.player.getBoundingBox();
         lastUnderBlock = MovTasks.isCollidingWithEnvironment(
                 mc.player, box.withMinY(box.maxY).withMaxY(box.maxY + 0.42));
+        lastHasGroundSupport = CollisionUtil.isEntitySupported(mc.player, 1E-3);
         lastVelocityAffectingPos = calculateVelocityAffectingPos();
         if (++cooldownInvSummary > 10 || inventorySummary == null || inventoryTotalSummary == null) {
             cooldownInvSummary = 0;
@@ -538,7 +543,7 @@ public class PlayerStateManager extends BaseModule {
                 mc.getNetworkHandler()
                         .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
             }
-            ClientPlayerAccess.of(mc.player).resyncSprint();
+            ClientPlayerAccess.of(mc.player).setLastSprintFlag(sprint);
         }
     }
 
@@ -567,10 +572,10 @@ public class PlayerStateManager extends BaseModule {
         return re;
     }
 
-    private Map<Integer, Integer> popMap = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> popMap = new ConcurrentHashMap<>();
 
     public int getPlayerPopCount(PlayerEntity entity) {
-        var re = popMap.get(entity.getId());
+        var re = popMap.get(entity.getUuid());
         return re == null ? 0 : re;
     }
 
@@ -588,7 +593,7 @@ public class PlayerStateManager extends BaseModule {
         EntityStatusS2CPacket packet = event.context;
         if (packet.getEntity(mc.world) instanceof PlayerEntity player) {
             if (packet.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING) {
-                int uid = player.getId();
+                UUID uid = player.getUuid();
                 popMap.merge(uid, 1, Integer::sum);
             }
             if (packet.getStatus() == EntityStatuses.PLAY_DEATH_SOUND_OR_ADD_PROJECTILE_HIT_PARTICLES) {
@@ -598,7 +603,7 @@ public class PlayerStateManager extends BaseModule {
     }
 
     private void onDeath(Entity entity) {
-        popMap.remove(entity.getId());
+        popMap.remove(entity.getUuid());
     }
 
     public void onRespawn(Event<PlayerRespawnS2CPacket> eventRespawn) {
@@ -608,6 +613,10 @@ public class PlayerStateManager extends BaseModule {
 
     public void onLeave(Event<Void> event) {
         popMap.clear();
+    }
+
+    public void onPlayerLeave(Event<PlayerListEntry> eventRemove) {
+        popMap.remove(VRecord.getId(eventRemove.context.getProfile()));
     }
 
     private static final Int2ObjectOpenHashMap<RegistryEntry<StatusEffect>> colorToRegistry =

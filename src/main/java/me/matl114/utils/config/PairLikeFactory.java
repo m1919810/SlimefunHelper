@@ -46,6 +46,11 @@ public interface PairLikeFactory<A, B, P> {
         return (PairLikeFactory) PAIR_FACTORY;
     }
 
+    public default <D> PairLikeFactory<A, B, D> concat(WrapperFactory<P, D> mapper) {
+        return new BasePairLikeFactory<>(
+                (a, b) -> mapper.create(create(a, b)), s -> getFirst(mapper.get(s)), s -> getSecond(mapper.get(s)));
+    }
+
     @AllArgsConstructor
     class BasePairLikeFactory<A, B, P> implements PairLikeFactory<A, B, P> {
         private final BiFunction<A, B, P> creator;

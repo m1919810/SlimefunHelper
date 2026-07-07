@@ -393,7 +393,7 @@ public abstract class BaseModule implements ModuleListProvider {
 
     // todo: remake config screen
 
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor) {}
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {}
 
     public static Text getModuleMeta(Enum<?> enumReff) {
         ConfigEnum configEnum = (ConfigEnum) enumReff;
