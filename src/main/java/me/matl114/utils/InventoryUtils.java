@@ -10,6 +10,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.hacks.InvTasks;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.inventory.ImmutableInventory;
 import me.matl114.utils.inventory.ImmutableListInventory;
@@ -257,6 +258,40 @@ public class InventoryUtils {
             }
         }
         return null;
+    }
+
+    public static IndexEntry<Slot> findPlayerBackpackItem(
+            Predicate<ItemStack> predicate, boolean acceptEmpty, boolean includeCraft) {
+        return findPlayerBackpackSlot((slot) -> predicate.test(slot.getStack()), acceptEmpty, includeCraft);
+    }
+
+    public static IndexEntry<Slot> findPlayerBackpackSlot(
+            Predicate<Slot> predicate, boolean acceptEmpty, boolean includeCraft) {
+        var handler = mc.player.playerScreenHandler;
+        var serverHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        if (serverHandler.syncId == handler.syncId) {
+            if (includeCraft) {
+                for (var i = 1; i < 5; ++i) {
+                    var slot = handler.slots.get(i);
+                    if (!acceptEmpty && slot.getStack().isEmpty()) continue;
+                    if (predicate.test(slot)) {
+                        return new IndexEntry<>(i, slot);
+                    }
+                }
+            }
+            var pinv = mc.player.getInventory();
+            for (var i = 0; i < pinv.size(); ++i) {
+                int slotIndex = InvTasks.getScreenSlotByInventoryIndex(i);
+                var slot = handler.slots.get(slotIndex);
+                if (!acceptEmpty && slot.getStack().isEmpty()) continue;
+                if (predicate.test(slot)) {
+                    return new IndexEntry<>(slotIndex, slot);
+                }
+            }
+            return null;
+        } else {
+            return null;
+        }
     }
 
     public static IndexEntry<Slot> findBestScreenSlot(

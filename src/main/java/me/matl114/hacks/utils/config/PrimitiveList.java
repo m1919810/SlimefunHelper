@@ -22,6 +22,10 @@ public class PrimitiveList<W> implements NBTParsable<PrimitiveList<W>> {
     final List<W> list;
     List<Primitive<W>> _cached;
 
+    public static <R> Class<PrimitiveList<R>> type(Class<R> clazz) {
+        return (Class) PrimitiveList.class;
+    }
+
     public PrimitiveList(NBTType<W> primitive, List<W> list) {
         this.elementType = primitive;
         this.list = new ArrayList<>(list);

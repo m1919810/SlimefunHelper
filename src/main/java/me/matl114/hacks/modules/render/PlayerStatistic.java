@@ -1,24 +1,16 @@
 package me.matl114.hacks.modules.render;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import me.matl114.api.Displayable;
 import me.matl114.events.Event;
-import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.DrawableWidget;
-import me.matl114.gui.basic.ExecutableWidget;
-import me.matl114.gui.basic.TextProvider;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.config.BoundedPrimitiveMap;
-import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.BoundedPrimitiveFlagMap;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
-import me.matl114.utils.CodecUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.effect.StatusEffect;
@@ -172,18 +164,10 @@ public class PlayerStatistic extends IRender2DColoredModule {
         }
     }
 
-    public static class PlayerStatisticElementSelectSet extends BoundedPrimitiveMap<StatisticElement, Boolean>
+    public static class PlayerStatisticElementSelectSet extends BoundedPrimitiveFlagMap<StatisticElement>
             implements NBTParsable<PlayerStatisticElementSelectSet> {
-        public static final NBTType<PlayerStatisticElementSelectSet> TYPE = create(
-                PlayerStatisticElementSelectSet.class,
-                PlayerStatisticElementSelectSet::new,
-                Arrays.asList(StatisticElement.values()),
-                CodecUtils.enumCodec(StatisticElement.class),
-                StatisticElement::createKeyNameWidget,
-                NBTTypes.BOOLEAN_TYPE,
-                250,
-                320,
-                20);
+        public static final NBTType<PlayerStatisticElementSelectSet> TYPE = createEnumMap(
+                PlayerStatisticElementSelectSet.class, StatisticElement.class, PlayerStatisticElementSelectSet::new);
 
         public PlayerStatisticElementSelectSet(
                 List<StatisticElement> keys, Map<StatisticElement, Boolean> map, NBTType<Boolean> type) {
@@ -191,11 +175,7 @@ public class PlayerStatistic extends IRender2DColoredModule {
         }
 
         public PlayerStatisticElementSelectSet() {
-            this(Arrays.asList(StatisticElement.values()), Map.of(), NBTTypes.BOOLEAN_TYPE);
-        }
-
-        public boolean getState(StatisticElement element) {
-            return map.get(element);
+            super(StatisticElement.class);
         }
 
         @Override
@@ -210,13 +190,6 @@ public class PlayerStatistic extends IRender2DColoredModule {
         TURTLE,
         FIREWORK,
         EFFECTS;
-
-        public DrawableWidget createKeyNameWidget(int x, int y, int width, int height) {
-            int estimateWidth = 180;
-            int startX = (width - estimateWidth) / 2;
-            return ExecutableWidget.instance(x + startX, y, estimateWidth, height)
-                    .setElementHandler(new ButtonElement(TextProvider.of(getDisplay()), ButtonAction.empty()));
-        }
 
         @Override
         public Text getDisplay() {

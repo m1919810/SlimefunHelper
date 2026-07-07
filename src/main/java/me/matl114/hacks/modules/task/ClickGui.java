@@ -19,6 +19,7 @@ import me.matl114.events.Listener;
 import me.matl114.gui.Constants;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.McWidgetHelpers;
+import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.clickGui.ClickGuiMainScreen;
 import me.matl114.gui.complex.config.ConfigurateNewStyleScreen;
@@ -60,7 +61,11 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
 public class ClickGui extends BaseModule {
-    public ClickGui() {}
+    public static ClickGui INSTANCE;
+
+    public ClickGui() {
+        INSTANCE = this;
+    }
 
     public final ModulePath hotkeys = makePath(Configs.MISC_CONFIG, "hotkeys");
     public final ModulePath config = makePath(Configs.MISC_CONFIG, "hotkeys");
@@ -370,7 +375,7 @@ public class ClickGui extends BaseModule {
                     new DynamicContentWidget<>(() -> showCondition.getAsBoolean() ? keyValue : null, 0, 0);
             listWidget.addDrawableChild(contentWidget);
         }
-        baseModule.addCustomWidgets(listWidget::addDrawableChild);
+        baseModule.addCustomWidgets(listWidget::addDrawableChild, width, buttonHeight, buttonBlank);
         Screen screen = new CenterScreen(listWidget);
         ScreenAccess.of(screen).openFromCurrent();
         // SubScreenWidget levelSubScreen = new SubScreenWidget(0, 0, 0,0);
@@ -391,7 +396,7 @@ public class ClickGui extends BaseModule {
                         wrapper.keyName()) {
                     @Override
                     public DrawableWidget createKeyLabel() {
-                        return ExecutableWidget.instance(0, buttonBlank, indexWidth, buttonHeight)
+                        return ExecutableWidget.instance(0, 0, indexWidth, buttonHeight)
                                 .setElementHandler(new ColorLabelTextElement(
                                                 TextProvider.of(this.getTranslationName()),
                                                 () -> ClickGui.this
@@ -675,4 +680,10 @@ public class ClickGui extends BaseModule {
                         Codec.BOOL.fieldOf("sliding_down").forGetter(ModuleSlideMeta::isSlidingDown))
                 .apply(instance, ModuleSlideMeta::new));
     }
+
+    public static final WidgetUtils.ConfigScreenPalette CONFIG_PALETTE = new WidgetUtils.ConfigScreenPalette(
+            () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
+            () -> ClickGui.INSTANCE.moduleListColor.get().withAlpha(255),
+            () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
+            () -> ClickGui.INSTANCE.configColor.get().withAlpha(255));
 }

@@ -44,12 +44,6 @@ public interface CommandContext {
         });
     }
 
-    public static CommandContext run(Predicate<ArgumentInputStream> var) {
-        return (var1, streamArgs, argsReader) -> {
-            return var.test(streamArgs);
-        };
-    }
-
     public static CommandContext run(BiConsumer<PlayerEntity, ArgumentInputStream> var) {
         return ((var1, streamArgs, argsReader) -> {
             if (var1.isPlayer()) {

@@ -56,6 +56,9 @@ public class RenderExtra extends BaseModule {
     public final FlagRef noFireOverlay =
             flagBuilder(render.add("no-fire-overlay")).build();
 
+    public final FlagRef noRandomEffect =
+            flagBuilder(render.add("no-random-block-effect")).build();
+
     public final FlagRef noBobWorld = builder(render.add("no-world-bob-view"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
