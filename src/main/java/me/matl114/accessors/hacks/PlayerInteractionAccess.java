@@ -181,10 +181,9 @@ public interface PlayerInteractionAccess {
     /**
      * 读取当前主挖掘位的进度。
      *
-     * <p>当 {@code shouldPredict} 为 true 时，实现方允许在本地原版进度不可直接复用时，按 start tick
-     * 和当前速度推导一个理论进度；为 false 时，应尽量返回更贴近本地缓存的值。
+     * <p>当传入 tool 时，按该工具推导理论进度；传入 null 时，优先返回原版本地缓存进度，再按当前主手回退到理论值。
      */
-    public float getCurrentMiningProgress(boolean shouldPredict);
+    public float getCurrentMiningProgress(@Nullable ItemStack tool);
 
     /**
      * 兼容旧调用名：语义等价于 {@link #startMiningBlock(BlockPos, Direction)}。

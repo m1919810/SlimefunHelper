@@ -65,32 +65,34 @@ public class ListModifyWidget extends ScrollableListWidget {
                 : new ContentDelegateWidget<>(0, 0, width, height).setContentDelegate(widget);
         int curHeight = startY + height * listIndex;
         int buttonSize = Math.min(20, height);
+        int buttonMiddle = (height - buttonSize) / 2;
         return new SubScreenWidget(startX, curHeight, width, height)
                 .addDrawableChild(wrap1)
-                .addDrawableChild(ExecutableWidget.instance(width + 1, 1, buttonSize - 2, buttonSize - 2)
+                .addDrawableChild(ExecutableWidget.instance(width + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
                         .setElementHandler(IconElement.fixedGui(SHIFT_UP_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     this.controller.shiftUp(listIndex);
                                 }))
                                 .setActive(listIndex != 0)
                                 .withTooltips(TooltipHandler.of(SHIFT_UP_TOOLTIPS))))
-                .addDrawableChild(ExecutableWidget.instance(width + buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
+                .addDrawableChild(ExecutableWidget.instance(
+                                width + buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
                         .setElementHandler(IconElement.fixedGui(SHIFT_DOWN_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     this.controller.shiftDown(listIndex);
                                 }))
                                 .setActive(listIndex != controller.size() - 1)
                                 .withTooltips(TooltipHandler.of(SHIFT_DOWN_TOOLTIPS))))
-                .addDrawableChild(
-                        ExecutableWidget.instance(width + 2 * buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
-                                .setElementHandler(IconElement.fixedGui(DEL_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                                            this.controller.del(listIndex);
-                                        }))
-                                        .withTooltips(TooltipHandler.of(DEL_TOOLTIPS))))
-                .addDrawableChild(
-                        ExecutableWidget.instance(width + 3 * buttonSize + 1, 1, buttonSize - 2, buttonSize - 2)
-                                .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                                            this.controller.insert(listIndex);
-                                        }))
-                                        .withTooltips(TooltipHandler.of(NEW_TOOLTIPS))));
+                .addDrawableChild(ExecutableWidget.instance(
+                                width + 2 * buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
+                        .setElementHandler(IconElement.fixedGui(DEL_TEXTURE_SPRITE, ButtonAction.run(() -> {
+                                    this.controller.del(listIndex);
+                                }))
+                                .withTooltips(TooltipHandler.of(DEL_TOOLTIPS))))
+                .addDrawableChild(ExecutableWidget.instance(
+                                width + 3 * buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
+                        .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
+                                    this.controller.insert(listIndex);
+                                }))
+                                .withTooltips(TooltipHandler.of(NEW_TOOLTIPS))));
     }
 
     protected ExecutableWidget getListEndAdd(int startX, int startY) {

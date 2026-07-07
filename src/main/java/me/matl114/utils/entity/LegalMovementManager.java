@@ -135,10 +135,9 @@ public class LegalMovementManager {
             input = PlayerInputUtils.tryCorrectMovementInput(
                     input, movementManagerEvent.context.playerStatus.yaw, player.getYaw());
             // one cannot sprint if forward is not pressed
-            if (!input.forward() && (input.sprint() || player.isSprinting())) {
+            if (input.forwardSpeed() < 1E-2 && (input.sprint() || player.isSprinting())) {
                 input.sprint(false);
                 player.setSprinting(false);
-                input.applyInput(player);
             }
             input.applyInput(player);
         }

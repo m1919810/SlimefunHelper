@@ -24,7 +24,6 @@ public class Configs {
             COMBAT_CONFIG.registerGlobal();
             INV_CONFIG.registerGlobal();
             MOV_CONFIG.registerGlobal();
-            HTTP_CONFIG.registerGlobal();
             INTERACT_CONFIG.registerGlobal();
             SLIMEFUN_CONFIG.registerGlobal();
             MODEL_CONFIG.registerGlobal();
@@ -33,7 +32,6 @@ public class Configs {
         } else {
             CHAT_CONFIG.registerGlobal();
             INV_CONFIG.registerGlobal();
-            HTTP_CONFIG.registerGlobal();
             SLIMEFUN_CONFIG.registerGlobal();
             MODEL_CONFIG.registerGlobal();
             MISC_CONFIG.registerGlobal();
@@ -232,10 +230,6 @@ public class Configs {
     public static final Config MOV_CONFIG = ConfigLoader.loadExternalConfig("sfhelper-configs/mov.yml", "mov settings")
             .markForSave();
 
-    public static final Config HTTP_CONFIG = ConfigLoader.loadExternalConfig(
-                    "sfhelper-configs/http.yml", "http settings")
-            .markForSave();
-
     public static final Config INTERACT_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/interact.yml", "interact settings")
             .markForSave();
@@ -263,6 +257,13 @@ public class Configs {
         File internalFile = FabricLoader.getInstance()
                 .getConfigDir()
                 .resolve("sfhelper-configs/internal.yml")
+                .toFile();
+        if (internalFile.exists()) {
+            internalFile.delete();
+        }
+        internalFile = FabricLoader.getInstance()
+                .getConfigDir()
+                .resolve("sfhelper-configs/http.yml")
                 .toFile();
         if (internalFile.exists()) {
             internalFile.delete();

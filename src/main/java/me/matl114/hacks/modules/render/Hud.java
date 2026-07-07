@@ -4,11 +4,9 @@ import java.util.*;
 import me.matl114.api.Displayable;
 import me.matl114.events.Event;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.config.BoundedPrimitiveMap;
-import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.BoundedPrimitiveFlagMap;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -66,6 +64,12 @@ public class Hud extends IRender2DColoredModule {
         }
         if (set.getState(HudElement.SPEED)) {
             handleSpeed(vdraw);
+        }
+        if (set.getState(HudElement.SPEED_HORIZONTAL)) {
+            handleSpeedHorizontal(vdraw);
+        }
+        if (set.getState(HudElement.SPEED_VERTICAL)) {
+            handleSpeedVertical(vdraw);
         }
     }
 
@@ -149,6 +153,26 @@ public class Hud extends IRender2DColoredModule {
                         manager.lastAverageMovementSpeed.length() * 20, manager.lastKnownMovementSpeed.length() * 20));
     }
 
+    public void handleSpeedHorizontal(VDrawContext vdraw) {
+        String speed = "H: Avg:%.2fm/s, Kwn:%.2fm/s";
+        PlayerStateManager manager = PlayerStateManager.INSTANCE;
+        drawText(
+                vdraw,
+                speed.formatted(
+                        manager.lastAverageMovementSpeed.horizontalLength() * 20,
+                        manager.lastKnownMovementSpeed.horizontalLength() * 20));
+    }
+
+    public void handleSpeedVertical(VDrawContext vdraw) {
+        String speed = "V: Avg:%.2fm/s, Kwn:%.2fm/s";
+        PlayerStateManager manager = PlayerStateManager.INSTANCE;
+        drawText(
+                vdraw,
+                speed.formatted(
+                        Math.abs(manager.lastAverageMovementSpeed.y * 20),
+                        Math.abs(manager.lastKnownMovementSpeed.y) * 20));
+    }
+
     public static enum HudElement implements Displayable {
         ICON,
         COMMON_INFO,
@@ -156,44 +180,27 @@ public class Hud extends IRender2DColoredModule {
         POSITION,
         ROTATION,
         FALL_DISTANCE,
-        SPEED;
+        SPEED,
+        SPEED_HORIZONTAL,
+        SPEED_VERTICAL;
 
         @Override
         public Text getDisplay() {
             return Text.literal(name());
         }
-
-        public DrawableWidget createKeyNameWidget(int x, int y, int width, int height) {
-            int estimateWidth = 180;
-            int startX = (width - estimateWidth) / 2;
-            return ExecutableWidget.instance(x + startX, y, estimateWidth, height)
-                    .setElementHandler(new ButtonElement(TextProvider.of(getDisplay()), ButtonAction.empty()));
-        }
     }
 
-    public static class HudElementSelectSet extends BoundedPrimitiveMap<HudElement, Boolean>
+    public static class HudElementSelectSet extends BoundedPrimitiveFlagMap<HudElement>
             implements NBTParsable<HudElementSelectSet> {
-        public static final NBTType<HudElementSelectSet> TYPE = create(
-                HudElementSelectSet.class,
-                HudElementSelectSet::new,
-                Arrays.asList(HudElement.values()),
-                CodecUtils.enumCodec(HudElement.class),
-                HudElement::createKeyNameWidget,
-                NBTTypes.BOOLEAN_TYPE,
-                250,
-                320,
-                20);
+        public static final NBTType<HudElementSelectSet> TYPE =
+                createEnumMap(HudElementSelectSet.class, HudElement.class, HudElementSelectSet::new);
 
         public HudElementSelectSet(List<HudElement> keys, Map<HudElement, Boolean> map, NBTType<Boolean> type) {
             super(keys, map, type);
         }
 
         public HudElementSelectSet() {
-            this(Arrays.asList(HudElement.values()), Map.of(), NBTTypes.BOOLEAN_TYPE);
-        }
-
-        public boolean getState(HudElement element) {
-            return map.get(element);
+            super(HudElement.class);
         }
 
         @Override

@@ -45,7 +45,6 @@ import net.minecraft.component.type.FireworksComponent;
 import net.minecraft.entity.*;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -770,29 +769,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public ItemStack findRocket() {
-        ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
-        if (canBeUsedAsFireworks(stack)) {
-            return stack;
-        } else {
-            stack = mc.player.getStackInHand(Hand.OFF_HAND);
-            if (canBeUsedAsFireworks(stack)) {
-                return stack;
-            } else {
-                // check hotbars
-                for (var i = 0; i < 9; ++i) {
-                    if (canBeUsedAsFireworks(mc.player.getInventory().getStack(i))) {
-                        return mc.player.getInventory().getStack(i);
-                    }
-                }
-                for (var i = 0; i < mc.player.currentScreenHandler.slots.size(); i++) {
-                    var slot = mc.player.currentScreenHandler.slots.get(i);
-                    if (slot.inventory instanceof PlayerInventory && canBeUsedAsFireworks(slot.getStack())) {
-                        return slot.getStack();
-                    }
-                }
-            }
-            return null;
-        }
+        var re = InventoryUtils.findPlayerBackpackItem(this::canBeUsedAsFireworks, false, true);
+        return re != null ? re.val().getStack() : null;
     }
 
     public int getRocketLevel(ItemStack stack) {
@@ -820,9 +798,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 onHasFirework();
             } else {
                 // check hotbars
-                var findResult = InventoryUtils.findPlayerItem(this::canBeUsedAsFireworks, false, false);
+                var findResult = InventoryUtils.findPlayerBackpackItem(this::canBeUsedAsFireworks, false, true);
                 if (findResult != null) {
-                    Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToOffhand(findResult.index());
+                    Runnable callback = InvExtra.INSTANCE.swapInventorySlotToOffhand(findResult.index());
                     if (callback != null) {
                         mc.interactionManager.sendSequencedPacket(
                                 mc.world, s -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, yaw, pitch));
@@ -862,11 +840,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
         boolean onGroundFlag;
         if (enableOnGroundFly.get()) {
-            if (lastLagBackTick + 1 < Tasks.getTick()) {
-                onGroundFlag = !mc.player.isOnGround() || canFireworkControlMotion(0);
-            } else {
-                onGroundFlag = !PlayerStateManager.INSTANCE.lastPlayerOnGround || canFireworkControlMotion(0);
-            }
+            onGroundFlag = !PlayerStateManager.INSTANCE.lastHasGroundSupport || canFireworkControlMotion(0);
         } else {
             onGroundFlag = !mc.player.isOnGround();
         }
@@ -888,7 +862,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public static boolean hasFireworks() {
-        return InventoryUtils.findPlayerItem(ElytraExtra.INSTANCE::canBeUsedAsFireworks, false, false) != null;
+        return InventoryUtils.findPlayerBackpackItem(ElytraExtra.INSTANCE::canBeUsedAsFireworks, false, true) != null;
     }
 
     int manuallySwitchTick = 0;
@@ -1199,6 +1173,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
+    public boolean shouldApplyOnGroundFly() {
+        return mc.player.isFallFlying() && armorFly.get() && thisFallFlyingIsArmorFly != -1 && enableOnGroundFly.get();
+    }
+
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
@@ -1291,9 +1269,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 thisFallFlyingIsAutoSwitch = -1;
             }
         }
-        if (mc.player.isFallFlying() && armorFly.get() && thisFallFlyingIsArmorFly != -1 && enableOnGroundFly.get()) {
+        if (shouldApplyOnGroundFly()) {
             // on Ground Fly
-            if (mc.player.isOnGround() && mc.player.getPitch() > 0) {
+            if (PlayerStateManager.INSTANCE.lastHasGroundSupport && mc.player.getPitch() > 0) {
                 mc.player.setPitch(0);
                 movementManagerEvent.context.pushImportantRotation(true, false);
                 movementManagerEvent.context.markForResetRot();
@@ -1655,10 +1633,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             if (player.isFallFlying()) {
                 autoTakeOffFlag = false;
             } else {
-                if (mc.player.isOnGround()) {
+                boolean hasGliding = hasGlidingItem();
+                if (hasGliding && mc.player.isOnGround()) {
                     PlayerInputUtils.of(player).jump(true).applyInput(player);
                 } else {
-                    if (player.checkGliding()) {
+                    if (hasGliding && player.checkGliding()) {
                         mc.getNetworkHandler()
                                 .sendPacket(new ClientCommandC2SPacket(
                                         mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));

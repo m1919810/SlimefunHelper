@@ -504,6 +504,9 @@ public class RenderTasks {
     public static PlayerLog playerLog;
 
     @Getter
+    public static PlayerQueue playerQueue;
+
+    @Getter
     public static ProjectileESP projectileESP;
 
     @Getter
@@ -551,6 +554,7 @@ public class RenderTasks {
         itemESP = new ItemESP().register(m);
         worldScanner = new WorldScanner().register(m);
         playerLog = new PlayerLog().register(m);
+        playerQueue = new PlayerQueue().register(m);
         projectileESP = new ProjectileESP().register(m);
         zoom = new Zoom().register(m);
         sleepMode = new SleepMode().register(m);

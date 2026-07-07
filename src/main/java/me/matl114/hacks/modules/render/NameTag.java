@@ -21,6 +21,7 @@ import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VDrawContext;
@@ -33,6 +34,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.MutableText;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.StringHelper;
@@ -68,6 +70,10 @@ public class NameTag extends BaseModule {
 
     public final DoubleRef size =
             doubleBuilder(nameTag.add("player-size")).defaultValue(1.0D).build();
+
+    public final IntRef playerListMaxLength = builder(nameTag.add("player-list-max-length"), IntRef.TYPE)
+            .defaultValue(20)
+            .build();
 
     public FlagRef right = flagBuilder(nameTag.add("list-right")).build();
     public NBTRef<Vec2> pos = builder(nameTag.add("list-pos"), Vec2.class)
@@ -276,9 +282,15 @@ public class NameTag extends BaseModule {
             if (enableList.get()) {
                 stack.getMatrices().pushMatrix();
                 handleRenderPosition(stack);
+                int count = 0;
                 for (var entry : nameTagInfos) {
+                    if (count >= playerListMaxLength.get()) {
+                        handleTooManyPlayerList(stack);
+                        break;
+                    }
                     onRenderList(entry, stack, (event.<Float>getArgs(0)));
                     stack.getMatrices().translate(0, HEIGHT);
+                    count += 1;
                 }
                 stack.getMatrices().popMatrix();
             }
@@ -335,6 +347,18 @@ public class NameTag extends BaseModule {
         } finally {
             vdraw.popMatrix();
         }
+    }
+
+    public void handleTooManyPlayerList(VDrawContext vdraw) {
+        vdraw.pushMatrix();
+        OrderedText display = Text.literal("......(" + (nameTagInfos.size() - playerListMaxLength.get()) + " more)")
+                .asOrderedText();
+        float length = mc.textRenderer.getTextHandler().getWidth(display);
+        if (right.get()) {
+            vdraw.getMatrices().translate(-length, 0);
+        }
+        vdraw.drawText(mc.textRenderer, display, (int) 0, 0, -1, true);
+        vdraw.popMatrix();
     }
 
     private static final float HEIGHT = 9.0F;

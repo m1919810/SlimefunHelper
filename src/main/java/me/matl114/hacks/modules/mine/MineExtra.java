@@ -1,8 +1,10 @@
 package me.matl114.hacks.modules.mine;
 
+import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.*;
 import me.matl114.events.Event;
@@ -14,15 +16,22 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.WorldUtils;
+import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
@@ -140,9 +149,33 @@ public class MineExtra extends BaseModule {
     public final FlagRef renderOnlyWhenMine =
             flagBuilder(fastbreak.add("render-only-when-mine")).build();
 
-    public final FlagRef grimBadPacketFix1 = flagBuilder(fastbreak.add("grim-badpackets-1"))
-            .show(() -> fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS)
-            .build();
+    public final FlagRef multiBreakFix =
+            flagBuilder(fastbreak.add("fix-multi-break")).build();
+
+    public final FlagRef ghostHandMine =
+            flagBuilder(fastbreak.add("ghost-hand-mine")).build();
+
+    public IndexEntry<ItemStack> getGhostHandMiningTool(BlockState currentState) {
+        if (!ghostHandMine.get()) {
+            return InventoryUtils.getSelectedItem();
+        }
+        BlockState calculatingState =
+                currentState.isAir() || currentState.isLiquid() ? Blocks.OBSIDIAN.getDefaultState() : currentState;
+        IndexEntry<ItemStack> result = InventoryUtils.findBestPlayerItem(
+                item -> {
+                    if (item.isEmpty()
+                            || item.getMaxDamage() < 10
+                            || item.contains(DataComponentTypes.UNBREAKABLE)
+                            || item.getDamage() < item.getMaxDamage() - 10) {
+                        return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                                mc.player, calculatingState, item);
+                    }
+                    return null;
+                },
+                true,
+                true);
+        return result != null ? result : InventoryUtils.getSelectedItem();
+    }
 
     public double getReachDistance() {
         return mc.player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE) + reachDistance.get();
@@ -159,6 +192,7 @@ public class MineExtra extends BaseModule {
                 Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onGrimSBFastBreakExplode);
         registerListener(Listener.getPacketPostSendPoint().getChannel(HandSwingC2SPacket.class), this::onLastSwing);
         registerListener(Listener.getPreGameTick(), this::onGrimCooldownResetPackets);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMove);
     }
 
     public void onGameJoin(Event<ClientPlayerEntity> gameJoin) {
@@ -173,9 +207,36 @@ public class MineExtra extends BaseModule {
     }
 
     int lastFinishBreakPacket = 0;
+    public Pair<Runnable, BlockPos> instaBreakGhostHand;
+    public Pair<Runnable, BlockPos> fastBreakGhostHand;
+    BlockPos lastServerPos;
+    Direction lastServerDirection;
+    boolean thisTickHasBroken;
 
     public void onMine(Event<PlayerActionC2SPacket> packetEvent) {
         PlayerActionC2SPacket packet = packetEvent.context();
+        if (fastBreakGhostHand != null
+                && packet.getAction() == PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK
+                && ghostHandMine.get()
+                && mc.player != null
+                && mc.interactionManager != null
+                && Objects.equals(packet.getPos(), fastBreakGhostHand.getSecond())) {
+            if (fastBreakGhostHand.getFirst() != null) {
+                PacketManager.schedulePostScheduleCallback(packet, fastBreakGhostHand.getFirst());
+            }
+            fastBreakGhostHand = null;
+        }
+        if (instaBreakGhostHand != null
+                && packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
+                && ghostHandMine.get()
+                && mc.player != null
+                && mc.interactionManager != null
+                && Objects.equals(packet.getPos(), instaBreakGhostHand.getSecond())) {
+            if (instaBreakGhostHand.getFirst() != null) {
+                PacketManager.schedulePostScheduleCallback(packet, instaBreakGhostHand.getFirst());
+            }
+            instaBreakGhostHand = null;
+        }
         // just for fixing grimac abort badpackets
         switch (packet.getAction()) {
             case START_DESTROY_BLOCK -> {
@@ -211,40 +272,78 @@ public class MineExtra extends BaseModule {
             // will set lastSwingPacket in the listener above
             mc.player.swingHand(Hand.MAIN_HAND);
         }
+        if (packet.getAction() != PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK) {
+            if (thisTickHasBroken
+                    && (packet.getDirection() != lastServerDirection
+                            || Objects.equals(lastServerPos, packet.getPos()))) {
+                if (multiBreakFix.get()) {
+                    PacketManager.schedulePostScheduleCallback(packet, () -> {
+                        Listener.sendPacketNoEvents(new PlayerActionC2SPacket(
+                                packet.getAction(),
+                                packet.getPos(),
+                                packet.getDirection(),
+                                NetworkUtils.generateNextSequence()));
+                    });
+                }
+            }
+            lastServerDirection = packet.getDirection();
+            lastServerPos = packet.getPos();
+            thisTickHasBroken = true;
+        }
+    }
+
+    public void onPlayerMove(Event<PlayerMoveC2SPacket> packetEvent) {
+        var pkt = PlayerMoveC2SPacketAccess.of(packetEvent.context);
+        if (pkt.getCause() == PlayerMoveC2SPacketAccess.Cause.SET_BACK
+                || pkt.getCause() == PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP
+                || pkt.getCause() == PlayerMoveC2SPacketAccess.Cause.TRIGGER_SIMULATION) {
+            return;
+        }
+        thisTickHasBroken = false;
     }
 
     public void onGrimSBFastBreakExplode(Event<PlayerActionC2SPacket> event) {
         if (quickMine.get() && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS && mc.player != null) {
             var packet = event.context();
             if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
-                    && packet.getPos().getY() < 1145) {
+                    && packet.getPos().getY() < 1145
+                    && Objects.equals(
+                            PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos(), packet.getPos())) {
                 if (mc.player.getAbilities().creativeMode) {
                     gainedAdvantageCooldown = 150;
                     return;
                 }
-                int duplicate = (doubleBreak.get() && (Tasks.getTick() - lastFinishBreakingTick) >= 5) ? 6 : 1;
-                List<PlayerActionC2SPacket> actionPackets = new ArrayList<>();
-
-                for (var i = 0; i < duplicate; ++i) {
-                    //                    mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(
-                    //                        PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
-                    //                        BlockPos.ofFloored(mc.player.getPos()).withY(9178),
-                    //                        Direction.DOWN,
-                    //                        packet.getSequence()));
-                    actionPackets.add(new PlayerActionC2SPacket(
-                            PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
-                            BlockPos.ofFloored(mc.player.getPos()).withY(9178),
-                            Direction.DOWN,
-                            NetworkUtils.generateNextSequence()));
-                    if ((Tasks.getTick() - lastFinishBreakingTick) >= 5) {
-                        gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
-                    } else {
-                        gainedAdvantageCooldown += (300 - (Tasks.getTick() - lastFinishBreakingTick) * 50);
-                    }
+                BlockState state = mc.world.getBlockState(packet.getPos());
+                // vanilla instant break
+                if (state.isAir()) {
+                    return;
                 }
-                PacketManager.schedulePostCallback(packet, () -> {
-                    for (var pkt : actionPackets) {
-                        mc.getNetworkHandler().sendPacket(pkt);
+                // hacking instant break
+                double currentBreakSpeed = WorldUtils.calcBlockBreakingDelta(state, mc.world, packet.getPos());
+                // instant break, no need to bypass fastbreak
+                if (currentBreakSpeed > 1.01) {
+                    return;
+                }
+                int duplicate = (doubleBreak.get() && (Tasks.getTick() - lastFinishBreakingTick) >= 5) ? 6 : 1;
+                PacketManager.schedulePostScheduleCallback(packet, () -> {
+                    for (var i = 0; i < duplicate; ++i) {
+                        //                    mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(
+                        //                        PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
+                        //                        BlockPos.ofFloored(mc.player.getPos()).withY(9178),
+                        //                        Direction.DOWN,
+                        //                        packet.getSequence()));
+                        mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
+                            return new PlayerActionC2SPacket(
+                                    PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
+                                    BlockPos.ofFloored(mc.player.getPos()).withY(9178),
+                                    Direction.DOWN,
+                                    seq);
+                        });
+                        if ((Tasks.getTick() - lastFinishBreakingTick) >= 5) {
+                            gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
+                        } else {
+                            gainedAdvantageCooldown += (300 - (Tasks.getTick() - lastFinishBreakingTick) * 50);
+                        }
                     }
                 });
             }
@@ -287,8 +386,6 @@ public class MineExtra extends BaseModule {
 
     public int ignoreNextFastBreakStatus = 0;
 
-    public boolean nextTickEarlyBreak = false;
-
     public void resetStatistics() {
         lastStartingMineIsInstantBreak = false;
         lastFinishBreakingTick = 0;
@@ -297,7 +394,6 @@ public class MineExtra extends BaseModule {
         lastStartingMineIsInstantBreak = false;
         gainedAdvantageMining = 0;
         ignoreNextFastBreakStatus = 0;
-        nextTickEarlyBreak = false;
     }
 
     @Unique
@@ -426,7 +522,7 @@ public class MineExtra extends BaseModule {
     }
 
     public boolean shouldExecuteOptimizeOneBlock() {
-        if (this.lastStartMineBreakingProgressResetTick == 0 || this.lastStartingMineIsInstantBreak) {
+        if (this.lastStartMineBreakingProgressResetTick == 0) {
             return false;
         }
         thisTimeOptimizedSamePosBreak = true;
@@ -439,7 +535,9 @@ public class MineExtra extends BaseModule {
      * <p>这里不消费 ignore 状态，只负责告诉 mixin：当前这一次 update 是否应立刻走 stop 路径。
      */
     public boolean shouldExecuteFastBreak(float currentProgress) {
-        return quickMine.get() && currentProgress >= breakThreshold.get() && ignoreNextFastBreakStatus <= 0;
+        return (quickMine.get() && ignoreNextFastBreakStatus <= 0)
+                ? (currentProgress >= breakThreshold.get())
+                : (currentProgress > 1.01D);
     }
 
     /**
@@ -448,37 +546,14 @@ public class MineExtra extends BaseModule {
      * <p>它统一复用 breakThreshold 与 fakeInstaBreak 的阈值语义，避免这些判定散落在多个 hook 和接口实现里。
      */
     public boolean shouldTreatAsInstantBreak(float speed) {
-        return speed >= 1.0F
-                || (speed > breakThreshold.get() && quickMine.get())
-                || shouldQueueNextTickEarlyBreak(speed);
+        return speed >= 1.0F || (speed > breakThreshold.get() && quickMine.get());
     }
 
     /**
      * 判断这次 attack 后是否应立即补一个 stop，实现 early stop。
      */
     public boolean shouldTriggerEarlyStop(float speed) {
-        return quickMine.get() && speed < 1.0F && speed > breakThreshold.get();
-    }
-
-    /**
-     * 判断这次速度是否落在 fakeInstaBreak 的“下一 tick 收尾”区间。
-     */
-    public boolean shouldQueueNextTickEarlyBreak(float speed) {
-        return fakeInstaBreak.get() && speed > ((breakThreshold.get() / 2.0) + 0.04d);
-    }
-
-    /**
-     * 记录下一 tick 需要执行一次 early break。
-     */
-    public void queueNextTickEarlyBreak() {
-        nextTickEarlyBreak = true;
-    }
-
-    /**
-     * grim bad packets 模式下，doubleBreak 切块时是否需要额外补一个 stop。
-     */
-    public boolean shouldSendGrimBadPacketsExtraStop() {
-        return fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS && grimBadPacketFix1.get();
+        return quickMine.get() && fakeInstaBreak.get() && speed < 1.0F && speed > breakThreshold.get();
     }
 
     /**
@@ -501,17 +576,6 @@ public class MineExtra extends BaseModule {
             }
         }
         return true;
-    }
-
-    /**
-     * 消费“下一 tick 提前收尾”标志。
-     */
-    public boolean shouldApplyNextTickFirstBreak() {
-        if (this.nextTickEarlyBreak) {
-            this.nextTickEarlyBreak = false;
-            return true;
-        }
-        return false;
     }
 
     private boolean shouldRenderMine() {
@@ -542,10 +606,11 @@ public class MineExtra extends BaseModule {
                     // 超过200格的不渲染
                     if (mc.player.getPos().squaredDistanceTo(pos) < 40000 && shouldRenderMine()) {
                         RenderUtils.drawOutlinedBox(renderEvent.context, pos, pos.add(1.0, 1.0, 1.0), Color.BLUE);
+                        BlockState state = mc.world.getBlockState(blockPos);
+                        var tool = getGhostHandMiningTool(state);
                         float progress = PlayerInteractionAccess.of(mc.interactionManager)
-                                .getCurrentMiningProgress(false);
+                                .getCurrentMiningProgress(tool.val());
                         if (progress > 0.0F) {
-                            BlockState state = mc.world.getBlockState(blockPos);
                             Box box;
                             if (state.isAir()) {
                                 box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);

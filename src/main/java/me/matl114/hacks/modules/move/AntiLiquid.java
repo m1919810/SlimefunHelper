@@ -1,5 +1,7 @@
 package me.matl114.hacks.modules.move;
 
+import java.util.List;
+import javax.swing.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.events.Event;
@@ -15,6 +17,8 @@ import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 
 public class AntiLiquid extends BaseModule implements LegalMovementManager.MovementModifier {
     static LegalMovementManager.DelegateMovementModifier instance;
@@ -51,6 +55,10 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
 
     public final IntRef switchElytraGt = intBuilder(antiLiquid.add("auto-armor-fly-switch-gt"))
             .defaultValue(5)
+            .build();
+
+    public final DoubleRef leaveWater = doubleBuilder(antiLiquid.add("leave-water-expand-check"))
+            .defaultValue(2.0D)
             .build();
 
     @Override
@@ -137,12 +145,30 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     }
 
     private void handleOutOfWater() {
-        if (currentArmorGlidingSaveState && taskLast + 4 * switchElytraGt.get() < Tasks.getTick()) {
-            currentArmorGlidingSaveState = false;
-            if (mc.player.isFallFlying()
-                    && ElytraExtra.INSTANCE.armorFly.get()
-                    && !ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-                ElytraExtra.INSTANCE.startArmorFlyTransaction(-1);
+        if (currentArmorGlidingSaveState) {
+            Box leaveWater = mc.player
+                    .getBoundingBox()
+                    .expand(this.leaveWater.get(), this.leaveWater.get(), this.leaveWater.get());
+            List<BlockPos> surroundBlocks = MathUtils.getOccupiedBlockPositions(leaveWater);
+            boolean findBlock = false;
+            for (var block : surroundBlocks) {
+                BlockState state = mc.world.getBlockState(block);
+                // remove liquid check because of kelp
+                // if(state.isLiquid())
+                Fluid fluid = state.getFluidState().getFluid();
+                boolean isWater = fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER;
+                if (isWater) {
+                    findBlock = true;
+                    break;
+                }
+            }
+            if (!findBlock) {
+                currentArmorGlidingSaveState = false;
+                if (mc.player.isFallFlying()
+                        && ElytraExtra.INSTANCE.armorFly.get()
+                        && !ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
+                    ElytraExtra.INSTANCE.startArmorFlyTransaction(-1);
+                }
             }
         }
     }

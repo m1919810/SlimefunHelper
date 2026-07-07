@@ -455,8 +455,7 @@ public class PlayerChat extends BaseModule {
             }
 
             String str = event.context();
-            if (!Pattern.matches(
-                    ChatTasks.getChatExtra().commandEscapeFormatPattern.get(), str)) {
+            if (!ChatTasks.getChatExtra().shouldEscapeFormatting(str)) {
                 event.context(prefixEncrypt.get() + tryEncrypt(str, getEncryptor(), 256));
             }
         }

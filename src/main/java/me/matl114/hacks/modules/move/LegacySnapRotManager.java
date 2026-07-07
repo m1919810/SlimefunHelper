@@ -96,25 +96,44 @@ public class LegacySnapRotManager extends BaseModule {
         return createSnapAt(py.x, py.y);
     }
 
+    public PlayerMoveC2SPacket createSnapAt(Vec3d look, boolean onGroundOverride) {
+        Vec2f py = EntityUtils.rotationToPitchYaw(look.normalize());
+        return createSnapAt(py.x, py.y, onGroundOverride);
+    }
+
     public PlayerMoveC2SPacket createSnapAt(float pitch, float yaw) {
         float lastYaw = PlayerStateManager.INSTANCE.lastYaw;
         return PlayerMoveC2SPacketAccess.setCause(
                 VPacket.newFull(
-                        mc.player.getX(),
-                        mc.player.getY(),
-                        mc.player.getZ(),
+                        PlayerStateManager.INSTANCE.lastX,
+                        PlayerStateManager.INSTANCE.lastY,
+                        PlayerStateManager.INSTANCE.lastZ,
                         EntityUtils.getSafeYaw(lastYaw, yaw),
                         EntityUtils.getSafePitch(pitch),
-                        mc.player.isOnGround(),
+                        PlayerStateManager.INSTANCE.lastOnGround,
+                        mc.player.horizontalCollision),
+                PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);
+    }
+
+    public PlayerMoveC2SPacket createSnapAt(float pitch, float yaw, boolean onGroundOverride) {
+        float lastYaw = PlayerStateManager.INSTANCE.lastYaw;
+        return PlayerMoveC2SPacketAccess.setCause(
+                VPacket.newFull(
+                        PlayerStateManager.INSTANCE.lastX,
+                        PlayerStateManager.INSTANCE.lastY,
+                        PlayerStateManager.INSTANCE.lastZ,
+                        EntityUtils.getSafeYaw(lastYaw, yaw),
+                        EntityUtils.getSafePitch(pitch),
+                        onGroundOverride,
                         mc.player.horizontalCollision),
                 PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);
     }
 
     public void sendAsSnap(PlayerMoveC2SPacket full) {
         PlayerMoveC2SPacket recreateFull = VPacket.newFull(
-                full.getX(mc.player.getX()),
-                full.getY(mc.player.getY()),
-                full.getZ(mc.player.getZ()),
+                full.getX(PlayerStateManager.INSTANCE.lastX),
+                full.getY(PlayerStateManager.INSTANCE.lastY),
+                full.getZ(PlayerStateManager.INSTANCE.lastZ),
                 PlayerStateManager.INSTANCE.lastYaw,
                 PlayerStateManager.INSTANCE.lastPitch,
                 full.isOnGround(),
