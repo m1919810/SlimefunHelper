@@ -43,16 +43,16 @@ public class DisablerManager extends BaseModule {
             .defaultValue(SupportAC.NONE)
             .build();
 
-    public final FlagRef grimFastBreak = builder(disablers.add("grim-fast-break"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
     public final FlagRef grimSelfCheck = builder(disablers.add("grim-self-check"), Boolean.class)
             .defaultValue(false)
             .build();
 
     public final FlagRef grimMultiplace = builder(disablers.add("grim-multi-place"), Boolean.class)
             .defaultValue(true)
+            .build();
+
+    public final FlagRef grimMultiBreak = builder(disablers.add("grim-multi-break"), Boolean.class)
+            .defaultValue(false)
             .build();
 
     public final FlagRef autoFlushPlaceQueue = builder(disablers.add("auto-flush-multi-place-queue"), Boolean.class)

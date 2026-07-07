@@ -1472,10 +1472,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 counter += 1;
             }
             if (last) {
-                mc.player.setOnGround(true);
                 Vec3d look = args.getRotationVector();
                 // Debug.chat("Snap");
-                LegacySnapRotManager.INSTANCE.snapAt(look, true);
+                mc.getNetworkHandler().sendPacket(LegacySnapRotManager.INSTANCE.createSnapAt(look, true));
                 mc.player.setOnGround(false);
                 last = false;
             }
@@ -1509,6 +1508,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     Vec3d look = args.getRotationVector();
                     mc.player.setOnGround(true);
                     mc.player.setPosition(mc.player.getPos().add(0, 9E-8, 0));
+                    mc.getNetworkHandler().sendPacket(LegacySnapRotManager.INSTANCE.createSnapAt(look, true));
                     LegacySnapRotManager.INSTANCE.snapAt(look, true);
                     movementManagerEvent.cancel();
                 }

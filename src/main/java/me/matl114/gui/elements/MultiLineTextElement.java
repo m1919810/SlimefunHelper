@@ -39,16 +39,23 @@ public class MultiLineTextElement extends RawTextElement {
             List<OrderedText> lines = mc.textRenderer.wrapLines(multiLine, width - 2);
             int size = lines.size();
             if (size > 0) {
-                int lineHeight = Math.max(9, element.getTextureHeight() / size);
+                int lineHeight = 9;
+                int estimated = lineHeight * size;
+                int startY = 0;
+                if (estimated < element.getTextureHeight()) {
+                    startY = (element.getTextureHeight() - estimated) / 2;
+                } else {
+                    lineHeight = Math.max(lineHeight, element.getTextureHeight() / size);
+                }
                 for (int i = 0; i < size; i++) {
                     RenderHandler.drawScaledText0(
                             context,
                             mc.textRenderer,
                             lines.get(i),
                             0,
-                            i * lineHeight,
+                            i * lineHeight + startY,
                             element.getTextureWidth(),
-                            lineHeight,
+                            (i + 1) * lineHeight + startY,
                             color.getColorInt(),
                             alignment);
                 }

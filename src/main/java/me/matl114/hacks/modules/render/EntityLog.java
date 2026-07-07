@@ -21,6 +21,7 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.render.RenderCollector;
+import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -34,6 +35,7 @@ import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -97,11 +99,13 @@ public class EntityLog extends BaseModule {
                 Listener.getPacketPostHandlePoint().getChannel(EntitySpawnS2CPacket.class), this::onEntitySpawn);
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(EntitiesDestroyS2CPacket.class), this::onEntityRemove);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getServerDisconnectPoint(), this::onServerExit);
         registerListener(Listener.getPostTick(), this::onUpdate);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getOtherPlayerJoinPoint(), this::onPlayerListEntryAdd);
         registerListener(Listener.getOtherPlayerEntryUpdate(), this::onPlayerListEntryModify);
+        registerListener(Listener.getOtherPlayerExitPoint(), this::onPlayerListEntryRemove);
+        registerListener(RenderListener.getRender2DEvent(), this::onRender2D);
     }
 
     public void onEntitySpawn(Event<EntitySpawnS2CPacket> packetEvent) {
@@ -223,6 +227,8 @@ public class EntityLog extends BaseModule {
                 playerLeaveChunk,
                 player.getPose(),
                 player.getDisplayName(),
+                player.getNameForScoreboard(),
+                mc.world.getRegistryKey(),
                 0);
         if (!mc.world.getChunkManager().isChunkLoaded(playerLeaveChunk.x, playerLeaveChunk.z)
                 || !mc.world.getChunkManager().isChunkLoaded(playerLeaveChunk.x + 1, playerLeaveChunk.z)
@@ -239,22 +245,26 @@ public class EntityLog extends BaseModule {
                         if (pe == null) {
                             entry.exitCode = 0;
                             return true;
+                        } else if (pe.getGameMode() == GameMode.SPECTATOR) {
+                            entry.exitCode = 0;
+                            handleJoinServer(VRecord.getId(pe.getProfile()));
+                            return true;
                         } else {
                             return false;
                         }
                     },
                     1,
                     1,
-                    100);
+                    20);
         }
         offLinePos.put(playerUUID, entry);
     }
 
-    public void onWorldSwitch(Event<World> eventWorld) {
+    public void onServerExit(Event<Void> eventLeave) {
         offLinePos.clear();
     }
 
-    static final String[] LEAVE_REASON = {"Log", "Faraway", "Teleport", "ReLogin"};
+    static final String[] LEAVE_REASON = {"Log", "Faraway", "Teleport", "Queuing", "ReLogin"};
 
     RenderCollector<Box> boxing = RenderCollectors.createBoxCollector(false, true, false);
     RenderCollector<Box> boxingFrame = RenderCollectors.createBoxCollector(true, false, false);
@@ -267,6 +277,8 @@ public class EntityLog extends BaseModule {
         texting.clear();
         if (checkNull()) return;
         if (enable.get() && renderLogPosition.get()) {
+            var worldKey = mc.world.getRegistryKey();
+            ;
             var color = this.color.get();
             for (var re : offLinePos.values()) {
                 switch (re.exitCode) {
@@ -279,6 +291,9 @@ public class EntityLog extends BaseModule {
                     case 2 -> {
                         if (!renderTp.get()) continue;
                     }
+                }
+                if (!Objects.equals(re.leaveWorld, worldKey)) {
+                    continue;
                 }
                 ChunkPos leaveChunk = re.leaveChunk;
                 if (mc.world.getChunkManager().isChunkLoaded(leaveChunk.x, leaveChunk.z)) {
@@ -297,7 +312,8 @@ public class EntityLog extends BaseModule {
                     builder.withText(ChatUtils.getDisplayedLocation(re.leavePos), Style.EMPTY.withBold(true));
                     builder.end();
                     texting.submit(
-                            new RenderElements.Text(builder.build(), re.leavePos.add(0, 2, 0)), color.withAlpha(255));
+                            new RenderElements.Text(builder.build(), re.leavePos.add(0, 2, 0), 0.66F),
+                            color.withAlpha(255));
                 }
             }
         }
@@ -305,9 +321,19 @@ public class EntityLog extends BaseModule {
 
     public void onRender(Event<MatrixStack> eventMatrixStack) {
         if (enable.get() && renderLogPosition.get()) {
-            boxing.render3D(eventMatrixStack.context);
-            tracing.render3D(eventMatrixStack.context);
-            texting.render3D(eventMatrixStack.context);
+            RenderUtils.startDrawVirtual(eventMatrixStack.context);
+            try {
+                boxing.render3D(eventMatrixStack.context);
+                tracing.render3D(eventMatrixStack.context);
+            } finally {
+                RenderUtils.stopDrawVirtual(eventMatrixStack.context);
+            }
+        }
+    }
+
+    public void onRender2D(Event<VDrawContext> eventVDraw) {
+        if (enable.get() && renderLogPosition.get()) {
+            texting.render2D(eventVDraw.context);
         }
     }
 
@@ -315,7 +341,19 @@ public class EntityLog extends BaseModule {
         UUID uid = VRecord.getId(event.context.getProfile());
         GameMode gameMode = event.context.getGameMode();
         if (gameMode != GameMode.SPECTATOR) {
-            handleReLogin(uid);
+            Tasks.scheduleDelayed(
+                    () -> {
+                        if (checkNull()) return;
+                        var entry = mc.getNetworkHandler().getPlayerListEntry(uid);
+                        if (entry == null) {
+                            return;
+                        } else if (entry.getGameMode() == GameMode.SPECTATOR) {
+                            handleJoinServer(uid);
+                        } else {
+                            handleReLogin(uid);
+                        }
+                    },
+                    5);
         }
     }
 
@@ -325,14 +363,52 @@ public class EntityLog extends BaseModule {
             GameMode gameMode = event.context.getGameMode();
             if (gameMode != GameMode.SPECTATOR) {
                 handleReLogin(uid);
+            } else {
+                handleKickToQueue(uid);
+            }
+        }
+    }
+
+    public void onPlayerListEntryRemove(Event<PlayerListEntry> event) {
+        UUID uid = VRecord.getId(event.context.getProfile());
+        handleExit(uid);
+    }
+
+    public void handleKickToQueue(UUID uid) {}
+
+    public void handleJoinServer(UUID uuid) {
+        var entry = offLinePos.get(uuid);
+        if (entry != null && entry.exitCode == 0) {
+            entry.exitCode = 3;
+            if (logLogReconnect.get()) {
+                int count = (int) mc.getNetworkHandler().getPlayerList().stream()
+                        .filter(s -> s.getGameMode() == GameMode.SPECTATOR)
+                        .count();
+                Debug.chat(
+                        Text.literal("[Entity]").formatted(Formatting.RED),
+                        "Player",
+                        entry.displayName,
+                        "join queue, last position:",
+                        ChatUtils.getDisplayedLocation(entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
+                        ", current queue:",
+                        count,
+                        ChatUtils.builder()
+                                .withParent(Style.EMPTY
+                                        .withClickEvent(
+                                                ChatUtils.getSuggestCommand("/!!pqueue add " + entry.scoreboardName))
+                                        .withHoverEvent(ChatUtils.getHoverShowText(
+                                                List.of(Text.literal("Click to track player in queue")))))
+                                .withColorString("&a&l[&aTrack&a&l]")
+                                .end()
+                                .build());
             }
         }
     }
 
     public void handleReLogin(UUID uuid) {
         var entry = offLinePos.remove(uuid);
-        if (entry != null) {
-            entry.exitCode = 3;
+        if (entry != null && (entry.exitCode == 0 || entry.exitCode == 3)) {
+            entry.exitCode = 4;
             if (logLogReconnect.get()) {
                 Debug.chat(
                         Text.literal("[Entity]").formatted(Formatting.RED),
@@ -340,6 +416,15 @@ public class EntityLog extends BaseModule {
                         entry.displayName,
                         "reLogin, last position:",
                         ChatUtils.getDisplayedLocation(entry.leavePos.x, entry.leavePos.y, entry.leavePos.z));
+            }
+        }
+    }
+
+    public void handleExit(UUID uuid) {
+        var entry = offLinePos.get(uuid);
+        if (entry != null) {
+            if (entry.exitCode == 3) {
+                entry.exitCode = 0;
             }
         }
     }
@@ -352,6 +437,8 @@ public class EntityLog extends BaseModule {
         ChunkPos leaveChunk;
         EntityPose leavePose;
         Text displayName;
+        String scoreboardName;
+        RegistryKey<World> leaveWorld;
         int exitCode;
     }
 }

@@ -54,6 +54,11 @@ public class FileManager {
         return getFile(path);
     }
 
+    public File getAndCreateFile(File path) {
+        checkFile(path);
+        return path;
+    }
+
     public File getFile(String path) {
         return new File(FOLDER, path);
     }

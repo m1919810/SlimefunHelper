@@ -1,20 +1,31 @@
 package me.matl114.hacks.modules.combat;
 
 import com.google.common.collect.ImmutableList;
+import com.mojang.serialization.JavaOps;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.DoubleStream;
+import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.commands.MainCommand;
+import me.matl114.gui.Constants;
+import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.ButtonElement;
+import me.matl114.gui.presets.lists.StringListModifyScreen;
+import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.EntityTypeRegex;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.entity.CameraEntity;
 import me.matl114.managers.Configs;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.config.*;
+import me.matl114.managers.file.FileStorage;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.commandGroup.CommandContext;
@@ -22,6 +33,8 @@ import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.kv.ListAttrKeyValue;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
@@ -62,13 +75,15 @@ public class TargetSelector extends BaseModule {
             .defaultValue(new Regex("^(.*NPC.*)$"))
             .build();
 
-    public final ListRef friendList = builder(attack.add("friend-list"), ListRef.TYPE)
-            .defaultValue(List.of())
-            .build();
-
     public final KeyBindRef addFriend = hotkey(attack.add("add-friend-hotkey"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onAddFriend))
+            .build();
+
+    public final NBTRef<OptionalPrimitive<String>> onAddSend = builder(
+                    attack.add("send-on-add-friend"), OptionalPrimitive.type(String.class))
+            .defaultValue(new OptionalPrimitive<>(
+                    false, NBTTypes.STRING_TYPE, "/msg %s I have just added you to my friends list!"))
             .build();
 
     public final FlagRef attackFriend =
@@ -103,6 +118,37 @@ public class TargetSelector extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerCommandBootstrap(this::onFriendCommandBootstrap);
+    }
+
+    public final FileStorage fileStorage = FileManager.getInstance().getInternalStorage("friends.nbt");
+    public static final String KEY_FRIENDS = "friend-list";
+
+    public List<String> playerList = new ArrayList<>();
+
+    {
+        var path = attack.add(KEY_FRIENDS);
+        if (path.getConfig().contains(path.toPath())) {
+            var re = path.getConfig().getList(path.toPath());
+            if (re != null) {
+                onListChange(re.get());
+            }
+            path.getConfig().setValueNoNew(null, path.toPath());
+        }
+
+        try {
+            Map<String, List<String>> listMap = fileStorage.as(JavaOps.INSTANCE);
+            if (listMap.containsKey(KEY_FRIENDS)) {
+                List<String> strs = listMap.get(KEY_FRIENDS);
+                playerList.addAll(strs);
+            }
+        } catch (Throwable e) {
+        }
+    }
+
+    public void onListChange(List<String> strings) {
+        playerList = strings;
+        Map<String, List<String>> listMap = Map.of(KEY_FRIENDS, playerList);
+        fileStorage.write((Object) listMap, JavaOps.INSTANCE);
     }
 
     private static final double[] FALL_FLYING_EYE_HEIGHTS = {0.4D, 1.62D, 1.27D};
@@ -158,27 +204,51 @@ public class TargetSelector extends BaseModule {
     }
 
     public void addFriend(String friends) {
-        List<String> friendList = this.friendList.get();
+        List<String> friendList = playerList;
         if (friendList.contains(friends)) {
             Debug.chat(ChatUtils.stringToText("&c[Friends] &f你已经添加了 %s 为好友".formatted(friends)));
         } else {
             Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功添加了 %s 为好友".formatted(friends)));
             friendList = new ArrayList<>(friendList);
             friendList.add(friends);
-            this.friendList.set(friendList);
+            onListChange(friendList);
+            addFriendSayMessage(friends);
+        }
+    }
+
+    public void addFriendSayMessage(String friendName) {
+        var strO = onAddSend.get();
+        if (strO.isPresent()) {
+            ChatTasks.sayMessage(strO.getValue().formatted(friendName), false);
         }
     }
 
     public void removeFriend(String friend) {
-        List<String> friendList = this.friendList.get();
+        List<String> friendList = playerList;
         if (friendList.contains(friend)) {
             Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功移除了 %s 好友".formatted(friend)));
             friendList = new ArrayList<>(friendList);
             friendList.remove(friend);
-            this.friendList.set(friendList);
+            onListChange(friendList);
         } else {
             Debug.chat(ChatUtils.stringToText("&c[Friends] &f你暂未添加 %s 为好友".formatted(friend)));
         }
+    }
+
+    public void openEditFriendsScreen() {
+        List<String> playerListCopy = new ArrayList<>(playerList);
+        AttrKeyValue<List<String>> attrKeyValue = AttrKeyValue.list("", playerListCopy);
+        ScreenAccess.of(new StringListModifyScreen((ListAttrKeyValue) attrKeyValue, listAttrKeyValue -> {
+                    attrKeyValue.setOriginValue((List<String>) ((ListAttrKeyValue) listAttrKeyValue).getOriginValue());
+                    List<String> current = attrKeyValue.getOriginValue();
+                    for (var re : current) {
+                        if (!playerList.contains(re)) {
+                            addFriendSayMessage(re);
+                        }
+                    }
+                    onListChange(current);
+                }))
+                .openFromCurrent();
     }
 
     public boolean canAttack(Entity target) {
@@ -214,7 +284,7 @@ public class TargetSelector extends BaseModule {
     }
 
     public boolean isInFriendList(PlayerEntity e) {
-        List<String> list = friendList.get();
+        List<String> list = playerList;
         if (list != null && list.contains(e.getNameForScoreboard())) {
             return true;
         }
@@ -252,6 +322,20 @@ public class TargetSelector extends BaseModule {
         }
     }
 
+    private boolean isSameTeam(PlayerEntity pl, EquipmentSlot slot) {
+        ItemStack chestPlate = pl.getEquippedStack(slot);
+        if (chestPlate.contains(DataComponentTypes.DYED_COLOR)) {
+            ItemStack ourPlate = mc.player.getEquippedStack(slot);
+            if (ourPlate.contains(DataComponentTypes.DYED_COLOR)) {
+                if (Objects.equals(
+                        chestPlate.get(DataComponentTypes.DYED_COLOR), ourPlate.get(DataComponentTypes.DYED_COLOR))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean isNotTeamMate(Entity e) {
         if (teamMate.get()) {
             if (e instanceof PlayerEntity pl) {
@@ -263,17 +347,12 @@ public class TargetSelector extends BaseModule {
                         return false;
                     }
                 }
-                ItemStack chestPlate = pl.getEquippedStack(EquipmentSlot.CHEST);
-                if (chestPlate.contains(DataComponentTypes.DYED_COLOR)) {
-                    ItemStack ourPlate = mc.player.getEquippedStack(EquipmentSlot.CHEST);
-                    if (ourPlate.contains(DataComponentTypes.DYED_COLOR)) {
-                        if (Objects.equals(
-                                chestPlate.get(DataComponentTypes.DYED_COLOR),
-                                ourPlate.get(DataComponentTypes.DYED_COLOR))) {
-                            return false;
-                        }
+                for (var re : EquipmentSlot.values()) {
+                    if (isSameTeam(pl, re)) {
+                        return false;
                     }
                 }
+
                 // more, consider colors of chestplates
                 return true;
             }
@@ -516,7 +595,7 @@ public class TargetSelector extends BaseModule {
                             .helper("显示好友列表")
                             .post(e -> e.executor(CommandContext.run(() -> {
                                 Debug.chat(Text.literal("== 当前好友列表 ==").formatted(Formatting.GREEN));
-                                for (var re : this.friendList.get()) {
+                                for (var re : playerList) {
                                     Debug.chat(re);
                                 }
                             })))
@@ -536,13 +615,27 @@ public class TargetSelector extends BaseModule {
                             .helper("移除好友")
                             .arg(SimpleCommandArgs.argumentBuilder()
                                     .name("name")
-                                    .tabSupplier(() -> this.friendList.get().stream())
+                                    .tabSupplier(() -> playerList.stream())
                                     .build())
                             .post(e -> e.executor(CommandContext.run((arg) -> {
                                 this.removeFriend(arg.nextNonnullString());
                             })))
+                            .complete()
+                            .subBuilder(SubCommand.taskBuilder())
+                            .name("gui")
+                            .helper("打开好友列表")
+                            .post(e -> e.executor(CommandContext.run(this::openEditFriendsScreen)))
                             .complete())
                     .complete();
         }
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        acceptor.accept(ExecutableWidget.instance(0, dblank, dx, dy)
+                .setElementHandler(new ButtonElement(
+                                TextProvider.of(Text.literal("点击编辑好友列表")),
+                                ButtonAction.run(this::openEditFriendsScreen))
+                        .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))));
     }
 }

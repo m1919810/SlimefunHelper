@@ -152,9 +152,6 @@ public class WorldScanner extends BaseModule {
                 Map<BlockPos, BlockState> stateMap = currentSearchingResult.get(chunkPos);
                 if (stateMap != null) {
                     stateMap.remove(pos);
-                    if (stateMap.isEmpty()) {
-                        currentSearchingResult.remove(chunkPos);
-                    }
                 }
             }
         }

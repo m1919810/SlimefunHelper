@@ -149,7 +149,7 @@ public class ChatTasks {
                     .complete();
         }
 
-        public boolean onReload(ArgumentInputStream args) {
+        public void onReload(ArgumentInputStream args) {
             var re = args.nextNonnullString();
             switch (re) {
                 case "command" -> Tasks.scheduleDelayed(MainCommand::reloadCommand, 1);
@@ -159,7 +159,6 @@ public class ChatTasks {
                 }
                 default -> Debug.chat("不支持的参数类型: " + re);
             }
-            return true;
         }
 
         {

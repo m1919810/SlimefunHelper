@@ -13,6 +13,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
@@ -283,8 +284,8 @@ public class ChatExtra extends BaseModule {
             .defaultValue("%s喵 | SlimefunHelper client | {random6}")
             .build();
 
-    public final StringRef commandEscapeFormatPattern = builder(chat.add("chat-message-escape-format"), String.class)
-            .defaultValue("^[/#!.](.*)$")
+    public final NBTRef<Regex> commandEscapeFormatPattern = builder(chat.add("chat-message-escape-format"), Regex.class)
+            .defaultValue(new Regex("^()$"))
             .build();
     private final Pattern randomPattern = Pattern.compile("\\{random(\\d+)\\}");
 
@@ -314,12 +315,26 @@ public class ChatExtra extends BaseModule {
         return String.format(processedTemplate, string);
     }
 
+    public boolean shouldEscapeFormatting(String originString) {
+        boolean shouldStop = false;
+        shouldStop = shouldStop || commandEscapeFormatPattern.get().test(originString);
+        shouldStop = shouldStop || originString.startsWith("/") || originString.startsWith(".");
+        if (BaritoneHooks.getInstance().isEnabled()) {
+            shouldStop = shouldStop
+                    || originString.startsWith(BaritoneHooks.getInstance().getCommandPrefix());
+        } else {
+            shouldStop = shouldStop || originString.startsWith("#");
+        }
+        return shouldStop;
+    }
+
     public void onStringReplace(Event<String> chatEvent) {
         if (chatEvent.isCancelled()) return;
         if (enableFormat.get()) {
             String originString = chatEvent.context();
             // remove our commands
-            if (!Pattern.matches(commandEscapeFormatPattern.get(), originString)) {
+
+            if (!shouldEscapeFormatting(originString)) {
                 chatEvent.context(generateFormatString(originString));
             }
         }

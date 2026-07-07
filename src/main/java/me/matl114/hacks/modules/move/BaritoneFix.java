@@ -1,11 +1,17 @@
 package me.matl114.hacks.modules.move;
 
+import java.util.function.Consumer;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.basic.DisplayWidget;
+import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.basic.TextProvider;
+import me.matl114.gui.elements.ColorLabelTextElement;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.task.ClickGui;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.hooks.impl.BaritoneFuture;
 import me.matl114.hooks.impl.BaritoneLanding;
@@ -21,6 +27,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.text.Text;
 
 public class BaritoneFix extends BaseModule {
     public static BaritoneFix INSTANCE;
@@ -257,5 +264,15 @@ public class BaritoneFix extends BaseModule {
                 }
             }
         }
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        acceptor.accept(DisplayWidget.instance(0, dblank, dx, dy)
+                .setRenderHandler(new ColorLabelTextElement(
+                        TextProvider.of(Text.literal(
+                                BaritoneHooks.getInstance().isEnabled() ? "已检测到可兼容的Baritone" : "未检出到可兼容的Baritone")),
+                        () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
+                        () -> ClickGui.INSTANCE.moduleListColor.get().withAlpha(255))));
     }
 }

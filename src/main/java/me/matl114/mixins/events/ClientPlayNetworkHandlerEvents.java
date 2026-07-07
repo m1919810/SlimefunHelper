@@ -1,9 +1,12 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
@@ -24,6 +27,11 @@ import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.*;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagGroupLoader;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
@@ -313,5 +321,24 @@ public abstract class ClientPlayNetworkHandlerEvents {
             return;
         }
         Listener.callPacketHandleEvent(instance, t, original::call);
+    }
+
+    @ModifyExpressionValue(
+            method = "startTagReload",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/registry/tag/TagPacketSerializer$Serialized;toRegistryTags(Lnet/minecraft/registry/Registry;)Lnet/minecraft/registry/tag/TagGroupLoader$RegistryTags;"))
+    private static <T> TagGroupLoader.RegistryTags<T> onRegistryTagReload(
+            TagGroupLoader.RegistryTags<T> original,
+            @Local(argsOnly = true) RegistryKey<? extends Registry<? extends T>> registryKey) {
+        Map<TagKey<T>, List<RegistryEntry<T>>> tagMap = original.tags();
+        Event<Map<TagKey<T>, List<RegistryEntry<T>>>> event = new Event<>(tagMap, false, true, original.key());
+        Listener.getRegistryTagKeyReload().handleValue((Event) event);
+        if (event.context != tagMap) {
+            return new TagGroupLoader.RegistryTags<>(original.key(), event.context);
+        }
+        return original;
     }
 }
