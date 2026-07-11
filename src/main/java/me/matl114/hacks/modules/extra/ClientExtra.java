@@ -31,6 +31,8 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
+import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.BlockEntityTickInvoker;
@@ -109,9 +111,6 @@ public class ClientExtra extends BaseModule {
 
     private final Text questionCrash =
             Text.literal("你的游戏刚才因为未知原因崩溃,但是SlimefunHelper拦截了它").formatted(Formatting.RED);
-    private final List<QuestionScreen.Solution> crashSolutions = List.of(
-            QuestionScreen.Solution.of(Text.literal("我已知晓, 继续游戏").formatted(Formatting.GREEN), Runnables.doNothing()),
-            QuestionScreen.Solution.of(Text.literal("我已知晓, 退出游戏").formatted(Formatting.RED), this::exitGame));
 
     private void exitGame() {
         mc.scheduleStop();
@@ -120,8 +119,39 @@ public class ClientExtra extends BaseModule {
     public void onCrash(Event<MinecraftClient> event) {
         if (event.canCancel() && event.context().isRunning() && noCrash.get()) {
             event.cancel();
+            CrashReport report = event.getArgs(0);
             // must disconnect from server here
-            QuestionScreen screen = new QuestionScreen(questionCrash, crashSolutions);
+            String msg = (report == null ? "null" : report.getMessage());
+            String detailedMessage = (report == null ? "null" : report.getCauseAsString());
+            // remove
+            detailedMessage = detailedMessage.replace("\t", "");
+            String[] lines = detailedMessage.split("\\r?\\n");
+            StringBuilder sb = new StringBuilder();
+            int maxLines = Math.min(lines.length, 6);
+            for (int i = 0; i < maxLines; i++) {
+                if (i > 0) sb.append("\n");
+                sb.append(lines[i]);
+            }
+            if (maxLines > 1 && maxLines < lines.length) {
+                sb.append("\n......(%d行)".formatted(lines.length - maxLines));
+            }
+            detailedMessage = sb.toString();
+            Text literal = ChatUtils.stringToText("&c你的游戏刚刚崩溃了,但是SlimefunHelper拦截了它\n报错信息: " + msg + "\n"
+                    + detailedMessage + "\n如果你须与寻求帮助,请点击下方按钮打开错误报告\n而不是发送这个界面的截图");
+            List<QuestionScreen.Solution> crashSolutions = List.of(
+                    QuestionScreen.Solution.of(
+                            Text.literal("我已知晓, 继续游戏").formatted(Formatting.GREEN), Runnables.doNothing()),
+                    QuestionScreen.Solution.of(Text.literal("打开报告, 继续游戏").formatted(Formatting.YELLOW), () -> {
+                        if (report != null) {
+                            var path = report.getFile();
+                            if (path != null) {
+                                Util.getOperatingSystem().open(report.getFile().getParent());
+                                Util.getOperatingSystem().open(report.getFile());
+                            }
+                        }
+                    }),
+                    QuestionScreen.Solution.of(Text.literal("我已知晓, 退出游戏").formatted(Formatting.RED), this::exitGame));
+            QuestionScreen screen = new QuestionScreen(literal, crashSolutions);
             checkClientData(screen);
         }
     }

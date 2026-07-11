@@ -65,18 +65,20 @@ public class SleepMode extends BaseModule {
     public void registerAll() {
         super.registerAll();
         // todo: make them  temporary listeners
-        registerListener(Listener.getGameRender(), this::onGameRender);
-        registerListener(Listener.getResolutionChange(), this::onSleepingResizeScreen);
-        registerListener(Listener.getMidSetScreen(), this::interceptScreenSetup);
-        registerListener(Listener.getKeyboardInput(), this::interceptScreenKeyboardAction);
-        registerListener(Listener.getMouseButton(), this::interceptScreenMouseAction);
-        registerListener(Listener.getMouseScroll(), this::interceptScreenMouseScroll);
-        registerListener(Listener.getCharTyped(), this::interceptCharType);
-        registerListener(Listener.getMouseMove(), this::interceptMouseMove);
-        registerListener(Listener.getMouseDrag(), this::interceptMouseDragged);
-        registerListener(Listener.getPreSetScreen(), this::interceptSetScreen);
+        registerListener(Listener.getGameRender(), this::onGameRender, Integer.MIN_VALUE);
+        registerListener(Listener.getResolutionChange(), this::onSleepingResizeScreen, Integer.MIN_VALUE);
+        registerListener(Listener.getMidSetScreen(), this::interceptScreenSetup, Integer.MIN_VALUE);
+        registerListener(Listener.getKeyboardInput(), this::interceptScreenKeyboardAction, Integer.MIN_VALUE);
+        registerListener(Listener.getMouseButton(), this::interceptScreenMouseAction, Integer.MIN_VALUE);
+        registerListener(Listener.getMouseScroll(), this::interceptScreenMouseScroll, Integer.MIN_VALUE);
+        registerListener(Listener.getCharTyped(), this::interceptCharType, Integer.MIN_VALUE);
+        registerListener(Listener.getMouseMove(), this::interceptMouseMove, Integer.MIN_VALUE);
+        registerListener(Listener.getMouseDrag(), this::interceptMouseDragged, Integer.MIN_VALUE);
+        registerListener(Listener.getPreSetScreen(), this::interceptSetScreen, Integer.MIN_VALUE);
         registerCommandBootstrap(this::onSleepCommandBootstrap);
-        registerListener(Listener.getPacketPoint().getChannel(ChunkDataS2CPacket.class), this::onChunkData);
+        registerListener(
+                Listener.getPacketPoint().getChannel(ChunkDataS2CPacket.class), this::onChunkData, Integer.MIN_VALUE);
+        registerListener(Listener.getHotKeyTriggeredListener(), this::interceptHotKey, Integer.MIN_VALUE);
     }
 
     boolean runnerOptimizeStart = false;
@@ -502,6 +504,12 @@ public class SleepMode extends BaseModule {
     }
 
     // fixme: hoverEvent and clickEvent does not work in SleepingChatScreen
+
+    public void interceptHotKey(Event<IHotKey> eventHotKey) {
+        if (isScreenSleeping()) {
+            eventHotKey.cancel();
+        }
+    }
 
     public void onChunkData(Event<ChunkDataS2CPacket> dataS2CPacket) {
         if (!runnerOptimizeStart) return;

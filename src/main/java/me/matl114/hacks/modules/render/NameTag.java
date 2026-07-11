@@ -152,7 +152,9 @@ public class NameTag extends BaseModule {
                     text.append(DEV_PREFIX);
                 }
                 if (TargetSelector.INSTANCE.isInFriendList(player)) {
-                    text.append(Text.literal("[F]").withColor(Color.ORANGE.getRGB()));
+                    text.append(ChatUtils.stringToText("&x&F&F&A&C&0&0["
+                            + TargetSelector.INSTANCE.getPlayerList().getFriendAlias(player.getNameForScoreboard())
+                            + "&x&F&F&A&C&0&0]"));
                 }
                 if (player.isCreative()) {
                     text.append(Text.literal("[C]").withColor(Color.RED.getRGB()));

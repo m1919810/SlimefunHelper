@@ -26,6 +26,10 @@ public interface FileStorage extends AutoCloseable {
         }
     }
 
+    default <R, T, W extends T> R readOrThrow(Codec<R> codec) {
+        return read(codec).getOrThrow();
+    }
+
     public <W> DataResult<?> write(Codec<W> codec, W value);
 
     public void markDirty(boolean dirty);
