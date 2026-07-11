@@ -15,7 +15,6 @@ import net.minecraft.entity.attribute.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
-import org.jspecify.annotations.Nullable;
 
 public class AttributeUtils {
     public static AttributeContainer getAttributeWith(
@@ -61,7 +60,7 @@ public class AttributeUtils {
         LivingEntityAccess.of(living).updateEquipmentAttributeChange();
     }
 
-    public static @Nullable Map<EquipmentSlot, ItemStack> getEquipmentChanges() {
+    public static  Map<EquipmentSlot, ItemStack> getEquipmentChanges() {
         return null;
     }
 
@@ -110,7 +109,7 @@ public class AttributeUtils {
 
     private static int getEquipmentLevel(
             RegistryKey<Enchantment> enchantment, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
-        var entry = ItemStackUtils.registry().getEntryOrThrow(enchantment);
+        var entry = ItemStackUtils.registry().getOptional(enchantment.getRegistryRef()).flatMap(s -> s.getOptional(enchantment)).orElseThrow();
         int i = 0;
         var var4 = equipmentOverrides.entrySet().iterator();
 
