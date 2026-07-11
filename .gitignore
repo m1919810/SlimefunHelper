@@ -41,3 +41,5 @@ replay_*.log
 Slimefun-ResourcePack_1.20.x/
 logs/
 run*.bat
+
+scripts/

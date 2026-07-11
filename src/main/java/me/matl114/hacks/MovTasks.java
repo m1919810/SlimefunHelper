@@ -2194,6 +2194,9 @@ public class MovTasks {
     public static PlayerStateManager playerStateManager;
 
     @Getter
+    public static PlayerInputManager playerInputManager;
+
+    @Getter
     public static LegacySnapRotManager legacySnapRotManager;
 
     @Getter
@@ -2279,6 +2282,7 @@ public class MovTasks {
         // move
         movExtra = new MovExtra().register(m);
         playerStateManager = new PlayerStateManager().register(m);
+        playerInputManager = new PlayerInputManager().register(m);
         // fallDistanceManager = new FallDistanceManager().register(m);
         legacySnapRotManager = new LegacySnapRotManager().register(m);
         forwardTp = new ForwardTp().register(m);

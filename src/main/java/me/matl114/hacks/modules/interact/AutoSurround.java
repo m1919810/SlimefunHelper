@@ -12,6 +12,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
@@ -32,7 +33,6 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -90,6 +90,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef autoCenter =
             flagBuilder(autoSurround.add("auto-center")).build();
+    public final FlagRef autoSneak = flagBuilder(autoSurround.add("auto-sneak")).build();
 
     @Override
     public void registerAll() {
@@ -111,6 +112,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     }
 
     int delayTicks;
+    boolean needSneak = false;
 
     public void onInput(Event<Void> inputEvent) {
         if (enable.get()) {
@@ -120,6 +122,12 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                         triggerCenterFix = true;
                     }
                     delayTicks = 0;
+                }
+            }
+            if (needSneak) {
+                needSneak = false;
+                if (autoSneak.get()) {
+                    PlayerInputManager.INSTANCE.addSneakModifier(0, true, Math.max(delay.get() - 1, 0), 1);
                 }
             }
         }
@@ -173,9 +181,11 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                     }
                     BlockState state = mc.world.getBlockState(test);
                     if ((state.isAir() || state.isReplaceable())) {
-                        BlockHitResult hitResult = InteractionTasks.getPlaceSupportingResult(test, !legal, !legal);
-                        boolean canPlace = hitResult != null;
-
+                        var hitResult = InteractionTasks.getPlaceSupportingResult(test, !legal, !legal);
+                        boolean canPlace = hitResult != null && InteractUtils.canInteract(mc.player, hitResult);
+                        if (hitResult != null && hitResult.flag()) {
+                            needSneak = true;
+                        }
                         if (canPlace) {
                             if (InteractUtils.canCubePlace(mc.player, test)) {
                                 if (placeCnt == 0) {
@@ -192,7 +202,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                                     InteractionTasks.flushACPlaceQueue();
                                 }
                                 InteractionTasks.handlePlaceMode(
-                                        mode.get(), hitResult, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND);
+                                        mode.get(), hitResult.val(), offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND);
                                 placeCnt += 1;
                                 if (placeCnt >= mul) {
                                     break place;

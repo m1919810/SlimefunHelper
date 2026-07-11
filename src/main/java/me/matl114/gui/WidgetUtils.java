@@ -7,15 +7,42 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.RefKeyValueInputWidget;
 import me.matl114.gui.elements.ColorLabelTextElement;
+import me.matl114.gui.elements.TextFieldElement;
 import me.matl114.gui.presets.single.CenterScreen;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.config.Ref;
 import me.matl114.managers.config.Refs;
 import me.matl114.utils.collections.MutableRecord;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
 public class WidgetUtils {
     public static final ConfigScreenLayout DEFAULT_CONFIG_SCREEN_LAYOUT = new ConfigScreenLayout(140, 10, 180, 18, 2);
+
+    public static DrawableWidget getFocusedWidget(DrawableWidget drawable) {
+        DrawableWidget current = drawable;
+        while (true) {
+            if (current instanceof SubSelectable subScreen) {
+                current = subScreen.getSelected();
+            } else if (current instanceof ContentDelegateWidget delegate
+                    && delegate.getDelegate() instanceof DrawableWidget draw) {
+                current = draw;
+            } else {
+                break;
+            }
+        }
+        return current;
+    }
+
+    public static boolean isInputWidget(DrawableWidget widget) {
+        if (widget instanceof ContentDelegateWidget<?> content
+                && content.getDelegate() instanceof TextFieldWidget textField) {
+            return true;
+        } else if (widget instanceof ExecutableWidget exe && exe.getHandler() instanceof TextFieldElement textField) {
+            return true;
+        }
+        return false;
+    }
 
     public record ConfigScreenLayout(
             int indexWidth, int blankWidth, int buttonWidth, int buttonHeight, int buttonBlank) {

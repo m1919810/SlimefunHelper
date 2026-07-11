@@ -1,26 +1,25 @@
 package me.matl114.hacks.modules.combat;
 
 import com.google.common.collect.ImmutableList;
-import com.mojang.serialization.JavaOps;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.DoubleStream;
-import me.matl114.accessors.gui.ScreenAccess;
+import java.util.stream.Stream;
+import lombok.Getter;
 import me.matl114.commands.MainCommand;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
-import me.matl114.gui.presets.lists.StringListModifyScreen;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
-import me.matl114.hacks.utils.config.EntityTypeRegex;
-import me.matl114.hacks.utils.config.NBTTypes;
-import me.matl114.hacks.utils.config.OptionalPrimitive;
-import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.CameraEntity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
@@ -33,8 +32,6 @@ import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
-import me.matl114.utils.config.AttrKeyValue;
-import me.matl114.utils.config.kv.ListAttrKeyValue;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
@@ -53,6 +50,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 public class TargetSelector extends BaseModule {
     public static TargetSelector INSTANCE;
@@ -121,32 +119,28 @@ public class TargetSelector extends BaseModule {
     public final FileStorage fileStorage = FileManager.getInstance().getInternalStorage("friends.nbt");
     public static final String KEY_FRIENDS = "friend-list";
 
-    public List<String> playerList = new ArrayList<>();
+    @Getter
+    public FriendListStorage playerList = new FriendListStorage(List.of(), Map.of());
 
     {
         var path = attack.add(KEY_FRIENDS);
         if (path.getConfig().contains(path.toPath())) {
             var re = path.getConfig().getList(path.toPath());
             if (re != null) {
-                onListChange(re.get());
+                onListChange(new FriendListStorage(re.get(), Map.of()));
             }
             path.getConfig().setValueNoNew(null, path.toPath());
         }
 
         try {
-            Map<String, List<String>> listMap = fileStorage.as(JavaOps.INSTANCE);
-            if (listMap.containsKey(KEY_FRIENDS)) {
-                List<String> strs = listMap.get(KEY_FRIENDS);
-                playerList.addAll(strs);
-            }
+            playerList = fileStorage.readOrThrow(FriendListStorage.CODEC);
         } catch (Throwable e) {
         }
     }
 
-    public void onListChange(List<String> strings) {
+    public void onListChange(FriendListStorage strings) {
         playerList = strings;
-        Map<String, List<String>> listMap = Map.of(KEY_FRIENDS, playerList);
-        fileStorage.write((Object) listMap, JavaOps.INSTANCE);
+        fileStorage.write(FriendListStorage.CODEC, playerList);
     }
 
     private static final double[] FALL_FLYING_EYE_HEIGHTS = {0.4D, 1.62D, 1.27D};
@@ -196,19 +190,18 @@ public class TargetSelector extends BaseModule {
         if (mc.crosshairTarget.getType() == HitResult.Type.ENTITY
                 && ((EntityHitResult) mc.crosshairTarget).getEntity() instanceof PlayerEntity player
                 && player != mc.player) {
-            addFriend(player.getNameForScoreboard());
+            addFriend(player.getNameForScoreboard(), "");
         }
         return false;
     }
 
-    public void addFriend(String friends) {
-        List<String> friendList = playerList;
-        if (friendList.contains(friends)) {
+    public void addFriend(String friends, String alias) {
+        FriendListStorage friendList = playerList;
+        if (friendList.contains(friends, alias)) {
             Debug.chat(ChatUtils.stringToText("&c[Friends] &f你已经添加了 %s 为好友".formatted(friends)));
         } else {
             Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功添加了 %s 为好友".formatted(friends)));
-            friendList = new ArrayList<>(friendList);
-            friendList.add(friends);
+            friendList = friendList.withAdd(friends, alias);
             onListChange(friendList);
             addFriendSayMessage(friends);
         }
@@ -222,11 +215,10 @@ public class TargetSelector extends BaseModule {
     }
 
     public void removeFriend(String friend) {
-        List<String> friendList = playerList;
+        FriendListStorage friendList = playerList;
         if (friendList.contains(friend)) {
             Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功移除了 %s 好友".formatted(friend)));
-            friendList = new ArrayList<>(friendList);
-            friendList.remove(friend);
+            friendList = friendList.withRemove(friend);
             onListChange(friendList);
         } else {
             Debug.chat(ChatUtils.stringToText("&c[Friends] &f你暂未添加 %s 为好友".formatted(friend)));
@@ -234,19 +226,19 @@ public class TargetSelector extends BaseModule {
     }
 
     public void openEditFriendsScreen() {
-        List<String> playerListCopy = new ArrayList<>(playerList);
-        AttrKeyValue<List<String>> attrKeyValue = AttrKeyValue.list("", playerListCopy);
-        ScreenAccess.of(new StringListModifyScreen((ListAttrKeyValue) attrKeyValue, listAttrKeyValue -> {
-                    attrKeyValue.setOriginValue((List<String>) ((ListAttrKeyValue) listAttrKeyValue).getOriginValue());
-                    List<String> current = attrKeyValue.getOriginValue();
-                    for (var re : current) {
-                        if (!playerList.contains(re)) {
-                            addFriendSayMessage(re);
-                        }
-                    }
-                    onListChange(current);
-                }))
-                .openFromCurrent();
+        List<Pair<String, String>> playerListCopy = playerList.toPairList();
+        NBTRef<PrimitivePairList<String, String>> holder = new NBTRef<>(new PrimitivePairList<>(
+                "widget.friend-list.friend-name",
+                "widget.friend-list.friend-alias",
+                NBTTypes.STRING_TYPE,
+                NBTTypes.STRING_TYPE,
+                playerListCopy));
+        var keyValue = holder.createKeyValue("");
+        DrawableWidget drawableWidget = keyValue.generateValueWidget(0, 0, 300, 20);
+        // open edit screen
+        keyValue.addListener((pairList) -> onListChange(FriendListStorage.create(pairList.list())));
+
+        drawableWidget.mouseClicked(150, 10, 0);
     }
 
     public boolean canAttack(Entity target) {
@@ -282,7 +274,7 @@ public class TargetSelector extends BaseModule {
     }
 
     public boolean isInFriendList(PlayerEntity e) {
-        List<String> list = playerList;
+        FriendListStorage list = playerList;
         if (list != null && list.contains(e.getNameForScoreboard())) {
             return true;
         }
@@ -583,7 +575,7 @@ public class TargetSelector extends BaseModule {
                             .helper("显示好友列表")
                             .post(e -> e.executor(CommandContext.run(() -> {
                                 Debug.chat(Text.literal("== 当前好友列表 ==").formatted(Formatting.GREEN));
-                                for (var re : playerList) {
+                                for (var re : playerList.friends()) {
                                     Debug.chat(re);
                                 }
                             })))
@@ -595,8 +587,13 @@ public class TargetSelector extends BaseModule {
                                     .name("name")
                                     .tabSupplier(WorldUtils::getPlayerListNames)
                                     .build())
-                            .post(e -> e.executor(CommandContext.run(
-                                    (Consumer<ArgumentInputStream>) (arg) -> this.addFriend(arg.nextNonnullString()))))
+                            .arg(SimpleCommandArgs.argumentBuilder()
+                                    .name("alias")
+                                    .select("<请输入别名>")
+                                    .defaultValue("")
+                                    .build())
+                            .post(e -> e.executor(CommandContext.run((Consumer<ArgumentInputStream>)
+                                    (arg) -> this.addFriend(arg.nextNonnullString(), arg.nextArg()))))
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("remove")
@@ -625,5 +622,81 @@ public class TargetSelector extends BaseModule {
                                 TextProvider.of(Text.literal("点击编辑好友列表")),
                                 ButtonAction.run(this::openEditFriendsScreen))
                         .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))));
+    }
+
+    public static record FriendListStorage(List<String> friends, Map<String, String> alias) {
+        public static Codec<FriendListStorage> CODEC = RecordCodecBuilder.create(oinstance -> oinstance
+                .group(
+                        Codec.list(Codec.STRING).fieldOf("friend-list").forGetter(FriendListStorage::friends),
+                        Codec.unboundedMap(Codec.STRING, Codec.STRING)
+                                .optionalFieldOf("friend-alias", Map.of())
+                                .forGetter(FriendListStorage::alias))
+                .apply(oinstance, FriendListStorage::new));
+
+        public String getFriendAlias(String friendName) {
+            return alias.getOrDefault(friendName, "F");
+        }
+
+        public static FriendListStorage create(List<Pair<String, String>> data) {
+            Map<String, String> mapData = new LinkedHashMap<>();
+            for (var re : data) {
+                if (!re.getSecond().trim().isEmpty()) {
+                    mapData.put(re.getFirst(), re.getSecond().trim());
+                }
+            }
+            return new FriendListStorage(data.stream().map(Pair::getFirst).toList(), mapData);
+        }
+
+        public boolean contains(String friendName) {
+            return friends.contains(friendName);
+        }
+
+        public boolean contains(String friendName, @Nullable String alias) {
+            return friends.contains(friendName)
+                    && Objects.equals(alias == null ? null : alias.trim(), this.alias.get(friendName));
+        }
+
+        public FriendListStorage withAdd(String friendName, @Nullable String alias) {
+            if (contains(friendName, alias)) {
+                return this;
+            } else {
+                List<String> str = new ArrayList<>(friends);
+                str.add(friendName);
+                Map<String, String> mapData = this.alias;
+                if (alias != null && !alias.trim().isEmpty()) {
+                    mapData = new LinkedHashMap<>(mapData);
+                    mapData.put(friendName, alias);
+                }
+                return new FriendListStorage(str, mapData);
+            }
+        }
+
+        public FriendListStorage withRemove(String friendName) {
+            if (contains(friendName)) {
+                List<String> str = new ArrayList<>(friends);
+                str.remove(friendName);
+                Map<String, String> mapData = this.alias;
+
+                if (this.alias.containsKey(friendName)) {
+                    mapData = new LinkedHashMap<>(mapData);
+                    mapData.remove(friendName);
+                }
+                return new FriendListStorage(str, mapData);
+            } else {
+                return this;
+            }
+        }
+
+        public List<Pair<String, String>> toPairList() {
+            List<Pair<String, String>> pairList = new ArrayList<>();
+            for (var re : friends) {
+                pairList.add(Pair.of(re, alias.getOrDefault(re, "")));
+            }
+            return pairList;
+        }
+
+        public Stream<String> stream() {
+            return friends.stream();
+        }
     }
 }

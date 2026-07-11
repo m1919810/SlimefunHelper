@@ -55,7 +55,6 @@
 		"events.WorldRendererEvents",
 		"fix.AbstractElementButtonFixMixin",
 		"fix.ArrayPaletteFixMixin",
-		"fix.CameraReplayFixMixin",
 		"fix.ClientPlayerListLookupCMEFix",
 		"fix.EntityRenderStateFixMixin",
 		"fix.IdListPaletteFixMixin",

@@ -1,6 +1,8 @@
 package me.matl114.hooks;
 
+import com.google.common.base.Preconditions;
 import fi.dy.masa.litematica.config.Configs;
+import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.util.EasyPlaceUtils;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import java.lang.invoke.MethodHandle;
@@ -8,6 +10,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public abstract class LitematicaHooks implements IHooks {
@@ -17,6 +20,8 @@ public abstract class LitematicaHooks implements IHooks {
     public abstract World getSchematicWorld();
 
     public abstract boolean isEasyPlaceEnabled();
+
+    public abstract boolean isPositionWithinRange(BlockPos pos);
 
     public static LitematicaHooks instance;
 
@@ -48,6 +53,7 @@ public abstract class LitematicaHooks implements IHooks {
 
         public Impl() {
             Class<?> clazz = SchematicWorldHandler.class;
+            Preconditions.checkNotNull(DataManager.getRenderLayerRange());
         }
 
         @Override
@@ -68,6 +74,11 @@ public abstract class LitematicaHooks implements IHooks {
         @Override
         public boolean isEasyPlaceEnabled() {
             return Configs.Generic.EASY_PLACE_MODE.getBooleanValue();
+        }
+
+        @Override
+        public boolean isPositionWithinRange(BlockPos pos) {
+            return DataManager.getRenderLayerRange().isPositionWithinRange(pos);
         }
 
         @Override
@@ -96,6 +107,11 @@ public abstract class LitematicaHooks implements IHooks {
 
         @Override
         public boolean isEasyPlaceEnabled() {
+            return false;
+        }
+
+        @Override
+        public boolean isPositionWithinRange(BlockPos pos) {
             return false;
         }
     }

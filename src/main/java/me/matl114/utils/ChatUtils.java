@@ -920,6 +920,7 @@ public class ChatUtils {
                             //         .setStyle(currentStyle);
                             //                        base.append(addition);
                         }
+                        builder.withLine();
                         // ignore \n
                         // return base;
                 }
