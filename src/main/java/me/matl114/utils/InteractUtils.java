@@ -133,21 +133,11 @@ public class InteractUtils {
         return !world.getDimension().respawnAnchorWorks();
     }
 
-    private static boolean isInteractableRespawnAnchor(World world, BlockState state, @Nullable PlayerEntity player) {
-        if (canRespawnAnchorExplode(world)) {
-            return true;
-        }
+    private static boolean isInteractableRespawnAnchor(BlockState state, ItemStack stack) {
         int charges = state.get(RespawnAnchorBlock.CHARGES);
-        if (player != null && charges < 4) {
-            if (player.getMainHandStack().isOf(Items.GLOWSTONE)
-                    || player.getOffHandStack().isOf(Items.GLOWSTONE)) {
-                return true;
-            }
-        }
-        if (charges == 0) {
+        if (charges == 0 && !stack.isOf(Items.GLOWSTONE)) {
             return false;
         }
-
         return true;
     }
 
@@ -195,7 +185,7 @@ public class InteractUtils {
             World world, PlayerEntity player, BlockPos pos, BlockState state, ItemStack interactStack) {
         Block block = state.getBlock();
         if (block instanceof RespawnAnchorBlock) {
-            return isInteractableRespawnAnchor(world, state, player);
+            return isInteractableRespawnAnchor(state, interactStack);
         }
         if (block instanceof LecternBlock) {
             return state.contains(LecternBlock.HAS_BOOK) && state.get(LecternBlock.HAS_BOOK);
