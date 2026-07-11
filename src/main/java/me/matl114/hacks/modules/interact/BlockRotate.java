@@ -1,8 +1,6 @@
 package me.matl114.hacks.modules.interact;
 
 import com.google.common.util.concurrent.Runnables;
-import java.util.*;
-import java.util.List;
 import me.matl114.accessors.access.HitResultAccess;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Event;
@@ -24,9 +22,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.NetworkUtils;
 import net.minecraft.block.*;
-import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.Orientation;
-import net.minecraft.block.enums.SlabType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
@@ -202,6 +198,7 @@ public class BlockRotate extends BaseModule {
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
 
             BlockPos modifyingBlockPos = useContext.getPlaceBlockPos(packet.getHand(), packetHitResult);
+            if (!LitematicaHooks.getInstance().isPositionWithinRange(modifyingBlockPos)) return;
             clientState = mc.world.getBlockState(modifyingBlockPos);
             litematicaState = litematicaWorld.getBlockState(modifyingBlockPos);
             if (!litematicaState.isAir()
@@ -238,250 +235,10 @@ public class BlockRotate extends BaseModule {
     }
 
     public BlockHitResult correctEasyPlaceHitResult(BlockHitResult hitResult, BlockState targetState) {
-        BlockHitResult result = null;
-        result = createHitResultRelatived(
+
+        var result = InteractionTasks.createSpecificStateHitResult(
                 hitResult.getSide().getOpposite(), hitResult.getBlockPos(), targetState, false, false);
-        return result == null ? hitResult : result;
-    }
-
-    public static BlockHitResult createHitResultRelatived(
-            Direction preferredDirection,
-            BlockPos placeTargetBlock,
-            BlockState targetState,
-            boolean enableAirPlace,
-            boolean enablePositionPlace) {
-        Set<Direction> availableSides = new HashSet<>(List.of(Direction.values()));
-        Block block = targetState.getBlock();
-        Vec3d centerPos = placeTargetBlock.toCenterPos();
-        Vec3d eyePos = mc.player.getEyePos();
-        List<Direction> order = new ArrayList<>(6);
-
-        if (block instanceof StairsBlock) {
-            BlockHalf half = targetState.get(StairsBlock.HALF);
-            order.add(half == BlockHalf.TOP ? Direction.UP : Direction.DOWN);
-            order.addAll(
-                    Arrays.asList(new Direction[] {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST}));
-            for (var direction : order) {
-                Vec3d plateCenter = centerPos.offset(direction, 0.5);
-                Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
-                BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
-
-                Vec3d interactPos = (direction == Direction.DOWN || direction == Direction.UP)
-                        ? plateCenter
-                        : plateCenter.add(0, 0.25 * (half == BlockHalf.TOP ? 1 : -1), 0);
-                if (enableAirPlace) {
-                    return new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false);
-                }
-                BlockState interactState = mc.world.getBlockState(targetPos);
-                if (interactState.isAir() || interactState.isLiquid()) {
-                    continue;
-                }
-                if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
-                    // ?
-                    return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
-                } else {
-                    Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                    Vec3d plateLLL = Vec3d.of(direction.getVector());
-                    if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
-                        return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
-                    }
-                }
-            }
-        } else if (block instanceof SlabBlock) {
-            SlabType type = targetState.get(SlabBlock.TYPE);
-            int sgn;
-            if (type == SlabType.DOUBLE) {
-                order.add(Direction.UP);
-                order.add(Direction.DOWN);
-                sgn = 0;
-            } else if (type == SlabType.TOP) {
-                order.add(Direction.UP);
-                sgn = 1;
-            } else if (type == SlabType.BOTTOM) {
-                order.add(Direction.DOWN);
-                sgn = -1;
-            } else {
-                sgn = 0;
-            }
-            order.addAll(
-                    Arrays.asList(new Direction[] {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST}));
-            for (var direction : order) {
-                Vec3d plateCenter = centerPos.offset(direction, 0.5);
-                Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
-                BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
-                // check double condition
-                BlockState interactState = mc.world.getBlockState(targetPos);
-                // this will make the interactState become DOUBLE
-                if (interactState.isOf(targetState.getBlock())
-                        && interactState.get(SlabBlock.TYPE) != SlabType.DOUBLE
-                        && interactState.get(SlabBlock.TYPE) != targetState.get(SlabBlock.TYPE)) {
-                    continue;
-                }
-                Vec3d interactPos = (direction == Direction.DOWN || direction == Direction.UP)
-                        ? plateCenter
-                        : plateCenter.add(0, 0.25 * (double) sgn, 0);
-                if (enableAirPlace) {
-                    return new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false);
-                }
-                if ((interactState.isAir() || interactState.isLiquid())) {
-                    continue;
-                }
-                if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
-                    // ?
-                    return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
-                } else {
-                    Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                    Vec3d plateLLL = Vec3d.of(direction.getVector());
-                    if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
-                        return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
-                    }
-                }
-            }
-            // DOUBLE 类型不修改
-        } else if (block instanceof TrapdoorBlock) {
-            BlockHalf half = targetState.get(TrapdoorBlock.HALF);
-            // 根据 HALF 决定优先的垂直方向
-            if (half == BlockHalf.BOTTOM) {
-                order.add(Direction.DOWN);
-                availableSides.remove(Direction.UP); // 不能从上面点击放置下半活板门
-            } else {
-                order.add(Direction.UP);
-                availableSides.remove(Direction.DOWN); // 不能从下面点击放置上半活板门
-            }
-            // 添加水平方向
-            order.addAll(Arrays.asList(Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST));
-
-            for (var direction : order) {
-                if (direction.getAxis().isHorizontal()
-                        && targetState.get(TrapdoorBlock.FACING) != direction.getOpposite()) {
-                    continue;
-                }
-                Vec3d plateCenter = centerPos.offset(direction, 0.5);
-                Vec3d interactBlockCenter = centerPos.offset(direction, 1.0);
-                BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
-                BlockState interactState = mc.world.getBlockState(targetPos);
-                // 交互点：对于垂直方向使用 plateCenter，对于水平方向需要根据 HALF 调整 Y 偏移
-                Vec3d interactPos;
-                if (direction == Direction.DOWN || direction == Direction.UP) {
-                    interactPos = plateCenter;
-                } else {
-                    double yOffset = (half == BlockHalf.TOP) ? 0.25 : -0.25;
-                    interactPos = plateCenter.add(0, yOffset, 0);
-                }
-                if (enableAirPlace) {
-                    return new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false);
-                }
-                if ((interactState.isAir() || interactState.isLiquid())) {
-                    continue;
-                }
-                if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
-                    return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, true);
-                } else {
-                    Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                    Vec3d plateLLL = Vec3d.of(direction.getVector());
-                    if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
-                        return new BlockHitResult(interactPos, direction.getOpposite(), targetPos, false);
-                    }
-                }
-            }
-        } else {
-            // 对特定方块进行方向过滤（仅基于 getSide 的直接使用）
-            if (block instanceof EndRodBlock) {
-                Direction targetFacing = targetState.get(EndRodBlock.FACING);
-                // EndRodBlock: getPlacementState 直接 with(FACING, ctx.getSide())
-                availableSides.removeIf(dir -> dir != targetFacing);
-            } else if (block instanceof ChestBlock) {
-                // ChestBlock: getPlacementState 未直接使用 getSide 设置 FACING（使用了 getHorizontalPlayerFacing）
-                // 因此不做任何过滤，保留所有方向
-            } else if (block instanceof BellBlock) {
-                // BellBlock: 在水平方向时，FACING 设置为 ctx.getSide().getOpposite()
-                // 垂直方向时 FACING 使用 getHorizontalPlayerFacing，不依赖 getSide
-                Direction targetFacing = targetState.get(BellBlock.FACING);
-                if (targetFacing.getAxis().isHorizontal()) {
-                    // 只允许与 targetFacing 相反的方向（因为 with(FACING, direction.getOpposite())）
-                    Direction allowedSide = targetFacing.getOpposite();
-                    availableSides.removeIf(dir -> dir != allowedSide);
-                }
-                // 如果 targetFacing 垂直，则保留所有方向（因为垂直时 FACING 不由 getSide 决定）
-            } else if (block instanceof LightningRodBlock) {
-                Direction targetFacing = targetState.get(LightningRodBlock.FACING);
-                // LightningRodBlock: 直接 with(FACING, ctx.getSide())
-                availableSides.removeIf(dir -> dir != targetFacing);
-            } else if (block instanceof ShulkerBoxBlock) {
-                Direction targetFacing = targetState.get(ShulkerBoxBlock.FACING);
-                // ShulkerBoxBlock: 直接 with(FACING, ctx.getSide())
-                availableSides.removeIf(dir -> dir != targetFacing);
-            } else if (block instanceof HopperBlock) {
-                Direction targetFacing = targetState.get(HopperBlock.FACING);
-                // HopperBlock: getPlacementState 逻辑
-                //   direction = ctx.getSide().getOpposite()
-                //   if direction.getAxis() == Y -> final = DOWN, else final = direction
-                // 因此允许的 getSide 需满足：
-                //   如果 targetFacing == DOWN，则允许 UP 或 DOWN
-                //   如果 targetFacing 水平，则允许 targetFacing.getOpposite()
-                if (targetFacing == Direction.DOWN) {
-                    availableSides.removeIf(dir -> dir != Direction.UP && dir != Direction.DOWN);
-                } else {
-                    Direction allowedSide = targetFacing.getOpposite();
-                    availableSides.removeIf(dir -> dir != allowedSide);
-                }
-            } else if (block instanceof RotatedInfestedBlock) {
-                Direction.Axis targetAxis = targetState.get(PillarBlock.AXIS);
-                // RotatedInfestedBlock: with(PillarBlock.AXIS, ctx.getSide().getAxis())
-                // 允许的方向轴必须等于 targetAxis
-                availableSides.removeIf(dir -> dir.getAxis() != targetAxis);
-            } else if (block instanceof AmethystClusterBlock) {
-                Direction targetFacing = targetState.get(AmethystClusterBlock.FACING);
-                // AmethystClusterBlock: 直接 with(FACING, ctx.getSide())
-                availableSides.removeIf(dir -> dir != targetFacing);
-            } else if (block instanceof WallHangingSignBlock) {
-                // 注意：WallHangingSignBlock 已经在 else 分支之前单独处理了？这里补充过滤
-                // 挂式告示牌不能放在天花板或地板上，且 FACING 由 getSide 的相反方向决定？实际上其 getPlacementState 遍历水平方向
-                // 简化：移除垂直方向，水平方向保留所有（因为最终 FACING 由多个因素决定，但 getSide 用于确定方向之一）
-                // 由于我们已经在 TrapdoorBlock 之后处理了 WallHangingSignBlock 的过滤（见之前代码），这里不再重复
-            }
-            // 其他方块不做过滤（保留所有方向）
-            Direction dir = preferredDirection;
-            if (availableSides.contains(dir.getOpposite())) {
-                order.add(dir);
-            }
-            for (var direction : new Direction[] {
-                Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST
-            }) {
-                if (direction != dir && availableSides.contains(dir.getOpposite())) {
-                    order.add(direction);
-                }
-            }
-            if (enableAirPlace) {
-                if (order.isEmpty()) {
-                    return null;
-                }
-                Direction availableDirection = order.get(0);
-                Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
-                return new BlockHitResult(plateCenter, availableDirection.getOpposite(), placeTargetBlock, false);
-            } else {
-                for (var direction : order) {
-                    Vec3d plateCenter = centerPos.offset(direction, 0.5);
-                    Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
-                    BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
-                    BlockState interactState = mc.world.getBlockState(targetPos);
-                    if ((interactState.isAir() || interactState.isLiquid())) {
-                        continue;
-                    }
-                    if (Box.from(Vec3d.of(targetPos)).contains(eyePos)) {
-                        // ?
-                        return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true);
-                    } else {
-                        Vec3d iSeeVect = eyePos.subtract(plateCenter);
-                        Vec3d plateLLL = Vec3d.of(direction.getVector());
-                        if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
-                            return new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false);
-                        }
-                    }
-                }
-            }
-        }
-        return null;
+        return result == null ? hitResult : result.val();
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> e) {

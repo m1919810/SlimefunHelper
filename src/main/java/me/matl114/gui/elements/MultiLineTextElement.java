@@ -36,7 +36,7 @@ public class MultiLineTextElement extends RawTextElement {
         Text multiLine = text.getText(element);
         if (multiLine != null) {
             int width = element.getTextureWidth();
-            List<OrderedText> lines = mc.textRenderer.wrapLines(multiLine, width - 2);
+            List<OrderedText> lines = mc.textRenderer.wrapLines(multiLine, width);
             int size = lines.size();
             if (size > 0) {
                 int lineHeight = 9;
@@ -45,7 +45,7 @@ public class MultiLineTextElement extends RawTextElement {
                 if (estimated < element.getTextureHeight()) {
                     startY = (element.getTextureHeight() - estimated) / 2;
                 } else {
-                    lineHeight = Math.max(lineHeight, element.getTextureHeight() / size);
+                    lineHeight = Math.min(lineHeight, element.getTextureHeight() / size);
                 }
                 for (int i = 0; i < size; i++) {
                     RenderHandler.drawScaledText0(

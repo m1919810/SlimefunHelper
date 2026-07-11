@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Main.class)
 public abstract class MainEvents {
+
     @Inject(
             method = "main",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;run()V", shift = At.Shift.AFTER))
@@ -29,7 +30,7 @@ public abstract class MainEvents {
             // not a crash
             if (GlobalEventVars.crashReportEvent == null) {
                 MinecraftClient mc = MinecraftClient.getInstance();
-                GlobalEventVars.crashReportEvent = new Event<>(mc, mc.isRunning(), false);
+                GlobalEventVars.crashReportEvent = new Event<>(mc, mc.isRunning(), false, (Object) null);
                 if (!Listener.getClientMainExit().isEmpty()) {
                     Listener.getClientMainExit().handleValue(GlobalEventVars.crashReportEvent);
                 }
@@ -59,7 +60,7 @@ public abstract class MainEvents {
                 GlobalEventVars.crashReport = null;
             } else {
                 if (!Listener.getClientMainExit().isEmpty()) {
-                    Event<MinecraftClient> event = new Event<>(mc, mc.isRunning(), false);
+                    Event<MinecraftClient> event = new Event<>(mc, mc.isRunning(), false, (Object) null);
                     Listener.getClientMainExit().handleValue(event);
                     if (!event.isCancelled()) {
                         break;

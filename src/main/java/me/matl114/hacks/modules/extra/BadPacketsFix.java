@@ -74,6 +74,10 @@ public class BadPacketsFix extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef cancelLitematicaTransmit = builder(badPackets.add("fix-litematica-transmit"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();

@@ -3,6 +3,7 @@ package me.matl114.utils;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.SpawnerBlock;
 import net.minecraft.client.MinecraftClient;
@@ -530,6 +531,92 @@ public class EntityUtils {
 
         // 5. 空气阻力（水平0.99，垂直0.98）
         return vel.multiply(0.99, 0.98, 0.99);
+    }
+
+    public static Vec3d simulateTravelInFluidVelocity(
+            Vec3d velocity, boolean lastInWater, boolean lastInLava, boolean hasGravity) {
+        if (lastInWater) {
+            return simulateTravelInWaterVelocity(velocity, hasGravity);
+        }
+        if (lastInLava) {
+            return simulateTravelInLavaVelocity(velocity, hasGravity);
+        }
+        return velocity;
+    }
+
+    private static Vec3d simulateTravelInWaterVelocity(Vec3d velocity, boolean hasGravity) {
+        PlayerInputUtils.Input input = PlayerStateManager.INSTANCE.lastInput;
+        Vec3d movementInput = new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
+        boolean falling = velocity.y <= 0.0;
+        double y = mc.player.getY();
+        double gravity = EntityUtils.getEffectiveGravity(mc.player);
+        float drag = mc.player.isSprinting() ? 0.9F : 0.8F;
+        float acceleration = 0.02F;
+        float efficiency = (float)
+                mc.player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.WATER_MOVEMENT_EFFICIENCY);
+        if (!mc.player.isOnGround()) {
+            efficiency *= 0.5F;
+        }
+        if (efficiency > 0.0F) {
+            drag += (0.54600006F - drag) * efficiency;
+            acceleration += (mc.player.getMovementSpeed() - acceleration) * efficiency;
+        }
+        if (mc.player.hasStatusEffect(StatusEffects.DOLPHINS_GRACE)) {
+            drag = 0.96F;
+        }
+        Vec3d nextVelocity =
+                velocity.add(EntityUtils.movementInputToVelocity(movementInput, acceleration, mc.player.getYaw()));
+        if (mc.player.horizontalCollision && mc.player.isClimbing()) {
+            nextVelocity = new Vec3d(nextVelocity.x, 0.2, nextVelocity.z);
+        }
+        nextVelocity = nextVelocity.multiply((double) drag, 0.800000011920929, (double) drag);
+        nextVelocity =
+                simulateApplyFluidMovingSpeed(gravity, falling, nextVelocity, hasGravity, mc.player.isSprinting());
+        return simulateResetVerticalVelocityInFluid(nextVelocity, y);
+    }
+
+    private static Vec3d simulateTravelInLavaVelocity(Vec3d velocity, boolean hasGravity) {
+        PlayerInputUtils.Input input = PlayerStateManager.INSTANCE.lastInput;
+        Vec3d movementInput = new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
+        boolean falling = velocity.y <= 0.0;
+        double y = mc.player.getY();
+        double gravity = EntityUtils.getEffectiveGravity(mc.player);
+        Vec3d nextVelocity =
+                velocity.add(EntityUtils.movementInputToVelocity(movementInput, 0.02F, mc.player.getYaw()));
+        if (mc.player.getFluidHeight(net.minecraft.registry.tag.FluidTags.LAVA) <= mc.player.getSwimHeight()) {
+            nextVelocity = nextVelocity.multiply(0.5, 0.800000011920929, 0.5);
+            nextVelocity =
+                    simulateApplyFluidMovingSpeed(gravity, falling, nextVelocity, hasGravity, mc.player.isSprinting());
+        } else {
+            nextVelocity = nextVelocity.multiply(0.5);
+        }
+        if (gravity != 0.0) {
+            nextVelocity = nextVelocity.add(0.0, -gravity / 4.0, 0.0);
+        }
+        return simulateResetVerticalVelocityInFluid(nextVelocity, y);
+    }
+
+    private static Vec3d simulateApplyFluidMovingSpeed(
+            double gravity, boolean falling, Vec3d velocity, boolean hasGravity, boolean isSprinting) {
+        if (gravity != 0.0 && hasGravity && !isSprinting) {
+            double nextY;
+            if (falling && Math.abs(velocity.y - 0.005) >= 0.003 && Math.abs(velocity.y - gravity / 16.0) < 0.003) {
+                nextY = -0.003;
+            } else {
+                nextY = velocity.y - gravity / 16.0;
+            }
+            return new Vec3d(velocity.x, nextY, velocity.z);
+        }
+        return velocity;
+    }
+
+    private static Vec3d simulateResetVerticalVelocityInFluid(Vec3d velocity, double y) {
+        if (mc.player.horizontalCollision
+                && mc.player.doesNotCollide(
+                        velocity.x, velocity.y + 0.6000000238418579 - mc.player.getY() + y, velocity.z)) {
+            return new Vec3d(velocity.x, 0.30000001192092896, velocity.z);
+        }
+        return velocity;
     }
 
     /**

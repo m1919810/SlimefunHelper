@@ -110,6 +110,8 @@ public class EntityLog extends BaseModule {
 
     public void onEntitySpawn(Event<EntitySpawnS2CPacket> packetEvent) {
         // Debug.info("check entity", packet.getEntityType());
+        if (checkNull()) return;
+        if (loginServerCheck()) return;
         var packet = packetEvent.context();
         if (enable.get()) {
             if (whiteList.get().test(packet.getEntityType())) {
@@ -166,6 +168,8 @@ public class EntityLog extends BaseModule {
     }
 
     public void onEntityRemove(Event<EntitiesDestroyS2CPacket> packetEvent) {
+        if (checkNull()) return;
+        if (loginServerCheck()) return;
         if (enable.get()) {
             var packet = packetEvent.context();
             if (mc.world != null) {
@@ -427,6 +431,10 @@ public class EntityLog extends BaseModule {
                 entry.exitCode = 0;
             }
         }
+    }
+
+    public boolean loginServerCheck() {
+        return mc.world.getWorldBorder().getSize() < 100;
     }
 
     @AllArgsConstructor

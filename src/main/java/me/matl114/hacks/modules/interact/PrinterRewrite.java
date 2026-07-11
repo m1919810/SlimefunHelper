@@ -13,6 +13,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.managers.Configs;
@@ -66,6 +67,9 @@ public class PrinterRewrite extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
+    public final FlagRef autoSneak =
+            flagBuilder(litematicaPrinterRewrite.add("auto-sneak")).build();
+
     public List<Vec3i> blocksSeq = new ArrayList<>();
 
     public void updateBlocks(int i) {
@@ -105,6 +109,7 @@ public class PrinterRewrite extends BaseModule {
     //    final Set<BlockPos> placeFailureBlocks = new HashSet<>();
     //    final Set<BlockPos> placeSuccessBlocks = new HashSet<>();
     final RenderCollector<Box> drawOutlines = RenderCollectors.createBoxCollector(true, false, false);
+    boolean needSneak = false;
 
     public void onPreInputEvent(Event<Void> event) {
         if (++countDown > delay.get()) {
@@ -125,23 +130,31 @@ public class PrinterRewrite extends BaseModule {
             int placeCount = 0;
             for (var offset : blocksSeq) {
                 BlockPos checkPos = posCenter.add(offset);
-                BlockState state = litematicaWorld.getBlockState(checkPos);
-                if (!state.isAir() && !state.isLiquid()) {
-                    BlockState clientState = mc.world.getBlockState(checkPos);
-                    if ((clientState.isAir() || clientState.isLiquid() || clientState.isReplaceable())
-                            && clientState != state) {
-                        // do place
-                        if (placeCount != 0) {
-                            InteractionTasks.flushACPlaceQueue();
-                        }
-                        if (doPlace(checkPos, state, !mode.get().isLegal())) {
-                            placeCount += 1;
-                            if (placeCount >= multiply) {
-                                break;
+                if (LitematicaHooks.getInstance().isPositionWithinRange(checkPos)) {
+                    BlockState state = litematicaWorld.getBlockState(checkPos);
+                    if (!state.isAir() && !state.isLiquid()) {
+                        BlockState clientState = mc.world.getBlockState(checkPos);
+                        if ((clientState.isAir() || clientState.isLiquid() || clientState.isReplaceable())
+                                && clientState != state) {
+                            // do place
+                            if (placeCount != 0) {
+                                InteractionTasks.flushACPlaceQueue();
+                            }
+                            if (doPlace(checkPos, state, !mode.get().isLegal())) {
+                                placeCount += 1;
+                                if (placeCount >= multiply) {
+                                    break;
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
+        if (needSneak) {
+            needSneak = false;
+            if (autoSneak.get()) {
+                PlayerInputManager.INSTANCE.addSneakModifier(0, true, Math.max(delay.get() - 1, 0), 2);
             }
         }
     }
@@ -170,10 +183,17 @@ public class PrinterRewrite extends BaseModule {
             putCanNotPlace(pos);
             return false;
         }
-        BlockHitResult result =
-                BlockRotate.createHitResultRelatived(mc.player.getFacing(), pos, targetState, useAirPlace, useAirPlace);
+        var result = InteractionTasks.createSpecificStateHitResult(
+                mc.player.getFacing(), pos, targetState, useAirPlace, useAirPlace);
         // add placement collision check
-        if (result != null && InteractUtils.getBlockPlacement(needBlock, mc.player, mc.world, result) != null) {
+        if (result != null && InteractUtils.getBlockPlacement(needBlock, mc.player, mc.world, result.val()) != null) {
+            if (result.flag()) {
+                needSneak = true;
+                if (!InteractUtils.canInteract(mc.player, result)) {
+                    putCanNotPlace(pos);
+                    return false;
+                }
+            }
             FlagRef enableRotateFix = InteractionTasks.getBlockRotate().enable2;
             FlagRef enableLegalLook = InteractionTasks.getBlockRotate().legal;
             EnumRef<Configs.BypassMode> enableRot = InteractionTasks.getBlockRotate().bypassMode2;
@@ -194,7 +214,7 @@ public class PrinterRewrite extends BaseModule {
                     putCanNotPlace(pos);
                     return false;
                 }
-                handlePlace(result);
+                handlePlace(result.val());
                 // sb grimac
                 // callback.run()
                 putSuccessPlace(pos);

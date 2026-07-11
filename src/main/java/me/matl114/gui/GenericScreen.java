@@ -4,6 +4,7 @@ import java.util.Iterator;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -19,6 +20,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
     protected int y;
     protected Text titleLabel;
     protected float currentShrink = 1.0F;
+    public static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public GenericScreen setTitleLabel(Text text) {
         this.titleLabel = text;
