@@ -25,7 +25,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class InteractUtils {
@@ -150,8 +149,8 @@ public class InteractUtils {
         if (!hasLead) {
             return false;
         }
-        List<Leashable> leashables = Leashable.collectLeashablesAround(
-                world, Vec3d.ofCenter(pos), entity -> entity.getLeashHolder() == player);
+        List<Leashable> leashables =
+                LeadItem.collectLeashablesAround(world, pos, entity -> entity.getLeashHolder() == player);
         return !leashables.isEmpty();
     }
 

@@ -27,6 +27,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet;
@@ -683,8 +684,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         if (noSlowUseItemGrim()) {
             if (useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY_V3)) {
                 v3Tick = PlayerInputUtils.of(mc.player).forward()
-                        && mc.player.getHungerManager().canSprint()
-                        && !mc.player.hasBlindnessEffect();
+                        && mc.player.getHungerManager().getFoodLevel() > 6
+                        && !mc.player.hasStatusEffect(StatusEffects.BLINDNESS);
             } else {
                 v3Tick = false;
             }

@@ -60,7 +60,7 @@ public class AttributeUtils {
         LivingEntityAccess.of(living).updateEquipmentAttributeChange();
     }
 
-    public static  Map<EquipmentSlot, ItemStack> getEquipmentChanges() {
+    public static Map<EquipmentSlot, ItemStack> getEquipmentChanges() {
         return null;
     }
 
@@ -109,7 +109,10 @@ public class AttributeUtils {
 
     private static int getEquipmentLevel(
             RegistryKey<Enchantment> enchantment, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
-        var entry = ItemStackUtils.registry().getOptional(enchantment.getRegistryRef()).flatMap(s -> s.getOptional(enchantment)).orElseThrow();
+        var entry = ItemStackUtils.registry()
+                .getOptional(enchantment.getRegistryRef())
+                .flatMap(s -> s.getOptional(enchantment))
+                .orElseThrow();
         int i = 0;
         var var4 = equipmentOverrides.entrySet().iterator();
 
