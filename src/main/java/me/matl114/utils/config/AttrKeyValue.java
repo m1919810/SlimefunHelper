@@ -7,12 +7,15 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.complex.config.KeyValueInputWidget;
+import me.matl114.gui.elements.LabelElement;
 import me.matl114.utils.ReflectUtils;
 import me.matl114.utils.config.kv.EnumAttrKeyValue;
 import me.matl114.utils.config.kv.RegistryAttrKeyValue;
 import me.matl114.utils.config.kv.StringListAttrKeyValue;
 import net.minecraft.registry.Registry;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public interface AttrKeyValue<T> extends KeyValue<T>, PropertyTracker<Object, String> {
@@ -149,6 +152,21 @@ public interface AttrKeyValue<T> extends KeyValue<T>, PropertyTracker<Object, St
 
         public static <T> UnaryOperator<CustomWidgetFactory<T>> cutSizeXRight(double portion) {
             return (w) -> cutSizeXRight(w, portion);
+        }
+
+        public static <T> UnaryOperator<CustomWidgetFactory<T>> withLabel(Text label) {
+            return (w) -> {
+                return (s111, x, y, dx, dy) -> {
+                    SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
+                    subScreenWidget.addDrawableChild(DisplayWidget.instance(1, 1, dy * 2 - 2, dy - 2)
+                            .setRenderHandler(new LabelElement(Text.empty(), -1)));
+                    subScreenWidget.addDrawableChild(
+                            DisplayWidget.instance(0, 0, dy * 2, dy).setRenderHandler(new RawTextElement(label, -1)));
+
+                    subScreenWidget.addDrawableChild(w.generateWidget(s111, dy * 2, 0, dx - dy * 2, dy));
+                    return subScreenWidget;
+                };
+            };
         }
     }
 }

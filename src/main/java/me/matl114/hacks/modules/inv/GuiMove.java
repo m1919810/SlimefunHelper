@@ -2,6 +2,8 @@ package me.matl114.hacks.modules.inv;
 
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.WidgetUtils;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -118,8 +120,15 @@ public class GuiMove extends BaseModule {
                 || mc.currentScreen instanceof AnvilScreen
                 || mc.currentScreen instanceof CommandBlockScreen
                 || mc.currentScreen instanceof StructureBlockScreen
-                || mc.currentScreen.getFocused() instanceof TextFieldWidget) return true;
+                || mc.currentScreen.getFocused() instanceof TextFieldWidget
+                || (mc.currentScreen.getFocused() instanceof DrawableWidget widget && checkCustomWidget(widget)))
+            return true;
         if (allGui.get()) return false;
         return !(mc.currentScreen instanceof HandledScreen<?>);
+    }
+
+    public boolean checkCustomWidget(DrawableWidget drawableWidget) {
+        DrawableWidget drawable = WidgetUtils.getFocusedWidget(drawableWidget);
+        return drawable != null && WidgetUtils.isInputWidget(drawable);
     }
 }

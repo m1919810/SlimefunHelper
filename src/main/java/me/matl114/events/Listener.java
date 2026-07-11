@@ -71,6 +71,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
 import net.minecraft.util.crash.CrashException;
+import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -362,6 +363,7 @@ public class Listener {
 
     @Getter
     @Cancelable(optional = true)
+    @ExtraArgs(CrashReport.class)
     private static final EventChannel<MinecraftClient> clientMainExit = new EventChannel<>();
 
     // chat events

@@ -19,6 +19,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
+import me.matl114.utils.collections.FlagEntry;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.BlockItem;
@@ -232,12 +233,12 @@ public class Scaffold extends BaseModule {
                 return hitResult;
             }
         }
-        BlockHitResult hitResult;
+        FlagEntry<BlockHitResult> hitResult;
         boolean enableAirPlace = !legalMode.get().isLegal();
         BlockState state = mc.world.getBlockState(pos);
         if (state.isReplaceable() && InteractUtils.canCubePlace(mc.player, pos)) {
             hitResult = InteractionTasks.getPlaceSupportingResult(predictedEyePos, pos, enableAirPlace, enableAirPlace);
-            if (hitResult != null) return hitResult;
+            if (hitResult != null && InteractUtils.canInteract(mc.player, hitResult)) return hitResult.val();
         }
 
         for (var vec3d : searchOffsets) {
@@ -250,7 +251,7 @@ public class Scaffold extends BaseModule {
                             checkPos,
                             !legalMode.get().isLegal(),
                             !legalMode.get().isLegal());
-                    if (hitResult != null) return hitResult;
+                    if (hitResult != null) return hitResult.val();
                 }
             }
         }

@@ -55,7 +55,7 @@ public class ServerStorage extends BaseModule {
                     path.add("persistent-storage-name-mapper"),
                     NBTType.<PrimitivePairList<String, String>>parameter(PrimitivePairList.class))
             .defaultValue(new PrimitivePairList<>(
-                    NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, List.of(Pair.of("3c3u.org", "3c3u"))))
+                    "", "", NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, List.of(Pair.of("3c3u.org", "3c3u"))))
             .build();
 
     public static final File SAVE_FILE = FileManager.getInstance().getAndCreateFile("server_storage");

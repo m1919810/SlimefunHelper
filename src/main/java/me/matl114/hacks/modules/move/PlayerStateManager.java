@@ -91,6 +91,7 @@ public class PlayerStateManager extends BaseModule {
     public BlockPos lastVelocityAffectingPos = BlockPos.ORIGIN;
     public Map<ItemStackSample, Integer> inventorySummary;
     public Map<ItemStackSample, Integer> inventoryTotalSummary;
+    public int glidingTicks;
     private static final int MAX_SIZE = 20;
 
     {
@@ -432,6 +433,11 @@ public class PlayerStateManager extends BaseModule {
         if (lastClimbing) {
             fallDistance = 0.0;
         }
+        if (mc.player.isFallFlying()) {
+            glidingTicks += 1;
+        } else {
+            glidingTicks = 0;
+        }
     }
 
     public void onEntityAttackEvent(Event<EntityDamageS2CPacket> eventS2C) {
@@ -511,6 +517,7 @@ public class PlayerStateManager extends BaseModule {
         lastVelocityAffectingPos = BlockPos.ORIGIN;
         inventoryTotalSummary = null;
         inventorySummary = null;
+        glidingTicks = 0;
     }
 
     public void onTickEnd(Event<ClientPlayerEntity> tickEndPacket) {

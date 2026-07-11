@@ -84,22 +84,32 @@ public class PlayerQueue extends BaseModule {
         for (var re : mc.getNetworkHandler().getPlayerList()) {
             if (re.getGameMode() == GameMode.SPECTATOR) {
                 currentQueuePosition++;
-                playerQueue.addLast(
-                        new Entry(VRecord.getId(re.getProfile()), re, currentQueuePosition, true, Tasks.getTick()));
+                playerQueue.addLast(new Entry(
+                        VRecord.getId(re.getProfile()),
+                        re,
+                        currentQueuePosition,
+                        currentQueuePosition,
+                        true,
+                        Tasks.getTick()));
                 uniqueSetPlayer.add(VRecord.getId(re.getProfile()));
             }
         }
     }
 
     public void onJoinPositionChange() {
-        if (enable.get() && !trackedPlayers.isEmpty()) {
-            IntSet intSet = new IntOpenHashSet(mentionOrderList.get().list());
+        if (!trackedPlayers.isEmpty()) {
+            IntSet intSet = null;
             int order = 0;
             for (var re : playerQueue) {
                 order += 1;
                 if (re.initialize) continue;
+                int lastOrder = re.lastOrder;
+                re.lastOrder = re.order;
                 re.order = order;
-                if (intSet.contains(order)) {
+                if (enable.get() && lastOrder != order) {
+                    if (intSet == null) {
+                        intSet = new IntOpenHashSet(mentionOrderList.get().list());
+                    }
                     String name = VRecord.getName(re.entry.getProfile());
                     if (trackedPlayers.contains(name)) {
                         Debug.chat(ChatUtils.stringToText(
@@ -111,16 +121,19 @@ public class PlayerQueue extends BaseModule {
     }
 
     public void onTrackedLeave(Entry entry, boolean leaveServer) {
-        if (enable.get() && !trackedPlayers.isEmpty()) {
+        if (!trackedPlayers.isEmpty()) {
             String name = VRecord.getName(entry.entry.getProfile());
             if (trackedPlayers.contains(name)) {
                 trackedPlayers.remove(name);
-                if (leaveServer) {
-                    Debug.chat(ChatUtils.stringToText("&c[Queue] &fPlayer %s leave the queue server".formatted(name)));
-                } else {
-                    boolean maySkipQueue = mentionSkipQueue.get() && !entry.initialize && entry.order > 3;
-                    Debug.chat(ChatUtils.stringToText("&c[Queue] &fPlayer %s finish queue %s"
-                            .formatted(name, (maySkipQueue ? "(may skip queue)" : ""))));
+                if (enable.get()) {
+                    if (leaveServer) {
+                        Debug.chat(
+                                ChatUtils.stringToText("&c[Queue] &fPlayer %s leave the queue server".formatted(name)));
+                    } else {
+                        boolean maySkipQueue = mentionSkipQueue.get() && !entry.initialize && entry.order > 3;
+                        Debug.chat(ChatUtils.stringToText("&c[Queue] &fPlayer %s finish queue %s"
+                                .formatted(name, (maySkipQueue ? "(may skip queue)" : ""))));
+                    }
                 }
             }
         }
@@ -130,7 +143,7 @@ public class PlayerQueue extends BaseModule {
         UUID uid = VRecord.getId(entry.getProfile());
         if (!uniqueSetPlayer.contains(uid)) {
             uniqueSetPlayer.add(uid);
-            playerQueue.addLast(new Entry(uid, entry, playerQueue.size(), false, Tasks.getTick()));
+            playerQueue.addLast(new Entry(uid, entry, playerQueue.size(), 0, false, Tasks.getTick()));
         }
     }
 
@@ -264,6 +277,7 @@ public class PlayerQueue extends BaseModule {
         final UUID uuid;
         final PlayerListEntry entry;
         int order;
+        int lastOrder;
         final boolean initialize;
         final int startTick;
     }

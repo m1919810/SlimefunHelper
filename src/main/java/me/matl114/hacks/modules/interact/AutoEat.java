@@ -202,6 +202,7 @@ public class AutoEat extends BaseModule {
                 restoreCallback = cbb;
                 eatingSlot = offHand ? 40 : InventoryUtils.getSelectedSlot();
             } else {
+                KeyBindAccess.of(mc.options.useKey).resetKeyState();
                 cbb.run();
             }
         }
@@ -336,10 +337,6 @@ public class AutoEat extends BaseModule {
 
     public void onRightClick(Event<ActionResult> event) {
         Hand hand = event.getArgs(0);
-        if (eating) {
-            event.cancel();
-            return;
-        }
         if (enable.get() && forceEatLeftClick.get() && mc.options.useKey.isPressed() && !eating) {
             ItemStack stack = mc.player.getStackInHand(hand);
             Hand offhand = hand == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
@@ -401,7 +398,8 @@ public class AutoEat extends BaseModule {
         } else {
             score = 0;
         }
-        if (hurtPriority) {
+        // only combat eat gapple
+        if (hurtPriority && mc.world.getPlayers().size() > 1) {
             if (isGoldenAppleFood(stack)) {
                 score += 100.0D;
             }
