@@ -111,6 +111,8 @@ public class AutoUse extends BaseModule {
                                     ChatUtils.stringToText("&c[Use] &fStart to use"),
                                     mc.player.getActiveItem().getName());
                         }
+                    } else {
+                        KeyBindAccess.of(mc.options.useKey).resetKeyState();
                     }
                 } else {
                     if (lastAutoUsingSpear) {

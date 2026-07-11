@@ -11,10 +11,8 @@ import me.matl114.utils.EntityUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.MovementType;
+import net.minecraft.entity.*;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -50,6 +48,9 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
 
     @Shadow
     public abstract void remove(RemovalReason reason);
+
+    @Shadow
+    public abstract void equipStack(EquipmentSlot slot, ItemStack stack);
 
     @Unique
     @Override
@@ -103,11 +104,20 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
     private void onWaterGlide(Vec3d movementInput, CallbackInfo ci) {
         if (checkClientPlayer()) {
-            if (ElytraExtra.INSTANCE.ignoreLiquidPushFly.get() && isFallFlying()) {
+            Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
+            if (isFallFlying()
+                    && ((ElytraExtra.INSTANCE.fireworksLiquidFly.get()
+                                    && ElytraExtra.INSTANCE.canFireworkControlMotion())
+                            || overriding != null)) {
                 ci.cancel();
                 Vec3d vec3d = this.getVelocity();
-                this.setVelocity(EntityUtils.calculateGlidingVelocity(
-                        (ClientPlayerEntity) (Entity) this, vec3d, this.getRotationVector(), !this.hasNoGravity()));
+                if (overriding != null) {
+                    this.setVelocity(overriding);
+                } else {
+                    this.setVelocity(EntityUtils.calculateGlidingVelocity(
+                            (ClientPlayerEntity) (Entity) this, vec3d, this.getRotationVector(), !this.hasNoGravity()));
+                }
+                ;
                 this.move(MovementType.SELF, this.getVelocity());
             }
         }

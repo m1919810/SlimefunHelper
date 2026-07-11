@@ -32,7 +32,11 @@ public class BindCommand extends BaseModule implements IHotKey {
     public final NBTRef<PrimitivePairList<MultiKeyBind, String>> commands = builder(
                     root.add("commands"), PrimitivePairList.<MultiKeyBind, String>parameter())
             .defaultValue(new PrimitivePairList<>(
-                    NBTTypes.KEY_BIND_TYPE, NBTTypes.STRING_TYPE, List.of(Pair.of(new MultiKeyBind(), "/!!help"))))
+                    "widget.bind-command.hotkey",
+                    "widget.bind-command.command",
+                    NBTTypes.KEY_BIND_TYPE,
+                    NBTTypes.STRING_TYPE,
+                    List.of(Pair.of(new MultiKeyBind(), "/!!help"))))
             .build();
 
     public BindCommand() {}

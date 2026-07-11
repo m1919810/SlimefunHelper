@@ -44,6 +44,10 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     public final EnumRef<Mode> mode =
             builder(antiLiquid.add("mode"), Mode.class).defaultValue(Mode.NONE).build();
 
+    public final DoubleRef liquidCheckExpand = doubleBuilder(antiLiquid.add("water-expand-check"))
+            .defaultValue(0.2D)
+            .build();
+
     public final FlagRef enableWhenNotFly =
             flagBuilder(antiLiquid.add("enable-not-fly")).build();
 
@@ -84,9 +88,12 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
                 taskLast = 0;
             }
         }
+
         if (enable.get() && mode.get() != Mode.NONE) {
             // check condition
-            var box = mc.player.getBoundingBox();
+            var box = mc.player
+                    .getBoundingBox()
+                    .expand(liquidCheckExpand.get(), liquidCheckExpand.get(), liquidCheckExpand.get());
             var blocks = MathUtils.getOccupiedBlockPositions(box);
             for (var block : blocks) {
                 BlockState state = mc.world.getBlockState(block);
@@ -108,26 +115,30 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     }
 
     int taskLast = 0;
+    int taskSwitch = 0;
 
     private void handleMayFlyIntoFluid(Event<LegalMovementManager> eventMove, boolean isLava, boolean isWater) {
         boolean lastNotInWater = !PlayerStateManager.INSTANCE.lastInWater;
         boolean lastNotInLava = !PlayerStateManager.INSTANCE.lastInLava;
         if ((isWater && lastNotInWater) || (isLava && lastNotInLava)) {
-            if (mc.player.isFallFlying()) {
-                if (isWater && autoArmorFlyControl.get() && ElytraExtra.INSTANCE.armorFly.get()) {
-                    if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-                        // firstly reset the pos, so that player can continue gliding
-                        eventMove.cancel();
-                        // restore now!
-                        eventMove.context.playerStatus.restorePos();
-                        ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
-                        if (!ElytraExtra.INSTANCE.nextPacketResetFallFlying.isEmpty()) {
-                            currentArmorGlidingSaveState = true;
-                            taskLast = Tasks.getTick();
-                        }
-                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-                        return;
+            // optimize takeOff
+            if (mc.player.isFallFlying() && PlayerStateManager.INSTANCE.glidingTicks > 20) {
+                if (isWater
+                        && autoArmorFlyControl.get()
+                        && ElytraExtra.INSTANCE.armorFly.get()
+                        && ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
+                    // firstly reset the pos, so that player can continue gliding
+                    eventMove.cancel();
+                    // restore now!
+                    eventMove.context.playerStatus.restorePos();
+                    ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
+                    currentArmorGlidingSaveState = true;
+                    taskSwitch = Tasks.getTick();
+                    if (!ElytraExtra.INSTANCE.nextPacketResetFallFlying.isEmpty()) {
+                        taskLast = Tasks.getTick();
                     }
+                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                    return;
                 }
                 if (enableWhenFly.get()) {
                     eventMove.cancel();
@@ -145,7 +156,7 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     }
 
     private void handleOutOfWater() {
-        if (currentArmorGlidingSaveState) {
+        if (currentArmorGlidingSaveState && Tasks.getTick() > taskSwitch + switchElytraGt.get()) {
             Box leaveWater = mc.player
                     .getBoundingBox()
                     .expand(this.leaveWater.get(), this.leaveWater.get(), this.leaveWater.get());
