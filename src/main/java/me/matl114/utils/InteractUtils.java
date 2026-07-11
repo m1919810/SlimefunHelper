@@ -27,7 +27,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.attribute.EnvironmentAttributes;
 
 public class InteractUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -133,17 +132,7 @@ public class InteractUtils {
     }
 
     public static boolean canRespawnAnchorExplode(World world) {
-        if (world.getDimension().attributes().containsKey(EnvironmentAttributes.RESPAWN_ANCHOR_WORKS_GAMEPLAY)
-                && world.getDimension()
-                                .attributes()
-                                .getEntry(EnvironmentAttributes.RESPAWN_ANCHOR_WORKS_GAMEPLAY)
-                                .argument()
-                        instanceof Boolean bl
-                && bl) {
-            // may not explode
-            return false;
-        }
-        return true;
+        return !world.getDimension().respawnAnchorWorks();
     }
 
     private static boolean isInteractableRespawnAnchor(World world, BlockState state, @Nullable PlayerEntity player) {
