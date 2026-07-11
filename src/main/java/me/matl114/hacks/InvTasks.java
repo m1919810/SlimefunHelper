@@ -34,7 +34,6 @@ import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.ComponentType;
-import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -58,8 +57,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
 
 public class InvTasks {
     public static void init() {}
@@ -1089,13 +1086,6 @@ public class InvTasks {
         };
     }
 
-    private static boolean canShulkerOpen(BlockPos pos, BlockState state) {
-        Box box = ShulkerEntity.calculateBoundingBox(1.0F, (Direction) state.get(ShulkerBoxBlock.FACING), 0.0F, 0.5F)
-                .offset(pos.toBottomCenterPos())
-                .contract(1.0E-6);
-        return mc.world.isSpaceEmpty(box);
-    }
-
     public static int predictOpenVanillaContainerSize(BlockPos blockPos) {
         if (mc.world.getBlockEntity(blockPos) instanceof Inventory inventory) {
             int size = inventory.size();
@@ -1112,7 +1102,7 @@ public class InvTasks {
             if (inventory instanceof ShulkerBoxBlockEntity shulker) {
                 BlockState state = shulker.getCachedState();
                 if (shulker.getAnimationStage() == ShulkerBoxBlockEntity.AnimationStage.CLOSED
-                        && !canShulkerOpen(blockPos, state)) {
+                        && !InteractUtils.canShulkerOpen(mc.world, blockPos, state)) {
                     size = 0;
                 }
             }

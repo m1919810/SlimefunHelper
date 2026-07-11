@@ -7,6 +7,7 @@ import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.LabelElement;
+import me.matl114.gui.elements.MultiLineTextElement;
 import net.minecraft.text.Text;
 
 public class QuestionScreen extends GenericBackGroundScreen {
@@ -30,16 +31,23 @@ public class QuestionScreen extends GenericBackGroundScreen {
     @Override
     protected void init() {
         super.init();
-        DisplayWidget.instance(this.x + 10, this.y + 80, this.backgroundWidth - 20, 40)
-                .setRenderHandler(LabelElement.instance(q))
+        int background = this.backgroundWidth - 10;
+        var re = mc.textRenderer.wrapLines(this.q, background);
+        int height = Math.max(40, 10 * re.size());
+        DisplayWidget.instance(this.x + 5, this.y + 30, background, height)
+                .setRenderHandler(LabelElement.instance(Text.empty()))
+                .addTo(this);
+        DisplayWidget.instance(this.x + 5, this.y + 30, background, height)
+                .setRenderHandler(new MultiLineTextElement(this.q, -1))
                 .addTo(this);
         int size = this.a.size();
         int lan = size / 3;
         int extra = size % 3;
+        int yLevelStart = this.y + 300 - 30 * (((size - 1) / 3) + 1);
         for (int i = 0; i < lan; ++i) {
             for (int j = 0; j < 3; ++j) {
                 Solution s1 = a.get(3 * i + j);
-                ExecutableWidget.instance(this.x + 5 + 80 * j, this.y + 150 + 30 * i, 70, 20)
+                ExecutableWidget.instance(this.x + 5 + 80 * j, yLevelStart + 30 * i, 70, 20)
                         .setElementHandler(new ButtonElement(
                                 TextProvider.of(s1.getSolutionLabel()),
                                 ButtonAction.run(this.wrapTaskWithClose(s1::execution))))
@@ -50,7 +58,7 @@ public class QuestionScreen extends GenericBackGroundScreen {
             int startX = this.backgroundWidth / 2 + 5 - 40 * extra;
             for (int i = 0; i < extra; ++i) {
                 Solution s1 = a.get(3 * lan + i);
-                ExecutableWidget.instance(this.x + startX + 80 * i, this.y + 150 + 30 * lan, 70, 20)
+                ExecutableWidget.instance(this.x + startX + 80 * i, yLevelStart + 30 * lan, 70, 20)
                         .setElementHandler(new ButtonElement(
                                 TextProvider.of(s1.getSolutionLabel()),
                                 ButtonAction.run(this.wrapTaskWithClose(s1::execution))))

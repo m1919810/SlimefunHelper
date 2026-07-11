@@ -51,9 +51,9 @@ public class DisablerManager extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public final FlagRef grimMultiBreak = builder(disablers.add("grim-multi-break"), Boolean.class)
-            .defaultValue(false)
-            .build();
+    //    public final FlagRef grimMultiBreak = builder(disablers.add("grim-multi-break"), Boolean.class)
+    //            .defaultValue(false)
+    //            .build();
 
     public final FlagRef autoFlushPlaceQueue = builder(disablers.add("auto-flush-multi-place-queue"), Boolean.class)
             .defaultValue(true)

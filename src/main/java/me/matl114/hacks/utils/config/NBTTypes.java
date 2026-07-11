@@ -115,6 +115,10 @@ public interface NBTTypes {
 
     public NBTType<Pos3> POS3_TYPE = Pos3.TYPE;
 
+    public NBTType<Primitive<?>> PRIMITIVE_TYPE = Primitive.TYPE.cast();
+
+    public NBTType<LabelPrimitive<?>> LABEL_PRIMITIVE_TYPE = LabelPrimitive.TYPE.cast();
+
     public static DrawableWidget generateColorInputWidget(
             AttrKeyValue<TextColor> keyValue, int x, int y, int dx, int dy) {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);

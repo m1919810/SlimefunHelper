@@ -58,6 +58,10 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
             .validator(Configs.doubleRange(0.0D, 100.0D))
             .build();
 
+    public final FlagRef fixKickFromLag = builder(grimAccelerate.add("fix-kick-from-lag"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     //    public final DoubleRef mn
 
     @Override
@@ -82,7 +86,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     }
 
     public Packet<?> storedPacket = null;
-    int setBack = 0;
+    int lastMoveTick = 0;
     int setBackCount = 0;
     int exemptTicks = 0;
 
@@ -127,7 +131,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     int lastWorkingTick = 0;
 
     public void onSetBackReceive(Event<TeleportConfirmC2SPacket> packet) {
-        setBack = Tasks.getTick();
+        lastMoveTick = Tasks.getTick();
         setBackCount++;
         receiveSetBackTick = true;
     }
@@ -141,7 +145,16 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
 
     public void onTeleportConfirm(Event<PlayerPositionLookS2CPacket> event) {}
 
+    int stopBecauseOfLagTillTick;
+
     private void createStorePacket() {
+        if (fixKickFromLag.get() && Tasks.getTick() > lastMoveTick + 10) {
+            stopBecauseOfLagTillTick = Tasks.getTick() + 5;
+            return;
+        }
+        if (stopBecauseOfLagTillTick > Tasks.getTick()) {
+            return;
+        }
         switch (mode.get()) {
             case SIMULATION -> {
                 storedPacket = VPacket.newFull(
@@ -157,7 +170,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                 storedPacket = VPacket.newFull(
                         3.9999999E7D,
                         mc.player.getY() + 2.5 * ((Tasks.getTick() % 3) + 1), // - 20 * ((Tasks.getTick() % 2) +1 ),
-                        Double.NEGATIVE_INFINITY,
+                        3.9999999E7D,
                         mc.player.getYaw(),
                         mc.player.getPitch(),
                         true,
@@ -202,9 +215,12 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                 }
                 // if no setback within a tick, then create one
                 createStorePacket();
+            } else {
+                lastMoveTick = Tasks.getTick();
             }
         } else {
             currentWorking = false;
+            lastMoveTick = Tasks.getTick();
         }
     }
 

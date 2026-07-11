@@ -205,7 +205,11 @@ public class PredictorImpl implements Predictor {
 
     private void addRecord(KnownPosition record) {
         // 若与队尾 tick 相同，则替换（避免重复记录同一时刻）
-        positions.add(record);
+        var pos = positions.peekLast();
+        // remove duplicate packets
+        if (!Objects.equals(pos, record)) {
+            positions.add(record);
+        }
     }
 
     public static record KnownPosition(Vec3d vec3d, int tick) {}
