@@ -33,7 +33,7 @@ public abstract class ServuxLitematicaFixMixin {
 
         var task = nbt.get("Task");
         if (task instanceof NbtString string) {
-            String task2 = string.value();
+            String task2 = string.asString();
             switch (task2) {
                     // File-Transmit support
                 case "Litematic-TransmitStart",
