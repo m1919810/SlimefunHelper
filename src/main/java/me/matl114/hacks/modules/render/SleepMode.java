@@ -75,7 +75,6 @@ public class SleepMode extends BaseModule {
         registerListener(Listener.getCharTyped(), this::interceptCharType, Integer.MIN_VALUE);
         registerListener(Listener.getMouseMove(), this::interceptMouseMove, Integer.MIN_VALUE);
         registerListener(Listener.getMouseDrag(), this::interceptMouseDragged, Integer.MIN_VALUE);
-        registerListener(Listener.getPreSetScreen(), this::interceptSetScreen, Integer.MIN_VALUE);
         registerCommandBootstrap(this::onSleepCommandBootstrap);
         registerListener(
                 Listener.getPacketPoint().getChannel(ChunkDataS2CPacket.class), this::onChunkData, Integer.MIN_VALUE);

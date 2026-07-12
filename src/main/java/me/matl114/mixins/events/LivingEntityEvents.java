@@ -3,6 +3,7 @@ package me.matl114.mixins.events;
 import com.google.common.collect.Maps;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 import me.matl114.accessors.access.LivingEntityAccess;
@@ -14,6 +15,7 @@ import me.matl114.utils.AttributeUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
@@ -22,8 +24,8 @@ import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Util;
 import net.minecraft.world.World;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -46,9 +48,11 @@ public abstract class LivingEntityEvents extends Entity
     @Unique
     public Map<EquipmentSlot, ItemStack> getClientLastEquipmentSnapshot() {
         if (clientLastEquipmentSnapshot == null) {
-            clientLastEquipmentSnapshot = Util.mapEnum(EquipmentSlot.class, (slot) -> {
-                return ItemStack.EMPTY;
-            });
+            Map<EquipmentSlot, ItemStack> clientLastEquipmentSnapshotMap = new EnumMap<>(EquipmentSlot.class);
+            for (var re : EquipmentSlot.values()) {
+                clientLastEquipmentSnapshotMap.put(re, ItemStack.EMPTY);
+            }
+            clientLastEquipmentSnapshot = clientLastEquipmentSnapshotMap;
         }
         return clientLastEquipmentSnapshot;
     }
@@ -93,8 +97,8 @@ public abstract class LivingEntityEvents extends Entity
     public abstract AttributeContainer getAttributes();
 
     @Shadow
-    protected abstract void onEquipmentRemoved(
-            ItemStack removedEquipment, EquipmentSlot slot, AttributeContainer container);
+    @Final
+    private AttributeContainer attributes;
 
     @WrapOperation(
             method = "tickMovement",
@@ -151,13 +155,15 @@ public abstract class LivingEntityEvents extends Entity
 
     @Unique
     public final void updateEquipmentAttributeChange() {
+        getClientLastEquipmentSnapshot();
         Map<EquipmentSlot, ItemStack> map = null;
-        Iterator var2 = EquipmentSlot.VALUES.iterator();
-        ItemStack itemStack2;
-        while (var2.hasNext()) {
-            EquipmentSlot equipmentSlot = (EquipmentSlot) var2.next();
-            ItemStack itemStack = (ItemStack) clientLastEquipmentSnapshot.get(equipmentSlot);
-            itemStack2 = this.getEquippedStack(equipmentSlot);
+        EquipmentSlot[] var2 = EquipmentSlot.values();
+        int var3 = var2.length;
+
+        for (int var4 = 0; var4 < var3; ++var4) {
+            EquipmentSlot equipmentSlot = var2[var4];
+            ItemStack itemStack = clientLastEquipmentSnapshot.get(equipmentSlot);
+            ItemStack itemStack2 = this.getEquippedStack(equipmentSlot);
             if (this.areItemsDifferent(itemStack, itemStack2)) {
                 if (map == null) {
                     map = Maps.newEnumMap(EquipmentSlot.class);
@@ -166,25 +172,34 @@ public abstract class LivingEntityEvents extends Entity
                 map.put(equipmentSlot, itemStack2);
                 AttributeContainer attributeContainer = this.getAttributes();
                 if (!itemStack.isEmpty()) {
-                    this.onEquipmentRemoved(itemStack, equipmentSlot, attributeContainer);
+                    itemStack.applyAttributeModifiers(equipmentSlot, (attribute, modifier) -> {
+                        EntityAttributeInstance entityAttributeInstance =
+                                attributeContainer.getCustomInstance(attribute);
+                        if (entityAttributeInstance != null) {
+                            entityAttributeInstance.removeModifier(modifier);
+                        }
+
+                        EnchantmentHelper.removeLocationBasedEffects(
+                                itemStack, (LivingEntity) (Entity) this, equipmentSlot);
+                    });
                 }
             }
         }
 
         if (map != null) {
-            var2 = map.entrySet().iterator();
+            Iterator var9 = map.entrySet().iterator();
 
-            while (var2.hasNext()) {
-                Map.Entry<EquipmentSlot, ItemStack> entry = (Map.Entry) var2.next();
+            while (var9.hasNext()) {
+                Map.Entry<EquipmentSlot, ItemStack> entry = (Map.Entry) var9.next();
                 EquipmentSlot equipmentSlot2 = (EquipmentSlot) entry.getKey();
-                itemStack2 = (ItemStack) entry.getValue();
-                if (!itemStack2.isEmpty() && !itemStack2.shouldBreak()) {
-                    itemStack2.applyAttributeModifiers(equipmentSlot2, (attribute, modifier) -> {
+                ItemStack itemStack3 = (ItemStack) entry.getValue();
+                if (!itemStack3.isEmpty()) {
+                    itemStack3.applyAttributeModifiers(equipmentSlot2, (registryEntry, entityAttributeModifier) -> {
                         EntityAttributeInstance entityAttributeInstance =
-                                this.getAttributes().getCustomInstance(attribute);
+                                this.attributes.getCustomInstance(registryEntry);
                         if (entityAttributeInstance != null) {
-                            entityAttributeInstance.removeModifier(modifier.id());
-                            entityAttributeInstance.addTemporaryModifier(modifier);
+                            entityAttributeInstance.removeModifier(entityAttributeModifier.id());
+                            entityAttributeInstance.addTemporaryModifier(entityAttributeModifier);
                         }
                     });
                 }
@@ -195,5 +210,7 @@ public abstract class LivingEntityEvents extends Entity
                 AttributeUtils.overrideViaAttributes(getClientLastEquipmentSnapshot(), this.getAttributes());
             }
         }
+
+        return;
     }
 }

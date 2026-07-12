@@ -8,15 +8,14 @@ import me.matl114.utils.collections.FlagEntry;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.CampfireBlockEntity;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.block.enums.ChestType;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Leashable;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
-import net.minecraft.recipe.RecipePropertySet;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.util.ActionResult;
@@ -106,8 +105,8 @@ public class InteractUtils {
                 return true;
             }
         }
-        Box box = ShulkerEntity.calculateBoundingBox(
-                        1.0F, state.get(ShulkerBoxBlock.FACING), 0.0F, 0.5F, pos.toBottomCenterPos())
+        Box box = ShulkerEntity.calculateBoundingBox(1.0F, state.get(ShulkerBoxBlock.FACING), 0.0F, 0.5F)
+                .offset(pos)
                 .contract(1.0E-6);
         return world.isSpaceEmpty(box);
     }
@@ -211,9 +210,8 @@ public class InteractUtils {
                     && (interactStack.isOf(Items.SHEARS) || interactStack.isOf(Items.GLASS_BOTTLE));
         }
         if (block instanceof CampfireBlock campfireBlock) {
-            return world.getRecipeManager()
-                    .getPropertySet(RecipePropertySet.CAMPFIRE_INPUT)
-                    .canUse(interactStack);
+            return world.getBlockEntity(pos) instanceof CampfireBlockEntity be
+                    && be.getRecipeFor(interactStack).isPresent();
         }
         if (block instanceof AbstractCauldronBlock cauldronBlock) {
             return cauldronBlock.behaviorMap.map().containsKey(interactStack.getItem());

@@ -395,7 +395,7 @@ public class ElytraBot extends BaseModule {
                 && !Objects.equals(Vec3d.ZERO, currentBehaviour.movementDirection)) {
             if (mc.player.isOnGround()) {
                 mc.options.jumpKey.setPressed(true);
-            } else if (mc.player.checkGliding()) {
+            } else if (mc.player.checkFallFlying()) {
                 mc.options.jumpKey.setPressed(false);
                 mc.getNetworkHandler()
                         .sendPacket(
@@ -1355,7 +1355,7 @@ public class ElytraBot extends BaseModule {
         private boolean moveAdjust(Vec3d originalLook) {
             //
             Debug.debug("Judget may hit");
-            Vec3d originalLookHorizontal = originalLook.getHorizontal();
+            Vec3d originalLookHorizontal = originalLook.withAxis(Direction.Axis.Y, 0);
             Vec3d vertical = new Vec3d(0, 1, 0);
             Vec3d side = vertical.crossProduct(originalLookHorizontal);
             Vec3d revertDirection =

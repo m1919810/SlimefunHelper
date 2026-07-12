@@ -29,7 +29,6 @@
 		"events.ClientPlayerEntityEvents",
 		"events.ClientPlayerInteractionManagerEvents",
 		"events.ClientPlayNetworkHandlerEvents",
-		"events.ClientRegistriesEvents",
 		"events.ClientWorldEvents",
 		"events.ConnectScreenEvents",
 		"events.CraftingScreenEvents",
@@ -116,6 +115,7 @@
 		"defaultRequire": 1
 	},
 	"mixins": [
+		"events.TagPacketSerializerEvents",
 		"fix.DecoderByteBufExceptionFixMixin",
 		"fix.EnchantmentLevelFixMixin",
 		"fix.HeightContextNullFix",
