@@ -87,6 +87,9 @@ public class ClientExtra extends BaseModule {
     public final FlagRef paletteException =
             flagBuilder(other.add("fix-palette-exception")).build();
 
+    public final FlagRef logServerExiting =
+            flagBuilder(other.add("log-self-server-leaving")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -107,6 +110,7 @@ public class ClientExtra extends BaseModule {
         registerListener(
                 Listener.getExceptionListener().getChannel(Listener.ExceptionType.UNKNOWN_CHANNEL_EXCEPTION),
                 this::onUnexpectedException);
+        registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
     }
 
     private final Text questionCrash =
@@ -328,6 +332,22 @@ public class ClientExtra extends BaseModule {
             } else {
                 mc.mouse.lockCursor();
             }
+        }
+    }
+
+    public void onServerLeave(Event<Void> eventVoid) {
+        if (mc.player != null && logServerExiting.get()) {
+            Debug.info("Player leaving server log:");
+            Debug.info("  - Reconfiguration: ", !eventVoid.<Boolean>getArgs(0));
+            Debug.info("  - Name: " + mc.player.getNameForScoreboard());
+            Debug.info("  - Pos: " + mc.player.getPos());
+            if (mc.world != null) {
+                Debug.info("  - World: " + mc.world.getRegistryKey().getValue());
+            }
+            Debug.info("  - Health: " + mc.player.getHealth());
+            Debug.info("  - Hand item: " + mc.player.getMainHandStack());
+            Debug.info("  - Offhand item: " + mc.player.getOffHandStack());
+            Debug.info("  - FallFlying: " + mc.player.isFallFlying());
         }
     }
 }
