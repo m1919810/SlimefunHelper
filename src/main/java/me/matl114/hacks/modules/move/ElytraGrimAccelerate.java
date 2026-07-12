@@ -89,6 +89,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     int lastMoveTick = 0;
     int setBackCount = 0;
     int exemptTicks = 0;
+    int lastSendMoveAndWaitSetBackTick = 0;
 
     public void onVcUpdate(Event<EntityVelocityUpdateS2CPacket> event) {
         Vec3d velocity = VPacket.getVelocity(event.context);
@@ -127,13 +128,12 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
         //        }
     }
 
-    boolean receiveSetBackTick = false;
     int lastWorkingTick = 0;
 
     public void onSetBackReceive(Event<TeleportConfirmC2SPacket> packet) {
         lastMoveTick = Tasks.getTick();
         setBackCount++;
-        receiveSetBackTick = true;
+        lastSendMoveAndWaitSetBackTick = 0;
     }
 
     public void setTryWorkingTick() {
@@ -148,8 +148,12 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     int stopBecauseOfLagTillTick;
 
     private void createStorePacket() {
+
         if (fixKickFromLag.get() && Tasks.getTick() > lastMoveTick + 10) {
             stopBecauseOfLagTillTick = Tasks.getTick() + 5;
+            return;
+        }
+        if (fixKickFromLag.get() && Tasks.getTick() < lastSendMoveAndWaitSetBackTick + 20) {
             return;
         }
         if (stopBecauseOfLagTillTick > Tasks.getTick()) {
@@ -231,9 +235,9 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
         if (storedPacket != null) {
             // mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(-rand.nextInt(0, Integer.MAX_VALUE - 1)));
             mc.getNetworkHandler().sendPacket(storedPacket);
+            lastSendMoveAndWaitSetBackTick = Tasks.getTick();
             storedPacket = null;
         }
-        receiveSetBackTick = false;
         currentTryWorking = false;
         return true;
     }
