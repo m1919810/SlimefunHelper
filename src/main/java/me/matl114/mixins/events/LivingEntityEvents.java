@@ -151,6 +151,7 @@ public abstract class LivingEntityEvents extends Entity
 
     @Unique
     public final void updateEquipmentAttributeChange() {
+        getClientLastEquipmentSnapshot();
         Map<EquipmentSlot, ItemStack> map = null;
         Iterator var2 = EquipmentSlot.VALUES.iterator();
         ItemStack itemStack2;
