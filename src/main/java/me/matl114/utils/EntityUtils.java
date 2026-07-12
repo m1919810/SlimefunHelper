@@ -14,6 +14,7 @@ import net.minecraft.entity.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
@@ -552,8 +553,7 @@ public class EntityUtils {
         double gravity = EntityUtils.getEffectiveGravity(mc.player);
         float drag = mc.player.isSprinting() ? 0.9F : 0.8F;
         float acceleration = 0.02F;
-        float efficiency = (float)
-                mc.player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.WATER_MOVEMENT_EFFICIENCY);
+        float efficiency = (float) mc.player.getAttributeValue(EntityAttributes.GENERIC_WATER_MOVEMENT_EFFICIENCY);
         if (!mc.player.isOnGround()) {
             efficiency *= 0.5F;
         }
