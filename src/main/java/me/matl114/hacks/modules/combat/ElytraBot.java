@@ -175,16 +175,6 @@ public class ElytraBot extends BaseModule {
                     && angleOptimize.get())
             .build();
 
-    // to be optimize
-    public final NBTRef<OptionalPrimitive<Vec2>> pullUpAngleOptimize = builder(
-                    elytraBot.add("combat-pull-up-angle-optimize"), OptionalPrimitive.type(Vec2.class))
-            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.VEC2_TYPE, new Vec2(6.0D, 4.0D)))
-            .show(() -> SlimefunHelper.DEV_ENV
-                    && mode.get().isIn(Mode.MACE_ARUA)
-                    && ElytraExtra.INSTANCE.autoRescale.get()
-                    && ElytraFlight.INSTANCE.useAutoRescale.get())
-            .build();
-
     public final NBTRef<OptionalPrimitive<Double>> maceChaseFollowYBias = builder(
                     elytraBot.add("combat-mace-chase-follow-y-bias"), OptionalPrimitive.DOUBLE_TYPE)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
@@ -888,20 +878,6 @@ public class ElytraBot extends BaseModule {
                         .subtract(mc.player.getPos());
                 if (movement.length() < 5) {
                     movement = movement.normalize().multiply(5);
-                }
-            }
-            if (base.pullUpAngleOptimize.get().isPresent() && !onGroundSupport && !executeSmoothHideFlight) {
-                Vec2 distanceRange = base.pullUpAngleOptimize.get().getValue();
-                double horizontalDistance = movement.horizontalLength();
-                if (horizontalDistance > 1E-1) {
-                    Vec3d lastMovement = PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed;
-                    Vec3d lastHorizontal = lastMovement.withAxis(Direction.Axis.Y, 0);
-                    double distance = mc.player.getY() < predictor.getY() ? distanceRange.y() : distanceRange.x();
-                    if (distance > horizontalDistance) {
-                        if (lastHorizontal.dotProduct(movement) < 0) {
-                            movement = movement.multiply(-1, 1, -1);
-                        }
-                    }
                 }
             }
             movementDirection = movement;
