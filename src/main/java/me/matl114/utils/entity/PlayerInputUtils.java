@@ -147,7 +147,7 @@ public class PlayerInputUtils {
             return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
         }
 
-        public void applyInput(ClientPlayerEntity player) {
+        public Input applyInput(ClientPlayerEntity player) {
             var input = player.input;
             input.pressingForward = this.forward;
             input.pressingBack = this.backward;
@@ -156,9 +156,10 @@ public class PlayerInputUtils {
             input.jumping = this.jump;
             input.sneaking = this.sneak;
             PlayerInputAccess.of(input).setPressingSprint(this.sprint);
+            return this;
         }
 
-        public void applyInput(GameOptions options) {
+        public Input applyInput(GameOptions options) {
             options.forwardKey.setPressed(forward);
             options.backKey.setPressed(backward);
             options.leftKey.setPressed(left);
@@ -166,6 +167,7 @@ public class PlayerInputUtils {
             options.jumpKey.setPressed(jump);
             options.sneakKey.setPressed(sneak);
             options.sprintKey.setPressed(sprint);
+            return this;
         }
 
         public boolean hasMovement() {

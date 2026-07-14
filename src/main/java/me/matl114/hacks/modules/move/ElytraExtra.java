@@ -361,7 +361,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             Tasks.scheduleRepeated(
                     () -> {
                         if (mc.player == joinServer.context) {
-                            if (mc.world.isChunkLoaded(mc.player.getBlockPos())) {
+                            if (WorldUtils.isChunkLoaded(mc.player.getBlockPos())) {
                                 if (!mc.player.isOnGround() && !mc.player.isFallFlying()) {
                                     autoTakeoff();
                                     return true;

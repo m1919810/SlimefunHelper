@@ -74,9 +74,9 @@ public class Configs {
 
         public static LegalInteractMode getFromPreset(ModulePreset preset) {
             return switch (preset) {
-                case AC_GRIM_LEGACY -> LEGACY_SLIENT_ROT;
-                case AC_GRIM, AC_MATRIX -> DELAY_MOVEMENT;
-                default -> NONE;
+                case HACKING, VANILLA -> Configs.LegalInteractMode.NONE;
+                case AC_GRIM_LEGACY -> Configs.LegalInteractMode.LEGACY_SLIENT_ROT;
+                default -> Configs.LegalInteractMode.DELAY_MOVEMENT;
             };
         }
 
