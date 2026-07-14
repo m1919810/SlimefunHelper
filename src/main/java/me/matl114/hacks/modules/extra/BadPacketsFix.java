@@ -78,6 +78,9 @@ public class BadPacketsFix extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef fixInvalidPlayerEntryUpdate =
+            flagBuilder(badPackets.add("fix-invalid-player-entry-update")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();

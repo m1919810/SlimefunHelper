@@ -157,6 +157,29 @@ public class WorldUtils {
         return !state.isToolRequired() || stack.isSuitableFor(state);
     }
 
+    public static boolean isServerChunkLoaded(BlockPos pos) {
+        return isServerChunkLoaded(
+                ChunkSectionPos.getSectionCoord(pos.getX()), ChunkSectionPos.getSectionCoord(pos.getZ()));
+    }
+
+    public static boolean isServerPosLoaded(int blockPosX, int blockPosZ) {
+
+        return isServerChunkLoaded(
+                ChunkSectionPos.getSectionCoord(blockPosX), ChunkSectionPos.getSectionCoord(blockPosZ));
+    }
+
+    public static boolean isServerChunkLoaded(int chunkX, int chunkZ) {
+        return isChunkLoaded(chunkX, chunkZ);
+    }
+
+    public static boolean isChunkLoaded(BlockPos pos) {
+        return isChunkLoaded(ChunkSectionPos.getSectionCoord(pos.getX()), ChunkSectionPos.getSectionCoord(pos.getZ()));
+    }
+
+    public static boolean isChunkLoaded(int chunkX, int chunkZ) {
+        return mc.world.getChunkManager().isChunkLoaded(chunkX, chunkZ);
+    }
+
     @Getter
     @AllArgsConstructor
     public static class Waypoint {

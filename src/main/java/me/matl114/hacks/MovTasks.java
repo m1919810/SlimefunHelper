@@ -2215,6 +2215,9 @@ public class MovTasks {
     public static AutoResync autoResync;
 
     @Getter
+    public static AntiChunkLag antiChunkLag;
+
+    @Getter
     public static Flight flight;
 
     @Getter
@@ -2291,6 +2294,7 @@ public class MovTasks {
 
         setBackLog = new SetBackLog().register(m);
         autoResync = new AutoResync().register(m);
+        antiChunkLag = new AntiChunkLag().register(m);
         flight = new Flight().register(m);
         sprint = new Sprint().register(m);
         moveTimer = new MoveTimer().register(m);

@@ -1,6 +1,8 @@
 package me.matl114.hacks.modules.interact;
 
 import com.google.common.util.concurrent.Runnables;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import me.matl114.accessors.access.HitResultAccess;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Event;
@@ -17,12 +19,15 @@ import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
+import me.matl114.utils.InteractUtils;
 import me.matl114.utils.NetworkUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.Orientation;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
@@ -35,12 +40,17 @@ import net.minecraft.world.World;
 
 public class BlockRotate extends BaseModule {
     public final ModulePath blockRotate = makePath(Configs.INTERACT_CONFIG, "block-rotate");
-    public final ModulePath blockRotateTest = blockRotate.add("test");
+    public final ModulePath tempSchematic = blockRotate.add("temporary-schematic");
     public final ModulePath litematicaFix = blockRotate.add("litematica-shit-fix");
+    public static BlockRotate INSTANCE;
 
-    public BlockRotate() {}
+    public BlockRotate() {
+        bindFlag(enable);
+        INSTANCE = this;
+    }
 
-    public final FlagRef enable = flagBuilder(blockRotateTest.add("enable")).build();
+    public final FlagRef enable =
+            builder(blockRotate.add("enable"), Boolean.class).defaultValue(true).build();
 
     public final EnumRef<Configs.BypassMode> bypassMode = builder(
                     blockRotate.add("yaw-deceive-bypass-mode"), Configs.BypassMode.class)
@@ -50,6 +60,10 @@ public class BlockRotate extends BaseModule {
     public final EnumRef<Configs.BypassMode> bypassMode2 = builder(
                     blockRotate.add("rotate-bypass-mode"), Configs.BypassMode.class)
             .defaultValue(Configs.BypassMode.NO_BYPASS)
+            .build();
+
+    public final FlagRef enable3 = builder(tempSchematic.add("enable"), Boolean.class)
+            .defaultValue(true)
             .build();
 
     public final FlagRef enable2 = flagBuilder(litematicaFix.add("enable")).build();
@@ -66,16 +80,45 @@ public class BlockRotate extends BaseModule {
                 Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class),
                 this::onPreSendInteractBlockRotate);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
+        registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
+        registerListener(Listener.getPostGameTick(), this::onUpdate);
     }
 
     public boolean enableBlockRotateModify() {
-        return enable.get() || enable2.get();
+        return enable3.get() || enable2.get();
+    }
+
+    final Map<BlockPos, TemporarySchematic> tempSchematics = new ConcurrentHashMap<>();
+
+    public void onWorldChange(Event<World> eventWorld) {
+        tempSchematics.clear();
+    }
+
+    int timer = 0;
+
+    public void onUpdate(Event<ClientPlayerEntity> eventUpdate) {
+        if (timer++ > 20) {
+            timer = 0;
+            var iter = tempSchematics.entrySet().iterator();
+            while (iter.hasNext()) {
+                var entry = iter.next();
+                if (entry.getValue().expire()) {
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    public void addTempStateSchematic(BlockPos pos, BlockState state, int lastingTicks) {
+        if (state != null) {
+            tempSchematics.put(pos, new TemporarySchematic(pos, lastingTicks, state));
+        }
     }
 
     // can not bypass
     public void onPreSendInteractBlockRotate(Event<PlayerInteractBlockC2SPacket> e) {
         if (e.isCancelled()) return;
-        if (enableBlockRotateModify()) {
+        if (enable.get() && enableBlockRotateModify()) {
             if (e.context instanceof PlayerInteractBlockC2SPacketAccess paccess
                     && paccess.hasUseContext()
                     && !paccess.getUseContext().isEmpty()) {
@@ -86,7 +129,7 @@ public class BlockRotate extends BaseModule {
                     Event<PitchYawDeceive> yawDeceive = new Event<>(new PitchYawDeceive(), false, true);
                     Event<Vec3d> playerLookAt = new Event<>(null, false, true);
                     handlePlaceCorrectLitematica(blockItem, e.context, context, yawDeceive, playerLookAt);
-                    handlePlaceCorrectDemo(blockItem, e.context, yawDeceive, playerLookAt);
+                    handlePlaceCorrectTemperarySchematic(blockItem, e.context, context, yawDeceive, playerLookAt);
                     PitchYawDeceive deceivePy = null;
                     Vec2f currentPy =
                             new Vec2f(PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw);
@@ -161,7 +204,8 @@ public class BlockRotate extends BaseModule {
                                     LegacySnapRotManager.INSTANCE.createSnapAt(lookVec.subtract(mc.player.getEyePos()));
                             PacketManager.schedulePostSendPacket(e.context, packet);
                         } else {
-                            InteractionTasks.addPostRotationCorrectTask(lookVec, Runnables.doNothing());
+                            InteractionTasks.addPostRotationCorrectTask(
+                                    lookVec, mc.player.getEyePos(), Runnables.doNothing());
                         }
                     }
                     //                    if (enable3.get()
@@ -178,10 +222,34 @@ public class BlockRotate extends BaseModule {
         }
     }
 
-    public void handlePlaceCorrectDemo(
-            BlockItem item, PlayerInteractBlockC2SPacket packet, Event<PitchYawDeceive> yawDeceive, Event<Vec3d> look) {
-        if (enable.get()) {
+    public void handlePlaceCorrectTemperarySchematic(
+            BlockItem item,
+            PlayerInteractBlockC2SPacket packet,
+            PlayerInteractBlockC2SPacketAccess.UseContext useContext,
+            Event<PitchYawDeceive> yawDeceive,
+            Event<Vec3d> look) {
+        if (enable3.get()) {
             // ?
+            BlockHitResult packetHitResult = packet.getBlockHitResult();
+            BlockState litematicaState;
+            BlockPos modifyingBlockPos = useContext.getPlaceBlockPos(packet.getHand(), packetHitResult);
+            TemporarySchematic schematic = tempSchematics.remove(modifyingBlockPos);
+            if (schematic == null || schematic.expire()) {
+                return;
+            }
+
+            litematicaState = schematic.targetState;
+            BlockHitResult newPacketHitResult =
+                    handlePlaceCorrect(item, modifyingBlockPos, litematicaState, packet, true);
+            if (newPacketHitResult != null) {
+                // wrong state, need correct
+                // do not rotate, because other module will rotate itself
+                //                packetHitResult = newPacketHitResult;
+                //                if (legal.get()) {
+                //                    look.context(packetHitResult.getBlockPos().toCenterPos());
+                //                }
+                handleYawDeceive(litematicaState, yawDeceive.context);
+            }
         }
     }
 
@@ -194,28 +262,24 @@ public class BlockRotate extends BaseModule {
 
         if (enable2.get() && LitematicaHooks.getInstance().isEnabled()) {
             BlockHitResult packetHitResult = packet.getBlockHitResult();
-            BlockState litematicaState, clientState;
+            BlockState litematicaState;
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
 
             BlockPos modifyingBlockPos = useContext.getPlaceBlockPos(packet.getHand(), packetHitResult);
             if (!LitematicaHooks.getInstance().isPositionWithinRange(modifyingBlockPos)) return;
-            clientState = mc.world.getBlockState(modifyingBlockPos);
+
             litematicaState = litematicaWorld.getBlockState(modifyingBlockPos);
-            if (!litematicaState.isAir()
-                    && litematicaState.getBlock().asItem() == item
-                    && litematicaState.getBlock() == clientState.getBlock()) {
-                // sb easy place, use illegal hitResult or shit
-                if (useContext.oldState().isAir()) {
-                    // handle airplace shit
-                    BlockHitResult hitResult = correctEasyPlaceHitResult(packetHitResult, litematicaState);
-                    // RenderTasks.debugBlockHitResult(hitResult);
-                    PlayerInteractBlockC2SPacketAccess.of(packet).setBlockHitResult(hitResult);
-                    packetHitResult = hitResult;
-                }
-
+            BlockHitResult newPacketHitResult = handlePlaceCorrect(
+                    item,
+                    modifyingBlockPos,
+                    litematicaState,
+                    packet,
+                    useContext.oldState().isAir());
+            if (newPacketHitResult != null) {
                 // wrong state, need correct
+                packetHitResult = newPacketHitResult;
+                BlockState clientState = mc.world.getBlockState(modifyingBlockPos);
                 if (litematicaState != clientState) {
-
                     BlockHitResult easyPlaceResult = LitematicaHooks.getInstance()
                             .getEasyPlaceClickedPosition(packetHitResult, litematicaState, clientState);
                     if (easyPlaceResult != null) {
@@ -223,21 +287,43 @@ public class BlockRotate extends BaseModule {
                         access.setPos(easyPlaceResult.getPos());
                     }
                 }
-                // handle direction
-                handleYawDeceive(litematicaState, yawDeceive.context);
                 if (legal.get()) {
                     look.context(packetHitResult.getBlockPos().toCenterPos());
                 }
+                handleYawDeceive(litematicaState, yawDeceive.context);
             }
-
             RenderTasks.debugBlockHitResult(packetHitResult);
         }
     }
 
-    public BlockHitResult correctEasyPlaceHitResult(BlockHitResult hitResult, BlockState targetState) {
+    public BlockHitResult handlePlaceCorrect(
+            BlockItem item,
+            BlockPos modifyingBlockPos,
+            BlockState targetState,
+            PlayerInteractBlockC2SPacket packet,
+            boolean forceCorrect) {
+        BlockHitResult packetHitResult = packet.getBlockHitResult();
+        BlockState clientState = mc.world.getBlockState(modifyingBlockPos);
+        if (!targetState.isAir()
+                && targetState.getBlock().asItem() == item
+                && targetState.getBlock() == clientState.getBlock()) {
+            // sb easy place, use illegal hitResult or shit
+            if (forceCorrect) {
+                // handle airplace shit
+                BlockHitResult hitResult = correctEasyPlaceHitResult(packetHitResult, targetState);
+                // RenderTasks.debugBlockHitResult(hitResult);
+                PlayerInteractBlockC2SPacketAccess.of(packet).setBlockHitResult(hitResult);
+                packetHitResult = hitResult;
+            }
+            return packetHitResult;
+        }
+        return null;
+    }
 
+    public BlockHitResult correctEasyPlaceHitResult(BlockHitResult hitResult, BlockState targetState) {
+        BlockPos placingPos = InteractUtils.getCurrentPlacePos(mc.player, hitResult);
         var result = InteractionTasks.createSpecificStateHitResult(
-                hitResult.getSide().getOpposite(), hitResult.getBlockPos(), targetState, false, false);
+                hitResult.getSide().getOpposite(), placingPos, targetState, false, false);
         return result == null ? hitResult : result.val();
     }
 
@@ -437,6 +523,22 @@ public class BlockRotate extends BaseModule {
 
         public float getYaw(float currentYaw) {
             return yaw != null ? yaw : currentYaw;
+        }
+    }
+
+    public static class TemporarySchematic {
+        BlockPos blockPos;
+        int expireTick;
+        BlockState targetState;
+
+        public TemporarySchematic(BlockPos blockPos, int lastTicks, BlockState targetState) {
+            this.blockPos = blockPos;
+            this.expireTick = lastTicks + Tasks.getTick();
+            this.targetState = targetState;
+        }
+
+        public boolean expire() {
+            return Tasks.getTick() > expireTick;
         }
     }
 }

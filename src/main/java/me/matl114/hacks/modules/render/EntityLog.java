@@ -396,15 +396,10 @@ public class EntityLog extends BaseModule {
                         ChatUtils.getDisplayedLocation(entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
                         ", current queue:",
                         count,
-                        ChatUtils.builder()
-                                .withParent(Style.EMPTY
-                                        .withClickEvent(
-                                                ChatUtils.getSuggestCommand("/!!pqueue add " + entry.scoreboardName))
-                                        .withHoverEvent(ChatUtils.getHoverShowText(
-                                                List.of(Text.literal("Click to track player in queue")))))
-                                .withColorString("&a&l[&aTrack&a&l]")
-                                .end()
-                                .build());
+                        ChatUtils.stringToText("&a&l[&aTrack&a&l]").styled(s -> s.withClickEvent(
+                                        ChatUtils.getSuggestCommand("/!!pqueue add " + entry.scoreboardName))
+                                .withHoverEvent(ChatUtils.getHoverShowText(
+                                        List.of(Text.literal("Click to track player in queue"))))));
             }
         }
     }

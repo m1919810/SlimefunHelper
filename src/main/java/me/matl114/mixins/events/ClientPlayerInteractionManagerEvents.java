@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.utils.collections.MutableEntry;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -77,19 +78,20 @@ public abstract class ClientPlayerInteractionManagerEvents {
         }
     }
 
-    @Inject(method = "interactBlock", at = @At(value = "HEAD"))
+    @Inject(method = "interactBlock", at = @At(value = "HEAD"), cancellable = true)
     public void onPreInteractBlock(
             ClientPlayerEntity player,
             Hand hand,
             BlockHitResult hitResult,
             CallbackInfoReturnable<ActionResult> cir,
             @Local(argsOnly = true) LocalRef<BlockHitResult> hand2) {
-        Event<BlockHitResult> blockHitResultEvent = new Event<>(hitResult, true, true, hand);
+        Event<MutableEntry<BlockHitResult, ActionResult>> blockHitResultEvent =
+                new Event<>(new MutableEntry<>(hitResult, ActionResult.SUCCESS), true, true, hand);
         Listener.getPrePlayerUseItemAtBlock().handleValue(blockHitResultEvent);
         if (blockHitResultEvent.isCancelled()) {
-            cir.setReturnValue(ActionResult.SUCCESS);
+            cir.setReturnValue(blockHitResultEvent.context.getValue());
         } else {
-            BlockHitResult hitResult2 = blockHitResultEvent.context;
+            BlockHitResult hitResult2 = blockHitResultEvent.context.getKey();
             if (hitResult2 != hitResult) {
                 hand2.set(hitResult2);
             }

@@ -238,7 +238,7 @@ public class Scaffold extends BaseModule {
         BlockState state = mc.world.getBlockState(pos);
         if (state.isReplaceable() && InteractUtils.canCubePlace(mc.player, pos)) {
             hitResult = InteractionTasks.getPlaceSupportingResult(predictedEyePos, pos, enableAirPlace, enableAirPlace);
-            if (hitResult != null && InteractUtils.canInteract(mc.player, hitResult)) return hitResult.val();
+            if (hitResult != null && InteractUtils.canInteractAndPlace(mc.player, hitResult)) return hitResult.val();
         }
 
         for (var vec3d : searchOffsets) {

@@ -66,6 +66,6 @@ public record ContainerPosition(RegistryKey<World> world, int doubleX, int y, in
     }
 
     public ChunkPos getChunk() {
-        return new ChunkPos(doubleX >> 4, doubleZ >> 4);
+        return new ChunkPos(doubleX >> 5, doubleZ >> 5);
     }
 }

@@ -458,14 +458,7 @@ public class Config implements RefMap {
         Runnable postTask;
 
         protected Ref<T> getRef() {
-            if (ref == null) {
-                Object obj = root.get(path);
-                if (obj instanceof Ref<?>) {
-                    ref = (Ref<T>) obj;
-                } else {
-                    ref = null;
-                }
-            }
+            Preconditions.checkNotNull(ref);
             return ref;
         }
 
@@ -477,6 +470,12 @@ public class Config implements RefMap {
 
         public SettingBuilder<T> defaultValue(T val) {
             this.defaultValue = Optional.ofNullable(val);
+            if (ref != null) {
+                var instance = Refs.wrapInstance(val);
+                if (!instance.isSameTypeWith(ref)) {
+                    ref = null;
+                }
+            }
             if (ref == null) {
                 var instance = Refs.wrapInstance(val);
                 ref = (Ref<T>) rootConfig.getOrCreate(instance, path);
@@ -489,13 +488,14 @@ public class Config implements RefMap {
         }
 
         public SettingBuilder<T> validator(Predicate<T> va) {
-            // validate default value
-            Preconditions.checkArgument(
-                    va.test(this.defaultValue.orElse(null)),
-                    "config default value validation failure: {0}",
-                    String.join(".", this.path));
-            // validate current value
+
             addPost(() -> {
+                // validate default value
+                Preconditions.checkArgument(
+                        va.test(this.defaultValue.orElse(null)),
+                        "config default value validation failure: {0}",
+                        String.join(".", this.path));
+                // validate current value
                 if (!va.test(getRef().getValue())) {
                     getRef().setValue(this.defaultValue.orElse(null));
                 }
