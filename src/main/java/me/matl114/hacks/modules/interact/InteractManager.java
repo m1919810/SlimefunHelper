@@ -18,8 +18,6 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.commands.commandGroup.SubCommand;
@@ -105,12 +103,6 @@ public class InteractManager extends BaseModule {
     public final FlagRef disableLowVersionSpeedReset =
             flagBuilder(module.add("disable-low-version-speed-reset")).build();
 
-    public final KeyBindRef disableLowVersionSpeedHotkey = moduleEntry(
-                    module.add("disable-low-version-speed-reset-hotkey"),
-                    new MultiKeyBind(),
-                    module.add("disable-low-version-speed-reset"))
-            .build();
-
     public final FlagRef disableLowVersionWhenUse = flagBuilder(
                     module.add("disable-low-version-speed-reset-when-command"))
             .build();
@@ -129,7 +121,7 @@ public class InteractManager extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMoveC2SPacket);
     }
 
-    boolean duringInput = false;
+    public boolean duringVanillaInput = false;
     boolean duringCommand = false;
 
     @Override
@@ -150,7 +142,6 @@ public class InteractManager extends BaseModule {
     Runnable holdUseCallback = null;
 
     public void onInputEvent(Event<Void> event) {
-        duringInput = true;
         if (checkNull()) return;
         duringCommand = true;
         try {
@@ -183,14 +174,16 @@ public class InteractManager extends BaseModule {
         } finally {
             duringCommand = false;
         }
+        duringVanillaInput = true;
     }
 
     public void onPostInputEvent(Event<Void> event) {
-        duringInput = false;
+        duringVanillaInput = false;
     }
 
     public void onPlayerMoveC2SPacket(Event<PlayerMoveC2SPacket> eventPacket) {
-        if (((disableLowVersionSpeedReset.get() && duringInput) || (disableLowVersionWhenUse.get() && duringCommand))
+        if (((disableLowVersionSpeedReset.get() && duringVanillaInput)
+                        || (disableLowVersionWhenUse.get() && duringCommand))
                 && ViaFabricPlusHooks.isSupportDupRot()
                 && eventPacket.context instanceof PlayerMoveC2SPacket.Full fullPacket) {
             if (fullPacket instanceof PlayerMoveC2SPacketAccess access

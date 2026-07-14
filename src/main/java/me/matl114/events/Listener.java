@@ -24,6 +24,7 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.IInputManager;
 import me.matl114.utils.collections.FPoint;
+import me.matl114.utils.collections.MutableEntry;
 import me.matl114.utils.collections.Point;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.BlockState;
@@ -696,7 +697,8 @@ public class Listener {
     @Cancelable
     @Modifiable
     @ExtraArgs({Hand.class})
-    private static final EventChannel<BlockHitResult> prePlayerUseItemAtBlock = new EventChannel<>();
+    private static final EventChannel<MutableEntry<BlockHitResult, ActionResult>> prePlayerUseItemAtBlock =
+            new EventChannel<>();
 
     @Getter
     @Broadcast
