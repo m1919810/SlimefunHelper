@@ -8,6 +8,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -22,6 +23,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.ApiStatus;
 
 public class ElytraFlight extends BaseModule implements LegalMovementManager.MovementModifier {
     public static ElytraFlight INSTANCE;
@@ -79,6 +81,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public final FlagRef useAutoRescale = flagBuilder(simpleFlightControl.add("use-auto-rescale"))
             .show(() -> ElytraExtra.INSTANCE.autoRescale.get())
             .build();
+
+    @ApiStatus.Experimental
+    public final FlagRef autoRescaleBestClimbingSpeed = flagBuilder(
+                    simpleFlightControl.add("use-auto-rescale-best-climbing-speed"))
+            .show(() -> ElytraExtra.INSTANCE.autoRescale.get())
+            .build();
+
     boolean currentTakeOff = false;
     public final FlagRef autoFly =
             flagBuilder(simpleFlightControl.add("auto-fly")).build();
@@ -165,6 +174,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                 new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
                         Vec3d velocity = EntityUtils.movementInputToVelocity(movementInput, 1.0F, player.getYaw());
 
+                        if (movementInput.y > 0
+                                && movementInput.horizontalLength() > 0
+                                && velocity.y > 0
+                                && useAutoRescale.get()
+                                && autoRescaleBestClimbingSpeed.get()) {
+                            velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
+                        }
                         if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
                             packetMotion = false;
                             shouldCheckRocket = true;
@@ -184,6 +200,14 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                 player.getPitch(), player.getYaw(), input.sidewaysSpeed(), 0, input.forwardSpeed());
                         Vec3d vertical = new Vec3d(0, input.upwardSpeed(), 0);
                         velocity = velocity.add(vertical);
+
+                        if (input.upwardSpeed() > 0
+                                && velocity.y > 0
+                                && useAutoRescale.get()
+                                && autoRescaleBestClimbingSpeed.get()) {
+                            velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
+                        }
+
                         if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
                             packetMotion = false;
                             shouldCheckRocket = true;
