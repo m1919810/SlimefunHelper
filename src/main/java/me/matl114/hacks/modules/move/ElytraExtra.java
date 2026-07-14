@@ -365,7 +365,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     () -> {
                         if (mc.player == joinServer.context) {
                             if (mc.player.networkHandler.isLoaded()
-                                    && mc.world.isChunkLoaded(mc.player.getBlockPos())) {
+                                    && WorldUtils.isChunkLoaded(mc.player.getBlockPos())) {
                                 if (!mc.player.isOnGround() && !mc.player.isFallFlying()) {
                                     autoTakeoff();
                                     return true;

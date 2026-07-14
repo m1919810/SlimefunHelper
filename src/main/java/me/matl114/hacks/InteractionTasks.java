@@ -24,11 +24,14 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
+import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
+import net.minecraft.world.RaycastContext;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -51,7 +54,7 @@ public class InteractionTasks {
         }
     }
 
-    public static void addPostRotationCorrectTask(Vec3d look3d, Runnable callback) {
+    public static void addPostRotationCorrectTask(Vec3d look3d, Vec3d eyePos, Runnable callback) {
         //        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
         //            RenderTasks.DEBUG_TICK, new RenderTasks.BoxObject(look3d.add(-0.1, -0.1, -0.1), look3d.add(0.1,
         // 0.1, 0.1), Color.MAGENTA)));
@@ -67,8 +70,8 @@ public class InteractionTasks {
                     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
                         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
 
-                        Vec2f rotation = EntityUtils.rotationToPitchYaw(
-                                look3d.subtract(mc.player.getEyePos().add(mc.player.getVelocity()))
+                        Vec2f rotation =
+                                EntityUtils.rotationToPitchYaw(look3d.subtract(eyePos.add(mc.player.getVelocity()))
                                         .normalize());
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityYawSafe(player, rotation.y);
@@ -83,31 +86,25 @@ public class InteractionTasks {
                     public boolean postModify(
                             Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
                         callback.run();
-                        //                        if(py != null){
-                        //                            Vec3d vec3d1 = mc.player.getEyePos();;
-                        //                            Vec3d vec3d2 = EntityUtils.pitchYawToRotation(py.x, py.y);
-                        //                            RenderTasks.drawLine(vec3d1, vec3d2, 300, Color.MAGENTA);
-                        //
-                        //                        }
                         return false;
                     }
                 });
     }
 
     public static void handlePlaceMode(Configs.LegalInteractMode mode, BlockHitResult result, Hand hand) {
+        Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(mc.player.getPos(), result.getBlockPos());
         switch (mode) {
             case USEITEM_PACKET -> {
-                Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
-                        .toCenterPos()
-                        .subtract(mc.player.getEyePos())
-                        .normalize());
+                Vec2f rotation = EntityUtils.rotationToPitchYaw(
+                        result.getBlockPos().toCenterPos().subtract(bestEyePos).normalize());
                 mc.interactionManager.sendSequencedPacket(
                         mc.world, (i) -> new PlayerInteractItemC2SPacket(hand, i, rotation.y, rotation.x));
                 InteractionTasks.placeBlock(hand, result);
             }
             case DELAY_MOVEMENT -> {
                 InteractionTasks.placeBlock(hand, result);
-                InteractionTasks.addPostRotationCorrectTask(result.getBlockPos().toCenterPos(), Runnables.doNothing());
+                InteractionTasks.addPostRotationCorrectTask(
+                        result.getBlockPos().toCenterPos(), bestEyePos, Runnables.doNothing());
             }
             case MOVEMENT_POST -> {
                 MutableObject<PlayerInteractBlockC2SPacket> catcher = new MutableObject<>();
@@ -121,15 +118,13 @@ public class InteractionTasks {
                 if (catcher.get() != null) {
                     var pkt = catcher.get();
                     InteractionTasks.addPostRotationCorrectTask(
-                            result.getBlockPos().toCenterPos(),
-                            () -> mc.getNetworkHandler().sendPacket(pkt));
+                            result.getBlockPos().toCenterPos(), bestEyePos, () -> mc.getNetworkHandler()
+                                    .sendPacket(pkt));
                 }
             }
             case LEGACY_SLIENT_ROT -> {
-                Vec2f rotation = EntityUtils.rotationToPitchYaw(result.getBlockPos()
-                        .toCenterPos()
-                        .subtract(mc.player.getEyePos())
-                        .normalize());
+                Vec2f rotation = EntityUtils.rotationToPitchYaw(
+                        result.getBlockPos().toCenterPos().subtract(bestEyePos).normalize());
                 LegacySnapRotManager.INSTANCE.snapAt(rotation.x, rotation.y, false);
                 InteractionTasks.placeBlock(hand, result);
             }
@@ -179,7 +174,7 @@ public class InteractionTasks {
                     var result = pair.getLeft();
                     InteractionTasks.placeBlock(hand, result);
                 }
-                InteractionTasks.addPostRotationCorrectTask(targetCenter, Runnables.doNothing());
+                InteractionTasks.addPostRotationCorrectTask(targetCenter, mc.player.getEyePos(), Runnables.doNothing());
             }
             case LEGACY_SLIENT_ROT -> {
                 int selectedSlot = -1;
@@ -596,6 +591,161 @@ public class InteractionTasks {
         return result;
     }
 
+    public static Vec2f createLiquidPlacementRaycast(Vec3d eyePos, BlockPos pos, BlockState targetState) {
+        if (mc.world == null || mc.player == null) {
+            return null;
+        }
+
+        boolean isWaterState =
+                targetState.isLiquid() && targetState.getFluidState().isIn(FluidTags.WATER);
+        boolean isWaterloggedState =
+                !targetState.isLiquid() && targetState.getFluidState().isIn(FluidTags.WATER);
+        double interactionRange = mc.player.getBlockInteractionRange();
+
+        Direction preferredDirection = mc.player.getFacing();
+        List<Direction> directions = new ArrayList<>();
+        directions.add(preferredDirection);
+        for (Direction direction : new Direction[] {
+            Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST
+        }) {
+            if (direction != preferredDirection) {
+                directions.add(direction);
+            }
+        }
+
+        for (Direction direction : directions) {
+            BlockPos interactPos;
+            Direction hitSide;
+            if (isWaterloggedState) {
+                interactPos = pos;
+                hitSide = direction;
+            } else if (isWaterState) {
+                interactPos = pos.offset(direction.getOpposite());
+                hitSide = direction;
+            } else {
+                continue;
+            }
+
+            BlockState interactState = mc.world.getBlockState(interactPos);
+            if (interactState.isAir()) {
+                continue;
+            }
+
+            for (Vec3d hitPoint : createLiquidPlacementFacePoints(interactPos, interactState, hitSide)) {
+                Vec3d look = hitPoint.subtract(eyePos);
+                if (look.lengthSquared() < 1.0E-12 || look.lengthSquared() > interactionRange * interactionRange) {
+                    continue;
+                }
+
+                Vec2f rotation = EntityUtils.rotationToPitchYaw(look.normalize());
+                Vec3d rotationVec = EntityUtils.pitchYawToRotation(rotation.x, rotation.y);
+                BlockHitResult raycastResult = mc.world.raycast(new RaycastContext(
+                        eyePos,
+                        eyePos.add(rotationVec.multiply(interactionRange)),
+                        RaycastContext.ShapeType.OUTLINE,
+                        RaycastContext.FluidHandling.NONE,
+                        mc.player));
+                if (raycastResult.getType() != HitResult.Type.BLOCK) {
+                    continue;
+                }
+                if (raycastResult.getBlockPos().equals(interactPos) && raycastResult.getSide() == hitSide) {
+                    return rotation;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static List<Vec3d> createLiquidPlacementFacePoints(BlockPos pos, BlockState state, Direction side) {
+        List<Vec3d> points = new ArrayList<>();
+        for (Box localBox : state.getOutlineShape(mc.world, pos).getBoundingBoxes()) {
+            Box box = localBox.offset(pos).expand(-1.0E-7, -1.0E-7, -1.0E-7);
+            if (box.getLengthX() <= 0 || box.getLengthY() <= 0 || box.getLengthZ() <= 0) {
+                continue;
+            }
+            addLiquidPlacementFacePoints(points, box, side);
+        }
+        return points;
+    }
+
+    private static void addLiquidPlacementFacePoints(List<Vec3d> points, Box box, Direction side) {
+        double minX = box.minX;
+        double midX = (box.minX + box.maxX) * 0.5D;
+        double maxX = box.maxX;
+        double minY = box.minY;
+        double midY = (box.minY + box.maxY) * 0.5D;
+        double maxY = box.maxY;
+        double minZ = box.minZ;
+        double midZ = (box.minZ + box.maxZ) * 0.5D;
+        double maxZ = box.maxZ;
+
+        switch (side) {
+            case DOWN -> addLiquidPlacementGrid(
+                    points, box.minY, minX, midX, maxX, minZ, midZ, maxZ, Direction.Axis.Y, true);
+            case UP -> addLiquidPlacementGrid(
+                    points, box.maxY, minX, midX, maxX, minZ, midZ, maxZ, Direction.Axis.Y, true);
+            case NORTH -> addLiquidPlacementGrid(
+                    points, box.minZ, minX, midX, maxX, minY, midY, maxY, Direction.Axis.Z, false);
+            case SOUTH -> addLiquidPlacementGrid(
+                    points, box.maxZ, minX, midX, maxX, minY, midY, maxY, Direction.Axis.Z, false);
+            case WEST -> addLiquidPlacementGrid(
+                    points, box.minX, minY, midY, maxY, minZ, midZ, maxZ, Direction.Axis.X, false);
+            case EAST -> addLiquidPlacementGrid(
+                    points, box.maxX, minY, midY, maxY, minZ, midZ, maxZ, Direction.Axis.X, false);
+        }
+    }
+
+    private static void addLiquidPlacementGrid(
+            List<Vec3d> points,
+            double fixed,
+            double minA,
+            double midA,
+            double maxA,
+            double minB,
+            double midB,
+            double maxB,
+            Direction.Axis axis,
+            boolean horizontalPlane) {
+        if (horizontalPlane) {
+            points.add(new Vec3d(midA, fixed, midB));
+            points.add(new Vec3d(minA, fixed, midB));
+            points.add(new Vec3d(maxA, fixed, midB));
+            points.add(new Vec3d(midA, fixed, minB));
+            points.add(new Vec3d(midA, fixed, maxB));
+            points.add(new Vec3d(minA, fixed, minB));
+            points.add(new Vec3d(minA, fixed, maxB));
+            points.add(new Vec3d(maxA, fixed, minB));
+            points.add(new Vec3d(maxA, fixed, maxB));
+            return;
+        }
+
+        switch (axis) {
+            case X -> {
+                points.add(new Vec3d(fixed, midA, midB));
+                points.add(new Vec3d(fixed, minA, midB));
+                points.add(new Vec3d(fixed, maxA, midB));
+                points.add(new Vec3d(fixed, midA, minB));
+                points.add(new Vec3d(fixed, midA, maxB));
+                points.add(new Vec3d(fixed, minA, minB));
+                points.add(new Vec3d(fixed, minA, maxB));
+                points.add(new Vec3d(fixed, maxA, minB));
+                points.add(new Vec3d(fixed, maxA, maxB));
+            }
+            case Z -> {
+                points.add(new Vec3d(midA, midB, fixed));
+                points.add(new Vec3d(minA, midB, fixed));
+                points.add(new Vec3d(maxA, midB, fixed));
+                points.add(new Vec3d(midA, minB, fixed));
+                points.add(new Vec3d(midA, maxB, fixed));
+                points.add(new Vec3d(minA, minB, fixed));
+                points.add(new Vec3d(minA, maxB, fixed));
+                points.add(new Vec3d(maxA, minB, fixed));
+                points.add(new Vec3d(maxA, maxB, fixed));
+            }
+            default -> {}
+        }
+    }
+
     @ApiMethod
     @Getter
     public static final ModuleGroup moduleManager = new ModuleGroup("Interaction");
@@ -631,6 +781,9 @@ public class InteractionTasks {
     public static PrinterRewrite printerRewrite;
 
     @Getter
+    public static NoInteract noInteract;
+
+    @Getter
     public static AutoRide autoRide;
 
     @Getter
@@ -651,6 +804,7 @@ public class InteractionTasks {
         autoSurround = new AutoSurround().register(m);
         blockRotate = new BlockRotate().register(m);
         printerRewrite = new PrinterRewrite().register(m);
+        noInteract = new NoInteract().register(m);
         autoRide = new AutoRide().register(m);
         autoEat = new AutoEat().register(m);
         autoUse = new AutoUse().register(m);

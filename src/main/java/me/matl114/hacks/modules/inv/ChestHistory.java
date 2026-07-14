@@ -30,6 +30,7 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.collections.MutableEntry;
 import me.matl114.utils.world.BlockLocation;
@@ -190,7 +191,7 @@ public class ChestHistory extends BaseModule {
             var entry = iterator.next();
             if (entry.getKey().isInRenderRange(location, AUTO_REFRESH_RANGE)) {
                 var chunkPos = entry.getKey().getChunk();
-                if (!mc.world.isChunkLoaded(chunkPos.x, chunkPos.z)) {
+                if (!WorldUtils.isServerChunkLoaded(chunkPos.x, chunkPos.z)) {
                     continue;
                 }
                 if (entry.getValue().getKey().isAir()) {

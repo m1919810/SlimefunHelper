@@ -2,6 +2,7 @@ package me.matl114.mixins.hack;
 
 import java.util.*;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.hacks.modules.extra.BadPacketsFix;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -70,6 +71,21 @@ public abstract class ClientPacketListenerMixin {
         if (MinecraftClient.getInstance().player != null) {
             ClientPlayerAccess access = ClientPlayerAccess.of(MinecraftClient.getInstance().player);
             access.clearKeepedInventory(false);
+        }
+    }
+
+    @Inject(
+            method = "onPlayerList",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lorg/slf4j/Logger;warn(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V",
+                            shift = At.Shift.BEFORE,
+                            remap = false),
+            cancellable = true)
+    public void onInvalidPlayerEntry(PlayerListS2CPacket packet, CallbackInfo ci) {
+        if (BadPacketsFix.INSTANCE.fixInvalidPlayerEntryUpdate.get()) {
+            ci.cancel();
         }
     }
 }

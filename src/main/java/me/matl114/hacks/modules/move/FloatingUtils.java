@@ -11,7 +11,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 
 public class FloatingUtils extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -63,13 +62,14 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         return PRIORITY_MONITOR;
     }
 
-    Packet<?> storedPacket;
-    boolean hasNoPosition = false;
+    PlayerMoveC2SPacket storedPacket;
+    // fix timer
+    boolean hasNoPositionMovementPacketThisTick = false;
 
     public void onMoveNoPosition(Event<PlayerMoveC2SPacket> eventMove) {
         // FIX: legacy snap seen as noPosition
         if (!eventMove.isCancelled() && (!eventMove.context.changesPosition())) {
-            hasNoPosition = true;
+            hasNoPositionMovementPacketThisTick = true;
         }
     }
 
@@ -119,14 +119,16 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         forceFloatingThisTick = false;
         forceOnGroundVia1205 = false;
         if (storedPacket != null) {
-            // optimize current, only if rotation different, send duplicate packet
-            if (!hasNoPosition || PlayerStateManager.INSTANCE.isRotationDifferent()) {
+            // optimize current, only if rotation different, or has No Position packet, send duplicate packet
+            if (((!hasNoPositionMovementPacketThisTick
+                    || PlayerStateManager.INSTANCE.isRotationDifferent(
+                            storedPacket.getPitch(mc.player.getPitch()), storedPacket.getYaw(mc.player.getYaw()))))) {
                 mc.getNetworkHandler().sendPacket(storedPacket);
             }
             // Listener.sendPacketNoEvents(storedPacket);
             storedPacket = null;
         }
-        hasNoPosition = false;
+        hasNoPositionMovementPacketThisTick = false;
         return true;
     }
 }

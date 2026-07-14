@@ -123,11 +123,12 @@ public class PlayerInputUtils {
             return new PlayerInputC2SPacket(toPlayerInput());
         }
 
-        public void sendPlayerInputPacket() {
+        public Input sendPlayerInputPacket() {
             MinecraftClient.getInstance().getNetworkHandler().sendPacket(toPlayerInputPacket());
+            return this;
         }
 
-        public void sendPlayerInputAsRiding() {
+        public Input sendPlayerInputAsRiding() {
             if (ViaFabricPlusHooks.getInstance().isViaEnabled()
                     && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 1)) {
                 // 1.21.1 ride packet
@@ -150,9 +151,10 @@ public class PlayerInputUtils {
             } else {
                 sendPlayerInputPacket();
             }
+            return this;
         }
 
-        public void sendPlayerSneakUpdatePacket() {
+        public Input sendPlayerSneakUpdatePacket() {
             if (ViaFabricPlusHooks.getInstance().isViaEnabled()
                     && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 5)
                     && SupportVersion.CURRENT.isHigherOrEqualTo(21, 6)) {
@@ -167,6 +169,7 @@ public class PlayerInputUtils {
                 wrapper.sendToServer(ViaProtocols.V1_21_5_TO_1_21_6, false);
             }
             sendPlayerInputPacket();
+            return this;
         }
 
         public int forwardSpeed() {
@@ -181,15 +184,17 @@ public class PlayerInputUtils {
             return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
         }
 
-        public void applyInput(ClientPlayerEntity input) {
+        public Input applyInput(ClientPlayerEntity input) {
             applyInput(input.input);
+            return this;
         }
 
-        protected void applyInput(net.minecraft.client.input.Input input) {
+        protected Input applyInput(net.minecraft.client.input.Input input) {
             input.playerInput = toPlayerInput();
+            return this;
         }
 
-        public void applyInput(GameOptions options) {
+        public Input applyInput(GameOptions options) {
             options.forwardKey.setPressed(forward);
             options.backKey.setPressed(backward);
             options.leftKey.setPressed(left);
@@ -197,6 +202,7 @@ public class PlayerInputUtils {
             options.jumpKey.setPressed(jump);
             options.sneakKey.setPressed(sneak);
             options.sprintKey.setPressed(sprint);
+            return this;
         }
 
         public boolean hasMovement() {

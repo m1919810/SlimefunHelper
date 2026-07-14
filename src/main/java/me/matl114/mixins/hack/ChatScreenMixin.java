@@ -22,8 +22,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ChatScreen.class)
@@ -144,15 +142,15 @@ public abstract class ChatScreenMixin extends Screen implements CustomFocusBehav
         return text;
     }
 
-    @Inject(
+    @WrapOperation(
             method = "init",
             at =
                     @At(
-                            value = "INVOKE",
+                            value = "FIELD",
                             target =
-                                    "Lnet/minecraft/client/gui/screen/ChatScreen$1;<init>(Lnet/minecraft/client/gui/screen/ChatScreen;Lnet/minecraft/client/font/TextRenderer;IIIILnet/minecraft/text/Text;)V",
-                            shift = At.Shift.AFTER))
-    private void modifyTextFieldWidget(CallbackInfo ci) {
-        this.chatField = new ChatScreenTextFieldWidget((ChatScreen) (Screen) this);
+                                    "Lnet/minecraft/client/gui/screen/ChatScreen;chatField:Lnet/minecraft/client/gui/widget/TextFieldWidget;",
+                            ordinal = 0))
+    private void modifyTextFieldWidget(ChatScreen instance, TextFieldWidget value, Operation<Void> original) {
+        original.call(instance, new ChatScreenTextFieldWidget((ChatScreen) (Screen) this));
     }
 }

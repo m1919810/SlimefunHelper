@@ -14,6 +14,7 @@ import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
@@ -116,6 +117,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     public void onInput(Event<Void> inputEvent) {
         if (enable.get()) {
+            boolean bl = mc.player.isSneaking();
             if (++delayTicks >= delay.get()) {
                 if (checkSurround()) {
                     if (autoCenter.get() && mc.player.getPose() != EntityPose.SWIMMING) {
@@ -127,7 +129,16 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
             if (needSneak) {
                 needSneak = false;
                 if (autoSneak.get()) {
-                    PlayerInputManager.INSTANCE.addSneakModifier(0, true, Math.max(delay.get() - 1, 0), 1);
+                    if (ViaFabricPlusHooks.isSupportInstaSneak()) {
+                        if (mc.player.isSneaking() != bl) {
+                            PlayerInputUtils.of(mc.player)
+                                    .sneak(bl)
+                                    .sendPlayerSneakUpdatePacket()
+                                    .applyInput(mc.player);
+                        }
+                    } else {
+                        PlayerInputManager.INSTANCE.addSneakModifier(0, true, Math.max(delay.get() - 1, 0), 1);
+                    }
                 }
             }
         }
@@ -182,10 +193,19 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                     BlockState state = mc.world.getBlockState(test);
                     if ((state.isAir() || state.isReplaceable())) {
                         var hitResult = InteractionTasks.getPlaceSupportingResult(test, !legal, !legal);
-                        boolean canPlace = hitResult != null && InteractUtils.canInteract(mc.player, hitResult);
                         if (hitResult != null && hitResult.flag()) {
+                            if (!needSneak
+                                    && autoSneak.get()
+                                    && ViaFabricPlusHooks.isSupportInstaSneak()
+                                    && !mc.player.isSneaking()) {
+                                PlayerInputUtils.of(mc.player)
+                                        .sneak(true)
+                                        .sendPlayerSneakUpdatePacket()
+                                        .applyInput(mc.player);
+                            }
                             needSneak = true;
                         }
+                        boolean canPlace = hitResult != null && InteractUtils.canInteractAndPlace(mc.player, hitResult);
                         if (canPlace) {
                             if (InteractUtils.canCubePlace(mc.player, test)) {
                                 if (placeCnt == 0) {
