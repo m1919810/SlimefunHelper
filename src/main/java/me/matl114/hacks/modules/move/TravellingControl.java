@@ -862,6 +862,9 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                                             control.pitch40Pitch.get()));
                         }
                     }
+                    if (AntiChunkLag.INSTANCE.currentMayFaceLagChunk) {
+                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                    }
                 } else {
                     handleReFly();
                 }
@@ -963,6 +966,10 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                                                     + counter2 * (float) control.negativeArgument.get(),
                                             control.pitch40Pitch.get()));
                         }
+                    }
+                    if (AntiChunkLag.INSTANCE.currentMayFaceLagChunk) {
+                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                        useGrimPacketFly = false;
                     }
                 } else {
                     handleReFly();

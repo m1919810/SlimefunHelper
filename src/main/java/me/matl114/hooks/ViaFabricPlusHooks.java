@@ -8,14 +8,11 @@ import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import com.viaversion.viaversion.api.type.Type;
 import com.viaversion.viaversion.api.type.Types;
-import de.florianmichael.viafabricplus.injection.access.IServerInfo;
 import de.florianmichael.viafabricplus.protocoltranslator.ProtocolTranslator;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import me.matl114.versioned.SupportVersion;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ServerInfo;
 
 public abstract class ViaFabricPlusHooks implements IHooks {
     public static ViaFabricPlusHooks instance;
@@ -41,22 +38,11 @@ public abstract class ViaFabricPlusHooks implements IHooks {
 
     public abstract SupportVersion getCurrentVersion();
 
-    public SupportVersion getServerVersion() {
-        return getServerVersion(MinecraftClient.getInstance().getCurrentServerEntry());
-    }
-
-    public abstract SupportVersion getServerVersion(ServerInfo server);
-
     public abstract boolean isViaEnabled();
 
     public static class Default extends ViaFabricPlusHooks {
         @Override
         public SupportVersion getCurrentVersion() {
-            return SupportVersion.CURRENT;
-        }
-
-        @Override
-        public SupportVersion getServerVersion(ServerInfo server) {
             return SupportVersion.CURRENT;
         }
 
@@ -83,12 +69,8 @@ public abstract class ViaFabricPlusHooks implements IHooks {
 
         ProtocolVersion lastProtocol = null;
         SupportVersion lastVersion = null;
-        ProtocolVersion lastServerProtocol = null;
-        SupportVersion lastServerVersion = null;
 
         protected abstract ProtocolVersion getTargetVersion0();
-
-        protected abstract ProtocolVersion getServerVersion0(ServerInfo serverInfo);
 
         @Override
         public SupportVersion getCurrentVersion() {
@@ -110,23 +92,6 @@ public abstract class ViaFabricPlusHooks implements IHooks {
         }
 
         @Override
-        public SupportVersion getServerVersion(ServerInfo server) {
-            ProtocolVersion currentProtocol = getServerVersion0(server);
-            if (!Objects.equals(currentProtocol, lastServerProtocol) || lastServerVersion == null) {
-                try {
-                    lastServerVersion = SupportVersion.parse(currentProtocol.getIncludedVersions().stream()
-                            .findFirst()
-                            .orElseThrow());
-                    lastServerProtocol = currentProtocol;
-                } catch (Throwable e) {
-                    lastServerVersion = SupportVersion.CURRENT;
-                    lastServerProtocol = currentProtocol;
-                }
-            }
-            return lastServerVersion;
-        }
-
-        @Override
         public ViaPacketWrapper createViaPacket() {
             return new ViaPacketWrapperImpl();
         }
@@ -142,11 +107,6 @@ public abstract class ViaFabricPlusHooks implements IHooks {
         @Override
         protected ProtocolVersion getTargetVersion0() {
             return base.getTargetVersion();
-        }
-
-        @Override
-        protected ProtocolVersion getServerVersion0(ServerInfo server) {
-            return base.getServerVersion(server);
         }
 
         public boolean isEnabled() {
@@ -176,11 +136,6 @@ public abstract class ViaFabricPlusHooks implements IHooks {
         }
 
         @Override
-        protected ProtocolVersion getServerVersion0(ServerInfo serverInfo) {
-            return ((IServerInfo) serverInfo).viaFabricPlus$forcedVersion();
-        }
-
-        @Override
         public boolean isEnabled() {
             return true;
         }
@@ -193,17 +148,7 @@ public abstract class ViaFabricPlusHooks implements IHooks {
             return null;
         }
 
-        @Override
-        protected ProtocolVersion getServerVersion0(ServerInfo serverInfo) {
-            return null;
-        }
-
         public SupportVersion getCurrentVersion() {
-            return SupportVersion.CURRENT;
-        }
-
-        @Override
-        public SupportVersion getServerVersion(ServerInfo server) {
             return SupportVersion.CURRENT;
         }
 
@@ -353,5 +298,9 @@ public abstract class ViaFabricPlusHooks implements IHooks {
 
     public static boolean isSupportDupRot() {
         return getInstance().getCurrentVersion().isLowerOrEqualTo(20, 7);
+    }
+
+    public static boolean isSupportInstaSneak() {
+        return getInstance().getCurrentVersion().isHigherOrEqualTo(21, 6);
     }
 }

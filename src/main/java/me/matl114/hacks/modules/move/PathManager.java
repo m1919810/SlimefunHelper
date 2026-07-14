@@ -1051,7 +1051,7 @@ public class PathManager extends BaseModule {
     }
 
     private boolean isChunkLoaded(BlockPos pos) {
-        return mc.world != null && mc.world.getChunkManager().isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4);
+        return mc.world != null && WorldUtils.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4);
     }
 
     private void stopCurrentRunningBaritone() {
