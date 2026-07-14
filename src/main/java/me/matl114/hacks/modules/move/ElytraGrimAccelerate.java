@@ -85,9 +85,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     }
 
     public Packet<?> storedPacket = null;
-    int lastMoveTick = 0;
     int setBackCount = 0;
-    int exemptTicks = 0;
     int lastSendMoveAndWaitSetBackTick = 0;
 
     public void onVcUpdate(Event<EntityVelocityUpdateS2CPacket> event) {
@@ -129,7 +127,6 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     int lastWorkingTick = 0;
 
     public void onSetBackReceive(Event<TeleportConfirmC2SPacket> packet) {
-        lastMoveTick = Tasks.getTick();
         setBackCount++;
         lastSendMoveAndWaitSetBackTick = 0;
     }
@@ -143,18 +140,13 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
 
     public void onTeleportConfirm(Event<PlayerPositionLookS2CPacket> event) {}
 
-    int stopBecauseOfLagTillTick;
-
     private void createStorePacket() {
-
-        if (fixKickFromLag.get() && Tasks.getTick() > lastMoveTick + 10) {
-            stopBecauseOfLagTillTick = Tasks.getTick() + 5;
+        // fix chunk lag
+        if (fixKickFromLag.get() && AntiChunkLag.INSTANCE.currentMayFaceLagChunk) {
             return;
         }
+        // check response, do not spam
         if (fixKickFromLag.get() && Tasks.getTick() < lastSendMoveAndWaitSetBackTick + 20) {
-            return;
-        }
-        if (stopBecauseOfLagTillTick > Tasks.getTick()) {
             return;
         }
         switch (mode.get()) {
@@ -217,12 +209,9 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                 }
                 // if no setback within a tick, then create one
                 createStorePacket();
-            } else {
-                lastMoveTick = Tasks.getTick();
             }
         } else {
             currentWorking = false;
-            lastMoveTick = Tasks.getTick();
         }
     }
 

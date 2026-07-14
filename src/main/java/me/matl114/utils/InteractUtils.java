@@ -50,10 +50,23 @@ public class InteractUtils {
         return blockItem.getPlacementState(placement);
     }
 
+    @Nullable
+    public static BlockState getBlockPlacement(
+            PlayerEntity player, Hand hand, ItemStack stack, BlockHitResult hitResult) {
+        return stack.getItem() instanceof BlockItem blockItem
+                ? blockItem.getPlacementState(new ItemPlacementContext(player, hand, stack, hitResult))
+                : null;
+    }
+
     public static boolean canCubePlace(PlayerEntity player, BlockPos pos) {
         // cube
         World world = player.getEntityWorld();
         BlockState state = Blocks.STONE.getDefaultState();
+        return state.canPlaceAt(world, pos) && world.canPlace(state, pos, ShapeContext.ofPlacement(player));
+    }
+
+    public static boolean canBlockPlace(PlayerEntity player, BlockPos pos, BlockState state) {
+        World world = player.getEntityWorld();
         return state.canPlaceAt(world, pos) && world.canPlace(state, pos, ShapeContext.ofPlacement(player));
     }
 
@@ -278,7 +291,11 @@ public class InteractUtils {
         return STATE_MAY_INTERACT.contains(block);
     }
 
-    public static boolean canInteract(PlayerEntity player, FlagEntry<BlockHitResult> sneak) {
+    public static boolean canInteractAndPlace(PlayerEntity player, FlagEntry<BlockHitResult> sneak) {
         return player.shouldCancelInteraction() || !sneak.flag();
+    }
+
+    public static boolean canInteractAndPlace(PlayerEntity player, boolean flag) {
+        return player.shouldCancelInteraction() || !flag;
     }
 }

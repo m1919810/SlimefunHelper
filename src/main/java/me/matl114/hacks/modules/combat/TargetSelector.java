@@ -162,7 +162,7 @@ public class TargetSelector extends BaseModule {
     }
 
     public boolean isWithinAttackRange(Vec3d pos, Box box, double range) {
-        if (box.squaredMagnitude(pos) > MathUtils.s2(range + 2 + mc.player.dimensions.eyeHeight())) {
+        if (box.squaredMagnitude(pos) > MathUtils.s2(range + 3 + mc.player.dimensions.eyeHeight())) {
             // filter all outofrange
             // optimize calculation
             return false;
@@ -184,6 +184,29 @@ public class TargetSelector extends BaseModule {
             }
         }
         return playerPos;
+    }
+
+    public Optional<Vec3d> getBestAttackEyePos(Vec3d pos, Box box, double range) {
+        if (box.squaredMagnitude(pos) > MathUtils.s2(range + 3 + mc.player.dimensions.eyeHeight())) {
+            // filter all outofrange
+            // optimize calculation
+            return Optional.empty();
+        }
+        var poses = getPotentialEyeHeights().mapToObj(s -> pos.add(0, s, 0)).toList();
+        Vec3d playerPos = pos.add(mc.player.getEyePos().subtract(mc.player.getPos()));
+        double s2 = box.squaredMagnitude(playerPos);
+        for (var pp : poses) {
+            double s3 = box.squaredMagnitude(pp);
+            if (s3 < s2) {
+                s2 = s3;
+                playerPos = pp;
+            }
+        }
+        if (MathUtils.s2(range) >= s2) {
+            return Optional.of(playerPos);
+        } else {
+            return Optional.empty();
+        }
     }
 
     public boolean onAddFriend() {

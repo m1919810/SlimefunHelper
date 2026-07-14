@@ -82,6 +82,7 @@ public abstract class BaritoneHooks implements IHooks {
             } catch (Throwable e) {
                 supportedVersion = false;
             }
+            prefix = getSetting("prefix");
         }
 
         private void buildMap() {
@@ -117,10 +118,10 @@ public abstract class BaritoneHooks implements IHooks {
             return (ValueAccessor<T>) settingsMap.get(name.toLowerCase(Locale.ROOT));
         }
 
-        ValueAccessor<String> prefix = getSetting("prefix");
+        final ValueAccessor<String> prefix;
 
         public String getCommandPrefix() {
-            return prefix.getValue();
+            return prefix == null ? "#" : prefix.getValue();
         }
 
         @Override
