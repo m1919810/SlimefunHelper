@@ -19,7 +19,7 @@ public abstract class EntityElytraModelMixin {
             method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isFallFlying()Z"))
     private boolean updateBipedRenderState(boolean original, @Local(argsOnly = true) LivingEntity livingEntity) {
-        if (livingEntity.isFallFlying() && livingEntity == MinecraftClient.getInstance().player) {
+        if (original && livingEntity == MinecraftClient.getInstance().player) {
             ElytraExtra elytraExtra = MovTasks.getElytraExtra();
             if (elytraExtra.renderFix.get() && elytraExtra.isCurrentArmorGliding()) {
                 return false;

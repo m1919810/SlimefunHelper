@@ -479,4 +479,28 @@ public class SpearEnhance extends BaseModule {
             }
         }
     }
+
+    public final Map<Item, Identifier> materialSwordToSpearInHandMap = new HashMap<>();
+
+    // 初始化
+    {
+        // 木制
+        materialSwordToSpearInHandMap.put(
+                Items.WOODEN_SWORD, new Identifier("slimefunhelper", "spear/wooden_spear_in_hand"));
+        // 石制
+        materialSwordToSpearInHandMap.put(
+                Items.STONE_SWORD, new Identifier("slimefunhelper", "spear/stone_spear_in_hand"));
+        // 铁制
+        materialSwordToSpearInHandMap.put(
+                Items.IRON_SWORD, new Identifier("slimefunhelper", "spear/iron_spear_in_hand"));
+        // 金制
+        materialSwordToSpearInHandMap.put(
+                Items.GOLDEN_SWORD, new Identifier("slimefunhelper", "spear/golden_spear_in_hand"));
+        // 钻石
+        materialSwordToSpearInHandMap.put(
+                Items.DIAMOND_SWORD, new Identifier("slimefunhelper", "spear/diamond_spear_in_hand"));
+        // 下界合金
+        materialSwordToSpearInHandMap.put(
+                Items.NETHERITE_SWORD, new Identifier("slimefunhelper", "spear/netherite_spear_in_hand"));
+    }
 }
