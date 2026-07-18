@@ -1,9 +1,13 @@
 package me.matl114.mixins.versioned;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.hacks.modules.combat.SpearEnhance;
+import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.versioned.impl.LancingUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.entity.LivingEntity;
@@ -56,5 +60,17 @@ public abstract class BipedEntityModelVersionedSpearMixin {
                 LancingUtils.positionArmForSpear(leftArm, head, false, pl.getActiveItem(), pl);
             }
         }
+    }
+
+    @ModifyExpressionValue(
+            method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;getFallFlyingTicks()I"))
+    private int setAnglesFallFlyingTicks(int original, @Local(argsOnly = true) LivingEntity p) {
+        if (original > 0 && p == MinecraftClient.getInstance().player) {
+            if (ElytraExtra.INSTANCE.isCurrentArmorGliding() && ElytraExtra.INSTANCE.renderFix.get()) {
+                return 0;
+            }
+        }
+        return original;
     }
 }

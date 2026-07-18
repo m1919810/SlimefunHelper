@@ -95,6 +95,7 @@
 		"hack.LivingEntityMixin",
 		"hack.PlayerAbilityMixin",
 		"hack.PlayerEntityMixin",
+		"hack.PlayerEntityRendererMixin",
 		"hack.PlayerInteractionMixin",
 		"hack.ResourcePackPositionMixin",
 		"hack.ShulkerScreenMixin",
@@ -109,7 +110,8 @@
 		"versioned.HeldItemVersionedSpearMixin",
 		"versioned.ItemVersionedSpearMixin",
 		"versioned.MatrixStackMixin",
-		"versioned.PlayerInputMixin"
+		"versioned.PlayerInputMixin",
+		"versioned.SpearHeldItemRenderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
