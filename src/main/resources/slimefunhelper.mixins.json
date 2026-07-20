@@ -109,6 +109,7 @@
 		"versioned.HeldItemFeatureRendererVersionedSpearMixin",
 		"versioned.HeldItemVersionedSpearMixin",
 		"versioned.ItemVersionedSpearMixin",
+		"versioned.LayeredDrawerMixin",
 		"versioned.MatrixStackMixin",
 		"versioned.PlayerInputMixin",
 		"versioned.SpearHeldItemRenderMixin"
