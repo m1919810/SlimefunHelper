@@ -56,8 +56,7 @@ public class AutoSlab extends BaseModule {
             .defaultValue(Configs.LegalInteractMode.NONE)
             .build();
 
-    public final FlagRef airplace = flagBuilder(autoPlate.add("air-place"))
-        .build();
+    public final FlagRef airplace = flagBuilder(autoPlate.add("air-place")).build();
 
     public final IntRef delay =
             intBuilder(autoPlate.add("delay")).defaultValue(5).build();
@@ -149,7 +148,8 @@ public class AutoSlab extends BaseModule {
 
     int timer = 0;
     List<BlockPos> fillBlockPoses = new ArrayList<>();
-    public void refreshBlocks(){
+
+    public void refreshBlocks() {
         fillBlockPoses.clear();
         BlockPos pos = mc.player.getBlockPos();
         for (var re : blocksSeq) {
@@ -194,13 +194,16 @@ public class AutoSlab extends BaseModule {
                 ? mul.get()
                 : 1;
         List<Runnable> stack = new ArrayList<>(multiply);
-        for(var testPos : fillBlockPoses) {
+        for (var testPos : fillBlockPoses) {
             var entry = supplyItem();
             if (entry != null && entry.val().getItem() instanceof BlockItem bl) {
                 BlockState targetState = bl.getBlock().getDefaultState();
-                FlagEntry<BlockHitResult> hitResult = InteractionTasks.createSpecificStateHitResult(testPos, targetState, airplace.get(), !mode.get().isLegal());
-                if(InteractUtils.canInteractAndPlace(mc.player, hitResult) && InteractExtra.INSTANCE.isWithinInteractRange(
-                    mc.player.getPos(), hitResult.val().getBlockPos(), range.get()) && InteractUtils.getBlockPlacement(bl, mc.player, mc.world, hitResult.val()) != null){
+                FlagEntry<BlockHitResult> hitResult = InteractionTasks.createSpecificStateHitResult(
+                        testPos, targetState, airplace.get(), !mode.get().isLegal());
+                if (InteractUtils.canInteractAndPlace(mc.player, hitResult)
+                        && InteractExtra.INSTANCE.isWithinInteractRange(
+                                mc.player.getPos(), hitResult.val().getBlockPos(), range.get())
+                        && InteractUtils.getBlockPlacement(bl, mc.player, mc.world, hitResult.val()) != null) {
                     Runnable runnable = InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
                     if (runnable == null) break;
                     stack.add(runnable);
@@ -209,7 +212,7 @@ public class AutoSlab extends BaseModule {
                     }
                     InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND);
                     cnt += 1;
-                    if(cnt >= multiply) {
+                    if (cnt >= multiply) {
                         break;
                     }
                 }
@@ -227,7 +230,7 @@ public class AutoSlab extends BaseModule {
         return InventoryUtils.findPlayerItem(s -> isAvailable(s.getItem()), true, false);
     }
 
-    public void onModulePreset(Event<EventContainer<ModulePreset>> event){
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         mode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
         airplace.set(!event.context.getValue().hasAC());
     }

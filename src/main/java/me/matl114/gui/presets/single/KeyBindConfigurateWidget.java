@@ -122,7 +122,10 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
         List<String> keyCodes = getKeys();
         if (keyCodes.isEmpty() || !Objects.equals(keyCodes.get(keyCodes.size() - 1), keyName)) {
             keyCodes.add(keyName);
-            ackChange(keyCodes, multiKeyBind.getOriginValue().isToggleOnRelease());
+            ackChange(
+                    keyCodes,
+                    multiKeyBind.getOriginValue().isToggleOnRelease(),
+                    multiKeyBind.getOriginValue().isAllowVanilla());
         }
     }
 
@@ -142,17 +145,20 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
             return;
         }
         keyCodes.remove(keyCodes.size() - 1);
-        ackChange(keyCodes, multiKeyBind.getOriginValue().isToggleOnRelease());
+        ackChange(
+                keyCodes,
+                multiKeyBind.getOriginValue().isToggleOnRelease(),
+                multiKeyBind.getOriginValue().isAllowVanilla());
     }
 
     private void undo() {
         List<String> keyCodes;
         keyCodes = new ArrayList<>();
         keyCodes.addAll(Arrays.asList(keyBind.getKeys()));
-        ackChange(keyCodes, keyBind.isToggleOnRelease());
+        ackChange(keyCodes, keyBind.isToggleOnRelease(), keyBind.isAllowVanilla());
     }
 
-    private void ackChange(List<String> keyCodes, boolean toggleOnBindRelease) {
-        multiKeyBind.valueChangeInternal(this, new MultiKeyBind(keyCodes, toggleOnBindRelease));
+    private void ackChange(List<String> keyCodes, boolean toggleOnBindRelease, boolean vanilla) {
+        multiKeyBind.valueChangeInternal(this, new MultiKeyBind(keyCodes, toggleOnBindRelease, vanilla));
     }
 }
