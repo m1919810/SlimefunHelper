@@ -78,14 +78,14 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
         double distanceS2 = MathUtils.s2(velocity.get());
         search:
         for (var x = -chunkSize; x <= chunkSize; x++) {
-            for(var z = -chunkSize; z <= chunkSize; z++) {
+            for (var z = -chunkSize; z <= chunkSize; z++) {
                 ChunkPos chunkPos = new ChunkPos(x + playerChunkPos.x, z + playerChunkPos.z);
-                if(WorldUtils.isChunkLoaded(chunkPos.x, chunkPos.z)){
+                if (WorldUtils.isChunkLoaded(chunkPos.x, chunkPos.z)) {
                     continue;
                 }
                 Vec3d startPos = new Vec3d(chunkPos.getStartX(), 0, chunkPos.getStartZ());
                 Box chunkBox = new Box(startPos, startPos.add(16, 0, 16));
-                if(chunkBox.squaredMagnitude(playerHorizontalPos) < distanceS2) {
+                if (chunkBox.squaredMagnitude(playerHorizontalPos) < distanceS2) {
                     hasUnloadedChunk = true;
                     break search;
                 }

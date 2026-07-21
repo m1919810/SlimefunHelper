@@ -64,6 +64,7 @@ public class AutoCity extends BaseModule {
     PlayerEntity targetEntity;
     BlockPos targetPos;
     boolean pendingSwitchPos;
+
     public void refreshTarget() {
         double range = MineExtra.INSTANCE.getReachDistance() + 1;
         if (targetEntity == null
@@ -92,8 +93,9 @@ public class AutoCity extends BaseModule {
             }
         }
     }
-    private void onPrePacketMine(Event<PacketMine.Pre> event){
-        if(enable.get() && !event.isCancelled() && pendingSwitchPos){
+
+    private void onPrePacketMine(Event<PacketMine.Pre> event) {
+        if (enable.get() && !event.isCancelled() && pendingSwitchPos) {
             event.cancel();
         }
     }
@@ -208,7 +210,7 @@ public class AutoCity extends BaseModule {
                         }
                     }
                 }
-            }else {
+            } else {
                 pendingSwitchPos = true;
             }
         } else {
