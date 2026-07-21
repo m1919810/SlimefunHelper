@@ -110,7 +110,7 @@ public class SimpleHotKey implements IHotKey {
                                         1,
                                         1);
                             }
-                            return true;
+                            return !this.getKeyCodes().isAllowVanilla();
                         } else {
                             return false;
                         }

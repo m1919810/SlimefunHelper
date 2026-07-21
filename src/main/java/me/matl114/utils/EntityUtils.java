@@ -327,6 +327,30 @@ public class EntityUtils {
         }
     }
 
+    public static int yawToXSgn(float yaw) {
+        float norm = yaw % 360;
+        if (norm < 0) norm += 360;
+        final float THRESH = 1e-3f; // 度
+        // 判断是否接近0或180
+        if (norm < THRESH || Math.abs(norm - 180) < THRESH || Math.abs(norm - 360) < THRESH) {
+            return 0;
+        }
+        // 否则在(0,180)为负，在(180,360)为正
+        return (norm > 0 && norm < 180) ? -1 : 1;
+    }
+
+    public static int yawToZSgn(float yaw) {
+        float norm = yaw % 360;
+        if (norm < 0) norm += 360;
+        final float THRESH = 1e-3f;
+        // 判断是否接近90或270
+        if (Math.abs(norm - 90) < THRESH || Math.abs(norm - 270) < THRESH) {
+            return 0;
+        }
+        // 在(90,270)为负，其余为正
+        return (norm > 90 && norm < 270) ? -1 : 1;
+    }
+
     public static boolean isRotationDifferent(float lastPitch, float pitch, float lastYaw, float yaw) {
         return Math.abs(pitch - lastPitch) > 1e-2 || Math.abs(EntityUtils.getSafeYawDiff(lastYaw, yaw)) > 1e-2;
     }

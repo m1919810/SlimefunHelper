@@ -62,6 +62,9 @@ public class ExtraTasks {
     @Getter
     public static SkinBlink skinBlink;
 
+    @Getter
+    public static EventNotify eventNotify;
+
     private static void initModules(ModuleManager m) {
         clientExtra = new ClientExtra().register(m);
         ;
@@ -79,6 +82,7 @@ public class ExtraTasks {
         boatVClip = new BoatVClip().register(m);
         iqBoost = new IQBoost().register(m);
         skinBlink = new SkinBlink().register(m);
+        eventNotify = new EventNotify().register(m);
     }
 
     static {

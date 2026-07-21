@@ -1,6 +1,6 @@
 package me.matl114.mixins.hack;
 
-import me.matl114.hacks.modules.render.RenderExtra;
+import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.world.ClientWorld;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ClientWorldMixin {
     @Inject(method = "doRandomBlockDisplayTicks", at = @At("HEAD"), cancellable = true)
     private void doRandomBlockDisplayTicks(int centerX, int centerY, int centerZ, CallbackInfo ci) {
-        if (RenderExtra.INSTANCE.noRandomEffect.get()) {
+        if (NoRender.INSTANCE.noRandomWorldEffect()) {
             ci.cancel();
         }
     }

@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.bukkit.BukkitItemStackUtils;
+import me.matl114.gui.Constants;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.KeyValueInputWidget;
@@ -277,7 +278,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         ItemStack lastResult;
         ExecutableWidget formatButton;
         EditBoxWidget widget;
-        protected static final Identifier FORMAT_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/format");
+        protected static final Identifier FORMAT_TEXTURE_SPRITE = Constants.FORMATTING_TEXTURE_SPRITE;
         protected static final List<Text> FORMAT = List.of(Text.literal("格式化NBT字符串"));
 
         protected ItemStack validateItemStack(NbtElement element) {

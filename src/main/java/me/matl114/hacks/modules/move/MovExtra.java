@@ -25,8 +25,11 @@ import net.minecraft.util.math.Vec3d;
 public class MovExtra extends BaseModule {
     public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
     public final ModulePath flight = moveSafety.add("flight");
+    public static MovExtra INSTANCE;
 
-    public MovExtra() {}
+    public MovExtra() {
+        INSTANCE = this;
+    }
 
     public final FlagRef fuckGrimAC =
             flagBuilder(moveSafety.add("grimac-1-21-2-input-features")).build();
@@ -94,32 +97,38 @@ public class MovExtra extends BaseModule {
     }
 
     private void sendNoMultiActionInputPacket(ClientPlayerEntity player) {
-        PlayerInputUtils.Input input = PlayerInputUtils.of(player);
-        input.right(false)
-                .left(false)
-                .forward(false)
-                .backward(false)
-                .jump(false)
-                .sprint(false);
-        if (!Objects.equals(PlayerStateManager.INSTANCE.lastInput, input)) {
-            input.sendPlayerInputPacket();
-            ClientPlayerAccess.of(player).resyncInput();
+        if (PlayerStateManager.INSTANCE.lastInput.hasMovement() || PlayerStateManager.INSTANCE.lastInput.sprint()) {
+            PlayerInputUtils.Input input = PlayerInputUtils.of(player);
+            input.right(false)
+                    .left(false)
+                    .forward(false)
+                    .backward(false)
+                    .jump(false)
+                    .sprint(false);
+            if (!Objects.equals(PlayerStateManager.INSTANCE.lastInput, input)) {
+                input.sendPlayerInputPacket();
+                ClientPlayerAccess.of(player).resyncInput();
+            }
         }
     }
     // mostly same as InventoryAction packets
     public void sendPacketsForPreStartFallFlying() {
         if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
-            var input = PlayerInputUtils.of(mc.player).jump(false);
-            input.sendPlayerInputPacket();
-            input.applyInput(mc.player);
+            if (PlayerStateManager.INSTANCE.lastInput.jump()) {
+                var input = PlayerInputUtils.of(mc.player).jump(false);
+                input.sendPlayerInputPacket();
+                input.applyInput(mc.player);
+            }
         }
     }
 
     public void sendPacketsForPostStartFallFlying() {
         if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
-            var input = PlayerInputUtils.of(mc.player).jump(true);
-            input.sendPlayerInputPacket();
-            input.applyInput(mc.player);
+            if (!PlayerStateManager.INSTANCE.lastInput.jump()) {
+                var input = PlayerInputUtils.of(mc.player).jump(true);
+                input.sendPlayerInputPacket();
+                input.applyInput(mc.player);
+            }
         }
     }
 

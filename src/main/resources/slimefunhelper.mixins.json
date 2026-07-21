@@ -48,6 +48,7 @@
 		"events.MinecraftClientEvents",
 		"events.MouseEvents",
 		"events.NetworkThreadUtilsEvents",
+		"events.ParticleManagerEvents",
 		"events.PlayerEntityEvents",
 		"events.RecipeBookScreenEvents",
 		"events.ScreenEvents",
@@ -56,7 +57,10 @@
 		"fix.AbstractElementButtonFixMixin",
 		"fix.ArrayPaletteFixMixin",
 		"fix.ClientPlayerListLookupCMEFix",
+		"fix.DecoderByteBufExceptionFixMixin",
+		"fix.EnchantmentLevelFixMixin",
 		"fix.EntityRenderStateFixMixin",
+		"fix.HeightContextNullFix",
 		"fix.IdListPaletteFixMixin",
 		"fix.KeyboardDebugCrashFix",
 		"fix.LoginHelloPacketNameFixMixin",
@@ -64,12 +68,14 @@
 		"fix.ParentElementButtonFixMixin",
 		"fix.ParticleCountLimitMixin",
 		"fix.ParticleTickFix",
+		"fix.ScreenHandlerFixMixin",
 		"fix.SignBlockEntityRendererFixMixin",
 		"fix.StringHelperFixMixin",
 		"gui.EditBoxWidgetMixin",
 		"gui.ScreenMixin",
 		"gui.ScrollableWidgetMixin",
 		"gui.TextFieldWidgetMixin",
+		"hack.CameraMixin",
 		"hack.ChatHudMixin",
 		"hack.ChatScreenMixin",
 		"hack.ChestScreenMixin",
@@ -83,6 +89,7 @@
 		"hack.EntityMixin",
 		"hack.EntityRenderDisplayNameMixin",
 		"hack.EntityRenderStateMixin",
+		"hack.FogRendererMixin",
 		"hack.GameRenderMixin",
 		"hack.InGameHudMixin",
 		"hack.InGameOverlayRendererMixin",
@@ -93,9 +100,11 @@
 		"hack.PlayerEntityMixin",
 		"hack.PlayerInteractionMixin",
 		"hack.ResourcePackPositionMixin",
+		"hack.ScreenMixin",
 		"hack.ShulkerScreenMixin",
 		"hack.SlimeBlockMixin",
 		"hack.SplashOverlayMixin",
+		"hack.StatusEffectFogModifierMixin",
 		"hack.VillagerTradeScreenMixin",
 		"hack.WorldRenderMixin",
 		"versioned.BipedEntityModelVersionedSpearMixin",
@@ -109,11 +118,5 @@
 	],
 	"injectors": {
 		"defaultRequire": 1
-	},
-	"mixins": [
-		"fix.DecoderByteBufExceptionFixMixin",
-		"fix.EnchantmentLevelFixMixin",
-		"fix.HeightContextNullFix",
-		"fix.ScreenHandlerFixMixin"
-	]
+	}
 }

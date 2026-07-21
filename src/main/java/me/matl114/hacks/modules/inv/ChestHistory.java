@@ -246,7 +246,7 @@ public class ChestHistory extends BaseModule {
 
     public void onRender(Event<MatrixStack> event) {
         MatrixStack stack = event.context();
-
+        // todo: make it a render
         if (enableTitle.get()) {
             if (mc.player != null) {
                 RenderUtils.startDrawVirtual(stack);

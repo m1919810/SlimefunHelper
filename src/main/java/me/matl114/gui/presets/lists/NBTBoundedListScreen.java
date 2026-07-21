@@ -89,7 +89,7 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
         new ListUnmodifiableWidget(
                         this.fuckController,
                         this.x + (this.backgroundWidth - listWidth) / 2,
-                        CONTENT_START_Y,
+                        this.y + CONTENT_START_Y,
                         listWidth,
                         content_end_y - CONTENT_START_Y)
                 .addTo(this);

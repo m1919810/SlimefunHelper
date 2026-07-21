@@ -20,10 +20,7 @@ import me.matl114.hacks.modules.task.ConnectionProxy;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
-import me.matl114.utils.ApiMethod;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
-import me.matl114.utils.InventoryUtils;
+import me.matl114.utils.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.TitleScreen;
@@ -49,7 +46,8 @@ public class MainTasks {
                 "strider_fix",
                 "client_crash",
                 "client_lite_crash",
-                "check_translation_key");
+                "check_translation_key",
+                "show_window");
     }
 
     @ApiMethod
@@ -75,6 +73,9 @@ public class MainTasks {
                 }
                 case "check_translation_key" -> {
                     checkTranslationKey(args);
+                }
+                case "show_window" -> {
+                    showWindows(args);
                 }
             }
         } catch (Throwable e) {
@@ -199,6 +200,12 @@ public class MainTasks {
             missingKeys.add(translationKey);
             Debug.info("Missing translation key for", translationKey);
         }
+    }
+
+    public static void showWindows(String[] args) {
+        // WindowUtils.createNotificationWindow("test1", "test2");
+        //        WindowUtils.createNotificationTrayWindow("test1", "test2");
+        // WindowUtils.createScriptNotificationWindow("test3", "test4");
     }
 
     public static void fillFakeSubChunkWithStone() {}

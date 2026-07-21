@@ -123,11 +123,11 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
                         }
                         for (var re : blockStateMap.entrySet()) {
                             BlockPos pos = re.getKey();
-                            Listener.sendPacketNoEvents(new PlayerActionC2SPacket(
-                                    PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
-                                    pos,
-                                    Direction.UP,
-                                    NetworkUtils.generateNextSequence()));
+                            //                            Listener.sendPacketNoEvents(new PlayerActionC2SPacket(
+                            //                                    PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
+                            //                                    pos,
+                            //                                    Direction.UP,
+                            //                                    NetworkUtils.generateNextSequence()));
                             Listener.sendPacketNoEvents(new PlayerActionC2SPacket(
                                     PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
                                     pos,
