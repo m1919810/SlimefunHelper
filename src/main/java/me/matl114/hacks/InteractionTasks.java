@@ -11,6 +11,7 @@ import me.matl114.events.catchers.PacketCatcherImpl;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
+import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.interact.*;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.managers.Configs;
@@ -135,6 +136,7 @@ public class InteractionTasks {
     }
 
     public static void flushACPlaceQueue() {
+        DisablerManager.INSTANCE.flushACPlaceQueue();
         // for flush places
         //        ACTasks.getDisablerManager().flushACPlaceQueue();
     }
@@ -286,6 +288,12 @@ public class InteractionTasks {
             }
             return result;
         }
+    }
+
+    public static FlagEntry<BlockHitResult> createSpecificStateHitResult(
+            BlockPos placeTargetBlock, BlockState targetState, boolean enableAirPlace, boolean enablePositionPlace) {
+        return createSpecificStateHitResult(
+                mc.player.getFacing(), placeTargetBlock, targetState, enableAirPlace, enablePositionPlace);
     }
 
     public static FlagEntry<BlockHitResult> createSpecificStateHitResult(
@@ -591,7 +599,7 @@ public class InteractionTasks {
         return result;
     }
 
-    public static Vec2f createLiquidPlacementRaycast(Vec3d eyePos, BlockPos pos, BlockState targetState) {
+    public static FlagEntry<Vec2f> createLiquidPlacementRaycast(Vec3d eyePos, BlockPos pos, BlockState targetState) {
         if (mc.world == null || mc.player == null) {
             return null;
         }
@@ -600,9 +608,9 @@ public class InteractionTasks {
                 targetState.isLiquid() && targetState.getFluidState().isIn(FluidTags.WATER);
         boolean isWaterloggedState =
                 !targetState.isLiquid() && targetState.getFluidState().isIn(FluidTags.WATER);
-        double interactionRange = mc.player.getBlockInteractionRange();
+        double interactionRange = AttributeUtils.getPlayerBlockInteractionRange(mc.player);
 
-        Direction preferredDirection = mc.player.getFacing();
+        Direction preferredDirection = mc.player.getFacing().getOpposite();
         List<Direction> directions = new ArrayList<>();
         directions.add(preferredDirection);
         for (Direction direction : new Direction[] {
@@ -612,26 +620,43 @@ public class InteractionTasks {
                 directions.add(direction);
             }
         }
-
+        FlagEntry<Vec2f> result = null;
         for (Direction direction : directions) {
+            // definitely can not interact from
+
             BlockPos interactPos;
             Direction hitSide;
+            BlockState hitState;
+            boolean sneakFlag;
             if (isWaterloggedState) {
                 interactPos = pos;
                 hitSide = direction;
+                sneakFlag = false;
+                hitState = mc.world.getBlockState(interactPos);
             } else if (isWaterState) {
                 interactPos = pos.offset(direction.getOpposite());
                 hitSide = direction;
+                hitState = mc.world.getBlockState(interactPos);
+                sneakFlag = hitState.getBlock() instanceof FluidFillable fillable
+                        && fillable.canFillWithFluid(
+                                mc.player,
+                                mc.world,
+                                interactPos,
+                                hitState,
+                                targetState.getFluidState().getFluid());
             } else {
                 continue;
             }
+            Vec3d facingDirection = interactPos.toCenterPos().subtract(eyePos);
 
-            BlockState interactState = mc.world.getBlockState(interactPos);
-            if (interactState.isAir()) {
+            if (new Vec3d(direction.getVector()).dotProduct(facingDirection) > 0) {
+                continue;
+            }
+            if (hitState.isAir() || hitState.isLiquid()) {
                 continue;
             }
 
-            for (Vec3d hitPoint : createLiquidPlacementFacePoints(interactPos, interactState, hitSide)) {
+            for (Vec3d hitPoint : createLiquidPlacementFacePoints(interactPos, hitState, hitSide)) {
                 Vec3d look = hitPoint.subtract(eyePos);
                 if (look.lengthSquared() < 1.0E-12 || look.lengthSquared() > interactionRange * interactionRange) {
                     continue;
@@ -649,11 +674,16 @@ public class InteractionTasks {
                     continue;
                 }
                 if (raycastResult.getBlockPos().equals(interactPos) && raycastResult.getSide() == hitSide) {
-                    return rotation;
+                    var re = new FlagEntry<>(sneakFlag, rotation);
+                    if (re.flag() == mc.player.isSneaking()) {
+                        return re;
+                    } else if (result == null) {
+                        result = re;
+                    }
                 }
             }
         }
-        return null;
+        return result;
     }
 
     private static List<Vec3d> createLiquidPlacementFacePoints(BlockPos pos, BlockState state, Direction side) {
@@ -784,6 +814,12 @@ public class InteractionTasks {
     public static NoInteract noInteract;
 
     @Getter
+    public static AutoPlate autoPlate;
+
+    @Getter
+    public static AutoSlab autoSlab;
+
+    @Getter
     public static AutoRide autoRide;
 
     @Getter
@@ -804,6 +840,8 @@ public class InteractionTasks {
         autoSurround = new AutoSurround().register(m);
         blockRotate = new BlockRotate().register(m);
         printerRewrite = new PrinterRewrite().register(m);
+        autoPlate = new AutoPlate().register(m);
+        autoSlab = new AutoSlab().register(m);
         noInteract = new NoInteract().register(m);
         autoRide = new AutoRide().register(m);
         autoEat = new AutoEat().register(m);

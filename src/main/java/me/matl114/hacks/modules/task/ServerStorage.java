@@ -4,11 +4,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.JavaOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.Getter;
@@ -16,6 +18,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.channels.EventChannel;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.NBTTypes;
@@ -29,7 +32,7 @@ import me.matl114.managers.FileManager;
 import me.matl114.managers.ScheduleService;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
-import me.matl114.managers.config.NBTType;
+import me.matl114.managers.config.Ref;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
@@ -51,12 +54,62 @@ public class ServerStorage extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public final NBTRef<PrimitivePairList<String, String>> serverNameMapper = builder(
-                    path.add("persistent-storage-name-mapper"),
-                    NBTType.<PrimitivePairList<String, String>>parameter(PrimitivePairList.class))
-            .defaultValue(new PrimitivePairList<>(
-                    "", "", NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, List.of(Pair.of("3c3u.org", "3c3u"))))
-            .build();
+    FileStorage fileStorage = FileManager.getInstance().getInternalStorage("server-storage.nbt");
+
+    static final String NAME_MAPPER_KEY = "persistent-storage-name-mapper";
+    Map<String, String> nameMapper;
+
+    {
+        Map<String, Object> javaMap = fileStorage.as(JavaOps.INSTANCE);
+        if (!javaMap.containsKey(NAME_MAPPER_KEY) || !(javaMap.get(NAME_MAPPER_KEY) instanceof Map<?, ?>)) {
+            Ref<?> originalMapper = path.getConfig()
+                    .get(path.add("persistent-storage-name-mapper").toPath());
+            if (originalMapper instanceof NBTRef nbt && nbt.get() instanceof PrimitivePairList<?, ?> list) {
+                path.getConfig()
+                        .setValueNoNew(
+                                null, path.add("persistent-storage-name-mapper").toPath());
+                List<Pair<String, String>> listed = (List) list.list();
+                updateNameMapper(listed);
+            } else {
+                nameMapper = Map.of("3c3u.org", "3c3u");
+                fileStorage.write(Map.of(NAME_MAPPER_KEY, nameMapper), JavaOps.INSTANCE);
+            }
+        } else {
+            nameMapper = (Map) javaMap.get(NAME_MAPPER_KEY);
+        }
+    }
+
+    public void updateNameMapper(List<Pair<String, String>> listed) {
+        nameMapper = new HashMap<>(listed.size());
+        for (var entry : listed) {
+            nameMapper.put(entry.getFirst(), entry.getSecond());
+        }
+        fileStorage.write(Map.of(NAME_MAPPER_KEY, nameMapper), JavaOps.INSTANCE);
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        var pth = path.add("persistent-storage-name-mapper");
+        List<Pair<String, String>> pairList = nameMapper.entrySet().stream()
+                .map(s -> Pair.of(s.getKey(), s.getValue()))
+                .toList();
+        NBTRef<PrimitivePairList<String, String>> ref = new NBTRef<>(new PrimitivePairList<>(
+                "widget.server-storage.ip",
+                "widget.server-storage.name",
+                NBTTypes.STRING_TYPE,
+                NBTTypes.STRING_TYPE,
+                pairList));
+        ref.addUpdateListener(s -> updateNameMapper(s.list()));
+        acceptor.accept(createRefEditor(pth.asString(), ref, 0, dblank, dx, dy));
+    }
+
+    //    public final NBTRef<PrimitivePairList<String, String>> serverNameMapper = builder(
+    //                    path.add("persistent-storage-name-mapper"),
+    //                    NBTType.<PrimitivePairList<String, String>>parameter(PrimitivePairList.class))
+    //            .defaultValue(new PrimitivePairList<>(
+    //                    "", "", NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, List.of(Pair.of("3c3u.org", "3c3u"))))
+    //            .build();
 
     public static final File SAVE_FILE = FileManager.getInstance().getAndCreateFile("server_storage");
 
@@ -199,9 +252,9 @@ public class ServerStorage extends BaseModule {
         String serverName = CommonUtils.getServerName();
         Preconditions.checkNotNull(serverName);
         String replace = serverName;
-        for (var re : serverNameMapper.get().list()) {
-            if (serverName.equalsIgnoreCase(re.getFirst())) {
-                replace = re.getSecond();
+        for (var re : nameMapper.entrySet()) {
+            if (serverName.equalsIgnoreCase(re.getKey())) {
+                replace = re.getValue();
             }
         }
         return replace;

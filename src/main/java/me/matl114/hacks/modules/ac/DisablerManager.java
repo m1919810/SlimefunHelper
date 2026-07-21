@@ -8,6 +8,8 @@ import me.matl114.events.PacketManager;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
@@ -17,6 +19,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.NetworkUtils;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
@@ -59,6 +62,11 @@ public class DisablerManager extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef autoFlushPlaceBreakQueue = builder(
+                    disablers.add("auto-flush-place-break-queue"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public DisablerManager() {
         super("Disabler");
         INSTANCE = this;
@@ -77,6 +85,10 @@ public class DisablerManager extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class),
                 this::onPlace,
+                Integer.MAX_VALUE - 1);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class),
+                this::onBreakAction,
                 Integer.MAX_VALUE - 1);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onFlying);
         registerListener(Listener.getPacketPoint().getChannel(CommonPongC2SPacket.class), this::onPingPong);
@@ -133,17 +145,40 @@ public class DisablerManager extends BaseModule {
 
     boolean hasAnyPlaceActionGrimQueue = false;
 
-    public void flushACPlaceQueue() {
+    public boolean flushACPlaceQueue() {
+        if (autoFlushPlaceQueue.get()) {
+            return flushACPlaceQueue0();
+        }
+        return false;
+    }
+
+    private boolean flushACPlaceQueue0() {
         switch (currentAC.get()) {
             case GRIM -> {
                 // flush ghost blocks
                 // see GrimAC handleQueuedPlaces()
                 if (hasAnyPlaceActionGrimQueue) {
-                    Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(InventoryUtils.getSelectedSlot()));
+                    if (ViaFabricPlusHooks.isSupportDupRot()) {
+                        LegacySnapRotManager.INSTANCE.snapAt(mc.player.getPitch(), mc.player.getYaw(), true);
+                    } else {
+                        int selected = InventoryUtils.getSelectedSlot();
+                        int next = selected == 8 ? 7 : 8;
+                        Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(next));
+                        Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(selected));
+                    }
                 }
                 hasAnyPlaceActionGrimQueue = false;
+                return true;
             }
         }
+        return false;
+    }
+
+    public boolean flushACPlaceBreakQueue() {
+        if (autoFlushPlaceBreakQueue.get()) {
+            return flushACPlaceQueue0();
+        }
+        return false;
     }
 
     public void onPlace(Event<PlayerInteractBlockC2SPacket> blockPlace) {
@@ -153,7 +188,7 @@ public class DisablerManager extends BaseModule {
         Vec3d cursor = hitResult.getPos();
         BlockPos blockPos = hitResult.getBlockPos();
         if (enable.get() && hasAnyPlaceActionGrimQueue && autoFlushPlaceQueue.get()) {
-            flushACPlaceQueue();
+            flushACPlaceQueue0();
         }
         hasAnyPlaceActionGrimQueue = true;
 
@@ -175,6 +210,21 @@ public class DisablerManager extends BaseModule {
         lastCursor = cursor;
         lastPos = blockPos;
     }
+
+    public void onBreakAction(Event<PlayerActionC2SPacket> eventBreak) {
+        if (eventBreak.isCancelled()) return;
+        switch (eventBreak.context.getAction()) {
+            case START_DESTROY_BLOCK, STOP_DESTROY_BLOCK -> {}
+            default -> {
+                return;
+            }
+        }
+        if (enable.get() && hasAnyPlaceActionGrimQueue && autoFlushPlaceBreakQueue.get()) {
+            flushACPlaceQueue0();
+        }
+        hasAnyPlaceActionGrimQueue = false;
+    }
+
     // see GrimAC handleQueuedPlaces
     public void onFlying(Event<PlayerMoveC2SPacket> playerMoveC2SPacket) {
         hasAnyPlaceActionGrimQueue = false;

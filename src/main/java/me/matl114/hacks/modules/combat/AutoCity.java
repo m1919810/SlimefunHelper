@@ -19,10 +19,7 @@ import me.matl114.utils.MathUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.*;
 
 public class AutoCity extends BaseModule {
     public static AutoCity INSTANCE;
@@ -61,11 +58,12 @@ public class AutoCity extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
+        registerListener(PacketMine.getPrePacketMine(), this::onPrePacketMine);
     }
 
     PlayerEntity targetEntity;
     BlockPos targetPos;
-
+    boolean pendingSwitchPos;
     public void refreshTarget() {
         double range = MineExtra.INSTANCE.getReachDistance() + 1;
         if (targetEntity == null
@@ -88,8 +86,15 @@ public class AutoCity extends BaseModule {
         if (enable.get()) {
             refreshTarget();
             if (targetEntity != null) {
+                // consider cooldown
+
                 onMine();
             }
+        }
+    }
+    private void onPrePacketMine(Event<PacketMine.Pre> event){
+        if(enable.get() && !event.isCancelled() && pendingSwitchPos){
+            event.cancel();
         }
     }
 
@@ -133,61 +138,81 @@ public class AutoCity extends BaseModule {
         outerPoses.removeAll(selfPoses);
         PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
         BlockPos currentPos = access.getCurrentMiningPos();
+        BlockPos nowCurrentFailMinePos = access.getCurrentFailBreakPos();
         // not mining
         boolean working = false;
         boolean switchPosition;
         if (burrow.get()) {
-            switchPosition = MovTasks.isCollidingWithEnvironment(targetEntity) || !outerPoses.contains(currentPos);
+            if (MovTasks.isCollidingWithEnvironment(targetEntity)) {
+                switchPosition = (!selfPoses.contains(currentPos)
+                                && (nowCurrentFailMinePos == null || !selfPoses.contains(nowCurrentFailMinePos)))
+                        || !outerPoses.contains(currentPos);
+            } else {
+                switchPosition = !outerPoses.contains(currentPos);
+            }
         } else {
             switchPosition = !outerPoses.contains(currentPos);
         }
         if (switchPosition) {
-            List<BlockPos> selfPosList = selfPoses.stream().toList();
-            List<BlockPos> outerPosList = outerPoses.stream().toList();
-            BlockPos currentMinePos = null;
-            BlockPos currentFailMinePos = null;
-            boolean canFailMine = access.isFailBreakEmpty();
-            find_mine_schedule:
-            {
-                // process selfPos first
-                for (var bp : selfPosList) {
-                    BlockState bs = mc.world.getBlockState(bp);
-                    if (!bs.isAir() && !bs.isLiquid() && PacketMine.INSTANCE.isMineable(bs)) {
-                        if (currentFailMinePos == null && canFailMine && doubleMineFace.get()) {
-                            currentFailMinePos = bp;
-                            continue;
+            if (MineExtra.INSTANCE.isVanillaMineCooldownComplete(1)) {
+                pendingSwitchPos = false;
+                List<BlockPos> selfPosList = selfPoses.stream().toList();
+                List<BlockPos> outerPosList = outerPoses.stream().toList();
+                BlockPos currentMinePos = null;
+                BlockPos currentFailMinePos = null;
+                boolean canFailMine = access.isFailBreakEmpty();
+                find_mine_schedule:
+                {
+                    // process selfPos first
+                    for (var bp : selfPosList) {
+                        BlockState bs = mc.world.getBlockState(bp);
+                        if (!bs.isAir() && !bs.isLiquid() && PacketMine.INSTANCE.isMineable(bs)) {
+                            if (Objects.equals(bp, nowCurrentFailMinePos)) {
+                                continue;
+                            }
+                            if (currentFailMinePos == null && canFailMine && doubleMineFace.get()) {
+                                currentFailMinePos = bp;
+                                continue;
+                            }
+                            currentMinePos = bp;
+                            break find_mine_schedule;
                         }
-                        currentMinePos = bp;
-                        break find_mine_schedule;
+                    }
+                    for (var bp : outerPosList) {
+                        BlockState bs = mc.world.getBlockState(bp);
+                        if (!bs.isAir() && !bs.isLiquid() && PacketMine.INSTANCE.isMineable(bs)) {
+                            currentMinePos = bp;
+                            break find_mine_schedule;
+                        }
                     }
                 }
-                for (var bp : outerPosList) {
-                    BlockState bs = mc.world.getBlockState(bp);
-                    if (!bs.isAir() && !bs.isLiquid() && PacketMine.INSTANCE.isMineable(bs)) {
-                        currentMinePos = bp;
-                        break find_mine_schedule;
+                if (currentFailMinePos != null) {
+                    // abort current
+                    if (currentMinePos != null) {
+                        if (!Objects.equals(currentPos, currentFailMinePos)) {
+                            access.sendStartBreakPacket(currentFailMinePos);
+                        }
+                        access.sendFailBreakCurrentPos(null);
+                    } else {
+                        currentMinePos = currentFailMinePos;
+                        currentFailMinePos = null;
                     }
                 }
-            }
-            if (currentFailMinePos != null) {
-                // abort current
                 if (currentMinePos != null) {
-                    if (!Objects.equals(currentPos, currentFailMinePos)) {
-                        access.sendStartBreakPacket(currentFailMinePos);
+                    working = true;
+                    if (!Objects.equals(currentPos, currentMinePos)) {
+                        access.sendStartBreakPacket(currentMinePos);
+                        // to avoid instant break not changing mining pos
+                        if (Objects.equals(access.getCurrentMiningPos(), currentMinePos)) {
+                            access.sendAbortBreakPacket();
+                        }
                     }
-                    access.sendFailBreakCurrentPos(null);
-                } else {
-                    currentMinePos = currentFailMinePos;
-                    currentFailMinePos = null;
                 }
-            }
-            if (currentMinePos != null) {
-                working = true;
-                if (!Objects.equals(currentPos, currentMinePos)) {
-                    access.sendStartBreakPacket(currentMinePos);
-                }
+            }else {
+                pendingSwitchPos = true;
             }
         } else {
+            pendingSwitchPos = false;
             working = true;
         }
         if (working) {

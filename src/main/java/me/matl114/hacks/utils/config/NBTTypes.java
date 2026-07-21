@@ -282,6 +282,38 @@ public interface NBTTypes {
                 pairFactory.create(k1Type.empty(), k2Type.empty()));
     }
 
+    public static <T, K1, K2> NBTType<T> createPairWithKey(
+            Class<T> targetClass,
+            Codec<K1> k1Codec,
+            K1 k1Default,
+            String name1,
+            NBTType<K2> k2Type,
+            String name2,
+            PairLikeFactory<K1, K2, T> pairFactory,
+            WidgetFactory<K1> k1Factory,
+            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K2>> k2Resize) {
+
+        return new NBTType<>(
+                targetClass.getSimpleName().toLowerCase(Locale.ROOT),
+                RecordCodecBuilder.<T>create(instance -> instance.group(
+                                k1Codec.fieldOf(name1).forGetter(pairFactory::getFirst),
+                                k2Type.typeCodec().fieldOf(name2).forGetter(pairFactory::getSecond))
+                        .apply(instance, pairFactory::create)),
+                (s, x, y, dx, dy) -> {
+                    AttrKeyValue<T> sourceAttr = s;
+                    K1 k1Value = pairFactory.getFirst(sourceAttr.getOriginValue());
+                    AttrKeyValue<K2> key2Attr =
+                            new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::getOriginValue), k2Type);
+                    SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
+                    subScreenWidget
+                            .addDrawableChild(k1Factory.generateWidget(k1Value, 0, 0, dx, dy))
+                            .addDrawableChild(k2Resize.apply(k2Type.customWidgetFactory())
+                                    .generateWidget(key2Attr, 0, 0, dx, dy));
+                    return subScreenWidget;
+                },
+                pairFactory.create(k1Default, k2Type.empty()));
+    }
+
     public static <T, K1, K2> NBTType<T> createArrayMapLike(
             Class<T> targetClass,
             NBTType<K1> k1Type,

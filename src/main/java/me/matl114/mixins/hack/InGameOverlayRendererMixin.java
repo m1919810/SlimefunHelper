@@ -1,6 +1,6 @@
 package me.matl114.mixins.hack;
 
-import me.matl114.hacks.modules.render.RenderExtra;
+import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -19,7 +19,7 @@ public abstract class InGameOverlayRendererMixin {
     @Inject(method = "renderInWallOverlay", at = @At("HEAD"), cancellable = true)
     private static void onNoRender0(
             Sprite sprite, MatrixStack matrices, VertexConsumerProvider vertexConsumers, CallbackInfo ci) {
-        if (RenderExtra.INSTANCE.noOverlay.get()) {
+        if (NoRender.INSTANCE.noWallOverlay()) {
             ci.cancel();
         }
     }
@@ -27,14 +27,14 @@ public abstract class InGameOverlayRendererMixin {
     @Inject(method = "renderUnderwaterOverlay", at = @At("HEAD"), cancellable = true)
     private static void onNoRender1(
             MinecraftClient client, MatrixStack matrices, VertexConsumerProvider vertexConsumers, CallbackInfo ci) {
-        if (RenderExtra.INSTANCE.noOverlay.get()) {
+        if (NoRender.INSTANCE.noLiquidOverlay()) {
             ci.cancel();
         }
     }
 
     @Inject(method = "renderFireOverlay", at = @At("HEAD"), cancellable = true)
     private static void onNoRender2(MatrixStack matrices, VertexConsumerProvider vertexConsumers, CallbackInfo ci) {
-        if (RenderExtra.INSTANCE.noFireOverlay.get()) {
+        if (NoRender.INSTANCE.noFireOverlay()) {
             ci.cancel();
         }
     }

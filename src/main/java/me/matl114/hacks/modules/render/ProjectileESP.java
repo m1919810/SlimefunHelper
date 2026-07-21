@@ -215,25 +215,28 @@ public class ProjectileESP extends BaseModule {
             boolean fireballFlag = renderFireball.get();
             float tickDelta = (Float) stackE.getArgs(0);
             RenderUtils.startDrawVirtual(stack);
-            for (var fireball : mc.world.getEntities()) {
-                if (fireball instanceof ExplosiveProjectileEntity explosive) {
-                    if (fireballFlag) {
-                        RenderUtils.drawStripLineVirtual(stack, predictFireballTrace(explosive), Color.RED);
+            try {
+                for (var fireball : mc.world.getEntities()) {
+                    if (fireball instanceof ExplosiveProjectileEntity explosive) {
+                        if (fireballFlag) {
+                            RenderUtils.drawStripLineVirtual(stack, predictFireballTrace(explosive), Color.RED);
+                        }
+                    }
+                    if (arrowFlag
+                            && fireball instanceof AbstractSkeletonEntity arrow
+                            && !(arrow instanceof WitherSkeletonEntity)) {
+                        renderSkeletonProjectile(stack, arrow, tickDelta);
+                    } else if (arrowFlag && fireball instanceof PlayerEntity player) {
+                        renderPlayerProjectile(stack, player, tickDelta);
+                    } else if (arrowFlag && fireball instanceof CrossbowUser user) {
+                        renderCrossbowProjectile(stack, user, tickDelta);
+                    } else if (arrowFlag && fireball instanceof PersistentProjectileEntity arrow) {
+                        renderArrowProjectile(stack, arrow, tickDelta);
                     }
                 }
-                if (arrowFlag
-                        && fireball instanceof AbstractSkeletonEntity arrow
-                        && !(arrow instanceof WitherSkeletonEntity)) {
-                    renderSkeletonProjectile(stack, arrow, tickDelta);
-                } else if (arrowFlag && fireball instanceof PlayerEntity player) {
-                    renderPlayerProjectile(stack, player, tickDelta);
-                } else if (arrowFlag && fireball instanceof CrossbowUser user) {
-                    renderCrossbowProjectile(stack, user, tickDelta);
-                } else if (arrowFlag && fireball instanceof PersistentProjectileEntity arrow) {
-                    renderArrowProjectile(stack, arrow, tickDelta);
-                }
+            } finally {
+                RenderUtils.stopDrawVirtual(stack);
             }
-            RenderUtils.stopDrawVirtual(stack);
         }
     }
 

@@ -39,10 +39,19 @@ public class MineTasks {
     public static MineExtra mineExtra;
 
     @Getter
+    public static MiningProgressManager miningProgressManager;
+
+    @Getter
     public static MineBot mineBot;
 
     @Getter
+    public static QueueMine queueMine;
+
+    @Getter
     public static PacketMine packetMine;
+
+    @Getter
+    public static BlockFarm blockFarm;
 
     @Getter
     public static SeedOre seedOre;
@@ -55,9 +64,11 @@ public class MineTasks {
 
     private static void initModules(ModuleManager m) {
         mineExtra = new MineExtra().register(m);
+        miningProgressManager = new MiningProgressManager().register(m);
         mineBot = new MineBot().register(m);
+        queueMine = new QueueMine().register(m);
         packetMine = new PacketMine().register(m);
-
+        blockFarm = new BlockFarm().register(m);
         mineArua = new MineArua().register(m);
         seedOre = new SeedOre().register(m);
         antiAXray = new AntiAXray().register(m);

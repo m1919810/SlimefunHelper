@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.chat;
 import com.google.common.hash.Hashing;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -13,6 +14,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.StringFormat;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -280,8 +282,8 @@ public class ChatExtra extends BaseModule {
     public final FlagRef enableFormat =
             flagBuilder(chat.add("enable-chat-message-format")).build();
 
-    public final StringRef formatStr = builder(chat.add("chat-message-format-str"), String.class)
-            .defaultValue("%s喵 | SlimefunHelper client | {random6}")
+    public final NBTRef<StringFormat> formatStr = builder(chat.add("chat-message-format-str"), StringFormat.class)
+            .defaultValue(new StringFormat(List.of("message", "random+数字"), "{message}喵 | WurstV91 client | {random6}"))
             .build();
 
     public final NBTRef<Regex> commandEscapeFormatPattern = builder(chat.add("chat-message-escape-format"), Regex.class)
@@ -301,7 +303,8 @@ public class ChatExtra extends BaseModule {
     }
 
     public String generateFormatString(String string) {
-        String template = formatStr.get();
+        StringFormat format = formatStr.get();
+        String template = format.formatString();
         Matcher m = randomPattern.matcher(template);
         StringBuffer sb = new StringBuffer();
         while (m.find()) {
@@ -312,7 +315,7 @@ public class ChatExtra extends BaseModule {
         m.appendTail(sb);
         String processedTemplate = sb.toString();
 
-        return String.format(processedTemplate, string);
+        return format.withFormatString(processedTemplate).format(string);
     }
 
     public boolean shouldEscapeFormatting(String originString) {

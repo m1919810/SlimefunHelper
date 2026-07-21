@@ -10,6 +10,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.PrimitivePairList;
 import me.matl114.managers.Configs;
@@ -105,12 +106,16 @@ public class BindCommand extends BaseModule implements IHotKey {
                     if (hotKeyEvent.isCancelled()) {
                         continue;
                     }
-                    handleCommand(lst.getSecond());
+                    if (HotKeyUtils.isValidState()) {
+                        handleCommand(lst.getSecond());
+                    }
                     if (mul.isToggleOnRelease()) {
                         Tasks.scheduleRepeatedPre(
                                 () -> {
                                     if (!mul.isAllPressed()) {
-                                        handleCommand(lst.getSecond());
+                                        if (HotKeyUtils.isValidState()) {
+                                            handleCommand(lst.getSecond());
+                                        }
                                         return true;
                                     }
                                     return false;
@@ -118,7 +123,7 @@ public class BindCommand extends BaseModule implements IHotKey {
                                 1,
                                 1);
                     }
-                    handled = true;
+                    handled |= !mul.isAllowVanilla();
                 }
             }
         }
