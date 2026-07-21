@@ -13,28 +13,32 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.Uuids;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.SpawnHelper;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.waypoint.TrackedWaypoint;
 
 public class WorldUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    public static final int UPDATE_BLOCK_NO_PHYSICS = 2 | 16 | 512;
 
     public static boolean areWorldEquals(ClientWorld world1, ClientWorld world2) {
         return world1 == world2
@@ -231,6 +235,32 @@ public class WorldUtils {
 
     public static boolean isChunkLoaded(int chunkX, int chunkZ) {
         return mc.world.getChunkManager().isChunkLoaded(chunkX, chunkZ);
+    }
+
+    public static boolean isInfiniteWater(World world, BlockPos pos) {
+        int stillSourceCount = 0;
+        for (Direction direction : Direction.Type.HORIZONTAL) {
+            FluidState neighborFluid = world.getFluidState(pos.offset(direction));
+            if (neighborFluid.isOf(Fluids.WATER) && neighborFluid.isStill()) {
+                stillSourceCount++;
+            }
+        }
+        if (stillSourceCount < 2) {
+            return false;
+        }
+        BlockPos downPos = pos.down();
+        BlockState downState = world.getBlockState(downPos);
+        FluidState downFluid = downState.getFluidState();
+        return downState.isSolid() || (downFluid.isOf(Fluids.WATER) && downFluid.isStill());
+    }
+
+    public static boolean canEntitySpawnAt(World world, BlockPos pos, EntityType<?> type) {
+        BlockState state = world.getBlockState(pos);
+        BlockState upState = world.getBlockState(pos.up());
+        BlockState downState = world.getBlockState(pos.down());
+        return downState.allowsSpawning(world, pos.down(), type)
+                && SpawnHelper.isClearForSpawn(world, pos, state, state.getFluidState(), type)
+                && SpawnHelper.isClearForSpawn(world, pos.up(), upState, upState.getFluidState(), type);
     }
 
     @Getter

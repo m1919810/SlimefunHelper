@@ -159,6 +159,10 @@ public class MainCommand extends AbstractMainCommand {
         return List.of();
     }
 
+    public static boolean isClientCommand(String command) {
+        return command.startsWith("!!") || command.startsWith("/!!");
+    }
+
     public static CompletableFuture<Suggestions> tabCompleteClientCommand(String command, int cursorAt) {
         if (command.startsWith("!!")) {
             return dispatchTabComplete(command.substring(2), cursorAt - 2, false);

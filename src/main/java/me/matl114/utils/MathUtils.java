@@ -2,13 +2,11 @@ package me.matl114.utils;
 
 import com.mojang.datafixers.util.Pair;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.IntSupplier;
 import lombok.AllArgsConstructor;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
 
@@ -70,6 +68,19 @@ public class MathUtils {
 
     public static Box createBox(Vec3d vec3d, double ra) {
         return new Box(vec3d.subtract(ra), vec3d.add(ra));
+    }
+
+    public static String getDirectionName(int xSgn, int zSgn) {
+        if (xSgn == 0 && zSgn == 0) return "Center";
+        if (xSgn == 0 && zSgn == 1) return "South";
+        if (xSgn == 0 && zSgn == -1) return "North";
+        if (xSgn == 1 && zSgn == 0) return "East";
+        if (xSgn == -1 && zSgn == 0) return "West";
+        if (xSgn == 1 && zSgn == 1) return "Southeast";
+        if (xSgn == 1 && zSgn == -1) return "Northeast";
+        if (xSgn == -1 && zSgn == 1) return "Southwest";
+        if (xSgn == -1 && zSgn == -1) return "Northwest";
+        return "Unknown";
     }
 
     public static List<BlockPos> getOccupiedBlockPositions(Box box) {
@@ -161,6 +172,33 @@ public class MathUtils {
         return Pair.of(
                 cutPoint.add(verticals.multiply(cutLen)).subtract(point),
                 cutPoint.subtract(verticals.multiply(cutLen)).subtract(point));
+    }
+
+    public static List<Vec3i> create2DPointListInRange(double i, int x) {
+        List<Vec3i> list = new ArrayList<>();
+        int range = (int) i;
+        for (var y = -range; y <= range; ++y) {
+            for (var z = -range; z <= range; ++z) {
+                list.add(new Vec3i(y, x, z));
+            }
+        }
+        list.sort(Comparator.comparingDouble(v -> v.getX() * v.getX() + v.getZ() * v.getZ()));
+        return list;
+    }
+
+    public static List<Vec3i> create3DPointListInRange(double i) {
+        List<Vec3i> list = new ArrayList<>();
+        int range = (int) i;
+        for (var x = -range; x <= range; ++x) {
+            for (var y = -range; y <= range; ++y) {
+                for (var z = -range; z <= range; ++z) {
+                    list.add(new Vec3i(x, y, z));
+                }
+            }
+        }
+
+        list.sort(Comparator.comparingDouble(s -> s.getX() * s.getX() + s.getZ() * s.getZ() + s.getY() * s.getY()));
+        return list;
     }
 
     public static Vec3d linearInterpolation(Vec3d[] vec3ds, int ticksLater) {

@@ -270,8 +270,18 @@ public class BaritoneFix extends BaseModule {
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         acceptor.accept(DisplayWidget.instance(0, dblank, dx, dy)
                 .setRenderHandler(new ColorLabelTextElement(
-                        TextProvider.of(Text.literal(
-                                BaritoneHooks.getInstance().isEnabled() ? "已检测到可兼容的Baritone" : "未检出到可兼容的Baritone")),
+                        TextProvider.of(Text.translatable(
+                                BaritoneHooks.getInstance().isBaritoneAPISupported()
+                                        ? "widget.baritone-fix.baritone-api-support"
+                                        : "widget.baritone-fix.baritone-api-not-support")),
+                        () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
+                        () -> ClickGui.INSTANCE.moduleListColor.get().withAlpha(255))));
+        acceptor.accept(DisplayWidget.instance(0, dblank, dx, dy)
+                .setRenderHandler(new ColorLabelTextElement(
+                        TextProvider.of(Text.translatable(
+                                BaritoneHooks.getInstance().isBaritoneVersionSupported()
+                                        ? "widget.baritone-fix.baritone-support"
+                                        : "widget.baritone-fix.baritone-not-support")),
                         () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
                         () -> ClickGui.INSTANCE.moduleListColor.get().withAlpha(255))));
     }

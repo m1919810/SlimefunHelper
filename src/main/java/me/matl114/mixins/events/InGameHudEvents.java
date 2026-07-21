@@ -22,6 +22,7 @@ public abstract class InGameHudEvents {
     @Inject(method = "render", at = @At("RETURN"))
     private void renderPlayerList(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         VDrawContext vdraw = VDrawContext.of(context);
+        context.createNewRootLayer();
         vdraw.pushMatrix();
         try {
             RenderListener.getRender2DEvent()

@@ -1,13 +1,14 @@
 package me.matl114.hacks.modules.combat;
 
+import java.util.List;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.StringFormat;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.StringRef;
-import me.matl114.utils.ChatUtils;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.DamageUtils;
 import me.matl114.utils.Debug;
 import net.minecraft.entity.damage.DamageType;
@@ -30,21 +31,25 @@ public class CombatLog extends BaseModule {
             flagBuilder(combatLog.add("log-other-hit-me")).build();
     public final FlagRef enableHit = flagBuilder(combatLog.add("log-hit")).build();
 
-    public final StringRef logFormat = builder(combatLog.add("log-hit-format-str"), StringRef.TYPE)
-            .defaultValue("&c[Combat]&f %s hit %s, type: %s")
+    public final NBTRef<StringFormat> logFormat = builder(combatLog.add("log-hit-format-str"), StringFormat.class)
+            .defaultValue(new StringFormat(
+                    List.of("attacker", "target", "damageType"),
+                    "&c[Combat]&f {attacker} hit {target}, type: {damageType}"))
             .build();
 
     public final FlagRef enableSmash = flagBuilder(combatLog.add("log-smash")).build();
 
-    public final StringRef logSmashFormat = builder(combatLog.add("log-smash-format-str"), StringRef.TYPE)
-            .defaultValue("&c[Combat]&f %s smash %s")
+    public final NBTRef<StringFormat> logSmashFormat = builder(
+                    combatLog.add("log-smash-format-str"), StringFormat.class)
+            .defaultValue(new StringFormat(List.of("attacker", "target"), "&c[Combat]&f {attacker} smash {target}"))
             .build();
 
     public final FlagRef enableKinetic =
             flagBuilder(combatLog.add("log-kinetic")).build();
 
-    public final StringRef logKineticFormat = builder(combatLog.add("log-kinetic-format-str"), StringRef.TYPE)
-            .defaultValue("&c[Combat]&f %s spear %s")
+    public final NBTRef<StringFormat> logKineticFormat = builder(
+                    combatLog.add("log-kinetic-format-str"), StringFormat.class)
+            .defaultValue(new StringFormat(List.of("attacker", "target"), "&c[Combat]&f {attacker} spear {target}"))
             .build();
 
     public void registerAll() {
@@ -73,24 +78,24 @@ public class CombatLog extends BaseModule {
         if (enableSmash.get()) {
             if (DamageUtils.isType(source, "mace_smash")) {
                 // we trigger a mace smash
-                Debug.chat(ChatUtils.stringToText(logSmashFormat.get().formatted(from, to)));
+                Debug.chat(logSmashFormat.get().formatText(from, to));
                 return;
             }
         }
         if (enableKinetic.get()) {
             if (DamageUtils.isType(source, "spear")) {
                 // we trigger a mace smash
-                Debug.chat(ChatUtils.stringToText(logKineticFormat.get().formatted(from, to)));
+                Debug.chat(logKineticFormat.get().formatText(from, to));
                 return;
             }
         }
         if (enableHit.get()) {
-            Debug.chat(ChatUtils.stringToText(logFormat
+            Debug.chat(logFormat
                     .get()
-                    .formatted(
+                    .formatText(
                             from,
                             to,
-                            source == null ? "null" : source.getValue().getPath())));
+                            source == null ? "null" : source.getValue().getPath()));
             return;
         }
     }

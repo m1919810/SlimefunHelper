@@ -1145,6 +1145,9 @@ public class InvTasks {
     public static FastCraft fastCraft;
 
     @Getter
+    public static NoQDrop noQDrop;
+
+    @Getter
     public static FastChest fastChest;
 
     @Getter
@@ -1192,6 +1195,7 @@ public class InvTasks {
         keepInv = new KeepInv().register(m);
         fastInv = new FastInv().register(m);
         fastCraft = new FastCraft().register(m);
+        noQDrop = new NoQDrop().register(m);
         fastChest = new FastChest().register(m);
         autoStore = new AutoStore().register(m);
         autoSteal = new AutoSteal().register(m);

@@ -110,7 +110,10 @@ public class Attack extends BaseModule {
             flagBuilder(attack.add("auto-handle-use-when-attack")).build();
 
     @ApiStatus.Experimental
-    public final FlagRef autoMaceSwap = flagBuilder(attack.add("mace-swap")).build();
+    public final NBTRef<OptionalPrimitive<Double>> autoMaceSwap = builder(
+                    attack.add("mace-swap"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 6.0D))
+            .build();
 
     // todo: ghosthand mace enchantment
 
@@ -160,7 +163,7 @@ public class Attack extends BaseModule {
             switch (legalTargetingMode.get()) {
                 case DELAY_MOVEMENT: {
                     if (mc.player.isFallFlying()
-                            && willUseMaceAttack(autoMaceSwap.get())
+                            && willUseMaceAttack()
                             && ElytraExtra.INSTANCE.shouldUseDelayMovementAttackMaceFix()) {
                         return 2;
                     }
@@ -250,7 +253,9 @@ public class Attack extends BaseModule {
 
     public AttackSettings createAttackSettings() {
         boolean useTp = canUseTp();
-        boolean maceSwap = autoMaceSwap.get();
+        boolean maceSwap = autoMaceSwap.get().isPresent()
+                && PlayerStateManager.INSTANCE.fallDistance
+                        >= autoMaceSwap.get().getValue();
         boolean invSwap = autoSwap.get();
         boolean selectWeapon = autoSelect.get();
         boolean antiShield = autoAntiShield.get();
@@ -259,6 +264,11 @@ public class Attack extends BaseModule {
                 MovTasks.getElytraExtra().shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(maceSwap);
         boolean criticalSprint = !legalMode.get() && mc.player.isSprinting();
         boolean maceVClip = canUseMaceTp() && !legalMode.get();
+        if (maceVClip
+                && autoMaceSwap.get().isPresent()
+                && maceHeight.get().getValue() >= autoMaceSwap.get().getValue()) {
+            maceSwap = true;
+        }
         return new AttackSettings(
                 useTp, maceSwap, invSwap, selectWeapon, antiShield, useAttack, elytraSwitch, criticalSprint, maceVClip);
     }
@@ -373,7 +383,8 @@ public class Attack extends BaseModule {
     }
 
     public boolean willUseMaceAttack() {
-        return willUseMaceAttack(autoMaceSwap.get());
+        return willUseMaceAttack(autoMaceSwap.get().isPresent()
+                && autoMaceSwap.get().getValue() <= PlayerStateManager.INSTANCE.fallDistance);
     }
 
     public boolean willUseMaceAttack(boolean autoMace) {

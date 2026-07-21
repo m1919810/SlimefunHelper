@@ -17,6 +17,8 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -25,12 +27,15 @@ import me.matl114.utils.MathUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.PlayerInputUtils;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -56,7 +61,7 @@ public class PacketMine extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef considerAirState =
+    public final FlagRef realBreak =
             flagBuilder(packetMine.add("simulate-real-break")).build();
 
     public final FlagRef airBreak =
@@ -80,10 +85,24 @@ public class PacketMine extends BaseModule {
     public final FlagRef groundOnlyWhenNoControl =
             flagBuilder(packetMine.add("ground-only-when-no-control")).build();
 
+    public final FlagRef mineOnce =
+            flagBuilder(packetMine.add("only-mine-once-per-click")).build();
+
+    public final FlagRef whiteList =
+            flagBuilder(packetMine.add("enable-mine-white-list")).build();
+
+    public final NBTRef<RegistryRegex<Block>> whiteListRegex = builder(
+                    packetMine.add("mine-white-list"), RegistryRegex.<Block>parameter())
+            .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.BLOCK))
+            .build();
+
+    BlockPos lastMinePos;
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onTick);
+        registerListener(Listener.getMineBlockAction(), this::onMineBlockAction);
     }
 
     public boolean hasMiningTarget() {
@@ -113,101 +132,132 @@ public class PacketMine extends BaseModule {
     }
 
     public void onTick(Event<ClientPlayerEntity> tickEvent) {
+        if (switchCallback != null) {
+            switchCallback.run();
+            switchCallback = null;
+        }
         if (isActive()) {
+            if (checkNull()) return;
+            BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+            if (mineOnce.get() && Objects.equals(pos, lastMinePos)) {
+                return;
+            }
             tickMine();
         }
     }
 
-    Runnable switchCallback = null;
+    public Runnable switchCallback = null;
 
     public void tickMine() {
         if (mc.interactionManager != null && mc.player != null) {
-            BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
             if (switchCallback != null) {
                 switchCallback.run();
                 switchCallback = null;
             }
+            BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+            if (pos == null) return;
+
             Runnable currentTickCallback = null;
             boolean postMineCallback = false;
+            float progress = 0;
             // todo: add predicted speed
-            if (pos != null) {
-                double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
-                if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
-                    BlockState blockState = mc.world.getBlockState(pos);
-                    IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
+            double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
+            if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
+                BlockState blockState = mc.world.getBlockState(pos);
+                IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
 
-                    ItemStack currentTool = currentItemSlot.val();
-                    if (canMine(blockState, currentTool)) {
-                        Event<Pre> eventPre = new Event<>(Pre.INSTANCE, true, false, pos);
-                        prePacketMine.handleValue(eventPre);
-                        if (!eventPre.isCancelled()) {
-                            if (groundDeceive.get() && !mc.player.isOnGround()) {
-                                boolean shouldExecute = true;
-                                if (groundOnlyWhenNoControl.get()
-                                        && !PlayerInputUtils.of(mc.options).hasMovementControl()) {
-                                    shouldExecute = false;
-                                }
-                                if (shouldExecute) {
+                ItemStack currentTool = currentItemSlot.val();
+                if (canMine(blockState, currentTool)) {
+                    Event<Pre> eventPre = new Event<>(Pre.INSTANCE, true, false, pos);
+                    prePacketMine.handleValue(eventPre);
+                    if (!eventPre.isCancelled()) {
+                        if (groundDeceive.get() && !mc.player.isOnGround()) {
+                            boolean shouldExecute = true;
+                            if (groundOnlyWhenNoControl.get()
+                                    && !PlayerInputUtils.of(mc.options).hasMovementControl()) {
+                                shouldExecute = false;
+                            }
+                            if (shouldExecute) {
 
-                                    mc.getNetworkHandler()
-                                            .sendPacket(LegacySnapRotManager.INSTANCE.createSnapAt(
-                                                    PlayerStateManager.INSTANCE.lastPitch,
-                                                    PlayerStateManager.INSTANCE.lastYaw,
-                                                    true));
-                                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-                                    FloatingUtils.INSTANCE.setForceOnGroundVia(true);
-                                }
+                                mc.getNetworkHandler()
+                                        .sendPacket(LegacySnapRotManager.INSTANCE.createSnapAt(
+                                                PlayerStateManager.INSTANCE.lastPitch,
+                                                PlayerStateManager.INSTANCE.lastYaw,
+                                                true));
+                                FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                                FloatingUtils.INSTANCE.setForceOnGroundVia(true);
                             }
-                            Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
-
-                            Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
-                            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-                            if (considerAirState.get()
-                                    && PlayerInteractionAccess.of(mc.interactionManager)
-                                                    .getCurrentMiningProgress(currentTool)
-                                            > 0.98F) {
-                                mc.interactionManager.breakBlock(pos);
-                            }
-                            for (int i = 0; i < multiplePackets.get(); ++i) {
-                                if (swingHand.get())
-                                    mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                                PlayerInteractionAccess.of(mc.interactionManager)
-                                        .sendBreakPacket(pos, dir);
-                            }
-                            currentTickCallback = callback;
-                            postMineCallback = true;
                         }
+                        Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
+
+                        Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
+                        Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+                        progress = PlayerInteractionAccess.of(mc.interactionManager)
+                                .getCurrentMiningProgress(currentTool);
+
+                        if (realBreak.get() && progress > 0.98F) {
+                            mc.interactionManager.breakBlock(pos);
+                        }
+                        for (int i = 0; i < multiplePackets.get(); ++i) {
+                            if (swingHand.get())
+                                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                            PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(pos, dir);
+                        }
+                        currentTickCallback = callback;
+                        postMineCallback = true;
                     }
                 }
             }
             if (autoToolDoubleBreak.get()
                     && PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
-                BlockPos failPos =
-                        PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
-                BlockState blockState = mc.world.getBlockState(failPos);
-                IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
-                ItemStack currentTool = currentItemSlot.val();
-                if (canMineFailBreak(blockState, currentTool)) {
-                    Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
-                    Runnable currentCallback =
-                            currentTickCallback == null ? Runnables.doNothing() : currentTickCallback;
-                    switchCallback = () -> {
-                        callback.run();
-                        currentCallback.run();
-                    };
-                } else {
-                    if (currentTickCallback != null) {
-                        currentTickCallback.run();
-                    }
-                }
+                tickGhostHandDoubleBreak(currentTickCallback, groundDeceive.get());
             } else {
                 if (currentTickCallback != null) {
                     currentTickCallback.run();
                 }
             }
             if (postMineCallback) {
-                postPacketMine.broadcast(Post.INSTANCE, pos);
+                postPacketMine.broadcast(Post.INSTANCE, pos, progress);
+            } else if (WorldUtils.isChunkLoaded(pos)) {
+                BlockState state = mc.world.getBlockState(pos);
+                if (state.isAir() || state.isLiquid()) {
+                    lastMinePos = pos;
+                }
             }
+        }
+    }
+
+    public void tickGhostHandDoubleBreak(Runnable currentTickCallback, boolean groundDeceive) {
+        if (switchCallback != null) {
+            return;
+        }
+        BlockPos failPos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
+        if (failPos == null) {
+            if (currentTickCallback != null) {
+                currentTickCallback.run();
+            }
+            return;
+        }
+        BlockState blockState = mc.world.getBlockState(failPos);
+        IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
+        ItemStack currentTool = currentItemSlot.val();
+        if (canMineFailBreak(blockState, currentTool, groundDeceive)) {
+            Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
+            Runnable currentCallback = currentTickCallback == null ? Runnables.doNothing() : currentTickCallback;
+            switchCallback = () -> {
+                callback.run();
+                currentCallback.run();
+            };
+        } else {
+            if (currentTickCallback != null) {
+                currentTickCallback.run();
+            }
+        }
+    }
+
+    public void onMineBlockAction(Event<HitResult> event) {
+        if (event.context != null && event.context.getType() == HitResult.Type.BLOCK) {
+            lastMinePos = null;
         }
     }
 
@@ -235,7 +285,10 @@ public class PacketMine extends BaseModule {
     }
 
     public boolean isMineable(BlockState state) {
-        return state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && (airBreak.get() || !state.isAir());
+        return state.getBlock().getHardness() >= 0.0F
+                && !state.isLiquid()
+                && (airBreak.get() || !state.isAir())
+                && (!whiteList.get() || !whiteListRegex.get().test(state.getBlock()));
     }
 
     public boolean canMine(BlockState state, ItemStack tool) {
@@ -256,13 +309,13 @@ public class PacketMine extends BaseModule {
         }
     }
 
-    public boolean canMineFailBreak(BlockState state, ItemStack tool) {
+    public boolean canMineFailBreak(BlockState state, ItemStack tool, boolean groundDeceive) {
         // do not mine liquid, that's a disaster
         // do not mine air, shit
         if (isMineable(state)) {
             var access = PlayerInteractionAccess.of(mc.interactionManager);
             var speed = access.predictFailMiningProgressWithTool(tool, 0);
-            if (groundDeceive.get() && !mc.player.isOnGround()) {
+            if (groundDeceive && !mc.player.isOnGround()) {
                 speed *= 5;
             }
             return speed > 0.99;
@@ -278,7 +331,7 @@ public class PacketMine extends BaseModule {
 
     @Getter
     @Broadcast
-    @ExtraArgs({BlockPos.class})
+    @ExtraArgs({BlockPos.class, float.class})
     public static final EventChannel<Post> postPacketMine = new EventChannel<>();
 
     public static class Pre {

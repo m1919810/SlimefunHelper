@@ -12,12 +12,17 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.*;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import org.jspecify.annotations.Nullable;
 
 public class AttributeUtils {
+    public static double getPlayerBlockInteractionRange(PlayerEntity player) {
+        return player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE);
+    }
+
     public static AttributeContainer getAttributeWith(
             LivingEntity living, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
         AttributeContainer attributeContainer = new AttributeContainer(

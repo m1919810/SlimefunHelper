@@ -8,4 +8,8 @@ public enum ModulePreset {
     AC_GRIM_LEGACY,
     AC_MATRIX,
     AC_VULCAN;
+
+    public boolean hasAC() {
+        return !(this == VANILLA || this == AC_VULCAN);
+    }
 }

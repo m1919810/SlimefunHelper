@@ -10,7 +10,7 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.*;
 import me.matl114.hacks.modules.move.MoveTimer;
 import me.matl114.hacks.modules.move.Sprint;
-import me.matl114.hacks.modules.render.RenderExtra;
+import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -26,7 +26,6 @@ import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -128,12 +127,11 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Override
     public float getEffectFadeFactor(RegistryEntry<StatusEffect> effect, float tickProgress) {
-        if (RenderExtra.INSTANCE.noNausea.get() && Objects.equals(effect, StatusEffects.NAUSEA)) {
+        if (NoRender.INSTANCE.noNausea() && Objects.equals(effect, StatusEffects.NAUSEA)) {
             return 0.0F;
         }
-        if (RenderExtra.INSTANCE.noEffect.get()
-                && (Objects.equals(effect, StatusEffects.DARKNESS)
-                        || Objects.equals(effect, StatusEffects.BLINDNESS))) {
+        if ((NoRender.INSTANCE.noDarkNess() && Objects.equals(effect, StatusEffects.DARKNESS))
+                || (NoRender.INSTANCE.noBlindness() && Objects.equals(effect, StatusEffects.BLINDNESS))) {
             return 0.0F;
         }
         return super.getEffectFadeFactor(effect, tickProgress);
@@ -152,19 +150,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
                 ci.cancel();
             }
         }
-    }
-
-    @Unique
-    @Override
-    public boolean canHaveStatusEffect(StatusEffectInstance effect) {
-        RenderExtra extra = RenderExtra.INSTANCE;
-        if (extra.noEffect.get()
-                && extra.noEffectForce.get()
-                && (extra.noEffectTypes.get().test(effect.getEffectType()))) {
-            return false;
-        }
-
-        return super.canHaveStatusEffect(effect);
     }
 
     @Unique

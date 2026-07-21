@@ -25,6 +25,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.NetworkUtils;
+import me.matl114.utils.WorldUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.Orientation;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -63,6 +64,10 @@ public class BlockRotate extends BaseModule {
             .build();
 
     public final FlagRef enable3 = builder(tempSchematic.add("enable"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef clientTempFix = builder(tempSchematic.add("client-state-temp-fix"), Boolean.class)
             .defaultValue(true)
             .build();
 
@@ -109,6 +114,10 @@ public class BlockRotate extends BaseModule {
         }
     }
 
+    public void addTempStateSchematic(BlockPos pos, BlockState state) {
+        addTempStateSchematic(pos, state, 1);
+    }
+
     public void addTempStateSchematic(BlockPos pos, BlockState state, int lastingTicks) {
         if (state != null) {
             tempSchematics.put(pos, new TemporarySchematic(pos, lastingTicks, state));
@@ -129,7 +138,7 @@ public class BlockRotate extends BaseModule {
                     Event<PitchYawDeceive> yawDeceive = new Event<>(new PitchYawDeceive(), false, true);
                     Event<Vec3d> playerLookAt = new Event<>(null, false, true);
                     handlePlaceCorrectLitematica(blockItem, e.context, context, yawDeceive, playerLookAt);
-                    handlePlaceCorrectTemperarySchematic(blockItem, e.context, context, yawDeceive, playerLookAt);
+                    handlePlaceCorrectTemperarySchematic(blockItem, e.context, context, yawDeceive);
                     PitchYawDeceive deceivePy = null;
                     Vec2f currentPy =
                             new Vec2f(PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw);
@@ -226,8 +235,7 @@ public class BlockRotate extends BaseModule {
             BlockItem item,
             PlayerInteractBlockC2SPacket packet,
             PlayerInteractBlockC2SPacketAccess.UseContext useContext,
-            Event<PitchYawDeceive> yawDeceive,
-            Event<Vec3d> look) {
+            Event<PitchYawDeceive> yawDeceive) {
         if (enable3.get()) {
             // ?
             BlockHitResult packetHitResult = packet.getBlockHitResult();
@@ -237,8 +245,12 @@ public class BlockRotate extends BaseModule {
             if (schematic == null || schematic.expire()) {
                 return;
             }
-
+            BlockState clientState = mc.world.getBlockState(modifyingBlockPos);
             litematicaState = schematic.targetState;
+            // no need for fix
+            if (clientState == litematicaState) {
+                return;
+            }
             BlockHitResult newPacketHitResult =
                     handlePlaceCorrect(item, modifyingBlockPos, litematicaState, packet, true);
             if (newPacketHitResult != null) {
@@ -249,6 +261,9 @@ public class BlockRotate extends BaseModule {
                 //                    look.context(packetHitResult.getBlockPos().toCenterPos());
                 //                }
                 handleYawDeceive(litematicaState, yawDeceive.context);
+                if (clientTempFix.get()) {
+                    mc.world.setBlockState(modifyingBlockPos, litematicaState, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
+                }
             }
         }
     }

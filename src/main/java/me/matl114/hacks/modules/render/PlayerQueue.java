@@ -109,24 +109,21 @@ public class PlayerQueue extends BaseModule {
     }
 
     public void onJoinPositionChange() {
-        if (!trackedPlayers.isEmpty()) {
-            IntSet intSet = null;
-            int order = 0;
-            for (var re : playerQueue) {
-                order += 1;
-                if (re.initialize) continue;
-                int lastOrder = re.lastOrder;
-                re.lastOrder = re.order;
-                re.order = order;
-                if (enable.get() && lastOrder != order) {
-                    if (intSet == null) {
-                        intSet = new IntOpenHashSet(mentionOrderList.get().list());
-                    }
-                    String name = VRecord.getName(re.entry.getProfile());
-                    if (trackedPlayers.contains(name) && (!certainOrder.get() || intSet.contains(order))) {
-                        Debug.chat(ChatUtils.stringToText(
-                                "&c[Queue] &fPlayer %s current in queue order %d".formatted(name, order)));
-                    }
+        IntSet intSet = null;
+        int order = 0;
+        for (var re : playerQueue) {
+            order += 1;
+            if (re.initialize) continue;
+            re.lastOrder = re.order;
+            re.order = order;
+            if (enable.get() && re.lastOrder != order) {
+                if (intSet == null) {
+                    intSet = new IntOpenHashSet(mentionOrderList.get().list());
+                }
+                String name = VRecord.getName(re.entry.getProfile());
+                if (trackedPlayers.contains(name) && (!certainOrder.get() || intSet.contains(order))) {
+                    Debug.chat(ChatUtils.stringToText(
+                            "&c[Queue] &fPlayer %s current in queue order %d".formatted(name, order)));
                 }
             }
         }
@@ -201,6 +198,12 @@ public class PlayerQueue extends BaseModule {
     }
 
     public void onPlayerListAdd(Event<PlayerListEntry> entry) {
+        String name = VRecord.getName(entry.context.getProfile());
+        if (trackedPlayers.contains(name)) {
+            if (enable.get()) {
+                Debug.chat(ChatUtils.stringToText("&c[Queue] &fPlayer %s join the server".formatted(name)));
+            }
+        }
         if (entry.context.getGameMode() == GameMode.SPECTATOR) {
             playerJoinQueue(entry.context);
         } else {
@@ -261,13 +264,33 @@ public class PlayerQueue extends BaseModule {
             if (entry != null) {
                 Debug.chat("-", re, "(queuing,", (entry.initialize ? "order=unknown)" : "order=" + entry.order + ")"));
             } else {
-                if (mc.getNetworkHandler().getPlayerListEntry(re) != null) {
-                    Debug.chat("-", re, "(online)");
+                var pentry = mc.getNetworkHandler().getPlayerListEntry(re);
+                if (pentry != null) {
+                    Debug.chat("-", re, pentry.getGameMode() == GameMode.SURVIVAL ? "(online)" : "(queuing)");
 
                 } else {
                     Debug.chat("-", re, "(offline)");
                 }
             }
+        }
+    }
+
+    public void checkTrackedInfo(String name) {
+        Debug.chat(ChatUtils.stringToText("&c[Queue] &fTracked Info for player " + name));
+        for (var entry : playerQueue) {
+            String string = VRecord.getName(entry.entry.getProfile());
+            if (Objects.equals(string, name)) {
+                Debug.chat(
+                        "-", name, "(queuing,", (entry.initialize ? "order=unknown)" : "order=" + entry.order + ")"));
+                return;
+            }
+        }
+        var pentry = mc.getNetworkHandler().getPlayerListEntry(name);
+        if (pentry != null) {
+            Debug.chat("-", name, pentry.getGameMode() == GameMode.SURVIVAL ? "(online)" : "(queuing)");
+
+        } else {
+            Debug.chat("-", name, "(offline)");
         }
     }
 
@@ -301,6 +324,15 @@ public class PlayerQueue extends BaseModule {
                     .name("clear")
                     .helper("清空队列追踪器")
                     .post(s -> s.executor(CommandContext.run(this::clearTrack)))
+                    .complete()
+                    .subBuilder(SubCommand.taskBuilder())
+                    .name("check")
+                    .helper("<name> 检查当前玩家的情况")
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("name")
+                            .tabSupplier(WorldUtils::getPlayerListNames)
+                            .build())
+                    .post(s -> s.executor(CommandContext.run((ar) -> this.checkTrackedInfo(ar.nextNonnullString()))))
                     .complete();
         }
     }

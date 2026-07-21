@@ -8,8 +8,13 @@ import net.minecraft.text.Text;
 
 public class ModuleEntry {
     Config config;
+
+    @Getter
     String[] path;
+
+    @Getter
     String[] hotkeyPath;
+
     FlagRef flagRef;
 
     @Getter

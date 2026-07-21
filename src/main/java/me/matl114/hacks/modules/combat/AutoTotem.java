@@ -217,10 +217,5 @@ public class AutoTotem extends BaseModule {
         noTotemMention = false;
     }
 
-    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
-        switch (event.context.getValue()) {
-            case AC_GRIM, AC_GRIM_LEGACY, AC_MATRIX -> mode.set(Configs.AutoInvMode.LAZY);
-            default -> mode.set(Configs.AutoInvMode.TICK);
-        }
-    }
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {}
 }

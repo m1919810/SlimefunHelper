@@ -11,10 +11,10 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.MathUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.entity.LegalMovementManager;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 
 public class AntiChunkLag extends BaseModule implements LegalMovementManager.MovementModifier {
     public static AntiChunkLag INSTANCE;
@@ -38,7 +38,7 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
             moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
 
     public final IntRef velocity = intBuilder(root.add("predict-velocity"))
-            .defaultValue(10)
+            .defaultValue(48)
             .validator(Configs.INT_POSITIVE)
             .build();
 
@@ -52,15 +52,46 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         if (currentMayFaceLagChunk && enable.get() && freeze.get()) {
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+            // fix armorGlide
+            if (mc.player.isFallFlying()) {
+                if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
+                    if (ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide()) {
+                        FloatingUtils.INSTANCE.setForceSilent(false);
+                    } else {
+                        FloatingUtils.INSTANCE.setForceSilent(true);
+                    }
+                } else {
+                    FloatingUtils.INSTANCE.setForceSilent(false);
+                }
+            } else {
+                FloatingUtils.INSTANCE.setForceSilent(true);
+            }
         }
     }
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        Vec3d currentVelocity = mc.player.getRotationVector();
-        Vec3d predictingPosition = currentVelocity.multiply(velocity.get()).add(mc.player.getPos());
-        BlockPos predictingPos = BlockPos.ofFloored(predictingPosition);
-        boolean val = !WorldUtils.isChunkLoaded(predictingPos);
+        int chunkSize = 1 + (velocity.get() / 16);
+        boolean hasUnloadedChunk = false;
+        ChunkPos playerChunkPos = mc.player.getChunkPos();
+        Vec3d playerHorizontalPos = mc.player.getPos().withAxis(Direction.Axis.Y, 0);
+        double distanceS2 = MathUtils.s2(velocity.get());
+        search:
+        for (var x = -chunkSize; x <= chunkSize; x++) {
+            for(var z = -chunkSize; z <= chunkSize; z++) {
+                ChunkPos chunkPos = new ChunkPos(x + playerChunkPos.x, z + playerChunkPos.z);
+                if(WorldUtils.isChunkLoaded(chunkPos.x, chunkPos.z)){
+                    continue;
+                }
+                Vec3d startPos = new Vec3d(chunkPos.getStartX(), 0, chunkPos.getStartZ());
+                Box chunkBox = new Box(startPos, startPos.add(16, 0, 16));
+                if(chunkBox.squaredMagnitude(playerHorizontalPos) < distanceS2) {
+                    hasUnloadedChunk = true;
+                    break search;
+                }
+            }
+        }
+        boolean val = hasUnloadedChunk;
         if (val && !currentMayFaceLagChunk) {
             currentMayFaceLagChunk = true;
             if (enable.get() && log.get()) {

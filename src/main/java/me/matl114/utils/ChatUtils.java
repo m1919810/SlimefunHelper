@@ -562,10 +562,17 @@ public class ChatUtils {
 
     @ApiMethod
     public static Text getDisplayedLocation(double x, double z) {
+        String suffixDirection = "";
+        if (mc.player != null) {
+            int xsgn = (int) MathUtils.sgn(x - mc.player.getX());
+            int zsgn = (int) MathUtils.sgn(z - mc.player.getZ());
+            suffixDirection = "\n" + MathUtils.getDirectionName(xsgn, zsgn) + " " + "X" + (xsgn >= 0 ? "+" : "-") + "Z"
+                    + (zsgn >= 0 ? "+" : "-");
+        }
         return Text.literal("[%.2f,~,%.2f]".formatted(x, z))
                 .setStyle(Style.EMPTY
                         .withClickEvent(new ClickEvent.CopyToClipboard("%.2f ~ %.2f".formatted(x, z)))
-                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord"))))
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord" + suffixDirection))))
                 .formatted(Formatting.GREEN);
     }
 
@@ -581,10 +588,17 @@ public class ChatUtils {
 
     @ApiMethod
     public static Text getDisplayedLocationDouble(double x, double y, double z) {
+        String suffixDirection = "";
+        if (mc.player != null) {
+            int xsgn = (int) MathUtils.sgn(x - mc.player.getX());
+            int zsgn = (int) MathUtils.sgn(z - mc.player.getZ());
+            suffixDirection = "\n" + MathUtils.getDirectionName(xsgn, zsgn) + " " + "X" + (xsgn >= 0 ? "+" : "-") + "Z"
+                    + (zsgn >= 0 ? "+" : "-");
+        }
         return Text.literal("[%.2f,%.2f,%.2f]".formatted(x, y, z))
                 .setStyle(Style.EMPTY
                         .withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(x, y, z)))
-                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord"))))
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord" + suffixDirection))))
                 .formatted(Formatting.GREEN);
     }
 
@@ -599,10 +613,17 @@ public class ChatUtils {
 
     @ApiMethod
     public static Text getDisplayedLocation(double x, double y, double z) {
+        String suffixDirection = "";
+        if (mc.player != null) {
+            int xsgn = (int) MathUtils.sgn(x - mc.player.getX());
+            int zsgn = (int) MathUtils.sgn(z - mc.player.getZ());
+            suffixDirection = "\n" + MathUtils.getDirectionName(xsgn, zsgn) + " " + "X" + (xsgn >= 0 ? "+" : "-") + "Z"
+                    + (zsgn >= 0 ? "+" : "-");
+        }
         return Text.literal("[%d,%d,%d]".formatted((int) x, (int) y, (int) z))
                 .setStyle(Style.EMPTY
                         .withClickEvent(new ClickEvent.CopyToClipboard("%.2f %.2f %.2f".formatted(x, y, z)))
-                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord"))))
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("click to copy coord" + suffixDirection))))
                 .formatted(Formatting.GREEN);
     }
 
@@ -942,6 +963,12 @@ public class ChatUtils {
 
         public TextBuilder withText(StringVisitable text, Style style) {
             text.visit(this, style);
+            return this;
+        }
+
+        public TextBuilder appendText(Text text) {
+            end();
+            this.empty.append(text);
             return this;
         }
 

@@ -122,8 +122,10 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
         boolean lastNotInLava = !PlayerStateManager.INSTANCE.lastInLava;
         if ((isWater && lastNotInWater) || (isLava && lastNotInLava)) {
             // optimize takeOff
-            if (mc.player.isFallFlying() && PlayerStateManager.INSTANCE.glidingTicks > 20) {
-                if (isWater
+            if (mc.player.isFallFlying()) {
+                if (PlayerStateManager.INSTANCE.glidingTicks > 20
+                        && !MovTasks.getElytraGrimAccelerate().enable.get()
+                        && isWater
                         && autoArmorFlyControl.get()
                         && ElytraExtra.INSTANCE.armorFly.get()
                         && ElytraExtra.INSTANCE.isCurrentArmorGliding()) {

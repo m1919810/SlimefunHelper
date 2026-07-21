@@ -214,6 +214,7 @@ public class TargetSelector extends BaseModule {
                 && ((EntityHitResult) mc.crosshairTarget).getEntity() instanceof PlayerEntity player
                 && player != mc.player) {
             addFriend(player.getNameForScoreboard(), "");
+            return true;
         }
         return false;
     }
@@ -642,7 +643,7 @@ public class TargetSelector extends BaseModule {
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         acceptor.accept(ExecutableWidget.instance(0, dblank, dx, dy)
                 .setElementHandler(new ButtonElement(
-                                TextProvider.of(Text.literal("点击编辑好友列表")),
+                                TextProvider.of(Text.translatable("widget.friend-list.edit-friend-list")),
                                 ButtonAction.run(this::openEditFriendsScreen))
                         .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))));
     }

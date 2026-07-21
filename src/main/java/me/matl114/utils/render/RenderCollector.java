@@ -24,7 +24,9 @@ public interface RenderCollector<B> {
         }
 
         public void clear() {
-            entries.clear();
+            if (!entries.isEmpty()) {
+                entries.clear();
+            }
         }
     }
 }

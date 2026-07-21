@@ -3,8 +3,10 @@ package me.matl114.hacks.utils.render;
 import static me.matl114.utils.RenderUtils.*;
 
 import java.awt.*;
+import java.util.List;
 import java.util.function.Function;
 import me.matl114.events.RenderListener;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
@@ -224,16 +226,19 @@ public class RenderCollectors {
                     stack.translate(delta.x, delta.y, delta.z);
                     stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
                     stack.scale(0.03125F * scale, 0.03125F * scale, 1);
-
-                    VRender.getInstance()
-                            .drawTextCameraCoord(
-                                    text.asOrderedText(),
-                                    stack,
-                                    Vec3d.ZERO,
-                                    entry.val().offSetFlag(),
-                                    new Color(col),
-                                    VRender.DEFAULT_TEXT);
-
+                    List<Text> listText = ChatUtils.splitToMultiLineText(text, Integer.MAX_VALUE);
+                    int index = 0;
+                    for (var re : listText) {
+                        VRender.getInstance()
+                                .drawTextCameraCoord(
+                                        re.asOrderedText(),
+                                        stack,
+                                        Vec3d.ZERO.add(0, -index * 9.0D, 0),
+                                        entry.val().offSetFlag(),
+                                        new Color(col),
+                                        VRender.DEFAULT_TEXT);
+                        index += 1;
+                    }
                     stack.pop();
                 }
             }

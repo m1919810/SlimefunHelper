@@ -3,9 +3,9 @@
 	"id": "slimefunhelper",
 	"version": "${version}",
 	"name": "SlimefunHelper",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "A utility mode for better gaming",
 	"authors": [
-		"Me!"
+		"matl114"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
@@ -16,9 +16,6 @@
 	"entrypoints": {
 		"main": [
 			"me.matl114.SlimefunHelper"
-		],
-		"fabric-datagen": [
-			"me.matl114.SlimefunHelperDataGenerator"
 		]
 	},
 	"mixins": [
@@ -27,12 +24,9 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.15.1",
-		"minecraft": "1.21.11",
+		"minecraft": "${minecraft_version}",
 		"java": ">=21",
 		"fabric-api": "*"
 	},
-	"accessWidener":"overrideList.accesswidener",
-	"suggests": {
-		"another-mod": "*"
-	}
+	"accessWidener":"overrideList.accesswidener"
 }

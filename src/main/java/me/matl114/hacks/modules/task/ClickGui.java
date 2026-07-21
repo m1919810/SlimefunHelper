@@ -23,7 +23,6 @@ import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.clickGui.ClickGuiMainScreen;
 import me.matl114.gui.complex.config.ConfigurateNewStyleScreen;
-import me.matl114.gui.complex.config.RefKeyValueInputWidget;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.ColorBoxElement;
 import me.matl114.gui.elements.ColorLabelTextElement;
@@ -368,7 +367,7 @@ public class ClickGui extends BaseModule {
             SubScreenWidget keyValue = new SubScreenWidget(0, 0, width, buttonHeight + buttonBlank);
             // add background placeholder , for isMouseOver()
             keyValue.addDrawableChild(DisplayWidget.instance(0, 0, width, buttonBlank + buttonHeight));
-            SubScreenWidget kvInputWidget = getKeyValueWidget(configWidget);
+            DrawableWidget kvInputWidget = getKeyValueWidget(configWidget.ref(), configWidget.keyName());
             keyValue.addDrawableChild(kvInputWidget);
             BooleanSupplier showCondition = configWidget.showPredicate();
             DynamicContentWidget<?> contentWidget =
@@ -381,36 +380,9 @@ public class ClickGui extends BaseModule {
         // SubScreenWidget levelSubScreen = new SubScreenWidget(0, 0, 0,0);
     }
 
-    private @NotNull SubScreenWidget getKeyValueWidget(WrapperConfigRef<?> wrapper) {
+    private @NotNull DrawableWidget getKeyValueWidget(Ref<?> wrapper, String keyName) {
         int width = indexWidth + blankWidth + buttonWidth;
-        SubScreenWidget kvInputWidget =
-                new RefKeyValueInputWidget(
-                        0,
-                        buttonBlank,
-                        width,
-                        buttonHeight,
-                        indexWidth,
-                        blankWidth,
-                        buttonWidth,
-                        wrapper.ref(),
-                        wrapper.keyName()) {
-                    @Override
-                    public DrawableWidget createKeyLabel() {
-                        return ExecutableWidget.instance(0, 0, indexWidth, buttonHeight)
-                                .setElementHandler(new ColorLabelTextElement(
-                                                TextProvider.of(this.getTranslationName()),
-                                                () -> ClickGui.this
-                                                        .textColor
-                                                        .get()
-                                                        .withAlpha(255),
-                                                () -> ClickGui.this
-                                                        .configColor
-                                                        .get()
-                                                        .withAlpha(255))
-                                        .withTooltips(TooltipHandler.of(this::getTooltips)));
-                    }
-                };
-        return kvInputWidget;
+        return createRefEditor(keyName, wrapper, 0, buttonBlank, width, buttonHeight);
     }
 
     private DrawableWidget createSearchList(ClickGuiMetaData metaData, ModuleSlideMeta slideMeta) {
