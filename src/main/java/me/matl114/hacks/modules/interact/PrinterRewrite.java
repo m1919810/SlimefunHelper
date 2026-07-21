@@ -13,20 +13,27 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.mine.QueueMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
+import me.matl114.utils.collections.FlagEntry;
+import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Item;
@@ -35,6 +42,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 
@@ -59,6 +67,9 @@ public class PrinterRewrite extends BaseModule {
             .defaultValue(Configs.LegalInteractMode.DELAY_MOVEMENT)
             .build();
 
+    public final FlagRef airplace =
+            flagBuilder(litematicaPrinterRewrite.add("air-place")).build();
+
     public final IntRef delay = builder(litematicaPrinterRewrite.add("delay"), IntRef.TYPE)
             .defaultValue(5)
             .validator(Configs.INT_POSITIVE)
@@ -74,6 +85,10 @@ public class PrinterRewrite extends BaseModule {
 
     public final FlagRef supportWater =
             flagBuilder(litematicaPrinterRewrite.add("support-water-place")).build();
+
+    public final FlagRef useIce = flagBuilder(litematicaPrinterRewrite.add("use-ice-to-form-water"))
+            .show(supportWater::get)
+            .build();
 
     public List<Vec3i> blocksSeq = new ArrayList<>();
 
@@ -126,6 +141,21 @@ public class PrinterRewrite extends BaseModule {
     //    final Set<BlockPos> placeSuccessBlocks = new HashSet<>();
     final RenderCollector<Box> drawOutlines = RenderCollectors.createBoxCollector(true, false, false);
     boolean needSneak = false;
+    boolean drainWater = false;
+    Map<BlockPos, Integer> waterBlocks = new HashMap<>();
+
+    public void tickWaterBlocks() {
+        if (waterBlocks.isEmpty()) {
+            return;
+        }
+        var iter = waterBlocks.entrySet().iterator();
+        while (iter.hasNext()) {
+            var entry = iter.next();
+            if (entry.getValue() < Tasks.getTick() - 20) {
+                iter.remove();
+            }
+        }
+    }
 
     public void onPreInputEvent(Event<Void> event) {
         if (++countDown > delay.get()) {
@@ -133,6 +163,7 @@ public class PrinterRewrite extends BaseModule {
         } else {
             return;
         }
+        tickWaterBlocks();
         //        placeFailureBlocks.clear();
         //        placeSuccessBlocks.clear();
         boolean bl = mc.player.isSneaking();
@@ -158,7 +189,8 @@ public class PrinterRewrite extends BaseModule {
                             if (placeCount != 0) {
                                 InteractionTasks.flushACPlaceQueue();
                             }
-                            if (doPlace(checkPos, state, !mode.get().isLegal())) {
+                            if (doPlace(
+                                    checkPos, state, airplace.get(), !mode.get().isLegal())) {
                                 placeCount += 1;
                                 if (placeCount >= multiply) {
                                     break;
@@ -169,12 +201,15 @@ public class PrinterRewrite extends BaseModule {
                                 && clientState != state
                                 && ((clientState.isAir() && state.isLiquid())
                                         || (clientState.getBlock() == state.getBlock()
-                                                && clientState.getFluidState() != state.getFluidState()))) {
+                                                && clientState.getFluidState() != state.getFluidState()))
+                                && !waterBlocks.containsKey(checkPos)) {
                             // fluid state change
                             FluidState fluidState = clientState.getFluidState();
                             FluidState targetState = state.getFluidState();
                             // place only source to empty state
-                            if (fluidState.getFluid() == Fluids.EMPTY
+                            if ((fluidState.getFluid() == Fluids.EMPTY
+                                            || fluidState.getFluid() == Fluids.FLOWING_WATER
+                                            || fluidState.getFluid() == Fluids.FLOWING_LAVA)
                                     && (targetState.getFluid() == Fluids.LAVA
                                             || targetState.getFluid() == Fluids.WATER)) {
                                 if (doLiquidPlace(checkPos, state)) {
@@ -204,12 +239,22 @@ public class PrinterRewrite extends BaseModule {
                 }
             }
         }
+        if (drainWater) {
+            tickTryDrainWater();
+        }
     }
 
     public int supplyBlocks(Block needBlock) {
         Item needItem = needBlock.asItem();
         if (needItem == Items.AIR) return -1;
         var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, true, false);
+        return entry == null ? -1 : entry.index();
+    }
+
+    public int supplyLiquid(Fluid fluid) {
+        Item item = fluid == Fluids.WATER ? Items.WATER_BUCKET : (fluid == Fluids.LAVA ? Items.LAVA_BUCKET : null);
+        if (item == null) return -1;
+        var entry = InventoryUtils.findPlayerItem((itemStack) -> itemStack.getItem() == item, true, false);
         return entry == null ? -1 : entry.index();
     }
 
@@ -223,7 +268,7 @@ public class PrinterRewrite extends BaseModule {
         drawOutlines.submit(MathUtils.getBlockBox(pos), renderSuccessColor.get().withAlpha(255));
     }
 
-    public boolean doPlace(BlockPos pos, BlockState targetState, boolean useAirPlace) {
+    public boolean doPlace(BlockPos pos, BlockState targetState, boolean useAirPlace, boolean usePositionPlace) {
         Block needBlock = targetState.getBlock();
         int idx = supplyBlocks(needBlock);
         if (idx == -1) {
@@ -231,7 +276,7 @@ public class PrinterRewrite extends BaseModule {
             return false;
         }
         var result = InteractionTasks.createSpecificStateHitResult(
-                mc.player.getFacing(), pos, targetState, useAirPlace, useAirPlace);
+                mc.player.getFacing(), pos, targetState, useAirPlace, usePositionPlace);
         // add placement collision check
         if (result != null
                 && InteractExtra.INSTANCE.isWithinInteractRange(
@@ -296,8 +341,82 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public boolean doLiquidPlace(BlockPos pos, BlockState targetState) {
+        FluidState fluidState = targetState.getFluidState();
+        // fill source
+        if (fluidState.getFluid() == Fluids.WATER && targetState.isLiquid() && useIce.get()) {
+            if (doPlace(
+                    pos,
+                    Blocks.ICE.getDefaultState(),
+                    airplace.get(),
+                    !mode.get().isLegal())) {
+                if (DisablerManager.INSTANCE.flushACPlaceBreakQueue()) {
+                    QueueMine.INSTANCE.sumitMine(pos);
+                } else {
+                    Tasks.scheduleDelayedPre(
+                            () -> {
+                                QueueMine.INSTANCE.sumitMine(pos);
+                            },
+                            0);
+                }
+
+                waterBlocks.put(pos, Tasks.getTick());
+                return true;
+            }
+        }
+        if (fluidState.getFluid() == Fluids.WATER || fluidState.getFluid() == Fluids.LAVA) {
+            int item = supplyLiquid(fluidState.getFluid());
+            if (item == -1) {
+                putCanNotPlace(pos);
+                if (fluidState.getFluid() == Fluids.WATER) {
+                    drainWater = true;
+                }
+                return false;
+            }
+            boolean suc = false;
+            FlagEntry<Vec2f> rotation =
+                    InteractionTasks.createLiquidPlacementRaycast(mc.player.getEyePos(), pos, targetState);
+            if (rotation == null) {
+                putCanNotPlace(pos);
+                return false;
+            }
+            if (rotation.flag() == mc.player.isSneaking()) {
+                var rot = rotation.val();
+
+                Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(item);
+                if (callback != null) {
+                    EntityMovementStatus<PlayerEntity> playerStatus = new EntityMovementStatus<>(mc.player);
+                    EntityUtils.setEntityPitchSafe(mc.player, rot.x);
+                    EntityUtils.setEntityYawSafe(mc.player, rot.y);
+                    mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                    playerStatus.restoreRotation();
+                    suc = true;
+                    waterBlocks.put(pos, Tasks.getTick());
+                }
+            }
+            if (suc) {
+                putSuccessPlace(pos);
+            } else {
+                putCanNotPlace(pos);
+            }
+            if (rotation.flag()) {
+                if (!needSneak
+                        && autoSneak.get()
+                        && ViaFabricPlusHooks.isSupportInstaSneak()
+                        && !mc.player.isSneaking()) {
+                    PlayerInputUtils.of(mc.player)
+                            .sneak(true)
+                            .sendPlayerSneakUpdatePacket()
+                            .applyInput(mc.player);
+                    mc.player.setSneaking(true);
+                }
+                needSneak = true;
+            }
+            return suc;
+        }
         return false;
     }
+
+    public void tickTryDrainWater() {}
 
     public void handlePlace(BlockHitResult result) {
         if (!mode.get().isLegal()) {
@@ -320,10 +439,7 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
-        switch (event.context.getValue()) {
-            case HACKING, VANILLA -> mode.set(Configs.LegalInteractMode.NONE);
-            case AC_GRIM_LEGACY -> mode.set(Configs.LegalInteractMode.LEGACY_SLIENT_ROT);
-            default -> mode.set(Configs.LegalInteractMode.DELAY_MOVEMENT);
-        }
+        mode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
+        airplace.set(!event.context.getValue().hasAC());
     }
 }

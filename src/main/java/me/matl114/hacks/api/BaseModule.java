@@ -15,6 +15,12 @@ import lombok.experimental.Accessors;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.basic.ExecutableWidget;
+import me.matl114.gui.basic.TextProvider;
+import me.matl114.gui.basic.TooltipHandler;
+import me.matl114.gui.complex.config.RefKeyValueInputWidget;
+import me.matl114.gui.elements.ColorLabelTextElement;
+import me.matl114.hacks.modules.task.ClickGui;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.Named;
 import me.matl114.hacks.utils.NamedConsumer;
@@ -394,6 +400,27 @@ public abstract class BaseModule implements ModuleListProvider {
     // todo: remake config screen
 
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {}
+
+    private static final int indexWidth = 140;
+    private static final int blankWidth = 10;
+
+    public DrawableWidget createRefEditor(String path, Ref<?> ref, int x, int y, int dx, int dy) {
+        return new RefKeyValueInputWidget(
+                x, y, dx, dy, indexWidth, blankWidth, dx - indexWidth - blankWidth, ref, path) {
+            @Override
+            public DrawableWidget createKeyLabel() {
+                return ExecutableWidget.instance(0, 0, indexWidth, dy)
+                        .setElementHandler(new ColorLabelTextElement(
+                                        TextProvider.of(this.getTranslationName()),
+                                        () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
+                                        () -> ClickGui.INSTANCE
+                                                .configColor
+                                                .get()
+                                                .withAlpha(255))
+                                .withTooltips(TooltipHandler.of(this::getTooltips)));
+            }
+        };
+    }
 
     public static Text getModuleMeta(Enum<?> enumReff) {
         ConfigEnum configEnum = (ConfigEnum) enumReff;

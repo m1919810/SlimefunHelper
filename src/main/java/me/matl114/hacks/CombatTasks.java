@@ -254,6 +254,9 @@ public class CombatTasks {
     public static AutoCity autoCity;
 
     @Getter
+    public static AnchorArua anchorArua;
+
+    @Getter
     public static ElytraBot elytraBot;
 
     @ApiStatus.Experimental
@@ -291,6 +294,7 @@ public class CombatTasks {
         backTrack = new BackTrack().register(m);
         pearlFly = new PearlFly().register(m);
         autoCity = new AutoCity().register(m);
+        anchorArua = new AnchorArua().register(m);
         elytraBot = new ElytraBot().register(m);
         // transactionBlocker = new TransactionBlocker().register(m);
     }

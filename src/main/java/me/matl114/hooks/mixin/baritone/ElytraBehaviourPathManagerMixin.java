@@ -61,8 +61,8 @@ public abstract class ElytraBehaviourPathManagerMixin {
             BlockPos var2,
             UnaryOperator<UnpackedSegment> var3,
             CallbackInfoReturnable<CompletableFuture<Void>> cir) {
-        if (BaritoneHooks.Impl.netherPathSupplier != null) {
-            var lst = BaritoneHooks.Impl.netherPathSupplier.get();
+        if (BaritoneHooks.MeteorBaritoneImpl.netherPathSupplier != null) {
+            var lst = BaritoneHooks.MeteorBaritoneImpl.netherPathSupplier.get();
             if (lst != null) {
                 UnpackedSegment segment = new UnpackedSegment(lst.stream().map(BetterBlockPos::from), true);
                 var segment2 = var3.apply(segment);
@@ -89,8 +89,8 @@ public abstract class ElytraBehaviourPathManagerMixin {
             BetterBlockPos par2,
             UnaryOperator<UnpackedSegment> par3,
             CallbackInfoReturnable<CompletableFuture<Void>> cir) {
-        if (BaritoneHooks.Impl.netherPathSupplier != null) {
-            var lst = BaritoneHooks.Impl.netherPathSupplier.get();
+        if (BaritoneHooks.MeteorBaritoneImpl.netherPathSupplier != null) {
+            var lst = BaritoneHooks.MeteorBaritoneImpl.netherPathSupplier.get();
             if (lst != null) {
                 UnpackedSegment segment = new UnpackedSegment(lst.stream().map(BetterBlockPos::from), true);
                 var segment2 = par3.apply(segment);

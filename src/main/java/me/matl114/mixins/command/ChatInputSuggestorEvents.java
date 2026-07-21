@@ -30,6 +30,9 @@ public abstract class ChatInputSuggestorEvents {
     @Shadow
     public abstract void show(boolean a);
 
+    @Shadow
+    private boolean completingSuggestions;
+
     @Inject(
             method = "refresh",
             at =
@@ -39,15 +42,19 @@ public abstract class ChatInputSuggestorEvents {
                             shift = At.Shift.BEFORE),
             cancellable = true)
     private void parseClientCommandsTabComplete(CallbackInfo ci) {
-        CompletableFuture<Suggestions> suggestionCompletableFuture =
-                MainCommand.tabCompleteClientCommand(textField.getText(), textField.getCursor());
-        if (suggestionCompletableFuture != null) {
-            this.pendingSuggestions = suggestionCompletableFuture;
-            this.pendingSuggestions.thenRun(() -> {
-                if (this.pendingSuggestions.isDone()) {
-                    show(true);
+        if (MainCommand.isClientCommand(textField.getText())) {
+            if (!this.completingSuggestions) {
+                CompletableFuture<Suggestions> suggestionCompletableFuture =
+                        MainCommand.tabCompleteClientCommand(textField.getText(), textField.getCursor());
+                if (suggestionCompletableFuture != null) {
+                    this.pendingSuggestions = suggestionCompletableFuture;
+                    this.pendingSuggestions.thenRun(() -> {
+                        if (this.pendingSuggestions.isDone()) {
+                            show(true);
+                        }
+                    });
                 }
-            });
+            }
             ci.cancel();
         }
     }

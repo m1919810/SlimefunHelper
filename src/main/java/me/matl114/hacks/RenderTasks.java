@@ -483,6 +483,9 @@ public class RenderTasks {
     public static RenderExtra renderExtra;
 
     @Getter
+    public static NoRender noRender;
+
+    @Getter
     public static EntityLog entityLog;
 
     @Getter
@@ -492,6 +495,9 @@ public class RenderTasks {
     public static NameTag nameTag;
 
     @Getter
+    public static NameList nameList;
+
+    @Getter
     public static ItemESP itemESP;
 
     @Getter
@@ -499,6 +505,9 @@ public class RenderTasks {
 
     @Getter
     public static WorldScanner worldScanner;
+
+    @Getter
+    public static MineESP mineESP;
 
     @Getter
     public static PlayerLog playerLog;
@@ -547,12 +556,15 @@ public class RenderTasks {
 
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
+        noRender = new NoRender().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);
         nameTag = new NameTag().register(m);
+        nameList = new NameList().register(m);
         chestESP = new ChestESP().register(m);
         itemESP = new ItemESP().register(m);
         worldScanner = new WorldScanner().register(m);
+        mineESP = new MineESP().register(m);
         playerLog = new PlayerLog().register(m);
         playerQueue = new PlayerQueue().register(m);
         projectileESP = new ProjectileESP().register(m);

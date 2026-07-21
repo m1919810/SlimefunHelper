@@ -277,7 +277,7 @@ public class InteractUtils {
     }
 
     public static boolean canInteractAndPlace(PlayerEntity player, FlagEntry<BlockHitResult> sneak) {
-        return player.shouldCancelInteraction() || !sneak.flag();
+        return sneak != null && (player.shouldCancelInteraction() || !sneak.flag());
     }
 
     public static boolean canInteractAndPlace(PlayerEntity player, boolean flag) {

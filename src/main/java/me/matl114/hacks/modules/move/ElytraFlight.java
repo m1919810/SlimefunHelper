@@ -8,6 +8,8 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -19,6 +21,7 @@ import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
@@ -67,6 +70,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef landAutoClose =
             flagBuilder(simpleFlightControl.add("land-auto-close")).build();
+
+    public final NBTRef<OptionalPrimitive<Integer>> takeOffOptimize = builder(
+                    simpleFlightControl.add("hold-jump-takeoff-ticks"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.INT_TYPE, 10))
+            .build();
 
     public final DoubleRef motionArg = builder(simpleFlightControl.add("motion-lerp-argument"), DoubleRef.TYPE)
             .defaultValue(1.0D)
@@ -135,14 +143,30 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     }
 
     Vec3d lastVelocity = null;
-    boolean duplicateRotSet = false;
+    int holdJumpCounter = 0;
 
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (player.isFallFlying()) {
             currentTakeOff = true;
         }
+        if (mc.options.jumpKey.isPressed()) {
+            holdJumpCounter++;
+        } else {
+            holdJumpCounter = 0;
+        }
         if (enable.get()) {
+            if (!player.isFallFlying()
+                    && takeOffOptimize.get().isPresent()
+                    && holdJumpCounter >= takeOffOptimize.get().getValue()) {
+                if (!mc.player.isOnGround() && mc.player.checkGliding()) {
+                    MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
+                    mc.getNetworkHandler()
+                            .sendPacket(new ClientCommandC2SPacket(
+                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    MovExtra.INSTANCE.sendPacketsForPostStartFallFlying();
+                }
+            }
             if (player.isFallFlying()) {
                 if (lastVelocity == null) {
                     lastVelocity = Vec3d.ZERO;

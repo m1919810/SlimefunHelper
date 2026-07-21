@@ -129,8 +129,8 @@ public class LegacySnapRotManager extends BaseModule {
                 PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);
     }
 
-    public void sendAsSnap(PlayerMoveC2SPacket full) {
-        PlayerMoveC2SPacket recreateFull = VPacket.newFull(
+    public PlayerMoveC2SPacket createAsSnap(PlayerMoveC2SPacket full) {
+        var pkt = VPacket.newFull(
                 full.getX(PlayerStateManager.INSTANCE.lastX),
                 full.getY(PlayerStateManager.INSTANCE.lastY),
                 full.getZ(PlayerStateManager.INSTANCE.lastZ),
@@ -138,7 +138,12 @@ public class LegacySnapRotManager extends BaseModule {
                 PlayerStateManager.INSTANCE.lastPitch,
                 full.isOnGround(),
                 VPacket.getCollisionFlag(full));
-        PlayerMoveC2SPacketAccess.of(recreateFull).setCause(PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);
+        PlayerMoveC2SPacketAccess.of(pkt).setCause(PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);
+        return pkt;
+    }
+
+    public void sendAsSnap(PlayerMoveC2SPacket full) {
+        PlayerMoveC2SPacket recreateFull = createAsSnap(full);
         mc.getNetworkHandler().sendPacket(recreateFull);
     }
 }

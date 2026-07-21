@@ -1,18 +1,17 @@
 package me.matl114.hacks.modules.move;
 
+import java.util.List;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.StringFormat;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.StringRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 
 public class SetBackLog extends BaseModule {
@@ -23,16 +22,21 @@ public class SetBackLog extends BaseModule {
     public final FlagRef logResync =
             flagBuilder(moveSafety.add("log-resync-packets")).build();
 
-    public final StringRef logResyncFormat = builder(moveSafety.add("log-resync-format"), String.class)
-            .defaultValue("&fPos Resync &a[%.2f,%.2f,%.2f]")
+    public final NBTRef<StringFormat> logResyncFormat = builder(moveSafety.add("log-resync-format"), StringFormat.class)
+            .defaultValue(new StringFormat(List.of("position"), "&fPos Resync {position}"))
             .build();
 
     public final FlagRef logAc =
             flagBuilder(moveSafety.add("check-setback-packets")).build();
 
-    public final StringRef logAcFormat = builder(moveSafety.add("log-ac-format"), String.class)
-            .defaultValue("&c[AC] 反作弊回弹! tp号:%d")
+    public final NBTRef<StringFormat> logAcFormat = builder(moveSafety.add("log-ac-format"), StringFormat.class)
+            .defaultValue(new StringFormat(
+                    List.of("teleportId", "position"), "&c[AC] 反作弊回弹! tp号:{teleportId}, 位置: {position}"))
             .build();
+
+    //    public final StringRef logAcFormat = builder(moveSafety.add("log-ac-format"), String.class)
+    //            .defaultValue("&c[AC] 反作弊回弹! tp号:%d")
+    //            .build();
 
     @Override
     public void registerAll() {
@@ -51,29 +55,19 @@ public class SetBackLog extends BaseModule {
             lastDesyncPos = mc.player.getPos();
         }
         if (logResync.get()) {
-            String logFormat = logResyncFormat.get();
-            try {
-                var text = ChatUtils.stringToText(logFormat.formatted(packet.getX(), packet.getY(), packet.getZ()));
-                text.setStyle(text.getStyle()
-                        .withClickEvent(new ClickEvent(
-                                ClickEvent.Action.COPY_TO_CLIPBOARD,
-                                "%.2f %.2f %.2f".formatted(packet.getX(), packet.getY(), packet.getZ())))
-                        .withHoverEvent(
-                                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord"))));
-                Debug.chat(text);
-
-            } catch (Throwable e) {
-                Debug.chat(ChatUtils.stringToText("&cInvalid format string: " + e.getMessage()));
-            }
+            StringFormat logFormat = logResyncFormat.get();
+            Debug.chat(logFormat.formatText(
+                    ChatUtils.getDisplayedLocationDouble(packet.getX(), packet.getY(), packet.getZ())));
         }
         if (logAc.get()) {
 
             if (tpId < 0) {
                 if (mc.player != null) {
-                    String logFormat = logAcFormat.get();
+                    StringFormat logFormat = logAcFormat.get();
                     try {
-                        Debug.chat(ChatUtils.stringToText(
-                                logFormat.formatted(tpId, packet.getX(), packet.getY(), packet.getZ())));
+                        Debug.chat(logFormat.formatText(
+                                tpId,
+                                ChatUtils.getDisplayedLocationDouble(packet.getX(), packet.getY(), packet.getZ())));
                     } catch (Throwable e) {
                         Debug.chat(ChatUtils.stringToText("&cInvalid format string: " + e.getMessage()));
                     }

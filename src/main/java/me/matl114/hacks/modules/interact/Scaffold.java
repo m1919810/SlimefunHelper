@@ -76,6 +76,8 @@ public class Scaffold extends BaseModule {
             .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
             .build();
 
+    public final FlagRef airplace = flagBuilder(scaffold.add("air-place")).build();
+
     public final IntRef delay =
             intBuilder(scaffold.add("delay")).defaultValue(1).build();
 
@@ -234,10 +236,10 @@ public class Scaffold extends BaseModule {
             }
         }
         FlagEntry<BlockHitResult> hitResult;
-        boolean enableAirPlace = !legalMode.get().isLegal();
         BlockState state = mc.world.getBlockState(pos);
         if (state.isReplaceable() && InteractUtils.canCubePlace(mc.player, pos)) {
-            hitResult = InteractionTasks.getPlaceSupportingResult(predictedEyePos, pos, enableAirPlace, enableAirPlace);
+            hitResult = InteractionTasks.getPlaceSupportingResult(
+                    predictedEyePos, pos, airplace.get(), !legalMode.get().isLegal());
             if (hitResult != null && InteractUtils.canInteractAndPlace(mc.player, hitResult)) return hitResult.val();
         }
 
@@ -260,10 +262,7 @@ public class Scaffold extends BaseModule {
     }
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
-        switch (event.context().getValue()) {
-            case AC_GRIM_LEGACY -> legalMode.set(Configs.LegalInteractMode.LEGACY_SLIENT_ROT);
-            case HACKING, VANILLA -> legalMode.set(Configs.LegalInteractMode.NONE);
-            default -> legalMode.set(Configs.LegalInteractMode.DELAY_MOVEMENT);
-        }
+        legalMode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
+        airplace.set(!event.context.getValue().hasAC());
     }
 }

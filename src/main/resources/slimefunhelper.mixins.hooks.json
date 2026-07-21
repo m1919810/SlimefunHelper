@@ -14,6 +14,7 @@
 		"litematica.PlacementManagerDaemonFixMixin",
 		"litematica.ServuxLitematicaFixMixin",
 		"meteor.BaritoneSettingsMixin",
+		"sodium.SodiumWorldRendererMixin",
 		"viaversion.PacketWrapperSendEvents"
 	],
 	"injectors": {
