@@ -373,7 +373,14 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     public boolean calculateInstantBlockBreakingDeltaWithGhostHand(BlockState instance, BlockPos pos) {
         if (MineExtra.INSTANCE.ghostHandMine.get()) {
             var bestTool = MineExtra.INSTANCE.getGhostHandMiningTool(instance);
-            if (MineExtra.INSTANCE.ghostHandSwapWhenStart.get() || WorldUtils.calcBlockBreakingDelta(instance, client.world, pos, WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(client.player, instance, bestTool.val())) > 1.01) {
+            if (MineExtra.INSTANCE.ghostHandSwapWhenStart.get()
+                    || WorldUtils.calcBlockBreakingDelta(
+                                    instance,
+                                    client.world,
+                                    pos,
+                                    WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                                            client.player, instance, bestTool.val()))
+                            > 1.01) {
                 MineExtra.INSTANCE.instaBreakGhostHand =
                         Pair.of(InvExtra.INSTANCE.swapInventoryIndexToHand(bestTool.index()), pos);
                 return true;
