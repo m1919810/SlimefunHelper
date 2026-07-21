@@ -1,7 +1,7 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.render.NoRender;
 import me.matl114.hacks.modules.render.RenderExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -32,7 +32,7 @@ public abstract class GameRenderMixin {
                             target =
                                     "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
     public boolean noRenderNausea(boolean original) {
-        if (RenderTasks.getRenderExtra().noNausea.get()) {
+        if (NoRender.INSTANCE.noNausea()) {
             return false;
         }
         return original;
