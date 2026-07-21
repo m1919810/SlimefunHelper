@@ -194,16 +194,16 @@ public class NoRender extends BaseModule {
     }
 
     public boolean noDistanceFogVanilla() {
-        return false;
+        return noDistanceFog();
     }
 
     public boolean noRandomWorldEffect() {
         return isActive() && noRandomWorldEffect.get();
     }
 
-    //    public boolean noWeather() {
-    //        return isActive() && noWeather.get();
-    //    }
+    public boolean noWeather() {
+        return isActive() && noWeather.get();
+    }
 
     // 状态效果相关
     public boolean noNausea() {
