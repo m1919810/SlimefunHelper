@@ -8,10 +8,11 @@ public class SodiumRenderFix {
                 fogParameters.red(),
                 fogParameters.green(),
                 fogParameters.blue(),
-                0,
-                Float.MAX_VALUE,
-                Float.MAX_VALUE,
-                Float.MAX_VALUE,
-                Float.MAX_VALUE);
+                fogParameters.alpha(),
+                fogParameters.environmentalEnd(),
+                fogParameters.environmentalEnd(),
+                fogParameters.renderEnd() * 2,
+                fogParameters.renderEnd() * 2,
+                fogParameters.cullDistance() * 2);
     }
 }

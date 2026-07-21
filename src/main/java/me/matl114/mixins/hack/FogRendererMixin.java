@@ -66,12 +66,10 @@ public abstract class FogRendererMixin {
             CallbackInfoReturnable<Vector4f> cir,
             @Local FogData fogData,
             @Local Vector4f color) {
-        if (NoRender.INSTANCE.noDistanceFog()) {
-            fogData.environmentalStart = Float.MAX_VALUE;
-            fogData.environmentalEnd = Float.MAX_VALUE;
-            fogData.renderDistanceStart = Float.MAX_VALUE;
-            fogData.renderDistanceEnd = Float.MAX_VALUE;
-            color.w = 0;
+        if (NoRender.INSTANCE.noDistanceFogVanilla()) {
+            fogData.environmentalStart = fogData.environmentalEnd;
+            fogData.renderDistanceStart = 2 * fogData.renderDistanceEnd;
+            fogData.renderDistanceEnd = 2 * fogData.renderDistanceEnd;
         }
     }
 }
