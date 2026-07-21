@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.combat;
 import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nullable;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -39,9 +38,7 @@ import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
@@ -72,12 +69,12 @@ public class ElytraBot extends BaseModule {
     public final EnumRef<Mode> mode =
             builder(elytraBot.add("mode"), Mode.class).defaultValue(Mode.FOLLOW).build();
 
-    public final FlagRef autoFly =
-            flagBuilder(elytraBot.add("auto-start-fallflying")).build();
-
     public final FlagRef playerOnly = builder(elytraBot.add("player-only"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
+
+    public final FlagRef dynamicTarget =
+            flagBuilder(elytraBot.add("dynamic-target")).build();
 
     public final FlagRef onlyWhenNoWASD =
             flagBuilder(elytraBot.add("only-when-no-wasd")).build();
@@ -247,7 +244,10 @@ public class ElytraBot extends BaseModule {
             .build();
 
     @ApiStatus.Experimental
-    public final FlagRef angleOptimizeRadicalFollow = flagBuilder(elytraBot.add("combat-angle-optimize-radical-follow"))
+    public final NBTRef<OptionalPrimitive<Double>> angleOptimizeRadicalFollow = builder(
+                    elytraBot.add("combat-angle-optimize-radical-follow"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(true, NBTTypes.DOUBLE_TYPE, 75.0D))
+            .validator(s -> s.getValue() >= 0.0D && s.getValue() <= 90.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA)
                     && ElytraExtra.INSTANCE.autoRescale.get()
                     && ElytraFlight.INSTANCE.useAutoRescale.get()
@@ -393,7 +393,6 @@ public class ElytraBot extends BaseModule {
         if (SlimefunHelper.DEV_ENV) {
             registerListener(RenderListener.getRender2DEvent(), this::onDebugRender);
         }
-        registerListener(Listener.getEntityPreTickListener().getChannel(EntityType.PLAYER), this::onEntityPreTick);
         registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityDamage);
     }
 
@@ -539,25 +538,6 @@ public class ElytraBot extends BaseModule {
         }
     }
 
-    public void onEntityPreTick(Event<Entity> event) {
-        if (event.context == mc.player
-                && enable.get()
-                && autoFly.get()
-                && !mc.player.isFallFlying()
-                && !PlayerInputUtils.of(mc.options).jump(false).hasMovementControl() // do not check jump
-                && currentBehaviour != null
-                && !Objects.equals(Vec3d.ZERO, currentBehaviour.movementDirection)) {
-            if (mc.player.isOnGround()) {
-                mc.options.jumpKey.setPressed(true);
-            } else if (mc.player.checkFallFlying()) {
-                mc.options.jumpKey.setPressed(false);
-                mc.getNetworkHandler()
-                        .sendPacket(
-                                new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-            }
-        }
-    }
-
     public void onRender(Event<MatrixStack> event) {
         if (enable.get() && render.get()) {
             RenderUtils.startDrawVirtual(event.context);
@@ -603,7 +583,7 @@ public class ElytraBot extends BaseModule {
                 || target.getPos().squaredDistanceTo(mc.player.getPos()) > targetRange.get()) {
             target = null;
         }
-        if (target == null) {
+        if (target == null || dynamicTarget.get()) {
             target = currentBehaviour != null ? currentBehaviour.searchTarget() : null;
         }
     }
@@ -787,6 +767,7 @@ public class ElytraBot extends BaseModule {
 
         public boolean canBeAttack(Entity entity) {
             if (entity instanceof PlayerEntity player
+                    && player != mc.player
                     && base.followFriend.get()
                     && !TargetSelector.INSTANCE.isNotFriend(player)) {
                 return true;
@@ -956,11 +937,12 @@ public class ElytraBot extends BaseModule {
                     CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target));
             // 限制高度 但是对面是往上飞的 不需要
             if (mayAttack
-                    && mc.player.getY()
-                            < targetPos.getY()
-                                    + (currentTargetUpFly
-                                            ? base.minimalAttackHeightPullUp.get()
-                                            : base.minimalAttackHeight.get())
+                    && (base.currentOnGround
+                            || mc.player.getY()
+                                    < targetPos.getY()
+                                            + (currentTargetUpFly
+                                                    ? base.minimalAttackHeightPullUp.get()
+                                                    : base.minimalAttackHeight.get()))
                     && targetInRange) {
                 setTargetToPlayer(targetPos);
                 scheduleAttack();
@@ -1244,9 +1226,12 @@ public class ElytraBot extends BaseModule {
                         double horizontal2 = Math.max(Math.abs(movementDirection.x), Math.abs(movementDirection.z));
                         if (horizontal2 > 0.1 && Math.abs(movementDirection.y) > horizontal2) {
                             // rescale
-                            if (!base.angleOptimizeRadicalFollow.get()
+                            if (!base.angleOptimizeRadicalFollow.get().isPresent()
                                     || Math.abs(movementDirection.y)
-                                            < movementDirection.horizontalLength() * Math.tan(Math.toRadians(66))) {
+                                            < movementDirection.horizontalLength()
+                                                    * Math.tan(Math.toRadians(base.angleOptimizeRadicalFollow
+                                                            .get()
+                                                            .getValue()))) {
                                 movementDirection = movementDirection.withAxis(Direction.Axis.Y, -horizontal2);
                             }
                         }
@@ -1409,7 +1394,7 @@ public class ElytraBot extends BaseModule {
                     return false;
                 }
                 // auto mace, do not hit twice
-                if (Attack.INSTANCE.willUseMaceAttack()) {
+                if (Attack.INSTANCE.willUseMaceAttack(false)) {
                     return false;
                 }
                 return true;
@@ -1418,14 +1403,16 @@ public class ElytraBot extends BaseModule {
         }
 
         public boolean shouldAttackMace() {
-            boolean cooldown = (lastMaceAttackSuccessTick < Tasks.getTick() - 5) || Attack.INSTANCE.willUseMaceAttack();
+            boolean cooldown =
+                    (lastMaceAttackSuccessTick < Tasks.getTick() - 5) || Attack.INSTANCE.willUseMaceAttack(false);
             return cooldown
                     && PlayerStateManager.INSTANCE.fallDistance
                             > base.maceAttackFallDistanceRequire.get().orElse(1.5D);
         }
 
         public boolean canAttackMace() {
-            boolean cooldown = (lastMaceAttackSuccessTick < Tasks.getTick() - 5) || Attack.INSTANCE.willUseMaceAttack();
+            boolean cooldown =
+                    (lastMaceAttackSuccessTick < Tasks.getTick() - 5) || Attack.INSTANCE.willUseMaceAttack(false);
             return cooldown || PlayerStateManager.INSTANCE.fallDistance > 1.5;
         }
 
