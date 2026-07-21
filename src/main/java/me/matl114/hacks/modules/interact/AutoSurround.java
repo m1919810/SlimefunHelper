@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.interact;
 
 import java.util.*;
-
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -147,10 +146,10 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         }
     }
 
-    public void onPrePacketMine(Event<PacketMine.Pre> eventPre){
-        if(enable.get() && !eventPre.isCancelled()){
+    public void onPrePacketMine(Event<PacketMine.Pre> eventPre) {
+        if (enable.get() && !eventPre.isCancelled()) {
             BlockPos pos = eventPre.getArgs(0);
-            if(getTargetingPos().contains(pos)){
+            if (getTargetingPos().contains(pos)) {
                 eventPre.cancel();
             }
         }
@@ -162,8 +161,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     Direction[] dd = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, Direction.DOWN};
     BlockPos lastSurround;
 
-
-    public Set<BlockPos> getTargetingPos(){
+    public Set<BlockPos> getTargetingPos() {
         BlockPos vcPos = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
         lastSurround = vcPos;
         Box playerBox = mc.player.getBoundingBox();
@@ -214,19 +212,19 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         List<Entity> entities = new ArrayList<>();
         boolean offhandOk = offhand.get();
         var resultPoses = getTargetingPos();
-        for(var test : resultPoses){
+        for (var test : resultPoses) {
             BlockState state = mc.world.getBlockState(test);
             if ((state.isAir() || state.isReplaceable())) {
                 var hitResult = InteractionTasks.getPlaceSupportingResult(test, airplace.get(), !legal);
                 if (hitResult != null && hitResult.flag()) {
                     if (!needSneak
-                        && autoSneak.get()
-                        && ViaFabricPlusHooks.isSupportInstaSneak()
-                        && !mc.player.isSneaking()) {
+                            && autoSneak.get()
+                            && ViaFabricPlusHooks.isSupportInstaSneak()
+                            && !mc.player.isSneaking()) {
                         PlayerInputUtils.of(mc.player)
-                            .sneak(true)
-                            .sendPlayerSneakUpdatePacket()
-                            .applyInput(mc.player);
+                                .sneak(true)
+                                .sendPlayerSneakUpdatePacket()
+                                .applyInput(mc.player);
                     }
                     needSneak = true;
                 }
@@ -241,21 +239,21 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                             mul = Math.min(mul, supply.val().getCount());
                             offhandOk |= supply.index() == 40;
                             invCallback = offhandOk
-                                ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(supply.index())
-                                : InvExtra.INSTANCE.swapInventoryIndexToHand(supply.index());
+                                    ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(supply.index())
+                                    : InvExtra.INSTANCE.swapInventoryIndexToHand(supply.index());
                         } else {
                             InteractionTasks.flushACPlaceQueue();
                         }
                         InteractionTasks.handlePlaceMode(
-                            mode.get(), hitResult.val(), offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND);
+                                mode.get(), hitResult.val(), offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND);
                         placeCnt += 1;
                         if (placeCnt >= mul) {
-                            break ;
+                            break;
                         }
                     } else {
                         // can not place: todo rewrite autoAttackCrystals
                         entities.addAll(mc.world.getOtherEntities(
-                            null, MathUtils.getBlockBox(test), (e) -> e instanceof EndCrystalEntity));
+                                null, MathUtils.getBlockBox(test), (e) -> e instanceof EndCrystalEntity));
                     }
                 }
             }
