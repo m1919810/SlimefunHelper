@@ -13,6 +13,7 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.InventoryUtils;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -48,7 +49,7 @@ public class NoQDrop extends BaseModule {
 
     public void onPlayerDropAction(Event<Boolean> eventDrop) {
         if (enable.get()) {
-            ItemStack stack = mc.player.getInventory().getSelectedStack();
+            ItemStack stack = InventoryUtils.getSelectedItem().val();
             if ((forceEquipment.get() && stack.isDamageable())
                     || whiteListItem.get().test(stack.getItem())) {
                 if (log.get()) {

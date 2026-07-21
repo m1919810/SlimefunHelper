@@ -573,8 +573,8 @@ public class ChatUtils {
                 .setStyle(Style.EMPTY
                         .withClickEvent(
                                 new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "%.2f ~ %.2f".formatted(x, z)))
-                        .withHoverEvent(
-                                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord" + suffixDirection))))
+                        .withHoverEvent(new HoverEvent(
+                                HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord" + suffixDirection))))
                 .formatted(Formatting.GREEN);
     }
 
@@ -601,8 +601,8 @@ public class ChatUtils {
                 .setStyle(Style.EMPTY
                         .withClickEvent(new ClickEvent(
                                 ClickEvent.Action.COPY_TO_CLIPBOARD, "%.2f %.2f %.2f".formatted(x, y, z)))
-                        .withHoverEvent(
-                                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord" + suffixDirection))))
+                        .withHoverEvent(new HoverEvent(
+                                HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord" + suffixDirection))))
                 .formatted(Formatting.GREEN);
     }
 
@@ -629,8 +629,8 @@ public class ChatUtils {
                 .setStyle(Style.EMPTY
                         .withClickEvent(new ClickEvent(
                                 ClickEvent.Action.COPY_TO_CLIPBOARD, "%.2f %.2f %.2f".formatted(x, y, z)))
-                        .withHoverEvent(
-                                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord" + suffixDirection))))
+                        .withHoverEvent(new HoverEvent(
+                                HoverEvent.Action.SHOW_TEXT, Text.literal("click to copy coord" + suffixDirection))))
                 .formatted(Formatting.GREEN);
     }
 

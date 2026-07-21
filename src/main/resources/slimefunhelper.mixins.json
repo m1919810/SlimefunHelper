@@ -75,6 +75,7 @@
 		"gui.ScreenMixin",
 		"gui.ScrollableWidgetMixin",
 		"gui.TextFieldWidgetMixin",
+		"hack.BackGroundRenderMixin",
 		"hack.CameraMixin",
 		"hack.ChatHudMixin",
 		"hack.ChatScreenMixin",
