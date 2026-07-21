@@ -82,6 +82,9 @@ public class NoInteract extends BaseModule {
             .defaultValue(Configs.LegalInteractMode.NONE)
             .build();
 
+    public final FlagRef correctAirPlace =
+            flagBuilder(noInteract.add("auto-correct-air-place")).build();
+
     public final FlagRef correctState =
             flagBuilder(noInteract.add("auto-correct-state")).build();
 
@@ -199,11 +202,12 @@ public class NoInteract extends BaseModule {
     public BlockHitResult handleMayAutoCorrect(BlockHitResult hitResult) {
         BlockPos placePosition = InteractUtils.getCurrentPlacePos(mc.player, hitResult);
         var newHitResult = InteractionTasks.getPlaceSupportingResult(
-                placePosition, !correctMode.get().isLegal(), !correctMode.get().isLegal());
+                placePosition, correctAirPlace.get(), !correctMode.get().isLegal());
         return (newHitResult != null && !newHitResult.flag()) ? newHitResult.val() : null;
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         correctMode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
+        correctAirPlace.set(!event.context.getValue().hasAC());
     }
 }

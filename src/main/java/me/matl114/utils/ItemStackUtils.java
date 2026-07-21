@@ -395,10 +395,10 @@ public class ItemStackUtils {
         }
         ItemStack stackCopy = stack.copy();
         if (setAmount != -999) {
-            stack.setCount(setAmount);
+            stackCopy.setCount(setAmount);
         }
         if (!keepDur) {
-            stackCopy.setDamage(cleaned.getDamage());
+            setOrRemoveChange(stackCopy, DAMAGE, null);
         }
         if (!keepEnchant) {
             setOrRemoveChange(stackCopy, ENCHANTMENTS, null);

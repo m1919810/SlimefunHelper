@@ -34,6 +34,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayerEntity.class)
@@ -302,5 +303,23 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             acc.setCause(PlayerMoveC2SPacketAccess.Cause.PLAYER_MOVEMENT);
         }
         return par1;
+    }
+
+    @Inject(method = "dropSelectedItem", at = @At("HEAD"), cancellable = true)
+    private void onDropSelected(boolean entireStack, CallbackInfoReturnable<Boolean> cir) {
+        if (checkClientPlayer()) {
+            if (!Listener.getPlayerDropSelectedItem().fireEvent(entireStack)) {
+                cir.setReturnValue(false);
+            }
+        }
+    }
+
+    @Inject(method = "closeHandledScreen", at = @At("HEAD"), cancellable = true)
+    private void onCloseHandledScreen(CallbackInfo ci) {
+        if (checkClientPlayer()) {
+            if (!Listener.getPlayerCloseHandledScreen().fireEvent(null)) {
+                ci.cancel();
+            }
+        }
     }
 }

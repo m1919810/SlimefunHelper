@@ -56,6 +56,9 @@ public class Hud extends IRender2DColoredModule {
         if (set.getState(HudElement.POSITION)) {
             handlePosition(vdraw);
         }
+        if (set.getState(HudElement.DIRECTION)) {
+            handleDirection(vdraw);
+        }
         if (set.getState(HudElement.ROTATION)) {
             handleRotation(vdraw);
         }
@@ -132,6 +135,17 @@ public class Hud extends IRender2DColoredModule {
         drawText(vdraw, template.formatted(manager.lastX, manager.lastY, manager.lastZ));
     }
 
+    public void handleDirection(VDrawContext vdraw) {
+        float yaw = mc.player.getYaw();
+        int xSgn = EntityUtils.yawToXSgn(yaw);
+        int zSgn = EntityUtils.yawToZSgn(yaw);
+        String directionName = MathUtils.getDirectionName(xSgn, zSgn);
+
+        // 2. 符号字符串，格式如 "x+z+" 或 "x-z-"，符号为 '+'、'-' 或 '0'
+        String symbolStr = "X" + ((xSgn >= 0) ? "+" : "-") + "Z" + ((zSgn >= 0) ? "+" : "-");
+        drawText(vdraw, "%s, %s".formatted(directionName, symbolStr));
+    }
+
     public void handleRotation(VDrawContext vdraw) {
         String rotation = "P:%.2f, Y: %.2f";
         PlayerStateManager manager = PlayerStateManager.INSTANCE;
@@ -178,6 +192,7 @@ public class Hud extends IRender2DColoredModule {
         COMMON_INFO,
         CONNECTION_INFO,
         POSITION,
+        DIRECTION,
         ROTATION,
         FALL_DISTANCE,
         SPEED,

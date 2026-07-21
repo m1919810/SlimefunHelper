@@ -8,10 +8,11 @@ import lombok.With;
 
 @Getter
 public class MultiKeyBind {
-    private MultiKeyBind(String[] keys, int[] keyCodes, boolean toggleOnRelease) {
+    private MultiKeyBind(String[] keys, int[] keyCodes, boolean toggleOnRelease, boolean allowVanilla) {
         this.keys = keys;
         this.keyCodes = keyCodes;
         this.toggleOnRelease = toggleOnRelease;
+        this.allowVanilla = allowVanilla;
     }
 
     final String[] keys;
@@ -19,6 +20,9 @@ public class MultiKeyBind {
 
     @With
     final boolean toggleOnRelease;
+
+    @With
+    final boolean allowVanilla;
 
     private void validateKeys() {
         Preconditions.checkNotNull(keys);
@@ -37,11 +41,16 @@ public class MultiKeyBind {
     }
 
     public MultiKeyBind(List<String> keys, boolean toggleOnRelease) {
-        this(keys.toArray(String[]::new), toggleOnRelease);
+        this(keys, toggleOnRelease, false);
     }
 
-    public MultiKeyBind(String[] keys, boolean toggleOnRelease) {
+    public MultiKeyBind(List<String> keys, boolean toggleOnRelease, boolean allowVanilla) {
+        this(keys.toArray(String[]::new), toggleOnRelease, allowVanilla);
+    }
+
+    public MultiKeyBind(String[] keys, boolean toggleOnRelease, boolean allowVanilla) {
         this.toggleOnRelease = toggleOnRelease;
+        this.allowVanilla = allowVanilla;
         this.keys = Arrays.copyOf(keys, keys.length);
         this.keyCodes = new int[keys.length];
         validateKeys();
@@ -57,6 +66,12 @@ public class MultiKeyBind {
         } else {
             toggleOnRelease = false;
         }
+        if (rawStr.startsWith("V|")) {
+            rawStr = rawStr.substring("V|".length());
+            allowVanilla = true;
+        } else {
+            allowVanilla = false;
+        }
         keys = rawStr.isEmpty() ? new String[0] : rawStr.split(",");
         keyCodes = new int[keys.length];
         validateKeys();
@@ -65,6 +80,7 @@ public class MultiKeyBind {
     public MultiKeyBind(int... keyCodes) throws RuntimeException {
         Preconditions.checkNotNull(keyCodes);
         this.toggleOnRelease = false;
+        this.allowVanilla = false;
         this.keyCodes = Arrays.copyOf(keyCodes, keyCodes.length);
         this.keys = new String[keyCodes.length];
         for (int i = 0; i < keyCodes.length; i++) {
@@ -78,7 +94,7 @@ public class MultiKeyBind {
     }
 
     public String asString() {
-        return "hotkey:" + (toggleOnRelease ? "T|" : "") + String.join(",", keys);
+        return "hotkey:" + (toggleOnRelease ? "T|" : "") + (allowVanilla ? "V|" : "") + String.join(",", keys);
     }
 
     public String getKeyStr() {

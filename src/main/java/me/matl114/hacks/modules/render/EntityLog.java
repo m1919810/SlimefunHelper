@@ -129,14 +129,15 @@ public class EntityLog extends BaseModule {
                             }
                         }
 
-                        Debug.chat(
-                                Text.literal("[Entity]").formatted(Formatting.RED),
-                                "Player ",
-                                text == null ? "" : text,
-                                "spawn at position ",
-                                ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()),
-                                ",distance: %.2f"
-                                        .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())));
+                        Debug.chat(ChatUtils.builder()
+                                .withColorString("&c[Entity] &fPlayer ")
+                                .appendText(text == null ? Text.empty() : text)
+                                .withColorString(" spawn at position ")
+                                .appendText(ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()))
+                                .withColorString(" ,distance: %.2f"
+                                        .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())))
+                                .end()
+                                .build());
                         // Debug.chat("Player Entity Id ", packet.getEntityId());
                     }
                     onPlayerAppear(packet.getUuid());
@@ -144,14 +145,14 @@ public class EntityLog extends BaseModule {
                     // if(LivingEntity.class.isAssignableFrom( packet.getEntityType().getBaseClass())){
                     // only log the living Entity; the common Entities are mostly functional and are noisy
                     if (chatLog.get()) {
-                        Debug.chat(
-                                Text.literal("[Entity]").formatted(Formatting.RED),
-                                "Entity",
-                                packet.getEntityType().getName(),
-                                "spawn at position ",
-                                ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()),
-                                ",distance: %.2f"
-                                        .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())));
+                        Debug.chat(ChatUtils.builder()
+                                .withColorString("&c[Entity] &fEntity "
+                                        + packet.getEntityType().getName() + " spawn at position ")
+                                .appendText(ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()))
+                                .withColorString(" ,distance: %.2f"
+                                        .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())))
+                                .end()
+                                .build());
                         // }
                     }
                 }
@@ -185,27 +186,30 @@ public class EntityLog extends BaseModule {
                 for (var entity : removing) {
                     if (entity instanceof PlayerEntity pl) {
                         if (chatLog.get()) {
-                            Debug.chat(
-                                    Text.literal("[Entity]").formatted(Formatting.RED),
-                                    "Player",
-                                    pl.getDisplayName(),
-                                    "disappear at position ",
-                                    ChatUtils.getDisplayedLocation(entity.getX(), entity.getY(), entity.getZ()),
-                                    ",distance: %.2f"
-                                            .formatted(calculateDistance(entity.getX(), entity.getY(), entity.getZ())));
+                            Debug.chat(ChatUtils.builder()
+                                    .withColorString("&c[Entity] &fPlayer ")
+                                    .appendText(pl.getDisplayName())
+                                    .withColorString(" disappear at position ")
+                                    .appendText(
+                                            ChatUtils.getDisplayedLocation(entity.getX(), entity.getY(), entity.getZ()))
+                                    .withColorString(" ,distance: %.2f"
+                                            .formatted(calculateDistance(entity.getX(), entity.getY(), entity.getZ())))
+                                    .end()
+                                    .build());
                         }
                         onPlayerDisappear(pl);
                     } else {
                         if (chatLog.get()) {
-                            Debug.chat(
-                                    Text.literal("[Entity]").formatted(Formatting.RED),
-                                    "Entity",
-                                    entity.getType().getName(),
-                                    (entity.hasCustomName() ? entity.getCustomName() : ""),
-                                    "disappear at position ",
-                                    ChatUtils.getDisplayedLocation(entity.getX(), entity.getY(), entity.getZ()),
-                                    ",distance: %.2f"
-                                            .formatted(calculateDistance(entity.getX(), entity.getY(), entity.getZ())));
+                            Debug.chat(ChatUtils.builder()
+                                    .withColorString("&c[Entity] &fEntity "
+                                            + entity.getType().getName() + " ")
+                                    .appendText(entity.hasCustomName() ? entity.getCustomName() : Text.empty())
+                                    .withColorString(" disappear at position ")
+                                    .appendText(
+                                            ChatUtils.getDisplayedLocation(entity.getX(), entity.getY(), entity.getZ()))
+                                    .withColorString(" ,distance: %.2f"
+                                            .formatted(
+                                                    calculateDistance(entity.getX(), entity.getY(), entity.getZ()))));
                         }
                     }
                 }
@@ -234,11 +238,7 @@ public class EntityLog extends BaseModule {
                 player.getNameForScoreboard(),
                 mc.world.getRegistryKey(),
                 0);
-        if (!mc.world.getChunkManager().isChunkLoaded(playerLeaveChunk.x, playerLeaveChunk.z)
-                || !mc.world.getChunkManager().isChunkLoaded(playerLeaveChunk.x + 1, playerLeaveChunk.z)
-                || !mc.world.getChunkManager().isChunkLoaded(playerLeaveChunk.x - 1, playerLeaveChunk.z)
-                || !mc.world.getChunkManager().isChunkLoaded(playerLeaveChunk.x, playerLeaveChunk.z + 1)
-                || !mc.world.getChunkManager().isChunkLoaded(playerLeaveChunk.x, playerLeaveChunk.z - 1)) {
+        if (mc.player.getPos().subtract(player.getPos()).horizontalLengthSquared() > MathUtils.s2(48)) {
             entry.exitCode = 1;
         } else {
             entry.exitCode = 2;

@@ -181,11 +181,16 @@ public class PacketHelper {
         mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(offhand ? Hand.OFF_HAND : Hand.MAIN_HAND));
     }
 
+    public static void startMine(Object pos, Object direction) {}
+
     public static void sendStartMining(Object pos, Object direction) {
         Direction dir = JsHelper.toEnum(direction, Direction.class);
         BlockPos blockPos = DataHelper.createBlockPos(pos);
+        // todo: fix packet
         PlayerInteractionAccess.of(mc.interactionManager).startMiningBlock(blockPos, dir);
     }
+
+    public static void stopMine() {}
 
     public static void sendStopMining() {
         var access = PlayerInteractionAccess.of(mc.interactionManager); // .sendStopBreakPacket();

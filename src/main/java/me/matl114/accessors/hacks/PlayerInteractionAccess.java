@@ -35,6 +35,10 @@ public interface PlayerInteractionAccess {
      */
     public void sendBreakPacket(BlockPos pos, Direction direction);
 
+    public boolean breakIfComplete();
+
+    public void abortBreak(Direction direction);
+
     /**
      * 强制同步客户端当前选中的快捷栏槽位。
      *
@@ -199,6 +203,10 @@ public interface PlayerInteractionAccess {
         sendStartBreakPacket(pos, direction);
     }
 
+    default void sendAbortBreakPacket() {
+        abortBreak(Direction.DOWN);
+    }
+
     /**
      * 兼容旧调用名：语义等价于 {@link #sendBreakPacket(BlockPos, Direction)}。
      */
@@ -220,6 +228,8 @@ public interface PlayerInteractionAccess {
     }
 
     public boolean sendFailBreakCurrentPos(@Nullable Direction direction);
+
+    public int getMiningCooldown();
 
     public ActionResult simulateInteractBlock(Hand hand, BlockHitResult hitResult);
 

@@ -107,6 +107,14 @@ public class FileManager {
         return storage;
     }
 
+    public boolean hasStorage(String path) {
+        return hasStorage(new File(FOLDER, path));
+    }
+
+    public boolean hasStorage(File file) {
+        return file.exists() && file.isFile();
+    }
+
     public FileStorage getStorage(File file, boolean reload) {
         return getStorage(file, reload, true);
     }
@@ -129,6 +137,11 @@ public class FileManager {
 
     public FileStorage getStorage(String filePath, boolean reload, boolean createOnNoExist) {
         return getStorage(new File(FOLDER, filePath), reload, createOnNoExist);
+    }
+
+    public boolean hasConfigStorage(String filePath) {
+        File ff = new File(CONFIG_SAVE_FOLDER, filePath);
+        return hasStorage(ff);
     }
 
     public FileStorage getConfigStorage(String filePath) {

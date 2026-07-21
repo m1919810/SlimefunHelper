@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.hacks.MovTasks;
+import me.matl114.hacks.modules.render.NoRender;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.hacks.utils.entity.SimpleEntityPredictor;
 import net.fabricmc.api.EnvType;
@@ -76,5 +77,12 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
             predictorInstance = new SimpleEntityPredictor((Entity) (Object) this);
         }
         return predictorInstance;
+    }
+
+    @Inject(method = "isInvisibleTo", at = @At("HEAD"), cancellable = true)
+    private void noInvisiblity(CallbackInfoReturnable<Boolean> cir) {
+        if (NoRender.INSTANCE.noInvisibility()) {
+            cir.setReturnValue(false);
+        }
     }
 }

@@ -1,6 +1,8 @@
 package me.matl114.utils;
 
+import java.awt.*;
 import java.io.IOException;
+import me.matl114.utils.process.NotificationServerProcess;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Util;
 
@@ -10,21 +12,12 @@ public class WindowUtils {
     private static final String DEFAULT_TITLE = "SlimefunHelper";
     private static final String MESSAGE_BOX_SCRIPT =
             "Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show($env:SLIMEFUNHELPER_MESSAGE, $env:SLIMEFUNHELPER_TITLE) | Out-Null";
-    private static final String TOAST_SCRIPT = "$ErrorActionPreference='Stop'; "
-            + "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null; "
-            + "[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] > $null; "
-            + "$template = @\"<toast><visual><binding template='ToastGeneric'><text>$env:SLIMEFUNHELPER_TITLE</text><text>$env:SLIMEFUNHELPER_MESSAGE</text></binding></visual></toast>\"@; "
-            + "$xml = New-Object Windows.Data.Xml.Dom.XmlDocument; "
-            + "$xml.LoadXml($template); "
-            + "$toast = [Windows.UI.Notifications.ToastNotification]::new($xml); "
-            + "$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('SlimefunHelper'); "
-            + "$notifier.Show($toast);";
 
     public static boolean isWindowsSystem() {
         return OP == Util.OperatingSystem.WINDOWS;
     }
 
-    public static boolean createNotificationWindow(String title, String message) {
+    public static boolean createScriptNotificationWindow(String title, String message) {
         if (!isWindowsSystem()) {
             return false;
         }
@@ -33,13 +26,8 @@ public class WindowUtils {
         return runAsync("sfh-window-notification", () -> showWindowsMessageBox(actualTitle, actualMessage));
     }
 
-    public static boolean createToastNotification(String title, String message) {
-        if (!isWindowsSystem()) {
-            return false;
-        }
-        String actualTitle = normalizeTitle(title);
-        String actualMessage = normalizeMessage(message);
-        return runAsync("sfh-toast-notification", () -> showWindowsToast(actualTitle, actualMessage));
+    public static boolean createNotificationTrayWindow(String title, String message) {
+        return NotificationServerProcess.Bootstrap.notify(title, message);
     }
 
     private static boolean runAsync(String threadName, Runnable task) {
@@ -61,8 +49,8 @@ public class WindowUtils {
         startWindowsProcess(MESSAGE_BOX_SCRIPT, title, message);
     }
 
-    private static void showWindowsToast(String title, String message) {
-        startWindowsProcess(TOAST_SCRIPT, title, message);
+    private static String escapeXml(String s) {
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private static void startWindowsProcess(String script, String title, String message) {

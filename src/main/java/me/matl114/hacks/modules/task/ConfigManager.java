@@ -23,6 +23,7 @@ import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
+import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.TabResult;
 import me.matl114.utils.config.AttrKeyValue;
@@ -30,6 +31,7 @@ import net.minecraft.loot.entry.LeafEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 
 public class ConfigManager extends BaseModule {
     public ConfigManager() {
@@ -104,6 +106,11 @@ public class ConfigManager extends BaseModule {
                 .name("reload")
                 .helper("重载配置文件")
                 .post(e -> e.executor(CommandContext.run(this::onReload)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("openfolder")
+                .helper("打开配置导出和配置保存的文件夹")
+                .post(s -> s.executor(CommandContext.run(this::onOpenFolder)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("save")
@@ -202,6 +209,33 @@ public class ConfigManager extends BaseModule {
                         .select("--confirm")
                         .build())
                 .post(e -> e.executor(CommandContext.run(this::onResetAll)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("resetmodule")
+                .helper("<module...> 重置若干模块的配置为默认值")
+                .post(e -> e.executor(new CommandContext() {
+                    @Override
+                    public boolean execute(
+                            me.matl114.utils.commands.params.api.CommandExecution sender,
+                            ArgumentInputStream streamArgs,
+                            me.matl114.utils.commands.params.ArgumentReader argsReader) {
+                        onResetModule(streamArgs, argsReader);
+                        return true;
+                    }
+
+                    @Override
+                    public List<String> supplyTab(
+                            me.matl114.utils.commands.params.api.CommandExecution sender,
+                            ArgumentInputStream streamArgs,
+                            me.matl114.utils.commands.params.ArgumentReader argsReader) {
+                        String[] remainingArgs = argsReader.getRemainingArgs();
+                        ;
+                        String lastArg = remainingArgs.length > 0 ? remainingArgs[remainingArgs.length - 1] : "";
+                        return getModuleNameSuggestions()
+                                .filter(s -> s.toLowerCase(Locale.ROOT).startsWith(lastArg.toLowerCase(Locale.ROOT)))
+                                .toList();
+                    }
+                }))
                 .complete();
     }
 
@@ -213,6 +247,11 @@ public class ConfigManager extends BaseModule {
     public void onReload() {
         Tasks.scheduleDelayed(Config::reloadAll, 1);
         Debug.chat(Text.literal("成功重载配置文件").formatted(Formatting.GREEN));
+    }
+
+    public void onOpenFolder() {
+        Util.getOperatingSystem().open(FileManager.CONFIG_SAVE_FOLDER);
+        Debug.chat(Text.literal("成功打开配置保存与导入文件夹").formatted(Formatting.GREEN));
     }
 
     public void onSet(ArgumentInputStream args) {
@@ -265,6 +304,19 @@ public class ConfigManager extends BaseModule {
         Debug.chat(Text.literal("成功重置配置项: " + configName + "." + rawPath).formatted(Formatting.GREEN));
     }
 
+    public void onResetModule(ArgumentInputStream args, ArgumentReader reader) {
+        List<BaseModule> baseModules = readModuleArguments(reader);
+        if (baseModules.isEmpty()) {
+            return;
+        }
+        for (var re : baseModules) {
+            for (var ref : re.getEditableConfig()) {
+                ref.ref().resetValue();
+            }
+            Debug.chat(Text.literal("成功重置模块配置项: " + re.getName()).formatted(Formatting.GREEN));
+        }
+    }
+
     public void onResetAll(ArgumentInputStream args) {
         String configName = args.nextNonnullString();
         String confirm = args.nextNonnullString();
@@ -272,7 +324,7 @@ public class ConfigManager extends BaseModule {
             if ("all".equalsIgnoreCase(configName)) {
                 for (var config : Config.REGISTRY) {
                     for (var path : config.getVisiblePaths()) {
-                        var ref = config.get(path);
+                        var ref = config.get(Config.cutToPath(path));
                         if (ref != null && ref.hasDefaultValue()) {
                             ref.resetValue();
                         }
@@ -285,7 +337,7 @@ public class ConfigManager extends BaseModule {
                     return;
                 }
                 for (var path : config.getVisiblePaths()) {
-                    var ref = config.get(path);
+                    var ref = config.get(Config.cutToPath(path));
                     if (ref != null && ref.hasDefaultValue()) {
                         ref.resetValue();
                     }
@@ -326,6 +378,14 @@ public class ConfigManager extends BaseModule {
             Debug.chat(Text.literal(e.getMessage()).formatted(Formatting.RED));
             return;
         }
+        if (FileManager.getInstance().hasConfigStorage(fileName)) {
+            Debug.chat(Text.literal("当前配置文件已存在: " + fileName).formatted(Formatting.RED));
+            Debug.chat(Text.literal("点击本文本打开文件夹以查看或重命名")
+                    .formatted(Formatting.YELLOW)
+                    .styled(style -> style.withClickEvent(ChatUtils.getOpenFile(FileManager.CONFIG_SAVE_FOLDER))));
+            return;
+        }
+
         String allName = args.nextNonnullString();
         String pathPrefix = args.nextNonnullString().trim();
         ConfigSnapshot snapshot;
@@ -371,6 +431,13 @@ public class ConfigManager extends BaseModule {
             fileName = normalizeSnapshotFileName(rawPath);
         } catch (IllegalArgumentException e) {
             Debug.chat(Text.literal(e.getMessage()).formatted(Formatting.RED));
+            return;
+        }
+        if (FileManager.getInstance().hasConfigStorage(fileName)) {
+            Debug.chat(Text.literal("当前配置文件已存在: " + fileName).formatted(Formatting.RED));
+            Debug.chat(Text.literal("点击本文本打开文件夹以查看或重命名")
+                    .formatted(Formatting.YELLOW)
+                    .styled(style -> style.withClickEvent(ChatUtils.getOpenFile(FileManager.CONFIG_SAVE_FOLDER))));
             return;
         }
         List<BaseModule> baseModules = readModuleArguments(argsReader);

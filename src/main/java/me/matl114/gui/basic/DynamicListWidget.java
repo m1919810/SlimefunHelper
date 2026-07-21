@@ -87,7 +87,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
                     selected = ch;
                     break;
                 }
-                yLevel += ch.getHeight();
+                yLevel += ch.getY() + ch.getHeight();
             }
         }
         int yLevel = 0;
@@ -99,7 +99,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
 
             ch.render0(context, translatedMouseX, translatedMouseY - yLevel, delta, disable);
             // dynamic height calculation
-            int height = ch.getHeight();
+            int height = ch.getY() + ch.getHeight();
             ;
             yLevel += height;
             if (height != 0) {
@@ -125,7 +125,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
                 setSelected(ch);
                 return true;
             }
-            yLevel += ch.getHeight();
+            yLevel += ch.getY() + ch.getHeight();
         }
         setSelected(null);
         return false;
@@ -146,7 +146,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
             if (ch.mouseReleased(translatedMouseX, translatedMouseY - yLevel, button)) {
                 return true;
             }
-            yLevel += ch.getHeight();
+            yLevel += ch.getY() + ch.getHeight();
         }
         return false;
     }
@@ -159,7 +159,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
                 if (ch == this.dragging) {
                     break;
                 }
-                yLevel += ch.getHeight();
+                yLevel += ch.getY() + ch.getHeight();
             }
             float textureScale = getTextureScale();
             return this.dragging.mouseDragged(
@@ -205,7 +205,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
                 this.dragging = ch;
                 return true;
             }
-            yLevel += ch.getHeight();
+            yLevel += ch.getY() + ch.getHeight();
         }
         return false;
     }
@@ -218,7 +218,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
                 if (ch == this.dragging) {
                     break;
                 }
-                yLevel += ch.getHeight();
+                yLevel += ch.getY() + ch.getHeight();
             }
             double translatedMouseX = mouseX - this.getX();
             double translatedMouseY = mouseY - this.getY();
@@ -245,7 +245,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
             if (ch.mouseScrolled(translatedMouseX, translatedMouseY - yLevel, horizontalAmount, verticalAmount)) {
                 return true;
             }
-            yLevel += ch.getHeight();
+            yLevel += ch.getY() + ch.getHeight();
         }
         return false;
     }

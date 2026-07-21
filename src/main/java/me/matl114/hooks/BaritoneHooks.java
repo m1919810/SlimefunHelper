@@ -30,7 +30,11 @@ public abstract class BaritoneHooks implements IHooks {
     public static BaritoneHooks getInstance() {
         if (instance == null) {
             try {
-                instance = new Impl();
+                try {
+                    instance = new MeteorBaritoneImpl();
+                } catch (Throwable e) {
+                    instance = new UnknownBaritoneImpl();
+                }
             } catch (Throwable e) {
                 instance = new Default();
             }
@@ -56,6 +60,10 @@ public abstract class BaritoneHooks implements IHooks {
 
     public abstract String getCommandPrefix();
 
+    public abstract boolean isBaritoneAPISupported();
+
+    public abstract boolean isBaritoneVersionSupported();
+
     @Getter
     @Cancelable
     @ExtraArgs({BaritoneLanding.class})
@@ -65,23 +73,15 @@ public abstract class BaritoneHooks implements IHooks {
     @Broadcast
     public static final EventChannel<BlockPos> elytraPathingEvent = new EventChannel<>();
 
-    public static class Impl extends BaritoneHooks {
-        Settings settings;
-        Map<String, ValueAccessor<?>> settingsMap = new LinkedHashMap<>();
-        boolean supportedVersion;
-        public static Supplier<List<BlockPos>> netherPathSupplier;
+    public abstract static class AbstractBaritoneVersion extends BaritoneHooks {
+        final Settings settings;
+        final Map<String, ValueAccessor<?>> settingsMap = new LinkedHashMap<>();
+        final ValueAccessor<String> prefix;
 
-        public Impl() {
+        public AbstractBaritoneVersion() {
+            Class<?> checkClass = BaritoneAPI.class;
             settings = BaritoneAPI.getSettings();
             buildMap();
-            try {
-                Class<?> clazz = ElytraProcess.class;
-                clazz = ElytraBehavior.class;
-                clazz = BetterBlockPos.class;
-                supportedVersion = true;
-            } catch (Throwable e) {
-                supportedVersion = false;
-            }
             prefix = getSetting("prefix");
         }
 
@@ -118,10 +118,12 @@ public abstract class BaritoneHooks implements IHooks {
             return (ValueAccessor<T>) settingsMap.get(name.toLowerCase(Locale.ROOT));
         }
 
-        final ValueAccessor<String> prefix;
-
         public String getCommandPrefix() {
             return prefix == null ? "#" : prefix.getValue();
+        }
+
+        public boolean isBaritoneAPISupported() {
+            return true;
         }
 
         @Override
@@ -133,16 +135,6 @@ public abstract class BaritoneHooks implements IHooks {
         }
 
         @Override
-        public void setBaritoneNetherPathSupplier(Supplier<List<BlockPos>> blockPos) {
-            netherPathSupplier = blockPos;
-        }
-
-        @Override
-        public void updateBaritoneNetherPath() {
-            BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().resetState();
-        }
-
-        @Override
         public void setBaritoneCurrentElytraDestination(BlockPos pos) {
             BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().pathTo(pos);
         }
@@ -150,6 +142,44 @@ public abstract class BaritoneHooks implements IHooks {
         @Override
         public void cancelBaritone() {
             BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
+        }
+
+        @Override
+        public void updateBaritoneNetherPath() {
+            BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().resetState();
+        }
+    }
+
+    public static class MeteorBaritoneImpl extends AbstractBaritoneVersion {
+
+        public static Supplier<List<BlockPos>> netherPathSupplier;
+
+        public MeteorBaritoneImpl() {
+            Class<?> clazz = ElytraProcess.class;
+            clazz = ElytraBehavior.class;
+            clazz = BetterBlockPos.class;
+        }
+
+        @Override
+        public boolean isBaritoneVersionSupported() {
+            return true;
+        }
+
+        @Override
+        public void setBaritoneNetherPathSupplier(Supplier<List<BlockPos>> blockPos) {
+            netherPathSupplier = blockPos;
+        }
+    }
+
+    public static class UnknownBaritoneImpl extends AbstractBaritoneVersion {
+        public UnknownBaritoneImpl() {}
+
+        @Override
+        public void setBaritoneNetherPathSupplier(Supplier<List<BlockPos>> blockPos) {}
+
+        @Override
+        public boolean isBaritoneVersionSupported() {
+            return false;
         }
     }
 
@@ -190,6 +220,16 @@ public abstract class BaritoneHooks implements IHooks {
         @Override
         public String getCommandPrefix() {
             return "#";
+        }
+
+        @Override
+        public boolean isBaritoneAPISupported() {
+            return false;
+        }
+
+        @Override
+        public boolean isBaritoneVersionSupported() {
+            return false;
         }
     }
 }

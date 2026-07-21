@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.extra;
 
 import com.google.common.util.concurrent.Runnables;
+import java.util.Comparator;
 import java.util.List;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
@@ -17,14 +18,17 @@ import me.matl114.managers.config.StringRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Items;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
@@ -348,6 +352,23 @@ public class ClientExtra extends BaseModule {
             Debug.info("  - Hand item: " + mc.player.getMainHandStack());
             Debug.info("  - Offhand item: " + mc.player.getOffHandStack());
             Debug.info("  - FallFlying: " + mc.player.isFallFlying());
+            int count = (int) InventoryUtils.computeInventory(
+                    s -> s.isOf(Items.TOTEM_OF_UNDYING) ? (double) s.getCount() : null, false);
+            Debug.info("  - TotemCount: " + count);
+            List<AbstractClientPlayerEntity> players = mc.world.getPlayers();
+            Debug.info("  - Players in visual range: " + players.size());
+            List<AbstractClientPlayerEntity> playersSort = players.stream()
+                    .sorted(Comparator.comparingDouble(s -> s.getPos().squaredDistanceTo(mc.player.getPos())))
+                    .toList();
+            for (var re : playersSort) {
+                if (re != mc.player) {
+                    Debug.info("    - Name: " + re.getNameForScoreboard() + ", Pos: " + re.getPos()
+                            + ", dist: %.2f"
+                                    .formatted(re.getPos()
+                                            .subtract(mc.player.getPos())
+                                            .length()));
+                }
+            }
         }
     }
 }

@@ -15,11 +15,10 @@ import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.gui.complex.invcache.InventoryViewScreen;
-import me.matl114.hacks.api.ModuleGroup;
-import me.matl114.hacks.api.ModuleManager;
-import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.api.*;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.chat.*;
+import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.utils.*;
@@ -260,26 +259,6 @@ public class ChatTasks {
                 }
             });
             return true;
-        }
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
-                    .name("recipes")
-                    .helper("<action:default enable> 管理配方系统")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("action")
-                            .select(List.of("reload", "enable"), "enable")
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onRecipe)))
-                    .complete();
-        }
-
-        public void onRecipe(ArgumentInputStream s) {
-            switch (s.nextNonnullString()) {
-                case "enable" -> {
-                    SlimefunTasks.getSlimefunGuide().handleAutoEnable();
-                }
-            }
         }
 
         {
@@ -868,6 +847,45 @@ public class ChatTasks {
                         return true;
                     }))
                     .complete();
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
+                    .name("toggle")
+                    .helper("<Module> 切换一个模块项的启用状态")
+                    .arg(SimpleCommandArgs.argumentBuilder()
+                            .name("module")
+                            .tabSupplier(this::supplyModule)
+                            .build())
+                    .post(e -> e.executor(CommandContext.run(this::onToggle)))
+                    .complete();
+        }
+
+        public Stream<String> supplyModule() {
+            return HackModules.getModuleGroups().stream()
+                    .flatMap(s -> s.getModules().stream())
+                    .flatMap(b -> {
+                        return b.getModuleEntries()
+                                .map(ModuleEntry::getTranslationKey)
+                                .map((ChatUtils::parseTranslation));
+                    });
+        }
+
+        public void onToggle(ArgumentInputStream re) {
+            String moduleName = re.nextNonnullString();
+            for (var moduleGroup : HackModules.getModuleGroups()) {
+                for (var module : moduleGroup.getModules()) {
+                    for (var moduleEntry : module.getModuleEntries().toList()) {
+                        String translation = ChatUtils.parseTranslation(moduleEntry.getTranslationKey());
+                        if (Objects.equals(moduleName, translation)) {
+                            HotKeyUtils.wrapFlagAsToggle(moduleEntry.getPath(), moduleEntry.getFlagRef())
+                                    .run();
+                            return;
+                        }
+                    }
+                }
+            }
+            Debug.chat(ChatUtils.stringToText("&e找不到模块项: " + moduleName));
         }
 
         // todo not complete

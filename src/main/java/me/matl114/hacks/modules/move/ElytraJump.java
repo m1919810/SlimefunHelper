@@ -40,10 +40,19 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
     public final FlagRef sneak = flagBuilder(root.add("sneak")).build();
 
     @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+        if (enable.get()) {
+            // set the pitch first to avoid conflict with other mode
+            if (mc.player.isFallFlying() || lastFallFly) {
+                mc.player.setPitch((float) pitch.get());
+                movementManagerEvent.context.markForResetRot();
+            }
+        }
+    }
 
     boolean lastOnGround = false;
     int counter = 0;
+    boolean lastFallFly = false;
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
@@ -71,13 +80,9 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                 re.sprint(false).jump(false).forward(false).sneak(sneak.get()).applyInput(mc.player);
             }
             counter++;
-
-            if (mc.player.isFallFlying()) {
-                mc.player.setPitch((float) pitch.get());
-                movementManagerEvent.context.markForResetRot();
-            }
         }
         lastOnGround = mc.player.isOnGround();
+        lastFallFly = mc.player.isFallFlying();
     }
 
     @Override
