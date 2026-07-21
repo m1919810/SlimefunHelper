@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import me.matl114.hacks.modules.render.NoRender;
 import me.matl114.hacks.modules.render.RenderExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -15,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class LightMapTextureMixin {
     @Inject(method = "getDarknessFactor", at = @At("HEAD"), cancellable = true)
     private void getDarknessFactor(CallbackInfoReturnable<Float> cir) {
-        if (RenderExtra.INSTANCE.noEffect.get()) {
+        if (NoRender.INSTANCE.noDarkNess()) {
             cir.setReturnValue(0.0F);
         }
     }
