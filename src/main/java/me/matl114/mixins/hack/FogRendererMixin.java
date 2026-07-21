@@ -13,7 +13,6 @@ import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(FogRenderer.class)
@@ -49,9 +48,25 @@ public abstract class FogRendererMixin {
         return original;
     }
 
-    @Inject(method = "applyFog(Lnet/minecraft/client/render/Camera;ILnet/minecraft/client/render/RenderTickCounter;FLnet/minecraft/client/world/ClientWorld;)Lorg/joml/Vector4f;", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/fog/FogRenderer;applyFog(Ljava/nio/ByteBuffer;ILorg/joml/Vector4f;FFFFFF)V", shift = At.Shift.BEFORE))
-    private void applyFog(Camera camera, int viewDistance, RenderTickCounter renderTickCounter, float f, ClientWorld clientWorld, CallbackInfoReturnable<Vector4f> cir, @Local FogData fogData, @Local Vector4f color) {
-        if(NoRender.INSTANCE.noDistanceFog()){
+    @Inject(
+            method =
+                    "applyFog(Lnet/minecraft/client/render/Camera;ILnet/minecraft/client/render/RenderTickCounter;FLnet/minecraft/client/world/ClientWorld;)Lorg/joml/Vector4f;",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/fog/FogRenderer;applyFog(Ljava/nio/ByteBuffer;ILorg/joml/Vector4f;FFFFFF)V",
+                            shift = At.Shift.BEFORE))
+    private void applyFog(
+            Camera camera,
+            int viewDistance,
+            RenderTickCounter renderTickCounter,
+            float f,
+            ClientWorld clientWorld,
+            CallbackInfoReturnable<Vector4f> cir,
+            @Local FogData fogData,
+            @Local Vector4f color) {
+        if (NoRender.INSTANCE.noDistanceFog()) {
             fogData.environmentalStart = Float.MAX_VALUE;
             fogData.environmentalEnd = Float.MAX_VALUE;
             fogData.renderDistanceStart = Float.MAX_VALUE;
