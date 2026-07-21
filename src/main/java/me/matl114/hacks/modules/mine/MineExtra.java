@@ -145,9 +145,8 @@ public class MineExtra extends BaseModule {
             flagBuilder(fastbreak.add("ghost-hand-mine")).build();
 
     public final FlagRef ghostHandSwapWhenStart = flagBuilder(fastbreak.add("ghost-hand-swap-when-start"))
-        .show(ghostHandMine::get)
-        .build();
-
+            .show(ghostHandMine::get)
+            .build();
 
     public final FlagRef multiBreakFix =
             flagBuilder(fastbreak.add("fix-multi-break")).build();
