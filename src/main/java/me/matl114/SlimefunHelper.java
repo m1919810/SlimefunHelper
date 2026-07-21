@@ -1,5 +1,6 @@
 package me.matl114;
 
+import com.google.common.base.Preconditions;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +22,8 @@ import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlu
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.fabric.impl.client.model.loading.ModelLoadingPluginManager;
+import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.impl.FabricLoaderImpl;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
@@ -33,6 +36,9 @@ public class SlimefunHelper implements ModInitializer {
     // public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     @Getter
     public static SlimefunHelper instance;
+
+    @Getter
+    public static ModContainer modContainer;
 
     public static boolean DEV_ENV = false;
 
@@ -48,6 +54,16 @@ public class SlimefunHelper implements ModInitializer {
         }
     }
 
+    public static void initializeEnvironment() {
+        for (var re : FabricLoaderImpl.INSTANCE.getEntrypointContainers("main", ModInitializer.class)) {
+            if (re.getEntrypoint() == instance) {
+                modContainer = re.getProvider();
+                break;
+            }
+        }
+        Preconditions.checkNotNull(modContainer);
+    }
+
     @Override
     public void onInitialize() {
         instance = this;
@@ -55,6 +71,7 @@ public class SlimefunHelper implements ModInitializer {
         // However, some things (like resources) may still be uninitialized.
         // Proceed with mild caution.
         authentication();
+        initializeEnvironment();
         Debug.info("SlimefunHelper, start!");
         Debug.info("SlimefunHelper start loading!");
         reloadModConfig();
@@ -102,6 +119,7 @@ public class SlimefunHelper implements ModInitializer {
         Debug.info("Reloading Mod Config");
         Configs.loadConfigs();
     }
+
     // 大饼: 实现指令系统，接入聊天框 !!开头
     // 大饼: 客户端实现/give指令劫持
     // 大饼: 发射器界面实现一键放入+合成(?)+交互合成按钮  有了

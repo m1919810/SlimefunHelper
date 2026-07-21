@@ -387,11 +387,7 @@ public class AutoEat extends BaseModule {
         if (food != null) {
             if (mc.player.canConsume(food.canAlwaysEat())) {
                 int hunger = food.nutrition();
-                if (hunger > 0) {
-                    score = food.saturation() / hunger;
-                } else {
-                    score = food.saturation();
-                }
+                score = food.saturation() * hunger;
             } else {
                 return null;
             }

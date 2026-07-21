@@ -7,13 +7,13 @@ import me.matl114.gui.Constants;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Direction2d;
 import me.matl114.hacks.utils.config.Vec2;
+import me.matl114.hacks.utils.render.ItemStackDisplayUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
-import net.minecraft.util.Colors;
 
 public class EquipmentHud extends IRender2DModule {
     public final ModulePath invHud = createRoot();
@@ -25,8 +25,9 @@ public class EquipmentHud extends IRender2DModule {
 
     public EquipmentHud() {}
 
-    public EnumRef<DamageDisplay> damageDisplay = builder(invHud.add("damage-display"), DamageDisplay.class)
-            .defaultValue(DamageDisplay.NONE)
+    public EnumRef<ItemStackDisplayUtils.DamageDisplay> damageDisplay = builder(
+                    invHud.add("damage-display"), ItemStackDisplayUtils.DamageDisplay.class)
+            .defaultValue(ItemStackDisplayUtils.DamageDisplay.NONE)
             .build();
 
     public EnumRef<Direction2d> displayDirection = builder(invHud.add("damage-display-position"), Direction2d.class)
@@ -90,27 +91,11 @@ public class EquipmentHud extends IRender2DModule {
     }
 
     private void drawDamageIfAbsent(VDrawContext vdraw, ItemStack stack, int startX, int startY) {
-        DamageDisplay display = damageDisplay.get();
-        if (display == DamageDisplay.NONE) return;
+        ItemStackDisplayUtils.DamageDisplay display = damageDisplay.get();
+        if (display == ItemStackDisplayUtils.DamageDisplay.NONE) return;
         var damage = stack.getMaxDamage();
         if (damage > 0) {
-            int damage2 = stack.getDamage();
-            int damageLeft = damage - damage2;
-            Text text =
-                    switch (display) {
-                        case DAMAGE -> {
-                            yield Text.literal("-%d".formatted(damage2));
-                        }
-                        case DAMAGE_LEFT -> {
-                            yield Text.literal("%d".formatted(damageLeft));
-                        }
-                        case PERCENTAGE -> {
-                            yield Text.literal("%d%%".formatted((damageLeft * 100) / damage));
-                        }
-                        default -> {
-                            yield null;
-                        }
-                    };
+            Text text = ItemStackDisplayUtils.getDamageShowText(stack, display);
             if (text != null) {
                 float len = mc.textRenderer.getTextHandler().getWidth(text);
                 int startXX, startYY;
@@ -139,32 +124,9 @@ public class EquipmentHud extends IRender2DModule {
                         text.asOrderedText(),
                         startXX,
                         startYY,
-                        getDamageDisplayColor(damage2, damage),
+                        ItemStackDisplayUtils.getDamageDisplayColor(stack),
                         true);
             }
-        }
-    }
-
-    public int getDamageDisplayColor(int damage, int damageMax) {
-        damage = damageMax - damage;
-        if (damage < damageMax * 0.33) {
-            return Colors.RED;
-        } else if (damage < damageMax * 0.66) {
-            return Colors.YELLOW;
-        } else {
-            return Colors.GREEN;
-        }
-    }
-
-    public static enum DamageDisplay implements ConfigEnum {
-        NONE,
-        DAMAGE_LEFT,
-        DAMAGE,
-        PERCENTAGE;
-
-        @Override
-        public String getConfigEnumType() {
-            return "equipment_hud_damage_display_type";
         }
     }
 }

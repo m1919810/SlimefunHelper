@@ -19,6 +19,8 @@ public interface Constants {
 
     public static final Identifier SEARCH_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/search");
 
+    public static final Identifier FORMATTING_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/format");
+
     public static final Identifier LIST_TAG_SPRITE = new Identifier("slimefunhelper", "gui/list_tag");
 
     public static final Identifier EDITOR_SPRITE = new Identifier("slimefunhelper", "gui/editor");

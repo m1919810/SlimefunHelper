@@ -9,7 +9,7 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.*;
 import me.matl114.hacks.modules.move.MoveTimer;
 import me.matl114.hacks.modules.move.Sprint;
-import me.matl114.hacks.modules.render.RenderExtra;
+import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -163,7 +163,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
                                     "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",
                             ordinal = 0))
     public boolean noNausea(boolean val) {
-        if (RenderExtra.INSTANCE.noNausea.get()) {
+        if (NoRender.INSTANCE.noNausea()) {
             return false;
         }
         return val;
@@ -182,19 +182,6 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
                 ci.cancel();
             }
         }
-    }
-
-    @Unique
-    @Override
-    public boolean canHaveStatusEffect(StatusEffectInstance effect) {
-        RenderExtra extra = RenderExtra.INSTANCE;
-        if (extra.noEffect.get()
-                && extra.noEffectForce.get()
-                && (extra.noEffectTypes.get().test(effect.getEffectType()))) {
-            return false;
-        }
-
-        return super.canHaveStatusEffect(effect);
     }
 
     @Unique

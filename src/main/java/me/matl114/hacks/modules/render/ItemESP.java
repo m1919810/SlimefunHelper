@@ -340,7 +340,7 @@ public class ItemESP extends BaseModule {
     public void onRenderEntity3D(Event<MatrixStack> event) {
         if (enable.get()) {
             MatrixStack stack = event.context();
-            RenderUtils.stopDrawVirtual(stack);
+            RenderUtils.startDrawVirtual(stack);
             try {
                 boxCollector.render3D(stack);
                 tracerCollector.render3D(stack);

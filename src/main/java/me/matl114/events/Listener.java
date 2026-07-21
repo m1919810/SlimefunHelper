@@ -43,6 +43,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.network.ServerAddress;
 import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.Entity;
@@ -65,6 +66,7 @@ import net.minecraft.network.packet.s2c.play.ChunkSentS2CPacket;
 import net.minecraft.network.packet.s2c.play.StartChunkSendS2CPacket;
 import net.minecraft.network.packet.s2c.query.PingResultS2CPacket;
 import net.minecraft.recipe.RecipeEntry;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
@@ -673,6 +675,12 @@ public class Listener {
     @ExtraArgs({ChunkPos.class})
     private static final EventChannel<Map<BlockPos, BlockState>> worldScannChunkResult = new EventChannel<>();
 
+    @Getter
+    @Cancelable
+    @ExtraArgs({ParticleEffect.class})
+    private static final EventChannelDispatcher<Particle> particleCreateListener =
+            new EventChannelDispatcher<>(eve -> eve.<ParticleEffect>getArgs(0).getType(), true);
+
     // client interactions and attacks
     @Getter // handle player uses and attacks
     @Cancelable
@@ -681,6 +689,14 @@ public class Listener {
     @Getter
     @Broadcast
     private static final EventChannel<Void> postHandleInputEvents = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    private static final EventChannel<Boolean> playerDropSelectedItem = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    private static final EventChannel<Void> playerCloseHandledScreen = new EventChannel<>();
 
     @Getter
     @Cancelable
@@ -708,6 +724,7 @@ public class Listener {
     @Getter // player attack at block
     @Cancelable
     @Modifiable
+    @ExtraArgs({boolean.class})
     private static final EventChannel<HitResult> mineBlockAction = new EventChannel<>();
 
     @Getter

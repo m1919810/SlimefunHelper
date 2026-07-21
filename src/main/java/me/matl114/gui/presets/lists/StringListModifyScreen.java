@@ -72,7 +72,7 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
         new ListModifyWidget(
                         this.controller,
                         this.x + (this.backgroundWidth - listWidth) / 2,
-                        CONTENT_START_Y,
+                        this.y + CONTENT_START_Y,
                         listWidth,
                         content_end_y - CONTENT_START_Y)
                 .addTo(this);

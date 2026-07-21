@@ -39,8 +39,12 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     public final FlagRef onGroundFloat =
             flagBuilder(grimFloating.add("on-ground-float")).build();
 
+    public final FlagRef useSnap =
+            flagBuilder(grimFloating.add("use-snap-packet")).build();
+
     boolean forceFloatingThisTick = false;
     boolean forceOnGroundVia1205 = false;
+    boolean useSnapPacket = false;
 
     public void setGrimFloatingTick(boolean t) {
         forceFloatingThisTick = t;
@@ -48,6 +52,14 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
     public void setForceOnGroundVia(boolean t) {
         forceOnGroundVia1205 = t;
+    }
+
+    public void setForceSilent(boolean t) {
+        forceSilentThisTick = t;
+    }
+
+    public void setUseSnapRotPacket(boolean t) {
+        useSnapPacket = t;
     }
 
     @Override
@@ -65,6 +77,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     PlayerMoveC2SPacket storedPacket;
     // fix timer
     boolean hasNoPositionMovementPacketThisTick = false;
+    boolean forceSilentThisTick = false;
 
     public void onMoveNoPosition(Event<PlayerMoveC2SPacket> eventMove) {
         // FIX: legacy snap seen as noPosition
@@ -107,6 +120,9 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                             mc.player.getPitch(),
                             mc.player.isOnGround(),
                             mc.player.horizontalCollision);
+                    if (useSnapPacket) {
+                        storedPacket = LegacySnapRotManager.INSTANCE.createAsSnap(storedPacket);
+                    }
                 }
             }
         } else {
@@ -118,16 +134,21 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
         forceFloatingThisTick = false;
         forceOnGroundVia1205 = false;
+
+        useSnapPacket = useSnap.get();
         if (storedPacket != null) {
             // optimize current, only if rotation different, or has No Position packet, send duplicate packet
-            if (((!hasNoPositionMovementPacketThisTick
-                    || PlayerStateManager.INSTANCE.isRotationDifferent(
-                            storedPacket.getPitch(mc.player.getPitch()), storedPacket.getYaw(mc.player.getYaw()))))) {
+            if (!forceSilentThisTick
+                    && ((!hasNoPositionMovementPacketThisTick
+                            || PlayerStateManager.INSTANCE.isRotationDifferent(
+                                    storedPacket.getPitch(mc.player.getPitch()),
+                                    storedPacket.getYaw(mc.player.getYaw()))))) {
                 mc.getNetworkHandler().sendPacket(storedPacket);
             }
             // Listener.sendPacketNoEvents(storedPacket);
             storedPacket = null;
         }
+        forceSilentThisTick = false;
         hasNoPositionMovementPacketThisTick = false;
         return true;
     }

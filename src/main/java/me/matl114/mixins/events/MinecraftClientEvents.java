@@ -21,6 +21,7 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
 import net.minecraft.util.Hand;
 import net.minecraft.util.crash.CrashReport;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.profiler.Profiler;
 import org.jetbrains.annotations.Nullable;
@@ -278,11 +279,13 @@ public abstract class MinecraftClientEvents {
                             ordinal = 0,
                             shift = At.Shift.BEFORE))
     private void onMineBlock(boolean breaking, CallbackInfo ci) {
-        Event<HitResult> hitResultEvent = new Event<>(this.crosshairTarget, true, true);
-        Listener.getMineBlockAction().handleValue(hitResultEvent);
-        if (hitResultEvent.isCancelled() || hitResultEvent.context != crosshairTarget) {
-            cacheHitResult = crosshairTarget;
-            crosshairTarget = hitResultEvent.isCancelled() ? null : hitResultEvent.context;
+        if (breaking) {
+            Event<HitResult> hitResultEvent = new Event<>(this.crosshairTarget, true, true, false);
+            Listener.getMineBlockAction().handleValue(hitResultEvent);
+            if (hitResultEvent.isCancelled() || hitResultEvent.context != crosshairTarget) {
+                cacheHitResult = crosshairTarget;
+                crosshairTarget = hitResultEvent.isCancelled() ? null : hitResultEvent.context;
+            }
         }
     }
 
@@ -292,6 +295,27 @@ public abstract class MinecraftClientEvents {
             this.crosshairTarget = cacheHitResult;
         }
         cacheHitResult = null;
+    }
+
+    @Inject(
+            method = "doAttack",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/util/hit/BlockHitResult;getBlockPos()Lnet/minecraft/util/math/BlockPos;",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void onAttackBlock(CallbackInfoReturnable<Boolean> cir, @Local LocalRef<BlockHitResult> hitResultLocalRef) {
+        var re = hitResultLocalRef.get();
+        Event<HitResult> hitResultEvent = new Event<>(re, true, true, true);
+        Listener.getMineBlockAction().handleValue(hitResultEvent);
+        if (hitResultEvent.isCancelled() || !(hitResultEvent.context instanceof BlockHitResult)) {
+            cir.setReturnValue(false);
+        }
+        if (hitResultEvent.context != re) {
+            hitResultLocalRef.set((BlockHitResult) hitResultEvent.context);
+        }
     }
 
     @WrapOperation(

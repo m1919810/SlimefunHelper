@@ -694,9 +694,11 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 // launch event from this method
                 if (mc.player.checkFallFlying()) {
+                    MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
                     mc.getNetworkHandler()
                             .sendPacket(new ClientCommandC2SPacket(
                                     mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    MovExtra.INSTANCE.sendPacketsForPostStartFallFlying();
                 }
 
                 // start counting down, if not startflying in 20 tick(1sec), auto logout

@@ -3,29 +3,43 @@ package me.matl114.hacks.modules.interact;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.stream.IntStream;
 import me.matl114.events.Event;
+import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.RenderListener;
+import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.ac.DisablerManager;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.CollisionUtil;
-import me.matl114.utils.ColorUtils;
-import me.matl114.utils.InventoryUtils;
+import me.matl114.utils.*;
+import me.matl114.utils.collections.FlagEntry;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3i;
 
 public class AutoPlate extends BaseModule {
-    public AutoPlate() {}
+    public AutoPlate() {
+        bindFlag(enable);
+    }
 
     public final ModulePath autoPlate = makePath(Configs.INTERACT_CONFIG, "place-utils.auto-plate");
 
@@ -36,17 +50,12 @@ public class AutoPlate extends BaseModule {
 
     public List<Vec3i> blocksSeq = new ArrayList<>();
 
-    public void updateBlocks(double i) {
-        List<Vec3i> list = new ArrayList<>();
-        int range = (int) i;
-        for (var y = -range; y <= range; ++y) {
-            for (var z = -range; z <= range; ++z) {
-                list.add(new Vec3i(y, 0, z));
-            }
-        }
-        list.sort(Comparator.comparingDouble(v -> v.getX() * v.getX() + v.getZ() * v.getZ()));
-        blocksSeq = new ArrayList<>(list);
-    }
+    public final EnumRef<Configs.LegalInteractMode> mode = builder(
+                    autoPlate.add("mode"), Configs.LegalInteractMode.class)
+            .defaultValue(Configs.LegalInteractMode.NONE)
+            .build();
+
+    public final FlagRef airplace = flagBuilder(autoPlate.add("air-place")).build();
 
     public final IntRef delay =
             intBuilder(autoPlate.add("delay")).defaultValue(5).build();
@@ -54,19 +63,31 @@ public class AutoPlate extends BaseModule {
     public final IntRef mul =
             intBuilder(autoPlate.add("multiply")).defaultValue(1).build();
 
+    public final DoubleRef expandRange = doubleBuilder(autoPlate.add("expand-range"))
+            .defaultValue(2.0D)
+            .validator(Configs.doubleRange(0.0d, 100.0d))
+            .build();
+
     public final DoubleRef range = doubleBuilder(autoPlate.add("interact-range"))
             .defaultValue(5.0D)
             .validator(Configs.doubleRange(0.0D, 100.0D))
-            .updateListener(this::updateBlocks)
+            .updateListener(s -> blocksSeq = MathUtils.create2DPointListInRange(s, 0))
+            .build();
+
+    public final IntRef depth = intBuilder(autoPlate.add("fill-depth"))
+            .defaultValue(0)
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     public final FlagRef copyState = builder(autoPlate.add("copy-state"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef useBlockRotate = builder(autoPlate.add("use-block-rotate"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final FlagRef useBlockRotate =
+            flagBuilder(autoPlate.add("use-block-rotate")).build();
+
+    public final FlagRef returnBlock =
+            flagBuilder(autoPlate.add("ghost-hand-swap-back")).build();
 
     public final FlagRef render = flagBuilder(autoPlate.add("render")).build();
 
@@ -77,6 +98,8 @@ public class AutoPlate extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onInput);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetReload);
     }
 
     final List<BlockPos> placeList = new ArrayList<>();
@@ -87,40 +110,45 @@ public class AutoPlate extends BaseModule {
         drawOutlines.clear();
         placeList.clear();
         placeState = Optional.empty();
-        Box playerBox = mc.player.getBoundingBox().expand(range.get(), 0, range.get());
+        Box playerBox = mc.player.getBoundingBox().expand(expandRange.get(), 0, expandRange.get());
         Box checkBox = new Box(
                 playerBox.minX,
-                playerBox.minY - range.get(),
+                playerBox.minY - expandRange.get(),
                 playerBox.minZ,
                 playerBox.maxX,
-                playerBox.minY + 1E-7,
+                playerBox.maxY,
                 playerBox.maxZ);
         List<BlockPos> collisions = CollisionUtil.getIntersectingBlockPositions(mc.world, checkBox, false);
         if (collisions.isEmpty()) {
             return;
         }
         int maxY = collisions.stream().mapToInt(BlockPos::getY).max().getAsInt();
-        List<BlockPos> filteredPos =
-                collisions.stream().filter(s -> s.getY() == maxY).toList();
 
         placeList.addAll(blocksSeq.stream()
-                .map(s -> new BlockPos(s.getX(), maxY, s.getZ()))
+                .flatMap(s -> IntStream.range(0, depth.get() + 1)
+                        .mapToObj(j -> new BlockPos(
+                                s.getX() + mc.player.getBlockX(), maxY - j, s.getZ() + mc.player.getBlockZ())))
                 .toList());
         placeList.forEach(s -> drawOutlines.submit(new Box(s), color.get().withAlpha(255)));
-        Map<BlockState, Integer> counterMap = new HashMap<>();
-        for (var bp : filteredPos) {
-            BlockState state = mc.world.getBlockState(bp);
-            if (!state.isAir() && !state.isLiquid()) {
-                counterMap.merge(state, 1, Integer::sum);
-            }
-        }
 
-        if (counterMap.isEmpty()) return;
-        BlockState bestBlockState = counterMap.entrySet().stream()
-                .max(Comparator.comparingInt(Map.Entry::getValue))
-                .get()
-                .getKey();
-        placeState = Optional.of(bestBlockState);
+        if (copyState.get()) {
+            Map<BlockState, Integer> counterMap = new HashMap<>();
+            List<BlockPos> filteredPos =
+                    collisions.stream().filter(s -> s.getY() == maxY).toList();
+            for (var bp : filteredPos) {
+                BlockState state = mc.world.getBlockState(bp);
+                if (!state.isAir() && !state.isLiquid()) {
+                    counterMap.merge(state, 1, Integer::sum);
+                }
+            }
+            if (counterMap.isEmpty()) return;
+
+            BlockState bestBlockState = counterMap.entrySet().stream()
+                    .max(Comparator.comparingInt(Map.Entry::getValue))
+                    .get()
+                    .getKey();
+            placeState = Optional.of(bestBlockState);
+        }
     }
 
     int timer;
@@ -145,8 +173,85 @@ public class AutoPlate extends BaseModule {
         return entry == null ? -1 : entry.index();
     }
 
+    public IndexEntry<ItemStack> supplyAnyBlocks() {
+        return InventoryUtils.findPlayerItem((item) -> item.getItem() instanceof BlockItem, true, false);
+    }
+
     public void tickPlace() {
         int cnt = 0;
-        for (var bp : placeList) {}
+        int multiply = (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
+                ? mul.get()
+                : 1;
+        List<Runnable> stack = new ArrayList<>(multiply);
+
+        for (var bp : placeList) {
+            BlockState clientState = mc.world.getBlockState(bp);
+            if (!clientState.isAir() && !clientState.isLiquid() && !clientState.isReplaceable()) {
+                continue;
+            }
+            int supplyBlock;
+            BlockState state;
+            if (placeState.isPresent()) {
+                supplyBlock = supplyBlocks(placeState.get().getBlock());
+                if (supplyBlock == -1) {
+                    break;
+                }
+                state = placeState.get();
+            } else {
+                var entry = supplyAnyBlocks();
+                if (entry == null) {
+                    break;
+                }
+                if (entry.val().getItem() instanceof BlockItem bl) {
+                    supplyBlock = entry.index();
+                    state = bl.getBlock().getDefaultState();
+                } else {
+                    break;
+                }
+            }
+            if (supplyBlock == -1) break;
+            FlagEntry<BlockHitResult> blockHitResult = InteractionTasks.createSpecificStateHitResult(
+                    bp, state, airplace.get(), !mode.get().isLegal());
+            if (InteractUtils.canInteractAndPlace(mc.player, blockHitResult)
+                    && InteractExtra.INSTANCE.isWithinInteractRange(
+                            mc.player.getPos(), blockHitResult.val().getBlockPos(), range.get())
+                    && InteractUtils.getBlockPlacement(state.getBlock(), mc.player, mc.world, blockHitResult.val())
+                            != null) {
+                Runnable runnable = InvExtra.INSTANCE.swapInventoryIndexToHand(supplyBlock);
+                if (runnable == null) break;
+                stack.add(runnable);
+                if (useBlockRotate.get()) {
+                    BlockRotate.INSTANCE.addTempStateSchematic(bp, state);
+                }
+                InteractionTasks.handlePlaceMode(mode.get(), blockHitResult.val(), Hand.MAIN_HAND);
+                mc.world.setBlockState(bp, state, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
+                cnt += 1;
+                if (cnt >= multiply) {
+                    break;
+                }
+            }
+        }
+        if (returnBlock.get()) {
+            int size = stack.size();
+            for (var i = size - 1; i >= 0; i--) {
+                stack.get(i).run();
+            }
+        }
+    }
+
+    public void onRender3D(Event<MatrixStack> eventVDraw) {
+        if (enable.get() && render.get()) {
+            RenderUtils.startDrawVirtual(eventVDraw.context);
+            try {
+                drawOutlines.render3D(eventVDraw.context);
+            } finally {
+                RenderUtils.stopDrawVirtual(eventVDraw.context);
+            }
+        }
+    }
+
+    public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
+        mode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
+        airplace.set(!event.context.getValue().hasAC());
     }
 }
