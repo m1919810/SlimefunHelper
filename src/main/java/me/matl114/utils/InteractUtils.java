@@ -64,7 +64,7 @@ public class InteractUtils {
 
     public static boolean canBlockPlace(PlayerEntity player, BlockPos pos, BlockState state) {
         World world = player.getEntityWorld();
-        return state.canPlaceAt(world, pos) && world.canPlace(state, pos, ShapeContext.ofPlacement(player));
+        return state.canPlaceAt(world, pos) && world.canPlace(state, pos, ShapeContext.of(player));
     }
 
     public static BlockPos getCurrentPlacePos(PlayerEntity player, BlockHitResult blockHitResult) {
