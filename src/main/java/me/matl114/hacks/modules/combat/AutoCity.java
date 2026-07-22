@@ -85,6 +85,7 @@ public class AutoCity extends BaseModule {
 
     public void onInputEvent(Event<Void> event) {
         if (enable.get()) {
+            pendingSwitchPos = false;
             refreshTarget();
             if (targetEntity != null) {
                 // consider cooldown

@@ -258,7 +258,9 @@ public class WorldUtils {
         BlockState state = world.getBlockState(pos);
         BlockState upState = world.getBlockState(pos.up());
         BlockState downState = world.getBlockState(pos.down());
+        Vec3d spawnerCenter = pos.toBottomCenterPos();
         return downState.allowsSpawning(world, pos.down(), type)
+                && world.isSpaceEmpty(type.getSpawnBox(spawnerCenter.x, spawnerCenter.y, spawnerCenter.z))
                 && SpawnHelper.isClearForSpawn(world, pos, state, state.getFluidState(), type)
                 && SpawnHelper.isClearForSpawn(world, pos.up(), upState, upState.getFluidState(), type);
     }
