@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.interact;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
@@ -122,6 +123,12 @@ public class AutoSlab extends BaseModule {
                 try {
                     if (!canSpawnOnBlocks.contains(re)) {
                         BlockState state = re.getDefaultState();
+                        try {
+                            if (!MoonriseBlockStateBaseAccess.of(state).isConstantCollisionShapeEmpty()) {
+                                availableBlocks.add(re);
+                            }
+                        } catch (Throwable e) {
+                        }
                         if (!SpawnHelper.isClearForSpawn(
                                 null, null, state, state.getFluidState(), EntityType.CREEPER)) {
                             availableBlocks.add(re);
