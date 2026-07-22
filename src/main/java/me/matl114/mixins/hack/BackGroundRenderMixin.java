@@ -47,7 +47,7 @@ public abstract class BackGroundRenderMixin {
             Fog fog = cir.getReturnValue();
             if (fog != null) {
                 cir.setReturnValue(
-                        new Fog(Float.MAX_VALUE, Float.MAX_VALUE, fog.shape(), fog.red(), fog.green(), fog.blue(), 0));
+                        new Fog(fog.end() * 2, fog.end() * 2, fog.shape(), fog.red(), fog.green(), fog.blue(), 0));
             }
         }
     }
