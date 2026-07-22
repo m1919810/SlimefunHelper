@@ -19,7 +19,7 @@ import net.minecraft.registry.entry.RegistryEntry;
 
 public class AttributeUtils {
     public static double getPlayerBlockInteractionRange(PlayerEntity player) {
-        return player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE);
+        return player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE);
     }
 
     public static AttributeContainer getAttributeWith(

@@ -159,7 +159,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             if (!player.isFallFlying()
                     && takeOffOptimize.get().isPresent()
                     && holdJumpCounter >= takeOffOptimize.get().getValue()) {
-                if (!mc.player.isOnGround() && mc.player.checkGliding()) {
+                if (!mc.player.isOnGround() && mc.player.checkFallFlying()) {
                     MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
                     mc.getNetworkHandler()
                             .sendPacket(new ClientCommandC2SPacket(

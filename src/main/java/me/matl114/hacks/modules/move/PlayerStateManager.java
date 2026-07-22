@@ -225,8 +225,9 @@ public class PlayerStateManager extends BaseModule {
     public void onPostPlayerExplosion(Event<ExplosionS2CPacket> eventBoom) {
         if (checkNull()) return;
         var exp = eventBoom.context;
-        if (exp.playerKnockback().isPresent()) {
-            Vec3d knockBack = exp.playerKnockback().get();
+        Vec3d vec3d = new Vec3d(exp.getPlayerVelocityX(), exp.getPlayerVelocityY(), exp.getPlayerVelocityZ());
+        if (vec3d.lengthSquared() > 1E-4) {
+            final Vec3d knockBack = vec3d;
             ACTasks.addPostTransactionAction(s -> lastKnownClientVelocity = lastKnownClientVelocity.add(knockBack));
         }
     }
