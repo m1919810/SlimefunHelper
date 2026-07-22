@@ -66,6 +66,9 @@ public class EntityLog extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef logLog =
+            flagBuilder(entityLog.add("log-log-player-to-chat")).build();
+
     public final FlagRef renderLogPosition =
             flagBuilder(entityLog.add("render-log-players")).build();
 
@@ -248,9 +251,37 @@ public class EntityLog extends BaseModule {
                         var pe = mc.getNetworkHandler().getPlayerListEntry(playerUUID);
                         if (pe == null) {
                             entry.exitCode = 0;
+                            if (logLog.get()) {
+                                Debug.chat(
+                                        Text.literal("[Entity]").formatted(Formatting.RED),
+                                        "Player",
+                                        entry.displayName,
+                                        "logout at",
+                                        ChatUtils.getDisplayedLocation(
+                                                entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
+                                        ChatUtils.stringToText("&a&l[&aTrack&a&l]")
+                                                .styled(s -> s.withClickEvent(ChatUtils.getSuggestCommand(
+                                                                "/!!pqueue add " + entry.scoreboardName))
+                                                        .withHoverEvent(ChatUtils.getHoverShowText(List.of(
+                                                                Text.literal("Click to track player in queue"))))));
+                            }
                             return true;
                         } else if (pe.getGameMode() == GameMode.SPECTATOR) {
                             entry.exitCode = 0;
+                            if (logLog.get()) {
+                                Debug.chat(
+                                        Text.literal("[Entity]").formatted(Formatting.RED),
+                                        "Player",
+                                        entry.displayName,
+                                        "was kicked at",
+                                        ChatUtils.getDisplayedLocation(
+                                                entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
+                                        ChatUtils.stringToText("&a&l[&aTrack&a&l]")
+                                                .styled(s -> s.withClickEvent(ChatUtils.getSuggestCommand(
+                                                                "/!!pqueue add " + entry.scoreboardName))
+                                                        .withHoverEvent(ChatUtils.getHoverShowText(List.of(
+                                                                Text.literal("Click to track player in queue"))))));
+                            }
                             handleJoinServer(VRecord.getId(pe.getProfile()));
                             return true;
                         } else {
