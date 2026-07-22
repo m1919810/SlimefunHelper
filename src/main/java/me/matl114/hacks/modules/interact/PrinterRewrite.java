@@ -182,24 +182,11 @@ public class PrinterRewrite extends BaseModule {
                     BlockState state = litematicaWorld.getBlockState(checkPos);
                     if (!state.isAir()) {
                         BlockState clientState = mc.world.getBlockState(checkPos);
-                        if (!state.isLiquid()
-                                && (clientState.isAir() || clientState.isLiquid() || clientState.isReplaceable())
-                                && clientState != state) {
-                            // do place
-                            if (placeCount != 0) {
-                                InteractionTasks.flushACPlaceQueue();
-                            }
-                            if (doPlace(
-                                    checkPos, state, airplace.get(), !mode.get().isLegal())) {
-                                placeCount += 1;
-                                if (placeCount >= multiply) {
-                                    break;
-                                }
-                            }
-                        }
                         if (supportWater.get()
                                 && clientState != state
-                                && ((clientState.isAir() && state.isLiquid())
+                                && ((clientState.isAir()
+                                                && (state.isLiquid()
+                                                        || state.getFluidState().getFluid() == Fluids.WATER))
                                         || (clientState.getBlock() == state.getBlock()
                                                 && clientState.getFluidState() != state.getFluidState()))
                                 && !waterBlocks.containsKey(checkPos)) {
@@ -217,6 +204,22 @@ public class PrinterRewrite extends BaseModule {
                                     if (placeCount >= multiply) {
                                         break;
                                     }
+                                    continue;
+                                }
+                            }
+                        }
+                        if (!state.isLiquid()
+                                && (clientState.isAir() || clientState.isLiquid() || clientState.isReplaceable())
+                                && clientState != state) {
+                            // do place
+                            if (placeCount != 0) {
+                                InteractionTasks.flushACPlaceQueue();
+                            }
+                            if (doPlace(
+                                    checkPos, state, airplace.get(), !mode.get().isLegal())) {
+                                placeCount += 1;
+                                if (placeCount >= multiply) {
+                                    break;
                                 }
                             }
                         }
@@ -343,7 +346,10 @@ public class PrinterRewrite extends BaseModule {
     public boolean doLiquidPlace(BlockPos pos, BlockState targetState) {
         FluidState fluidState = targetState.getFluidState();
         // fill source
-        if (fluidState.getFluid() == Fluids.WATER && targetState.isLiquid() && useIce.get()) {
+        BlockState clientState = mc.world.getBlockState(pos);
+        if (useIce.get()
+                && fluidState.getFluid() == Fluids.WATER
+                && (clientState.isAir() || clientState.isLiquid() || clientState.isReplaceable())) {
             if (doPlace(
                     pos,
                     Blocks.ICE.getDefaultState(),
