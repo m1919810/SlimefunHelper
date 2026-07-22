@@ -8,6 +8,7 @@ import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
+import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.ListRef;
 import me.matl114.utils.Debug;
 import net.minecraft.resource.ResourceManager;
@@ -18,13 +19,17 @@ import net.minecraft.util.Identifier;
 public class CustomTextures extends BaseModule {
     public final ModulePath textureConfig = makePath(Configs.MODEL_CONFIG, "texture-config");
 
-    public CustomTextures() {}
+    public CustomTextures() {
+        bindFlag(enable);
+    }
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getAtlasSourceSupply(), this::onAtlasSupply);
     }
+
+    public final FlagRef enable = flagBuilder(textureConfig.add("enable")).build();
 
     public final ListRef customTexturePath = builder(textureConfig.add("namespace-for-custom-textures"), ListRef.TYPE)
             .defaultValue(List.of("ae2", "infinityexpansion", "avaritia"))
@@ -82,22 +87,25 @@ public class CustomTextures extends BaseModule {
                     }
                 });
             } else {
-                Set<String> namespacess = pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
+                if (enable.get()) {
+                    Set<String> namespacess = pack.getNamespaces(ResourceType.CLIENT_RESOURCES);
 
-                for (String namespace : namespacess) {
-                    pack.findResources(ResourceType.CLIENT_RESOURCES, namespace, "textures", (i, j) -> {
-                        String realNamespace = i.getNamespace();
-                        if (i.getPath().endsWith(".png")) {
-                            String realPath =
-                                    i.getPath().replaceFirst("^textures/", "").replaceAll(".png$", "");
+                    for (String namespace : namespacess) {
+                        pack.findResources(ResourceType.CLIENT_RESOURCES, namespace, "textures", (i, j) -> {
+                            String realNamespace = i.getNamespace();
+                            if (i.getPath().endsWith(".png")) {
+                                String realPath = i.getPath()
+                                        .replaceFirst("^textures/", "")
+                                        .replaceAll(".png$", "");
 
-                            Identifier shouldId = new Identifier(realNamespace, realPath);
-                            String string = shouldId.toString();
-                            if (predicates.stream().anyMatch(p -> p.test(string))) {
-                                textureIds.add(shouldId);
+                                Identifier shouldId = new Identifier(realNamespace, realPath);
+                                String string = shouldId.toString();
+                                if (predicates.stream().anyMatch(p -> p.test(string))) {
+                                    textureIds.add(shouldId);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
         }
