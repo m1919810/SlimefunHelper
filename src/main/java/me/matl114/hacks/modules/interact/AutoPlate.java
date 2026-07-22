@@ -132,22 +132,15 @@ public class AutoPlate extends BaseModule {
         placeList.forEach(s -> drawOutlines.submit(new Box(s), color.get().withAlpha(255)));
 
         if (copyState.get()) {
-            Map<BlockState, Integer> counterMap = new HashMap<>();
             List<BlockPos> filteredPos =
                     collisions.stream().filter(s -> s.getY() == maxY).toList();
-            for (var bp : filteredPos) {
-                BlockState state = mc.world.getBlockState(bp);
-                if (!state.isAir() && !state.isLiquid()) {
-                    counterMap.merge(state, 1, Integer::sum);
-                }
-            }
-            if (counterMap.isEmpty()) return;
-
-            BlockState bestBlockState = counterMap.entrySet().stream()
-                    .max(Comparator.comparingInt(Map.Entry::getValue))
-                    .get()
-                    .getKey();
-            placeState = Optional.of(bestBlockState);
+            placeState = filteredPos.stream()
+                    .filter(s -> {
+                        BlockState state = mc.world.getBlockState(s);
+                        return !state.isAir() && !state.isLiquid();
+                    })
+                    .min(Comparator.comparingDouble(s -> s.getSquaredDistance(mc.player.getPos())))
+                    .map(mc.world::getBlockState);
         }
     }
 
