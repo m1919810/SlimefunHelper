@@ -1101,6 +1101,7 @@
 	"combat-bot.elytra-bot.combat-smooth-flight-argument-1-1.tooltips":"当位于战斗范围内时,尝试以一定比例混合原平滑飞行方向和纯横向方向\n更快的拉出对方攻击范围",
 	"combat-bot.elytra-bot.combat-smooth-flight-3": "鞘翅追人: 平滑战斗飞行(速攻)",
 	"combat-bot.elytra-bot.combat-smooth-flight-argument-2": "鞘翅追人: 平滑飞行速攻切向半径",
+	"combat-bot.elytra-bot.dynamic-target": "鞘翅追人: 动态目标",
 	"combat-utils.pearl-fly.enable": "珍珠穿墙: 启用",
 	"combat-utils.pearl-fly.hotkey": "珍珠穿墙: 快捷键",
 	"combat-utils.pearl-fly.enable-crawl": "珍珠穿墙: 启用爬行",
