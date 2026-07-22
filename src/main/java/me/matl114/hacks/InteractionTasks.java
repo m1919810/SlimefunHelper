@@ -648,8 +648,8 @@ public class InteractionTasks {
                 continue;
             }
             Vec3d facingDirection = interactPos.toCenterPos().subtract(eyePos);
-
-            if (new Vec3d(direction.getVector()).dotProduct(facingDirection) > 0) {
+            Vec3i vec3i = direction.getVector();
+            if (new Vec3d(vec3i.getX(), vec3i.getY(), vec3i.getZ()).dotProduct(facingDirection) > 0) {
                 continue;
             }
             if (hitState.isAir() || hitState.isLiquid()) {

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
@@ -13,6 +15,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
+@Environment(EnvType.CLIENT)
 @Mixin(TagPacketSerializer.Serialized.class)
 public abstract class TagPacketSerializerEvents {
     @ModifyArg(

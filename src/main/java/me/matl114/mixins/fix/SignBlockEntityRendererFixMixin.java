@@ -5,6 +5,8 @@ import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.modules.render.RenderOptimize;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.entity.SignText;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -14,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
+@Environment(EnvType.CLIENT)
 @Mixin(SignBlockEntityRenderer.class)
 public abstract class SignBlockEntityRendererFixMixin {
 

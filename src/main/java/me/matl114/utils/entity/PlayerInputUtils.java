@@ -116,9 +116,11 @@ public class PlayerInputUtils {
             this(forward, backward, left, right, false, false, false);
         }
 
-        public void sendPlayerInputPacket() {}
+        public Input sendPlayerInputPacket() {
+            return this;
+        }
 
-        public void sendPlayerSneakUpdatePacket() {
+        public Input sendPlayerSneakUpdatePacket() {
             if (sneak) {
                 mc.getNetworkHandler()
                         .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
@@ -127,12 +129,14 @@ public class PlayerInputUtils {
                         .sendPacket(
                                 new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
             }
+            return this;
         }
 
-        public void sendPlayerInputAsRiding() {
+        public Input sendPlayerInputAsRiding() {
             mc.getNetworkHandler()
                     .sendPacket(new PlayerInputC2SPacket(
                             this.sidewaysSpeed() * 0.98F, this.forwardSpeed() * 0.98F, this.jump(), this.sneak()));
+            return this;
         }
 
         public int forwardSpeed() {

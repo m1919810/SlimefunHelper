@@ -118,7 +118,7 @@ public class NoInteract extends BaseModule {
                     && InteractManager.INSTANCE.duringVanillaInput
                     && Tasks.getTick() == lastCancelMainHandVanillaInputTick) {
                 event.cancel();
-                event.context.setValue(ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION);
+                event.context.setValue(ActionResult.PASS);
                 return;
             }
             if (hitResult != null
@@ -161,7 +161,7 @@ public class NoInteract extends BaseModule {
                     }
 
                     event.cancel();
-                    event.context.setValue(ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION);
+                    event.context.setValue(ActionResult.PASS);
                     if (InteractManager.INSTANCE.duringVanillaInput && hand == Hand.MAIN_HAND) {
                         lastCancelMainHandVanillaInputTick = Tasks.getTick();
                     }

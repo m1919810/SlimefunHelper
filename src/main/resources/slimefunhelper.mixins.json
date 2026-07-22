@@ -49,14 +49,19 @@
 		"events.MinecraftClientEvents",
 		"events.MouseEvents",
 		"events.NetworkThreadUtilsEvents",
+		"events.ParticleManagerEvents",
 		"events.PlayerEntityEvents",
 		"events.ScreenEvents",
+		"events.TagPacketSerializerEvents",
 		"events.WorldEvents",
 		"events.WorldRendererEvents",
 		"fix.AbstractElementButtonFixMixin",
 		"fix.ArrayPaletteFixMixin",
 		"fix.ClientPlayerListLookupCMEFix",
+		"fix.DecoderByteBufExceptionFixMixin",
+		"fix.EnchantmentLevelFixMixin",
 		"fix.EntityRenderStateFixMixin",
+		"fix.HeightContextNullFix",
 		"fix.IdListPaletteFixMixin",
 		"fix.KeyboardDebugCrashFix",
 		"fix.LoginHelloPacketNameFixMixin",
@@ -65,6 +70,7 @@
 		"fix.ParticleCountLimitMixin",
 		"fix.ParticleTickFix",
 		"fix.ScreenHandlerFixMixin",
+		"fix.SignBlockEntityRendererFixMixin",
 		"fix.StringHelperFixMixin",
 		"gui.EditBoxWidgetMixin",
 		"gui.ItemColorMixin",
@@ -73,6 +79,7 @@
 		"gui.ScrollableWidgetMixin",
 		"gui.TextFieldWidgetMixin",
 		"hack.BackGroundRenderMixin",
+		"hack.CameraMixin",
 		"hack.ChatHudMixin",
 		"hack.ChatScreenMixin",
 		"hack.ChestScreenMixin",
@@ -98,6 +105,7 @@
 		"hack.PlayerEntityRendererMixin",
 		"hack.PlayerInteractionMixin",
 		"hack.ResourcePackPositionMixin",
+		"hack.ScreenMixin",
 		"hack.ShulkerScreenMixin",
 		"hack.SlimeBlockMixin",
 		"hack.SplashOverlayMixin",
@@ -112,17 +120,10 @@
 		"versioned.LayeredDrawerMixin",
 		"versioned.MatrixStackMixin",
 		"versioned.PlayerInputMixin",
+		"versioned.PlayerInputSprintUpdateMixin",
 		"versioned.SpearHeldItemRenderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
-	},
-	"mixins": [
-		"events.TagPacketSerializerEvents",
-		"fix.DecoderByteBufExceptionFixMixin",
-		"fix.EnchantmentLevelFixMixin",
-		"fix.HeightContextNullFix",
-		"fix.SignBlockEntityRendererFixMixin",
-		"versioned.PlayerInputSprintUpdateMixin"
-	]
+	}
 }

@@ -46,7 +46,7 @@ public abstract class GameRenderMixin {
                             target =
                                     "Lnet/minecraft/client/network/ClientPlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
     public boolean noRenderNausea2(boolean original) {
-        if (RenderTasks.getRenderExtra().noNausea.get()) {
+        if (NoRender.INSTANCE.noNausea()) {
             return false;
         }
         return original;

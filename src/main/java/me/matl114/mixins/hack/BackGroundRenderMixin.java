@@ -1,20 +1,19 @@
 package me.matl114.mixins.hack;
 
-import java.util.Objects;
-import me.matl114.hacks.modules.render.NoRender;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
+import java.util.Objects;
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.Fog;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffects;
-import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
@@ -61,27 +60,30 @@ public abstract class BackGroundRenderMixin {
                                     "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z",
                             ordinal = 1))
     private static boolean render2(boolean original) {
-        if (RenderTasks.getRenderExtra().noEffect.get()) {
+        if (NoRender.INSTANCE.noDarkNess()) {
             return false;
         } else {
             return original;
         }
     }
-    @Inject(method = "applyFog", at = @At("RETURN"), cancellable = true)
-    private static void applyFog(
-            Camera camera,
-            BackgroundRenderer.FogType fogType,
-            Vector4f color,
-            float viewDistance,
-            boolean thickenFog,
-            float tickDelta,
-            CallbackInfoReturnable<Fog> cir) {
+
+    @ModifyArg(
+            method = "applyFog",
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFogStart(F)V"))
+    private static float applyFog(float shaderFogStart, @Local(argsOnly = true) BackgroundRenderer.FogType fogType) {
         if (fogType == BackgroundRenderer.FogType.FOG_TERRAIN && NoRender.INSTANCE.noDistanceFog()) {
-            Fog fog = cir.getReturnValue();
-            if (fog != null) {
-                cir.setReturnValue(
-                        new Fog(fog.end() * 2, fog.end() * 2, fog.shape(), fog.red(), fog.green(), fog.blue(), 0));
-            }
+            return Float.MAX_VALUE;
         }
+        return shaderFogStart;
+    }
+
+    @ModifyArg(
+            method = "applyFog",
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFogEnd(F)V"))
+    private static float applyFogEnd(float shaderFogEnd, @Local(argsOnly = true) BackgroundRenderer.FogType fogType) {
+        if (fogType == BackgroundRenderer.FogType.FOG_TERRAIN && NoRender.INSTANCE.noDistanceFog()) {
+            return Float.MAX_VALUE;
+        }
+        return shaderFogEnd;
     }
 }
