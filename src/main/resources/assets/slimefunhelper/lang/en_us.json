@@ -1034,6 +1034,7 @@
 	"new-style-item.enable-enchant-book": "启用附魔书新材质",
 	"new-style-item.enable-new-style-item": "启用部分物品新材质",
 	"new-style-item.enable-new-style-nbt": "启用部分特殊物品新材质",
+	"texture-config.enable" : "额外材质加载: 启用",
 	"texture-config.namespace-for-custom-textures": "额外材质加载命名空间",
 	"texture-config.namespace-for-custom-textures.tooltips": "修改后需重载资源包才能生效",
 	"slimefun-models.path-pattern-for-slimefun-model": "粘液模型路径匹配",
