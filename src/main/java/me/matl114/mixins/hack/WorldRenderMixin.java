@@ -7,9 +7,9 @@ import java.util.Objects;
 import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.WeatherRendering;
 import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.render.state.WeatherRenderState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
@@ -42,21 +42,20 @@ public abstract class WorldRenderMixin {
     }
 
     @WrapWithCondition(
-            method = "render",
+            method = "method_62216",
             at =
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/WeatherRendering;buildPrecipitationPieces(Lnet/minecraft/world/World;IFLnet/minecraft/util/math/Vec3d;Lnet/minecraft/client/render/state/WeatherRenderState;)V"))
-    public boolean buildPrecipitationPiecesNoWeather(
+                                    "Lnet/minecraft/client/render/WeatherRendering;renderPrecipitation(Lnet/minecraft/world/World;Lnet/minecraft/client/render/VertexConsumerProvider;IFLnet/minecraft/util/math/Vec3d;)V"))
+    private boolean noRenderRainSnow(
             WeatherRendering instance,
             World world,
+            VertexConsumerProvider vertexConsumers,
             int ticks,
-            float tickProgress,
-            Vec3d cameraPos,
-            WeatherRenderState state) {
+            float delta,
+            Vec3d pos) {
         if (NoRender.INSTANCE.noWeather()) {
-            state.intensity = 0;
             return false;
         }
         return true;
