@@ -102,7 +102,7 @@ public class ItemESP extends BaseModule {
     public NBTRef<RegistryRegex<Item>> itemType = builder(itemEsp.add("item-type"), RegistryRegex.<Item>parameter())
             .defaultValue(new RegistryRegex<>(
                     new Regex(
-                            "^(.*ton_skull|netherite.*|.*_star|.*_apple|.*potion|tot.*|end_c.*l|obsi.*|.*anchor|expe.*|mace|ely.*)$"),
+                            "^(.*ton_skull|netherite.*|.*_star|.*_apple|.*potion|tot.*|end_c.*l|obsi.*|.*anchor|expe.*|mace|ely.*|.*shulker.*|trident)$"),
                     Registries.ITEM))
             .updateListener(this::updateSet)
             .build();
@@ -226,7 +226,9 @@ public class ItemESP extends BaseModule {
         if (!stack.isEmpty() && testItem(stack)) {
             markItemToRender(
                     itemEntity,
-                    stack.getName().copy().append(ChatUtils.stringToText("&ex%d".formatted(stack.getCount()))));
+                    stack.getFormattedName()
+                            .copy()
+                            .append(ChatUtils.stringToText("&ex%d".formatted(stack.getCount()))));
         } else {
             removeItemFromRender(itemEntity);
         }
@@ -311,12 +313,12 @@ public class ItemESP extends BaseModule {
                                         && !entity1.getStack().isEmpty()) {
                                     ItemStack stack = entity1.getStack();
                                     text = entity1.getStack()
-                                            .getName()
+                                            .getFormattedName()
                                             .copy()
                                             .append(ChatUtils.stringToText("&ex%d".formatted(stack.getCount())));
                                 } else if (entity instanceof ItemFrameEntity entity1
                                         && !entity1.getHeldItemStack().isEmpty()) {
-                                    text = entity1.getHeldItemStack().getName();
+                                    text = entity1.getHeldItemStack().getFormattedName();
                                 } else {
                                     text = null;
                                 }
