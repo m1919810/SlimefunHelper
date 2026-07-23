@@ -501,6 +501,9 @@ public class RenderTasks {
     public static ItemESP itemESP;
 
     @Getter
+    public static ItemList itemList;
+
+    @Getter
     public static ChestESP chestESP;
 
     @Getter
@@ -563,6 +566,7 @@ public class RenderTasks {
         nameList = new NameList().register(m);
         chestESP = new ChestESP().register(m);
         itemESP = new ItemESP().register(m);
+        itemList = new ItemList().register(m);
         worldScanner = new WorldScanner().register(m);
         mineESP = new MineESP().register(m);
         playerLog = new PlayerLog().register(m);

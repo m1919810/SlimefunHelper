@@ -34,6 +34,10 @@ public class MovExtra extends BaseModule {
     public final FlagRef fuckGrimAC =
             flagBuilder(moveSafety.add("grimac-1-21-2-input-features")).build();
 
+    public final FlagRef fuckGrimACSprint = builder(moveSafety.add("grimac-sprint-features"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef noStepHeightFeature =
             flagBuilder(moveSafety.add("disable-stepheight-feature")).build();
 
@@ -71,8 +75,8 @@ public class MovExtra extends BaseModule {
     }
 
     public void sendPacketsForInventoryAction() {
+        sendSprintPacketsForInventoryAction();
         if (fuckGrimAC.get()) {
-            sendSprintPacketsForInventoryAction();
             if (ViaFabricPlusHooks.isSupportEndTick()) {
                 sendNoMultiActionInputPacket(mc.player);
             }
@@ -80,12 +84,14 @@ public class MovExtra extends BaseModule {
     }
 
     public void sendSprintPacketsForInventoryAction() {
-        ClientPlayerEntity player = mc.player;
-        // only sprint need to be toggled
-        if (PlayerStateManager.INSTANCE.lastSprint) {
-            mc.getNetworkHandler()
-                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-            ClientPlayerAccess.of(player).setLastSprintFlag(false);
+        if (fuckGrimACSprint.get()) {
+            ClientPlayerEntity player = mc.player;
+            // only sprint need to be toggled
+            if (PlayerStateManager.INSTANCE.lastSprint) {
+                mc.getNetworkHandler()
+                        .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                ClientPlayerAccess.of(player).setLastSprintFlag(false);
+            }
         }
     }
 

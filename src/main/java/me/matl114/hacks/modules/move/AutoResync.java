@@ -181,10 +181,7 @@ public class AutoResync extends BaseModule {
 
     public void onPreSetBack(Event<PlayerPositionLookS2CPacket> event) {
         if (autoResyncRot.get() && !modifyPacketRot.get()) {
-            Set<PositionFlag> flags = event.context.getFlags();
-            if (flags.contains(PositionFlag.X_ROT) || flags.contains(PositionFlag.Y_ROT)) {
-                restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
-            }
+            restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         }
     }
 
