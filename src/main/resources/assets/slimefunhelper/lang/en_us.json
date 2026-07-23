@@ -1083,6 +1083,7 @@
 	"combat-bot.elytra-bot.auto-start-fallflying": "鞘翅追人: 自动起飞",
 	"combat-bot.elytra-bot.mace-height": "鞘翅追人: 重锤高度",
 	"combat-bot.elytra-bot.player-only": "鞘翅追人: 只锁玩家",
+	"combat-bot.elytra-bot.dynamic-target": "鞘翅追人: 动态目标",
 	"combat-bot.elytra-bot.only-when-no-wasd": "鞘翅追人: 允许按键操作覆盖",
 	"combat-bot.elytra-bot.follow-on-ground-height-extra": "鞘翅追人: 地面目标高度偏移",
 	"combat-bot.elytra-bot.min-attack-height": "鞘翅追人: 重锤攻击高度限制",
