@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.move;
 
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -59,15 +58,10 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         if (enable.get()) {
             var re = PlayerInputUtils.of(mc.player);
             if (mc.player.isOnGround()) {
-                ClientPlayerAccess.of(mc.player).setJumpingCooldown(0);
                 re.jump(true).sprint(true).forward(true).sneak(sneak.get()).applyInput(mc.player);
                 mc.player.setSprinting(true);
                 counter = 0;
-
             } else {
-                if (conditionalSprint.get()) {
-                    mc.player.setSprinting(false);
-                }
                 if (!mc.player.isFallFlying()) {
                     if (mc.player.checkFallFlying()) {
                         MovTasks.getMovExtra().sendPacketsForPreStartFallFlying();
@@ -77,7 +71,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                         MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
                     }
                 }
-                re.sprint(false).jump(false).forward(false).sneak(sneak.get()).applyInput(mc.player);
+                re.sprint(true).jump(false).forward(true).sneak(sneak.get()).applyInput(mc.player);
             }
             counter++;
         }
