@@ -53,7 +53,7 @@ public class NoQDrop extends BaseModule {
             if ((forceEquipment.get() && stack.isDamageable())
                     || whiteListItem.get().test(stack.getItem())) {
                 if (log.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[NoQDrop] &fCancel dropping"), stack.getName());
+                    Debug.chat(ChatUtils.stringToText("&c[NoQDrop] &fCancel dropping"), stack.getFormattedName());
                 }
                 eventDrop.cancel();
             }
