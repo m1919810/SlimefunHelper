@@ -457,6 +457,9 @@ public abstract class BaseModule implements ModuleListProvider {
         String[] path;
         String keyName;
 
+        @Getter
+        boolean experimental = false;
+
         public WrapperConfigRef(Ref<T> ref, Config config, String[] path) {
             this.ref = Objects.requireNonNull(ref);
             this.path = path;
@@ -575,6 +578,13 @@ public abstract class BaseModule implements ModuleListProvider {
         public WrapperSettingBuilder<W> show(BooleanSupplier supplier) {
             addPost(() -> {
                 getWrapper().addShowPredicate(supplier);
+            });
+            return this;
+        }
+
+        public WrapperSettingBuilder<W> experimental() {
+            addPost(() -> {
+                getWrapper().experimental(true);
             });
             return this;
         }

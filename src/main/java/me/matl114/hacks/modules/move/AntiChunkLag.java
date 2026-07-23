@@ -49,28 +49,15 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
     public boolean currentMayFaceLagChunk;
 
     @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-        if (currentMayFaceLagChunk && enable.get() && freeze.get()) {
-            FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-            // fix armorGlide
-            if (mc.player.isFallFlying()) {
-                if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-                    if (ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide()) {
-                        FloatingUtils.INSTANCE.setForceSilent(false);
-                    } else {
-                        FloatingUtils.INSTANCE.setForceSilent(true);
-                    }
-                } else {
-                    FloatingUtils.INSTANCE.setForceSilent(false);
-                }
-            } else {
-                FloatingUtils.INSTANCE.setForceSilent(true);
-            }
-        }
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
+
+    @Override
+    public void applyBeforeInputPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+        this.applyBeforeMovementPacketModify(movementManagerEvent);
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         int chunkSize = 1 + (velocity.get() / 16);
         boolean hasUnloadedChunk = false;
         ChunkPos playerChunkPos = mc.player.getChunkPos();
@@ -100,6 +87,28 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
         } else if (!val && currentMayFaceLagChunk) {
             currentMayFaceLagChunk = false;
         }
+        if (currentMayFaceLagChunk && enable.get() && freeze.get()) {
+            movementManagerEvent.context.playerStatus.restorePos();
+            FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+            // fix armorGlide
+            if (mc.player.isFallFlying()) {
+                if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
+                    if (ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide()) {
+                        FloatingUtils.INSTANCE.setForceSilent(false);
+                    } else {
+                        FloatingUtils.INSTANCE.setForceSilent(true);
+                    }
+                } else {
+                    FloatingUtils.INSTANCE.setForceSilent(false);
+                }
+            } else {
+                FloatingUtils.INSTANCE.setForceSilent(true);
+            }
+        }
+    }
+
+    @Override
+    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
 
         return true;
     }
