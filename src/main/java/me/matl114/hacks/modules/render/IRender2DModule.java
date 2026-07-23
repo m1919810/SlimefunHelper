@@ -17,6 +17,8 @@ public abstract class IRender2DModule extends BaseModule {
 
     protected abstract ModulePath createRoot();
 
+    protected void initializeSettings() {}
+
     public IRender2DModule() {
         bindFlag(enable);
     }
@@ -30,6 +32,10 @@ public abstract class IRender2DModule extends BaseModule {
 
     public KeyBindRef keyBind = toggleHotkey(hud.add("hotkey"), new MultiKeyBind(), hud.add("enable"))
             .build();
+
+    {
+        initializeSettings();
+    }
 
     public FlagRef right = flagBuilder(hud.add("right")).build();
 

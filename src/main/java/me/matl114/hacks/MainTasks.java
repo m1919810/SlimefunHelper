@@ -134,6 +134,9 @@ public class MainTasks {
         for (ModuleGroup group : HackModules.getModuleGroups()) {
             for (BaseModule module : group.getModules()) {
                 for (var configWrapper : module.getEditableConfig()) {
+                    if (configWrapper.experimental()) {
+                        continue;
+                    }
                     ++wrapperConfigCount;
                     checkTranslationKey(configWrapper.keyName(), checkedKeys, missingKeys);
                 }

@@ -2,6 +2,7 @@ package me.matl114.utils;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 import me.matl114.utils.collections.FlagEntry;
@@ -145,6 +146,10 @@ public class InteractUtils {
     }
 
     public static boolean canRespawnAnchorExplode(World world) {
+        String worldName = world.getRegistryKey().getValue().toString();
+        if (Objects.equals(worldName, "minecraft:overworld") || Objects.equals(worldName, "minecraft:the_end")) {
+            return true;
+        }
         if (world.getDimension().attributes().containsKey(EnvironmentAttributes.RESPAWN_ANCHOR_WORKS_GAMEPLAY)
                 && world.getDimension()
                                 .attributes()
