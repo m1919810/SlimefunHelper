@@ -185,7 +185,7 @@ public class AutoEat extends BaseModule {
     private void tryStartEating(@Nonnull IndexEntry<ItemStack> re, boolean offHand) {
 
         if (log.get()) {
-            Text text = re.val().getFormattedName();
+            Text text = VItem.getInstance().getFormattedName(re.val());
             Debug.chat(ChatUtils.stringToText("&c[Eat] &fStart to eat"), text);
         }
         offHand = offHand || re.index() == 40;
