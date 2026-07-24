@@ -18,6 +18,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.MutableText;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Unit;
@@ -51,6 +52,8 @@ public interface VItem {
     public ItemStack fromNbt(NbtCompound tag);
     // now we save DataVersion field
     public NbtCompound toNbt(ItemStack tag);
+
+    public MutableText getFormattedName(ItemStack stack);
 
     public CustomModelDataComponent createModelData(int cmd);
 
