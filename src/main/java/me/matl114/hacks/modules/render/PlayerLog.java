@@ -23,11 +23,11 @@ public class PlayerLog extends BaseModule {
     public final FlagRef enable = flagBuilder(playerIo.add("log-player-io")).build();
 
     public final NBTRef<StringFormat> logFormatIn = builder(playerIo.add("log-player-in-format"), StringFormat.class)
-            .defaultValue(new StringFormat(List.of("name"), "&7&l[&a&l+&7&l] &f{name}"))
+            .defaultValue(new StringFormat(List.of("name"), "&7&l[&a&l+&7&l] &f{name}", true))
             .build();
 
     public final NBTRef<StringFormat> logFormatOut = builder(playerIo.add("log-player-out-format"), StringFormat.class)
-            .defaultValue(new StringFormat(List.of("name"), "&7&l[&c&l-&7&l] &f{name}"))
+            .defaultValue(new StringFormat(List.of("name"), "&7&l[&c&l-&7&l] &f{name}", true))
             .build();
 
     @Override
