@@ -5,11 +5,8 @@ import me.matl114.hacks.modules.task.ModuleSettings;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.input.SimpleHotKey;
-import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 public class HotKeyUtils {
 
@@ -63,13 +60,7 @@ public class HotKeyUtils {
         return () -> {
             boolean result = !flagRef.get();
             flagRef.set(result);
-            if (ModuleSettings.INSTANCE.moduleToggleNotify.get()) {
-                Debug.chat(
-                        Text.literal(result ? "[+]" : "[-]")
-                                .formatted(result ? Formatting.GREEN : Formatting.RED)
-                                .formatted(Formatting.BOLD),
-                        Text.translatableWithFallback(path, path));
-            }
+            ModuleSettings.INSTANCE.sendToggleMessage(path, result);
         };
     }
 

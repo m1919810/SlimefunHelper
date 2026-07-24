@@ -1,13 +1,19 @@
 package me.matl114.hacks.modules.task;
 
+import java.util.List;
+import me.matl114.accessors.events.ChatHudAccess;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.StringFormat;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.NBTRef;
+import me.matl114.utils.Debug;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.text.Text;
 
 public class ModuleSettings extends BaseModule {
     public static ModuleSettings INSTANCE;
@@ -30,6 +36,19 @@ public class ModuleSettings extends BaseModule {
     public final FlagRef moduleToggleNotify = builder(moduleSettings.add("module-toggle-notify"), FlagRef.TYPE)
             .defaultValue(true)
             .build();
+
+    public final NBTRef<StringFormat> moduleOnNotifyFormat = builder(
+                    moduleSettings.add("module-on-notify-format"), StringFormat.class)
+            .defaultValue(new StringFormat(List.of("name"), "&a&l[+] &f{name}", true))
+            .build();
+
+    public final NBTRef<StringFormat> moduleOffNotify = builder(
+                    moduleSettings.add("module-off-notify-format"), StringFormat.class)
+            .defaultValue(new StringFormat(List.of("name"), "&c&l[-] &f{name}", true))
+            .build();
+
+    public final FlagRef moduleToggleCompress =
+            flagBuilder(moduleSettings.add("compress-module-toggle-message")).build();
 
     public boolean shouldNotExecuteConditionHotkey() {
         if (mc.currentScreen != null) {
@@ -55,6 +74,23 @@ public class ModuleSettings extends BaseModule {
             }
         } else {
             return false;
+        }
+    }
+
+    public static final String TOGGLE_UNIQUE_ID = "slimefunhelper:module_toggle/";
+
+    public void sendToggleMessage(String message, boolean result) {
+        if (checkNull()) return;
+        if (moduleToggleNotify.get()) {
+            StringFormat format = result ? moduleOnNotifyFormat.get() : moduleOffNotify.get();
+            ChatHudAccess access = ChatHudAccess.of(mc.inGameHud.getChatHud());
+            String uniqueId = TOGGLE_UNIQUE_ID + message;
+            if (moduleToggleCompress.get()) {
+                access.clearUniqueMessages(uniqueId);
+            }
+            access.setUniqueMessageId(uniqueId);
+            Debug.chat(format.formatText(Text.translatableWithFallback(message, message)));
+            access.setUniqueMessageId(null);
         }
     }
 

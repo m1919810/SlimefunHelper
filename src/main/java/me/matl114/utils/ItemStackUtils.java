@@ -22,6 +22,7 @@ import net.minecraft.client.network.ClientDynamicRegistryType;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.type.*;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
@@ -505,8 +506,18 @@ public class ItemStackUtils {
     }
 
     public static boolean matchItemMiningAbility(ItemStack stack1, ItemStack stack2) {
-        return Objects.equals(stack1.get(TOOL), stack2.get(TOOL))
-                && Objects.equals(stack1.get(ENCHANTMENTS), stack2.get(ENCHANTMENTS));
+        return Objects.equals(stack1.get(TOOL), stack2.get(TOOL)) && matchEfficiency(stack1, stack2);
+    }
+
+    private static boolean matchEfficiency(ItemStack stack1, ItemStack stack2) {
+        ItemEnchantmentsComponent ench1 = stack1.get(ENCHANTMENTS);
+        ItemEnchantmentsComponent ench2 = stack2.get(ENCHANTMENTS);
+        if (ench1 == null || ench2 == null) {
+            return ench1 == ench2;
+        } else {
+            RegistryEntry<Enchantment> efficient = ItemStackUtils.registry().getEntryOrThrow(Enchantments.EFFICIENCY);
+            return ench1.getLevel(efficient) == ench2.getLevel(efficient);
+        }
     }
 
     protected static String BUKKIT_NAMESPACE = "PublicBukkitValues";

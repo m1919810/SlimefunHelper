@@ -13,6 +13,8 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.config.Ref;
 import me.matl114.managers.config.Refs;
 import me.matl114.utils.collections.MutableRecord;
+import me.matl114.utils.config.ValueAccessor;
+import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
@@ -161,5 +163,43 @@ public class WidgetUtils {
         }
 
         return listWidget;
+    }
+
+    public static DynamicSubScreenWidget createCenterScreenWidget(DrawableWidget widget, int totalX, int totalY) {
+        ValueAccessor<Integer> overrideYAcc = ValueAccessor.holder(0);
+        ValueAccessor<Boolean> yLock = ValueAccessor.holder(false);
+        var re =
+                new DynamicSubScreenWidget(
+                        ValueAccessor.ofIgnore(() -> {
+                            return ((totalX - widget.getWidth()) / 2) - widget.getX();
+                        }),
+                        ValueAccessor.of(
+                                () -> {
+                                    int y = ((totalY - widget.getHeight()) / 2) - widget.getY();
+                                    if (y < 0) {
+                                        yLock.setValue(false);
+                                        return overrideYAcc.getValue();
+                                    } else {
+                                        yLock.setValue(true);
+                                        overrideYAcc.setValue(y);
+                                        return y;
+                                    }
+                                },
+                                (y) -> {
+                                    if (!yLock.getValue()) {
+                                        overrideYAcc.setValue(Math.min(y, 0));
+                                        ;
+                                    }
+                                })) {
+                    @Override
+                    public void render0(
+                            VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
+                        context.enableScissor(0, 0, totalX, totalY);
+                        super.render0(context, mouseX, mouseY, delta, disableSelect);
+                        context.disableScissor();
+                    }
+                };
+        re.addDrawableChild(widget);
+        return re;
     }
 }

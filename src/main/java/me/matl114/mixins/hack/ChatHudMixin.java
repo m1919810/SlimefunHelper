@@ -1,8 +1,6 @@
 package me.matl114.mixins.hack;
 
-import java.util.ArrayList;
 import java.util.List;
-import me.matl114.accessors.access.ChatHudAccess;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.modules.chat.ChatExtra;
 import me.matl114.hacks.modules.render.SleepMode;
@@ -14,7 +12,6 @@ import net.minecraft.client.gui.screen.ChatScreen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -22,16 +19,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ChatHud.class)
-public abstract class ChatHudMixin implements ChatHudAccess {
+public abstract class ChatHudMixin {
     @Shadow
     @Final
     private List<ChatHudLine.Visible> visibleMessages;
-
-    @Unique
-    @Override
-    public ArrayList<ChatHudLine.Visible> getVisibleLines() {
-        return (ArrayList<ChatHudLine.Visible>) this.visibleMessages;
-    }
 
     // mixin for chatHistoryLength override
     @Inject(
