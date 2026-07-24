@@ -716,6 +716,14 @@ public class MineExtra extends BaseModule {
         }
     }
 
+    public float predictBlockBreakingSpeedAt(BlockPos pos) {
+        if (mc.player.isCreative()) return 10000.0F;
+        BlockState state = mc.world.getBlockState(pos);
+        IndexEntry<ItemStack> stackEntry = getGhostHandMiningTool(state);
+        float speed1 = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, state, stackEntry.val());
+        return WorldUtils.getPlayerBlockBreakingSpeedAt(state);
+    }
+
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {

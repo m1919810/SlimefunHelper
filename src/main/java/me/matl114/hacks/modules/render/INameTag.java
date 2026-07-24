@@ -77,6 +77,10 @@ public abstract class INameTag extends BaseModule {
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
             .build();
 
+    public final NBTRef<WrapColor> friendNameColor = builder(nameTag.add("friend-name-color"), WrapColor.class)
+            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .build();
+
     public final NBTRef<WrapColor> healthColor = builder(nameTag.add("health-color"), WrapColor.class)
             .defaultValue(new WrapColor(ColorUtils.color(new Color(20, 170, 170))))
             .build();
@@ -144,7 +148,8 @@ public abstract class INameTag extends BaseModule {
                 if (SlimefunHelper.DEV_NAME.contains(name)) {
                     text.append(DEV_PREFIX);
                 }
-                if (TargetSelector.INSTANCE.isInFriendList(player)) {
+                boolean isFriend = TargetSelector.INSTANCE.isInFriendList(player);
+                if (isFriend) {
                     text.append(ChatUtils.stringToText("&x&F&F&A&C&0&0["
                             + TargetSelector.INSTANCE.getPlayerList().getFriendAlias(player.getNameForScoreboard())
                             + "&x&F&F&A&C&0&0]"));
@@ -153,8 +158,12 @@ public abstract class INameTag extends BaseModule {
                     text.append(Text.literal("[C]").withColor(Color.RED.getRGB()));
                 }
 
-                text.append(
-                        player.getDisplayName().copy().withColor(nameColor.get().asRGB()));
+                text.append(player.getDisplayName()
+                        .copy()
+                        .withColor(
+                                isFriend
+                                        ? friendNameColor.get().asRGB()
+                                        : nameColor.get().asRGB()));
                 if (showHealth.get()) {
                     text.append(Text.literal(" %d♥".formatted((int) player.getHealth()))
                             .withColor(healthColor.get().asRGB()));

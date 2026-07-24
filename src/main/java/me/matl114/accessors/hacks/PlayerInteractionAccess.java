@@ -47,21 +47,6 @@ public interface PlayerInteractionAccess {
     public void syncSelectedHotbar(int x);
 
     /**
-     * 基于当前位置和当前游戏模式，预判一次 start 后是否会立刻满足 instant break 条件。
-     *
-     * <p>这个判断主要服务于快速挖掘、伪秒挖和 bypass 策略选择，不要求一定与客户端展示进度一致；
-     * 它更接近“当前这一击是否值得按 instant 分支处理”的策略信号。
-     */
-    public boolean preCalculateInstantBreak(BlockPos pos);
-
-    /**
-     * 计算当前位置的单 tick 挖掘速度。
-     *
-     * <p>返回值用于上层估算完成时间、判断 quickMine 阈值，以及评估 fakeInstaBreak 是否成立。
-     */
-    public float calculateBreakingSpeed(BlockPos pos);
-
-    /**
      * 读取当前主挖掘槽位绑定的位置。
      *
      * <p>这是客户端当前正在服务端状态机里复用的主挖掘位，不等价于画面上显示的破坏动画来源。
@@ -230,6 +215,8 @@ public interface PlayerInteractionAccess {
     public boolean sendFailBreakCurrentPos(@Nullable Direction direction);
 
     public int getMiningCooldown();
+
+    public void setMiningCooldown(int vla);
 
     public ActionResult simulateInteractBlock(Hand hand, BlockHitResult hitResult);
 

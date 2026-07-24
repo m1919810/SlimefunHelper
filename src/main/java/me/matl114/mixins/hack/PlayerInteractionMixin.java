@@ -133,20 +133,33 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
      * <p>这是对外暴露的稳定语义，调用方不需要再依赖 null 细节自行拼装状态判断。
      */
     @Override
+    @Unique
     public boolean isFailBreakEmpty() {
         return currentFailBreakPos == null;
     }
 
+    @Override
+    @Unique
     public int getCurrentMiningTicks() {
         return Tasks.getTick() - MineExtra.INSTANCE.lastStartMineBreakingProgressResetTick;
     }
 
+    @Override
+    @Unique
     public int getFailBreakMiningTicks() {
         return Tasks.getTick() - failBreakStartTick;
     }
 
+    @Override
+    @Unique
     public int getMiningCooldown() {
         return blockBreakingCooldown;
+    }
+
+    @Override
+    @Unique
+    public void setMiningCooldown(int val) {
+        blockBreakingCooldown = val;
     }
     /**
      * 读取当前主挖掘位进度。
@@ -431,25 +444,6 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     //            sendStopBreakPacket(currentBreakingPos, Direction.UP);
     //        }
     //    }
-    public float calculateBreakingSpeed(BlockPos blockPos) {
-        if (this.gameMode.isCreative()) {
-            return 100000.0f;
-        } else {
-            BlockState state = this.client.world.getBlockState(blockPos);
-            return state.calcBlockBreakingDelta(this.client.player, this.client.player.getEntityWorld(), blockPos);
-        }
-    }
-
-    public boolean preCalculateInstantBreak(BlockPos blockPos) {
-        if (this.gameMode.isCreative()) {
-            return true;
-        } else {
-            BlockState state = this.client.world.getBlockState(blockPos);
-            float speed =
-                    state.calcBlockBreakingDelta(this.client.player, this.client.player.getEntityWorld(), blockPos);
-            return MineExtra.INSTANCE.shouldTreatAsInstantBreak(speed);
-        }
-    }
 
     @Unique
     public boolean breakIfComplete() {
