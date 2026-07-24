@@ -14,6 +14,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -53,7 +54,9 @@ public class NoQDrop extends BaseModule {
             if ((forceEquipment.get() && stack.isDamageable())
                     || whiteListItem.get().test(stack.getItem())) {
                 if (log.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[NoQDrop] &fCancel dropping"), stack.getFormattedName());
+                    Debug.chat(
+                            ChatUtils.stringToText("&c[NoQDrop] &fCancel dropping"),
+                            VItem.getInstance().getFormattedName(stack));
                 }
                 eventDrop.cancel();
             }

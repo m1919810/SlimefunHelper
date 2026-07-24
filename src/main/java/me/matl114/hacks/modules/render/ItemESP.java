@@ -22,6 +22,7 @@ import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VDrawContext;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.ComponentChanges;
@@ -230,8 +231,8 @@ public class ItemESP extends BaseModule {
         if (!stack.isEmpty() && testItem(stack)) {
             markItemToRender(
                     itemEntity,
-                    stack.getFormattedName()
-                            .copy()
+                    VItem.getInstance()
+                            .getFormattedName(stack)
                             .append(ChatUtils.stringToText("&ex%d".formatted(stack.getCount()))));
         } else {
             removeItemFromRender(itemEntity);
@@ -317,13 +318,12 @@ public class ItemESP extends BaseModule {
                                 if (entity instanceof ItemEntity entity1
                                         && !entity1.getStack().isEmpty()) {
                                     ItemStack stack = entity1.getStack();
-                                    text = entity1.getStack()
-                                            .getFormattedName()
-                                            .copy()
+                                    text = VItem.getInstance()
+                                            .getFormattedName(stack)
                                             .append(ChatUtils.stringToText("&ex%d".formatted(stack.getCount())));
                                 } else if (entity instanceof ItemFrameEntity entity1
                                         && !entity1.getHeldItemStack().isEmpty()) {
-                                    text = entity1.getHeldItemStack().getFormattedName();
+                                    text = VItem.getInstance().getFormattedName(entity1.getHeldItemStack());
                                 } else {
                                     text = null;
                                 }
