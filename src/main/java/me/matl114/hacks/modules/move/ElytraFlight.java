@@ -94,6 +94,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public final FlagRef autoRescaleBestClimbingSpeed = flagBuilder(
                     simpleFlightControl.add("use-auto-rescale-best-climbing-speed"))
             .show(() -> ElytraExtra.INSTANCE.autoRescale.get())
+            .experimental()
             .build();
 
     boolean currentTakeOff = false;

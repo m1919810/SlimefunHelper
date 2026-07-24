@@ -120,6 +120,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef minimalAttackHeightPullUp = builder(elytraBot.add("min-attack-height-pull-up"), Double.class)
             .defaultValue(10.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .experimental()
             .build();
 
     public final IntRef maceRemainPullUpTick = builder(elytraBot.add("mace-max-extra-pull-up-tick"), IntRef.TYPE)
@@ -146,6 +147,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef maceYLevelWeight = doubleBuilder(elytraBot.add("mace-y-level-lerp"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(0.0)
+            .experimental()
             .build();
 
     public final FlagRef combatSmoothFlight1 = flagBuilder(elytraBot.add("combat-smooth-flight"))
@@ -165,12 +167,14 @@ public class ElytraBot extends BaseModule {
     @ApiStatus.Experimental
     public final FlagRef combatSmoothFlag2 = flagBuilder(elytraBot.add("combat-smooth-flight-argument-1-2"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
     public final DoubleRef combatSmoothArg13 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-1-3"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(20.0D)
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
@@ -178,23 +182,27 @@ public class ElytraBot extends BaseModule {
                     elytraBot.add("combat-smooth-flight-argument-1-4"), OptionalPrimitive.type(Vec3.class))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.VEC3_TYPE, new Vec3(10, 0.3, 20)))
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
     public final FlagRef combatSmoothFlight2 = flagBuilder(elytraBot.add("combat-smooth-flight-2"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
     public final DoubleRef combatSmoothArg21 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-2-1"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(10.0D)
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
     public final DoubleRef combatSmoothArg22 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-2-2"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(10.0D)
+            .experimental()
             .build();
 
     public final FlagRef combatSmoothFlight3 = flagBuilder(elytraBot.add("combat-smooth-flight-3"))
@@ -229,6 +237,7 @@ public class ElytraBot extends BaseModule {
                     && ElytraFlight.INSTANCE.useAutoRescale.get()
                     && ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V2)
                     && angleOptimize.get())
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
@@ -241,6 +250,7 @@ public class ElytraBot extends BaseModule {
                     && ElytraFlight.INSTANCE.useAutoRescale.get()
                     && ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V2)
                     && angleOptimize.get())
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
@@ -253,8 +263,10 @@ public class ElytraBot extends BaseModule {
                     && ElytraFlight.INSTANCE.useAutoRescale.get()
                     && ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V2)
                     && angleOptimize.get())
+            .experimental()
             .build();
 
+    @ApiStatus.Experimental
     public final KeyBindRef forcePullupHotkey = builder(
                     elytraBot.add("combat-force-angled-pull-up-hotkey"), KeyBindRef.TYPE)
             .defaultValue(new MultiKeyBind())
@@ -263,6 +275,7 @@ public class ElytraBot extends BaseModule {
                     && ElytraFlight.INSTANCE.useAutoRescale.get()
                     && ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V2)
                     && angleOptimize.get())
+            .experimental()
             .build();
 
     // to be optimize
@@ -274,6 +287,7 @@ public class ElytraBot extends BaseModule {
                     && ElytraExtra.INSTANCE.autoRescale.get()
                     && ElytraFlight.INSTANCE.useAutoRescale.get()
                     && angleOptimize.get())
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
@@ -284,12 +298,14 @@ public class ElytraBot extends BaseModule {
                     && ElytraFlight.INSTANCE.useAutoRescale.get()
                     && angleOptimize.get()
                     && pullUpAngleOptimize.get().isPresent())
+            .experimental()
             .build();
 
     public final NBTRef<OptionalPrimitive<Double>> maceChaseFollowYBias = builder(
                     elytraBot.add("combat-mace-chase-follow-y-bias"), OptionalPrimitive.DOUBLE_TYPE)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 3.0D))
+            .experimental()
             .build();
 
     //    public final FlagRef pullUpNoSpear = builder(
