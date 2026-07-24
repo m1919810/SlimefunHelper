@@ -32,6 +32,7 @@ import me.matl114.utils.commands.params.impl.*;
 import me.matl114.utils.commands.params.types.EntitySelector;
 import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.commands.params.types.ExecuteRotation;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.Entity;
@@ -949,7 +950,7 @@ public class InteractManager extends BaseModule {
                         Hand hand = shouldUseOffHand ? Hand.OFF_HAND : Hand.MAIN_HAND;
                         var result = mc.interactionManager.interactItem(player, hand);
                         if (InteractManager.INSTANCE.logA.get()) {
-                            Text text = entry.val().getFormattedName();
+                            Text text = VItem.getInstance().getFormattedName(entry.val());
                             Debug.chat(
                                     ChatUtils.stringToText("&c[Interact] &f使用了").append(text));
                         }
@@ -996,7 +997,7 @@ public class InteractManager extends BaseModule {
                     Hand hand = offhand ? Hand.OFF_HAND : Hand.MAIN_HAND;
                     var result = mc.interactionManager.interactItem(player, hand);
                     if (InteractManager.INSTANCE.logA.get()) {
-                        Text text = entry.val().getFormattedName();
+                        Text text = VItem.getInstance().getFormattedName(entry.val());
                         Debug.chat(ChatUtils.stringToText("&c[Interact] &f使用了").append(text));
                     }
                     manager.holdUseTick = releaseTicks;

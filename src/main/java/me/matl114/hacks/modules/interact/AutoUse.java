@@ -109,7 +109,7 @@ public class AutoUse extends BaseModule {
                         if (log.get()) {
                             Debug.chat(
                                     ChatUtils.stringToText("&c[Use] &fStart to use"),
-                                    mc.player.getActiveItem().getFormattedName());
+                                    VItem.getInstance().getFormattedName(mc.player.getActiveItem()));
                         }
                     } else {
                         KeyBindAccess.of(mc.options.useKey).resetKeyState();

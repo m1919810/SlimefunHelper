@@ -17,6 +17,7 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.inventory.ItemStackSample;
 import me.matl114.versioned.api.VDrawContext;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
@@ -111,7 +112,8 @@ public class ItemList extends IRender2DColoredModule {
             for (var re : itemMap.entrySet()) {
                 Text text = ChatUtils.builder()
                         .withColorString("&f")
-                        .appendText(re.getKey().sample().getFormattedName())
+                        .appendText(
+                                VItem.getInstance().getFormattedName(re.getKey().sample()))
                         .withColorString("&f x" + re.getValue())
                         .end()
                         .build();

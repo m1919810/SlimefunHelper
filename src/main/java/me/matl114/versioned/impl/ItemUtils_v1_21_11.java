@@ -21,8 +21,10 @@ import net.minecraft.nbt.NbtInt;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryOps;
 import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextCodecs;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.JsonHelper;
 
 public class ItemUtils_v1_21_11 implements VItem {
@@ -132,6 +134,17 @@ public class ItemUtils_v1_21_11 implements VItem {
         NbtCompound tagCompound = toNbt0(tag);
         tagCompound.putInt(DataVersion.DATA_VERSION_FLAG, DataVersion.getDataVersion());
         return tagCompound;
+    }
+
+    @Override
+    public MutableText getFormattedName(ItemStack stack) {
+        MutableText mutableText =
+                Text.empty().append(stack.getName()).formatted(stack.getRarity().getFormatting());
+        if (stack.contains(DataComponentTypes.CUSTOM_NAME)) {
+            mutableText.formatted(Formatting.ITALIC);
+        }
+
+        return mutableText;
     }
 
     private NbtCompound toNbt0(ItemStack tag) {
