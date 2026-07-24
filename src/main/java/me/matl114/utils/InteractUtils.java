@@ -3,7 +3,6 @@ package me.matl114.utils;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 import me.matl114.utils.collections.FlagEntry;

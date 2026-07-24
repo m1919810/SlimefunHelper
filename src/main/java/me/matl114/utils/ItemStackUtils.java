@@ -511,7 +511,10 @@ public class ItemStackUtils {
         if (ench1 == null || ench2 == null) {
             return ench1 == ench2;
         } else {
-            RegistryEntry<Enchantment> efficient = ItemStackUtils.registry().getEntryOrThrow(Enchantments.EFFICIENCY);
+            RegistryEntry<Enchantment> efficient = ItemStackUtils.registry()
+                    .getOptional(Enchantments.EFFICIENCY.getRegistryRef())
+                    .flatMap(s -> s.getOptional(Enchantments.EFFICIENCY))
+                    .orElseThrow();
             return ench1.getLevel(efficient) == ench2.getLevel(efficient);
         }
     }
