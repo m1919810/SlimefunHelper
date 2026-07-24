@@ -46,8 +46,6 @@ public class PacketOrderManager extends BaseModule {
                 Integer.MAX_VALUE);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPacketTick, Integer.MAX_VALUE);
-        registerListener(
-                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onTickEnd, Integer.MAX_VALUE);
     }
 
     public void onInteract(Event<PlayerInteractEntityC2SPacket> event) {
@@ -107,13 +105,4 @@ public class PacketOrderManager extends BaseModule {
         }
     }
 
-    public void onTickEnd(Event<ClientTickEndC2SPacket> event) {
-        if (lastTickMove) {
-            lastTickMove = false;
-        } else {
-            if (ViaFabricPlusHooks.isSupportEndTick()) {
-                onTick();
-            }
-        }
-    }
 }
