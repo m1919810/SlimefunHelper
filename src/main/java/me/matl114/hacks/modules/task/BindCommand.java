@@ -27,7 +27,7 @@ import net.minecraft.util.Formatting;
 
 public class BindCommand extends BaseModule implements IHotKey {
     private static final String HOTKEY_PREFIX = "bind-command";
-
+    public static BindCommand INSTANCE;
     private final ModulePath root = makePath(Configs.MISC_CONFIG, HOTKEY_PREFIX);
 
     public final NBTRef<PrimitivePairList<MultiKeyBind, String>> commands = builder(
@@ -40,7 +40,9 @@ public class BindCommand extends BaseModule implements IHotKey {
                     List.of(Pair.of(new MultiKeyBind(), "/!!help"))))
             .build();
 
-    public BindCommand() {}
+    public BindCommand() {
+        INSTANCE = this;
+    }
 
     @Override
     public void registerAll() {

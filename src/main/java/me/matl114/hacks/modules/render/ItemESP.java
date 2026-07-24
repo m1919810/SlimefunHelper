@@ -128,6 +128,10 @@ public class ItemESP extends BaseModule {
             .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
             .build();
 
+    public NBTRef<WrapColor> nameSpecialColor = builder(itemEsp.add("special-name-display-color"), WrapColor.class)
+            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .build();
+
     public DoubleRef nameScale =
             doubleBuilder(itemEsp.add("name-scale")).defaultValue(0.75D).build();
     // 可选：热键（若需要可取消注释，并实现对应的 KeyBindRef）
@@ -275,6 +279,7 @@ public class ItemESP extends BaseModule {
             int color = this.color.get().withAlpha(255);
             int specialColor = this.specialColor.get().withAlpha(255);
             int nameColor = this.nameColor.get().withAlpha(255);
+            int specialNameColor = this.nameSpecialColor.get().withAlpha(255);
             TracingOption op = option.get();
             TracingOption specialOp = specialOptions.get();
             if (special || common) {
@@ -296,7 +301,7 @@ public class ItemESP extends BaseModule {
                                                 displayText,
                                                 entity.getBoundingBox().getCenter(),
                                                 (float) nameScale.get()),
-                                        nameColor);
+                                        specialNameColor);
                             }
                             continue;
                         }

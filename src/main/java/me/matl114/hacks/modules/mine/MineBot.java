@@ -12,12 +12,14 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -90,12 +92,16 @@ public class MineBot extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef toolProtect = builder(mineBot.add("durability-protect"), Boolean.class)
+    public final FlagRef considerCooldown = builder(mineBot.add("consider-cooldown"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    //    public final FlagRef rightClickMode =
-    //            flagBuilder(mineBot.add("right-click")).build();
+    public final FlagRef autoSwap =
+            flagBuilder(mineBot.add("auto-swap")).defaultValue(true).build();
+
+    public final FlagRef toolProtect = builder(mineBot.add("durability-protect"), Boolean.class)
+            .defaultValue(true)
+            .build();
 
     private boolean isMineable(BlockState state) {
         if (state != null && !state.isAir() && !state.isLiquid()) {
@@ -154,45 +160,87 @@ public class MineBot extends BaseModule {
     public int durMultiply = 4;
     public int minDurLimit = 9;
 
-    public boolean checkToolDurability(boolean instaMine) {
-        if (toolProtect.get() && mc.player != null) {
-            ItemStack item = mc.player.getMainHandStack();
-
-            int durabilityLimit; // item.get(DataComponentTypes.UNBREAKABLE) != null ? Integer.MAX_VALUE: (
-            if (item.get(DataComponentTypes.UNBREAKABLE) != null) {
-                durabilityLimit = 0;
-            } else if (item.get(DataComponentTypes.MAX_DAMAGE) != null) {
-                var optionalUnbreaking = ItemStackUtils.registry()
-                        .getOptional(RegistryKeys.ENCHANTMENT)
-                        .orElseThrow()
-                        .getEntry(Enchantments.UNBREAKING);
-                int multiply = 1;
-                if (optionalUnbreaking.isPresent()) {
-                    multiply = EnchantmentHelper.getLevel(optionalUnbreaking.get(), item) + 1;
-                }
-                durabilityLimit = (durMultiply * (instaMine ? maxInstaMine.get() : 2)) / multiply;
-            } else {
-                // it is not a tool
-                return true;
+    public boolean isDurabilityOk(ItemStack item) {
+        if (item.isEmpty()) return true;
+        int durabilityLimit;
+        if (item.get(DataComponentTypes.UNBREAKABLE) != null) {
+            durabilityLimit = 0;
+        } else if (item.get(DataComponentTypes.MAX_DAMAGE) != null) {
+            var optionalUnbreaking = ItemStackUtils.registry()
+                    .getOptional(RegistryKeys.ENCHANTMENT)
+                    .orElseThrow()
+                    .getEntry(Enchantments.UNBREAKING);
+            int multiply = 1;
+            if (optionalUnbreaking.isPresent()) {
+                multiply = EnchantmentHelper.getLevel(optionalUnbreaking.get(), item) + 1;
             }
-            int max = Math.max(minDurLimit, durabilityLimit);
-            if (!item.isEmpty() && item.getDamage() > item.getMaxDamage() - max) {
-                //
-                Debug.chat("Your tool runs out of durability! stop mining");
-                enable.set(false);
-                return false;
-            }
+            durabilityLimit = (durMultiply * (2)) / multiply;
+        } else {
+            return true;
+        }
+        int max = Math.max(minDurLimit, durabilityLimit);
+        if (item.getDamage() > item.getMaxDamage() - max) {
+            return false;
         }
         return true;
     }
+
+    //    public boolean checkToolDurability(boolean instaMine) {
+    //        if ((toolProtect.get() || replaceSameTool.get()) && mc.player != null) {
+    //            ItemStack item = mc.player.getMainHandStack();
+    //
+    //            int durabilityLimit; // item.get(DataComponentTypes.UNBREAKABLE) != null ? Integer.MAX_VALUE: (
+    //            if (item.get(DataComponentTypes.UNBREAKABLE) != null) {
+    //                durabilityLimit = 0;
+    //            } else if (item.get(DataComponentTypes.MAX_DAMAGE) != null) {
+    //                var optionalUnbreaking = ItemStackUtils.registry()
+    //                        .getOptional(RegistryKeys.ENCHANTMENT)
+    //                        .orElseThrow()
+    //                        .getOptional(Enchantments.UNBREAKING);
+    //                int multiply = 1;
+    //                if (optionalUnbreaking.isPresent()) {
+    //                    multiply = EnchantmentHelper.getLevel(optionalUnbreaking.get(), item) + 1;
+    //                }
+    //                durabilityLimit = (durMultiply * (instaMine ? maxInstaMine.get() : 2)) / multiply;
+    //            } else {
+    //                // it is not a tool
+    //                return true;
+    //            }
+    //            int max = Math.max(minDurLimit, durabilityLimit);
+    //            if (!item.isEmpty() && item.getDamage() > item.getMaxDamage() - max) {
+    //                //
+    //                if(replaceSameTool.get()){
+    //                    IndexEntry<ItemStack> stackReplacement = InventoryUtils.findPlayerItem(s -> {
+    //                        return s.getDamage() <= s.getMaxDamage() - max && ItemStackUtils.matchItemMiningAbility(s,
+    // item);
+    //                    }, true, false);
+    //                    if(stackReplacement != null){
+    //                        Debug.chat(ChatUtils.stringToText("&c[MineBot] &fReplacing your tool..."));
+    //                        InvExtra.INSTANCE.swapInventoryIndexToHand(stackReplacement.index());
+    //                        return true;
+    //                    }else {
+    //                        Debug.chat(ChatUtils.stringToText("&c[MineBot] &fReplacing failed because no same tool
+    // found, stop mining!"));
+    //                        enable.set(false);
+    //                        return false;
+    //                    }
+    //                }
+    //                if(toolProtect.get()){
+    //                    Debug.chat(ChatUtils.stringToText("&c[MineBot] &fYour tool runs out of durability, stop
+    // mining!"));
+    //                    enable.set(false);
+    //                    return false;
+    //                }
+    //
+    //            }
+    //        }
+    //        return true;
+    //    }
 
     private int noBlockAroundTick;
     private static final int NO_BLOCK_MENTION_LIMIT = 400;
 
     public int onMineCommon(Supplier<BlockPos> posFinder) {
-        if (!checkToolDurability(false)) {
-            return 0;
-        }
         int tryMine = 0;
         boolean insta = false;
         Vec2f originPy = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
@@ -205,67 +253,81 @@ public class MineBot extends BaseModule {
             if (lastMinePos == null) {
                 break;
             }
-            if (false) { // rightClickMode.get()) {
-                Vec3d facingTarget = lastMinePos.toCenterPos().subtract(mc.player.getEyePos());
-                Vec2f vc2f = EntityUtils.rotationToPitchYaw(facingTarget.normalize());
-                mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
-                    return new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, sequence, vc2f.y, vc2f.x);
-                });
-                tryMine += 1;
-
-            } else {
-                boolean preCalculation =
-                        PlayerInteractionAccess.of(mc.interactionManager).preCalculateInstantBreak(lastMinePos);
-                if (!insta && preCalculation) {
-                    insta = true;
-                    if (!checkToolDurability(true)) {
-                        break;
-                    }
-                }
-                tryMine += 1;
-                // use real Direction
-                Vec3d shouldFacing = lastMinePos.toCenterPos().subtract(mc.player.getEyePos());
-                Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-                switch (legalMode.get()) {
-                    case SWING_HAND_AND_ROT -> {
-                        Vec3d rotate2f = mc.player.getRotationVector();
-                        Vec3d rotateXZ = new Vec3d(rotate2f.x, 0, rotate2f.z);
-                        // out of the sight
-                        if (rotateXZ.dotProduct(shouldFacing) < 0) {
-                            mc.player.setYaw(EntityUtils.getSafeYaw(mc.player, mc.player.getYaw() + 180));
-                            mc.getNetworkHandler()
-                                    .sendPacket(VPacket.newLookAndOnGround(
-                                            mc.player.getYaw(),
-                                            mc.player.getPitch(),
-                                            mc.player.isOnGround(),
-                                            mc.player.horizontalCollision));
-                        }
-                    }
-                    case SWING_HAND_AND_TARGET -> {
-                        Vec3d facing = shouldFacing.normalize();
-                        Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(facing);
-                        if (Math.abs(EntityUtils.getSafeYawDiff(mc.player.getYaw(), pitchYaw.y)) > 30) {
-                            mc.player.setPitch(pitchYaw.x);
-                            mc.player.setYaw(pitchYaw.y);
-                            mc.getNetworkHandler()
-                                    .sendPacket(VPacket.newLookAndOnGround(
-                                            mc.player.getYaw(),
-                                            mc.player.getPitch(),
-                                            mc.player.isOnGround(),
-                                            mc.player.horizontalCollision));
-                        }
-                    }
-                }
-                mc.interactionManager.updateBlockBreakingProgress(lastMinePos, dir);
-                // fake a swing packet , so that we can bypass some packet check
-
-                if (legalMode.get().hasSwing()) {
-                    mc.player.swingHand(Hand.MAIN_HAND);
-                }
-
-                if (!preCalculation) {
+            if (considerCooldown.get()) {
+                if (PlayerInteractionAccess.of(mc.interactionManager).getMiningCooldown() > 0) {
                     break;
                 }
+            } else {
+                PlayerInteractionAccess.of(mc.interactionManager).setMiningCooldown(0);
+            }
+
+            BlockState mineState = mc.world.getBlockState(lastMinePos);
+            IndexEntry<ItemStack> bestStack = autoSwap.get()
+                    ? InventoryUtils.findBestPlayerItem(
+                            s -> {
+                                if (isDurabilityOk(s)) {
+                                    return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                                            mc.player, mineState, s);
+                                } else return null;
+                            },
+                            true,
+                            true)
+                    : InventoryUtils.getSelectedItem();
+            if (bestStack == null || !isDurabilityOk(bestStack.val())) {
+                if (toolProtect.get()) {
+                    Debug.chat(ChatUtils.stringToText("&c[MineBot] &fYour tool runs out of durability, stop mining!"));
+                    enable.set(false);
+                    break;
+                } else {
+                    bestStack = InventoryUtils.getSelectedItem();
+                }
+            }
+            InvExtra.INSTANCE.swapInventoryIndexToHand(bestStack.index());
+            AttributeUtils.updateAttribute(mc.player);
+            float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(lastMinePos);
+            tryMine += 1;
+            // use real Direction
+            Vec3d shouldFacing = lastMinePos.toCenterPos().subtract(mc.player.getEyePos());
+            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+            switch (legalMode.get()) {
+                case SWING_HAND_AND_ROT -> {
+                    Vec3d rotate2f = mc.player.getRotationVector();
+                    Vec3d rotateXZ = new Vec3d(rotate2f.x, 0, rotate2f.z);
+                    // out of the sight
+                    if (rotateXZ.dotProduct(shouldFacing) < 0) {
+                        mc.player.setYaw(EntityUtils.getSafeYaw(mc.player, mc.player.getYaw() + 180));
+                        mc.getNetworkHandler()
+                                .sendPacket(VPacket.newLookAndOnGround(
+                                        mc.player.getYaw(),
+                                        mc.player.getPitch(),
+                                        mc.player.isOnGround(),
+                                        mc.player.horizontalCollision));
+                    }
+                }
+                case SWING_HAND_AND_TARGET -> {
+                    Vec3d facing = shouldFacing.normalize();
+                    Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(facing);
+                    if (Math.abs(EntityUtils.getSafeYawDiff(mc.player.getYaw(), pitchYaw.y)) > 30) {
+                        mc.player.setPitch(pitchYaw.x);
+                        mc.player.setYaw(pitchYaw.y);
+                        mc.getNetworkHandler()
+                                .sendPacket(VPacket.newLookAndOnGround(
+                                        mc.player.getYaw(),
+                                        mc.player.getPitch(),
+                                        mc.player.isOnGround(),
+                                        mc.player.horizontalCollision));
+                    }
+                }
+            }
+            mc.interactionManager.updateBlockBreakingProgress(lastMinePos, dir);
+            // fake a swing packet , so that we can bypass some packet check
+
+            if (legalMode.get().hasSwing()) {
+                mc.player.swingHand(Hand.MAIN_HAND);
+            }
+
+            if (!MineExtra.INSTANCE.shouldTreatAsInstantBreak(speed)) {
+                break;
             }
 
         } while (!mc.interactionManager.isBreakingBlock() && tryMine < maxInstaMine.get());

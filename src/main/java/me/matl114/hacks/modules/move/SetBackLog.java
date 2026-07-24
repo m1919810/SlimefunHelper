@@ -23,7 +23,7 @@ public class SetBackLog extends BaseModule {
             flagBuilder(moveSafety.add("log-resync-packets")).build();
 
     public final NBTRef<StringFormat> logResyncFormat = builder(moveSafety.add("log-resync-format"), StringFormat.class)
-            .defaultValue(new StringFormat(List.of("position"), "&fPos Resync {position}"))
+            .defaultValue(new StringFormat(List.of("position"), "&fPos Resync {position}", true))
             .build();
 
     public final FlagRef logAc =
@@ -31,7 +31,7 @@ public class SetBackLog extends BaseModule {
 
     public final NBTRef<StringFormat> logAcFormat = builder(moveSafety.add("log-ac-format"), StringFormat.class)
             .defaultValue(new StringFormat(
-                    List.of("teleportId", "position"), "&c[AC] 反作弊回弹! tp号:{teleportId}, 位置: {position}"))
+                    List.of("teleportId", "position"), "&c[AC] 反作弊回弹! tp号:{teleportId}, 位置: {position}", true))
             .build();
 
     //    public final StringRef logAcFormat = builder(moveSafety.add("log-ac-format"), String.class)
