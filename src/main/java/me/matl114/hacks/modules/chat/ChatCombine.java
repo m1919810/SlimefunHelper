@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import me.matl114.accessors.access.ChatHudAccess;
+import me.matl114.accessors.events.ChatHudAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
