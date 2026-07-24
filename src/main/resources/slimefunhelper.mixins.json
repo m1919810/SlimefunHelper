@@ -24,6 +24,8 @@
 		"events.BlockEntityEvents",
 		"events.BlockEntityRenderManagerEvents",
 		"events.ChatHudEvents",
+		"events.ChatHudLineEvents",
+		"events.ChatHudLineVisibleEvents",
 		"events.ChatScreenEvents",
 		"events.ClientConnectionEvents",
 		"events.ClientPlayerEntityEvents",

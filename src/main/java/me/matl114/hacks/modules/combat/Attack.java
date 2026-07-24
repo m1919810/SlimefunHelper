@@ -22,6 +22,7 @@ import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
+import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -120,6 +121,10 @@ public class Attack extends BaseModule {
     public final FlagRef renderAttackTarget =
             flagBuilder(attack.add("render-target")).build();
 
+    public final NBTRef<WrapColor> renderAttackColor = builder(attack.add("render-target-color"), WrapColor.class)
+            .defaultValue(new WrapColor(ColorUtils.color(Formatting.GREEN)))
+            .build();
+
     private final Random attackOffsetRand = new Random();
 
     public boolean canUseTp() {
@@ -215,7 +220,10 @@ public class Attack extends BaseModule {
                     float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
                     Box box = RenderUtils.getLerpedBox(entity, tickDelta);
                     RenderUtils.drawSolidBox(
-                            stack, box.getMinPos(), box.getMaxPos(), ColorUtils.withAlpha(Color.GREEN, opacity));
+                            stack,
+                            box.getMinPos(),
+                            box.getMaxPos(),
+                            ColorUtils.withAlpha(renderAttackColor.get().color(), opacity));
                 }
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
@@ -997,8 +1005,6 @@ public class Attack extends BaseModule {
         // todo: add Environment check and fallback plans like positions around
         if (targetPos != null) {
             // common atttack?
-            if (RenderTasks.DEBUG_RENDER_COMBAT)
-                RenderTasks.drawBox(player.dimensions.getBoxAt(targetPos), 150, Color.GREEN);
             List<Vec3d> tpSequence = MovTasks.generateTpSequence(current, targetPos, false, 1.5 * range, true);
             List<Vec3d> tpSequenceBack = MovTasks.generateTpSequence(targetPos, current, false, 1.5 * range, true);
             if ((tpSequence.size() == 2 || tpSequence.size() == 4)

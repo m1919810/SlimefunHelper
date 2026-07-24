@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,6 +34,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
+import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapColor;
@@ -230,10 +231,14 @@ public class ClickGui extends BaseModule {
     public void openClickGui() {
         List<String> modules = getModules();
         ClickGuiMetaData meta = getClickGuiMetadata();
-        Map<String, Supplier<DrawableWidget>> selections = new LinkedHashMap<>();
-        selections.put("Module", () -> this.createModuleGroupList(modules, meta));
-        selections.put("Config", () -> this.createConfig(meta));
-        selections.put("Test", () -> this.createTest(meta));
+        Map<String, Function<Screen, DrawableWidget>> selections = new LinkedHashMap<>();
+        selections.put("Module", (s) -> this.createModuleGroupList(modules, meta));
+        selections.put("Friends", (s) -> this.createFriendSettings(s, meta));
+        selections.put("BindCmd", (s) -> this.createBindCmdSettings(s, meta));
+        selections.put("Hotkeys", (s) -> this.createKeyBindListSettings(s, meta));
+        selections.put("BaseSettings", (s) -> this.createBaseSettings(s, meta));
+        selections.put("GuiSettings", (s) -> this.createGuiSettings(s, meta));
+        selections.put("Config", (s) -> this.createConfig(meta));
         Screen screen = new ClickGuiMainScreen(selections);
         // add save when close
         ScreenAccess.of(screen).addCloseFuture(() -> setClickGuiMeta(meta));
@@ -352,7 +357,7 @@ public class ClickGui extends BaseModule {
     private static final int buttonHeight = 18;
     private static final int buttonBlank = 2;
 
-    public void openConfigurateScreen(BaseModule baseModule) {
+    public DrawableWidget createBaseModuleConfigurateScreen(BaseModule baseModule) {
         int width = indexWidth + blankWidth + buttonWidth;
         DynamicListWidget listWidget = new DynamicListWidget(0, 0, width);
 
@@ -375,6 +380,11 @@ public class ClickGui extends BaseModule {
             listWidget.addDrawableChild(contentWidget);
         }
         baseModule.addCustomWidgets(listWidget::addDrawableChild, width, buttonHeight, buttonBlank);
+        return listWidget;
+    }
+
+    public void openConfigurateScreen(BaseModule baseModule) {
+        var listWidget = createBaseModuleConfigurateScreen(baseModule);
         Screen screen = new CenterScreen(listWidget);
         ScreenAccess.of(screen).openFromCurrent();
         // SubScreenWidget levelSubScreen = new SubScreenWidget(0, 0, 0,0);
@@ -567,6 +577,46 @@ public class ClickGui extends BaseModule {
                             context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                         }))
                         .withTooltips(TooltipHandler.of(List.of(Text.literal("拖动或鼠标滚轮以修改位置")))));
+    }
+
+    private DrawableWidget createBaseSettings(Screen screen, ClickGuiMetaData meta) {
+        DrawableWidget widget = createBaseModuleConfigurateScreen(ModuleSettings.INSTANCE);
+        return WidgetUtils.createCenterScreenWidget(
+                widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
+    }
+
+    private DrawableWidget createGuiSettings(Screen screen, ClickGuiMetaData metaData) {
+        DrawableWidget widget = createBaseModuleConfigurateScreen(ClickGui.INSTANCE);
+        return WidgetUtils.createCenterScreenWidget(
+                widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
+    }
+
+    private DrawableWidget createFriendSettings(Screen screen, ClickGuiMetaData meta) {
+        DrawableWidget widget = createBaseModuleConfigurateScreen(TargetSelector.INSTANCE);
+        return WidgetUtils.createCenterScreenWidget(
+                widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
+    }
+
+    private DrawableWidget createBindCmdSettings(Screen screen, ClickGuiMetaData meta) {
+        DrawableWidget widget = createBaseModuleConfigurateScreen(BindCommand.INSTANCE);
+        return WidgetUtils.createCenterScreenWidget(
+                widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
+    }
+
+    private DrawableWidget createKeyBindListSettings(Screen screen, ClickGuiMetaData meta) {
+        List<WrapperConfigRef<?>> allKeyBinds = HackModules.getModuleGroups().stream()
+                .flatMap(s -> s.getModules().stream())
+                .flatMap(s -> s.getEditableConfig().stream())
+                .filter(s -> s.ref() instanceof KeyBindRef)
+                .toList();
+        DrawableWidget widget = WidgetUtils.createConfigScreen(
+                Text.translatable("widget.click-gui.selection.Hotkeys"),
+                List::of,
+                allKeyBinds,
+                WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
+                CONFIG_PALETTE);
+        return WidgetUtils.createCenterScreenWidget(
+                widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
     }
 
     private DrawableWidget createTest(ClickGuiMetaData meta) {

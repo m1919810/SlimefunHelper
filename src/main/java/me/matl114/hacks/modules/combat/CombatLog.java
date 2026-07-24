@@ -34,14 +34,16 @@ public class CombatLog extends BaseModule {
     public final NBTRef<StringFormat> logFormat = builder(combatLog.add("log-hit-format-str"), StringFormat.class)
             .defaultValue(new StringFormat(
                     List.of("attacker", "target", "damageType"),
-                    "&c[Combat]&f {attacker} hit {target}, type: {damageType}"))
+                    "&c[Combat]&f {attacker} hit {target}, type: {damageType}",
+                    true))
             .build();
 
     public final FlagRef enableSmash = flagBuilder(combatLog.add("log-smash")).build();
 
     public final NBTRef<StringFormat> logSmashFormat = builder(
                     combatLog.add("log-smash-format-str"), StringFormat.class)
-            .defaultValue(new StringFormat(List.of("attacker", "target"), "&c[Combat]&f {attacker} smash {target}"))
+            .defaultValue(
+                    new StringFormat(List.of("attacker", "target"), "&c[Combat]&f {attacker} smash {target}", true))
             .build();
 
     public final FlagRef enableKinetic =
@@ -49,7 +51,8 @@ public class CombatLog extends BaseModule {
 
     public final NBTRef<StringFormat> logKineticFormat = builder(
                     combatLog.add("log-kinetic-format-str"), StringFormat.class)
-            .defaultValue(new StringFormat(List.of("attacker", "target"), "&c[Combat]&f {attacker} spear {target}"))
+            .defaultValue(
+                    new StringFormat(List.of("attacker", "target"), "&c[Combat]&f {attacker} spear {target}", true))
             .build();
 
     public void registerAll() {

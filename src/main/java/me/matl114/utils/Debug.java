@@ -30,9 +30,13 @@ public class Debug {
     public static void sendPlayer(Text text) {
         if (MinecraftClient.getInstance().player != null) {
             // do not log async
-            MinecraftClient.getInstance().execute(() -> {
+            if (MinecraftClient.getInstance().isOnThread()) {
                 MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(text);
-            });
+            } else {
+                MinecraftClient.getInstance().execute(() -> {
+                    MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(text);
+                });
+            }
         } else {
             ChatTasks.sendDelayChatMessage(text);
         }
