@@ -9,7 +9,9 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import me.matl114.utils.Debug;
+import me.matl114.utils.FileUtils;
 
 public class JsonFileStorageImpl extends FileStorageImpl {
     private JsonElement data;
@@ -57,12 +59,23 @@ public class JsonFileStorageImpl extends FileStorageImpl {
     @Override
     public void write() {
         ensureParentDir();
-        try (FileWriter writer = new FileWriter(file)) {
-            GSON.toJson(data, writer);
-            dirty = false;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        File tempFile = new File(file.getParent(), file.getName() + ".tmp");
+        if (tempFile.exists()) {
+            tempFile.delete();
         }
+        try (FileWriter writer = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
+            GSON.toJson(data, writer);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save " + file, e);
+        }
+
+        try {
+            FileUtils.saveTempFile(tempFile, file);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save " + file, e);
+        }
+        dirty = false;
     }
 
     @Override
@@ -79,5 +92,12 @@ public class JsonFileStorageImpl extends FileStorageImpl {
             throw new RuntimeException(e);
         }
         dirty = false;
+    }
+
+    @Override
+    public void delete() {
+        data = new JsonObject();
+        file.delete();
+        deprecated = true;
     }
 }

@@ -5,7 +5,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.config.Vec2;
+import me.matl114.hacks.utils.config.WidgetPos;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
@@ -20,6 +20,7 @@ public abstract class IRender2DModule extends BaseModule {
     protected void initializeSettings() {}
 
     public IRender2DModule() {
+        super("IRender2DModule");
         bindFlag(enable);
     }
 
@@ -39,9 +40,8 @@ public abstract class IRender2DModule extends BaseModule {
 
     public FlagRef right = flagBuilder(hud.add("right")).build();
 
-    public NBTRef<Vec2> pos = builder(hud.add("pos"), Vec2.class)
-            .defaultValue(new Vec2(0.0D, 0.0D))
-            .validator((v) -> v.x() >= 0.0D && v.y() >= 0.0D && v.x() <= 1.0D && v.y() <= 1.0D)
+    public NBTRef<WidgetPos> pos = builder(hud.add("pos"), WidgetPos.class)
+            .defaultValue(new WidgetPos(0, 0.0D, 0.0D, 0, 0))
             .build();
 
     @Override
@@ -69,16 +69,15 @@ public abstract class IRender2DModule extends BaseModule {
 
     public void handleRenderPosition(VDrawContext vdraw) {
         int sizeX = mc.getWindow().getScaledWidth();
-        int sizeY = mc.getWindow().getScaledHeight();
         //        vdraw.pushMatrix();
         //        vdraw.drawTexturedQuad(Identifier.tryParse("slimefunhelper:textures/custom/genshin_impact.png"), sizeX
         // - 30,sizeX, sizeY - 20, sizeY, 0, 0,1,0 , 1);
         //        vdraw.popMatrix();
         var pp = pos.get();
-        double xPer = pp.x();
-        double yPer = pp.y();
-        int startX = (int) (right.get() ? (sizeX - xPer * sizeX) : xPer * sizeX);
-        int startY = (int) (yPer * sizeY);
+        int posX = pp.getWindowX(mc.getWindow());
+        int posY = pp.getWindowY(mc.getWindow());
+        int startX = (right.get() ? (sizeX - posX) : posX);
+        int startY = (posY);
         vdraw.getMatrices().translate(startX, startY);
     }
 

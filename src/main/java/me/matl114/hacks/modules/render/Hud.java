@@ -22,7 +22,9 @@ public class Hud extends IRender2DColoredModule {
     public final ModulePath hudRoot = makePath(Configs.RENDER_CONFIG, "in-game-hud");
     public final ModulePath hud = hudRoot.add("hud");
 
-    public Hud() {}
+    public Hud() {
+        super("Hud");
+    }
 
     @Override
     protected ModulePath createRoot() {
@@ -32,6 +34,8 @@ public class Hud extends IRender2DColoredModule {
     public NBTRef<HudElementSelectSet> hudElementList = builder(hud.add("elements"), HudElementSelectSet.class)
             .defaultValue(new HudElementSelectSet())
             .build();
+
+    public final FlagRef useKmH = flagBuilder(hud.add("use-kmPH")).build();
 
     @Override
     public void registerAll() {
@@ -114,10 +118,10 @@ public class Hud extends IRender2DColoredModule {
         if ((pl = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid())) != null) {
             latency = pl.getLatency();
         }
-        Text text = ChatUtils.stringToText("&a&lMCv" + currentVersion
+        Text text = ChatUtils.stringToText("&aMCv" + currentVersion
                 + (Objects.equals(currentVersion, SupportVersion.CURRENT) ? "" : "(Via)") + " Fps:"
                 + mc.getCurrentFps() + " " + latency + "ms");
-        drawText(vdraw, text.asOrderedText());
+        drawText(vdraw, text);
     }
 
     public void handleConnectionInfo(VDrawContext vdraw) {
@@ -159,32 +163,53 @@ public class Hud extends IRender2DColoredModule {
     }
 
     public void handleSpeed(VDrawContext vdraw) {
-        String speed = "Avg:%.2fm/s, Kwn:%.2fm/s";
+        String speedShow;
         PlayerStateManager manager = PlayerStateManager.INSTANCE;
-        drawText(
-                vdraw,
-                speed.formatted(
-                        manager.lastAverageMovementSpeed.length() * 20, manager.lastKnownMovementSpeed.length() * 20));
+        if (useKmH.get()) {
+            String speed = "Avg:%.2fKm/h, Kwn:%.2fKm/h";
+            speedShow = speed.formatted(
+                    manager.lastAverageMovementSpeed.length() * 72, manager.lastKnownMovementSpeed.length() * 72);
+
+        } else {
+            String speed = "Avg:%.2fm/s, Kwn:%.2fm/s";
+            speedShow = speed.formatted(
+                    manager.lastAverageMovementSpeed.length() * 20, manager.lastKnownMovementSpeed.length() * 20);
+        }
+        drawText(vdraw, speedShow);
     }
 
     public void handleSpeedHorizontal(VDrawContext vdraw) {
-        String speed = "H: Avg:%.2fm/s, Kwn:%.2fm/s";
+        String speedShow;
         PlayerStateManager manager = PlayerStateManager.INSTANCE;
-        drawText(
-                vdraw,
-                speed.formatted(
-                        manager.lastAverageMovementSpeed.horizontalLength() * 20,
-                        manager.lastKnownMovementSpeed.horizontalLength() * 20));
+        if (useKmH.get()) {
+            String speed = "H: Avg:%.2fKm/h, Kwn:%.2fKm/h";
+            speedShow = speed.formatted(
+                    manager.lastAverageMovementSpeed.horizontalLength() * 72,
+                    manager.lastKnownMovementSpeed.horizontalLength() * 72);
+
+        } else {
+            String speed = "H: Avg:%.2fm/s, Kwn:%.2fm/s";
+            speedShow = speed.formatted(
+                    manager.lastAverageMovementSpeed.horizontalLength() * 20,
+                    manager.lastKnownMovementSpeed.horizontalLength() * 20);
+        }
+        drawText(vdraw, speedShow);
     }
 
     public void handleSpeedVertical(VDrawContext vdraw) {
-        String speed = "V: Avg:%.2fm/s, Kwn:%.2fm/s";
+        String speedShow;
         PlayerStateManager manager = PlayerStateManager.INSTANCE;
-        drawText(
-                vdraw,
-                speed.formatted(
-                        Math.abs(manager.lastAverageMovementSpeed.y * 20),
-                        Math.abs(manager.lastKnownMovementSpeed.y) * 20));
+        if (useKmH.get()) {
+            String speed = "V: Avg:%.2fKm/h, Kwn:%.2fKm/h";
+            speedShow = speed.formatted(
+                    Math.abs(manager.lastAverageMovementSpeed.y) * 72, Math.abs(manager.lastKnownMovementSpeed.y) * 72);
+
+        } else {
+            String speed = "V: Avg:%.2fm/s, Kwn:%.2fm/s";
+            speedShow = speed.formatted(
+                    Math.abs(manager.lastAverageMovementSpeed.y) * 20, Math.abs(manager.lastKnownMovementSpeed.y) * 20);
+        }
+        drawText(vdraw, speedShow);
     }
 
     public static enum HudElement implements Displayable {
@@ -207,8 +232,8 @@ public class Hud extends IRender2DColoredModule {
 
     public static class HudElementSelectSet extends BoundedPrimitiveFlagMap<HudElement>
             implements NBTParsable<HudElementSelectSet> {
-        public static final NBTType<HudElementSelectSet> TYPE =
-                createEnumMap(HudElementSelectSet.class, HudElement.class, HudElementSelectSet::new);
+        public static final NBTType<HudElementSelectSet> TYPE = createEnumMap(
+                "HudElementSelectSet".toLowerCase(Locale.ROOT), HudElement.class, HudElementSelectSet::new);
 
         public HudElementSelectSet(List<HudElement> keys, Map<HudElement, Boolean> map, NBTType<Boolean> type) {
             super(keys, map, type);

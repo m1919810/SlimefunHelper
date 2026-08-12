@@ -26,6 +26,11 @@ public class MainCommand extends AbstractMainCommand {
     }
 
     public static final MinecraftClient mc = MinecraftClient.getInstance();
+    public static String MAIN_PREFIX = "!!";
+
+    public static String getMainCommandPrefix() {
+        return "/" + MAIN_PREFIX;
+    }
 
     public static void reloadCommand() {
         new MainCommand();
@@ -109,12 +114,12 @@ public class MainCommand extends AbstractMainCommand {
     // our client commands
     public static void parseClientCommand(Event<String> commandEvent) {
         String command = commandEvent.context();
-        if (command.startsWith("!!")) {
-            dispatchClientCommand(command.substring(2));
+        if (command.startsWith(MAIN_PREFIX)) {
+            dispatchClientCommand(command.substring(MAIN_PREFIX.length()));
             commandEvent.cancel();
             return;
-        } else if (command.startsWith("/!!")) {
-            dispatchClientCommand(command.substring(3));
+        } else if (command.startsWith("/" + MAIN_PREFIX)) {
+            dispatchClientCommand(command.substring(MAIN_PREFIX.length() + 1));
             commandEvent.cancel();
             return;
         }
@@ -160,14 +165,15 @@ public class MainCommand extends AbstractMainCommand {
     }
 
     public static boolean isClientCommand(String command) {
-        return command.startsWith("!!") || command.startsWith("/!!");
+        return command.startsWith(MAIN_PREFIX) || command.startsWith("/" + MAIN_PREFIX);
     }
 
     public static CompletableFuture<Suggestions> tabCompleteClientCommand(String command, int cursorAt) {
-        if (command.startsWith("!!")) {
-            return dispatchTabComplete(command.substring(2), cursorAt - 2, false);
-        } else if (command.startsWith("/!!")) {
-            return dispatchTabComplete(command.substring(3), cursorAt - 3, true);
+        if (command.startsWith(MAIN_PREFIX)) {
+            return dispatchTabComplete(command.substring(MAIN_PREFIX.length()), cursorAt - MAIN_PREFIX.length(), false);
+        } else if (command.startsWith("/" + MAIN_PREFIX)) {
+            return dispatchTabComplete(
+                    command.substring(MAIN_PREFIX.length() + 1), cursorAt - MAIN_PREFIX.length() - 1, true);
         }
         return null;
     }
@@ -179,7 +185,7 @@ public class MainCommand extends AbstractMainCommand {
         }
         String trueCommand = command.substring(0, cursorAt);
         int lastBlank = -1;
-        int prefixLen = 2 + (withPrefix ? 1 : 0);
+        int prefixLen = MAIN_PREFIX.length() + (withPrefix ? 1 : 0);
         StringRange tabCompleteRange;
         List<String> args = new ArrayList<>();
         while (true) {

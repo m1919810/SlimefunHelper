@@ -18,7 +18,7 @@ public record Vec2(double x, double y) implements NBTParsable<Vec2> {
     }
 
     public static final NBTType<Vec2> TYPE = new NBTType<>(
-            Vec2.class,
+            "vec2",
             RecordCodecBuilder.<Vec2>create(s -> s.group(
                             Codec.DOUBLE.fieldOf("x").forGetter(Vec2::x),
                             Codec.DOUBLE.fieldOf("y").forGetter(Vec2::y))

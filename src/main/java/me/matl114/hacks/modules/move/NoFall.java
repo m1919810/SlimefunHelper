@@ -12,15 +12,14 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Blocks;
@@ -45,6 +44,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     public final ModulePath noFallPath = moveSafety.add("no-fall");
 
     public NoFall() {
+        super("NoFall");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
@@ -1220,28 +1220,28 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                 if (playerInput.hasWASDMovement()) {
                                     if (playerInput.forward()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 180);
                                     } else if (playerInput.backward()) {
 
                                     } else if (playerInput.left()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 90);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 90);
                                     } else if (playerInput.right()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() - 90);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() - 90);
                                     }
                                 } else {
                                     if (!co.forward()) {
 
                                     } else if (!co.backward()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 180);
                                     } else if (!co.left()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() - 90);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() - 90);
                                     } else if (!co.right()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 90);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 90);
                                     }
                                 }
                             }
@@ -1646,28 +1646,28 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                                 if (playerInput.hasWASDMovement()) {
                                     if (playerInput.forward()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 180);
                                     } else if (playerInput.backward()) {
 
                                     } else if (playerInput.left()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 90);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 90);
                                     } else if (playerInput.right()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() - 90);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() - 90);
                                     }
                                 } else {
                                     if (!co.forward()) {
 
                                     } else if (!co.backward()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 180);
                                     } else if (!co.left()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() - 90);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() - 90);
                                     } else if (!co.right()) {
                                         modifyRot = true;
-                                        EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 90);
+                                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 90);
                                     }
                                 }
                             }

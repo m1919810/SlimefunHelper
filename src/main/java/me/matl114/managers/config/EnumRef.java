@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import java.util.Objects;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 public class EnumRef<T extends ConfigEnum> extends LazilyRegisterTypeRef<T, String> {
     public static <T extends ConfigEnum> Class<T> parameter(Class<?> enumClass) {
@@ -91,12 +92,12 @@ public class EnumRef<T extends ConfigEnum> extends LazilyRegisterTypeRef<T, Stri
     }
 
     @Override
-    public AttrKeyValue<T> _createKeyValue0(String key) {
+    public BaseAttrKeyValue<T> _createKeyValue0(String key) {
         if (!resolved) {
             tryResolve();
         }
         if (resolved) {
-            return (AttrKeyValue<T>)
+            return (BaseAttrKeyValue<T>)
                     AttrKeyValue.enumMap(key, this.getValue(), this.getValue().getMap());
         } else {
             throw new IllegalStateException("Access to a config enum instance before it is registered");

@@ -24,10 +24,17 @@ public class AttributeUtils {
 
     public static AttributeContainer getAttributeWith(
             LivingEntity living, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
+        Map<EquipmentSlot, ItemStack> filterMap = new LinkedHashMap<>();
+        for (var re : equipmentOverrides.entrySet()) {
+            ItemStack current = living.getEquippedStack(re.getKey());
+            if (!ItemStack.areItemsAndComponentsEqual(re.getValue(), current)) {
+                filterMap.put(re.getKey(), current);
+            }
+        }
         AttributeContainer attributeContainer = new AttributeContainer(
                 DefaultAttributeRegistry.get((EntityType<? extends LivingEntity>) living.getType()));
         attributeContainer.setFrom(living.getAttributes());
-        for (Map.Entry<EquipmentSlot, ItemStack> entry : equipmentOverrides.entrySet()) {
+        for (Map.Entry<EquipmentSlot, ItemStack> entry : filterMap.entrySet()) {
             var slot = entry.getKey();
             var itemStack2 = entry.getValue();
             ItemStack toBeRemoved = living.getEquippedStack(slot);
@@ -50,7 +57,7 @@ public class AttributeUtils {
             }
         }
         if (ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)) {
-            Map<EquipmentSlot, ItemStack> newMap = new HashMap<>(equipmentOverrides);
+            Map<EquipmentSlot, ItemStack> newMap = new HashMap<>(filterMap);
             for (var re : EquipmentSlot.values()) {
                 if (!newMap.containsKey(re)) {
                     newMap.put(re, living.getEquippedStack(re));

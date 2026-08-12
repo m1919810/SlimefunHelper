@@ -333,7 +333,7 @@ public class SlimefunTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("give")
-                    .helper("<id> <amount:default 1> 获取粘液物品(以指令形式)")
+                    .helper("message.command.sf.give.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("id")
                             .tabSupplier(() -> SlimefunTasks.getAllRecipes().keySet().stream())
@@ -361,7 +361,7 @@ public class SlimefunTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("view")
-                    .helper("<id> 打开对应物品的配方展示页面")
+                    .helper("message.command.sf.view.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("id")
                             .tabSupplier(() -> SlimefunTasks.getAllRecipes().keySet().stream())
@@ -385,7 +385,7 @@ public class SlimefunTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("banlist")
-                    .helper("查询服务器禁用物品列表")
+                    .helper("message.command.sf.banlist.help")
                     .post(e -> e.executor(CommandContext.run(this::onBanlist)))
                     .complete();
         }
@@ -420,25 +420,21 @@ public class SlimefunTasks {
     public static final ModuleGroup moduleManager = new ModuleGroup("Slimefun");
 
     @Getter
-    public static SlimefunExtra slimefunExtra;
+    private static RecipeDatabase recipeDatabase;
 
     @Getter
-    public static RecipeDatabase recipeDatabase;
+    private static MultiBlockHelper multiBlockHelper;
 
     @Getter
-    public static MultiBlockHelper multiBlockHelper;
+    private static SlimefunGuide slimefunGuide;
 
     @Getter
-    public static SlimefunGuide slimefunGuide;
+    private static CopyId copyId;
 
     @Getter
-    public static CopyId copyId;
-
-    @Getter
-    public static ShowIdTooltips showIdTooltips;
+    private static ShowIdTooltips showIdTooltips;
 
     private static void initModule(ModuleManager m) {
-        slimefunExtra = new SlimefunExtra().register(m);
         recipeDatabase = new RecipeDatabase().register(m);
         multiBlockHelper = new MultiBlockHelper().register(m);
         slimefunGuide = new SlimefunGuide().register(m);

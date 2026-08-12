@@ -6,9 +6,11 @@ import lombok.With;
 import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Tasks;
-import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
+import net.minecraft.client.network.ClientPlayerEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,9 +18,10 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     public static PlayerInputManager INSTANCE;
     public static LegalMovementManager.DelegateMovementModifier instance;
 
-    private final List<TimedInputModifier> priorityQueue = new ArrayList<>(16);
+    private final List<TimedModifier> priorityQueue = new ArrayList<>(16);
 
     public PlayerInputManager() {
+        super("PlayerInputManager");
         INSTANCE = this;
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
@@ -27,20 +30,20 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
         instance.setDelegate(this::cast);
     }
 
-    public void addInputModifier(InputModifier modifier) {
+    public void addInputModifier(Modifier modifier) {
         addInputModifier(modifier, 1);
     }
 
-    public void addInputModifier(InputModifier modifier, int ticks) {
+    public void addInputModifier(Modifier modifier, int ticks) {
         addInputModifier(modifier, 0, ticks);
     }
 
-    public void addInputModifier(InputModifier modifier, int startTicks, int ticks) {
+    public void addInputModifier(Modifier modifier, int startTicks, int ticks) {
         if (modifier == null || modifier.isEmpty() || ticks < 0) {
             return;
         }
 
-        addTimedModifier(new TimedInputModifier(startTicks, ticks, modifier));
+        addTimedModifier(new TimedModifier(startTicks, ticks, modifier));
     }
 
     public void addForwardModifier(int priority, boolean forward, int ticks) {
@@ -48,7 +51,7 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     public void addForwardModifier(int priority, boolean forward, int startTicks, int ticks) {
-        addInputModifier(InputModifier.empty(priority).forward(forward), startTicks, ticks);
+        addInputModifier(Modifier.empty(priority).forward(forward), startTicks, ticks);
     }
 
     public void addBackwardModifier(int priority, boolean backward, int ticks) {
@@ -56,7 +59,7 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     public void addBackwardModifier(int priority, boolean backward, int startTicks, int ticks) {
-        addInputModifier(InputModifier.empty(priority).backward(backward), startTicks, ticks);
+        addInputModifier(Modifier.empty(priority).backward(backward), startTicks, ticks);
     }
 
     public void addLeftModifier(int priority, boolean left, int ticks) {
@@ -64,7 +67,7 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     public void addLeftModifier(int priority, boolean left, int startTicks, int ticks) {
-        addInputModifier(InputModifier.empty(priority).left(left), startTicks, ticks);
+        addInputModifier(Modifier.empty(priority).left(left), startTicks, ticks);
     }
 
     public void addRightModifier(int priority, boolean right, int ticks) {
@@ -72,7 +75,7 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     public void addRightModifier(int priority, boolean right, int startTicks, int ticks) {
-        addInputModifier(InputModifier.empty(priority).right(right), startTicks, ticks);
+        addInputModifier(Modifier.empty(priority).right(right), startTicks, ticks);
     }
 
     public void addJumpModifier(int priority, boolean jump, int ticks) {
@@ -80,7 +83,7 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     public void addJumpModifier(int priority, boolean jump, int startTicks, int ticks) {
-        addInputModifier(InputModifier.empty(priority).jump(jump), startTicks, ticks);
+        addInputModifier(Modifier.empty(priority).jump(jump), startTicks, ticks);
     }
 
     public void addSneakModifier(int priority, boolean sneak, int ticks) {
@@ -88,7 +91,7 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     public void addSneakModifier(int priority, boolean sneak, int startTicks, int ticks) {
-        addInputModifier(InputModifier.empty(priority).sneak(sneak), startTicks, ticks);
+        addInputModifier(Modifier.empty(priority).sneak(sneak), startTicks, ticks);
     }
 
     public void addSprintModifier(int priority, boolean sprint, int ticks) {
@@ -96,10 +99,10 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     public void addSprintModifier(int priority, boolean sprint, int startTicks, int ticks) {
-        addInputModifier(InputModifier.empty(priority).sprint(sprint), startTicks, ticks);
+        addInputModifier(Modifier.empty(priority).sprint(sprint), startTicks, ticks);
     }
 
-    private void addTimedModifier(TimedInputModifier timedModifier) {
+    private void addTimedModifier(TimedModifier timedModifier) {
         int index = 0;
         while (index < priorityQueue.size() && priorityQueue.get(index).compareTo(timedModifier) <= 0) {
             index++;
@@ -108,8 +111,24 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     @Override
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+        LegalMovementManager.MovementModifier.super.applyPreTickModify(movementManagerEvent);
+        if (priorityQueue.isEmpty() || mc.player == null) {
+            return;
+        }
+        boolean rotModify = false;
+        for (var re : priorityQueue) {
+            boolean val = re.tickRotation(mc.player);
+            rotModify |= val;
+        }
+        if (rotModify) {
+            movementManagerEvent.context.markForResetRot();
+        }
+    }
+
+    @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        if (priorityQueue.isEmpty()) {
+        if (priorityQueue.isEmpty() || mc.player == null) {
             return;
         }
         PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
@@ -120,11 +139,12 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
                 iter.remove();
             }
         }
+
         input.applyInput(mc.player);
     }
 
     @With
-    public static record InputModifier(
+    public static record Modifier(
             int priority,
             @Nullable Boolean forward,
             @Nullable Boolean backward,
@@ -132,42 +152,52 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
             @Nullable Boolean right,
             @Nullable Boolean jump,
             @Nullable Boolean sneak,
-            @Nullable Boolean sprint) {
-        public static final InputModifier EMPTY = new InputModifier(0, null, null, null, null, null, null, null);
+            @Nullable Boolean sprint,
+            @Nullable Float pitch,
+            @Nullable Float yaw) {
+        public static final Modifier EMPTY = new Modifier(0, null, null, null, null, null, null, null, null, null);
 
-        public static InputModifier empty(int priority) {
+        public static Modifier empty(int priority) {
             return EMPTY.withPriority(priority);
         }
 
-        public InputModifier forward(boolean value) {
-            return new InputModifier(priority, value, backward, left, right, jump, sneak, sprint);
+        public Modifier forward(boolean value) {
+            return new Modifier(priority, value, backward, left, right, jump, sneak, sprint, pitch, yaw);
         }
 
-        public InputModifier backward(boolean value) {
-            return new InputModifier(priority, forward, value, left, right, jump, sneak, sprint);
+        public Modifier backward(boolean value) {
+            return new Modifier(priority, forward, value, left, right, jump, sneak, sprint, pitch, yaw);
         }
 
-        public InputModifier left(boolean value) {
-            return new InputModifier(priority, forward, backward, value, right, jump, sneak, sprint);
+        public Modifier left(boolean value) {
+            return new Modifier(priority, forward, backward, value, right, jump, sneak, sprint, pitch, yaw);
         }
 
-        public InputModifier right(boolean value) {
-            return new InputModifier(priority, forward, backward, left, value, jump, sneak, sprint);
+        public Modifier right(boolean value) {
+            return new Modifier(priority, forward, backward, left, value, jump, sneak, sprint, pitch, yaw);
         }
 
-        public InputModifier jump(boolean value) {
-            return new InputModifier(priority, forward, backward, left, right, value, sneak, sprint);
+        public Modifier jump(boolean value) {
+            return new Modifier(priority, forward, backward, left, right, value, sneak, sprint, pitch, yaw);
         }
 
-        public InputModifier sneak(boolean value) {
-            return new InputModifier(priority, forward, backward, left, right, jump, value, sprint);
+        public Modifier sneak(boolean value) {
+            return new Modifier(priority, forward, backward, left, right, jump, value, sprint, pitch, yaw);
         }
 
-        public InputModifier sprint(boolean value) {
-            return new InputModifier(priority, forward, backward, left, right, jump, sneak, value);
+        public Modifier sprint(boolean value) {
+            return new Modifier(priority, forward, backward, left, right, jump, sneak, value, pitch, yaw);
         }
 
-        public void modify(PlayerInputUtils.Input input) {
+        public Modifier pitch(float value) {
+            return new Modifier(priority, forward, backward, left, right, jump, sneak, sprint, value, yaw);
+        }
+
+        public Modifier yaw(float value) {
+            return new Modifier(priority, forward, backward, left, right, jump, sneak, sprint, pitch, value);
+        }
+
+        public void modifyInput(PlayerInputUtils.Input input) {
             if (forward != null) {
                 input.forward(forward);
             }
@@ -191,6 +221,21 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
             }
         }
 
+        public void modifyRotation(ClientPlayerEntity player) {
+            if (player != null) {
+                if (pitch != null) {
+                    EntityUtils.setEntityPitchSafe(player, pitch);
+                }
+                if (yaw != null) {
+                    EntityUtils.setEntityYawSafe(player, yaw);
+                }
+            }
+        }
+
+        public boolean hasRotation() {
+            return pitch != null || yaw != null;
+        }
+
         public boolean isEmpty() {
             return forward == null
                     && backward == null
@@ -198,20 +243,22 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
                     && right == null
                     && jump == null
                     && sneak == null
-                    && sprint == null;
+                    && sprint == null
+                    && pitch == null
+                    && yaw == null;
         }
     }
 
-    public static class TimedInputModifier implements Comparable<TimedInputModifier> {
+    public static class TimedModifier implements Comparable<TimedModifier> {
         private final int startTicks;
         private final int expireTicks;
-        private final InputModifier modifier;
+        private final Modifier modifier;
 
-        public TimedInputModifier(int lastTicks, InputModifier modifier) {
+        public TimedModifier(int lastTicks, Modifier modifier) {
             this(0, lastTicks, modifier);
         }
 
-        public TimedInputModifier(int startTicks, int lastTicks, InputModifier modifier) {
+        public TimedModifier(int startTicks, int lastTicks, Modifier modifier) {
             this.startTicks = Tasks.getTick() + startTicks;
             this.expireTicks = Tasks.getTick() + startTicks + lastTicks;
 
@@ -223,7 +270,20 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
                 return true;
             }
             if (Tasks.getTick() >= startTicks) {
-                modifier.modify(input);
+                modifier.modifyInput(input);
+            }
+            return false;
+        }
+
+        public boolean tickRotation(ClientPlayerEntity player) {
+            if (isExpired()) {
+                return false;
+            }
+            if (Tasks.getTick() >= startTicks) {
+                if (modifier.hasRotation()) {
+                    modifier.modifyRotation(player);
+                    return true;
+                }
             }
             return false;
         }
@@ -233,8 +293,8 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
         }
 
         @Override
-        public int compareTo(@NotNull PlayerInputManager.TimedInputModifier timedInputModifier) {
-            return Integer.compare(modifier.priority(), timedInputModifier.modifier.priority());
+        public int compareTo(@NotNull PlayerInputManager.TimedModifier timedModifier) {
+            return Integer.compare(modifier.priority(), timedModifier.modifier.priority());
         }
     }
 }

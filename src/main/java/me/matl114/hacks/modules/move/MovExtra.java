@@ -28,6 +28,7 @@ public class MovExtra extends BaseModule {
     public static MovExtra INSTANCE;
 
     public MovExtra() {
+        super("MovExtra");
         INSTANCE = this;
     }
 

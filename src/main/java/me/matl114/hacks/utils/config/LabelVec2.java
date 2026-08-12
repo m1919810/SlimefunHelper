@@ -5,15 +5,13 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.With;
-import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.DisplayWidget;
-import me.matl114.gui.basic.SubScreenWidget;
-import me.matl114.gui.basic.TextProvider;
+import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
 import me.matl114.managers.config.Ref;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.PairLikeFactory;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
@@ -27,7 +25,7 @@ public record LabelVec2(String xLabel, String yLabel, Vec2 data) implements NBTP
     }
 
     public static final NBTType<LabelVec2> TYPE = new NBTType<>(
-            LabelVec2.class,
+            "labelvec2",
             RecordCodecBuilder.create(s -> s.group(
                             Codec.STRING.fieldOf("x_label").forGetter(LabelVec2::xLabel),
                             Codec.STRING.fieldOf("y_label").forGetter(LabelVec2::yLabel),
@@ -42,13 +40,21 @@ public record LabelVec2(String xLabel, String yLabel, Vec2 data) implements NBTP
                 return subScreenWidget
                         .addDrawableChild(DisplayWidget.instance(0, 0, 2 * dy, dy)
                                 .setRenderHandler(new ButtonElement(
-                                        TextProvider.of(Text.literal(originalLabel.xLabel())), ButtonAction.empty())))
+                                                TextProvider.of(Text.translatableWithFallback(
+                                                        originalLabel.xLabel(), originalLabel.xLabel())),
+                                                ButtonAction.empty())
+                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                originalLabel.xLabel() + ".tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, pairFactory.asFirstWrapper(s::getOriginValue), NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(2 * dy, 0, half - 2 * dy, dy))
                         .addDrawableChild(DisplayWidget.instance(half, 0, 2 * dy, dy)
                                 .setRenderHandler(new ButtonElement(
-                                        TextProvider.of(Text.literal(originalLabel.yLabel())), ButtonAction.empty())))
+                                                TextProvider.of(Text.translatableWithFallback(
+                                                        originalLabel.yLabel(), originalLabel.yLabel())),
+                                                ButtonAction.empty())
+                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                originalLabel.yLabel() + ".tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, pairFactory.asSecondWrapper(s::getOriginValue), NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(half + 2 * dy, 0, half - 2 * dy, dy));

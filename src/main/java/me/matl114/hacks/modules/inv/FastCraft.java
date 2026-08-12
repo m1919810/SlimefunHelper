@@ -38,6 +38,7 @@ public class FastCraft extends BaseModule {
     public final ModulePath fastCraft = makePath(Configs.INV_CONFIG, "fast-craft");
 
     public FastCraft() {
+        super("FastCraft");
         bindFlag(enable);
     }
 

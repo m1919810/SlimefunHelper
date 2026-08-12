@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.combat;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 import lombok.With;
@@ -23,13 +22,13 @@ import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
@@ -57,6 +56,7 @@ public class Attack extends BaseModule {
     public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "att-bot");
 
     public Attack() {
+        super("Attack");
         bindFlag(enable);
         INSTANCE = this;
     }
@@ -67,7 +67,11 @@ public class Attack extends BaseModule {
                     attack.add("always-att-hotkey"), new MultiKeyBind(), attack.add("always-att"))
             .build();
 
-    public final FlagRef legalMode = flagBuilder(attack.add("legal-mode")).build();
+    //    public final FlagRef legalMode = flagBuilder(attack.add("legal-mode")).build();
+    public final EnumRef<Configs.LegalTargetingMode> legalTargetingMode = builder(
+                    attack.add("legal-targeting"), Configs.LegalTargetingMode.class)
+            .defaultValue(Configs.LegalTargetingMode.DELAY_MOVEMENT)
+            .build();
 
     public final NBTRef<OptionalPrimitive<Double>> tpRange = builder(
                     attack.add("tp-reach"), OptionalPrimitive.DOUBLE_TYPE)
@@ -77,26 +81,22 @@ public class Attack extends BaseModule {
     public final NBTRef<OptionalPrimitive<Double>> maceHeight = builder(
                     attack.add("mace-height-multiply"), OptionalPrimitive.DOUBLE_TYPE)
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 30.0d))
-            .show(() -> !legalMode.get())
+            .show(() -> !legalTargetingMode.get().isLegal())
             .build();
 
     public final FlagRef exactAttack = flagBuilder(attack.add("exact-tp"))
-            .show(() -> !legalMode.get() && tpRange.get().isPresent())
-            .build();
-
-    public final EnumRef<Configs.LegalTargetingMode> legalTargetingMode = builder(
-                    attack.add("legal-targeting"), Configs.LegalTargetingMode.class)
-            .defaultValue(Configs.LegalTargetingMode.DELAY_MOVEMENT)
-            .show(legalMode::get)
+            .show(() -> !legalTargetingMode.get().isLegal() && tpRange.get().isPresent())
             .build();
 
     public final FlagRef targetPredict = flagBuilder(attack.add("use-delay-movement-pos-predict"))
-            .show(() -> legalMode.get() && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
+            .show(() -> !legalTargetingMode.get().isLegal()
+                    && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
             .build();
 
     public final FlagRef postFix = builder(attack.add("attack-post-fix"), Boolean.class)
             .defaultValue(true)
-            .show(() -> legalMode.get() && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
+            .show(() -> !legalTargetingMode.get().isLegal()
+                    && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
             .build();
 
     public final FlagRef autoAntiShield =
@@ -118,11 +118,14 @@ public class Attack extends BaseModule {
 
     // todo: ghosthand mace enchantment
 
+    public final FlagRef swingHand =
+            builder(attack.add("swing-hand"), Boolean.class).defaultValue(true).build();
+
     public final FlagRef renderAttackTarget =
             flagBuilder(attack.add("render-target")).build();
 
     public final NBTRef<WrapColor> renderAttackColor = builder(attack.add("render-target-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.GREEN)))
+            .defaultValue(new WrapColor(Formatting.GREEN))
             .build();
 
     private final Random attackOffsetRand = new Random();
@@ -164,7 +167,7 @@ public class Attack extends BaseModule {
     }
 
     public int getModePredictTicks() {
-        if (targetPredict.get() && legalMode.get()) {
+        if (targetPredict.get() && legalTargetingMode.get().isLegal()) {
             switch (legalTargetingMode.get()) {
                 case DELAY_MOVEMENT: {
                     if (mc.player.isFallFlying()
@@ -208,7 +211,7 @@ public class Attack extends BaseModule {
                 lastTick = Tasks.getTick();
                 lastTickTarget = CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), true);
             }
-            if (lastTickTarget == null || !lastTickTarget.isAlive()) {
+            if (!EntityUtils.isEntityValid(lastTickTarget)) {
                 lastTickTarget = null;
                 return;
             }
@@ -268,17 +271,28 @@ public class Attack extends BaseModule {
         boolean selectWeapon = autoSelect.get();
         boolean antiShield = autoAntiShield.get();
         boolean useAttack = autoRelease.get() && mc.player.isUsingItem();
-        boolean elytraSwitch =
-                MovTasks.getElytraExtra().shouldUseDelayMovementAttackMaceFix() && willUseMaceAttack(maceSwap);
-        boolean criticalSprint = !legalMode.get() && mc.player.isSprinting();
-        boolean maceVClip = canUseMaceTp() && !legalMode.get();
+        boolean elytraSwitch = ElytraExtra.INSTANCE.shouldUseMaceFix()
+                && ElytraExtra.INSTANCE.shouldUseDelayMovementAttackMaceFix()
+                && willUseMaceAttack(maceSwap);
+        boolean legal = legalTargetingMode.get().isLegal();
+        boolean criticalSprint = !legal && mc.player.isSprinting();
+        boolean maceVClip = canUseMaceTp() && !legal;
         if (maceVClip
                 && autoMaceSwap.get().isPresent()
                 && maceHeight.get().getValue() >= autoMaceSwap.get().getValue()) {
             maceSwap = true;
         }
         return new AttackSettings(
-                useTp, maceSwap, invSwap, selectWeapon, antiShield, useAttack, elytraSwitch, criticalSprint, maceVClip);
+                useTp,
+                maceSwap,
+                invSwap,
+                selectWeapon,
+                antiShield,
+                useAttack,
+                elytraSwitch,
+                criticalSprint,
+                maceVClip,
+                swingHand.get());
     }
 
     public static boolean shouldUseAntiShield(Entity target) {
@@ -357,7 +371,7 @@ public class Attack extends BaseModule {
                         != null) {
             callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
         }
-        attackWithCritic(player, target, attackSettings.criticalSprint());
+        attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
         if (callback != null) {
             callback.run();
         }
@@ -368,12 +382,20 @@ public class Attack extends BaseModule {
 
     @ApiMethod
     public static void attackWithCritic(PlayerEntity player, Entity target, boolean criticSprint) {
-        if (criticSprint) {
-            mc.getNetworkHandler()
-                    .sendPacket(new ClientCommandC2SPacket(player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-        }
+        attackWithCritic(player, target, criticSprint, true);
+    }
+
+    @ApiMethod
+    public static void attackWithCritic(PlayerEntity player, Entity target, boolean criticSprint, boolean swing) {
+        //        if (criticSprint) {
+        //            mc.getNetworkHandler()
+        //                    .sendPacket(new ClientCommandC2SPacket(player,
+        // ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+        //        }
         mc.interactionManager.attackEntity(mc.player, target);
-        mc.player.swingHand(Hand.MAIN_HAND);
+        if (swing) {
+            mc.player.swingHand(Hand.MAIN_HAND);
+        }
         // we use event to handle shield predict
 
     }
@@ -383,7 +405,7 @@ public class Attack extends BaseModule {
     }
 
     public boolean attackEntity(Entity target, AttackSettings settings) {
-        if (legalMode.get()) {
+        if (legalTargetingMode.get().isLegal()) {
             return processLegalAttack(target, settings);
         } else {
             return processIllegalAttack(target, settings);
@@ -411,6 +433,10 @@ public class Attack extends BaseModule {
         return switch (legalTargetingMode.get()) {
             case DELAY_MOVEMENT -> processDelayMovementAttack(target, settings);
             case LEGACY_SLIENT_ROT -> processLegacySnapAttack(target, settings);
+            case NONE -> {
+                attackWithSettings(mc.player, target, settings);
+                yield true;
+            }
         };
     }
 
@@ -444,10 +470,7 @@ public class Attack extends BaseModule {
             boolean armorFly = elytraExtra.isCurrentArmorGliding();
             if (useMaceAttack) {
                 // do here
-                if (armorFly) {
-                    // disable next restart
-                    elytraExtra.disableNextArmorFlyLazyElytraTransaction = 10;
-                } else {
+                if (!armorFly) {
                     // common elytra fly not supported yet
                     swapElytraSlot = elytraExtra.findEmptyPlaceForElytra();
                     if (swapElytraSlot != -1) {
@@ -552,7 +575,7 @@ public class Attack extends BaseModule {
                                         .subtract(predictedEyePos)
                                         .normalize();
                                 movementManagerEvent.context.pushImportantRotation(true, true);
-                                EntityUtils.setEntityRotationSafe(args, cacheDirection);
+                                PlayerStateManager.setPlayerRotationSafe(args, cacheDirection);
                                 if (RenderTasks.DEBUG_RENDER_COMBAT) {
                                     RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
                                             RenderTasks.DEBUG_TICK,
@@ -572,8 +595,7 @@ public class Attack extends BaseModule {
                             if (!runThisTick) return;
                             ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
                             // there is no need for fall flying player to correct this
-                            if (lookVec != null && !args.isFallFlying()) {
-                                // rewrite input to fit lookVec
+                            if (!args.isFallFlying()) {
                                 PlayerInputUtils.of(mc.player).sprint(false).applyInput(mc.player);
                                 movementManagerEvent.context.markForMoveFix();
                             }
@@ -600,7 +622,6 @@ public class Attack extends BaseModule {
                             }
                             if (useMaceAttack && !preAttack) {
                                 if (armorFly) {
-                                    elytraExtra.disableNextArmorFlyLazyElytraTransaction = 0;
                                     ACTasks.addPostTransactionAction((ch) -> {
                                         if (elytraExtra.onSwitchItemArmorFallFlying()) {
                                             mc.getNetworkHandler()
@@ -642,21 +663,6 @@ public class Attack extends BaseModule {
     }
 
     private void applyPostAttack(Entity target, AttackSettings settings) {
-        //        Vec3d vec3d = mc.player.getPos();
-        //        Listener.addPostPacketCatcher(new PacketCatcherImpl<>(PlayerMoveC2SPacket.class, (packetEvent -> {
-        //            if(PlayerMoveC2SPacketAccess.of(packetEvent.context).getCause() ==
-        // PlayerMoveC2SPacketAccess.Cause.SET_BACK){
-        //                Vec3d curr = mc.player.getPos();
-        //                mc.player.setPosition(vec3d);
-        //                mc.player.setOnGround(true);
-        //                attackWithSettings(mc.player, target, settings);
-        //                LegacySnapRotManager.INSTANCE.snapAt(mc.player.getRotationVector(), true);
-        //                mc.player.setPosition(curr);
-        //                mc.player.setOnGround(false);
-        //                return true;
-        //            }
-        //            return false;
-        //        })));
         if (postFix.get()) {
             ACTasks.addPostTransactionAction((ch) -> {
                 attackWithSettings(mc.player, target, settings);
@@ -987,7 +993,7 @@ public class Attack extends BaseModule {
             boolean vanillaSuccess,
             AttackSettings settings) {
         // how to manage exact attack and mace hack
-        // fixed : can not tp to shulker inside
+        // fixed : can not tp to shulker insidef
         // should teleport the player to the pos of target entity
         PositionPredict positionPredict = CombatTasks.getPositionPredict();
         if (vanillaSuccess) {
@@ -1106,26 +1112,17 @@ public class Attack extends BaseModule {
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context().getValue();
+        legalTargetingMode.set(Configs.LegalTargetingMode.getFromPreset(preset));
         switch (preset) {
             case HACKING, VANILLA -> {
-                legalMode.set(false);
                 if (tpRange.get().getValue() < 0) {
                     tpRange.set(tpRange.get().withValue(-tpRange.get().getValue()));
                 }
             }
             default -> {
-                legalMode.set(true);
                 if (tpRange.get().getValue() > 0) {
                     tpRange.set(tpRange.get().withValue(-tpRange.get().getValue()));
                 }
-            }
-        }
-        switch (preset) {
-            case AC_GRIM_LEGACY -> {
-                legalTargetingMode.set(Configs.LegalTargetingMode.LEGACY_SLIENT_ROT);
-            }
-            default -> {
-                legalTargetingMode.set(Configs.LegalTargetingMode.DELAY_MOVEMENT);
             }
         }
     }
@@ -1140,7 +1137,8 @@ public class Attack extends BaseModule {
             boolean useAttack,
             boolean elytraDelaySwitch,
             boolean criticalSprint,
-            boolean maceVClip) {
+            boolean maceVClip,
+            boolean swingHand) {
         public boolean isVanilla() {
             return !useTp && !elytraDelaySwitch && !maceVClip && !useAttack;
         }

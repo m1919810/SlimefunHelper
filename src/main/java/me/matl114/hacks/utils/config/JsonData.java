@@ -13,7 +13,7 @@ import net.minecraft.util.dynamic.Codecs;
 
 public record JsonData(JsonElement data) implements NBTParsable<JsonData> {
     public static final NBTType<JsonData> TYPE = new NBTType<>(
-            JsonData.class,
+            "jsondata",
             Codecs.JSON_ELEMENT.xmap(JsonData::new, JsonData::data),
             BaseAttrKeyValue.getWidgetFactory(),
             AttrKeyValues.JSON_ELEMENT_FACTORY.concat(WrapperFactory.of(JsonData::new, JsonData::data)),

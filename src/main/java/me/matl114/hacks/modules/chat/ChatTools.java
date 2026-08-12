@@ -38,6 +38,7 @@ public class ChatTools extends BaseModule {
     public final ModulePath chatTools = makePath(Configs.CHAT_CONFIG, "chat-screen-tools");
 
     public ChatTools() {
+        super("ChatTools");
         bindFlag(enableChatScreenTools);
     }
 
@@ -237,12 +238,12 @@ public class ChatTools extends BaseModule {
                                 LOCK_DISABLE_SPRITE,
                                 ButtonAction.isLeft((i) -> {
                                     if (i) {
-                                        ChatTasks.getPlayerChat().encrypt.toggle();
+                                        ChatTasks.getEncryptChat().encrypt.toggle();
                                     } else {
-                                        MainTasks.openModuleScreen(ChatTasks.getPlayerChat());
+                                        MainTasks.openModuleScreen(ChatTasks.getEncryptChat());
                                     }
                                 }),
-                                (el) -> ChatTasks.getPlayerChat().shouldEncryptSendMessage())
+                                (el) -> ChatTasks.getEncryptChat().shouldEncryptSendMessage())
                         .withTooltips(TooltipHandler.of(TOOLTIPS_ENCRYPT)))
                 .addToSub(basicSubScreenWidget);
         ExecutableWidget.instance(20, 24, 20, 20)

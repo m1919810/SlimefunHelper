@@ -15,7 +15,7 @@ import org.apache.commons.lang3.function.TriFunction;
 public class BoundedPrimitiveFlagMap<E extends Enum<E>> extends BoundedPrimitiveMap<E, Boolean> {
 
     public static <S extends Enum<S>, T extends BoundedPrimitiveFlagMap<S>> NBTType<T> createEnumMap(
-            Class<T> clazzT, Class<S> enumS, TriFunction<List<S>, Map<S, Boolean>, NBTType<Boolean>, T> creator) {
+            String clazzT, Class<S> enumS, TriFunction<List<S>, Map<S, Boolean>, NBTType<Boolean>, T> creator) {
         return create(
                 clazzT,
                 creator,

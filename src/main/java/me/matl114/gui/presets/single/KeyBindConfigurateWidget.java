@@ -8,6 +8,7 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
@@ -16,21 +17,6 @@ import net.minecraft.util.Formatting;
 public class KeyBindConfigurateWidget extends SubScreenWidget {
     AttrKeyValue<MultiKeyBind> multiKeyBind;
     // todo: can not sync with attributeKeyValue
-    private static final List<Text> KEYCODE_CONFIGURE_TOOLTIPS = List.of(
-            Text.literal("使用鼠标点击以选中该构件,在该构件被选中时:"),
-            Text.literal("点击键盘以追加键"),
-            Text.literal("使用鼠标点击以追加鼠标键"),
-            Text.literal("点击右侧T以切换为TriggerOnBindRelease"),
-            Text.literal("点击右侧D以删除末尾键"),
-            Text.literal("点击空白处或者其他构件以取消选中"));
-
-    private static final List<Text> KEYCODE_T_TOOLTIPS = List.of(Text.literal("切换是否在释放的时候额外触发一次"));
-
-    private static final List<Text> KEYCODE_V_TOOLTIPS = List.of(Text.literal("切换是否允许触发后继续执行按键原版行为"));
-
-    private static final List<Text> KEYCODE_D_TOOLTIPS = List.of(Text.literal("点击删除末尾键"));
-    private static final List<Text> KEYCODE_R_TOOLTIPS = List.of(Text.literal("点击清除本次修改"));
-
     MultiKeyBind keyBind;
 
     public KeyBindConfigurateWidget(int x, int y, int dx, int dy, AttrKeyValue<MultiKeyBind> config) {
@@ -66,7 +52,8 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                             }
                             return false;
                         }))
-                        .withTooltips(TooltipHandler.of(KEYCODE_CONFIGURE_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.key-bind-configurate-widget.keycode-configure.tooltips", ""))))
                 .addToSub(this);
         ExecutableWidget.instance(dx - 3 * dy - 1, 1, dy - 2, dy - 2)
                 .setElementHandler(new ButtonElement(
@@ -75,7 +62,8 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                                     return false;
                                 }))
                         .setActivePredicate((v) -> multiKeyBind.getOriginValue().isToggleOnRelease())
-                        .withTooltips(TooltipHandler.of(KEYCODE_T_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.key-bind-configurate-widget.keycode-t.tooltips", ""))))
                 .addToSub(this);
         ExecutableWidget.instance(dx - 2 * dy - 1, 1, dy - 2, dy - 2)
                 .setElementHandler(new ButtonElement(
@@ -84,7 +72,8 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                                     return false;
                                 }))
                         .setActivePredicate((v) -> multiKeyBind.getOriginValue().isAllowVanilla())
-                        .withTooltips(TooltipHandler.of(KEYCODE_V_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.key-bind-configurate-widget.keycode-v.tooltips", ""))))
                 .addToSub(this);
         deleteKeyInputWidget = ExecutableWidget.instance(dx - dy - 1, 1, dy - 2, dy - 2)
                 .setElementHandler(
@@ -93,7 +82,8 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                                     // make it return false, do not unselect current
                                     return false;
                                 }))
-                                .withTooltips(TooltipHandler.of(KEYCODE_D_TOOLTIPS)))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.key-bind-configurate-widget.keycode-d.tooltips", ""))))
                 .addToSub(this);
     }
 

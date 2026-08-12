@@ -24,6 +24,7 @@ public class FastInv extends BaseModule {
     public final ModulePath fastInv = makePath(Configs.INV_CONFIG, "fastinv");
 
     public FastInv() {
+        super("FastInv");
         bindFlag(enable);
     }
 
@@ -55,12 +56,16 @@ public class FastInv extends BaseModule {
                     new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q, KeyCode.MOUSE_BUTTON_1))
             .registerHotkey(HotKeyUtils.asHandler(this::onQuickDropAction))
             .build();
+    public static final String TAKE_ALL = "take-all";
+    public static final String SAVE_ALL = "save-all";
 
     @Override
     public void registerAll() {
         super.registerAll();
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "fast-inv", enable);
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "left-one", enableLeftOne);
+        TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + TAKE_ALL, this::takeAll);
+        TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + SAVE_ALL, this::saveAll);
     }
 
     public boolean onShiftAction() {
@@ -112,5 +117,13 @@ public class FastInv extends BaseModule {
             return InvTasks.dropAllCursorStack();
         }
         return false;
+    }
+
+    public void takeAll() {
+        InvTasks.takeAllContainerItem();
+    }
+
+    public void saveAll() {
+        InvTasks.saveAllPlayerItem();
     }
 }

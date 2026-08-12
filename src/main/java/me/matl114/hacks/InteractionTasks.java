@@ -3,6 +3,8 @@ package me.matl114.hacks;
 import com.google.common.util.concurrent.Runnables;
 import java.util.*;
 import java.util.List;
+import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
@@ -14,16 +16,22 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.interact.*;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.FlagEntry;
-import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BlockHalf;
+import net.minecraft.block.enums.ChestType;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.ActionResult;
@@ -34,7 +42,6 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.jetbrains.annotations.ApiStatus;
 
 public class InteractionTasks {
     public static void init() {}
@@ -45,13 +52,28 @@ public class InteractionTasks {
     //
     //    }
 
-    public static void placeBlock(Hand hand, BlockHitResult result) {
+    public static void interactBlock(Hand hand, BlockHitResult result, boolean swing) {
+        Vec2f storePY = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+        // use true fucking rotation .
+        mc.player.setPitch(PlayerStateManager.INSTANCE.lastPitch);
+        mc.player.setYaw(PlayerStateManager.INSTANCE.lastYaw);
         ActionResult actionResult2 = mc.interactionManager.interactBlock(mc.player, hand, result);
-        if (actionResult2.isAccepted()) {
-            if (((ActionResult.Success) actionResult2).swingSource() == ActionResult.SwingSource.CLIENT) {
-                mc.player.swingHand(hand);
-            }
+        mc.player.setPitch(storePY.x);
+        mc.player.setYaw(storePY.y);
+        if (swing) {
+            InteractUtils.swingHandIfSuccess(actionResult2, hand);
             return;
+        }
+    }
+
+    public static void interactEntity(PlayerEntity player, Entity entity, Hand hand, boolean swing) {
+        ActionResult result = mc.interactionManager.interactEntityAtLocation(
+                mc.player, entity, RaycastUtils.createRealHitResult(entity, player.getEyePos()), hand);
+        if (!result.isAccepted()) {
+            result = mc.interactionManager.interactEntity(player, entity, hand);
+        }
+        if (swing) {
+            InteractUtils.swingHandIfSuccess(result, hand);
         }
     }
 
@@ -75,7 +97,7 @@ public class InteractionTasks {
                                 EntityUtils.rotationToPitchYaw(look3d.subtract(eyePos.add(mc.player.getVelocity()))
                                         .normalize());
                         movementManagerEvent.context.pushImportantRotation(true, true);
-                        EntityUtils.setEntityYawSafe(player, rotation.y);
+                        PlayerStateManager.setPlayerYawSafe(player, rotation.y);
                         EntityUtils.setEntityPitchSafe(player, rotation.x);
                         //                        py = rotation;
                         movementManagerEvent.context.tryMarkForMoveFix();
@@ -93,6 +115,11 @@ public class InteractionTasks {
     }
 
     public static void handlePlaceMode(Configs.LegalInteractMode mode, BlockHitResult result, Hand hand) {
+        handlePlaceMode(mode, result, hand, true);
+    }
+
+    public static void handlePlaceMode(
+            Configs.LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
         Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(mc.player.getPos(), result.getBlockPos());
         switch (mode) {
             case USEITEM_PACKET -> {
@@ -100,10 +127,10 @@ public class InteractionTasks {
                         result.getBlockPos().toCenterPos().subtract(bestEyePos).normalize());
                 mc.interactionManager.sendSequencedPacket(
                         mc.world, (i) -> new PlayerInteractItemC2SPacket(hand, i, rotation.y, rotation.x));
-                InteractionTasks.placeBlock(hand, result);
+                InteractionTasks.interactBlock(hand, result, swingHand);
             }
             case DELAY_MOVEMENT -> {
-                InteractionTasks.placeBlock(hand, result);
+                InteractionTasks.interactBlock(hand, result, swingHand);
                 InteractionTasks.addPostRotationCorrectTask(
                         result.getBlockPos().toCenterPos(), bestEyePos, Runnables.doNothing());
             }
@@ -115,7 +142,7 @@ public class InteractionTasks {
                     eve.cancel();
                     return true;
                 }));
-                InteractionTasks.placeBlock(hand, result);
+                InteractionTasks.interactBlock(hand, result, swingHand);
                 if (catcher.getValue() != null) {
                     var pkt = catcher.getValue();
                     InteractionTasks.addPostRotationCorrectTask(
@@ -127,10 +154,10 @@ public class InteractionTasks {
                 Vec2f rotation = EntityUtils.rotationToPitchYaw(
                         result.getBlockPos().toCenterPos().subtract(bestEyePos).normalize());
                 LegacySnapRotManager.INSTANCE.snapAt(rotation.x, rotation.y, false);
-                InteractionTasks.placeBlock(hand, result);
+                InteractionTasks.interactBlock(hand, result, swingHand);
             }
             case NONE -> {
-                InteractionTasks.placeBlock(hand, result);
+                InteractionTasks.interactBlock(hand, result, swingHand);
             }
         }
     }
@@ -142,7 +169,10 @@ public class InteractionTasks {
     }
 
     public static void handlePlaceModeMulti(
-            Configs.LegalInteractMode mode, Vec3d targetCenter, List<Pair<BlockHitResult, Hand>> resultList) {
+            Configs.LegalInteractMode mode,
+            Vec3d targetCenter,
+            List<Pair<BlockHitResult, Hand>> resultList,
+            boolean swingHand) {
         switch (mode) {
             case USEITEM_PACKET -> {
                 Vec2f rotation = EntityUtils.rotationToPitchYaw(
@@ -160,7 +190,7 @@ public class InteractionTasks {
                     } else {
                         flushACPlaceQueue();
                     }
-                    InteractionTasks.placeBlock(hand, result);
+                    InteractionTasks.interactBlock(hand, result, swingHand);
                 }
             }
             case DELAY_MOVEMENT -> {
@@ -174,7 +204,7 @@ public class InteractionTasks {
                     }
                     var hand = pair.getRight();
                     var result = pair.getLeft();
-                    InteractionTasks.placeBlock(hand, result);
+                    InteractionTasks.interactBlock(hand, result, swingHand);
                 }
                 InteractionTasks.addPostRotationCorrectTask(targetCenter, mc.player.getEyePos(), Runnables.doNothing());
             }
@@ -195,14 +225,14 @@ public class InteractionTasks {
                                     .subtract(mc.player.getEyePos())
                                     .normalize(),
                             false);
-                    InteractionTasks.placeBlock(hand, result);
+                    InteractionTasks.interactBlock(hand, result, swingHand);
                 }
             }
             case NONE -> {
                 for (Pair<BlockHitResult, Hand> pair : resultList) {
                     var hand = pair.getRight();
                     var result = pair.getLeft();
-                    InteractionTasks.placeBlock(hand, result);
+                    InteractionTasks.interactBlock(hand, result, swingHand);
                 }
             }
         }
@@ -288,6 +318,59 @@ public class InteractionTasks {
             }
             return result;
         }
+    }
+
+    @Nonnull
+    public static List<FlagEntry<BlockHitResult>> getAllPlaceSupportingResult(
+            Vec3d predictEyePos,
+            BlockPos blockPos,
+            Direction preferredDirection,
+            boolean enableAirPlace,
+            boolean enablePositionPlace) {
+        List<FlagEntry<BlockHitResult>> result = new ArrayList<>();
+        Direction dir = preferredDirection;
+        List<Direction> order = new ArrayList<>();
+        order.add(dir);
+        for (var direction : new Direction[] {
+            Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST
+        }) {
+            if (direction != dir) {
+                order.add(direction);
+            }
+        }
+        Vec3d centerPos = blockPos.toCenterPos();
+        if (enableAirPlace) {
+            if (!order.isEmpty()) {
+                Direction availableDirection = order.get(0);
+                Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
+                result.add(new FlagEntry<>(
+                        false, new BlockHitResult(plateCenter, availableDirection.getOpposite(), blockPos, false)));
+            }
+        }
+        FlagEntry<BlockHitResult> current = null;
+        for (var direction : order) {
+            Vec3d plateCenter = centerPos.offset(direction, 0.5);
+            Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
+            BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
+            BlockState interactState = mc.world.getBlockState(targetPos);
+            if ((interactState.isAir() || interactState.isLiquid())) {
+                continue;
+            }
+            boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+            if (Box.from(Vec3d.of(targetPos)).contains(predictEyePos)) {
+                // ?
+                result.add(new FlagEntry<>(
+                        mayInteract, new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true)));
+            } else {
+                Vec3d iSeeVect = predictEyePos.subtract(plateCenter);
+                Vec3d plateLLL = Vec3d.of(direction.getVector());
+                if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
+                    result.add(new FlagEntry<>(
+                            mayInteract, new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false)));
+                }
+            }
+        }
+        return result;
     }
 
     public static FlagEntry<BlockHitResult> createSpecificStateHitResult(
@@ -484,13 +567,90 @@ public class InteractionTasks {
             }
         } else {
             // 对特定方块进行方向过滤（仅基于 getSide 的直接使用）
+            boolean forceSneak = false;
             if (block instanceof EndRodBlock) {
                 Direction targetFacing = targetState.get(EndRodBlock.FACING);
                 // EndRodBlock: getPlacementState 直接 with(FACING, ctx.getSide())
                 availableSides.removeIf(dir -> dir != targetFacing);
             } else if (block instanceof ChestBlock) {
-                // ChestBlock: getPlacementState 未直接使用 getSide 设置 FACING（使用了 getHorizontalPlayerFacing）
-                // 因此不做任何过滤，保留所有方向
+                ChestType targetChestType = targetState.get(ChestBlock.CHEST_TYPE);
+                Direction targetFacing = targetState.get(ChestBlock.FACING);
+                BlockPos pos = placeTargetBlock;
+
+                if (mc.player.shouldCancelInteraction()) {
+
+                    // ---- 预检查：双箱能否形成 ----
+                    if (targetChestType != ChestType.SINGLE) {
+                        Direction left = targetFacing.rotateYCounterclockwise();
+                        Direction right = targetFacing.rotateYClockwise();
+                        boolean canForm = false;
+                        for (Direction d : new Direction[] {left, right}) {
+                            BlockPos neighborPos = pos.offset(d);
+                            BlockState neighborState = mc.world.getBlockState(neighborPos);
+                            if (neighborState.getBlock() instanceof ChestBlock
+                                    && neighborState.get(ChestBlock.CHEST_TYPE) == ChestType.SINGLE
+                                    && neighborState.get(ChestBlock.FACING) == targetFacing) {
+                                canForm = true;
+                                break;
+                            }
+                        }
+                        if (!canForm) {
+                            targetChestType = ChestType.SINGLE; // 降级
+                        }
+                    }
+
+                    // ---- 根据是否潜行处理 ----
+                    if (targetChestType == ChestType.SINGLE) {
+                        // 单箱：排除会导致合并的水平面
+                        availableSides.removeIf(side -> {
+                            if (!side.getAxis().isHorizontal()) return false;
+                            Direction opposite = side.getOpposite();
+                            BlockPos neighborPos = pos.offset(opposite);
+                            BlockState neighborState = mc.world.getBlockState(neighborPos);
+                            if (!(neighborState.getBlock() instanceof ChestBlock)) return false;
+                            if (neighborState.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE) return false;
+                            Direction neighborFacing = neighborState.get(ChestBlock.FACING);
+                            return neighborFacing.getAxis() != side.getAxis();
+                        });
+                    } else {
+                        // 双箱（此时 canForm 一定为 true）：只保留能精确形成该双箱的水平面
+                        final ChestType finalTargetChestType = targetChestType;
+                        availableSides.removeIf(side -> {
+                            if (!side.getAxis().isHorizontal()) return true;
+                            Direction opposite = side.getOpposite();
+                            BlockPos neighborPos = pos.offset(opposite);
+                            BlockState neighborState = mc.world.getBlockState(neighborPos);
+                            if (!(neighborState.getBlock() instanceof ChestBlock)) return true;
+                            if (neighborState.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE) return true;
+                            Direction neighborFacing = neighborState.get(ChestBlock.FACING);
+                            if (neighborFacing.getAxis() == side.getAxis()) return true;
+                            ChestType finalChestType = (neighborFacing.rotateYCounterclockwise() == side.getOpposite())
+                                    ? ChestType.RIGHT
+                                    : ChestType.LEFT;
+                            Direction finalFacing = neighborFacing;
+                            return !(finalFacing == targetFacing && finalChestType == finalTargetChestType);
+                        });
+                    }
+                } else {
+                    // 非下蹲：不过滤 availableSides，但单箱时检查是否需 forceSneak
+                    if (targetChestType == ChestType.SINGLE) {
+                        Direction left = targetFacing.rotateYCounterclockwise();
+                        Direction right = targetFacing.rotateYClockwise();
+                        boolean canMerge = false;
+                        for (BlockPos neighborPos : new BlockPos[] {pos.offset(left), pos.offset(right)}) {
+                            BlockState neighborState = mc.world.getBlockState(neighborPos);
+                            if (neighborState.getBlock() instanceof ChestBlock
+                                    && neighborState.get(ChestBlock.CHEST_TYPE) == ChestType.SINGLE
+                                    && neighborState.get(ChestBlock.FACING) == targetFacing) {
+                                canMerge = true;
+                                break;
+                            }
+                        }
+                        if (canMerge) {
+                            forceSneak = true;
+                        }
+                    }
+                }
             } else if (block instanceof BellBlock) {
                 // BellBlock: 在水平方向时，FACING 设置为 ctx.getSide().getOpposite()
                 // 垂直方向时 FACING 使用 getHorizontalPlayerFacing，不依赖 getSide
@@ -520,8 +680,8 @@ public class InteractionTasks {
                 if (targetFacing == Direction.DOWN) {
                     availableSides.removeIf(dir -> dir != Direction.UP && dir != Direction.DOWN);
                 } else {
-                    Direction allowedSide = targetFacing.getOpposite();
-                    availableSides.removeIf(dir -> dir != allowedSide);
+                    Direction direction = targetFacing.getOpposite();
+                    availableSides.removeIf(dir -> dir != direction);
                 }
             } else if (block instanceof RotatedInfestedBlock) {
                 Direction.Axis targetAxis = targetState.get(PillarBlock.AXIS);
@@ -546,7 +706,7 @@ public class InteractionTasks {
             for (var direction : new Direction[] {
                 Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST
             }) {
-                if (direction != dir && availableSides.contains(dir.getOpposite())) {
+                if (direction != dir && availableSides.contains(direction.getOpposite())) {
                     order.add(direction);
                 }
             }
@@ -557,7 +717,7 @@ public class InteractionTasks {
                 Direction availableDirection = order.get(0);
                 Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
                 return new FlagEntry<>(
-                        false,
+                        forceSneak,
                         new BlockHitResult(plateCenter, availableDirection.getOpposite(), placeTargetBlock, false));
             } else {
                 for (var direction : order) {
@@ -584,7 +744,7 @@ public class InteractionTasks {
                         Vec3d plateLLL = Vec3d.of(direction.getVector());
                         if (enablePositionPlace || iSeeVect.dotProduct(plateLLL) < 0) {
                             var re = new FlagEntry<>(
-                                    mayInteract,
+                                    mayInteract || forceSneak,
                                     new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false));
                             if (!re.flag()) {
                                 return re;
@@ -776,64 +936,89 @@ public class InteractionTasks {
         }
     }
 
+    private static Entity lastInteractEntity = null;
+    private static int lastInteractTimestamp = -1;
+
+    private static void listenInteractEntityPacket(PlayerInteractEntityC2SPacket packet) {
+        if (((Enum) packet.type.getType()).name().equals("INTERACT")) {
+            lastInteractEntity = mc.world.getEntityById(packet.entityId);
+            lastInteractTimestamp = Tasks.getTick();
+        }
+    }
+
+    public static Entity predictScreenFrom(Predicate<Entity> targetBlock) {
+        int timeStamp = Tasks.getTick();
+        // 在一秒内反应的 可以考虑
+        if (timeStamp < lastInteractTimestamp + 20
+                && lastInteractEntity != null
+                && lastInteractEntity.isAlive()
+                && targetBlock.test(lastInteractEntity)) {
+            return lastInteractEntity;
+            // block Type not match,
+        }
+        return RaycastUtils.rayTraceSpecificEntity(targetBlock).orElse(null);
+    }
+
     @ApiMethod
     @Getter
     public static final ModuleGroup moduleManager = new ModuleGroup("Interaction");
 
     @Getter
-    public static InteractExtra interactExtra;
+    private static InteractExtra interactExtra;
 
     @Getter
-    public static GuiInteract guiInteract;
-
-    @ApiStatus.Experimental
-    public static AutoInteract autoInteract;
-
-    @ApiStatus.Experimental
-    public static AutoAttack autoAttack;
+    private static GuiInteract guiInteract;
 
     @Getter
-    public static Scaffold scaffold;
+    private static AutoClick autoClick;
 
     @Getter
-    public static TpInteract tpInteract;
+    private static Interact interact;
 
     @Getter
-    public static Airplace airplace;
+    private static Scaffold scaffold;
 
     @Getter
-    public static AutoSurround autoSurround;
+    private static TpInteract tpInteract;
 
     @Getter
-    public static BlockRotate blockRotate;
+    private static Airplace airplace;
 
     @Getter
-    public static PrinterRewrite printerRewrite;
+    private static AutoSurround autoSurround;
 
     @Getter
-    public static NoInteract noInteract;
+    private static BlockRotate blockRotate;
 
     @Getter
-    public static AutoPlate autoPlate;
+    private static PrinterRewrite printerRewrite;
 
     @Getter
-    public static AutoSlab autoSlab;
+    private static NoInteract noInteract;
 
     @Getter
-    public static AutoRide autoRide;
+    private static AutoPlate autoPlate;
 
     @Getter
-    public static AutoEat autoEat;
+    private static AutoSlab autoSlab;
 
     @Getter
-    public static AutoUse autoUse;
+    private static AutoRide autoRide;
 
     @Getter
-    public static InteractManager interactManager;
+    private static AutoEat autoEat;
+
+    @Getter
+    private static AutoUse autoUse;
+
+    @Getter
+    private static InteractManager interactManager;
 
     private static void initModules(ModuleManager m) {
         interactExtra = new InteractExtra().register(m);
         guiInteract = new GuiInteract().register(m);
+        autoClick = new AutoClick().register(m);
+        interact = new Interact().register(m);
         scaffold = new Scaffold().register(m);
         tpInteract = new TpInteract().register(m);
         airplace = new Airplace().register(m);
@@ -852,5 +1037,7 @@ public class InteractionTasks {
     static {
         moduleManager.registerFactories(InteractionTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
+        Listener.registerSinglePacketListener(
+                PlayerInteractEntityC2SPacket.class, InteractionTasks::listenInteractEntityPacket);
     }
 }

@@ -19,6 +19,7 @@ public class MiningProgressManager extends BaseModule {
     public static MiningProgressManager INSTANCE;
 
     public MiningProgressManager() {
+        super("MiningProgressManager");
         INSTANCE = this;
     }
 

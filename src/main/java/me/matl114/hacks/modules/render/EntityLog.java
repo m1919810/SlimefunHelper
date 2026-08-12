@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.render;
 
 import java.util.*;
 import lombok.AllArgsConstructor;
+import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -49,6 +50,7 @@ public class EntityLog extends BaseModule {
     public final ModulePath entityLog = makePath(Configs.RENDER_CONFIG, "detect-entity.entity-log");
 
     public EntityLog() {
+        super("EntityLog");
         bindFlag(enable);
     }
 
@@ -77,7 +79,7 @@ public class EntityLog extends BaseModule {
             .build();
 
     public final NBTRef<WrapColor> color = builder(entityLog.add("render-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.LIGHT_PURPLE)))
+            .defaultValue(new WrapColor(Formatting.LIGHT_PURPLE))
             .build();
 
     public final FlagRef renderLog = builder(entityLog.add("render-reason-log"), Boolean.class)
@@ -261,7 +263,8 @@ public class EntityLog extends BaseModule {
                                                 entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
                                         ChatUtils.stringToText("&a&l[&aTrack&a&l]")
                                                 .styled(s -> s.withClickEvent(ChatUtils.getSuggestCommand(
-                                                                "/!!pqueue add " + entry.scoreboardName))
+                                                                MainCommand.getMainCommandPrefix() + "pqueue add "
+                                                                        + entry.scoreboardName))
                                                         .withHoverEvent(ChatUtils.getHoverShowText(List.of(
                                                                 Text.literal("Click to track player in queue"))))));
                             }
@@ -278,7 +281,8 @@ public class EntityLog extends BaseModule {
                                                 entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
                                         ChatUtils.stringToText("&a&l[&aTrack&a&l]")
                                                 .styled(s -> s.withClickEvent(ChatUtils.getSuggestCommand(
-                                                                "/!!pqueue add " + entry.scoreboardName))
+                                                                MainCommand.getMainCommandPrefix() + "pqueue add "
+                                                                        + entry.scoreboardName))
                                                         .withHoverEvent(ChatUtils.getHoverShowText(List.of(
                                                                 Text.literal("Click to track player in queue"))))));
                             }
@@ -428,7 +432,8 @@ public class EntityLog extends BaseModule {
                         ", current queue:",
                         count,
                         ChatUtils.stringToText("&a&l[&aTrack&a&l]").styled(s -> s.withClickEvent(
-                                        ChatUtils.getSuggestCommand("/!!pqueue add " + entry.scoreboardName))
+                                        ChatUtils.getSuggestCommand(MainCommand.getMainCommandPrefix() + "pqueue add "
+                                                + entry.scoreboardName))
                                 .withHoverEvent(ChatUtils.getHoverShowText(
                                         List.of(Text.literal("Click to track player in queue"))))));
             }

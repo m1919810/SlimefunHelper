@@ -15,6 +15,8 @@ import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.PrimitivePairList;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
+import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.commands.commandGroup.CommandContext;
@@ -30,6 +32,12 @@ public class BindCommand extends BaseModule implements IHotKey {
     public static BindCommand INSTANCE;
     private final ModulePath root = makePath(Configs.MISC_CONFIG, HOTKEY_PREFIX);
 
+    public final FlagRef enable =
+            builder(root.addEnable(), Boolean.class).defaultValue(true).build();
+
+    public final KeyBindRef hotkey =
+            toggleHotkey(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
+
     public final NBTRef<PrimitivePairList<MultiKeyBind, String>> commands = builder(
                     root.add("commands"), PrimitivePairList.<MultiKeyBind, String>parameter())
             .defaultValue(new PrimitivePairList<>(
@@ -41,6 +49,7 @@ public class BindCommand extends BaseModule implements IHotKey {
             .build();
 
     public BindCommand() {
+        super("BindCommand");
         INSTANCE = this;
     }
 
@@ -60,17 +69,17 @@ public class BindCommand extends BaseModule implements IHotKey {
         TreeSubCommand main = command.subMainBuilder().name("bindc").build();
         main.subBuilder(SubCommand.taskBuilder())
                 .name("opengui")
-                .helper("打开快捷键指令配置界面")
+                .helper("message.command.bindc.opengui.help")
                 .post(e -> e.executor(CommandContext.run(this::openGui)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("list")
-                .helper("列出当前快捷键指令绑定")
+                .helper("message.command.bindc.list.help")
                 .post(e -> e.executor(CommandContext.execute(this::listBindings)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("help")
-                .helper("显示 bindc 指令帮助")
+                .helper("message.command.bindc.help.help")
                 .post(e -> e.executor(CommandContext.execute(this::showBindCommandHelp)))
                 .complete();
     }
@@ -100,6 +109,9 @@ public class BindCommand extends BaseModule implements IHotKey {
     public boolean handleKeyInput(IInputManager manager, int keyCode, boolean isStateChanged, boolean isClicked) {
         boolean handled = false;
         if (isStateChanged && isClicked) {
+            if (checkNull()) {
+                return handled;
+            }
             for (var lst : commands.get().list()) {
                 var mul = lst.getFirst();
                 if (!mul.isEmpty() && keyCode == mul.getLastKey() && mul.isAllPressed()) {

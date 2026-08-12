@@ -1,6 +1,5 @@
 package me.matl114.gui.presets.single;
 
-import java.util.List;
 import java.util.function.Consumer;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -9,6 +8,7 @@ import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.elements.PlateElement;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.kv.AttrKeyValues;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -107,11 +107,8 @@ public class IntFastInputWidget extends SubScreenWidget {
     private static final Text N1 = Text.literal("-1");
     private static final Text N16 = Text.literal("-16");
     private static final Text N64 = Text.literal("-64");
-    private static final Text CONFIRM = Text.literal("提交");
+    private static final Text CONFIRM = Text.translatable("widget.gui.int-fast-input-widget.confirm");
     protected static Identifier CANCEL_GUI_TEXTURE = new Identifier("minecraft", "container/beacon/cancel");
-    protected static final List<Text> CANCEL_GUI_TOOLTIPS = List.of(Text.literal("点击关闭当前子界面"));
-    protected static final List<Text> SHIFT_CANCEL_TOOLTIPS =
-            List.of(Text.literal("点击此按钮,"), Text.literal("或者按下回车键"), Text.literal("以提交输入框的数字"));
 
     protected void initFastButtons() {
         int maxWidth = dx / 3;
@@ -159,7 +156,8 @@ public class IntFastInputWidget extends SubScreenWidget {
                 .addToSub(this);
         ExecutableWidget.instance(inputDx + 2, 7, dx - inputDx - 6, dy - 14)
                 .setElementHandler(new ButtonElement(TextProvider.of(CONFIRM), ButtonAction.run(this::callback))
-                        .withTooltips(TooltipHandler.of(SHIFT_CANCEL_TOOLTIPS))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.int-fast-input-widget.confirm.tooltips", "")))
                         .withInputHandler(InputHandler.keyPress(((el, keycode) -> {
                             if (keycode == GLFW.GLFW_KEY_ENTER) {
                                 callback();
@@ -173,7 +171,8 @@ public class IntFastInputWidget extends SubScreenWidget {
     protected void initPlateBackground() {
         ExecutableWidget.instance(dx + 6, -30, 24, 24)
                 .setElementHandler(IconElement.fixedGui(CANCEL_GUI_TEXTURE, ButtonAction.run(this::finishRunning))
-                        .withTooltips(TooltipHandler.of(CANCEL_GUI_TOOLTIPS))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.int-fast-input-widget.cancel-gui.tooltips", "")))
                         .withPresentCondition((i) -> finishRunning != null))
                 .addToSub(this);
         ExecutableWidget.instance(-30, -30, dx + 60, dy + 60)

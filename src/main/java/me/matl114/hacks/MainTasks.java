@@ -165,6 +165,9 @@ public class MainTasks {
                 if (cut.length > 0) {
                     indexes.add(cut[0]);
                 }
+                if (cut.length > 1) {
+                    indexes.add(joinPath(cut, cut.length - 1));
+                }
             }
             for (String index : indexes) {
                 ++configIndexCount;
@@ -203,6 +206,17 @@ public class MainTasks {
             missingKeys.add(translationKey);
             Debug.info("Missing translation key for", translationKey);
         }
+    }
+
+    private static String joinPath(String[] path, int length) {
+        if (length <= 0) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder(path[0]);
+        for (int i = 1; i < length; ++i) {
+            builder.append('.').append(path[i]);
+        }
+        return builder.toString();
     }
 
     public static void showWindows(String[] args) {
@@ -264,25 +278,25 @@ public class MainTasks {
     private static final ModuleGroup moduleManager = new ModuleGroup("Tasks");
 
     @Getter
-    public static ModuleSettings moduleSettings;
+    private static ModuleSettings moduleSettings;
 
     @Getter
-    public static ClickGui clickGui;
+    private static ClickGui clickGui;
 
     @Getter
-    public static ConfigManager configManager;
+    private static ConfigManager configManager;
 
     @Getter
-    public static BindCommand bindCommand;
+    private static BindCommand bindCommand;
 
     @Getter
-    public static EventCommand eventCommand;
+    private static EventCommand eventCommand;
 
     @Getter
-    public static ServerStorage serverStorage;
+    private static ServerStorage serverStorage;
 
     @Getter
-    public static ConnectionProxy connectionProxy;
+    private static ConnectionProxy connectionProxy;
 
     private static void initModule(ModuleManager m) {
         moduleSettings = new ModuleSettings().register(m);
@@ -307,6 +321,7 @@ public class MainTasks {
         WorldTasks.init();
         MovTasks.init();
         InteractionTasks.init();
+        SurvivalTasks.init();
         SlimefunTasks.init();
         ModelTasks.init();
         ACTasks.init();

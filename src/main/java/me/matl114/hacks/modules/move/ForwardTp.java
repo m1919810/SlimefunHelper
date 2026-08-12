@@ -17,7 +17,9 @@ import net.minecraft.util.math.Vec3d;
 public class ForwardTp extends BaseModule {
     public final ModulePath quickMove = makePath(Configs.MOV_CONFIG, "quick-move");
 
-    public ForwardTp() {}
+    public ForwardTp() {
+        super("ForwardTp");
+    }
 
     public final KeyBindRef frontKey = hotkey(quickMove.add("quick-move"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::quickMovFront))

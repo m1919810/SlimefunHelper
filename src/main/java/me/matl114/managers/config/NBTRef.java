@@ -5,7 +5,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import me.matl114.utils.Debug;
-import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.versioned.api.VNbt;
 import net.minecraft.nbt.NbtElement;
 
@@ -119,7 +119,7 @@ public class NBTRef<T extends NBTParsable<?>> extends LazilyRegisterTypeRef<T, N
     }
 
     @Override
-    public AttrKeyValue<T> _createKeyValue0(String key) {
+    public BaseAttrKeyValue<T> _createKeyValue0(String key) {
         if (!resolved) {
             tryResolve();
         }

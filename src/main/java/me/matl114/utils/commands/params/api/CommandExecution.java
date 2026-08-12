@@ -10,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Vector2f;
 import org.joml.Vector3d;
 
 public interface CommandExecution {
@@ -30,8 +31,18 @@ public interface CommandExecution {
 
     public void sendMessage(Text message);
 
+    public Vector2f getExecuteRot();
+
     @Nonnull
     public Vector3d getExecutePos();
+
+    default Vector3d getExecuteEyePos() {
+        if (getExecutor() instanceof PlayerEntity pl) {
+            return getExecutePos().add(0, pl.getEyeHeight(pl.getPose()), 0);
+        } else {
+            return getExecutePos();
+        }
+    }
 
     @Nonnull
     public World getExecuteWorld();
@@ -71,6 +82,15 @@ public interface CommandExecution {
         public void sendMessage(Text message) {
             if (sender != null) {
                 Debug.sendPlayer(message);
+            }
+        }
+
+        @Override
+        public Vector2f getExecuteRot() {
+            if (sender instanceof PlayerEntity p) {
+                return new Vector2f(p.getPitch(), p.getYaw());
+            } else {
+                return new Vector2f(0, 0);
             }
         }
 
@@ -116,6 +136,11 @@ public interface CommandExecution {
             if (sout) {
                 Debug.info(message);
             }
+        }
+
+        @Override
+        public Vector2f getExecuteRot() {
+            return new Vector2f(0, 0);
         }
 
         @Override

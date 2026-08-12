@@ -3,14 +3,17 @@ package me.matl114.utils;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.SpawnerBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.UseEffectsComponent;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.*;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
@@ -149,6 +152,15 @@ public class EntityUtils {
         }
     }
 
+    public static boolean isEntityValid(@Nullable Entity entity) {
+        return entity != null
+                && entity.isAlive()
+                && !entity.isRemoved()
+                && mc.world != null
+                && mc.world == entity.getEntityWorld()
+                && mc.world.getEntity(entity.getUuid()) == entity;
+    }
+
     public static Vector2d getEntityLookXZ(Entity entity) {
         float yaw = entity.getYaw();
         float pitch = entity.getPitch();
@@ -158,31 +170,24 @@ public class EntityUtils {
         return new Vector2d(g * h, f * h);
     }
 
-    public static void setEntityRotation(Entity entity, Vec3d vec) {
-        vec = vec.normalize();
-
-        entity.setPitch((float) Math.toDegrees(Math.asin(-vec.y)));
-        entity.setYaw((float) Math.toDegrees(Math.atan2(-vec.x, vec.z)));
-    }
-
-    public static void setEntityYawSafe(Entity entity, Vec2f vec2f) {
-        setEntityYawSafe(entity, (float) Math.toDegrees(Math.atan2(-vec2f.x, vec2f.y)));
-    }
-
-    public static void setEntityRotationSafe(Entity entity, Vec3d vec) {
-        vec = vec.normalize();
-        setEntityPitchSafe(entity, (float) Math.toDegrees(Math.asin(-vec.y)));
-
-        float newYaw = (float) Math.toDegrees(Math.atan2(-vec.x, vec.z));
-        setEntityYawSafe(entity, newYaw);
-    }
-
-    public static float getSafeYaw(Entity entity, float newYaw) {
-        //        if(newYaw == -180.0 || newYaw == 180.0)return newYaw;
-        //        float oldYaw = entity.getYaw();
-        float oldYaw = entity.getYaw();
-        return getSafeYaw(oldYaw, newYaw);
-    }
+    //    public static void setEntityRotation(Entity entity, Vec3d vec) {
+    //        vec = vec.normalize();
+    //
+    //        entity.setPitch((float) Math.toDegrees(Math.asin(-vec.y)));
+    //        entity.setYaw((float) Math.toDegrees(Math.atan2(-vec.x, vec.z)));
+    //    }
+    //
+    //    public static void setEntityYawSafe(Entity entity, Vec2f vec2f) {
+    //        setEntityYawSafe(entity, (float) Math.toDegrees(Math.atan2(-vec2f.x, vec2f.y)));
+    //    }
+    //
+    //    public static void setEntityRotationSafe(Entity entity, Vec3d vec) {
+    //        vec = vec.normalize();
+    //        setEntityPitchSafe(entity, (float) Math.toDegrees(Math.asin(-vec.y)));
+    //
+    //        float newYaw = (float) Math.toDegrees(Math.atan2(-vec.x, vec.z));
+    //        setEntityYawSafe(entity, newYaw);
+    //    }
 
     public static float getSafeYaw(float oldYaw, float newYaw) {
         //        if(newYaw == -180.0 || newYaw == 180.0)return newYaw;
@@ -193,7 +198,13 @@ public class EntityUtils {
 
     public static float getSafeYawDiff(float oldYaw, float newYaw) {
         float diff = newYaw - oldYaw;
-        return (diff % 360.0F + 720.0F + 180.0F) % 360.0F - 180.0F; // 归一化到 [-180,180]
+        float normalizedDiff = (diff % 360.0F + 720.0F + 180.0F) % 360.0F - 180.0F; // 归一化到 [-180,180]
+        if (oldYaw > 1000 && normalizedDiff > 179) {
+            normalizedDiff -= 360.0F;
+        } else if (oldYaw < -1000 && normalizedDiff < -179) {
+            normalizedDiff += 360.0F;
+        }
+        return normalizedDiff;
     }
 
     public static float getSafePitch(float newPitch) {
@@ -214,7 +225,7 @@ public class EntityUtils {
     }
 
     public static void setEntityYawSafe(Entity entity, float newYaw) {
-        newYaw = getSafeYaw(entity, newYaw);
+        newYaw = getSafeYaw(entity.getYaw(), newYaw);
         entity.setYaw(newYaw);
     }
 
@@ -514,6 +525,38 @@ public class EntityUtils {
         return withStrafe(self, speed, 1.0D);
     }
 
+    public static Vec2f applyMovementFactors(Entity entity, Vec2f vec2f) {
+        if (vec2f.lengthSquared() == 0) {
+            return vec2f;
+        }
+        if (entity instanceof ClientPlayerEntity p) {
+            vec2f = vec2f.multiply(0.98F);
+            if (p.isUsingItem() && !p.hasVehicle()) {
+                vec2f = vec2f.multiply(p.getActiveItem()
+                        .getOrDefault(DataComponentTypes.USE_EFFECTS, UseEffectsComponent.DEFAULT)
+                        .speedMultiplier());
+            }
+            if (p.shouldSlowDown()) {
+                float f = (float) p.getAttributeValue(EntityAttributes.SNEAKING_SPEED);
+                vec2f = vec2f.multiply(f);
+            }
+            float f = vec2f.length();
+            vec2f = vec2f.multiply(1.0F / f);
+            float g = getDirectionalMovementSpeedMultiplier(vec2f);
+            float h = Math.min(f * g, 1.0F);
+            return vec2f.multiply(h);
+        } else {
+            return vec2f;
+        }
+    }
+
+    private static float getDirectionalMovementSpeedMultiplier(Vec2f vec) {
+        float f = Math.abs(vec.x);
+        float g = Math.abs(vec.y);
+        float h = g > f ? f / g : g / f;
+        return MathHelper.sqrt(1.0F + MathHelper.square(h));
+    }
+
     public static double getEffectiveGravity(ClientPlayerEntity player) {
         boolean bl = player.getVelocity().y <= 0.0;
         return bl && player.hasStatusEffect(StatusEffects.SLOW_FALLING)
@@ -570,7 +613,10 @@ public class EntityUtils {
 
     private static Vec3d simulateTravelInWaterVelocity(Vec3d velocity, boolean hasGravity) {
         PlayerInputUtils.Input input = PlayerStateManager.INSTANCE.lastInput;
-        Vec3d movementInput = new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
+
+        Vec2f vec2f =
+                EntityUtils.applyMovementFactors(mc.player, new Vec2f(input.sidewaysSpeed(), input.forwardSpeed()));
+        Vec3d movementInput = new Vec3d(vec2f.x, 0, vec2f.y);
         boolean falling = velocity.y <= 0.0;
         double y = mc.player.getY();
         double gravity = EntityUtils.getEffectiveGravity(mc.player);

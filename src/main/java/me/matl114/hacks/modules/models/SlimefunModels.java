@@ -30,7 +30,9 @@ public class SlimefunModels extends BaseModule {
     public final ModulePath modelConfig = makePath(Configs.MODEL_CONFIG, "model-config");
     public final ModulePath slimefunModels = makePath(Configs.MODEL_CONFIG, "slimefun-models");
 
-    public SlimefunModels() {}
+    public SlimefunModels() {
+        super("SlimefunModels");
+    }
 
     public final FlagRef enableCmd = builder(modelConfig.add("enable-slimefun-cmd-override"), Boolean.class)
             .defaultValue(true)

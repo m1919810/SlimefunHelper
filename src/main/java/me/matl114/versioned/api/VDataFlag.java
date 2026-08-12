@@ -4,6 +4,7 @@ public interface VDataFlag {
     int ID_FLAGS = 0;
     int ON_FIRE_FLAG_INDEX = 0;
     int SNEAKING_FLAG_INDEX = 1;
+
     int FALL_FLYING_FLAG_INDEX = 7;
     int ID_AIR = 1;
     int ID_CUSTOM_NAME = 2;
@@ -26,12 +27,16 @@ public interface VDataFlag {
 
     // Living Entity
     int ID_LIVING_FLAGS = 8;
-    int USING_ITEM_FLAG_INDEX = 1;
-    int OFFHAND_ACTIVE_FLAG_INDEX = 2;
+    int USING_ITEM_FLAG_INDEX = 0;
+    int OFFHAND_ACTIVE_FLAG_INDEX = 1;
+    int RIPTIDE_FLAG_INDEX = 2;
     int ID_HEALTH = 9;
     int ID_POTION_SWIRLS = 10;
     int ID_POTION_SWIRLS_AMBIENT = 11;
     int ID_STUCK_ARROW_COUNT = 12;
+
+    // Villager
+    int ID_VILLAGER_PROFESSION_DATA = 18;
 
     int ENTITY_STATUS_KINETIC_ATTACK = 2;
 }

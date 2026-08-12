@@ -25,6 +25,7 @@ public class ChatCombine extends BaseModule {
     private static final Pattern matcherCombinedMessageSuffix = Pattern.compile("^\\s*?\\[x(\\d*?)\\]$");
 
     public ChatCombine() {
+        super("ChatCombine");
         bindFlag(enable);
     }
 

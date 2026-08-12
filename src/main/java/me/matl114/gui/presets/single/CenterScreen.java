@@ -3,7 +3,6 @@ package me.matl114.gui.presets.single;
 import me.matl114.gui.GenericScreen;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.DrawableWidget;
-import me.matl114.gui.basic.DynamicSubScreenWidget;
 import net.minecraft.text.Text;
 
 public class CenterScreen extends GenericScreen {
@@ -24,7 +23,7 @@ public class CenterScreen extends GenericScreen {
     @Override
     protected void init() {
         super.init();
-        DynamicSubScreenWidget dynamic = WidgetUtils.createCenterScreenWidget(widget, this.width, this.height);
+        DrawableWidget dynamic = WidgetUtils.createCenterScreenWidget(widget, this.width, this.height);
         dynamic.addTo(this);
     }
 }

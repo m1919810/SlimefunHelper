@@ -2,7 +2,7 @@ package me.matl114.gui.presets.lists;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,6 +11,7 @@ import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.util.Colors;
 
 @Getter
@@ -21,7 +22,8 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
     int entryHeight;
     List<Map.Entry<W, AttrKeyValue<Boolean>>> filterList;
     BiFunction<W, AttrKeyValue<Boolean>, RenderHandler> renderFactory;
-    Predicate<W> filter;
+    BiPredicate<W, String> filter;
+    ValueAccessor<String> filterInput;
     boolean modifiable = true;
 
     public Set<W> buildSelected() {
@@ -35,7 +37,8 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
             List<W> lst,
             Set<W> currentSelection,
             BiFunction<W, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
-            Predicate<W> filter,
+            ValueAccessor<String> filterInput,
+            BiPredicate<W, String> filter,
             int x,
             int y,
             int dx,
@@ -44,13 +47,16 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
         super(x, y, dx, dy);
         this.list = new LinkedHashMap<>();
         for (var shit : lst) {
-            this.list.put(shit, AttrKeyValue.bool("是否选中", currentSelection.contains(shit)));
+            this.list.put(
+                    shit,
+                    AttrKeyValue.bool("widget.gui.list-multi-select-widget.selected", currentSelection.contains(shit)));
             if (currentSelection.contains(shit)) {
                 Debug.info("contains", shit);
             }
         }
         this.entryHeight = height;
         this.filter = filter;
+        this.filterInput = filterInput;
         this.renderFactory = renderFactory;
         init();
     }
@@ -61,6 +67,13 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
         for (var i = 0; i < size; ++i) {
             addScrollingWidget(generateEntry(i));
         }
+    }
+
+    protected void toggleSelected(AttrKeyValue<Boolean> attrKeyValue) {
+        if (!modifiable) {
+            return;
+        }
+        attrKeyValue.valueChange(null, attrKeyValue.getOriginValue() == Boolean.TRUE ? "false" : "true");
     }
 
     protected DrawableWidget generateEntry(int index) {
@@ -85,15 +98,10 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
             // do not resort when value change
             // because player may do it accidentally
         });
-        shitWidget.setMouseHandler(mouseHandler).setRenderHandler(renderHandler);
+        shitWidget.setInputHandler(mouseHandler).setRenderHandler(renderHandler);
         return shitWidget;
     }
-    //    protected void applyFilter(String filter){
-    //        if(!Objects.equals(FilterService.currentUserInput, filter)){
-    //            FilterService.currentUserInput = filter;
-    //            updateFilterList();
-    //        }
-    //    }
+
     protected void updateFilterList() {
         Comparator<Map.Entry<W, AttrKeyValue<Boolean>>> comparator = (o1, o2) -> {
             if (o1.getValue().getOriginValue() && !o2.getValue().getOriginValue()) {
@@ -105,7 +113,7 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
             }
         };
         filterList = list.entrySet().stream()
-                .filter(i -> filter == null || filter.test(i.getKey()))
+                .filter(i -> filter == null || filter.test(i.getKey(), filterInput.getValue()))
                 .sorted(comparator)
                 .toList();
         refreshList();
@@ -113,11 +121,8 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
 
     protected void init() {
         int textHeight = Math.min(20, this.entryHeight);
-        this.scrollableBorder.addDrawableChild(
-                FilterService.createFilter(this::updateFilterList, 1, -textHeight + 1, dx - 2, textHeight - 2)
-                //   McWidgetHelpers.createTextFieldEditBox( PropertyTracker.event(this::applyFilter),
-                // FilterService.currentUserInput)
-                );
+        this.scrollableBorder.addDrawableChild(FilterService.createFilter(
+                filterInput, this::updateFilterList, 1, -textHeight + 1, dx - 2, textHeight - 2));
         this.updateFilterList();
     }
 }

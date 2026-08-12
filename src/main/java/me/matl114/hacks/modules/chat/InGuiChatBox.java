@@ -20,6 +20,7 @@ public class InGuiChatBox extends BaseModule {
     public final FlagRef enable = flagBuilder(chat.add("chat-box-in-gui")).build();
 
     public InGuiChatBox() {
+        super("InGuiChatBox");
         bindFlag(enable);
     }
 
