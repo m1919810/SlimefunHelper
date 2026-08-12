@@ -7,9 +7,11 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.combat.ElytraBot;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
@@ -19,7 +21,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
@@ -70,6 +71,10 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             .defaultValue(true)
             .build();
 
+    public final FlagRef pauseWhenAccelerate = builder(simpleFlightControl.add("pause-when-accelerate"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef landAutoClose =
             flagBuilder(simpleFlightControl.add("land-auto-close")).build();
 
@@ -114,6 +119,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     private static LegalMovementManager.DelegateMovementModifier instance;
 
     public ElytraFlight() {
+        super("ElytraFlight");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
@@ -142,8 +148,12 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         return false;
     }
 
+    public boolean shouldControlFlight() {
+        return enable.get() || (ElytraBot.INSTANCE.canControlFlight());
+    }
+
     public boolean shouldFlyRocketOnFirstOff() {
-        if (enable.get()) {
+        if (shouldControlFlight()) {
             if (autoFly.get()) return true;
             if (PlayerInputUtils.of(mc.options).hasMovementControl()) return true;
             return !useFloatingUtils.get();
@@ -165,7 +175,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         } else {
             holdJumpCounter = 0;
         }
-        if (enable.get()) {
+
+        if (shouldControlFlight()) {
             if (!player.isFallFlying()
                     && takeOffOptimize.get().isPresent()
                     && holdJumpCounter >= takeOffOptimize.get().getValue()) {
@@ -198,14 +209,17 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         Vec3d movementInput =
                                 new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
                         Vec3d velocity = EntityUtils.movementInputToVelocity(movementInput, 1.0F, player.getYaw());
+                        if (useAutoRescale.get()
+                                && autoRescaleBestClimbingSpeed.get()
+                                && movementInput.horizontalLength() > 0) {
+                            if (movementInput.y > 0 && velocity.y > 0) {
 
-                        if (movementInput.y > 0
-                                && movementInput.horizontalLength() > 0
-                                && velocity.y > 0
-                                && useAutoRescale.get()
-                                && autoRescaleBestClimbingSpeed.get()) {
-                            velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
+                                velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
+                            } else if (movementInput.y < 0 && velocity.y < 0) {
+                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(velocity);
+                            }
                         }
+
                         if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
                             packetMotion = false;
                             shouldCheckRocket = true;
@@ -308,7 +322,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                             Vec2f py = EntityUtils.rotationToPitchYaw(realVector.normalize());
                             movementManagerEvent.context.markForResetRot();
                             EntityUtils.setEntityPitchSafe(mc.player, py.x);
-                            EntityUtils.setEntityYawSafe(mc.player, py.y);
+                            PlayerStateManager.setPlayerYawSafe(mc.player, py.y);
                         } else {
                             movementManagerEvent.context.pushImportantRotation(true, false);
                             float pitch = EntityUtils.rotationToPitch(realVector.normalize());
@@ -320,9 +334,9 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     if (useAutoRescale.get()) {
                         float yaw = mc.player.getYaw();
                         if (Tasks.getTick() % 2 == 0) {
-                            EntityUtils.setEntityYawSafe(mc.player, yaw + 0.01F);
+                            PlayerStateManager.setPlayerYawSafe(mc.player, yaw + 0.01F);
                         } else {
-                            EntityUtils.setEntityYawSafe(mc.player, yaw - 0.01F);
+                            PlayerStateManager.setPlayerYawSafe(mc.player, yaw - 0.01F);
                         }
                     }
                 }
