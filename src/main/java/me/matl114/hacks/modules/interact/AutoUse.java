@@ -23,6 +23,7 @@ import net.minecraft.util.Hand;
 
 public class AutoUse extends BaseModule {
     public AutoUse() {
+        super("AutoUse");
         bindFlag(enable);
     }
 

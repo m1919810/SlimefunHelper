@@ -5,12 +5,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntSupplier;
+import lombok.Setter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.ViaFabricPlusHooks;
@@ -21,7 +23,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ColorUtils;
 import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.versioned.SupportVersion;
@@ -60,6 +61,7 @@ public class SpearEnhance extends BaseModule {
     public final ModulePath spearModule = makePath(Configs.COMBAT_CONFIG, "spear-module");
 
     public SpearEnhance() {
+        super("SpearEnhance");
         INSTANCE = this;
     }
 
@@ -89,7 +91,7 @@ public class SpearEnhance extends BaseModule {
 
     public final NBTRef<WrapColor> renderColor = builder(
                     spearModule.add("render-kinetic-players-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
+            .defaultValue(new WrapColor((Formatting.YELLOW)))
             .build();
 
     public final FlagRef spearSpeedReset =
@@ -106,6 +108,9 @@ public class SpearEnhance extends BaseModule {
 
     public final FlagRef spearSpeedResetTargetJudge =
             flagBuilder(spearModule.add("reset-spear-speed-only-combat")).build();
+
+    public final FlagRef autoFocusTarget =
+            flagBuilder(spearModule.add("reset-spear-auto-focus-target")).build();
 
     @Override
     public void registerAll() {
@@ -267,9 +272,15 @@ public class SpearEnhance extends BaseModule {
         return stack.get(DataComponentTypes.KINETIC_WEAPON);
     }
 
+    @Setter
+    boolean forceSpearReset = false;
+
     public void onPostTick(Event<ClientPlayerEntity> eventPostTick) {
         if (checkNull()) return;
-        if (eventPostTick.context == mc.player && spearSpeedReset.get() && ViaFabricPlusHooks.isSupportDupRot()) {
+        if (eventPostTick.context == mc.player
+                && (spearSpeedReset.get() || forceSpearReset)
+                && ViaFabricPlusHooks.isSupportDupRot()) {
+            forceSpearReset = false;
             boolean autoCondition = true;
 
             if (spearSpeedResetAuto.get()) {
@@ -286,10 +297,10 @@ public class SpearEnhance extends BaseModule {
                 }
             }
             if (autoCondition) {
-                Vec3d look = null;
-                if (isUsingSpear(mc.player)) {
+                Vec3d look = PlayerStateManager.INSTANCE.getLastRotationVector();
+                if (autoFocusTarget.get() && isUsingSpear(mc.player)) {
                     Entity targetEntity =
-                            TargetSelector.INSTANCE.searchAttackEntity(20, true, pl -> pl instanceof PlayerEntity);
+                            TargetSelector.INSTANCE.searchAttackEntity(30, true, pl -> pl instanceof PlayerEntity);
                     if (targetEntity != null) {
                         look = targetEntity
                                 .dimensions
@@ -301,10 +312,6 @@ public class SpearEnhance extends BaseModule {
                                 .subtract(mc.player.getEyePos());
                     }
                 }
-                if (look == null) {
-                    look = mc.player.getRotationVector();
-                }
-
                 // reset speed and rotation
                 LegacySnapRotManager.INSTANCE.snapAt(look, true);
             }

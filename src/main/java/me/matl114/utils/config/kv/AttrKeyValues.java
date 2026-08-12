@@ -74,6 +74,9 @@ public interface AttrKeyValues {
         }
     }
 
+    WrapperFactory<String, Float> FLOAT_FACTORY =
+            WrapperFactory.of(Float::parseFloat, s -> s != null ? String.valueOf(s) : "0.0");
+
     WrapperFactory<String, Double> DOUBLE_FACTORY =
             WrapperFactory.of(Double::parseDouble, s -> s != null ? String.valueOf(s) : "0.0");
 

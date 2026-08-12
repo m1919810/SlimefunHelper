@@ -5,5 +5,9 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
 
 public class ReflectMapping extends BaseModule {
+    public ReflectMapping() {
+        super("ReflectMapping");
+    }
+
     public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
 }

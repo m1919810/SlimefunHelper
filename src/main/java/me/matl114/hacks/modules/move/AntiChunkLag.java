@@ -4,16 +4,14 @@ import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.WorldUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.util.math.*;
 
 public class AntiChunkLag extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -21,6 +19,7 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
     public static LegalMovementManager.DelegateMovementModifier instance;
 
     public AntiChunkLag() {
+        super("AntiChunkLag");
         INSTANCE = this;
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
@@ -72,7 +71,10 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
                 }
                 Vec3d startPos = new Vec3d(chunkPos.getStartX(), 0, chunkPos.getStartZ());
                 Box chunkBox = new Box(startPos, startPos.add(16, 0, 16));
-                if (chunkBox.squaredMagnitude(playerHorizontalPos) < distanceS2) {
+                double distance = Math.max(
+                        MathUtils.getBoxDistance(playerHorizontalPos.x, chunkBox.minX, chunkBox.maxX),
+                        MathUtils.getBoxDistance(playerHorizontalPos.z, chunkBox.minZ, chunkBox.maxZ));
+                if (distance < distanceS2) {
                     hasUnloadedChunk = true;
                     break search;
                 }
@@ -82,27 +84,56 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
         if (val && !currentMayFaceLagChunk) {
             currentMayFaceLagChunk = true;
             if (enable.get() && log.get()) {
-                Debug.chat(ChatUtils.stringToText("&c[ChunkLag] &f Facing chunk lag"));
+                logI18N("message.module.anti-chunk-lag.facing-lag");
             }
         } else if (!val && currentMayFaceLagChunk) {
             currentMayFaceLagChunk = false;
         }
         if (currentMayFaceLagChunk && enable.get() && freeze.get()) {
-            movementManagerEvent.context.playerStatus.restorePos();
-            FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-            // fix armorGlide
-            if (mc.player.isFallFlying()) {
-                if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-                    if (ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide()) {
-                        FloatingUtils.INSTANCE.setForceSilent(false);
+            Vec3d currentPos = mc.player.getPos();
+            Vec3d oldPos = movementManagerEvent.context.playerStatus.pos;
+            Vec3d movement = currentPos.subtract(oldPos);
+            int movementSgnX = (int) MathUtils.sgn(movement.x);
+            int movementSgnZ = (int) MathUtils.sgn(movement.z);
+            if (movementSgnZ != 0 || movementSgnX != 0) {
+                boolean hasUnloaded = false;
+                search:
+                for (var x = 0; x <= chunkSize; x++) {
+                    for (var z = 0; z <= chunkSize; z++) {
+                        ChunkPos chunkPos =
+                                new ChunkPos(x * movementSgnX + playerChunkPos.x, z * movementSgnZ + playerChunkPos.z);
+                        if (WorldUtils.isChunkLoaded(chunkPos.x, chunkPos.z)) {
+                            continue;
+                        }
+                        Vec3d startPos = new Vec3d(chunkPos.getStartX(), 0, chunkPos.getStartZ());
+                        Box chunkBox = new Box(startPos, startPos.add(16, 0, 16));
+                        double distance = Math.max(
+                                MathUtils.getBoxDistance(playerHorizontalPos.x, chunkBox.minX, chunkBox.maxX),
+                                MathUtils.getBoxDistance(playerHorizontalPos.z, chunkBox.minZ, chunkBox.maxZ));
+                        if (distance < distanceS2) {
+                            hasUnloaded = true;
+                            break search;
+                        }
+                    }
+                }
+                if (hasUnloaded) {
+                    movementManagerEvent.context.playerStatus.restorePos();
+                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                    // fix armorGlide
+                    if (mc.player.isFallFlying()) {
+                        if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
+                            if (ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide()) {
+                                FloatingUtils.INSTANCE.setForceSilent(false);
+                            } else {
+                                FloatingUtils.INSTANCE.setForceSilent(true);
+                            }
+                        } else {
+                            FloatingUtils.INSTANCE.setForceSilent(false);
+                        }
                     } else {
                         FloatingUtils.INSTANCE.setForceSilent(true);
                     }
-                } else {
-                    FloatingUtils.INSTANCE.setForceSilent(false);
                 }
-            } else {
-                FloatingUtils.INSTANCE.setForceSilent(true);
             }
         }
     }

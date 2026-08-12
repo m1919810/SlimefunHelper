@@ -48,6 +48,7 @@ public class MutableInventory implements Inventory {
             return ItemStack.EMPTY;
         } else {
             this.stacks.set(slot, ItemStack.EMPTY);
+            markDirty();
             return itemStack;
         }
     }
@@ -55,6 +56,7 @@ public class MutableInventory implements Inventory {
     @Override
     public void setStack(int slot, ItemStack stack) {
         this.stacks.set(slot, stack);
+        markDirty();
     }
 
     @Override
@@ -70,5 +72,6 @@ public class MutableInventory implements Inventory {
         for (var i = 0; i < this.stacks.size(); i++) {
             stacks.set(i, ItemStack.EMPTY);
         }
+        markDirty();
     }
 }

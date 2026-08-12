@@ -17,6 +17,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Unit;
@@ -50,6 +51,10 @@ public interface VItem {
     public ItemStack fromNbt(NbtCompound tag);
     // now we save DataVersion field
     public NbtCompound toNbt(ItemStack tag);
+
+    public ItemStack fromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup lookup);
+    // now we save DataVersion field
+    public NbtCompound toNbt(ItemStack tag, RegistryWrapper.WrapperLookup lookup);
 
     public MutableText getFormattedName(ItemStack stack);
 

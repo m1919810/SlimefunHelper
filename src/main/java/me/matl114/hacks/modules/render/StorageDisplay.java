@@ -41,7 +41,9 @@ import net.minecraft.util.Identifier;
 public class StorageDisplay extends BaseModule {
     public final ModulePath modelConfig = makePath(Configs.RENDER_CONFIG, "itemstack-display.storage-display");
 
-    public StorageDisplay() {}
+    public StorageDisplay() {
+        super("StorageDisplay");
+    }
 
     public final FlagRef storageDisplay = builder(modelConfig.add("enable-storage-display"), Boolean.class)
             .defaultValue(true)

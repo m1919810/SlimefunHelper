@@ -6,13 +6,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.RenderHandler;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -23,13 +24,13 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
         return buildSelected().stream().map(Triplet::getC).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private static final Predicate<Triplet<Text, Identifier, Object>> filter = s -> {
+    private static final BiPredicate<Triplet<Text, Identifier, Object>, String> filter = (s, b) -> {
         String id = s.getB().toString();
-        if (FilterService.nameMatch(id, FilterService.currentUserInput)) {
+        if (FilterService.nameMatch(id, b)) {
             return true;
         }
         String zhcn = s.getA().getString();
-        if (FilterService.nameMatch(zhcn, FilterService.currentUserInput)) {
+        if (FilterService.nameMatch(zhcn, b)) {
             return true;
         }
         return false;
@@ -55,33 +56,61 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
             Set<T> currentSelection,
             Function<T, Text> localization,
             BiFunction<Triplet<Text, Identifier, T>, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
+            ValueAccessor<String> filterInput,
             int x,
             int y,
             int dx,
             int dy,
             int height) {
-        this(buildPairInternal(registry, currentSelection, localization), renderFactory, x, y, dx, dy, height);
+        this(
+                buildPairInternal(registry, currentSelection, localization),
+                renderFactory,
+                filterInput,
+                x,
+                y,
+                dx,
+                dy,
+                height);
     }
 
     private ListRegistryMultiSelectWidget(
             Pair<List<Triplet<Text, Identifier, T>>, Set<Triplet<Text, Identifier, T>>> pairData,
             BiFunction<Triplet<Text, Identifier, T>, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
+            ValueAccessor<String> filterInput,
             int x,
             int y,
             int dx,
             int dy,
             int height) {
-        super(pairData.getFirst(), pairData.getSecond(), renderFactory, (Predicate) filter, x, y, dx, dy, height);
+        super(
+                pairData.getFirst(),
+                pairData.getSecond(),
+                renderFactory,
+                filterInput,
+                (BiPredicate) filter,
+                x,
+                y,
+                dx,
+                dy,
+                height);
     }
 
     public static <T> ListRegistryMultiSelectWidget<T> registry(
-            Registry<T> registry, Set<T> currentSelect, int x, int y, int dx, int dy, int height) {
+            Registry<T> registry,
+            Set<T> currentSelect,
+            ValueAccessor<String> filterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height) {
 
         return new ListRegistryMultiSelectWidget<>(
                 registry,
                 currentSelect,
                 RegistryDisplays::getDisplay,
                 (trp, attr) -> RegistryDisplays.of(registry, trp.getC(), trp.getA(), trp.getB()),
+                filterInput,
                 x,
                 y,
                 dx,

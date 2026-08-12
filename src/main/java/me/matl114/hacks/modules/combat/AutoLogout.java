@@ -24,6 +24,7 @@ public class AutoLogout extends BaseModule {
     public final ModulePath autoLogout = makePath(Configs.COMBAT_CONFIG, "auto-logout");
 
     public AutoLogout() {
+        super("AutoLogout");
         bindFlag(enable);
     }
 
@@ -87,7 +88,7 @@ public class AutoLogout extends BaseModule {
                 return;
             }
             if (totemLeftEnable.get()) {
-                double cnt = InventoryUtils.computeInventory(
+                double cnt = InventoryUtils.computePlayerInventory(
                         (v) -> v.getItem() == Items.TOTEM_OF_UNDYING ? (double) v.getCount() : null, false);
                 if (cnt <= totemLeftThreshold.get()) {
                     MainTasks.scheduleDisconnect();
@@ -112,7 +113,7 @@ public class AutoLogout extends BaseModule {
             if (entity != null && entity.getId() == mc.player.getId()) {
                 int leftTotem = totemTriggerCheckLeftTotem.get();
                 // minus one, because one is going to consume
-                double cnt = InventoryUtils.computeInventory(
+                double cnt = InventoryUtils.computePlayerInventory(
                                 (v) -> v.getItem() == Items.TOTEM_OF_UNDYING ? (double) v.getCount() : null, false)
                         - 1;
                 if (cnt <= leftTotem) {

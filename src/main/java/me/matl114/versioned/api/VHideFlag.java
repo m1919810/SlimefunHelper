@@ -7,5 +7,6 @@ public interface VHideFlag {
 
     public void setHideFlag(ItemStack stack, boolean hide);
 
+    @Deprecated
     public String displayName();
 }

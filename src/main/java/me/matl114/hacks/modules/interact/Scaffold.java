@@ -42,6 +42,7 @@ public class Scaffold extends BaseModule {
     //    };
 
     public Scaffold() {
+        super("Scaffold");
         bindFlag(enable);
     }
 
@@ -90,11 +91,14 @@ public class Scaffold extends BaseModule {
             .validator(Configs.intRange(0, 3))
             .build();
 
-    public final IntRef expandInteractRange = builder(
-                    Configs.INTERACT_CONFIG, makePath("interact-scaffold.expand-interact-range"), IntRef.TYPE)
+    public final IntRef expandInteractRange = builder(scaffold.add("expand-interact-range"), IntRef.TYPE)
             .defaultValue(1)
             .updateListener(this::updateSearchRange)
             .validator(Configs.intRange(0, 3))
+            .build();
+
+    public final FlagRef swingHand = builder(scaffold.add("swing-hand"), Boolean.class)
+            .defaultValue(true)
             .build();
 
     //    public final IntRef cooldownOverride = builder(
@@ -128,7 +132,8 @@ public class Scaffold extends BaseModule {
                 if (Objects.equals(result1.getBlockPos(), result.getBlockPos())
                         && Objects.equals(result1.getSide(), result.getSide())
                         && Objects.equals(result1.getType(), result.getType())) {
-                    InteractionTasks.placeBlock(offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, result1);
+                    InteractionTasks.interactBlock(
+                            offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, result1, swingHand.get());
                     return;
                 }
             }
@@ -136,9 +141,10 @@ public class Scaffold extends BaseModule {
             if (legalMode.get().isLegal()) {
                 var mode = legalMode.get();
                 // todo: delay movement fix
-                InteractionTasks.handlePlaceMode(mode, result, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND);
+                InteractionTasks.handlePlaceMode(
+                        mode, result, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
             } else {
-                InteractionTasks.placeBlock(offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, result);
+                InteractionTasks.interactBlock(offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, result, swingHand.get());
             }
         } finally {
             callback.run();

@@ -3,12 +3,12 @@ package me.matl114.hacks.utils.config;
 import com.google.common.base.Preconditions;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import java.util.*;
-import java.util.function.Function;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.CodecUtils;
 import me.matl114.utils.config.AttrKeyValue;
@@ -19,149 +19,185 @@ import net.minecraft.registry.Registry;
 
 @Getter
 @Accessors(fluent = true)
-public class EntryPrimitiveMap<T, W> implements NBTParsable<EntryPrimitiveMap<T, W>> {
-    final Registry<T> keyType;
-    final NBTType<W> valueType;
-    final W defaultValue;
-    final Map<T, W> map;
-    Map<Holder<T>, Primitive<W>> originValue;
+public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
 
     public static <T, W> Class<EntryPrimitiveMap<T, W>> parameter() {
         return (Class<EntryPrimitiveMap<T, W>>) (Class) EntryPrimitiveMap.class;
     }
 
     public EntryPrimitiveMap(Registry<T> registry, NBTType<W> type, Map<T, W> map) {
-        this(registry, type, map, null);
+        this(registry, type, map, Optional.empty());
     }
 
     public EntryPrimitiveMap(Registry<T> registry, NBTType<W> type, Map<T, W> map, W defaultValue) {
-        this.keyType = registry;
-        this.valueType = type;
-        this.map = new LinkedHashMap<>(map);
-        this.defaultValue = defaultValue;
+        this(registry, type, map, Optional.ofNullable(defaultValue).map(value -> Primitive.of(type, value)));
     }
 
-    public EntryPrimitiveMap(Map<Holder<T>, Primitive<W>> map, Registry<T> registry, NBTType<W> type)
-            throws RuntimeException {
-        this.keyType = registry;
-        this.valueType = type;
-        originValue = map;
-        this.map = new LinkedHashMap<>(map.size());
-        W defa = null;
-        for (Map.Entry<Holder<T>, Primitive<W>> entry : map.entrySet()) {
-            var key = entry.getKey();
-            var value = entry.getValue();
+    public EntryPrimitiveMap(
+            Registry<T> registry, NBTType<W> type, Map<T, W> map, Optional<Primitive<W>> defaultPrimitive) {
+        this(registry, type, defaultPrimitive, valueMapToHolderMap(registry, map));
+    }
+
+    protected EntryPrimitiveMap(
+            Registry<T> registry, NBTType<W> type, Optional<Primitive<W>> defaultPrimitive, Map<Holder<T>, W> map) {
+        super(Holder.TYPE.<Holder<T>>cast(), type, map, createDefaultKeyPrimitive(registry), defaultPrimitive);
+    }
+
+    public EntryPrimitiveMap(
+            Map<Holder<T>, Primitive<W>> map,
+            Registry<T> registry,
+            NBTType<W> type,
+            Optional<Primitive<W>> defaultPrimitive) {
+        this(
+                registry,
+                type,
+                holderMapToValueMap(map, registry, type),
+                resolveDefaultPrimitive(map, registry, type, defaultPrimitive));
+    }
+
+    private static <T> Optional<Primitive<Holder<T>>> createDefaultKeyPrimitive(Registry<T> registry) {
+        return Optional.of(Primitive.of(Holder.TYPE.<Holder<T>>cast(), Holder.of(registry, null)));
+    }
+
+    private static <T, W> Map<Holder<T>, W> valueMapToHolderMap(Registry<T> registry, Map<T, W> map) {
+        Map<Holder<T>, W> result = new LinkedHashMap<>(map.size());
+        for (var entry : map.entrySet()) {
+            result.put(Holder.of(registry, entry.getKey()), entry.getValue());
+        }
+        return result;
+    }
+
+    private static <T, W> Map<T, W> holderMapToValueMap(
+            Map<Holder<T>, Primitive<W>> map, Registry<T> registry, NBTType<W> type) {
+        Map<T, W> result = new LinkedHashMap<>();
+        for (var entry : map.entrySet()) {
+            Holder<T> key = entry.getKey();
+            Primitive<W> value = entry.getValue();
+            Preconditions.checkArgument(registry.getKey() == key.registry().getKey());
+            Preconditions.checkArgument(value.valueType() == type);
+            if (key.entry() != null) {
+                result.put(key.entry(), value.value());
+            }
+        }
+        return result;
+    }
+
+    private static <T, W> Optional<Primitive<W>> resolveDefaultPrimitive(
+            Map<Holder<T>, Primitive<W>> map,
+            Registry<T> registry,
+            NBTType<W> type,
+            Optional<Primitive<W>> defaultPrimitive) {
+        Primitive<W> legacyDefaultPrimitive = null;
+        for (var entry : map.entrySet()) {
+            Holder<T> key = entry.getKey();
+            Primitive<W> value = entry.getValue();
             Preconditions.checkArgument(registry.getKey() == key.registry().getKey());
             Preconditions.checkArgument(value.valueType() == type);
             if (key.entry() == null) {
-                defa = value.value();
-            } else {
-                this.map.put(key.entry(), value.value());
+                legacyDefaultPrimitive = value;
             }
         }
-        this.defaultValue = defa;
+        Primitive<W> finalLegacyDefaultPrimitive = legacyDefaultPrimitive;
+        return defaultPrimitive
+                .map(entry -> {
+                    Preconditions.checkArgument(entry.valueType() == type);
+                    return entry;
+                })
+                .or(() -> Optional.ofNullable(finalLegacyDefaultPrimitive));
     }
 
-    public Map<Holder<T>, Primitive<W>> toMap() {
-        if (originValue == null) {
-            Map<Holder<T>, Primitive<W>> originValue = new LinkedHashMap<>();
-            for (var re : map.entrySet()) {
-                originValue.put(Holder.of(keyType, re.getKey()), Primitive.of(valueType, re.getValue()));
-            }
-            if (defaultValue != null) {
-                originValue.put(Holder.of(keyType, null), Primitive.of(valueType, defaultValue));
-            }
-            this.originValue = originValue;
+    private static <T, W> Registry<T> resolveRegistry(PrimitiveMap<Holder<T>, W> map) {
+        return map.defaultKeyPrimitive()
+                .map(Primitive::value)
+                .map(Holder::registry)
+                .or(() -> map.map().keySet().stream().findFirst().map(Holder::registry))
+                .orElseThrow(() -> new IllegalArgumentException("Can not resolve registry from PrimitiveMap"));
+    }
+
+    private static <T, W> Map<Holder<T>, Primitive<W>> toLegacyMap(PrimitiveMap<Holder<T>, W> map) {
+        Map<Holder<T>, Primitive<W>> result = new LinkedHashMap<>();
+        for (var entry : map.map().entrySet()) {
+            result.put(entry.getKey(), Primitive.of(map.valueType(), entry.getValue()));
         }
-        return originValue;
+        return result;
     }
 
-    NBTType<Map<Holder<T>, Primitive<W>>> cachedEntryType;
-
-    public static final <T, W> NBTType<EntryPrimitiveMap<T, W>> create() {
-        Function<EntryPrimitiveMap<T, W>, NBTType<Map<Holder<T>, Primitive<W>>>> typeGenerator = (w) -> {
-            if (w.cachedEntryType == null) {
-                w.cachedEntryType = NBTTypes.createArrayMapLike(
-                        "parametered_map",
-                        Holder.TYPE.<Holder<T>>cast(),
-                        () -> Holder.of(w.keyType, null),
-                        "key",
-                        Primitive.TYPE.cast(),
-                        () -> Primitive.of(w.valueType, w.valueType.empty()),
-                        "value",
-                        WrapperFactory.identity(),
-                        AttrKeyValue.CustomWidgetFactory.cutSizeXLeft(0.5),
-                        AttrKeyValue.CustomWidgetFactory.cutSizeXRight(0.5),
-                        300,
-                        20);
-            }
-            return w.cachedEntryType;
-        };
-        return new NBTType<EntryPrimitiveMap<T, W>>(
-                NBTType.<EntryPrimitiveMap<T, W>>parameter(EntryPrimitiveMap.class),
-                RecordCodecBuilder.<EntryPrimitiveMap<T, W>>create(oInstance -> oInstance
-                        .group(
-                                CodecUtils.arrayMapCodec(
-                                                Holder.TYPE.<Holder<T>>cast().typeCodec(),
-                                                Primitive.TYPE
-                                                        .<Primitive<W>>cast()
-                                                        .typeCodec())
-                                        .fieldOf("data")
-                                        .forGetter(EntryPrimitiveMap::toMap),
-                                ((Codec<Registry<T>>) Registries.REGISTRIES.getCodec())
-                                        .fieldOf("key_type")
-                                        .forGetter(EntryPrimitiveMap::keyType),
-                                NBTTypes.<W>codec().fieldOf("value_type").forGetter(EntryPrimitiveMap::valueType))
-                        .apply(oInstance, EntryPrimitiveMap::new)),
-                (w, x, y, dx, dy) -> {
-                    EntryPrimitiveMap<T, W> map = w.getOriginValue();
-                    WrapperFactory<Map<Holder<T>, Primitive<W>>, EntryPrimitiveMap<T, W>> wrapperFactory =
-                            WrapperFactory.of(
-                                    mp -> new EntryPrimitiveMap<>(mp, map.keyType, map.valueType),
-                                    EntryPrimitiveMap::toMap);
-                    return new TypeConvertAttrKeyValue<>(w, wrapperFactory, typeGenerator.apply(map))
-                            .generateValueWidget(x, y, dx, dy);
-                },
-                null,
-                (EntryPrimitiveMap<T, W>) new EntryPrimitiveMap<>(Map.of(), Registries.BLOCK, NBTTypes.STRING_TYPE));
+    private static <T, W> EntryPrimitiveMap<T, W> fromPrimitiveMap(PrimitiveMap<Holder<T>, W> map) {
+        return new EntryPrimitiveMap<>(
+                toLegacyMap(map), resolveRegistry(map), map.valueType(), map.defaultValuePrimitive());
     }
 
-    public static final NBTType<EntryPrimitiveMap<Object, Object>> TYPE = create();
+    private static <T, W> WrapperFactory<PrimitiveMap<Holder<T>, W>, EntryPrimitiveMap<T, W>> wrapperFactory() {
+        return WrapperFactory.of(EntryPrimitiveMap::fromPrimitiveMap, map -> map);
+    }
+
+    public Registry<T> registry() {
+        return this.defaultKeyPrimitive
+                .map(Primitive::value)
+                .map(Holder::registry)
+                .orElse(null);
+    }
 
     @Nullable
-    public W getOrDefault(T va) {
-        return map.getOrDefault(va, defaultValue);
+    public W getEntryValue(T value) {
+        return super.getOrDefault(Holder.of(registry(), value));
     }
 
-    public W getOrWithDefault(T va, W val) {
-        var re = getOrDefault(va);
-        return re == null ? val : re;
+    public W getEntryValueOr(T value, W fallback) {
+        W result = getEntryValue(value);
+        return result == null ? fallback : result;
     }
+
+    private static <T, W> Codec<EntryPrimitiveMap<T, W>> legacyCodec() {
+        return RecordCodecBuilder.create(instance -> instance.group(
+                        CodecUtils.arrayMapCodec(
+                                        Holder.TYPE.<Holder<T>>cast().typeCodec(),
+                                        Primitive.TYPE.<Primitive<W>>cast().typeCodec())
+                                .fieldOf("data")
+                                .forGetter(EntryPrimitiveMap::toLegacyMap),
+                        ((Codec<Registry<T>>) Registries.REGISTRIES.getCodec())
+                                .fieldOf("key_type")
+                                .forGetter(EntryPrimitiveMap::registry),
+                        NBTTypes.<W>codec().fieldOf("value_type").forGetter(EntryPrimitiveMap::valueType),
+                        Primitive.TYPE
+                                .<Primitive<W>>cast()
+                                .typeCodec()
+                                .optionalFieldOf("default_primitive")
+                                .forGetter(EntryPrimitiveMap::defaultValuePrimitive))
+                .apply(instance, EntryPrimitiveMap::new));
+    }
+
+    public static <T, W> NBTType<EntryPrimitiveMap<T, W>> createEntry() {
+        WrapperFactory<PrimitiveMap<Holder<T>, W>, EntryPrimitiveMap<T, W>> factory = wrapperFactory();
+        NBTType<PrimitiveMap<Holder<T>, W>> parentType = PrimitiveMap.TYPE.cast();
+        AttrKeyValue.CustomWidgetFactory<EntryPrimitiveMap<T, W>> widgetFactory = (attr, x, y, dx, dy) -> parentType
+                .customWidgetFactory()
+                .generateWidget(new TypeConvertAttrKeyValue<>(attr, factory, parentType), x, y, dx, dy);
+        return new NBTType<>(
+                "entryprimitivemap",
+                Codec.withAlternative(factory.wrapCodecXmap(parentType.typeCodec()), legacyCodec()),
+                widgetFactory,
+                (EntryPrimitiveMap<T, W>) new EntryPrimitiveMap<>(Registries.BLOCK, NBTTypes.STRING_TYPE, Map.of()));
+    }
+
+    public static final NBTType<EntryPrimitiveMap<Object, Object>> TYPE = createEntry();
 
     @Override
-    public NBTType<EntryPrimitiveMap<T, W>> type() {
+    public NBTType<PrimitiveMap<Holder<T>, W>> type() {
         return TYPE.cast();
     }
 
     @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (!(object instanceof EntryPrimitiveMap<?, ?> that)) return false;
-        return Objects.equals(keyType, that.keyType)
-                && Objects.equals(valueType, that.valueType)
-                && Objects.equals(defaultValue, that.defaultValue)
-                && Objects.equals(map, that.map);
+    protected PrimitiveMap<Holder<T>, W> withDefault(
+            Map<Holder<T>, W> map,
+            Optional<Primitive<Holder<T>>> defaultKeyPrimitive,
+            Optional<Primitive<W>> defaultValuePrimitive) {
+        Registry<T> registry = registry();
+        return new EntryPrimitiveMap<>(registry, valueType(), defaultValuePrimitive, map);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(keyType, valueType, defaultValue, map);
-    }
-
-    public boolean isSameType(NBTParsable<?> type) {
-        return NBTParsable.super.isSameType(type)
-                && type instanceof EntryPrimitiveMap mm
-                && mm.keyType == keyType
-                && mm.valueType == valueType;
+    public boolean equals(Object object) {
+        return this == object || (object instanceof EntryPrimitiveMap<?, ?> that && super.equals(that));
     }
 }

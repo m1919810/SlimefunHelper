@@ -5,12 +5,13 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
-import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityPose;
@@ -23,6 +24,7 @@ import net.minecraft.util.math.Vec3d;
 
 public class PearlFly extends BaseModule {
     public PearlFly() {
+        super("PearlFly");
         bindFlag(enable);
     }
 
@@ -136,7 +138,7 @@ public class PearlFly extends BaseModule {
     public boolean usePearl(Vec3d look) {
         var re = InventoryUtils.findPlayerItem((ss) -> ss.getItem() == Items.ENDER_PEARL, true, false);
         if (re == null) {
-            Debug.chat(ChatUtils.stringToText("&c[Pearl] &f没有珍珠了"));
+            logI18NSub("Pearl", "message.module.pearl-fly.no-pearl");
             return true;
         }
 
@@ -147,7 +149,7 @@ public class PearlFly extends BaseModule {
         if (runnable == null) return false;
         var status = new EntityMovementStatus<>(mc.player);
 
-        EntityUtils.setEntityRotationSafe(mc.player, look);
+        PlayerStateManager.setPlayerRotationSafe(mc.player, look);
         Hand hand = offHand ? Hand.OFF_HAND : Hand.MAIN_HAND;
         mc.interactionManager.interactItem(mc.player, hand);
         status.restoreRotation();

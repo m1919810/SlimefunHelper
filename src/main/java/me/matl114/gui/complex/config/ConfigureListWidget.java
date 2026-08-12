@@ -116,7 +116,7 @@ public class ConfigureListWidget
                         this.getFromKeyOr(str, Map.of()).getSecond().values().stream()
                                 .filter(this::applyFilter)
                                 .toList(),
-                        b -> new RefKeyValueInputWidget(
+                        b -> new DefaultedKeyValueInputWidget(
                                 blankDx,
                                 0,
                                 this.buttonDx + blankDx + inputDx,

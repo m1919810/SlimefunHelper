@@ -1,5 +1,7 @@
 package me.matl114.hacks.api;
 
+import java.util.Arrays;
+import java.util.Objects;
 import lombok.Getter;
 import me.matl114.managers.config.Config;
 import net.minecraft.text.Text;
@@ -40,5 +42,18 @@ public class ModulePath {
 
     public Text toTranslationKey() {
         return Text.translatable(asString());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(config, Arrays.hashCode(splits));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof ModulePath)) return false;
+        ModulePath other = (ModulePath) obj;
+        return other.config == this.config && Arrays.equals(splits, other.splits);
     }
 }

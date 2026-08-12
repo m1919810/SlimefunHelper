@@ -18,6 +18,7 @@ public class LegacySnapRotManager extends BaseModule {
     public static LegacySnapRotManager INSTANCE;
 
     public LegacySnapRotManager() {
+        super("LegacySnapRotManager");
         INSTANCE = this;
     }
 

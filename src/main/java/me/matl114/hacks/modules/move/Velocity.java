@@ -10,11 +10,11 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
@@ -38,6 +38,14 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public final KeyBindRef hotkey = moduleEntry(
                     antiKb.addHotkey(), new MultiKeyBind(), antiKb.addEnable(), moduleMeta(() -> this.mode))
+            .build();
+
+    public final FlagRef hurtOnly = builder(antiKb.add("ground-hurt-only"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef hurtElytraOnly = builder(antiKb.add("elytra-hurt-only"), Boolean.class)
+            .defaultValue(true)
             .build();
 
     public final DoubleRef minHorizontalVelocity = builder(antiKb.add("horizontal-threshold"), DoubleRef.TYPE)
@@ -96,9 +104,12 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     public final FlagRef noWaterPush =
             flagBuilder(antiKb.add("no-liquid-flow-push")).build();
 
+    public final FlagRef noClimbing = flagBuilder(antiKb.add("no-climbing")).build();
+
     public static LegalMovementManager.DelegateMovementModifier instance;
 
     public Velocity() {
+        super("Velocity");
         bindFlag(enable);
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
@@ -203,8 +214,14 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                 event.cancel();
                 return;
             }
-            if (canCancel > 0) {
-                canCancel -= 1;
+            boolean shouldApply;
+            if (mc.player.isFallFlying()) {
+                shouldApply = !hurtElytraOnly.get() || canCancel > 0;
+            } else {
+                shouldApply = !hurtOnly.get() || canCancel > 0;
+            }
+            if (shouldApply) {
+                canCancel = Math.max(canCancel - 1, 0);
                 if (event.isCancelled()) {
                     return;
                 }

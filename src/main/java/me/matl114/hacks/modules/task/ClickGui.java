@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.task;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.lang.ref.WeakReference;
@@ -9,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -38,13 +40,13 @@ import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.config.*;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.managers.input.*;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.ColorUtils;
 import me.matl114.utils.algorithms.SerialExecutor;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.Screen;
@@ -64,6 +66,7 @@ public class ClickGui extends BaseModule {
     public static ClickGui INSTANCE;
 
     public ClickGui() {
+        super("ClickGui");
         INSTANCE = this;
     }
 
@@ -92,19 +95,23 @@ public class ClickGui extends BaseModule {
     public FileStorage internalGuiData = FileManager.getInstance().getInternalStorage("click-gui-data.nbt");
 
     public NBTRef<WrapColor> moduleListColor = builder(clickGui.add("gui-frame-style"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color("#984FDB")))
+            .defaultValue(new WrapColor(("#984FDB")))
             .build();
 
     public NBTRef<WrapColor> backGroundColor = builder(clickGui.add("gui-background-style"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color("#323232")))
+            .defaultValue(new WrapColor(("#323232")))
             .build();
 
     public NBTRef<WrapColor> configColor = builder(clickGui.add("gui-config-style"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color("#323232")))
+            .defaultValue(new WrapColor(("#323232")))
             .build();
 
     public NBTRef<WrapColor> textColor = builder(clickGui.add("gui-text-style"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .defaultValue(new WrapColor((Formatting.WHITE)))
+            .build();
+
+    public final FlagRef enableConfigSubGroup = builder(clickGui.add("enable-config-subgroup"), Boolean.class)
+            .defaultValue(true)
             .build();
 
     private boolean onHotkey(IHotKey iHotKey, IInputManager manager) {
@@ -234,11 +241,14 @@ public class ClickGui extends BaseModule {
         Map<String, Function<Screen, DrawableWidget>> selections = new LinkedHashMap<>();
         selections.put("Module", (s) -> this.createModuleGroupList(modules, meta));
         selections.put("Friends", (s) -> this.createFriendSettings(s, meta));
-        selections.put("BindCmd", (s) -> this.createBindCmdSettings(s, meta));
+        selections.put("CmdMacros", (s) -> this.createCmdMacrosSettings(s, meta));
         selections.put("Hotkeys", (s) -> this.createKeyBindListSettings(s, meta));
         selections.put("BaseSettings", (s) -> this.createBaseSettings(s, meta));
         selections.put("GuiSettings", (s) -> this.createGuiSettings(s, meta));
         selections.put("Config", (s) -> this.createConfig(meta));
+        if (BaritoneHooks.getInstance().isBaritoneAPISupported()) {
+            selections.put("Baritone", (s) -> this.createBaritoneScreen(s, meta));
+        }
         Screen screen = new ClickGuiMainScreen(selections);
         // add save when close
         ScreenAccess.of(screen).addCloseFuture(() -> setClickGuiMeta(meta));
@@ -246,7 +256,7 @@ public class ClickGui extends BaseModule {
     }
 
     public Stream<BaseModule> getShowModuleList(ModuleGroup group) {
-        return group.getModules().stream().filter(BaseModule::hasEditableConfig);
+        return group.getModules().stream().filter(BaseModule::shouldShowInGui);
     }
 
     private DrawableWidget createModuleGroupList(List<String> modules, ClickGuiMetaData meta) {
@@ -254,7 +264,7 @@ public class ClickGui extends BaseModule {
         for (var re : modules) {
             ModuleGroup group = HackModules.getModuleGroup(re);
             ModuleSlideMeta groupMeta = meta.getModuleMeta(re);
-            subScreen.addDrawableChild(createModuleGroup(re, group, groupMeta));
+            subScreen.addDrawableChild(createModuleGroup(re, group, groupMeta, meta));
         }
         // search list
         subScreen.addDrawableChild(createSearchList(meta, meta.getModuleMeta(SEARCH_MODULE)));
@@ -266,26 +276,27 @@ public class ClickGui extends BaseModule {
                 ValueAccessor.of(slideMeta::getX, slideMeta::setX), ValueAccessor.of(slideMeta::getY, slideMeta::setY));
     }
 
-    private DrawableWidget createModuleGroup(String module, ModuleGroup moduleGroup, ModuleSlideMeta slideMeta) {
+    private DrawableWidget createModuleGroup(
+            String module, ModuleGroup moduleGroup, ModuleSlideMeta slideMeta, ClickGuiMetaData metaData) {
         SubScreenWidget subScreen = createModuleListHolder(slideMeta);
         DrawableWidget expandHead = createDragExpandableHead(module, slideMeta);
         subScreen.addDrawableChild(expandHead);
         // add list
-        SubScreenWidget moduleList = createModuleList(moduleGroup);
+        SubScreenWidget moduleList = createModuleList(moduleGroup, metaData);
         subScreen.addDrawableChild(new DynamicContentWidget<>(
                 () -> (slideMeta.slidingDown ? moduleList : null), 0, expandHead.getHeight()));
         return subScreen;
     }
 
-    private SubScreenWidget createModuleList(ModuleGroup moduleGroup) {
-        return createModuleList(getShowModuleList(moduleGroup).toList());
+    private SubScreenWidget createModuleList(ModuleGroup moduleGroup, ClickGuiMetaData metaData) {
+        return createModuleList(getShowModuleList(moduleGroup).toList(), metaData);
     }
 
-    private SubScreenWidget createModuleList(Collection<BaseModule> baseModules) {
+    private SubScreenWidget createModuleList(Collection<BaseModule> baseModules, ClickGuiMetaData metaData) {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 0, 0);
         int yLevel = 0;
         for (var entry : baseModules) {
-            DrawableWidget widget = createClickableModuleWidget(entry);
+            DrawableWidget widget = createClickableModuleWidget(entry, metaData);
             subScreen.addDrawableChild(new ContentDelegateWidget<>(0, yLevel, 0, 0).setContentDelegate(widget));
             yLevel += widget.getHeight();
         }
@@ -324,7 +335,7 @@ public class ClickGui extends BaseModule {
                 "暂无介绍");
     }
 
-    private DrawableWidget createClickableModuleWidget(BaseModule baseModule) {
+    private DrawableWidget createClickableModuleWidget(BaseModule baseModule, ClickGuiMetaData metaData) {
         FlagRef bindFlag = baseModule.getBindFlag();
         return ExecutableWidget.instance(
                         0, 0, (int) widgetSize.get().x(), (int) widgetSize.get().y())
@@ -334,10 +345,10 @@ public class ClickGui extends BaseModule {
                                             if (bl) {
                                                 bindFlag.toggle();
                                             } else {
-                                                openConfigurateScreen(baseModule);
+                                                openConfigurateScreen(baseModule, metaData);
                                             }
                                         })
-                                        : ButtonAction.run(() -> openConfigurateScreen(baseModule)),
+                                        : ButtonAction.run(() -> openConfigurateScreen(baseModule, metaData)),
                                 TextProvider.of(getModuleName(baseModule)),
                                 () -> this.backGroundColor.get().withAlpha(192),
                                 () -> this.textColor.get().withAlpha(255),
@@ -357,7 +368,7 @@ public class ClickGui extends BaseModule {
     private static final int buttonHeight = 18;
     private static final int buttonBlank = 2;
 
-    public DrawableWidget createBaseModuleConfigurateScreen(BaseModule baseModule) {
+    public DrawableWidget createBaseModuleConfigurateScreen(BaseModule baseModule, ClickGuiMetaData metaData) {
         int width = indexWidth + blankWidth + buttonWidth;
         DynamicListWidget listWidget = new DynamicListWidget(0, 0, width);
 
@@ -367,25 +378,136 @@ public class ClickGui extends BaseModule {
                                 () -> this.textColor.get().withAlpha(255),
                                 () -> this.moduleListColor.get().withAlpha(255))
                         .withTooltips(TooltipHandler.of(getModuleDescriptionTooltips(baseModule)))));
-        // 占位符。tmd
-        for (var configWidget : baseModule.getEditableConfig()) {
-            SubScreenWidget keyValue = new SubScreenWidget(0, 0, width, buttonHeight + buttonBlank);
-            // add background placeholder , for isMouseOver()
-            keyValue.addDrawableChild(DisplayWidget.instance(0, 0, width, buttonBlank + buttonHeight));
-            DrawableWidget kvInputWidget = getKeyValueWidget(configWidget.ref(), configWidget.keyName());
-            keyValue.addDrawableChild(kvInputWidget);
-            BooleanSupplier showCondition = configWidget.showPredicate();
-            DynamicContentWidget<?> contentWidget =
-                    new DynamicContentWidget<>(() -> showCondition.getAsBoolean() ? keyValue : null, 0, 0);
-            listWidget.addDrawableChild(contentWidget);
+
+        List<WrapperConfigRef<?>> editableConfigs = baseModule.getEditableConfig();
+        Map<String, List<WrapperConfigRef<?>>> groupedConfigs = collectConfigSubGroups(editableConfigs);
+        if (shouldUseConfigSubGroups(groupedConfigs)) {
+            for (var entry : groupedConfigs.entrySet()) {
+                String prefix = entry.getKey();
+                if (shouldShowConfigSubGroupHead(prefix)) {
+                    listWidget.addDrawableChild(createConfigSubGroupHead(baseModule, prefix, metaData));
+                    BooleanSupplier subGroupEnabled = createSubGroupEnabledPredicate(baseModule, prefix, metaData);
+                    for (var configWidget : entry.getValue()) {
+                        listWidget.addDrawableChild(createBaseModuleConfigurateRow(configWidget, subGroupEnabled));
+                    }
+                } else {
+                    for (var configWidget : entry.getValue()) {
+                        listWidget.addDrawableChild(createBaseModuleConfigurateRow(configWidget));
+                    }
+                }
+            }
+        } else {
+            for (var configWidget : editableConfigs) {
+                listWidget.addDrawableChild(createBaseModuleConfigurateRow(configWidget));
+            }
         }
         baseModule.addCustomWidgets(listWidget::addDrawableChild, width, buttonHeight, buttonBlank);
         return listWidget;
     }
 
+    private Map<String, List<WrapperConfigRef<?>>> collectConfigSubGroups(List<WrapperConfigRef<?>> editableConfigs) {
+        Map<String, List<WrapperConfigRef<?>>> groupedConfigs = new LinkedHashMap<>();
+        for (var configWidget : editableConfigs) {
+            String prefix = getConfigSubGroupPrefix(configWidget);
+            groupedConfigs.computeIfAbsent(prefix, ignored -> new ArrayList<>()).add(configWidget);
+        }
+        return groupedConfigs;
+    }
+
+    private boolean shouldUseConfigSubGroups(Map<String, List<WrapperConfigRef<?>>> groupedConfigs) {
+        return enableConfigSubGroup.get() && groupedConfigs.size() > 1;
+    }
+
+    private boolean shouldShowConfigSubGroupHead(String prefix) {
+        return prefix != null && !prefix.isEmpty();
+    }
+
+    private String getConfigSubGroupPrefix(WrapperConfigRef<?> configWidget) {
+        String[] path = configWidget.path();
+        if (path == null || path.length <= 1) {
+            return "";
+        }
+        return String.join(".", Arrays.copyOf(path, path.length - 1));
+    }
+
+    private BooleanSupplier createSubGroupEnabledPredicate(
+            BaseModule baseModule, String prefix, ClickGuiMetaData metaData) {
+        String metaKey = getConfigSubGroupMetaKey(baseModule, prefix);
+        metaData.checkSubGroupDefault(metaKey);
+        return () -> metaData.isSubGroupExpanded(metaKey);
+    }
+
+    private DrawableWidget createConfigSubGroupHead(BaseModule baseModule, String prefix, ClickGuiMetaData metaData) {
+        int width = indexWidth + blankWidth + buttonWidth;
+        int buttonHeight = (int) widgetSize.get().y();
+        int height = buttonHeight + buttonBlank;
+        String metaKey = getConfigSubGroupMetaKey(baseModule, prefix);
+        metaData.checkSubGroupDefault(metaKey);
+        SubScreenWidget subScreen = new SubScreenWidget(0, 0, width, height);
+        ExecutableWidget.instance(0, 0, width, height)
+                .setElementHandler(new AbstractElement()
+                        .withInputHandler(InputHandler.clickRun(
+                                () -> metaData.setSubGroupExpanded(metaKey, !metaData.isSubGroupExpanded(metaKey)))))
+                .addToSub(subScreen);
+        DisplayWidget.instance(0, buttonBlank, width - buttonHeight, buttonHeight)
+                .setRenderHandler(new ColorSplitterElement(
+                        TextProvider.of(getConfigSubGroupTitle(prefix)),
+                        this.textColor.get().withAlpha(255),
+                        () -> backGroundColor.get().withAlpha(192)))
+                .addToSub(subScreen);
+        ExecutableWidget.instance(width - buttonHeight, buttonBlank, buttonHeight, buttonHeight)
+                .setRenderHandler(new AbstractElement()
+                        .combineRender(
+                                RenderHandler.ofColorQuad(backGroundColor.get().withAlpha(192)))
+                        .combineRender((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
+                            context.setShaderColor(textColor.get().withAlpha(255));
+                            context.drawGuiTexture(
+                                    metaData.isSubGroupExpanded(metaKey)
+                                            ? Constants.EXPAND_GUI_ON_SPRITE
+                                            : Constants.EXPAND_GUI_OFF_SPRITE,
+                                    element.getTextureWidth() - element.getTextureHeight() + 2,
+                                    2,
+                                    0,
+                                    element.getTextureHeight() - 4,
+                                    element.getTextureHeight() - 4);
+                            context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                        }))
+                .addToSub(subScreen);
+        return subScreen;
+    }
+
+    private Text getConfigSubGroupTitle(String prefix) {
+        return Text.translatable("config.index." + prefix);
+    }
+
+    private String getConfigSubGroupMetaKey(BaseModule baseModule, String prefix) {
+        return baseModule.getModuleManager().getName() + "." + baseModule.getName() + ":" + prefix;
+    }
+
+    private DrawableWidget createBaseModuleConfigurateRow(WrapperConfigRef<?> configWidget) {
+        return createBaseModuleConfigurateRow(configWidget, () -> true);
+    }
+
+    private DrawableWidget createBaseModuleConfigurateRow(
+            WrapperConfigRef<?> configWidget, BooleanSupplier extraShowCondition) {
+        int width = indexWidth + blankWidth + buttonWidth;
+        SubScreenWidget keyValue = new SubScreenWidget(0, 0, width, buttonHeight + buttonBlank);
+        keyValue.addDrawableChild(DisplayWidget.instance(0, 0, width, buttonBlank + buttonHeight));
+        DrawableWidget kvInputWidget = getKeyValueWidget(configWidget.ref(), configWidget.keyName());
+        keyValue.addDrawableChild(kvInputWidget);
+        BooleanSupplier showCondition = configWidget.showPredicate();
+        return new DynamicContentWidget<>(
+                () -> showCondition.getAsBoolean() && extraShowCondition.getAsBoolean() ? keyValue : null, 0, 0);
+    }
+
     public void openConfigurateScreen(BaseModule baseModule) {
-        var listWidget = createBaseModuleConfigurateScreen(baseModule);
+        openConfigurateScreen(baseModule, getClickGuiMetadata());
+    }
+
+    public void openConfigurateScreen(BaseModule baseModule, ClickGuiMetaData metaData) {
+        var listWidget = createBaseModuleConfigurateScreen(baseModule, metaData);
         Screen screen = new CenterScreen(listWidget);
+        ScreenAccess.of(screen).addCloseFuture(() -> setClickGuiMeta(metaData));
         ScreenAccess.of(screen).openFromCurrent();
         // SubScreenWidget levelSubScreen = new SubScreenWidget(0, 0, 0,0);
     }
@@ -440,8 +562,8 @@ public class ClickGui extends BaseModule {
                 }
                 mc.execute(() -> {
                     listWidget.clearChildren();
-                    createSearchResultGroupSubList(listWidget::addDrawableChild, "Name", moduleFilter);
-                    createSearchResultGroupSubList(listWidget::addDrawableChild, "Setting", settingsFilter);
+                    createSearchResultGroupSubList(listWidget::addDrawableChild, "Name", moduleFilter, metaData);
+                    createSearchResultGroupSubList(listWidget::addDrawableChild, "Setting", settingsFilter, metaData);
                 });
             } else {
                 mc.execute(listWidget::clearChildren);
@@ -467,7 +589,7 @@ public class ClickGui extends BaseModule {
     }
 
     private void createSearchResultGroupSubList(
-            Consumer<DrawableWidget> childrenAdder, String group, List<BaseModule> list) {
+            Consumer<DrawableWidget> childrenAdder, String group, List<BaseModule> list, ClickGuiMetaData metaData) {
         MutableBoolean showFlag = new MutableBoolean(true);
         int buttonWidth = (int) widgetSize.get().x();
         int buttonHeight = (int) widgetSize.get().y();
@@ -501,7 +623,7 @@ public class ClickGui extends BaseModule {
                         })))
                 .addToSub(subScreen);
         childrenAdder.accept(subScreen);
-        var re = createModuleList(list);
+        var re = createModuleList(list, metaData);
         re.refreshScreenSize();
         DynamicContentWidget<?> dynamic = new DynamicContentWidget<>(() -> showFlag.booleanValue() ? re : null, 0, 0);
         childrenAdder.accept(dynamic);
@@ -580,25 +702,33 @@ public class ClickGui extends BaseModule {
     }
 
     private DrawableWidget createBaseSettings(Screen screen, ClickGuiMetaData meta) {
-        DrawableWidget widget = createBaseModuleConfigurateScreen(ModuleSettings.INSTANCE);
+        DrawableWidget widget = createBaseModuleConfigurateScreen(ModuleSettings.INSTANCE, meta);
         return WidgetUtils.createCenterScreenWidget(
                 widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
     }
 
     private DrawableWidget createGuiSettings(Screen screen, ClickGuiMetaData metaData) {
-        DrawableWidget widget = createBaseModuleConfigurateScreen(ClickGui.INSTANCE);
+        DrawableWidget widget = createBaseModuleConfigurateScreen(ClickGui.INSTANCE, metaData);
         return WidgetUtils.createCenterScreenWidget(
                 widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
     }
 
     private DrawableWidget createFriendSettings(Screen screen, ClickGuiMetaData meta) {
-        DrawableWidget widget = createBaseModuleConfigurateScreen(TargetSelector.INSTANCE);
+        DrawableWidget widget = createBaseModuleConfigurateScreen(TargetSelector.INSTANCE, meta);
         return WidgetUtils.createCenterScreenWidget(
                 widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
     }
 
-    private DrawableWidget createBindCmdSettings(Screen screen, ClickGuiMetaData meta) {
-        DrawableWidget widget = createBaseModuleConfigurateScreen(BindCommand.INSTANCE);
+    private DrawableWidget createCmdMacrosSettings(Screen screen, ClickGuiMetaData meta) {
+        List<WrapperConfigRef<?>> configRefs = Stream.of(BindCommand.INSTANCE, EventCommand.INSTANCE)
+                .flatMap(s -> s.getEditableConfig().stream())
+                .toList();
+        DrawableWidget widget = createConfigScreen(
+                Text.translatable("widget.click-gui.selection.CmdMacros"),
+                List::of,
+                configRefs,
+                WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
+                CONFIG_PALETTE);
         return WidgetUtils.createCenterScreenWidget(
                 widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
     }
@@ -609,7 +739,7 @@ public class ClickGui extends BaseModule {
                 .flatMap(s -> s.getEditableConfig().stream())
                 .filter(s -> s.ref() instanceof KeyBindRef)
                 .toList();
-        DrawableWidget widget = WidgetUtils.createConfigScreen(
+        DrawableWidget widget = createConfigScreen(
                 Text.translatable("widget.click-gui.selection.Hotkeys"),
                 List::of,
                 allKeyBinds,
@@ -629,20 +759,78 @@ public class ClickGui extends BaseModule {
         return new ContentDelegateWidget<>(0, 0, 0, 0).setContentDelegate(screen);
     }
 
+    private DrawableWidget createBaritoneScreen(Screen screen, ClickGuiMetaData metaData) {
+        List<Pair<String, ValueAccessor>> baritones = BaritoneHooks.getInstance().getAllSettings().entrySet().stream()
+                .map(s -> Pair.of("widget.click-gui.baritone." + s.getKey(), (ValueAccessor) s.getValue()))
+                .toList();
+        var widget = WidgetUtils.createValueAccessorsEditScreen(
+                Text.translatable("widget.click-gui.selection.Baritone"),
+                List::of,
+                (List) baritones,
+                WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
+                CONFIG_PALETTE,
+                true);
+        return WidgetUtils.createCenterScreenWidget(
+                widget, screen.width, screen.height - 2 * ClickGuiMainScreen.BUTTON_HEIGHT);
+    }
+
+    public static DynamicListWidget createConfigScreen(
+            Text title,
+            Supplier<List<Text>> titleTooltips,
+            List<BaseModule.WrapperConfigRef<?>> configs,
+            WidgetUtils.ConfigScreenLayout layout,
+            WidgetUtils.ConfigScreenPalette palette) {
+        int width = layout.totalWidth();
+        DynamicListWidget listWidget = new DynamicListWidget(0, 0, width);
+
+        listWidget.addDrawableChild(ExecutableWidget.instance(0, 0, width, layout.buttonHeight())
+                .setElementHandler(new ColorLabelTextElement(
+                                TextProvider.of(title),
+                                () -> palette.titleTextColor().getColorInt(),
+                                () -> palette.titleBackgroundColor().getColorInt())
+                        .withTooltips(TooltipHandler.of(titleTooltips))));
+
+        for (var configWidget : configs) {
+            SubScreenWidget keyValueRow =
+                    new SubScreenWidget(0, 0, width, layout.buttonHeight() + layout.buttonBlank());
+            keyValueRow.addDrawableChild(
+                    DisplayWidget.instance(0, 0, width, layout.buttonBlank() + layout.buttonHeight()));
+            keyValueRow.addDrawableChild(createKeyValueWidget(configWidget, layout, palette));
+            DynamicContentWidget<?> contentWidget = new DynamicContentWidget<>(
+                    () -> configWidget.showPredicate().getAsBoolean() ? keyValueRow : null, 0, 0);
+            listWidget.addDrawableChild(contentWidget);
+        }
+
+        return listWidget;
+    }
+
+    private static SubScreenWidget createKeyValueWidget(
+            BaseModule.WrapperConfigRef<?> wrapper,
+            WidgetUtils.ConfigScreenLayout layout,
+            WidgetUtils.ConfigScreenPalette palette) {
+        return WidgetUtils.createKeyValueWidget(wrapper.ref(), wrapper.keyName(), layout, palette);
+    }
+
     @Getter
     public static class ClickGuiMetaData {
         Map<String, ModuleSlideMeta> moduleMetaMap;
+        Map<String, Boolean> subGroupMetaMap;
 
         @Setter
         String searching;
 
         public ClickGuiMetaData() {
             this.moduleMetaMap = new LinkedHashMap<>();
+            this.subGroupMetaMap = new LinkedHashMap<>();
             this.searching = "";
         }
 
-        public ClickGuiMetaData(Map<String, ModuleSlideMeta> moduleCoordinates, String searching) {
+        public ClickGuiMetaData(
+                Map<String, ModuleSlideMeta> moduleCoordinates,
+                Map<String, Boolean> subGroupMetaMap,
+                String searching) {
             this.moduleMetaMap = new LinkedHashMap<>(moduleCoordinates);
+            this.subGroupMetaMap = new LinkedHashMap<>(subGroupMetaMap);
             this.searching = searching;
         }
 
@@ -651,6 +839,19 @@ public class ClickGui extends BaseModule {
                 ModuleSlideMeta newMeta = new ModuleSlideMeta(x, y, false);
                 moduleMetaMap.put(moduleName, newMeta);
             }
+        }
+
+        public void checkSubGroupDefault(String key) {
+            subGroupMetaMap.putIfAbsent(key, true);
+        }
+
+        public boolean isSubGroupExpanded(String key) {
+            checkSubGroupDefault(key);
+            return subGroupMetaMap.get(key);
+        }
+
+        public void setSubGroupExpanded(String key, boolean expanded) {
+            subGroupMetaMap.put(key, expanded);
         }
 
         public void checkDefault(List<String> moduleNames, int wX, int wY) {
@@ -676,6 +877,9 @@ public class ClickGui extends BaseModule {
                         Codec.unboundedMap(Codec.STRING, ModuleSlideMeta.CODEC)
                                 .fieldOf("module_list_metas")
                                 .forGetter(ClickGuiMetaData::getModuleMetaMap),
+                        Codec.unboundedMap(Codec.STRING, Codec.BOOL)
+                                .optionalFieldOf("sub_group_metas", Map.of())
+                                .forGetter(ClickGuiMetaData::getSubGroupMetaMap),
                         Codec.STRING.optionalFieldOf("searching", "").forGetter(ClickGuiMetaData::getSearching))
                 .apply(instance, ClickGuiMetaData::new));
     }

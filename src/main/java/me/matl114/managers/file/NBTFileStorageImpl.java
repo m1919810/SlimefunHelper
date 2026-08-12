@@ -4,6 +4,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import java.io.File;
+import java.io.IOException;
+import me.matl114.utils.FileUtils;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtIo;
@@ -48,10 +50,19 @@ public class NBTFileStorageImpl extends FileStorageImpl {
     @Override
     public void write() {
         ensureParentDir();
+        File tempFile = new File(this.file.getParentFile(), this.file.getName() + ".tmp");
+        if (tempFile.exists()) {
+            tempFile.delete();
+        }
         try {
-            NbtIo.write(this.nbtCompound, this.file.toPath());
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
+            NbtIo.write(this.nbtCompound, tempFile.toPath());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save " + file, e);
+        }
+        try {
+            FileUtils.saveTempFile(tempFile, this.file);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save " + file, e);
         }
         dirty = false;
     }
@@ -69,5 +80,12 @@ public class NBTFileStorageImpl extends FileStorageImpl {
             throw new RuntimeException(e);
         }
         dirty = false;
+    }
+
+    @Override
+    public void delete() {
+        nbtCompound = new NbtCompound();
+        file.delete();
+        deprecated = true;
     }
 }

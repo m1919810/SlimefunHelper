@@ -1,7 +1,6 @@
 package me.matl114.utils.commands.params.types;
 
 import me.matl114.utils.commands.params.api.CommandExecution;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector2f;
 import org.joml.Vector3d;
@@ -81,17 +80,8 @@ public interface ExecutePos {
         @Override
         public Vector3d getPosition(CommandExecution executor) {
             Vector3d executorPos = executor.getExecutePos();
-            float pitch;
-            float yaw;
-            if (executor.getExecutor() instanceof PlayerEntity p) {
-                pitch = p.getPitch();
-                yaw = p.getYaw();
-            } else {
-                pitch = 0;
-                yaw = 0;
-            }
-
-            return executorPos.add(lookCoordTooPos(pitch, yaw, vector3d.x, vector3d.y, vector3d.z));
+            Vector2f vec2 = executor.getExecuteRot();
+            return executorPos.add(lookCoordTooPos(vec2.x, vec2.y, vector3d.x, vector3d.y, vector3d.z));
         }
 
         @Override

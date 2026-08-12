@@ -17,7 +17,6 @@ import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
-import net.minecraft.world.World;
 
 @ApiMethod
 public class RaycastUtils {
@@ -48,8 +47,7 @@ public class RaycastUtils {
                 e, from, to, new Box(from, to), es -> !es.isSpectator() && es.canHit() && es != mc.player, 16384);
     }
 
-    public static BlockHitResult createHitResult(BlockPos pos) {
-        if (mc.player == null) return null;
+    public static BlockHitResult createRealHitResult(BlockPos pos) {
         Vec3d startVec = mc.player.getCameraPosVec(1.0f);
         Vec3d endVec = pos.toCenterPos();
         Vec3d ray = startVec.subtract(endVec);
@@ -63,14 +61,31 @@ public class RaycastUtils {
                     case WEST -> startVec.subtract(ray.multiply((startVec.x - (endVec.x - 0.5)) / ray.x));
                     case EAST -> startVec.subtract(ray.multiply((startVec.x - (endVec.x + 0.5)) / ray.x));
                 }
-                : endVec;
+                : endVec.offset(dir, 0.5);
         return new BlockHitResult(crossTargetPose, dir, pos, false);
+    }
+
+    public static BlockHitResult createHitResult(BlockPos pos, Vec3d playerEyePos) {
+        Direction direction =
+                Direction.getFacing(pos.toCenterPos().subtract(playerEyePos)).getOpposite();
+        return createHitResult(pos, direction);
     }
 
     public static BlockHitResult createHitResult(BlockPos pos, Direction blockFace) {
         if (mc.player == null) return null;
         Vec3d endVec = pos.toCenterPos().offset(blockFace, 0.5);
         return new BlockHitResult(endVec, blockFace, pos, false);
+    }
+
+    public static EntityHitResult createRealHitResult(Entity entity, Vec3d playerEyePos) {
+        Box box = entity.getBoundingBox();
+        Vec3d to = box.getCenter();
+        var raycastSurface = box.raycast(playerEyePos, to);
+        if (raycastSurface != null && raycastSurface.isPresent()) {
+            return new EntityHitResult(entity, raycastSurface.get());
+        } else {
+            return new EntityHitResult(entity);
+        }
     }
 
     public static Optional<BlockPos> rayTraceSpecificBlock(Predicate<Block> blockPredicate) {
@@ -82,20 +97,32 @@ public class RaycastUtils {
                 return Optional.of(blockHitResult.getBlockPos());
             }
         }
-        Vec3d lookat = mc.player.getRotationVector().normalize().multiply(0.1);
-        Vec3d cameraPose = mc.player.getCameraPosVec(1.0f);
-        BlockPos.Mutable mutable = new BlockPos.Mutable(cameraPose.x, cameraPose.y, cameraPose.z);
-        for (int i = 0; i < 75; ++i) {
-            int x = (int) (lookat.x * i + cameraPose.x);
-            int y = (int) (lookat.y * i + cameraPose.y);
-            int z = (int) (lookat.z * i + cameraPose.z);
-            if (x != mutable.getX() || y != mutable.getY() || z != mutable.getZ()) {
-                mutable.set(x, y, z);
-                BlockPos pos = mutable.toImmutable();
-                Block block = mc.world.getBlockState(pos).getBlock();
-                if (blockPredicate.test(block)) {
-                    return Optional.of(pos);
-                }
+        for (var pos : createRaycastBlockPoses(
+                mc.player.getEyePos(),
+                mc.player.getEyePos().add(mc.player.getRotationVector().multiply(6)))) {
+            Block block = mc.world.getBlockState(pos).getBlock();
+            if (blockPredicate.test(block)) {
+                return Optional.of(pos);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<Entity> rayTraceSpecificEntity(Predicate<Entity> entityPredicate) {
+        if (mc.world == null || mc.player == null) return Optional.empty();
+        if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
+            EntityHitResult entityHitResult = (EntityHitResult) mc.crosshairTarget;
+            if (entityPredicate.test(entityHitResult.getEntity())) {
+                return Optional.of(entityHitResult.getEntity());
+            }
+        }
+        Vec3d rayCastStart = mc.player.getEyePos();
+        Vec3d rayCastEnd =
+                mc.player.getEyePos().add(mc.player.getRotationVector().multiply(6));
+        Box including = new Box(rayCastStart, rayCastEnd);
+        for (var re : mc.world.getOtherEntities(mc.player, including, entityPredicate)) {
+            if (re.getBoundingBox().raycast(rayCastStart, rayCastEnd).isPresent()) {
+                return Optional.of(re);
             }
         }
         return Optional.empty();
@@ -242,7 +269,11 @@ public class RaycastUtils {
         }
     }
 
-    public static Iterator<BlockPos> createRaycastBlockPosIterator(World world, Vec3d start, Vec3d end) {
+    public static Iterable<BlockPos> createRaycastBlockPoses(Vec3d start, Vec3d end) {
+        return () -> createRaycastBlockPosIterator(start, end);
+    }
+
+    public static Iterator<BlockPos> createRaycastBlockPosIterator(Vec3d start, Vec3d end) {
 
         // 起点与终点重合时，只返回起点所在方块
         if (start.equals(end)) {
@@ -348,6 +379,14 @@ public class RaycastUtils {
         Vec3d look = EntityUtils.pitchYawToRotation(pitch, yaw);
         Vec3d raycast = look.normalize().multiply(distance);
         Box targetBox = target.getBoundingBox();
+        return targetBox.raycast(vec3d, vec3d.add(raycast)).isPresent();
+    }
+
+    public static boolean canRaycastHit(PlayerEntity player, float pitch, float yaw, BlockPos pos, double distance) {
+        Vec3d vec3d = player.getEyePos();
+        Vec3d look = EntityUtils.pitchYawToRotation(pitch, yaw);
+        Vec3d raycast = look.normalize().multiply(distance);
+        Box targetBox = new Box(pos);
         return targetBox.raycast(vec3d, vec3d.add(raycast)).isPresent();
     }
 }

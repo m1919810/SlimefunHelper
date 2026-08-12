@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import java.awt.*;
 import java.util.List;
 import java.util.Map;
+import me.matl114.utils.ChatUtils;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -25,13 +26,19 @@ public interface Constants {
 
     public static final Identifier EDITOR_SPRITE = new Identifier("slimefunhelper", "gui/editor");
 
-    public static final List<Text> SEARCH_REGISTRY_TOOLTIPS = List.of(Text.literal("从注册标中选择"), Text.literal("选择后点击确认"));
+    public static List<Text> searchRegistryTooltips() {
+        return ChatUtils.parseTooltipsTranslation("widget.gui.constants.search-registry.tooltips", "");
+    }
 
-    public static final Text OPEN_LIST_EDIT_TEXT = Text.literal("点击编辑列表");
+    public static final Text OPEN_LIST_EDIT_TEXT = Text.translatable("widget.gui.constants.open-list-edit");
 
-    public static final List<Text> OPEN_LIST_EDIT_TOOLTIPS = List.of(Text.literal("点击打开 列表编辑界面"));
+    public static List<Text> openListEditTooltips() {
+        return ChatUtils.parseTooltipsTranslation("widget.gui.constants.open-list-edit.tooltips", "");
+    }
 
-    public static final List<Text> OPEN_LIST_PREVIEW_TOOLTIPS = List.of(Text.literal("点击打开 列表预览"));
+    public static List<Text> openListPreviewTooltips() {
+        return ChatUtils.parseTooltipsTranslation("widget.gui.constants.open-list-preview.tooltips", "");
+    }
 
     public static final Identifier EXPAND_GUI_ON_SPRITE = new Identifier("slimefunhelper", "gui/triangle");
     public static final Identifier EXPAND_GUI_OFF_SPRITE = new Identifier("slimefunhelper", "gui/triangle_90");

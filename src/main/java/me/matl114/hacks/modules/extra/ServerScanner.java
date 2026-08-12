@@ -55,6 +55,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class ServerScanner extends BaseModule {
     public ServerScanner() {
+        super("ServerScanner");
         bindFlag(enable);
     }
 

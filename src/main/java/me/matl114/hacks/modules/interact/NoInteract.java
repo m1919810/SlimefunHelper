@@ -22,7 +22,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ColorUtils;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.MutableEntry;
@@ -44,6 +43,7 @@ import net.minecraft.util.shape.VoxelShape;
 
 public class NoInteract extends BaseModule {
     public NoInteract() {
+        super("NoInteract");
         bindFlag(enable);
     }
 
@@ -88,11 +88,15 @@ public class NoInteract extends BaseModule {
     public final FlagRef correctState =
             flagBuilder(noInteract.add("auto-correct-state")).build();
 
+    public final FlagRef swingHand = builder(noInteract.add("swing-hand"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef render =
             flagBuilder(noInteract.add("render-fail-interact")).build();
 
     public final NBTRef<WrapColor> color = builder(noInteract.add("render-fail-interact-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.RED)))
+            .defaultValue(new WrapColor((Color.RED)))
             .build();
 
     @Override
@@ -149,9 +153,10 @@ public class NoInteract extends BaseModule {
                                 if (hitResultOverride != null) {
                                     if (correctState.get()) {
 
-                                        BlockRotate.INSTANCE.addTempStateSchematic(targetPos, targetState, 1);
+                                        BlockRotate.INSTANCE.addTempStateSchematic(targetPos, targetState);
                                     }
-                                    InteractionTasks.handlePlaceMode(correctMode.get(), hitResultOverride, hand);
+                                    InteractionTasks.handlePlaceMode(
+                                            correctMode.get(), hitResultOverride, hand, swingHand.get());
                                     event.cancel();
                                     event.context.setValue(ActionResult.SUCCESS);
                                     return;

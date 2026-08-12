@@ -19,9 +19,12 @@ import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.world.World;
 
 public class EventCommand extends BaseModule {
+    public static EventCommand INSTANCE;
 
     public EventCommand() {
+        super("EventCommand");
         bindFlag(enable);
+        INSTANCE = this;
     }
 
     public final ModulePath cmd = makePath(Configs.MISC_CONFIG, "event-command");

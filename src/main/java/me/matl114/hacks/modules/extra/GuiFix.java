@@ -27,7 +27,9 @@ import net.minecraft.text.TranslatableTextContent;
 public class GuiFix extends BaseModule {
     public final ModulePath guiFix = makePath(Configs.TEST_CONFIG, "other.gui-fix");
 
-    public GuiFix() {}
+    public GuiFix() {
+        super("GuiFix");
+    }
 
     public final FlagRef noTerrain =
             flagBuilder(guiFix.add("disable-terrain-load-screen")).build();

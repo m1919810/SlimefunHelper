@@ -6,6 +6,7 @@
 	"compatibilityLevel": "JAVA_17",
 	"client": [
 		"baritone.BaritoneChunkPackerFixMixin",
+		"baritone.BaritoneClientPlayerEntityRotFixMixin",
 		"baritone.ElytraBehaviourMixin",
 		"baritone.ElytraBehaviourPathManagerMixin",
 		"baritone.ElytraCommandMixin",
@@ -15,7 +16,9 @@
 		"litematica.ServuxLitematicaFixMixin",
 		"meteor.BaritoneSettingsMixin",
 		"sodium.SodiumWorldRendererMixin",
-		"viaversion.PacketWrapperSendEvents"
+		"viaversion.PacketWrapperSendEvents",
+		"xaero.XaeroGuiMapMixin",
+		"xaero.XaeroPlusBaritonePathHelperMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

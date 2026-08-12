@@ -13,16 +13,15 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.RegistryRegex;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
@@ -30,8 +29,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -42,6 +43,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     static LegalMovementManager.DelegateMovementModifier instance;
 
     public AutoSurround() {
+        super("AutoSurround");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
@@ -93,6 +95,18 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     public final FlagRef autoCenter =
             flagBuilder(autoSurround.add("auto-center")).build();
     public final FlagRef autoSneak = flagBuilder(autoSurround.add("auto-sneak")).build();
+
+    public final FlagRef useWhiteList =
+            flagBuilder(autoSurround.add("use-white-list")).build();
+
+    public final NBTRef<RegistryRegex<Item>> whiteList = builder(
+                    autoSurround.add("white-list"), RegistryRegex.<Item>parameter())
+            .defaultValue(new RegistryRegex<>(new Regex("^(obsidian)$"), Registries.ITEM))
+            .build();
+
+    public final FlagRef swingHand = builder(autoSurround.add("swing-hand"), Boolean.class)
+            .defaultValue(true)
+            .build();
 
     @Override
     public void registerAll() {
@@ -245,7 +259,10 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                             InteractionTasks.flushACPlaceQueue();
                         }
                         InteractionTasks.handlePlaceMode(
-                                mode.get(), hitResult.val(), offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND);
+                                mode.get(),
+                                hitResult.val(),
+                                offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND,
+                                swingHand.get());
                         placeCnt += 1;
                         if (placeCnt >= mul) {
                             break;
@@ -273,6 +290,11 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         return InventoryUtils.findBestPlayerItem(
                 item -> {
                     if (item.getItem() instanceof BlockItem blockItem) {
+                        if (useWhiteList.get()) {
+                            if (!whiteList.get().test(blockItem)) {
+                                return null;
+                            }
+                        }
                         return (double) (blockItem.getBlock().getBlastResistance())
                                 + ((blockItem == Items.OBSIDIAN) ? 1E8 : 0)
                                 + (blockItem.getBlock() instanceof BlockWithEntity ? -1E8 : 0);
@@ -304,7 +326,8 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 if (!inputUtils.hasMovement() && !movementManagerEvent.context.hasImportantRotation()) {
                     rotateSuccess = true;
                     Vec3d lookHorizontal = blockPos.toCenterPos().subtract(mc.player.getPos());
-                    EntityUtils.setEntityYawSafe(mc.player, EntityUtils.rotationToYaw(lookHorizontal.normalize()));
+                    PlayerStateManager.setPlayerYawSafe(
+                            mc.player, EntityUtils.rotationToYaw(lookHorizontal.normalize()));
                     movementManagerEvent.context.markForResetRot();
                 }
             } else {

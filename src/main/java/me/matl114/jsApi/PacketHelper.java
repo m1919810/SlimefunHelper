@@ -18,6 +18,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
@@ -121,7 +122,8 @@ public class PacketHelper {
                         mc.player
                                 .getStackInHand(offhand ? Hand.OFF_HAND : Hand.MAIN_HAND)
                                 .copy(),
-                        mc.world.getBlockState(hitResult.getBlockPos())));
+                        mc.world.getBlockState(hitResult.getBlockPos()),
+                        ActionResult.SUCCESS));
             }
             return packet;
         });
@@ -190,11 +192,9 @@ public class PacketHelper {
         PlayerInteractionAccess.of(mc.interactionManager).startMiningBlock(blockPos, dir);
     }
 
-    public static void stopMine() {}
-
     public static void sendStopMining() {
         var access = PlayerInteractionAccess.of(mc.interactionManager); // .sendStopBreakPacket();
-        access.sendBreakPacket(access.getCurrentMiningPos(), Direction.UP);
+        access.sendBreakPacket();
     }
 
     public static void sendStopMining(Object pos, Object direction) {

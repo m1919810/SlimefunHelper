@@ -32,7 +32,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class AnchorArua extends BaseModule {
-    public AnchorArua() {}
+    public AnchorArua() {
+        super("AnchorArua");
+    }
 
     public final ModulePath root = makePath(Configs.COMBAT_CONFIG, "combat-utils.anchor-arua");
 
@@ -67,6 +69,9 @@ public class AnchorArua extends BaseModule {
             flagBuilder(root.add("zero-tick-place-supply")).build();
 
     public final FlagRef use0TickSupply = flagBuilder(root.add("zero-tick-use")).build();
+
+    public final FlagRef swingHand =
+            builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
 
     @Override
     public void registerAll() {
@@ -112,8 +117,9 @@ public class AnchorArua extends BaseModule {
         if (checkNull()) return;
         if (enable.get()) {
             if (!InteractUtils.canRespawnAnchorExplode(mc.world)) {
-                Debug.chat(ChatUtils.stringToText("&c[AnchorArua] &fCan not use RespawnAnchor in "
-                        + mc.world.getRegistryKey().getValue()));
+                logI18N(
+                        "message.module.anchor-arua.invalid-dimension",
+                        mc.world.getRegistryKey().getValue());
                 enable.set(false);
                 return;
             }
@@ -145,7 +151,7 @@ public class AnchorArua extends BaseModule {
         if (re == null) {
             if (!noItem) {
                 noItem = true;
-                Debug.chat(ChatUtils.stringToText("&c[AnchorArua] &fNo"), item.getName());
+                logI18N("message.module.anchor-arua.no-item", item.getName());
             }
             return null;
         } else {
@@ -176,7 +182,7 @@ public class AnchorArua extends BaseModule {
                 }
                 var callback = InvExtra.INSTANCE.swapInventoryIndexToHand(glowstone.index());
                 if (callback == null) return;
-                InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND);
+                InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
                 level = 1;
                 interactLevel.put(targetPos, level);
                 callback.run();
@@ -188,7 +194,7 @@ public class AnchorArua extends BaseModule {
                 var noGlowStone = supplyNoItem(Items.GLOWSTONE);
                 var callback = InvExtra.INSTANCE.swapInventoryIndexToHand(noGlowStone.index());
                 if (callback == null) return;
-                InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND);
+                InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
                 level = 0;
                 interactLevel.put(targetPos, level);
                 callback.run();
@@ -198,7 +204,7 @@ public class AnchorArua extends BaseModule {
                     var callback2 = InvExtra.INSTANCE.swapInventoryIndexToHand(anchor.index());
                     if (callback2 == null) return;
                     mc.world.setBlockState(targetPos, Blocks.AIR.getDefaultState());
-                    InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND);
+                    InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
                     callback2.run();
                 }
             }
@@ -238,7 +244,7 @@ public class AnchorArua extends BaseModule {
             var runnable = InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
             if (runnable == null) return false;
             mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
-            InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND);
+            InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND, swingHand.get());
             runnable.run();
             trackedAnchorPositions.addFirst(pos);
             return true;

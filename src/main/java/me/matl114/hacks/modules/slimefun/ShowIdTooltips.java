@@ -22,6 +22,7 @@ public class ShowIdTooltips extends BaseModule {
     public final ModulePath slimefunSettings = makePath(Configs.SLIMEFUN_CONFIG, "slimefun-settings");
 
     public ShowIdTooltips() {
+        super("ShowIdTooltips");
         bindFlag(enable);
     }
 

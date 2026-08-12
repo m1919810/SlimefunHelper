@@ -22,7 +22,9 @@ import net.minecraft.util.Identifier;
 public class NewStyleModel extends BaseModule {
     public final ModulePath newStyleItem = makePath(Configs.MODEL_CONFIG, "new-style-item");
 
-    public NewStyleModel() {}
+    public NewStyleModel() {
+        super("NewStyleModel");
+    }
 
     public final FlagRef enableEnchant = builder(newStyleItem.add("enable-enchant-book"), Boolean.class)
             .defaultValue(true)

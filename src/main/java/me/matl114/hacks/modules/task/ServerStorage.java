@@ -17,6 +17,7 @@ import lombok.Getter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
+import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
@@ -25,6 +26,7 @@ import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.PrimitivePairList;
 import me.matl114.hacks.utils.world.BlockStorage;
 import me.matl114.hacks.utils.world.ChunkStorage;
+import me.matl114.hacks.utils.world.EntityStorage;
 import me.matl114.hacks.utils.world.IStorage;
 import me.matl114.hacks.utils.world.WorldStorage;
 import me.matl114.managers.Configs;
@@ -37,6 +39,9 @@ import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -46,6 +51,7 @@ public class ServerStorage extends BaseModule {
     public static ServerStorage INSTANCE;
 
     public ServerStorage() {
+        super("ServerStorage");
         INSTANCE = this;
     }
 
@@ -117,6 +123,10 @@ public class ServerStorage extends BaseModule {
     static Meta serverStorage;
     static Map<BlockPos, BlockStorage> snapshotMap1;
     static Map<ChunkPos, ChunkStorage> snapshotMap2;
+
+    public static Meta getStorage() {
+        return serverStorage;
+    }
 
     public static BlockStorage getBlockStorage(BlockPos pos) {
         return getBlockStorage(pos, (Function<BlockPos, BlockStorage>) null);
@@ -204,7 +214,6 @@ public class ServerStorage extends BaseModule {
             }
             block = supplier.apply(key);
             mmm.put(key, block);
-            serverStorage.dirty = true;
             return block;
         }
     }
@@ -215,34 +224,29 @@ public class ServerStorage extends BaseModule {
 
     @Getter
     @Broadcast
+    @ExtraArgs({String.class, DynamicRegistryManager.class})
     private static final EventChannel<Meta> serverStorageLoad = new EventChannel<>();
 
     @Getter
     @Broadcast
+    @ExtraArgs({String.class, DynamicRegistryManager.class})
     private static final EventChannel<Meta> serverStorageSave = new EventChannel<>();
 
     private static <W, T> void _putToSSSSMap(W key, T val, Map<W, T> mmm) {
         if (val != null) {
             mmm.put(key, val);
-            serverStorage.dirty = true;
         } else {
-            if (mmm.remove(key) != null) {
-                serverStorage.dirty = true;
+            T oldValue = mmm.get(key);
+            if (oldValue instanceof IStorage storage) {
+                storage.storage.clear();
+                storage.setDirty(true);
+            } else {
+                mmm.remove(key);
             }
         }
     }
 
-    public static void update(BlockStorage storage, boolean autoRemoval) {
-        if (serverStorage != null) {
-            if (storage.dirty) {
-                serverStorage.dirty = true;
-            }
-            if (autoRemoval && storage.isEmpty()) {
-                setBlockStorage(storage.getPos(), null);
-                serverStorage.dirty = true;
-            }
-        }
-    }
+    public static void update(BlockStorage storage, boolean autoRemoval) {}
 
     public static String getCurrentServerName() {
         return INSTANCE.mappedServerName();
@@ -280,28 +284,30 @@ public class ServerStorage extends BaseModule {
         String serverName = ServerStorage.currentServerName;
         serverStorage = new Meta(serverName);
         Meta loadingStorage = serverStorage;
+        DynamicRegistryManager registry = mc.getNetworkHandler().getRegistryManager();
 
         if (enable.get()) {
-            // load persistent data
             CompletableFuture.runAsync(() -> {
-                        String normalized = normalizedFileName(serverName);
-                        File folder = new File(SAVE_FILE, normalized);
-                        File file = new File(folder, "meta.nbt");
-                        FileManager.getInstance().checkFile(folder);
+                        File folder = getStorageFolder(serverName);
+                        File metaFile = getMetaFile(serverName);
+                        FileManager.getInstance().checkFolder(folder);
                         synchronized (loadingStorage) {
-                            try (FileStorage storage = FileManager.getInstance().getStorage(file)) {
+                            try (FileStorage storage = FileManager.getInstance().getStorage(metaFile)) {
                                 var serverMeta = storage.read(Meta.CODEC);
                                 Meta mt;
                                 if (serverMeta.isSuccess()
                                         && (mt = serverMeta.getOrThrow()).serverName.equals(serverName)) {
                                     if (mt.version < Meta.DATA_VERSION) {
-                                        processUpdate(mt, storage);
+                                        Meta upgraded = processUpdate(mt, storage, mt.version, Meta.DATA_VERSION);
+                                        if (upgraded != mt) {
+                                            mt = upgraded;
+                                            saveStorage(serverName, mt);
+                                        }
                                     }
-                                    loadingStorage.load(mt.toBlockList(), mt.toChunkList(), mt.toWorldList());
                                 } else {
-                                    // writing default
                                     storage.write(Meta.CODEC, loadingStorage);
                                 }
+                                loadStorageFolders(serverName, loadingStorage);
                             } catch (Throwable e) {
                                 Debug.info("Error while loading server storage:");
                                 Debug.info(e);
@@ -310,18 +316,17 @@ public class ServerStorage extends BaseModule {
                     })
                     .thenRunAsync(
                             () -> {
-                                serverStorageLoad.broadcast(loadingStorage);
+                                serverStorageLoad.broadcast(loadingStorage, serverName, registry);
                             },
                             mc);
         } else {
-            serverStorageLoad.broadcast(loadingStorage);
+            serverStorageLoad.broadcast(loadingStorage, serverName, registry);
         }
-        // clear old snapshot
         processAsyncUpdateMapSnapshot(null);
     }
 
     public static void processAsyncUpdateMapSnapshot(RegistryKey<World> world) {
-        if (serverStorage != null) {
+        if (serverStorage != null && world != null) {
             Meta storage = serverStorage;
             CompletableFuture.runAsync(() -> {
                 synchronized (storage) {
@@ -344,7 +349,14 @@ public class ServerStorage extends BaseModule {
         registerListener(Listener.getGameJoinPoint(), this::onGameJoin, Integer.MAX_VALUE);
         registerListener(Listener.getWorldSwitchPoint(), this::onGameSwitchWorld, Integer.MIN_VALUE);
         registerListener(Listener.getServerLeavePoint(), this::onGameLeave, Integer.MIN_VALUE);
-        saveTask = ScheduleService.launchAsyncRepeatTask(this::onSave, 15 * 1000, 15 * 1000);
+        saveTask = ScheduleService.launchAsyncRepeatTask(
+                () -> {
+                    if (mc.getNetworkHandler() != null && mc.getNetworkHandler().getRegistryManager() != null) {
+                        onSave(mc.getNetworkHandler().getRegistryManager());
+                    }
+                },
+                15 * 1000,
+                15 * 1000);
     }
 
     @Override
@@ -367,14 +379,15 @@ public class ServerStorage extends BaseModule {
 
     public void onGameLeave(Event<Void> eventVoid) {
         processAsyncUpdateMapSnapshot(null);
-        CompletableFuture.runAsync(this::onSave);
+        DynamicRegistryManager registry = mc.getNetworkHandler().getRegistryManager();
+        CompletableFuture.runAsync(() -> onSave(registry));
     }
 
-    private void onSave() {
+    private void onSave(DynamicRegistryManager registryReference) {
         if (currentServerName != null && serverStorage != null) {
             Meta currentSaveStorage = serverStorage;
             String serverName = currentServerName;
-            serverStorageSave.broadcast(currentSaveStorage);
+            serverStorageSave.broadcast(currentSaveStorage, currentServerName, registryReference);
             onSave(serverName, currentSaveStorage);
         }
     }
@@ -383,28 +396,245 @@ public class ServerStorage extends BaseModule {
         if (enable.get()) {
             synchronized (currentSaveStorage) {
                 if (currentSaveStorage.isDirty()) {
-                    String normalized = normalizedFileName(serverName);
-                    File folder = new File(SAVE_FILE, normalized);
-                    File file = new File(folder, "meta.nbt");
-                    FileManager.getInstance().checkFile(file);
-                    try (FileStorage storage = FileManager.getInstance().getStorage(file)) {
-                        storage.write(Meta.CODEC, currentSaveStorage);
-                    } finally {
-                        currentSaveStorage.onSave();
-                    }
+                    saveStorage(serverName, currentSaveStorage);
                 }
             }
         }
     }
 
-    public void processUpdate(Meta meta, FileStorage oldStorage) {}
+    private File getStorageFolder(String serverName) {
+        return new File(SAVE_FILE, normalizedFileName(serverName));
+    }
+
+    private File getMetaFile(String serverName) {
+        return new File(getStorageFolder(serverName), "meta.nbt");
+    }
+
+    private File getTypedFolder(String serverName, String folderName) {
+        return new File(getStorageFolder(serverName), folderName);
+    }
+
+    private static String sanitizeWorldKey(RegistryKey<World> worldKey) {
+        return worldKey.getValue().toString().replace(":", "_");
+    }
+
+    private static String blockFileName(BlockStorage storage) {
+        return sanitizeWorldKey(storage.getDimension()) + "_" + storage.getPos().asLong();
+    }
+
+    private static String chunkFileName(ChunkStorage storage) {
+        return sanitizeWorldKey(storage.getDimension()) + "_" + storage.getChunkPos().x + "_" + storage.getChunkPos().z;
+    }
+
+    private static String worldFileName(WorldStorage storage) {
+        return sanitizeWorldKey(storage.getDimension());
+    }
+
+    private static String entityFileName(EntityStorage storage) {
+        return storage.getUuid().toString();
+    }
+
+    private static File dataFile(File folder, String fileName) {
+        return new File(folder, fileName + ".nbt");
+    }
+
+    private static IStorage storageFromNbt(NbtCompound compound) {
+        Map<String, NbtElement> storage = new HashMap<>();
+        for (String key : compound.getKeys()) {
+            NbtElement element = compound.get(key);
+            if (element != null) {
+                storage.put(key, element.copy());
+            }
+        }
+        return new IStorage(World.OVERWORLD, storage);
+    }
+
+    private static NbtCompound storageToNbt(IStorage storage) {
+        NbtCompound compound = new NbtCompound();
+        for (var entry : storage.storage.entrySet()) {
+            compound.put(entry.getKey(), entry.getValue().copy());
+        }
+        return compound;
+    }
+
+    private <T extends IStorage> void saveStorageValue(
+            File folder, T storageValue, Function<T, String> fileNameGetter, Codec<T> codec) {
+        if (!storageValue.isDirty()) {
+            return;
+        }
+        File target = dataFile(folder, fileNameGetter.apply(storageValue));
+        if (storageValue.isEmpty()) {
+            if (target.exists()) {
+                target.delete();
+            }
+            storageValue.setDirty(false);
+            return;
+        }
+        try (FileStorage storage = FileManager.getInstance().getStorage(target).asAutoSave()) {
+            storage.write(codec, storageValue);
+            storageValue.setDirty(false);
+        }
+    }
+
+    private <K, T extends IStorage> void saveStorageIterator(
+            File folder, Iterator<Map.Entry<K, T>> iterator, Function<T, String> fileNameGetter, Codec<T> codec) {
+        FileManager.getInstance().checkFolder(folder);
+        while (iterator.hasNext()) {
+            T storageValue = iterator.next().getValue();
+            saveStorageValue(folder, storageValue, fileNameGetter, codec);
+            if (storageValue.isEmpty()) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private <K, T extends IStorage> void saveNestedStorageIterator(
+            File folder,
+            Iterator<? extends Map.Entry<K, ? extends Map<?, T>>> outerIterator,
+            Function<T, String> fileNameGetter,
+            Codec<T> codec) {
+        FileManager.getInstance().checkFolder(folder);
+        while (outerIterator.hasNext()) {
+            Map<?, T> storageMap = outerIterator.next().getValue();
+            var iterator = storageMap.entrySet().iterator();
+            while (iterator.hasNext()) {
+                T storageValue = iterator.next().getValue();
+                saveStorageValue(folder, storageValue, fileNameGetter, codec);
+                if (storageValue.isEmpty()) {
+                    iterator.remove();
+                }
+            }
+            if (storageMap.isEmpty()) {
+                outerIterator.remove();
+            }
+        }
+    }
+
+    private void saveStorage(String serverName, Meta currentSaveStorage) {
+        File folder = getStorageFolder(serverName);
+        FileManager.getInstance().checkFolder(folder);
+        try (FileStorage storage =
+                FileManager.getInstance().getStorage(getMetaFile(serverName)).asAutoSave()) {
+            storage.write(Meta.CODEC, currentSaveStorage);
+        }
+        saveNestedStorageIterator(
+                getTypedFolder(serverName, Meta.BLOCK_STORAGE_FOLDER),
+                currentSaveStorage.blockStorageMap.entrySet().iterator(),
+                ServerStorage::blockFileName,
+                BlockStorage.CODEC);
+        saveNestedStorageIterator(
+                getTypedFolder(serverName, Meta.CHUNK_STORAGE_FOLDER),
+                currentSaveStorage.chunkStorageMap.entrySet().iterator(),
+                ServerStorage::chunkFileName,
+                ChunkStorage.CODEC);
+        saveStorageIterator(
+                getTypedFolder(serverName, Meta.WORLD_STORAGE_FOLDER),
+                currentSaveStorage.worldStorageMap.entrySet().iterator(),
+                ServerStorage::worldFileName,
+                WorldStorage.CODEC);
+        saveStorageIterator(
+                getTypedFolder(serverName, Meta.ENTITY_STORAGE_FOLDER),
+                currentSaveStorage.entityStorageMap.entrySet().iterator(),
+                ServerStorage::entityFileName,
+                EntityStorage.CODEC);
+    }
+
+    private <T extends IStorage> void loadStorageFolder(File folder, Codec<T> codec, Consumer<T> consumer) {
+        if (!folder.exists() || !folder.isDirectory()) {
+            return;
+        }
+        File[] files = folder.listFiles(file -> file.isFile() && file.getName().endsWith(".nbt"));
+        if (files == null) {
+            return;
+        }
+        for (File file : files) {
+            try (FileStorage storage = FileManager.getInstance().getStorage(file, false, false)) {
+                if (storage == null) {
+                    continue;
+                }
+                var result = storage.read(codec, null);
+                if (result != null) {
+                    result.setDirty(false);
+                    consumer.accept(result);
+                } else {
+                    storage.delete();
+                }
+            } catch (UnsupportedOperationException invalidFile) {
+                file.delete();
+            } catch (Throwable e) {
+            }
+        }
+    }
+
+    private void loadStorageFolders(String serverName, Meta loadingStorage) {
+        File folder = getStorageFolder(serverName);
+        FileManager.getInstance().checkFolder(folder);
+        loadStorageFolder(
+                getTypedFolder(serverName, Meta.BLOCK_STORAGE_FOLDER),
+                BlockStorage.CODEC,
+                loadingStorage::putBlockStorage);
+        loadStorageFolder(
+                getTypedFolder(serverName, Meta.CHUNK_STORAGE_FOLDER),
+                ChunkStorage.CODEC,
+                loadingStorage::putChunkStorage);
+        loadStorageFolder(
+                getTypedFolder(serverName, Meta.WORLD_STORAGE_FOLDER),
+                WorldStorage.CODEC,
+                loadingStorage::putWorldStorage);
+        loadStorageFolder(
+                getTypedFolder(serverName, Meta.ENTITY_STORAGE_FOLDER),
+                EntityStorage.CODEC,
+                loadingStorage::putEntityStorage);
+    }
+
+    public Meta processUpdate(Meta meta, FileStorage oldStorage, int oldVersion, int newVersion) {
+        Meta current = meta;
+        int version = oldVersion;
+        while (version < newVersion) {
+            if (version == 0) {
+                current = processUpdateV0ToV1(current, oldStorage);
+            } else {
+                break;
+            }
+            version = current.version;
+        }
+        return current;
+    }
+
+    private Meta processUpdateV0ToV1(Meta meta, FileStorage oldStorage) {
+        Meta legacy = oldStorage.read(Meta.LEGACY_CODEC).result().orElse(meta);
+        Meta updated = new Meta(legacy.serverName, Meta.V1_DATA_VERSION);
+        legacy.allBlockStorages().forEach(storage -> {
+            storage.setDirty(true);
+            updated.putBlockStorage(storage);
+        });
+        legacy.allChunkStorages().forEach(storage -> {
+            storage.setDirty(true);
+            updated.putChunkStorage(storage);
+        });
+        legacy.allWorldStorages().forEach(storage -> {
+            storage.setDirty(true);
+            updated.putWorldStorage(storage);
+        });
+        return updated;
+    }
 
     public static class Meta {
-        public static final int DATA_VERSION = 0;
-        // todo: may optimize to seperate storage.
+        public static final int V1_DATA_VERSION = 1;
+        public static final int DATA_VERSION = V1_DATA_VERSION;
+        public static final String BLOCK_STORAGE_FOLDER = "block-storage";
+        public static final String CHUNK_STORAGE_FOLDER = "chunk-storage";
+        public static final String WORLD_STORAGE_FOLDER = "world-storage";
+        public static final String ENTITY_STORAGE_FOLDER = "entity-storage";
+
         public static final Codec<Meta> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                         Codec.STRING.fieldOf("server-name").forGetter(Meta::getServerName),
-                        Codec.INT.fieldOf("data-version").forGetter((meta) -> meta.version),
+                        Codec.INT.fieldOf("data-version").forGetter(meta -> meta.version))
+                .apply(instance, Meta::new));
+
+        public static final Codec<Meta> LEGACY_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                        Codec.STRING.fieldOf("server-name").forGetter(Meta::getServerName),
+                        Codec.INT.fieldOf("data-version").forGetter(meta -> meta.version),
                         Codec.list(BlockStorage.CODEC)
                                 .optionalFieldOf("block-storage", List.of())
                                 .forGetter(Meta::toBlockList),
@@ -419,12 +649,12 @@ public class ServerStorage extends BaseModule {
         public final Map<RegistryKey<World>, Map<BlockPos, BlockStorage>> blockStorageMap;
         public final Map<RegistryKey<World>, Map<ChunkPos, ChunkStorage>> chunkStorageMap;
         public final Map<RegistryKey<World>, WorldStorage> worldStorageMap;
+        public final Map<UUID, EntityStorage> entityStorageMap;
+
         public final int version;
 
         @Getter
         public final String serverName;
-
-        boolean dirty = false;
 
         public Meta(String serverName) {
             this(serverName, DATA_VERSION);
@@ -436,6 +666,7 @@ public class ServerStorage extends BaseModule {
             this.blockStorageMap = new ConcurrentHashMap<>();
             this.chunkStorageMap = new ConcurrentHashMap<>();
             this.worldStorageMap = new ConcurrentHashMap<>();
+            this.entityStorageMap = new ConcurrentHashMap<>();
         }
 
         public Meta(
@@ -445,68 +676,138 @@ public class ServerStorage extends BaseModule {
                 List<ChunkStorage> chunkStorage,
                 List<WorldStorage> worldStorageList) {
             this(serverName, version);
-            load(blockStorageList, chunkStorage, worldStorageList);
+            loadLegacy(blockStorageList, chunkStorage, worldStorageList);
         }
 
-        public void load(
+        public void loadLegacy(
                 List<BlockStorage> blockStorageList,
                 List<ChunkStorage> chunkStorage,
                 List<WorldStorage> worldStorageList) {
             blockStorageMap.clear();
             chunkStorageMap.clear();
             worldStorageMap.clear();
+            entityStorageMap.clear();
             for (var re : blockStorageList) {
-                this.blockStorageMap
-                        .computeIfAbsent(re.getDimension(), k -> new ConcurrentHashMap<>())
-                        .put(re.getPos(), re);
+                putBlockStorage(re);
             }
             for (var re : chunkStorage) {
-                this.chunkStorageMap
-                        .computeIfAbsent(re.getDimension(), k -> new ConcurrentHashMap<>())
-                        .put(re.getChunkPos(), re);
+                putChunkStorage(re);
             }
             for (var re : worldStorageList) {
-                this.worldStorageMap.put(re.getDimension(), re);
+                putWorldStorage(re);
             }
-            dirty = false;
+        }
+
+        private static <T, W, R> ConcurrentHashMap<W, R> newMap(T k) {
+            return new ConcurrentHashMap<>();
+        }
+
+        public void putBlockStorage(BlockStorage storage) {
+            this.blockStorageMap
+                    .computeIfAbsent(storage.getDimension(), Meta::newMap)
+                    .put(storage.getPos(), storage);
+        }
+
+        public void putChunkStorage(ChunkStorage storage) {
+            this.chunkStorageMap
+                    .computeIfAbsent(storage.getDimension(), Meta::newMap)
+                    .put(storage.getChunkPos(), storage);
+        }
+
+        public void putWorldStorage(WorldStorage storage) {
+            this.worldStorageMap.put(storage.getDimension(), storage);
+        }
+
+        public void putEntityStorage(EntityStorage storage) {
+            this.entityStorageMap.put(storage.getUuid(), storage);
         }
 
         public List<BlockStorage> toBlockList() {
-            return blockStorageMap.values().stream()
-                    .flatMap(s -> s.values().stream())
-                    .filter(BlockStorage::nonEmpty)
-                    .toList();
+            return allBlockStorages().stream().filter(BlockStorage::nonEmpty).toList();
         }
 
         public List<ChunkStorage> toChunkList() {
-            return chunkStorageMap.values().stream()
-                    .flatMap(s -> s.values().stream())
-                    .filter(ChunkStorage::nonEmpty)
-                    .toList();
+            return allChunkStorages().stream().filter(ChunkStorage::nonEmpty).toList();
         }
 
         public List<WorldStorage> toWorldList() {
-            return worldStorageMap.values().stream()
-                    .filter(WorldStorage::nonEmpty)
+            return allWorldStorages().stream().filter(WorldStorage::nonEmpty).toList();
+        }
+
+        public Collection<BlockStorage> allBlockStorages() {
+            return blockStorageMap.values().stream()
+                    .flatMap(s -> s.values().stream())
                     .toList();
         }
 
-        public boolean isDirty() {
-            return dirty
-                    || Streams.concat(
-                                    blockStorageMap.values().stream().flatMap(s -> s.values().stream()),
-                                    chunkStorageMap.values().stream().flatMap(s -> s.values().stream()),
-                                    worldStorageMap.values().stream())
-                            .anyMatch(IStorage::isDirty);
+        public Collection<ChunkStorage> allChunkStorages() {
+            return chunkStorageMap.values().stream()
+                    .flatMap(s -> s.values().stream())
+                    .toList();
         }
 
-        public void onSave() {
-            dirty = false;
-            Streams.concat(
-                            blockStorageMap.values().stream().flatMap(s -> s.values().stream()),
-                            chunkStorageMap.values().stream().flatMap(s -> s.values().stream()),
-                            worldStorageMap.values().stream())
-                    .forEach(s -> s.setDirty(false));
+        public Collection<WorldStorage> allWorldStorages() {
+            return worldStorageMap.values().stream().toList();
+        }
+
+        public Collection<EntityStorage> allEntityStorages() {
+            return entityStorageMap.values().stream().toList();
+        }
+
+        public BlockStorage getBlockStorage(RegistryKey<World> world, BlockPos pos, boolean createIfAbsent) {
+            if (createIfAbsent) {
+                return blockStorageMap
+                        .computeIfAbsent(world, Meta::newMap)
+                        .computeIfAbsent(pos, k -> new BlockStorage(world, k));
+            } else {
+                var map = blockStorageMap.get(world);
+                if (map != null) {
+                    return map.get(pos);
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        public ChunkStorage getChunkStorage(RegistryKey<World> world, ChunkPos pos, boolean createIfAbsent) {
+            if (createIfAbsent) {
+                return chunkStorageMap
+                        .computeIfAbsent(world, Meta::newMap)
+                        .computeIfAbsent(pos, k -> new ChunkStorage(world, k));
+            } else {
+                var map = chunkStorageMap.get(world);
+                if (map != null) {
+                    return map.get(pos);
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        public WorldStorage getWorldStorage(RegistryKey<World> world, boolean createIfAbsent) {
+            if (createIfAbsent) {
+                return worldStorageMap.computeIfAbsent(world, WorldStorage::new);
+            } else {
+                return worldStorageMap.get(world);
+            }
+        }
+
+        public EntityStorage getEntityStorage(UUID uuid, boolean createIfAbsent) {
+            if (createIfAbsent) {
+                return entityStorageMap.computeIfAbsent(uuid, EntityStorage::new);
+            }
+            return entityStorageMap.get(uuid);
+        }
+
+        public void markDirty() {}
+
+        public boolean isDirty() {
+            return Streams.concat(
+                            allBlockStorages().stream(),
+                            allChunkStorages().stream(),
+                            allWorldStorages().stream(),
+                            allEntityStorages().stream())
+                    .anyMatch(IStorage::isDirty);
         }
     }
 }

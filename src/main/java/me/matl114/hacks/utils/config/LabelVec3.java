@@ -5,15 +5,13 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.With;
-import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.DisplayWidget;
-import me.matl114.gui.basic.SubScreenWidget;
-import me.matl114.gui.basic.TextProvider;
+import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
 import me.matl114.managers.config.Ref;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
 import net.minecraft.text.Text;
@@ -26,7 +24,7 @@ public record LabelVec3(String xLabel, String yLabel, String zLabel, Vec3 data) 
     }
 
     public static final NBTType<LabelVec3> TYPE = new NBTType<>(
-            LabelVec3.class,
+            "labelvec3",
             RecordCodecBuilder.create(s -> s.group(
                             Codec.STRING.fieldOf("x_label").forGetter(LabelVec3::xLabel),
                             Codec.STRING.fieldOf("y_label").forGetter(LabelVec3::yLabel),
@@ -48,17 +46,29 @@ public record LabelVec3(String xLabel, String yLabel, String zLabel, Vec3 data) 
                 return subScreenWidget
                         .addDrawableChild(DisplayWidget.instance(0, 0, label, dy)
                                 .setRenderHandler(new ButtonElement(
-                                        TextProvider.of(Text.literal(original.xLabel())), ButtonAction.empty())))
+                                                TextProvider.of(Text.translatableWithFallback(
+                                                        original.xLabel(), original.xLabel())),
+                                                ButtonAction.empty())
+                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                original.xLabel() + ".tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(label, 0, half - label, dy))
                         .addDrawableChild(DisplayWidget.instance(half, 0, label, dy)
                                 .setRenderHandler(new ButtonElement(
-                                        TextProvider.of(Text.literal(original.yLabel())), ButtonAction.empty())))
+                                                TextProvider.of(Text.translatableWithFallback(
+                                                        original.yLabel(), original.yLabel())),
+                                                ButtonAction.empty())
+                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                original.yLabel() + ".tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(half + label, 0, half - label, dy))
                         .addDrawableChild(DisplayWidget.instance(2 * half, 0, label, dy)
                                 .setRenderHandler(new ButtonElement(
-                                        TextProvider.of(Text.literal(original.zLabel())), ButtonAction.empty())))
+                                                TextProvider.of(Text.translatableWithFallback(
+                                                        original.zLabel(), original.zLabel())),
+                                                ButtonAction.empty())
+                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                original.zLabel() + ".tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, thirdWrapper, NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(2 * half + label, 0, half - label, dy));
             },

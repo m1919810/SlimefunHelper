@@ -18,16 +18,19 @@ import me.matl114.gui.complex.invcache.InventoryViewScreen;
 import me.matl114.hacks.api.*;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.chat.*;
+import me.matl114.hacks.modules.inv.ChestHistory;
+import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.survival.SeedOre;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.utils.*;
-import me.matl114.utils.commands.CommandUtils;
 import me.matl114.utils.commands.commandGroup.*;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
+import me.matl114.utils.inventory.ItemStackSample;
 import me.matl114.utils.tasks.LimitedSpeedExecutor;
 import me.matl114.versioned.api.VEntity;
 import me.matl114.versioned.api.VRecord;
@@ -35,7 +38,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.EnderChestInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.visitor.NbtTextFormatter;
@@ -59,25 +62,28 @@ public class ChatTasks {
     public static final ModuleGroup moduleManager = new ModuleGroup("Chat");
 
     @Getter
-    public static ChatExtra chatExtra;
+    private static ChatExtra chatExtra;
 
     @Getter
-    public static ChatTools chatTools;
+    private static ChatTools chatTools;
 
     @Getter
-    public static ClientSideCommand clientSideCommand;
+    private static ClientSideCommand clientSideCommand;
 
     @Getter
-    public static ChatCombine chatCombine;
+    private static ChatCombine chatCombine;
 
     @Getter
-    public static InGuiChatBox inGuiChatBox;
+    private static InGuiChatBox inGuiChatBox;
 
     @Getter
-    public static PlayerChat playerChat;
+    private static EncryptChat encryptChat;
 
     @Getter
-    public static ChatSpamFix chatSpamFix;
+    private static PlayerChat playerChat;
+
+    @Getter
+    private static ChatSpamFix chatSpamFix;
 
     private static void initModules(ModuleManager m) {
         chatExtra = new ChatExtra().register(m);
@@ -88,6 +94,8 @@ public class ChatTasks {
 
         chatCombine = new ChatCombine().register(m);
         inGuiChatBox = new InGuiChatBox().register(m);
+
+        encryptChat = new EncryptChat().register(m);
 
         playerChat = new PlayerChat().register(m);
 
@@ -139,10 +147,10 @@ public class ChatTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("reload")
-                    .helper("<what: default main> 重载模块")
+                    .helper("message.command.sfh.reload.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("what")
-                            .select(List.of("command", "module"), "command")
+                            .select(List.of("command", "module", "all"), "command")
                             .build())
                     .post(e -> e.executor(CommandContext.run(SlimefunHelperCommand.this::onReload)))
                     .complete();
@@ -156,6 +164,12 @@ public class ChatTasks {
                 case "module" -> {
                     CompletableFuture.runAsync(() -> mc.execute(HackModules::reloadModuleGroups));
                 }
+                case "all" -> {
+                    CompletableFuture.runAsync(() -> mc.execute(() -> {
+                        HackModules.reloadModuleGroups();
+                        MainCommand.reloadCommand();
+                    }));
+                }
                 default -> Debug.chat("不支持的参数类型: " + re);
             }
         }
@@ -163,7 +177,7 @@ public class ChatTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("reset")
-                    .helper("<what> 重置内容")
+                    .helper("message.command.sfh.reset.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("what")
                             .select(List.of("clickgui"))
@@ -185,7 +199,7 @@ public class ChatTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("openmenu")
-                    .helper("<page:default guide> 打开模组的特殊界面")
+                    .helper("message.command.sfh.openmenu.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("page")
                             .select(pageType, "guide")
@@ -211,8 +225,7 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
-                    .name("task")
-                    .helper("<taskid> <args> 运行内置任务")
+                    .helper("message.command.sfh.task.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("taskid")
                             .tabSupplier(() -> MainTasks.getSpecialTaskName().stream())
@@ -237,8 +250,7 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
-                    .name("asynctask")
-                    .helper("<taskid> <args> 运行内置任务")
+                    .helper("message.command.sfh.asynctask.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("taskid")
                             .tabSupplier(() -> MainTasks.getSpecialTaskName().stream())
@@ -263,39 +275,8 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
-                    .name("debug")
-                    .helper("<debug> <state> 调试项开关")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("debug")
-                            .select(List.of("packet-in", "packet-out", "log-to-chat"))
-                            .build())
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("state")
-                            .bool()
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onDebugState)))
-                    .complete();
-        }
-
-        public void onDebugState(ArgumentInputStream s) {
-            var debug = s.nextNonnullString();
-            switch (debug) {
-                case "packet-in" -> {
-                    ExtraTasks.getPacketDebugger().debugIn.set(s.nextBoolean());
-                }
-                case "packet-out" -> {
-                    ExtraTasks.getPacketDebugger().debugOut.set(s.nextBoolean());
-                }
-                case "log-to-chat" -> {
-                    ExtraTasks.DEBUG_INTO_CHAT = s.nextBoolean();
-                }
-            }
-        }
-
-        {
-            main.subBuilder(SubCommand.taskBuilder())
                     .name("registry")
-                    .helper("<id> <filter:\"\"> 查看原版注册表")
+                    .helper("message.command.sfh.registry.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("id")
                             .tabSupplier(() -> ItemStackUtils.registry()
@@ -341,7 +322,7 @@ public class ChatTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("resource")
-                    .helper("<id> <filter:\"\"> 查看某些原版重要数据")
+                    .helper("message.command.sfh.resource.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("id")
                             .select(resourceTypes)
@@ -385,9 +366,8 @@ public class ChatTasks {
                                     .append(ChatUtils.getDisplayedLong(mc.world.getBiomeAccess().seed)),
                             Text.literal("当前绑定种子: ")
                                     .append(
-                                            MineTasks.getSeedOre().hasCurrentSeed()
-                                                    ? ChatUtils.getDisplayedLong(MineTasks.getSeedOre()
-                                                            .getCurrentSeed())
+                                            SeedOre.INSTANCE.hasCurrentSeed()
+                                                    ? ChatUtils.getDisplayedLong(SeedOre.INSTANCE.getCurrentSeed())
                                                     : Text.literal("暂未输入")));
                     onResource0(val, datas);
                 }
@@ -435,52 +415,23 @@ public class ChatTasks {
             }
         }
 
-        {
-            main.subBuilder(SubCommand.taskBuilder())
-                    .name("debug-render")
-                    .helper("<task> <state> 调试渲染功能")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("task")
-                            .select(List.of(
-                                    "collision", "combat", "bow-aim", "standing", "spear", "interaction", "debug-tick"))
-                            .build())
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("state")
-                            .dispatchLastArg(s -> onDebugRenderTab(s.nonnullResultAsString()))
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onDebugRender)))
-                    .complete();
-        }
-
-        public void onDebugRender(ArgumentInputStream re) {
-            String task = re.nextNonnull();
-            switch (task) {
-                case "collision" -> RenderTasks.DEBUG_RENDER_COLLISION = re.nextBoolean();
-                case "standing" -> RenderTasks.DEBUG_RENDER_STANDING = re.nextBoolean();
-                case "combat" -> RenderTasks.DEBUG_RENDER_COMBAT = re.nextBoolean();
-                case "bow-aim" -> RenderTasks.DEBUG_RENDER_BOWAIM = re.nextBoolean();
-                case "spear" -> RenderTasks.DEBUG_RENDER_SPEAR = re.nextBoolean();
-                case "interaction" -> RenderTasks.DEBUG_RENDER_INTERACTION = re.nextBoolean();
-                case "debug-tick" -> RenderTasks.DEBUG_TICK = re.nextClampedInt(0, Integer.MAX_VALUE);
-                default -> Debug.chat("没有调试项:", task);
-            }
-        }
-
-        public Stream<String> onDebugRenderTab(String type) {
-            return switch (type) {
-                case "collision", "combat", "bow-aim", "standing" -> CommandUtils.bools().stream();
-                case "debug-tick" -> CommandUtils.numbers().stream();
-                default -> Stream.empty();
-            };
-        }
-
-        List<String> infoTypes =
-                List.of("death", "spawn", "nbt", "inventory", "ender", "plist", "team", "pentry", "waypoint", "server");
+        List<String> infoTypes = List.of(
+                "death",
+                "spawn",
+                "nbt",
+                "inventory",
+                "ender",
+                "trackinventory",
+                "plist",
+                "team",
+                "pentry",
+                "waypoint",
+                "server");
 
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("info")
-                    .helper("<information> <user> 查看某项信息")
+                    .helper("message.command.sfh.info.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("information")
                             .select(infoTypes)
@@ -497,7 +448,7 @@ public class ChatTasks {
 
         public Stream<String> onInfoTab(String string) {
             return switch (string) {
-                case "nbt", "inventory", "ender" -> EntityUtils.getWorldPlayerNames(true);
+                case "nbt", "inventory", "trackinventory", "ender" -> EntityUtils.getWorldPlayerNames(true);
                 case "pentry", "team" -> WorldUtils.getPlayerListNames();
                 case "waypoint" -> WorldUtils.getWaypointNames();
                 default -> Stream.empty();
@@ -576,9 +527,35 @@ public class ChatTasks {
                         Debug.chat("找不到玩家", user);
                     }
                 }
+                case "trackinventory" -> {
+                    if (entity != null) {
+                        PlayerStateManager.PlayerStatus status = PlayerStateManager.INSTANCE.getPlayerStatus(entity);
+                        List<ItemStack> stacks;
+                        if (status != null) {
+                            stacks = status.trackedInventoryItems.stream()
+                                    .map(ItemStackSample::sample)
+                                    .toList();
+                        } else {
+                            stacks = List.of();
+                        }
+                        Tasks.scheduleDelayed(
+                                () -> {
+                                    ScreenAccess.of(new InventoryViewScreen(
+                                                    InventoryUtils.createInventory(stacks),
+                                                    Text.literal("背包追踪预览 - " + entity.getNameForScoreboard()),
+                                                    new ItemStack(Items.BARRIER)))
+                                            .openFromCurrent();
+                                },
+                                2);
+                    } else {
+                        Debug.chat("找不到玩家", user);
+                    }
+                }
                 case "ender" -> {
                     if (entity != null) {
-                        EnderChestInventory enderInventory = entity.getEnderChestInventory();
+                        Inventory enderInventory = entity == mc.player
+                                ? ChestHistory.INSTANCE.getTrackedEnderChestInventory()
+                                : entity.getEnderChestInventory();
                         Tasks.scheduleDelayed(
                                 () -> {
                                     ScreenAccess.of(new InventoryViewScreen(
@@ -742,7 +719,7 @@ public class ChatTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("preset")
-                    .helper("<preset> 加载配置文件预设")
+                    .helper("message.command.sfh.preset.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("preset")
                             .enumValue(ModulePreset.class)
@@ -763,7 +740,7 @@ public class ChatTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("runtask")
-                    .helper("<delay> <args> 将后面的指令延时执行")
+                    .helper("message.command.sfh.runtask.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("delay")
                             .intValue()
@@ -796,7 +773,7 @@ public class ChatTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("runrepeat")
-                    .helper("<period> <time> <args> 将后面的指令延时执行")
+                    .helper("message.command.sfh.runrepeat.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("period")
                             .intValue()
@@ -841,7 +818,7 @@ public class ChatTasks {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("say")
-                    .helper("<args> 说话")
+                    .helper("message.command.sfh.say.help")
                     .post(e -> e.executor((a, b, c) -> {
                         ChatTasks.sayMessage(c.getRemainingArgStr(), false);
                         return true;
@@ -851,8 +828,16 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
+                    .name("logout")
+                    .helper("message.command.sfh.exit.help")
+                    .post(e -> e.executor(CommandContext.run(MainTasks::scheduleDisconnect)))
+                    .complete();
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
                     .name("toggle")
-                    .helper("<Module> 切换一个模块项的启用状态")
+                    .helper("message.command.sfh.toggle.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("module")
                             .tabSupplier(this::supplyModule)

@@ -6,7 +6,6 @@ import java.util.function.*;
 import java.util.stream.Collectors;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.api.Displayable;
-import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.PlateElement;
@@ -16,19 +15,20 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.kv.EnumAttrKeyValue;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 public class SlimefunChoiceScreen<T> extends SlimefunScreen {
     final GridSelectSubScreen<T> selectGrid;
     ContentDelegateWidget<GridSelectSubScreen<T>> gridDelegate;
     Function<T, ItemStack> itemFilterFunction;
     List<Text> labelTooltips;
+    public static String currentInputFilter = "";
 
     public SlimefunChoiceScreen(
             Text title,
@@ -59,24 +59,42 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
                 16,
                 this.wrapOriginValueProviders(originValue),
                 null,
+                ValueAccessor.of(() -> currentInputFilter, (s) -> currentInputFilter = s),
                 widgetFunction);
         this.labelTooltips = titleTooltips;
     }
 
     private static enum NbtFilterRule implements Displayable {
-        ANY(i -> true, "&b无", "不进行任何过滤"),
-        HAS_NBT_ONLY(ItemStackUtils::hasInPatch, "&aNBT", "保留含有NBT的物品"),
-        NO_NBT_ONLY(i -> !ItemStackUtils.hasInPatch(i), "&cNBT", "保留不含有NBT的物品"),
-        HAS_CUSTOM_DATA_ONLY(ItemStackUtils::hasCustomData, "&aCNBT", "保留含有CustomData的物品"),
-        NO_CUSTOM_DATA_ONLY(i -> !ItemStackUtils.hasCustomData(i), "&cCNBT", "保留不含有CustomData的物品");
+        ANY(
+                i -> true,
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.any",
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.any.detail"),
+        HAS_NBT_ONLY(
+                ItemStackUtils::hasInPatch,
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.has-nbt",
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.has-nbt.detail"),
+        NO_NBT_ONLY(
+                i -> !ItemStackUtils.hasInPatch(i),
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.no-nbt",
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.no-nbt.detail"),
+        HAS_CUSTOM_DATA_ONLY(
+                ItemStackUtils::hasCustomData,
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.has-custom-data",
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.has-custom-data.detail"),
+        NO_CUSTOM_DATA_ONLY(
+                i -> !ItemStackUtils.hasCustomData(i),
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.no-custom-data",
+                "widget.gui.slimefun-choice-screen.nbt-filter.rule.no-custom-data.detail");
         final Predicate<ItemStack> itemFilter;
         final Text displayName;
-        final String detail;
+        final String detailKey;
+        final Text detail;
 
-        NbtFilterRule(Predicate<ItemStack> itemFilter, String displayName, String detail) {
+        NbtFilterRule(Predicate<ItemStack> itemFilter, String displayNameKey, String detailKey) {
             this.itemFilter = itemFilter;
-            this.displayName = ChatUtils.stringToText(displayName);
-            this.detail = detail;
+            this.displayName = Text.translatable(displayNameKey);
+            this.detailKey = detailKey;
+            this.detail = Text.translatable(detailKey);
         }
 
         @Override
@@ -92,7 +110,7 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
                     .collect(
                             Collectors
                                     .<NbtFilterRule, String, NbtFilterRule, LinkedHashMap<String, NbtFilterRule>>toMap(
-                                            i -> i.detail,
+                                            i -> i.detailKey,
                                             Function.identity(),
                                             (existing, replacement) -> existing,
                                             LinkedHashMap::new)));
@@ -123,7 +141,7 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
     private static final ItemFilterRule itemFilter = new ItemFilterRule();
 
     private void resetNbtFilter() {
-        nbtFilter.valueChange(null, NbtFilterRule.ANY.detail);
+        nbtFilter.valueChange(null, NbtFilterRule.ANY.detailKey);
         executeFilterTask();
     }
 
@@ -139,30 +157,14 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
         return this;
     }
 
-    protected static final List<Text> SEARCH_TOOLTIP = List.of(
-            Text.literal("在下方的输入框输入匹配字符"),
-            Text.literal("点击本按钮用于刷新界面"),
-            Text.literal("正常输入将按名字匹配"),
-            Text.literal("输入空字符串将取消匹配"),
-            Text.literal("输入@按id匹配(如果有id)").formatted(Formatting.GREEN));
-    protected static final List<Text> NBT_FILTER_TOOLTIPS = List.of(
-            Text.literal("NBT过滤规则设置: "),
-            Text.literal("点击切换NBT过滤规则"),
-            Text.literal("Shift点击重置NBT过滤规则"),
-            Text.literal("-----------------------"));
-    protected static final List<Text> ITEM_TYPE_FILTER_TOOLTIPS = List.of(
-            Text.literal("物品类型过滤规则设置: "),
-            Text.literal("左键点击选择物品类型名单"),
-            Text.literal("右键点击切换黑白名单"),
-            Text.literal("Shift点击清空设置"),
-            Text.literal("-----------------------"));
-
     protected List<Text> getSearchButtonTooltips() {
-        return this.selectGrid.getFilter() != null ? SEARCH_TOOLTIP : super.getSearchButtonTooltips();
+        return this.selectGrid.getFilter() != null
+                ? ChatUtils.parseTooltipsTranslation("widget.gui.slimefun-choice-screen.search.tooltips", "")
+                : super.getSearchButtonTooltips();
     }
 
     public void executeFilterTask() {
-        this.selectGrid.getFilterTask().accept(FilterService.currentUserInput);
+        this.selectGrid.getFilterTask().accept(currentInputFilter);
     }
 
     @Override
@@ -186,11 +188,11 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
         // Search button
         if (this.selectGrid.getFilter() != null) {
 
-            this.searchButton.setMouseHandler(InputHandler.run(this::executeFilterTask));
+            this.searchButton.setInputHandler(InputHandler.run(this::executeFilterTask));
         }
 
         ExecutableWidget.instance(this.x + this.backgroundWidth - 3, this.y + 12, 26, 26)
-                .setMouseHandler(InputHandler.run(this::close))
+                .setInputHandler(InputHandler.run(this::close))
                 .setRenderHandler(PlateElement.instance()
                         .combineRender(RenderHandler.ofGuiTextures(CANCEL_GUI_TEXTURE, 4, 4, 18, 18)))
                 .addTo(this);
@@ -216,16 +218,24 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
                 })
                 .updateRenderHandler(h -> ((AbstractElement) h).withTooltips(TooltipHandler.of(() -> {
                     var builder = ImmutableList.<Text>builder();
-                    builder.addAll(NBT_FILTER_TOOLTIPS);
-                    builder.add(ChatUtils.stringToText("&7当前选项: &a%s".formatted(nbtFilter.getOriginValue().detail)));
+                    builder.addAll(ChatUtils.parseTooltipsTranslation(
+                            "widget.gui.slimefun-choice-screen.nbt-filter.tooltips", ""));
+                    builder.add(Text.translatable(
+                            "widget.gui.slimefun-choice-screen.nbt-filter.current-option",
+                            nbtFilter.getOriginValue().detail));
                     return builder.build();
                 })))
                 .addTo(this);
         TooltipHandler bwlistTooltips = TooltipHandler.of(() -> {
             var builder = ImmutableList.<Text>builder();
-            builder.addAll(ITEM_TYPE_FILTER_TOOLTIPS);
-            builder.add(ChatUtils.stringToText("&7当前选项: &a%s".formatted(itemFilter.blacklist ? "黑名单" : "白名单")));
-            builder.add(ChatUtils.stringToText("&7名单内容:"));
+            builder.addAll(ChatUtils.parseTooltipsTranslation(
+                    "widget.gui.slimefun-choice-screen.item-type-filter.tooltips", ""));
+            builder.add(Text.translatable(
+                    "widget.gui.slimefun-choice-screen.item-type-filter.current-option",
+                    itemFilter.blacklist
+                            ? Text.translatable("widget.gui.slimefun-choice-screen.item-type-filter.blacklist")
+                            : Text.translatable("widget.gui.slimefun-choice-screen.item-type-filter.whitelist")));
+            builder.add(Text.translatable("widget.gui.slimefun-choice-screen.item-type-filter.list-content"));
             for (var re : itemFilter.items) {
                 builder.add(re.getName());
             }
@@ -234,7 +244,7 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
         SubScreenWidget.instance(this.x + this.backgroundWidth - 3, this.y + 90, 26, 26)
                 .addDrawableChild(DisplayWidget.instance(0, 0, 26, 26).setRenderHandler(PlateElement.instance()))
                 .addDrawableChild(ExecutableWidget.instance(4, 4, 18, 18)
-                        .setMouseHandler(
+                        .setInputHandler(
                                 new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.isLeft((left) -> {
                                     Runnable callback = this::executeFilterTask;
                                     if (ScreenUtils.hasShiftDown()) {

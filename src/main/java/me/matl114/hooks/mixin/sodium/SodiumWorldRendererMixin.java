@@ -3,7 +3,7 @@ package me.matl114.hooks.mixin.sodium;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import me.matl114.hacks.modules.render.NoRender;
-import me.matl114.hooks.impl.SodiumRenderFix;
+import me.matl114.hooks.impl.sodium.SodiumRenderFix;
 import net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import net.caffeinemc.mods.sodium.client.render.viewport.Viewport;

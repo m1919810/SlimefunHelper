@@ -1,6 +1,7 @@
 package me.matl114.managers.config;
 
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 public class StringRef extends ObjectRef<String> {
     public static final Class<String> TYPE = String.class;
@@ -27,7 +28,7 @@ public class StringRef extends ObjectRef<String> {
     }
 
     @Override
-    public AttrKeyValue<String> _createKeyValue0(String key) {
+    public BaseAttrKeyValue<String> _createKeyValue0(String key) {
         return AttrKeyValue.str(key, this.get());
     }
 

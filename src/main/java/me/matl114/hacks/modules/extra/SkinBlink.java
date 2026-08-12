@@ -15,6 +15,7 @@ import net.minecraft.util.Arm;
 
 public class SkinBlink extends BaseModule {
     public SkinBlink() {
+        super("SkinBlink");
         bindFlag(enable);
     }
 
@@ -104,8 +105,10 @@ public class SkinBlink extends BaseModule {
 
     public static class PlayerModelPartSelectSet extends BoundedPrimitiveFlagMap<PlayerModelPart>
             implements NBTParsable<PlayerModelPartSelectSet> {
-        public static final NBTType<PlayerModelPartSelectSet> TYPE =
-                createEnumMap(PlayerModelPartSelectSet.class, PlayerModelPart.class, PlayerModelPartSelectSet::new);
+        public static final NBTType<PlayerModelPartSelectSet> TYPE = createEnumMap(
+                "PlayerModelPartSelectSet".toLowerCase(Locale.ROOT),
+                PlayerModelPart.class,
+                PlayerModelPartSelectSet::new);
 
         public PlayerModelPartSelectSet(
                 List<PlayerModelPart> keys, Map<PlayerModelPart, Boolean> map, NBTType<Boolean> type) {

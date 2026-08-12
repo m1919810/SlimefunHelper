@@ -21,7 +21,8 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
 
     public StringListModifyScreen(ListAttrKeyValue<T> list, Consumer<ListAttrKeyValue<T>> consumer) {
         super(Text.empty());
-        setTitleLabel(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
+        setTitleLabel(
+                Text.translatable("widget.gui.string-list-modify-screen.title").formatted(Formatting.GREEN));
         this.listAttrKeyValue = list;
         this.list = new ArrayList<>(this.listAttrKeyValue.createAttrKeyValueForElements());
         this.consumer = consumer;
@@ -49,12 +50,12 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
 
     @Override
     protected void onConfirmButton() {
-        this.close();
         this.listAttrKeyValue.valueChangeInternal(
                 this, this.list.stream().map(AttrKeyValue::getOriginValue).toList());
         if (this.listAttrKeyValue.isValidate()) {
             consumer.accept(this.listAttrKeyValue);
         }
+        this.close();
     }
 
     @Override

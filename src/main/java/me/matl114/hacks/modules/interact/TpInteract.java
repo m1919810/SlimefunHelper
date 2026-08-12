@@ -14,7 +14,6 @@ import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -27,17 +26,21 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class TpInteract extends BaseModule {
     public final ModulePath tpInteract = makePath(Configs.INTERACT_CONFIG, "tp-interact");
 
+    public static TpInteract INSTANCE;
+
     public TpInteract() {
+        super("TpInteract");
         bindFlag(enable);
+        INSTANCE = this;
     }
 
     public final FlagRef enable = flagBuilder(tpInteract.add("enable")).build();
@@ -74,7 +77,7 @@ public class TpInteract extends BaseModule {
             var packetToSend = event.context;
             BlockHitResult hit = event.context.getBlockHitResult();
             BlockPos blockPos = hit.getBlockPos();
-            double distance = MineExtra.INSTANCE.getReachDistance() + ENABLE_NO_TP_DISTANCE;
+            double distance = InteractExtra.INSTANCE.getBlockReachDistance() + ENABLE_NO_TP_DISTANCE;
             if (new Box(blockPos).squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(distance)) {
                 if (!mc.player.isSneaking() && tryTpSteal.get().isAllPressed()) {
                     int size = InvTasks.predictOpenVanillaContainerSize(blockPos);
@@ -143,34 +146,34 @@ public class TpInteract extends BaseModule {
                 }
             }
             BlockPos blockPos = packet.getPos();
-            double distance = MineExtra.INSTANCE.getReachDistance() + ENABLE_NO_TP_DISTANCE;
+            double distance = InteractExtra.INSTANCE.getBlockReachDistance() + ENABLE_NO_TP_DISTANCE;
             if (new Box(blockPos).squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(distance)) {
-                Packet<?> packetToSend = event.context();
+                PlayerActionC2SPacket packetToSend = event.context();
                 if (tpToBlock(
                         blockPos,
                         useFallMine.get()
-                                ? (selectedPos) -> {
+                                ? (selectedPos) -> executeTp(selectedPos, () -> {
+                                    mc.getNetworkHandler().sendPacket(packetToSend);
                                     PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
-                                    if (access.beginFailBreak(blockPos)) {
-                                        PlayerActionC2SPacket stopMinePacket = new PlayerActionC2SPacket(
-                                                PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
-                                                blockPos,
-                                                Direction.UP,
-                                                NetworkUtils.generateNextSequence());
-                                        if (executeTp(selectedPos, packetToSend, stopMinePacket)) {
-                                            return true;
-                                        } else {
-                                            access.clearFailBreak();
-                                            return false;
-                                        }
+                                    if (packetToSend.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
+                                            && Objects.equals(access.getCurrentMiningPos(), packetToSend.getPos())
+                                            && access.getCurrentFailBreakPos() == null) {
+                                        access.sendFailBreakCurrentPos(null);
                                     }
-                                    return executeTp(selectedPos, packetToSend);
-                                }
+                                })
                                 : (sel) -> executeTp(sel, packetToSend))) {
                     event.cancel();
                 }
             }
         }
+    }
+
+    public boolean tpAndInteractBlock(BlockHitResult hitResult, Hand hand, boolean swing) {
+        return tpToBlock(
+                hitResult.getBlockPos(),
+                (sel) -> executeTp(sel, () -> {
+                    InteractionTasks.interactBlock(hand, hitResult, swing);
+                }));
     }
 
     public boolean tpToBlock(BlockPos pos, Predicate<Vec3d> callBack) {
@@ -180,7 +183,7 @@ public class TpInteract extends BaseModule {
         if (MineTasks.distanceOutOfReach(pos, selectedPos.add(0, eyeHeight, 0))
                 || MovTasks.ENGIN.checkEnvironmentCollision(mc.player, selectedPos, true)) {
             selectedPos = null;
-            for (var deltaPos : MineExtra.INSTANCE.getBlocksAround()) {
+            for (var deltaPos : InteractExtra.INSTANCE.getBlocksAround()) {
                 Vec3d checkPos = pos.add(deltaPos).toBottomCenterPos().add(0, 1E-4, 0);
                 if (!MineTasks.distanceOutOfReach(pos, checkPos.add(0, eyeHeight, 0))
                         && !MovTasks.ENGIN.checkEnvironmentCollision(mc.player, checkPos, true)) {
@@ -190,7 +193,7 @@ public class TpInteract extends BaseModule {
             }
         }
         if (selectedPos == null) {
-            Debug.chat("[TpAct] Can not reach the target");
+            logI18NSub("TpAct", "message.module.tp-interact.cannot-reach");
             return false;
         } else {
             return callBack.test(selectedPos);
@@ -207,7 +210,7 @@ public class TpInteract extends BaseModule {
             // make an algorithm to
             BlockPos entityPos = pos.getBlockPos();
             // todo: move this to CombatExtra or PositionPredictor or something
-            for (var deltaPos : MineExtra.INSTANCE.getBlocksAround()) {
+            for (var deltaPos : InteractExtra.INSTANCE.getBlocksAround()) {
                 Vec3d checkPos = entityPos.add(deltaPos).toBottomCenterPos().add(0, 1E-4, 0);
                 if (entityBox.squaredMagnitude(checkPos.add(0, eyeHeight, 0)) < MathUtils.s2(attackRange)
                         && !MovTasks.ENGIN.checkEnvironmentCollision(mc.player, checkPos, true)) {

@@ -19,7 +19,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ColorUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
@@ -34,6 +33,7 @@ public class QueueMine extends BaseModule {
     public static QueueMine INSTANCE;
 
     public QueueMine() {
+        super("QueueMine");
         INSTANCE = this;
         bindFlag(enable);
     }
@@ -59,7 +59,7 @@ public class QueueMine extends BaseModule {
     public final FlagRef render = flagBuilder(packetMine.add("render")).build();
 
     public final NBTRef<WrapColor> color = builder(packetMine.add("render-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.GREEN)))
+            .defaultValue(new WrapColor((Color.GREEN)))
             .build();
 
     public final Queue<BlockPos> breakRequest = new ArrayDeque<>();
@@ -92,8 +92,11 @@ public class QueueMine extends BaseModule {
 
     public void tickQueue() {
 
+        if (MineExtra.INSTANCE.getMiningPacketCooldown() > 0) {
+            return;
+        }
         var access = PlayerInteractionAccess.of(mc.interactionManager);
-        if (access == null || access.getMiningCooldown() > 0) return;
+        if (access == null) return;
         if (useDoubleBreak.get()
                 && !MineExtra.INSTANCE.isVanillaDoubleMineCooldownComplete(5)
                 && !MineExtra.INSTANCE.isVanillaMineCooldownComplete(1)) {

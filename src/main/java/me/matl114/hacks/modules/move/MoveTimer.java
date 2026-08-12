@@ -13,6 +13,7 @@ public class MoveTimer extends BaseModule {
     public final ModulePath moveTimer = moveSpeed.add("timer");
 
     public MoveTimer() {
+        super("MoveTimer");
         bindFlag(enable);
     }
 

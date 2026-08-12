@@ -147,6 +147,14 @@ public interface InputHandler {
         }
     }
 
+    static interface AdvancedInputHandler extends InputHandler {
+        default boolean onClick(ExecutableWidget element, double mouseX, double mouseY, int button) {
+            throw new IllegalStateException();
+        }
+
+        public boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, Type type);
+    }
+
     static InputHandler keyboard(KeyboardHandler handler) {
         return handler;
     }
@@ -157,6 +165,10 @@ public interface InputHandler {
 
     static InputHandler scroller(ScrollerHandler scrollerHandler) {
         return scrollerHandler;
+    }
+
+    static InputHandler advanced(AdvancedInputHandler handler) {
+        return handler;
     }
 
     static InputHandler clickRun(Runnable task) {

@@ -11,9 +11,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import lombok.Getter;
 import me.matl114.commands.MainCommand;
-import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -57,6 +55,7 @@ public class TargetSelector extends BaseModule {
     public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "attack");
 
     public TargetSelector() {
+        super("TargetSelector");
         INSTANCE = this;
     }
 
@@ -84,6 +83,10 @@ public class TargetSelector extends BaseModule {
 
     public final FlagRef attackFriend =
             builder(attack.add("att-friend"), FlagRef.TYPE).defaultValue(true).build();
+
+    public final KeyBindRef attackFriendHotkey = toggleHotkey(
+                    attack.add("att-friend-hotkey"), new MultiKeyBind(), attack.add("att-friend"))
+            .build();
 
     public final FlagRef attackNamedEntity =
             builder(attack.add("att-named"), Boolean.class).defaultValue(true).build();
@@ -126,10 +129,10 @@ public class TargetSelector extends BaseModule {
         var path = attack.add(KEY_FRIENDS);
         if (path.getConfig().contains(path.toPath())) {
             var re = path.getConfig().getList(path.toPath());
+            path.getConfig().setValueNoNew(null, path.toPath());
             if (re != null) {
                 onListChange(new FriendListStorage(re.get(), Map.of()));
             }
-            path.getConfig().setValueNoNew(null, path.toPath());
         }
 
         try {
@@ -159,6 +162,10 @@ public class TargetSelector extends BaseModule {
                     DoubleStream.of(mc.player.dimensions.eyeHeight()));
         }
         return DoubleStream.of(mc.player.dimensions.eyeHeight());
+    }
+
+    public boolean isWithinAttackRange(Vec3d pos, Entity entity) {
+        return isWithinAttackRange(pos, entity.getBoundingBox(), CombatExtra.INSTANCE.getAttackAtTargetRange(entity));
     }
 
     public boolean isWithinAttackRange(Vec3d pos, Box box, double range) {
@@ -222,10 +229,10 @@ public class TargetSelector extends BaseModule {
     public void addFriend(String friends, String alias) {
         FriendListStorage friendList = playerList;
         if (friendList.contains(friends, alias)) {
-            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你已经添加了 %s 为好友".formatted(friends)));
+            logI18NSub("Friends", "message.module.target-selector.friends.already-added", friends);
         } else {
-            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功添加了 %s 为好友".formatted(friends)));
-            friendList = friendList.withAdd(friends, alias);
+            logI18NSub("Friends", "message.module.target-selector.friends.added", friends);
+            friendList = friendList.withRemove(friends).withAdd(friends, alias);
             onListChange(friendList);
             addFriendSayMessage(friends);
         }
@@ -241,11 +248,11 @@ public class TargetSelector extends BaseModule {
     public void removeFriend(String friend) {
         FriendListStorage friendList = playerList;
         if (friendList.contains(friend)) {
-            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你成功移除了 %s 好友".formatted(friend)));
+            logI18NSub("Friends", "message.module.target-selector.friends.removed", friend);
             friendList = friendList.withRemove(friend);
             onListChange(friendList);
         } else {
-            Debug.chat(ChatUtils.stringToText("&c[Friends] &f你暂未添加 %s 为好友".formatted(friend)));
+            logI18NSub("Friends", "message.module.target-selector.friends.not-added", friend);
         }
     }
 
@@ -596,7 +603,7 @@ public class TargetSelector extends BaseModule {
                     .name("friends")
                     .post(m -> m.subBuilder(SubCommand.taskBuilder())
                             .name("list")
-                            .helper("显示好友列表")
+                            .helper("message.command.friends_command.friends.list.help")
                             .post(e -> e.executor(CommandContext.run(() -> {
                                 Debug.chat(Text.literal("== 当前好友列表 ==").formatted(Formatting.GREEN));
                                 for (var re : playerList.friends()) {
@@ -606,7 +613,7 @@ public class TargetSelector extends BaseModule {
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("add")
-                            .helper("添加好友")
+                            .helper("message.command.friends_command.friends.add.help")
                             .arg(me.matl114.utils.commands.params.SimpleCommandArgs.argumentBuilder()
                                     .name("name")
                                     .tabSupplier(WorldUtils::getPlayerListNames)
@@ -621,7 +628,7 @@ public class TargetSelector extends BaseModule {
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("remove")
-                            .helper("移除好友")
+                            .helper("message.command.friends_command.friends.remove.help")
                             .arg(SimpleCommandArgs.argumentBuilder()
                                     .name("name")
                                     .tabSupplier(() -> playerList.stream())
@@ -632,7 +639,7 @@ public class TargetSelector extends BaseModule {
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("gui")
-                            .helper("打开好友列表")
+                            .helper("message.command.friends_command.friends.gui.help")
                             .post(e -> e.executor(CommandContext.run(this::openEditFriendsScreen)))
                             .complete())
                     .complete();
@@ -641,11 +648,14 @@ public class TargetSelector extends BaseModule {
 
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        acceptor.accept(ExecutableWidget.instance(0, dblank, dx, dy)
-                .setElementHandler(new ButtonElement(
-                                TextProvider.of(Text.translatable("widget.friend-list.edit-friend-list")),
-                                ButtonAction.run(this::openEditFriendsScreen))
-                        .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))));
+        acceptor.accept(createExecuteButton(
+                "widget.friend-list.edit-friend-list",
+                ButtonAction.run(this::openEditFriendsScreen),
+                0,
+                dblank,
+                dx,
+                dy));
+        acceptor.accept(createTitleLabel("widget.friend-list.command", 0, dblank, dx, dy));
     }
 
     public static record FriendListStorage(List<String> friends, Map<String, String> alias) {
@@ -677,7 +687,9 @@ public class TargetSelector extends BaseModule {
 
         public boolean contains(String friendName, @Nullable String alias) {
             return friends.contains(friendName)
-                    && Objects.equals(alias == null ? null : alias.trim(), this.alias.get(friendName));
+                    && Objects.equals(
+                            (alias == null || alias.trim().isEmpty()) ? null : alias.trim(),
+                            this.alias.get(friendName));
         }
 
         public FriendListStorage withAdd(String friendName, @Nullable String alias) {

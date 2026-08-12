@@ -69,7 +69,7 @@ public class OptionalPrimitive<T> implements NBTParsable<OptionalPrimitive<T>> {
     }
 
     public static final NBTType<OptionalPrimitive> TYPE = new NBTType<>(
-            OptionalPrimitive.class,
+            "optionalprimitive",
             RecordCodecBuilder.create(oInstance -> oInstance
                     .group(
                             Codec.BOOL.fieldOf("present").forGetter(OptionalPrimitive::isPresent),

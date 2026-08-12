@@ -40,7 +40,7 @@ public record Primitive<T>(NBTType<T> valueType, @Nonnull T value, String valueS
 
     private static <T> NBTType<Primitive<T>> create() {
         return new NBTType(
-                NBTType.<Primitive<T>>parameter(Primitive.class),
+                "primitive",
                 Codec.STRING.<Primitive<T>>comapFlatMap(Primitive::<T>parse, Primitive::asString),
                 (AttrKeyValue.CustomWidgetFactory<Primitive<T>>) (w, x, y, dx, dy) -> {
                     Primitive<T> primitive = w.getOriginValue();

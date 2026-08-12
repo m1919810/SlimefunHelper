@@ -75,31 +75,35 @@ public interface AttrKeyValue<T> extends KeyValue<T>, PropertyTracker<Object, St
 
     public <W extends AttrKeyValue<T>> W copy();
 
-    public static AttrKeyValue<Boolean> bool(String key) {
+    public static BaseAttrKeyValue<Boolean> bool(String key) {
         return bool(key, false);
     }
 
-    public static AttrKeyValue<Boolean> bool(String key, boolean value) {
+    public static BaseAttrKeyValue<Boolean> bool(String key, boolean value) {
         return new BaseAttrKeyValue<>(key, value, BOOLEAN_WIDGET_FACTORY, BOOL_FACTORY);
     }
 
-    public static AttrKeyValue<Integer> integer(String key, int val) {
+    public static BaseAttrKeyValue<Integer> integer(String key, int val) {
         return new BaseAttrKeyValue<>(key, val, INT_FACTORY);
     }
 
-    public static AttrKeyValue<Integer> clampedInt(String key, int val, int from, int to) {
+    public static BaseAttrKeyValue<Integer> clampedInt(String key, int val, int from, int to) {
         return new ClampedIntAttrKeyValue(key, val, from, to);
     }
 
-    public static AttrKeyValue<Double> doub(String keyName, double val) {
+    public static BaseAttrKeyValue<Float> floatVal(String keyName, float val) {
+        return new BaseAttrKeyValue<>(keyName, val, FLOAT_FACTORY);
+    }
+
+    public static BaseAttrKeyValue<Double> doubleVal(String keyName, double val) {
         return new BaseAttrKeyValue<>(keyName, val, DOUBLE_FACTORY);
     }
 
-    public static <T> AttrKeyValue<T> registry(String key, Registry<T> registry, T val) {
+    public static <T> BaseAttrKeyValue<T> registry(String key, Registry<T> registry, T val) {
         return new RegistryAttrKeyValue<>(key, val, registry);
     }
 
-    public static <T> AttrKeyValue<T> openRegistry(String key, Registry<T> registry, String val) {
+    public static <T> BaseAttrKeyValue<T> openRegistry(String key, Registry<T> registry, String val) {
         Identifier identifier = Identifier.tryParse(val);
         T val0;
         if (identifier != null && (val0 = registry.getOrEmpty(identifier).orElse(null)) != null) {
@@ -122,11 +126,11 @@ public interface AttrKeyValue<T> extends KeyValue<T>, PropertyTracker<Object, St
         return new EnumAttrKeyValue<>(key, val, enumClass, map);
     }
 
-    public static AttrKeyValue<List<String>> list(String key, List<String> list) {
+    public static BaseAttrKeyValue<List<String>> list(String key, List<String> list) {
         return new StringListAttrKeyValue(key, list);
     }
 
-    public static AttrKeyValue<Identifier> identifier(String key, Identifier id) {
+    public static BaseAttrKeyValue<Identifier> identifier(String key, Identifier id) {
         return new BaseAttrKeyValue<>(key, id, IDENTIFIER_FACTORY);
     }
 

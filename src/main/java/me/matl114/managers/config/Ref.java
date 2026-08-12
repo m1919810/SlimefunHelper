@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
-import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 public abstract class Ref<T> {
 
@@ -111,12 +111,13 @@ public abstract class Ref<T> {
 
     public abstract <W> boolean copyValueFrom(Ref<W> otherRef);
 
-    public final AttrKeyValue<T> createKeyValue(String key) {
-        AttrKeyValue<T> keyValue = _createKeyValue0(key);
+    public final BaseAttrKeyValue<T> createKeyValue(String key) {
+        BaseAttrKeyValue<T> keyValue = _createKeyValue0(key);
+        keyValue.setUpdater(this::getValue);
         validators.forEach(keyValue::addValidator);
         keyValue.addListener(this::setValue);
         return keyValue;
     }
 
-    protected abstract AttrKeyValue<T> _createKeyValue0(String key);
+    protected abstract BaseAttrKeyValue<T> _createKeyValue0(String key);
 }

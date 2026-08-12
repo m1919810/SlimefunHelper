@@ -9,9 +9,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.world.World;
 
-public abstract class IStorage {
+public class IStorage {
     @Getter
     public final RegistryKey<World> dimension;
 
@@ -25,6 +26,10 @@ public abstract class IStorage {
 
     public IStorage() {
         this(mc.world.getRegistryKey(), null);
+    }
+
+    public IStorage(RegistryKey<World> dimension) {
+        this(dimension, null);
     }
 
     public IStorage(RegistryKey<World> dimension, Map<String, NbtElement> storage) {
@@ -41,18 +46,30 @@ public abstract class IStorage {
         return re == null ? null : resultOrNull(re, codec);
     }
 
+    public <T> T get(String key, Codec<T> codec, RegistryWrapper.WrapperLookup lookup) {
+        var re = get(key);
+        return re == null ? null : resultOrNull(re, codec, lookup);
+    }
+
     public static <T> T resultOrNull(NbtElement re, Codec<T> codec) {
         var tmp = codec.decode(NbtOps.INSTANCE, re);
         return tmp.isSuccess() ? tmp.getOrThrow().getFirst() : null;
     }
 
+    public static <T> T resultOrNull(NbtElement re, Codec<T> codec, RegistryWrapper.WrapperLookup lookup) {
+        var tmp = codec.decode(lookup.getOps(NbtOps.INSTANCE), re);
+        return tmp.isSuccess() ? tmp.getOrThrow().getFirst() : null;
+    }
+
     public void put(String key, NbtElement value) {
         if (value == null) {
-            this.storage.remove(key);
+            if (this.storage.remove(key) != null) {
+                dirty = true;
+            }
         } else {
             this.storage.put(key, value);
+            dirty = true;
         }
-        dirty = true;
     }
 
     public <T> void put(String key, T val, Codec<T> codec) {
@@ -60,6 +77,14 @@ public abstract class IStorage {
             put(key, null);
         } else {
             put(key, codec.encodeStart(NbtOps.INSTANCE, val).getOrThrow());
+        }
+    }
+
+    public <T> void put(String key, T val, Codec<T> codec, RegistryWrapper.WrapperLookup lookup) {
+        if (val == null) {
+            put(key, null);
+        } else {
+            put(key, codec.encodeStart(lookup.getOps(NbtOps.INSTANCE), val).getOrThrow());
         }
     }
 

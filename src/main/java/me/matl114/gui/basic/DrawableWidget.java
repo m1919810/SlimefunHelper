@@ -113,7 +113,7 @@ public abstract class DrawableWidget
     }
 
     public <T extends DrawableWidget> T updateRenderHandler(UnaryOperator<RenderHandler> updater) {
-        this.renderHandler = updater.apply(this.renderHandler);
+        this.renderHandler = updater.apply(this.renderHandler == null ? new AbstractElement() : this.renderHandler);
         return (T) this;
     }
 
