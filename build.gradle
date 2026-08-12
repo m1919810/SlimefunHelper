@@ -67,6 +67,9 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	modCompileOnly files("libs/baritone-meteor-1.21.1.jar")
+//	modCompileOnly files("libs/xaeroworldmap-fabric-1.21.11-1.41.0.jar")
+//	modCompileOnly files("libs/xaerominimap-fabric-1.21.11-26.1.0.jar")
+//	modCompileOnly files("libs/XaeroPlus-2.32.1+fabric-1.21.11-WM1.41.0-MM26.1.0.jar")
 	modCompileOnly "meteordevelopment:meteor-client:${project.meteor_version}"
 
 	// bridge
@@ -179,6 +182,7 @@ jar {
 tasks.named("runClient", JavaExec) {
 	jvmArgs("-XX:+AllowEnhancedClassRedefinition", "-XX:-OmitStackTraceInFastThrow"
 			, "-Dmixin.debug.export=true"
+			, "-Xmx6G", "-Xms3G"
 	)
 	systemProperties = [
 			"https.proxyHost": "127.0.0.1",

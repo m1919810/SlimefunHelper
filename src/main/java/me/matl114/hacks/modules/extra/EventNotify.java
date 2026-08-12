@@ -8,18 +8,14 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.DrawableWidget;
-import me.matl114.gui.basic.ExecutableWidget;
-import me.matl114.gui.basic.TextProvider;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.config.NBTTypes;
-import me.matl114.hacks.utils.config.PrimitiveList;
+import me.matl114.hacks.utils.config.IntPrimitiveList;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.render.NotifyType;
 import me.matl114.hooks.BaritoneHooks;
-import me.matl114.hooks.impl.BaritoneFuture;
-import me.matl114.hooks.impl.BaritoneLanding;
+import me.matl114.hooks.impl.baritone.BaritoneFuture;
+import me.matl114.hooks.impl.baritone.BaritoneLanding;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -28,12 +24,12 @@ import me.matl114.utils.WindowUtils;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
-import net.minecraft.text.Text;
 
 public class EventNotify extends BaseModule {
     public final ModulePath path = makePath(Configs.TEST_CONFIG, "other.queue-notify");
 
     public EventNotify() {
+        super("EventNotify");
         bindFlag(enable);
     }
 
@@ -53,12 +49,12 @@ public class EventNotify extends BaseModule {
 
     public final FlagRef enableQueue = flagBuilder(path.add("enable-queue")).build();
 
-    public final NBTRef<Regex> queueRegex = builder(path.add("queue-title-regex"), Regex.class)
-            .defaultValue(new Regex(".*(正在游玩.*队列位置|Queue.*position)[：:]\\\\s*(\\\\d+)"))
+    public final NBTRef<Regex> queueRegex = builder(path.add("queue-3c-title-regex"), Regex.class)
+            .defaultValue(new Regex(".*(正在游玩.*队列位置|Queue.*position)[：:]\\s*(\\d+)"))
             .build();
 
-    public final NBTRef<PrimitiveList<Integer>> order = builder(path.add("order"), PrimitiveList.<Integer>parameter())
-            .defaultValue(new PrimitiveList<>(NBTTypes.INT_TYPE, List.of(5, 10)))
+    public final NBTRef<IntPrimitiveList> order = builder(path.add("order"), IntPrimitiveList.class)
+            .defaultValue(new IntPrimitiveList(List.of(5, 10)))
             .build();
 
     public final FlagRef leave =
@@ -172,10 +168,14 @@ public class EventNotify extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(ExecutableWidget.instance(0, 0, dx, dy)
-                .setElementHandler(new ButtonElement(
-                        TextProvider.of(Text.translatable("widget.event-notify.test-usage")), ButtonAction.run(() -> {
-                            notify("[SlimefunHelper]测试", "HelloWorld");
-                        }))));
+        acceptor.accept(createExecuteButton(
+                "widget.event-notify.test-usage",
+                ButtonAction.run(() -> {
+                    notify("[SlimefunHelper]测试", "HelloWorld");
+                }),
+                0,
+                dblank,
+                dx,
+                dy));
     }
 }

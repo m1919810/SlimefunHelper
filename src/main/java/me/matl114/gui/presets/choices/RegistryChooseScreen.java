@@ -1,10 +1,10 @@
 package me.matl114.gui.presets.choices;
 
 import java.util.function.Consumer;
-import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.presets.lists.ListRegistrySelectWidget;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -22,11 +22,10 @@ public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
         super(Text.empty());
         this.registry = registry;
         this.callback = callback;
-        setTitleLabel(Text.literal("从注册表中选择注册项").formatted(Formatting.AQUA));
-        // reset user input, so it is more convenient for user to select a registry value,
-        FilterService.currentUserInput = filterInput;
-        this.selectSubScreen =
-                ListRegistrySelectWidget.registry(this.registry, 0, CONTENT_START_Y + 20, WIDTH, 240, 20);
+        setTitleLabel(
+                Text.translatable("widget.gui.registry-choose-screen.title").formatted(Formatting.AQUA));
+        this.selectSubScreen = ListRegistrySelectWidget.registry(
+                this.registry, ValueAccessor.holder(filterInput), 0, CONTENT_START_Y + 20, WIDTH, 240, 20);
     }
 
     protected ListRegistrySelectWidget<T> selectSubScreen;
@@ -35,13 +34,6 @@ public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
     @Override
     protected boolean canConfirm(ElementHandler elementHandler) {
         return selectSubScreen.getSelectedRegistry() != null;
-    }
-
-    @Override
-    public void close() {
-        // reset input,
-        FilterService.currentUserInput = "";
-        super.close();
     }
 
     @Override

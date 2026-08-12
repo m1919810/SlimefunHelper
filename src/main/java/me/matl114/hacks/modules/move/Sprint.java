@@ -7,15 +7,12 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 
@@ -26,6 +23,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public static LegalMovementManager.DelegateMovementModifier instance;
     // todo: 顶头跑 here
     public Sprint() {
+        super("Sprint");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
@@ -88,7 +86,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     && PlayerInputUtils.of(mc.options).hasWASDMovement()) {
                 mc.options.sprintKey.setPressed(true);
                 if (logSprint.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[Sprint] &fToggle sprint on"));
+                    logI18N("message.module.sprint.toggle-on");
                 }
             }
         }
@@ -121,7 +119,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     && !input.forward()
                     && input.backward()
                     && !movementManagerEvent.context.hasImportantRotation()) {
-                EntityUtils.setEntityYawSafe(player, player.getYaw() + 180);
+                PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
                 movementManagerEvent.context.markForResetRot();
                 movementManagerEvent.context.markForMoveFix();
             }
@@ -169,7 +167,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         //                //                        Debug.info(yaw);
         //                // turn around to bypass ,movingAround
         //
-        //                EntityUtils.setEntityYawSafe(player, player.getYaw() + 180);
+        //                PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
         //                // rotate the input
         //                //                    var input = PlayerInputUtils.of(player);
         //                // reverse input

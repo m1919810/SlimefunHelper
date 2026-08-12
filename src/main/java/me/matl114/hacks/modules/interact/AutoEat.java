@@ -20,8 +20,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.collections.IndexEntry;
@@ -52,6 +50,7 @@ public class AutoEat extends BaseModule {
     public final ModulePath autoEat = interactionTweaks.add("auto-eat");
 
     public AutoEat() {
+        super("AutoEat");
         bindFlag(enable);
     }
 
@@ -186,7 +185,7 @@ public class AutoEat extends BaseModule {
 
         if (log.get()) {
             Text text = VItem.getInstance().getFormattedName(re.val());
-            Debug.chat(ChatUtils.stringToText("&c[Eat] &fStart to eat"), text);
+            logI18N("message.module.auto-eat.start", text);
         }
         offHand = offHand || re.index() == 40;
         Runnable cbb = offHand
@@ -239,7 +238,7 @@ public class AutoEat extends BaseModule {
                 mc.options.useKey.setPressed(true);
             } else {
                 if (log.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[Eat] &fStop Eating"));
+                    logI18N("message.module.auto-eat.stop");
                 }
                 stopEating();
             }

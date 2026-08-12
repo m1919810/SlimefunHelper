@@ -31,6 +31,7 @@ public class EntityESP extends BaseModule {
     public final ModulePath entityEsp = entityRoot.add("entity-esp");
 
     public EntityESP() {
+        super("EntityESP");
         bindFlag(enable);
     }
 
@@ -133,7 +134,7 @@ public class EntityESP extends BaseModule {
             } else {
                 EntityInternalAccess<?> access = EntityInternalAccess.of(entity);
                 int renderLevel = access.renderTrackedLevel();
-                if (!glowMap.getOrWithDefault(entity.getType(), false)) {
+                if (!glowMap.getEntryValueOr(entity.getType(), false)) {
                     access.setGlow0(false);
                 }
                 if (renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST) {
@@ -145,7 +146,7 @@ public class EntityESP extends BaseModule {
                 }
                 if ((renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST && enable)
                         || renderLevel == EntityInternalAccess.RENDER_LEVEL_FORCE) {
-                    if (glowMap.getOrWithDefault(entity.getType(), false)) {
+                    if (glowMap.getEntryValueOr(entity.getType(), false)) {
                         if (!entity.isGlowing()) {
                             access.setGlow0(true);
                         }
@@ -196,10 +197,10 @@ public class EntityESP extends BaseModule {
             if (color != null) {
 
                 Box box = RenderUtils.getLerpedBox(entity, tickDelta);
-                if (boxMap.getOrWithDefault(entity.getType(), false)) {
+                if (boxMap.getEntryValueOr(entity.getType(), false)) {
                     renderBox.submit(box, color.getRGB());
                 }
-                if (lineMap.getOrWithDefault(entity.getType(), false)) {
+                if (lineMap.getEntryValueOr(entity.getType(), false)) {
                     renderTrace.submit(box.getCenter(), color.getRGB());
                 }
             }
@@ -217,7 +218,7 @@ public class EntityESP extends BaseModule {
 
     private Color getShaderColorByEntityType(Entity entity) {
         EntityType<?> type = entity.getType();
-        TextColor color = renderColor.get().getOrDefault(type);
+        TextColor color = renderColor.get().getEntryValue(type);
         return color != null ? new Color(color.getRgb()) : null;
         //        if (entity instanceof PlayerEntity entity1) {
         //            return Color.YELLOW;

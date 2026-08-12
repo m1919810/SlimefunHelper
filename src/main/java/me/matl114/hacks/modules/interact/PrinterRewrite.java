@@ -3,10 +3,13 @@ package me.matl114.hacks.modules.interact;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.function.Consumer;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.basic.DynamicContentWidget;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -15,22 +18,20 @@ import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.QueueMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.LitematicaHooks;
-import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.FlagEntry;
-import me.matl114.utils.entity.EntityMovementStatus;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.render.RenderCollector;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.*;
+import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
@@ -38,12 +39,10 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 
 public class PrinterRewrite extends BaseModule {
@@ -90,6 +89,14 @@ public class PrinterRewrite extends BaseModule {
             .show(supportWater::get)
             .build();
 
+    public final FlagRef supportReplace = builder(litematicaPrinterRewrite.add("support-replace-block"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef swingHand = builder(litematicaPrinterRewrite.add("swing-hand"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public List<Vec3i> blocksSeq = new ArrayList<>();
 
     public void updateBlocks(double i) {
@@ -120,20 +127,29 @@ public class PrinterRewrite extends BaseModule {
             .build();
     public final NBTRef<WrapColor> renderSuccessColor = builder(
                     litematicaPrinterRewrite.add("render-success-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.GREEN)))
+            .defaultValue(new WrapColor((Color.GREEN)))
             .build();
 
     public final NBTRef<WrapColor> renderFailColor = builder(
                     litematicaPrinterRewrite.add("render-fail-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.RED)))
+            .defaultValue(new WrapColor((Color.RED)))
             .build();
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetReload);
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        var re = createTitleLabel("widget.queue-mine.mine.use-argument", 0, dblank, dx, dy);
+        acceptor.accept(new DynamicContentWidget<>(() -> supportWater.get() && useIce.get() ? re : null, 0, 0));
     }
 
     int countDown;
@@ -142,16 +158,17 @@ public class PrinterRewrite extends BaseModule {
     final RenderCollector<Box> drawOutlines = RenderCollectors.createBoxCollector(true, false, false);
     boolean needSneak = false;
     boolean drainWater = false;
-    Map<BlockPos, Integer> waterBlocks = new HashMap<>();
+    Map<BlockPos, Integer> desyncWaitBlocks = new HashMap<>();
 
-    public void tickWaterBlocks() {
-        if (waterBlocks.isEmpty()) {
+    public void tickDesyncWaitBlocks() {
+        if (desyncWaitBlocks.isEmpty()) {
             return;
         }
-        var iter = waterBlocks.entrySet().iterator();
+        int tick = Tasks.getTick();
+        var iter = desyncWaitBlocks.entrySet().iterator();
         while (iter.hasNext()) {
             var entry = iter.next();
-            if (entry.getValue() < Tasks.getTick() - 20) {
+            if (entry.getValue() < tick) {
                 iter.remove();
             }
         }
@@ -163,10 +180,7 @@ public class PrinterRewrite extends BaseModule {
         } else {
             return;
         }
-        tickWaterBlocks();
-        //        placeFailureBlocks.clear();
-        //        placeSuccessBlocks.clear();
-        boolean bl = mc.player.isSneaking();
+        tickDesyncWaitBlocks();
         drawOutlines.clear();
         if (enable.get() && LitematicaHooks.getInstance().isEnabled()) {
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
@@ -182,6 +196,20 @@ public class PrinterRewrite extends BaseModule {
                     BlockState state = litematicaWorld.getBlockState(checkPos);
                     if (!state.isAir()) {
                         BlockState clientState = mc.world.getBlockState(checkPos);
+                        if (supportReplace.get()
+                                && clientState != state
+                                && !clientState.isAir()
+                                && !clientState.isLiquid()
+                                && !clientState.isReplaceable()
+                                && !desyncWaitBlocks.containsKey(checkPos)
+                                && canBeReplaceTo(clientState, state)) {
+                            if (doMultiReplace(checkPos, clientState, state)) {
+                                placeCount++;
+                                if (placeCount >= multiply) {
+                                    break;
+                                }
+                            }
+                        }
                         if (supportWater.get()
                                 && clientState != state
                                 && ((clientState.isAir()
@@ -189,7 +217,7 @@ public class PrinterRewrite extends BaseModule {
                                                         || state.getFluidState().getFluid() == Fluids.WATER))
                                         || (clientState.getBlock() == state.getBlock()
                                                 && clientState.getFluidState() != state.getFluidState()))
-                                && !waterBlocks.containsKey(checkPos)) {
+                                && !desyncWaitBlocks.containsKey(checkPos)) {
                             // fluid state change
                             FluidState fluidState = clientState.getFluidState();
                             FluidState targetState = state.getFluidState();
@@ -230,16 +258,7 @@ public class PrinterRewrite extends BaseModule {
         if (needSneak) {
             needSneak = false;
             if (autoSneak.get()) {
-                if (ViaFabricPlusHooks.isSupportInstaSneak()) {
-                    if (mc.player.isSneaking() != bl) {
-                        PlayerInputUtils.of(mc.player)
-                                .sneak(bl)
-                                .sendPlayerSneakUpdatePacket()
-                                .applyInput(mc.player);
-                    }
-                } else {
-                    PlayerInputManager.INSTANCE.addSneakModifier(0, true, Math.max(delay.get() - 1, 0), 2);
-                }
+                PlayerInputManager.INSTANCE.addSneakModifier(0, true, Math.max(delay.get() - 1, 0), 2);
             }
         }
         if (drainWater) {
@@ -273,6 +292,11 @@ public class PrinterRewrite extends BaseModule {
 
     public boolean doPlace(BlockPos pos, BlockState targetState, boolean useAirPlace, boolean usePositionPlace) {
         Block needBlock = targetState.getBlock();
+        if (needBlock instanceof CandleCakeBlock) {
+            needBlock = Blocks.CAKE;
+        } else if (needBlock instanceof FlowerPotBlock flowerPotBlock && flowerPotBlock.getContent() != Blocks.AIR) {
+            needBlock = Blocks.FLOWER_POT;
+        }
         int idx = supplyBlocks(needBlock);
         if (idx == -1) {
             putCanNotPlace(pos);
@@ -286,16 +310,6 @@ public class PrinterRewrite extends BaseModule {
                         mc.player.getPos(), result.val().getBlockPos(), interactRangeOverride.get())
                 && InteractUtils.getBlockPlacement(needBlock, mc.player, mc.world, result.val()) != null) {
             if (result.flag()) {
-                if (!needSneak
-                        && autoSneak.get()
-                        && ViaFabricPlusHooks.isSupportInstaSneak()
-                        && !mc.player.isSneaking()) {
-                    PlayerInputUtils.of(mc.player)
-                            .sneak(true)
-                            .sendPlayerSneakUpdatePacket()
-                            .applyInput(mc.player);
-                    mc.player.setSneaking(true);
-                }
                 needSneak = true;
 
                 if (!InteractUtils.canInteractAndPlace(mc.player, result)) {
@@ -365,7 +379,7 @@ public class PrinterRewrite extends BaseModule {
                             0);
                 }
 
-                waterBlocks.put(pos, Tasks.getTick());
+                desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
                 return true;
             }
         }
@@ -392,11 +406,11 @@ public class PrinterRewrite extends BaseModule {
                 if (callback != null) {
                     EntityMovementStatus<PlayerEntity> playerStatus = new EntityMovementStatus<>(mc.player);
                     EntityUtils.setEntityPitchSafe(mc.player, rot.x);
-                    EntityUtils.setEntityYawSafe(mc.player, rot.y);
+                    PlayerStateManager.setPlayerYawSafe(mc.player, rot.y);
                     mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
                     playerStatus.restoreRotation();
                     suc = true;
-                    waterBlocks.put(pos, Tasks.getTick());
+                    desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
                 }
             }
             if (suc) {
@@ -405,16 +419,6 @@ public class PrinterRewrite extends BaseModule {
                 putCanNotPlace(pos);
             }
             if (rotation.flag()) {
-                if (!needSneak
-                        && autoSneak.get()
-                        && ViaFabricPlusHooks.isSupportInstaSneak()
-                        && !mc.player.isSneaking()) {
-                    PlayerInputUtils.of(mc.player)
-                            .sneak(true)
-                            .sendPlayerSneakUpdatePacket()
-                            .applyInput(mc.player);
-                    mc.player.setSneaking(true);
-                }
                 needSneak = true;
             }
             return suc;
@@ -422,13 +426,306 @@ public class PrinterRewrite extends BaseModule {
         return false;
     }
 
+    public boolean canBeReplaceTo(BlockState fromState, BlockState toState) {
+        return new InteractUtils().canBeReplaceTo(fromState, toState);
+    }
+
+    private boolean isDesyncStateInteractTransition(BlockState currentState, BlockState targetState) {
+        if (currentState == null || targetState == null) return false;
+        Block currentBlock = currentState.getBlock();
+        Block targetBlock = targetState.getBlock();
+        if (currentBlock instanceof NoteBlock
+                && targetState.equals(currentState.with(NoteBlock.NOTE, (currentState.get(NoteBlock.NOTE) + 1) % 25))) {
+            return true;
+        }
+        if (currentBlock instanceof DoorBlock && targetState.equals(currentState.cycle(DoorBlock.OPEN))) {
+            return true;
+        }
+        if (currentBlock instanceof TrapdoorBlock && targetState.equals(currentState.cycle(TrapdoorBlock.OPEN))) {
+            return true;
+        }
+        if (currentBlock instanceof FenceGateBlock && targetState.equals(currentState.cycle(FenceGateBlock.OPEN))) {
+            return true;
+        }
+        if (currentBlock instanceof LeverBlock && targetState.equals(currentState.cycle(LeverBlock.POWERED))) {
+            return true;
+        }
+        if (currentBlock instanceof ButtonBlock
+                && !currentState.get(ButtonBlock.POWERED)
+                && targetState.equals(currentState.with(ButtonBlock.POWERED, true))) {
+            return true;
+        }
+        if (currentBlock instanceof RepeaterBlock && targetState.equals(currentState.cycle(RepeaterBlock.DELAY))) {
+            return true;
+        }
+        if (currentBlock instanceof ComparatorBlock && targetState.equals(currentState.cycle(ComparatorBlock.MODE))) {
+            return true;
+        }
+        if (currentBlock instanceof RespawnAnchorBlock
+                && targetBlock instanceof RespawnAnchorBlock
+                && currentState.get(RespawnAnchorBlock.CHARGES) < targetState.get(RespawnAnchorBlock.CHARGES)) {
+            return true;
+        }
+        if (currentBlock instanceof CandleBlock
+                && targetBlock instanceof CandleBlock
+                && currentState.get(CandleBlock.LIT)
+                && targetState.equals(currentState.with(CandleBlock.LIT, false))) {
+            return true;
+        }
+        if (currentBlock instanceof CandleBlock
+                && targetBlock instanceof CandleBlock
+                && !currentState.get(CandleBlock.LIT)
+                && !currentState.get(CandleBlock.WATERLOGGED)
+                && targetState.equals(currentState.with(CandleBlock.LIT, true))) {
+            return true;
+        }
+        if (currentBlock instanceof FlowerPotBlock fromPot && targetBlock instanceof FlowerPotBlock targetPot) {
+            return (fromPot.getContent() == Blocks.AIR && targetPot.getContent() != Blocks.AIR)
+                    || (fromPot.getContent() != Blocks.AIR && targetPot.getContent() == Blocks.AIR);
+        }
+        if (currentBlock instanceof CakeBlock && targetBlock instanceof CakeBlock) {
+            return currentState.get(CakeBlock.BITES) < 6
+                    && targetState.equals(currentState.with(CakeBlock.BITES, currentState.get(CakeBlock.BITES) + 1));
+        }
+        if (currentBlock instanceof CakeBlock && targetBlock instanceof CandleCakeBlock) {
+            return currentState.get(CakeBlock.BITES) == 0;
+        }
+        if (currentBlock instanceof CandleCakeBlock && targetBlock instanceof CakeBlock) {
+            return targetState.get(CakeBlock.BITES) == 1;
+        }
+        return false;
+    }
+
+    private boolean isStackedPlacementTransition(BlockState currentState, BlockState targetState) {
+        if (currentState == null || targetState == null) return false;
+        if (!currentState.isOf(targetState.getBlock())) return false;
+        Block block = currentState.getBlock();
+        if (block instanceof SlabBlock) {
+            return currentState.get(SlabBlock.TYPE) != SlabType.DOUBLE
+                    && targetState.get(SlabBlock.TYPE) == SlabType.DOUBLE;
+        }
+        if (block instanceof SnowBlock) {
+            return currentState.get(SnowBlock.LAYERS) < targetState.get(SnowBlock.LAYERS);
+        }
+        if (block instanceof CandleBlock) {
+            return currentState.get(CandleBlock.CANDLES) < targetState.get(CandleBlock.CANDLES);
+        }
+        if (block instanceof SeaPickleBlock) {
+            return currentState.get(SeaPickleBlock.PICKLES) < targetState.get(SeaPickleBlock.PICKLES);
+        }
+        if (block instanceof FlowerbedBlock) {
+            return currentState.get(FlowerbedBlock.FLOWER_AMOUNT) < targetState.get(FlowerbedBlock.FLOWER_AMOUNT);
+        }
+        if (block instanceof LeafLitterBlock) {
+            return currentState.get(LeafLitterBlock.SEGMENT_AMOUNT) < targetState.get(LeafLitterBlock.SEGMENT_AMOUNT);
+        }
+        return false;
+    }
+
+    public boolean doMultiPlace(BlockPos pos, BlockState currentState, BlockState targetState) {
+        if (!isStackedPlacementTransition(currentState, targetState)) {
+            return false;
+        }
+        boolean success = doPlace(pos, targetState, false, !mode.get().isLegal());
+        if (success && isDesyncStateInteractTransition(currentState, targetState)) {
+            desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+        }
+        return success;
+    }
+
+    private BlockHitResult createStateInteractHitResult(BlockPos pos) {
+        Vec2f rot = EntityUtils.rotationToPitchYaw(
+                pos.toCenterPos().subtract(mc.player.getEyePos()).normalize());
+        Direction side = EntityUtils.pitchYawToDirection(rot).getOpposite();
+        return new BlockHitResult(pos.toCenterPos(), side, pos, false);
+    }
+
+    private int supplyInteractionItem(BlockState currentState, BlockState targetState) {
+        if (currentState == null || targetState == null) return -2;
+        Block currentBlock = currentState.getBlock();
+        Block targetBlock = targetState.getBlock();
+
+        if (currentBlock instanceof RespawnAnchorBlock
+                && targetBlock instanceof RespawnAnchorBlock
+                && currentState.get(RespawnAnchorBlock.CHARGES) < targetState.get(RespawnAnchorBlock.CHARGES)) {
+            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.GLOWSTONE), true, false);
+            return entry == null ? -1 : entry.index();
+        }
+        if (currentBlock instanceof CandleBlock
+                && targetBlock instanceof CandleBlock
+                && !currentState.get(CandleBlock.LIT)
+                && targetState.get(CandleBlock.LIT)) {
+            var entry = InventoryUtils.findPlayerItem(
+                    stack -> stack.isOf(Items.FLINT_AND_STEEL) || stack.isOf(Items.FIRE_CHARGE), true, false);
+            return entry == null ? -1 : entry.index();
+        }
+        if (currentBlock instanceof PumpkinBlock && targetBlock == Blocks.CARVED_PUMPKIN) {
+            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.SHEARS), true, false);
+            return entry == null ? -1 : entry.index();
+        }
+        if (currentBlock instanceof FlowerPotBlock fromPot && targetBlock instanceof FlowerPotBlock targetPot) {
+            if (fromPot.getContent() == Blocks.AIR && targetPot.getContent() != Blocks.AIR) {
+                Item item = targetPot.getContent().asItem();
+                if (item == Items.AIR) return -1;
+                var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(item), true, false);
+                return entry == null ? -1 : entry.index();
+            }
+            return -2;
+        }
+        if (currentBlock instanceof CakeBlock && targetBlock instanceof CandleCakeBlock) {
+            Item item = targetBlock.asItem();
+            if (item == Items.AIR) return -1;
+            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(item), true, false);
+            return entry == null ? -1 : entry.index();
+        }
+        return -2;
+    }
+
+    private boolean isSupportedStateInteractTransition(BlockState currentState, BlockState targetState) {
+        if (currentState == null || targetState == null) return false;
+        Block currentBlock = currentState.getBlock();
+        Block targetBlock = targetState.getBlock();
+        if (currentBlock instanceof RepeaterBlock && targetState.equals(currentState.cycle(RepeaterBlock.DELAY))) {
+            return true;
+        }
+        if (currentBlock instanceof ComparatorBlock && targetState.equals(currentState.cycle(ComparatorBlock.MODE))) {
+            return true;
+        }
+        if (currentBlock instanceof DoorBlock && targetState.equals(currentState.cycle(DoorBlock.OPEN))) {
+            return true;
+        }
+        if (currentBlock instanceof TrapdoorBlock && targetState.equals(currentState.cycle(TrapdoorBlock.OPEN))) {
+            return true;
+        }
+        if (currentBlock instanceof FenceGateBlock && targetState.equals(currentState.cycle(FenceGateBlock.OPEN))) {
+            return true;
+        }
+        if (currentBlock instanceof LeverBlock && targetState.equals(currentState.cycle(LeverBlock.POWERED))) {
+            return true;
+        }
+        if (currentBlock instanceof ButtonBlock
+                && !currentState.get(ButtonBlock.POWERED)
+                && targetState.equals(currentState.with(ButtonBlock.POWERED, true))) {
+            return true;
+        }
+        if (currentBlock instanceof NoteBlock
+                && targetState.equals(currentState.with(NoteBlock.NOTE, (currentState.get(NoteBlock.NOTE) + 1) % 25))) {
+            return true;
+        }
+        if (currentBlock instanceof RespawnAnchorBlock
+                && targetBlock instanceof RespawnAnchorBlock
+                && currentState.get(RespawnAnchorBlock.CHARGES) < targetState.get(RespawnAnchorBlock.CHARGES)) {
+            return true;
+        }
+        if (currentBlock instanceof CandleBlock
+                && targetBlock instanceof CandleBlock
+                && currentState.get(CandleBlock.LIT)
+                && targetState.equals(currentState.with(CandleBlock.LIT, false))) {
+            return true;
+        }
+        if (currentBlock instanceof CandleBlock
+                && targetBlock instanceof CandleBlock
+                && !currentState.get(CandleBlock.LIT)
+                && !currentState.get(CandleBlock.WATERLOGGED)
+                && targetState.equals(currentState.with(CandleBlock.LIT, true))) {
+            return true;
+        }
+        if (currentBlock instanceof PumpkinBlock && targetBlock == Blocks.CARVED_PUMPKIN) {
+            return true;
+        }
+        if (currentBlock instanceof FlowerPotBlock fromPot && targetBlock instanceof FlowerPotBlock targetPot) {
+            return (fromPot.getContent() == Blocks.AIR && targetPot.getContent() != Blocks.AIR)
+                    || (fromPot.getContent() != Blocks.AIR && targetPot.getContent() == Blocks.AIR);
+        }
+        if (currentBlock instanceof CakeBlock && targetBlock instanceof CakeBlock) {
+            return currentState.get(CakeBlock.BITES) < 6
+                    && targetState.equals(currentState.with(CakeBlock.BITES, currentState.get(CakeBlock.BITES) + 1));
+        }
+        if (currentBlock instanceof CakeBlock && targetBlock instanceof CandleCakeBlock) {
+            return currentState.get(CakeBlock.BITES) == 0;
+        }
+        if (currentBlock instanceof CandleCakeBlock && targetBlock instanceof CakeBlock) {
+            return targetState.get(CakeBlock.BITES) == 1;
+        }
+        return false;
+    }
+
+    private boolean doStateInteract(BlockPos pos, BlockState currentState, BlockState targetState) {
+        if (!isSupportedStateInteractTransition(currentState, targetState)) {
+            return false;
+        }
+        int itemIndex = supplyInteractionItem(currentState, targetState);
+        if (itemIndex == -1) {
+            putCanNotPlace(pos);
+            return false;
+        }
+        if (itemIndex >= 0 && mc.player.shouldCancelInteraction()) {
+            putCanNotPlace(pos);
+            return false;
+        }
+        if (itemIndex == -2 && mc.player.shouldCancelInteraction()) {
+            needSneak = true;
+        }
+        BlockHitResult result = createStateInteractHitResult(pos);
+        if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos, interactRangeOverride.get())) {
+            putCanNotPlace(pos);
+            return false;
+        }
+        FlagRef enableRotateFix = InteractionTasks.getBlockRotate().enable2;
+        FlagRef enableLegalLook = InteractionTasks.getBlockRotate().legal;
+        EnumRef<Configs.BypassMode> enableRot = InteractionTasks.getBlockRotate().bypassMode2;
+        boolean state = enableRotateFix.get();
+        boolean state2 = enableLegalLook.get();
+        Configs.BypassMode bypassMode = enableRot.get();
+        if (!state) enableRotateFix.set(true);
+        if (!state2) enableLegalLook.set(true);
+        enableRot.set(Configs.BypassMode.NO_BYPASS);
+        try {
+            if (itemIndex >= 0) {
+                Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(itemIndex);
+                if (callback == null) {
+                    putCanNotPlace(pos);
+                    return false;
+                }
+            }
+            handlePlace(result);
+            if (isDesyncStateInteractTransition(currentState, targetState)) {
+                desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+            }
+            mc.world.setBlockState(pos, targetState, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
+            putSuccessPlace(pos);
+            return true;
+        } finally {
+            if (!state) enableRotateFix.set(false);
+            if (!state2) enableLegalLook.set(false);
+            enableRot.set(bypassMode);
+        }
+    }
+
+    public boolean doMultiReplace(BlockPos pos, BlockState currentState, BlockState targetState) {
+        if (doMultiPlace(pos, currentState, targetState)) {
+            return true;
+        }
+        return doStateInteract(pos, currentState, targetState);
+    }
+
+    private void onBlockUpdate(Event<BlockUpdateS2CPacket> event) {
+        if (enable.get() && !desyncWaitBlocks.isEmpty()) {
+            BlockPos pos = event.context.getPos();
+            Integer waitUntil = desyncWaitBlocks.get(pos);
+            if (waitUntil != null) {
+                desyncWaitBlocks.put(pos, Math.min(waitUntil, Tasks.getTick() + 2));
+            }
+        }
+    }
+
     public void tickTryDrainWater() {}
 
     public void handlePlace(BlockHitResult result) {
         if (!mode.get().isLegal()) {
-            InteractionTasks.placeBlock(Hand.MAIN_HAND, result);
+            InteractionTasks.interactBlock(Hand.MAIN_HAND, result, swingHand.get());
         } else {
-            InteractionTasks.handlePlaceMode(mode.get(), result, Hand.MAIN_HAND);
+            InteractionTasks.handlePlaceMode(mode.get(), result, Hand.MAIN_HAND, swingHand.get());
         }
     }
 

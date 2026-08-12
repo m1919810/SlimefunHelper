@@ -21,6 +21,7 @@ import net.minecraft.registry.Registries;
 
 public class NoQDrop extends BaseModule {
     public NoQDrop() {
+        super("NoQDrop");
         bindFlag(enable);
     }
 

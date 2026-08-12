@@ -38,6 +38,7 @@ import net.minecraft.util.math.Vec3i;
 
 public class AutoPlate extends BaseModule {
     public AutoPlate() {
+        super("AutoPlate");
         bindFlag(enable);
     }
 
@@ -89,10 +90,14 @@ public class AutoPlate extends BaseModule {
     public final FlagRef returnBlock =
             flagBuilder(autoPlate.add("ghost-hand-swap-back")).build();
 
+    public final FlagRef swingHand = builder(autoPlate.add("swing-hand"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef render = flagBuilder(autoPlate.add("render")).build();
 
     public final NBTRef<WrapColor> color = builder(autoPlate.add("render-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.GREEN)))
+            .defaultValue(new WrapColor((Color.GREEN)))
             .build();
 
     public void registerAll() {
@@ -216,7 +221,7 @@ public class AutoPlate extends BaseModule {
                 if (useBlockRotate.get()) {
                     BlockRotate.INSTANCE.addTempStateSchematic(bp, state);
                 }
-                InteractionTasks.handlePlaceMode(mode.get(), blockHitResult.val(), Hand.MAIN_HAND);
+                InteractionTasks.handlePlaceMode(mode.get(), blockHitResult.val(), Hand.MAIN_HAND, swingHand.get());
                 mc.world.setBlockState(bp, state, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
                 cnt += 1;
                 if (cnt >= multiply) {

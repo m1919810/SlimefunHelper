@@ -15,11 +15,11 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
+import me.matl114.hacks.utils.tasks.StateExecutor;
+import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -39,6 +39,7 @@ public class AutoTotem extends BaseModule {
     public final ModulePath totem = makePath(Configs.COMBAT_CONFIG, "totem");
 
     public AutoTotem() {
+        super("AutoTotem");
         bindFlag(enable);
     }
 
@@ -46,10 +47,6 @@ public class AutoTotem extends BaseModule {
 
     public final KeyBindRef hotkey = moduleEntry(
                     totem.add("auto-totem-hotkey"), new MultiKeyBind(), totem.add("auto-totem"))
-            .build();
-
-    public final EnumRef<Configs.AutoInvMode> mode = builder(totem.add("auto-totem-mode"), Configs.AutoInvMode.class)
-            .defaultValue(Configs.AutoInvMode.LAZY)
             .build();
 
     public final FlagRef log = builder(totem.add("auto-totem-log"), Boolean.class)
@@ -82,52 +79,42 @@ public class AutoTotem extends BaseModule {
         return ex.getItem() == Items.TOTEM_OF_UNDYING || enableHandItems.get().test(ex.getItem());
     }
 
-    boolean noTotemMention = false;
+    StateExecutor noTotem = new StateExecutor();
     // todo: add legal mode (swap hand)
     public void onTick(Event<ClientPlayerEntity> ev) {
         if (enable.get()) {
-            switch (mode.get()) {
-                case LAZY -> {
-                    onTotemLazy();
-                }
-                case TICK -> {
-                    onTotemTick();
-                }
-            }
+            onTotemLazy();
         }
     }
 
     private void handleTotemSwapFailure() {
-        if (!noTotemMention) {
-            noTotemMention = true;
+        noTotem.state(true, () -> {
             if (log.get()) {
-                Debug.chat(ChatUtils.stringToText("&c[AutoTotem] &fTotem not found in your inventory"));
+                logI18N("message.module.auto-totem.not-found");
             }
-        }
+        });
     }
 
-    int lastStartSwap114514 = 0;
-    int swapCnt1919810 = 0;
+    //    int lastStartSwap114514 = 0;
+    //    int swapCnt1919810 = 0;
+    TimerExecutor swapFrequency = new TimerExecutor();
+    int swapCntCounter = 0;
 
     private void handleTotemSwapSuccess() {
-        noTotemMention = false;
-        lastSwapTick = Tasks.getTick() + cooldown.get();
-        if (lastStartSwap114514 < Tasks.getTick() - 20 || mode.get().isIn(Configs.AutoInvMode.TICK)) {
-            lastStartSwap114514 = Tasks.getTick();
-            swapCnt1919810 = 1;
-        } else {
-            if (++swapCnt1919810 > 5) {
-                swapCnt1919810 = 0;
-                if (log.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[AutoTotem] &fTotem swap too frequently, may caused by lag"));
-                }
+        noTotem.state(false);
+        swap.mark();
+        swapFrequency.run(20, () -> swapCntCounter = 0);
+        if (++swapCntCounter > 5) {
+            swapCntCounter = 0;
+            if (log.get()) {
+                logI18N("message.module.auto-totem.swap-too-frequent");
             }
         }
     }
 
     public void onTotemLazy() {
         // stop from duplicate swap
-        if (lastSwapTick >= Tasks.getTick()) {
+        if (!swap.canRun(cooldown.get())) {
             return;
         }
         if (!canBeAccepted(mc.player.getOffHandStack())) {
@@ -181,7 +168,7 @@ public class AutoTotem extends BaseModule {
         }
     }
 
-    int lastSwapTick = 0;
+    TimerExecutor swap = new TimerExecutor();
 
     public void onTotem(Event<EntityStatusS2CPacket> eventTotem) {
         if (checkNull()) return;
@@ -195,7 +182,8 @@ public class AutoTotem extends BaseModule {
             mc.player.getInventory().setStack(consumeSlot, ItemStack.EMPTY);
             ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
             List<Slot> slots = handled.slots;
-            for (var i = 0; i < slots.size(); ++i) {
+            // revert usage to avoid conflict
+            for (var i = slots.size() - 1; i >= 0; --i) {
                 if (i != consumeSlot
                         && (slots.get(i).inventory instanceof PlayerInventory
                                 || handled == mc.player.playerScreenHandler)
@@ -205,7 +193,7 @@ public class AutoTotem extends BaseModule {
                     handleTotemSwapSuccess();
                     Debug.debug("handle antimiss success");
                     // pre tick
-                    lastSwapTick += 1;
+                    swap.mark(1);
                     return;
                 }
             }
@@ -214,7 +202,7 @@ public class AutoTotem extends BaseModule {
     }
 
     public void onPlayerInit(Event<ClientPlayerEntity> eventPlayer) {
-        noTotemMention = false;
+        noTotem.state(false);
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {}

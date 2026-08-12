@@ -1,12 +1,12 @@
 package me.matl114.gui.complex.slimefun;
 
-import java.util.List;
 import java.util.function.Consumer;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.PlateElement;
 import me.matl114.gui.elements.SlotElement;
 import me.matl114.hacks.InvTasks;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
@@ -28,13 +28,6 @@ public class SavedItemWidget extends SubScreenWidget {
         init0();
     }
 
-    private static final List<Text> CREATIVEGIVE_TOOLTIPS =
-            List.of(Text.literal("获得物品"), Text.literal(""), Text.literal("仅在创造模式可用"));
-    private static final List<Text> COPYCOMMAND_TOOLTIPS = List.of(Text.literal("拷贝获取/give指令"));
-
-    private static final List<Text> OPENEDITOR_TOOLTIPS = List.of(Text.literal("在物品编辑器中打开该物品"));
-    private static final List<Text> DELITEM_TOOLTIPS = List.of(Text.literal("将该物品移除保存物品"));
-
     private final void init0() {
         DisplayWidget.instance(0, 0, DX, DY)
                 .setRenderHandler(PlateElement.instance())
@@ -45,37 +38,46 @@ public class SavedItemWidget extends SubScreenWidget {
                 .addToSub(this);
         ExecutableWidget.instance(75, 12, 25, 16)
                 .setElementHandler(new ButtonElement(
-                                TextProvider.of(Text.literal("Editor")),
+                                TextProvider.of(Text.translatable("widget.gui.saved-item-widget.open-editor")),
                                 ButtonAction.run(() -> InvTasks.openEditScreen(itemStack, null)))
-                        .withTooltips(TooltipHandler.of(OPENEDITOR_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.saved-item-widget.open-editor.tooltips", ""))))
                 .addToSub(this);
 
         ExecutableWidget.instance(75, 36, 25, 16)
-                .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("Give")), ButtonAction.run(() -> {
-                            if (MinecraftClient.getInstance().player != null
-                                    && MinecraftClient.getInstance()
-                                            .interactionManager
-                                            .getCurrentGameMode()
-                                            .isCreative()) {
-                                InvTasks.creativeAddItem(this.itemStack, 64);
-                            } else {
-                                Debug.chat(Text.literal("当前并不处于创造模式,无法获取保存物品!").formatted(Formatting.YELLOW));
-                            }
-                        }))
-                        .withTooltips(TooltipHandler.of(CREATIVEGIVE_TOOLTIPS)))
+                .setElementHandler(new ButtonElement(
+                                TextProvider.of(Text.translatable("widget.gui.saved-item-widget.creative-give")),
+                                ButtonAction.run(() -> {
+                                    if (MinecraftClient.getInstance().player != null
+                                            && MinecraftClient.getInstance()
+                                                    .interactionManager
+                                                    .getCurrentGameMode()
+                                                    .isCreative()) {
+                                        InvTasks.creativeAddItem(this.itemStack, 64);
+                                    } else {
+                                        Debug.chat(Text.translatable("widget.gui.saved-item-widget.creative-give.error")
+                                                .formatted(Formatting.YELLOW));
+                                    }
+                                }))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.saved-item-widget.creative-give.tooltips", ""))))
                 .addToSub(this);
 
         ExecutableWidget.instance(105, 12, 25, 16)
                 .setElementHandler(new ButtonElement(
-                                TextProvider.of(Text.literal("Remove")),
+                                TextProvider.of(Text.translatable("widget.gui.saved-item-widget.delete-item")),
                                 ButtonAction.run(() -> InvTasks.getSaveItem().removeSavedItem(this.itemStack)))
-                        .withTooltips(TooltipHandler.of(DELITEM_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.saved-item-widget.delete-item.tooltips", ""))))
                 .addToSub(this);
         ExecutableWidget.instance(105, 36, 25, 16)
-                .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("Command")), ButtonAction.run(() -> {
-                            InvTasks.copyGiveCommand(this.itemStack);
-                        }))
-                        .withTooltips(TooltipHandler.of(COPYCOMMAND_TOOLTIPS)))
+                .setElementHandler(new ButtonElement(
+                                TextProvider.of(Text.translatable("widget.gui.saved-item-widget.copy-command")),
+                                ButtonAction.run(() -> {
+                                    InvTasks.copyGiveCommand(this.itemStack);
+                                }))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.saved-item-widget.copy-command.tooltips", ""))))
                 .addToSub(this);
     }
 }

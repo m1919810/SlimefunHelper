@@ -2,7 +2,7 @@ package me.matl114.accessors.events;
 
 import javax.annotation.Nonnull;
 import me.matl114.accessors.access.LivingEntityAccess;
-import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 

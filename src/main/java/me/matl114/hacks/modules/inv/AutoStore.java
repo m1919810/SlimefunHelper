@@ -27,6 +27,7 @@ public class AutoStore extends BaseModule {
     public final ModulePath autoStore = autoInv.add("auto-store");
 
     public AutoStore() {
+        super("AutoStore");
         bindFlag(enable);
     }
 

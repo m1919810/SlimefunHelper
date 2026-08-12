@@ -116,9 +116,16 @@ public abstract class MinecraftClientEvents {
         Listener.getPostSetScreen().broadcast(this.currentScreen);
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At("HEAD"))
-    public void onServerDisconnect(Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
+    @Inject(
+            method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;ZZ)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;unloadWorld()V"))
+    public void onServerDisconnect(
+            Screen disconnectionScreen, boolean transferring, boolean stopSounds, CallbackInfo ci) {
         // origin exit
+        // ensure that player is exiting from PLAY stage , we inject before the unloadWorld
         Listener.getServerLeavePoint().handleValue(new Event<>(null, false, false, true));
         Listener.getServerDisconnectPoint().handleValue(new Event<>(null, false, false, transferring));
     }
@@ -220,27 +227,16 @@ public abstract class MinecraftClientEvents {
                             target =
                                     "Lnet/minecraft/client/network/ClientPlayerEntity;getStackInHand(Lnet/minecraft/util/Hand;)Lnet/minecraft/item/ItemStack;"),
             cancellable = true)
-    private void onItemUseEvent(CallbackInfo ci, @Local LocalRef<Hand> hand) {
+    private void onItemUseEvent(CallbackInfo ci, @Local Hand currentHand) {
         crosshairTarget = cacheHitResult;
-        Hand currentHand = hand.get();
-        while (true) {
-            Event<HitResult> hitResultEvent = new Event<>(crosshairTarget, true, true, currentHand);
-            Listener.getItemUseAction().handleValue(hitResultEvent);
-            if (hitResultEvent.isCancelled() || hitResultEvent.context == null) {
-                int nextHand = currentHand.ordinal() + 1;
-                Hand[] hands = Hand.values();
-                if (nextHand < hands.length) {
-                    currentHand = hands[nextHand];
-                } else {
-                    ci.cancel();
-                    return;
-                }
-            } else {
-                crosshairTarget = hitResultEvent.context;
-                break;
-            }
+        Event<HitResult> hitResultEvent = new Event<>(crosshairTarget, true, true, currentHand);
+        Listener.getItemUseAction().handleValue(hitResultEvent);
+        if (hitResultEvent.isCancelled() || hitResultEvent.context == null) {
+            crosshairTarget = cacheHitResult;
+            ci.cancel();
+            return;
         }
-        hand.set(currentHand);
+        crosshairTarget = hitResultEvent.context;
     }
 
     @Inject(method = "doItemUse", at = @At("RETURN"))

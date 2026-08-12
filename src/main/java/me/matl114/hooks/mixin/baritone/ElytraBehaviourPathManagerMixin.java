@@ -5,9 +5,10 @@ import baritone.process.elytra.ElytraBehavior;
 import baritone.process.elytra.UnpackedSegment;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.UnaryOperator;
-import me.matl114.hacks.modules.move.BaritoneFix;
+import me.matl114.hacks.modules.survival.BaritoneFix;
 import me.matl114.hooks.BaritoneHooks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -19,6 +20,8 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
@@ -103,5 +106,25 @@ public abstract class ElytraBehaviourPathManagerMixin {
                         MinecraftClient.getInstance()));
             }
         }
+    }
+
+    @ModifyArg(
+            method = {
+                "a(Lbaritone/process/elytra/UnpackedSegment;)V",
+                "Lbaritone/process/elytra/ElytraBehavior$PathManager;setPath(Lbaritone/process/elytra/UnpackedSegment;)V"
+            },
+            at = @At(value = "INVOKE", target = "Lbaritone/process/elytra/NetherPath;<init>(Ljava/util/List;)V"),
+            require = 0,
+            expect = 0)
+    private List<BetterBlockPos> captureNetherPathArgumentUpdate(List<BetterBlockPos> list) {
+        BaritoneHooks.currentNetherElytraPath = (List) list;
+        return list;
+    }
+
+    @Inject(
+            method = {"a()V", "Lbaritone/process/elytra/ElytraBehavior$PathManager;clear()V"},
+            at = @At("HEAD"))
+    private void captureNetherPathArgumentClear(CallbackInfo ci) {
+        BaritoneHooks.currentNetherElytraPath = List.of();
     }
 }

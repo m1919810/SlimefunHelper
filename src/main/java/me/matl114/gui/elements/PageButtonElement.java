@@ -7,6 +7,7 @@ import java.util.function.IntSupplier;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
+import me.matl114.utils.ChatUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -16,15 +17,23 @@ public class PageButtonElement extends ButtonElement {
     private IntSupplier maxPage;
     private IntSupplier pageGetter;
     private int delta;
-    protected static final List<Text> PREV = List.of(Text.literal("上一页"));
-    protected static final List<Text> NEXT = List.of(Text.literal("下一页"));
 
     public static PageButtonElement prev(IntSupplier maxPage, IntSupplier page, IntConsumer set) {
-        return new PageButtonElement(PREV, maxPage, page, set, -1);
+        return new PageButtonElement(
+                ChatUtils.parseTooltipsTranslation("widget.gui.page-button-element.prev.tooltips", ""),
+                maxPage,
+                page,
+                set,
+                -1);
     }
 
     public static PageButtonElement next(IntSupplier maxPage, IntSupplier page, IntConsumer set) {
-        return new PageButtonElement(NEXT, maxPage, page, set, 1);
+        return new PageButtonElement(
+                ChatUtils.parseTooltipsTranslation("widget.gui.page-button-element.next.tooltips", ""),
+                maxPage,
+                page,
+                set,
+                1);
     }
 
     protected static final Identifier ARROW_LEFT_SPRITE = new Identifier("slimefunhelper", "gui/arrow_left");

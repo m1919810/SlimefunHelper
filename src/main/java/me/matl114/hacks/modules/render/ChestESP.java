@@ -40,6 +40,7 @@ public class ChestESP extends BaseModule {
     public final ModulePath chestEsp = detectBlock.add("chest-esp");
 
     public ChestESP() {
+        super("ChestESP");
         bindFlag(enable);
     }
 
@@ -120,7 +121,7 @@ public class ChestESP extends BaseModule {
     }
 
     public void dispatchBlockEntityRender(BlockEntity blockEntity, BlockPos blockPos) {
-        TextColor color = colorMap.get().getOrDefault(blockEntity.getType());
+        TextColor color = colorMap.get().getEntryValue(blockEntity.getType());
         if (color == null) return;
         TracingOption option = enableLines.get();
         if (option.box()) {

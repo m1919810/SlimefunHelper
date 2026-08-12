@@ -1,5 +1,6 @@
 package me.matl114.utils;
 
+import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -11,13 +12,33 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CampfireBlockEntity;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
+import net.minecraft.block.entity.Spawner;
 import net.minecraft.block.enums.ChestType;
+import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ChargedProjectilesComponent;
+import net.minecraft.component.type.ConsumableComponent;
+import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.entity.*;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.decoration.ItemFrameEntity;
+import net.minecraft.entity.decoration.LeashKnotEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.PiglinActivity;
+import net.minecraft.entity.mob.PiglinEntity;
 import net.minecraft.entity.Leashable;
 import net.minecraft.entity.mob.ShulkerEntity;
+import net.minecraft.entity.passive.*;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.vehicle.*;
 import net.minecraft.item.*;
+import net.minecraft.potion.Potions;
+import net.minecraft.recipe.RecipePropertySet;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -25,6 +46,8 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class InteractUtils {
@@ -125,6 +148,10 @@ public class InteractUtils {
         return world.isSpaceEmpty(box);
     }
 
+    public static boolean canEnderChestOpen(World world, BlockPos pos) {
+        return !world.getBlockState(pos.up()).isSolidBlock(world, pos.up());
+    }
+
     public static boolean canChestOpen(World world, BlockPos pos, BlockState state) {
         if (!(state.getBlock() instanceof ChestBlock)) {
             return false;
@@ -146,7 +173,11 @@ public class InteractUtils {
         if (Objects.equals(worldName, "minecraft:overworld") || Objects.equals(worldName, "minecraft:the_end")) {
             return true;
         }
-        return !world.getDimension().respawnAnchorWorks();
+        if (world.getDimension().respawnAnchorWorks()) {
+            // may not explode
+            return false;
+        }
+        return true;
     }
 
     private static boolean isInteractableRespawnAnchor(BlockState state, ItemStack stack) {
@@ -184,7 +215,7 @@ public class InteractUtils {
             return canShulkerOpen(world, pos, state);
         }
         if (block instanceof EnderChestBlock) {
-            return !world.getBlockState(pos.up()).isSolidBlock(world, pos.up());
+            return canEnderChestOpen(world, pos);
         }
         if (block instanceof LecternBlock) {
             return state.contains(LecternBlock.HAS_BOOK) && state.get(LecternBlock.HAS_BOOK);
@@ -195,6 +226,17 @@ public class InteractUtils {
 
     public static boolean isInteractAcceptable(World world, PlayerEntity player, BlockPos pos, BlockState state) {
         return isInteractAcceptable(world, player, pos, state, ItemStack.EMPTY);
+    }
+
+    public static final Set<Block> shovelBlocks = new HashSet<>();
+
+    static {
+        shovelBlocks.add(Blocks.GRASS_BLOCK);
+        shovelBlocks.add(Blocks.DIRT);
+        shovelBlocks.add(Blocks.PODZOL);
+        shovelBlocks.add(Blocks.COARSE_DIRT);
+        shovelBlocks.add(Blocks.MYCELIUM);
+        shovelBlocks.add(Blocks.ROOTED_DIRT);
     }
 
     public static boolean isInteractAcceptable(
@@ -233,6 +275,68 @@ public class InteractUtils {
         }
         if (block instanceof AbstractCauldronBlock cauldronBlock) {
             return cauldronBlock.behaviorMap.map().containsKey(interactStack.getItem());
+        }
+        Item item = interactStack.getItem();
+        // 矿车放铁轨
+        if (item instanceof MinecartItem && state.isIn(BlockTags.RAILS)) {
+            return true;
+        }
+        // 盔甲架
+        if (item instanceof ArmorStandItem) {
+            return true;
+        }
+        // 末地水晶
+        if (item instanceof EndCrystalItem && (state.isOf(Blocks.OBSIDIAN) || state.isOf(Blocks.BEDROCK))) {
+            return true;
+        }
+        if (item instanceof SpawnEggItem) {
+            return state.hasBlockEntity() && world.getBlockEntity(pos) instanceof Spawner
+                    || state.getCollisionShape(world, pos).isEmpty();
+        }
+        // 打火石 / 火焰弹
+        if (item instanceof FlintAndSteelItem || item instanceof FireChargeItem) {
+            if (CampfireBlock.canBeLit(state) || CandleBlock.canBeLit(state) || CandleCakeBlock.canBeLit(state)) {
+                return true;
+            }
+            BlockPos firePos = pos.offset(Direction.UP);
+            if (AbstractFireBlock.canPlaceAt(world, firePos, player.getHorizontalFacing())) {
+                return true;
+            }
+        }
+        // 骨粉
+        if (item instanceof BoneMealItem) {
+            Block varBoneMealBlock = state.getBlock();
+            if (varBoneMealBlock instanceof Fertilizable fertilizable
+                    && fertilizable.isFertilizable(world, pos, state)) {
+                return true;
+            }
+            BlockPos sidePos = pos.up();
+            if (state.isSideSolidFullSquare(world, pos, Direction.UP)
+                    && world.getBlockState(sidePos).isOf(Blocks.WATER)
+                    && world.getFluidState(sidePos).getLevel() == 8) {
+                return true;
+            }
+        }
+        // 铲子拍平 / 熄灭营火
+        if (item instanceof ShovelItem) {
+            if (shovelBlocks.contains(block) && world.getBlockState(pos.up()).isAir()) {
+                return true;
+            }
+            //            if (block instanceof CampfireBlock && state.get(CampfireBlock.LIT)) {
+            //                return true;
+            //            }
+        }
+        // 蜂蜜脾上蜡
+        if (item instanceof HoneycombItem && HoneycombItem.getWaxedState(state).isPresent()) {
+            return true;
+        }
+        // 水瓶变泥
+        if (item instanceof PotionItem) {
+            PotionContentsComponent potionContents =
+                    interactStack.getOrDefault(DataComponentTypes.POTION_CONTENTS, PotionContentsComponent.DEFAULT);
+            if (potionContents.matches(Potions.WATER) && state.isIn(BlockTags.CONVERTABLE_TO_MUD)) {
+                return true;
+            }
         }
 
         if (STATE_MAY_INTERACT == null) {
@@ -281,11 +385,517 @@ public class InteractUtils {
         return STATE_MAY_INTERACT.contains(block);
     }
 
+    public static final Set<Class<? extends Entity>> ENTITY_MAY_INTERACT;
+
+    static {
+        HashSet<Class<? extends Entity>> result = new HashSet<>();
+        ENTITY_MAY_INTERACT = result;
+    }
+
+    public static boolean isInteractAcceptable(
+            World world, PlayerEntity player, Entity entity, ItemStack interactStack) {
+        if (world == null || player == null || entity == null) {
+            return false;
+        }
+        if (player.isSpectator() || !entity.isAlive()) {
+            return false;
+        }
+        ItemStack stack = interactStack == null ? ItemStack.EMPTY : interactStack;
+        if (isGenericAcceptedInteractItem(entity, stack)) {
+            return true;
+        }
+        if (isVehicleEntityInteractAcceptable(player, entity, stack)) {
+            return true;
+        }
+        if (isSpecialEntityInteractAcceptable(player, entity, stack)) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isGenericAcceptedInteractItem(Entity entity, ItemStack stack) {
+        if (stack.isOf(Items.NAME_TAG) && entity instanceof LivingEntity) {
+            return true;
+        }
+        if (stack.getItem() instanceof SpawnEggItem && entity instanceof MobEntity) {
+            return true;
+        }
+        if (stack.isOf(Items.LEAD) && entity instanceof Leashable && !(entity instanceof LeashKnotEntity)) {
+            return true;
+        }
+        if (stack.isOf(Items.SADDLE)
+                && entity instanceof LivingEntity livingEntity
+                && livingEntity.canEquip(stack, EquipmentSlot.SADDLE)) {
+            return true;
+        }
+        if (stack.isOf(Items.WATER_BUCKET) && entity instanceof Bucketable) {
+            return true;
+        }
+        if (stack.isOf(Items.SHEARS) && entity instanceof Shearable shearable && shearable.isShearable()) {
+            return true;
+        }
+        if (entity instanceof AnimalEntity animal && animal.isBreedingItem(stack)) {
+            return true;
+        }
+        if (entity instanceof MooshroomEntity mooshroom) {
+            if (!mooshroom.isBaby() && stack.isOf(Items.BOWL)) {
+                return true;
+            }
+            return mooshroom.getVariant() == MooshroomEntity.Variant.BROWN
+                    && SuspiciousStewIngredient.of(stack.getItem()) != null;
+        }
+        if (entity instanceof AbstractCowEntity cow) {
+            return stack.isOf(Items.BUCKET) && !cow.isBaby();
+        }
+        if (entity instanceof GoatEntity goat) {
+            return stack.isOf(Items.BUCKET) && !goat.isBaby();
+        }
+
+        if (entity instanceof IronGolemEntity ironGolem) {
+            return stack.isOf(Items.IRON_INGOT) && ironGolem.getHealth() < ironGolem.getMaxHealth();
+        }
+        if (entity instanceof ArmadilloEntity armadillo) {
+            return stack.isOf(Items.BRUSH) && !armadillo.isBaby();
+        }
+        if (entity instanceof DolphinEntity) {
+            return stack.isIn(ItemTags.FISHES);
+        }
+        if (entity instanceof TadpoleEntity) {
+            return stack.isIn(ItemTags.FROG_FOOD) || stack.isOf(Items.WATER_BUCKET);
+        }
+        if (entity instanceof ParrotEntity) {
+            return stack.isIn(ItemTags.PARROT_FOOD) || stack.isIn(ItemTags.PARROT_POISONOUS_FOOD);
+        }
+        return false;
+    }
+
+    private static boolean isVehicleEntityInteractAcceptable(PlayerEntity player, Entity entity, ItemStack stack) {
+        if (entity instanceof VehicleInventory) {
+            return true;
+        }
+        if (entity instanceof FurnaceMinecartEntity) {
+            return true;
+        }
+        if (entity instanceof CommandBlockMinecartEntity) {
+            return player.isCreativeLevelTwoOp();
+        }
+        if (entity instanceof MinecartEntity minecart) {
+            return !player.shouldCancelInteraction() && !minecart.hasPassengers();
+        }
+        if (entity instanceof AbstractBoatEntity) {
+            return !player.shouldCancelInteraction();
+        }
+        return false;
+    }
+
+    private static boolean isSpecialEntityInteractAcceptable(PlayerEntity player, Entity entity, ItemStack stack) {
+        if (entity instanceof ArmorStandEntity armorStand) {
+            return !armorStand.isMarker();
+        }
+        if (entity instanceof ItemFrameEntity itemFrame) {
+            if (itemFrame.isRemoved()) {
+                return false;
+            }
+            return !itemFrame.getHeldItemStack().isEmpty() || !stack.isEmpty();
+        }
+        if (entity instanceof LeashKnotEntity) {
+            return true;
+        }
+        if (entity instanceof AllayEntity allay) {
+            if (allay.isDancing() && stack.isIn(ItemTags.DUPLICATES_ALLAYS) && allay.canDuplicate()) {
+                return true;
+            }
+            if (!allay.isHoldingItem() && !stack.isEmpty()) {
+                return true;
+            }
+            return allay.isHoldingItem() && stack.isEmpty();
+        }
+        if (entity instanceof CamelEntity camel) {
+            if (camel.isBaby()) {
+                return camel.isBreedingItem(stack);
+            }
+            return true;
+        }
+        if (entity instanceof AbstractHorseEntity horse) {
+            if (horse.isBaby()) {
+                return horse.isBreedingItem(stack);
+            }
+            return true;
+        }
+        if (entity instanceof PigEntity pig) {
+            if (pig.hasSaddleEquipped() && !pig.hasPassengers() && !player.shouldCancelInteraction()) {
+                return true;
+            }
+        }
+        if (entity instanceof StriderEntity strider) {
+            if (strider.hasSaddleEquipped() && !strider.hasPassengers() && !player.shouldCancelInteraction()) {
+                return true;
+            }
+        }
+        if (entity instanceof VillagerEntity villager) {
+            return !villager.hasCustomer() && !villager.isSleeping();
+        }
+        if (entity instanceof WanderingTraderEntity trader) {
+            return !trader.hasCustomer() && !trader.isBaby();
+        }
+        if (entity instanceof WolfEntity wolf) {
+            if (wolf.isTamed()) {
+                if (wolf.isBreedingItem(stack) && wolf.getHealth() < wolf.getMaxHealth()) {
+                    return true;
+                }
+                if (wolf.isOwner(player)) {
+                    if (stack.getItem() instanceof DyeItem dyeItem && dyeItem.getColor() != wolf.getCollarColor()) {
+                        return true;
+                    }
+                    if (stack.isOf(Items.WOLF_ARMOR) && !wolf.isBaby() && !wolf.isWearingBodyArmor()) {
+                        return true;
+                    }
+                    if (wolf.isInSittingPose()
+                            && wolf.isWearingBodyArmor()
+                            && wolf.getBodyArmor().isDamaged()
+                            && wolf.getBodyArmor().canRepairWith(stack)) {
+                        return true;
+                    }
+                    return true;
+                }
+                return false;
+            }
+            return stack.isOf(Items.BONE) && !wolf.hasAngerTime();
+        }
+        if (entity instanceof CatEntity cat) {
+            if (!cat.isTamed()) {
+                return cat.isBreedingItem(stack);
+            }
+            if (cat.isOwner(player)) {
+                if (stack.getItem() instanceof DyeItem dyeItem && dyeItem.getColor() != cat.getCollarColor()) {
+                    return true;
+                }
+                if (cat.isBreedingItem(stack) && cat.getHealth() < cat.getMaxHealth()) {
+                    return true;
+                }
+                return true;
+            }
+            return false;
+        }
+        if (entity instanceof OcelotEntity ocelot) {
+            return !ocelot.isTrusting() && ocelot.isBreedingItem(stack);
+        }
+        if (entity instanceof ParrotEntity parrot) {
+            if (!parrot.isTamed()) {
+                return stack.isIn(ItemTags.PARROT_FOOD) || stack.isIn(ItemTags.PARROT_POISONOUS_FOOD);
+            }
+            return parrot.isOwner(player);
+        }
+        if (entity instanceof PiglinEntity piglin) {
+            return piglin.getActivity() != PiglinActivity.ADMIRING_ITEM;
+        }
+        return false;
+    }
+
+    public static boolean isInteractAtAcceptable(
+            World world, PlayerEntity player, Entity entity, Vec3d hitPos, ItemStack interactStack) {
+        if (world == null || player == null || entity == null || hitPos == null) {
+            return false;
+        }
+        if (player.isSpectator() || !entity.isAlive()) {
+            return false;
+        }
+        ItemStack stack = interactStack == null ? ItemStack.EMPTY : interactStack;
+        if (entity instanceof ArmorStandEntity armorStand) {
+            if (armorStand.isMarker()) {
+                return false;
+            }
+            if (stack.isOf(Items.NAME_TAG)) {
+                return false;
+            }
+            if (stack.isEmpty()) {
+                EquipmentSlot hitSlot = getArmorStandHitSlot(armorStand, hitPos);
+                if (canArmorStandUseSlot(armorStand, hitSlot)
+                        && !armorStand.getEquippedStack(hitSlot).isEmpty()) {
+                    return true;
+                }
+                EquipmentSlot preferredSlot = EquipmentSlot.MAINHAND;
+                if (canArmorStandUseSlot(armorStand, preferredSlot)
+                        && !armorStand.getEquippedStack(preferredSlot).isEmpty()) {
+                    return true;
+                }
+                EquipmentSlot offhandSlot = EquipmentSlot.OFFHAND;
+                return canArmorStandUseSlot(armorStand, offhandSlot)
+                        && !armorStand.getEquippedStack(offhandSlot).isEmpty();
+            }
+            EquipmentSlot slot = armorStand.getPreferredEquipmentSlot(stack);
+            if (!canArmorStandUseSlot(armorStand, slot)) {
+                return false;
+            }
+            if (slot.getType() == EquipmentSlot.Type.HAND && !armorStand.shouldShowArms()) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isInteractAcceptable(World world, PlayerEntity player, ItemStack interactStack) {
+        if (world == null || player == null || interactStack == null || interactStack.isEmpty()) {
+            return false;
+        }
+        if (!interactStack.isItemEnabled(world.getEnabledFeatures())) {
+            return false;
+        }
+        if (player.getItemCooldownManager().isCoolingDown(interactStack)) {
+            return false;
+        }
+
+        ConsumableComponent consumableComponent = interactStack.get(DataComponentTypes.CONSUMABLE);
+        if (consumableComponent != null) {
+            return consumableComponent.canConsume(player, interactStack);
+        }
+
+        EquippableComponent equippableComponent = interactStack.get(DataComponentTypes.EQUIPPABLE);
+        if (equippableComponent != null && equippableComponent.swappable()) {
+            if (!player.canUseSlot(equippableComponent.slot()) || !equippableComponent.allows(player.getType())) {
+                return false;
+            }
+            ItemStack equippedStack = player.getEquippedStack(equippableComponent.slot());
+            return !ItemStack.areItemsAndComponentsEqual(interactStack, equippedStack);
+        }
+
+        if (interactStack.contains(DataComponentTypes.BLOCKS_ATTACKS)
+                || interactStack.contains(DataComponentTypes.KINETIC_WEAPON)
+                || VItem.getInstance().isSpear(interactStack)) {
+            return true;
+        }
+
+        Item item = interactStack.getItem();
+        if (item instanceof BowItem) {
+            return player.isInCreativeMode()
+                    || !player.getProjectileType(interactStack).isEmpty();
+        }
+        if (item instanceof CrossbowItem) {
+            ChargedProjectilesComponent chargedProjectilesComponent =
+                    interactStack.get(DataComponentTypes.CHARGED_PROJECTILES);
+            return chargedProjectilesComponent != null && !chargedProjectilesComponent.isEmpty()
+                    || !player.getProjectileType(interactStack).isEmpty();
+        }
+        if (item instanceof TridentItem) {
+            return true;
+        }
+        if (item instanceof GoatHornItem) {
+            return interactStack.contains(DataComponentTypes.INSTRUMENT);
+        }
+        if (item instanceof FireworkRocketItem) {
+            return player.isFallFlying();
+        }
+        if (item instanceof OnAStickItem) {
+            return player.hasVehicle();
+        }
+
+        return item instanceof SpyglassItem
+                || item instanceof BundleItem
+                || item instanceof FishingRodItem
+                || item instanceof BucketItem
+                || item instanceof BoatItem
+                || item instanceof PlaceableOnWaterItem
+                || item instanceof SpawnEggItem
+                || item instanceof EmptyMapItem
+                || item instanceof GlassBottleItem
+                || item instanceof WrittenBookItem
+                || item instanceof WritableBookItem
+                || item instanceof KnowledgeBookItem
+                || item instanceof EnderEyeItem
+                || item instanceof ProjectileItem;
+    }
+
+    private static EquipmentSlot getArmorStandHitSlot(ArmorStandEntity armorStand, Vec3d hitPos) {
+        EquipmentSlot slot = EquipmentSlot.MAINHAND;
+        boolean small = armorStand.isSmall();
+        double y = hitPos.y / (armorStand.getScale() * armorStand.getScaleFactor());
+        if (y >= 0.1
+                && y < 0.1 + (small ? 0.8 : 0.45)
+                && !armorStand.getEquippedStack(EquipmentSlot.FEET).isEmpty()) {
+            slot = EquipmentSlot.FEET;
+        } else if (y >= 0.9 + (small ? 0.3 : 0.0)
+                && y < 0.9 + (small ? 1.0 : 0.7)
+                && !armorStand.getEquippedStack(EquipmentSlot.CHEST).isEmpty()) {
+            slot = EquipmentSlot.CHEST;
+        } else if (y >= 0.4
+                && y < 0.4 + (small ? 1.0 : 0.8)
+                && !armorStand.getEquippedStack(EquipmentSlot.LEGS).isEmpty()) {
+            slot = EquipmentSlot.LEGS;
+        } else if (y >= 1.6 && !armorStand.getEquippedStack(EquipmentSlot.HEAD).isEmpty()) {
+            slot = EquipmentSlot.HEAD;
+        } else if (armorStand.getEquippedStack(EquipmentSlot.MAINHAND).isEmpty()
+                && !armorStand.getEquippedStack(EquipmentSlot.OFFHAND).isEmpty()) {
+            slot = EquipmentSlot.OFFHAND;
+        }
+        return slot;
+    }
+
+    private static boolean canArmorStandUseSlot(ArmorStandEntity armorStand, EquipmentSlot slot) {
+        return slot != EquipmentSlot.BODY && slot != EquipmentSlot.SADDLE && armorStand.canUseSlot(slot);
+    }
+
     public static boolean canInteractAndPlace(PlayerEntity player, FlagEntry<BlockHitResult> sneak) {
         return sneak != null && (player.shouldCancelInteraction() || !sneak.flag());
     }
 
     public static boolean canInteractAndPlace(PlayerEntity player, boolean flag) {
         return player.shouldCancelInteraction() || !flag;
+    }
+
+    public boolean canBeReplaceTo(BlockState fromState, BlockState toState) {
+        if (fromState == null || toState == null) {
+            return false;
+        }
+        if (fromState.equals(toState)) {
+            return true;
+        }
+
+        ArrayDeque<BlockState> pending = new ArrayDeque<>();
+        Set<BlockState> visited = new HashSet<>();
+        pending.add(fromState);
+        visited.add(fromState);
+
+        while (!pending.isEmpty()) {
+            BlockState current = pending.removeFirst();
+            for (BlockState next : getInteractionStates(current, toState)) {
+                if (next.equals(toState)) {
+                    return true;
+                }
+                if (visited.add(next)) {
+                    pending.addLast(next);
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Set<BlockState> getInteractionStates(BlockState fromState, BlockState targetState) {
+        Set<BlockState> result = new HashSet<>();
+        Block fromBlock = fromState.getBlock();
+        Block targetBlock = targetState.getBlock();
+
+        if (fromBlock == targetBlock) {
+            if (fromBlock instanceof SlabBlock
+                    && fromState.get(SlabBlock.TYPE) != SlabType.DOUBLE
+                    && targetState.equals(
+                            fromState.with(SlabBlock.TYPE, SlabType.DOUBLE).with(SlabBlock.WATERLOGGED, false))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof SnowBlock
+                    && fromState.get(SnowBlock.LAYERS) < 8
+                    && targetState.equals(fromState.with(SnowBlock.LAYERS, fromState.get(SnowBlock.LAYERS) + 1))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof CandleBlock
+                    && fromState.get(CandleBlock.CANDLES) < 4
+                    && targetState.equals(
+                            fromState.with(CandleBlock.CANDLES, fromState.get(CandleBlock.CANDLES) + 1))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof SeaPickleBlock
+                    && fromState.get(SeaPickleBlock.PICKLES) < 4
+                    && targetState.equals(
+                            fromState.with(SeaPickleBlock.PICKLES, fromState.get(SeaPickleBlock.PICKLES) + 1))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof FlowerbedBlock
+                    && fromState.get(FlowerbedBlock.FLOWER_AMOUNT) < 4
+                    && targetState.equals(fromState.with(
+                            FlowerbedBlock.FLOWER_AMOUNT, fromState.get(FlowerbedBlock.FLOWER_AMOUNT) + 1))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof LeafLitterBlock
+                    && fromState.get(LeafLitterBlock.SEGMENT_AMOUNT) < 4
+                    && targetState.equals(fromState.with(
+                            LeafLitterBlock.SEGMENT_AMOUNT, fromState.get(LeafLitterBlock.SEGMENT_AMOUNT) + 1))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof RepeaterBlock && targetState.equals(fromState.cycle(RepeaterBlock.DELAY))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof ComparatorBlock && targetState.equals(fromState.cycle(ComparatorBlock.MODE))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof DoorBlock && targetState.equals(fromState.cycle(DoorBlock.OPEN))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof TrapdoorBlock && targetState.equals(fromState.cycle(TrapdoorBlock.OPEN))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof FenceGateBlock && targetState.equals(fromState.cycle(FenceGateBlock.OPEN))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof LeverBlock && targetState.equals(fromState.cycle(LeverBlock.POWERED))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof ButtonBlock
+                    && !fromState.get(ButtonBlock.POWERED)
+                    && targetState.equals(fromState.with(ButtonBlock.POWERED, true))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof NoteBlock
+                    && targetState.equals(fromState.with(NoteBlock.NOTE, (fromState.get(NoteBlock.NOTE) + 1) % 25))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof CandleBlock
+                    && fromState.get(CandleBlock.LIT)
+                    && targetState.equals(fromState.with(CandleBlock.LIT, false))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof CandleBlock
+                    && !fromState.get(CandleBlock.LIT)
+                    && !fromState.get(CandleBlock.WATERLOGGED)
+                    && targetState.equals(fromState.with(CandleBlock.LIT, true))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof RespawnAnchorBlock
+                    && fromState.get(RespawnAnchorBlock.CHARGES) < 4
+                    && targetState.equals(fromState.with(
+                            RespawnAnchorBlock.CHARGES, fromState.get(RespawnAnchorBlock.CHARGES) + 1))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof CakeBlock
+                    && fromState.get(CakeBlock.BITES) < 6
+                    && targetState.equals(fromState.with(CakeBlock.BITES, fromState.get(CakeBlock.BITES) + 1))) {
+                result.add(targetState);
+            }
+            if (fromBlock instanceof ComposterBlock) {
+                int level = fromState.get(ComposterBlock.LEVEL);
+                if (level < 7 && targetState.equals(fromState.with(ComposterBlock.LEVEL, level + 1))) {
+                    result.add(targetState);
+                }
+                if (level == 8 && targetState.equals(fromState.with(ComposterBlock.LEVEL, 0))) {
+                    result.add(targetState);
+                }
+            }
+            if (fromBlock instanceof FlowerPotBlock fromPot
+                    && targetBlock instanceof FlowerPotBlock targetPot
+                    && fromPot.getContent() != Blocks.AIR
+                    && targetPot.getContent() == Blocks.AIR) {
+                result.add(targetState);
+            }
+        }
+
+        if (fromBlock instanceof CakeBlock
+                && targetBlock instanceof CandleCakeBlock
+                && fromState.get(CakeBlock.BITES) == 0) {
+            result.add(targetState);
+        }
+        if (fromBlock instanceof CandleCakeBlock
+                && targetBlock instanceof CakeBlock
+                && targetState.get(CakeBlock.BITES) == 1) {
+            result.add(targetState);
+        }
+        if (fromBlock instanceof FlowerPotBlock fromPot
+                && targetBlock instanceof FlowerPotBlock targetPot
+                && fromPot.getContent() == Blocks.AIR
+                && targetPot.getContent() != Blocks.AIR) {
+            result.add(targetState);
+        }
+        if (fromBlock instanceof PumpkinBlock && targetBlock == Blocks.CARVED_PUMPKIN) {
+            result.add(targetState);
+        }
+        return result;
     }
 }

@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.val;
@@ -78,12 +79,34 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
     }
 
     public final String getValue() {
+        checkUpdate();
         return value;
     }
 
-    @Getter
+    @Override
+    @Nullable
+    public final T getOriginValue() {
+        checkUpdate();
+        return originValue;
+    }
+
     @Nullable
     private T originValue;
+
+    @Nullable
+    private Supplier<T> updater;
+
+    private void checkUpdate() {
+        if (updater == null) {
+            return;
+        }
+        T updated = updater.get();
+        if (!Objects.equals(updated, originValue)) {
+            originValue = updated;
+            value = updated == null ? null : updateValue(updated);
+            validate = true;
+        }
+    }
 
     @Getter
     List<Predicate<T>> validators = new ArrayList<>();
@@ -163,6 +186,11 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
 
     public final void addValidator(Predicate<T> validator) {
         validators.add(validator);
+    }
+
+    public final void setUpdater(Supplier<T> updater) {
+        this.updater = updater;
+        checkUpdate();
     }
 
     @Override

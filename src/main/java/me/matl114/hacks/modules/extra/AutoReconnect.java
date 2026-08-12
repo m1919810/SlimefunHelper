@@ -31,6 +31,7 @@ public class AutoReconnect extends BaseModule {
             .build();
 
     public AutoReconnect() {
+        super("AutoReconnect");
         bindFlag(enable);
     }
 

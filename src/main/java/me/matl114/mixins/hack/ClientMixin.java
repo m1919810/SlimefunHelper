@@ -6,9 +6,9 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.InteractionTasks;
-import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.modules.combat.CombatExtra;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.render.RenderExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -77,7 +77,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
                                     "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V",
                             ordinal = 1))
     public Screen onRedirectInventoryKeyPress(Screen screen) {
-        if (InvTasks.getKeepInv().enable.get()) {
+        if (InvExtra.INSTANCE.enableKeepInv.get()) {
             ClientPlayerEntity player = MinecraftClient.getInstance().player;
             if (player != null
                     && ClientPlayerAccess.of(player).getKeepedInvHandler() != null

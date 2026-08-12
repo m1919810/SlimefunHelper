@@ -4,9 +4,9 @@ import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.entity.LegalMovementManager;
 
 public class ElytraFlightLegit extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
@@ -24,6 +24,7 @@ public class ElytraFlightLegit extends BaseModule implements LegalMovementManage
     public static LegalMovementManager.DelegateMovementModifier instance;
     // we remove it from these modules, we may add back later
     public ElytraFlightLegit() {
+        super("ElytraFlightLegit");
         bindFlag(enable);
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
@@ -38,14 +39,6 @@ public class ElytraFlightLegit extends BaseModule implements LegalMovementManage
         // 空实现，不添加任何逻辑
     }
 
-    /**
-     * 判断是否应该启用合法飞行
-     * @return true 如果本模块启用且 ElytraFlight 模块未启用
-     */
-    public boolean isEnableLegitFly() {
-        return enable.get() && !MovTasks.getElytraFlight().enable.get();
-    }
-
     int counter = 0;
     boolean workThisTick = false;
 
@@ -58,7 +51,7 @@ public class ElytraFlightLegit extends BaseModule implements LegalMovementManage
         //                workThisTick = true;
         //                player.setPitch(0.0F);
         //                if(counter %2 == 0){
-        //                    EntityUtils.setEntityYawSafe(player, player.getYaw() + 180);
+        //                    PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
         //                }
         //
         //                //player.setVelocity(Vec3d.ZERO);

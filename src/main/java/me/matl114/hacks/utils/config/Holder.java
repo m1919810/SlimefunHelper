@@ -16,6 +16,10 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 public record Holder<T>(Registry<T> registry, @Nullable T entry, String asString) implements NBTParsable<Holder<T>> {
+    public static <W> Class<Holder<W>> parameter() {
+        return (Class) Holder.class;
+    }
+
     public static final Identifier DEFAULT_EMPTY = new Identifier("minecraft", "default");
     public static final String DEFAULT_EMPTY_STRING = DEFAULT_EMPTY.toString();
     public static final String SPLITTER = "|";
@@ -74,7 +78,7 @@ public record Holder<T>(Registry<T> registry, @Nullable T entry, String asString
 
     private static <T> NBTType<Holder<T>> create() {
         return new NBTType<Holder<T>>(
-                NBTType.<Holder<T>>parameter(Holder.class),
+                "holder",
                 Codec.STRING.comapFlatMap(Holder::parse, Holder::asString),
                 (w, x, y, dx, dy) -> {
                     Holder<T> holder = w.getOriginValue();

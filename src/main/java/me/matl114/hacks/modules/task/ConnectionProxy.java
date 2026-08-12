@@ -78,20 +78,22 @@ public class ConnectionProxy extends BaseModule {
                                 (el -> {
                                     var currentSelected = proxyList.getSelected();
                                     if (currentSelected != null) {
-                                        return Text.literal("点击编辑代理配置, 当前使用的代理: " + currentSelected.name()
-                                                + "(%s:%s:%d)"
-                                                        .formatted(
-                                                                currentSelected
-                                                                        .type()
-                                                                        .name(),
-                                                                currentSelected.address(),
-                                                                currentSelected.port()));
+                                        return Text.translatable("widget.connection-proxy.proxy-list-editor")
+                                                .append(Text.literal(currentSelected.name()
+                                                        + "(%s:%s:%d)"
+                                                                .formatted(
+                                                                        currentSelected
+                                                                                .type()
+                                                                                .name(),
+                                                                        currentSelected.address(),
+                                                                        currentSelected.port())));
                                     } else {
-                                        return Text.literal("点击编辑代理配置, 当前未使用任何代理");
+                                        return Text.translatable("widget.connection-proxy.proxy-list-editor")
+                                                .append("None");
                                     }
                                 }),
                                 ButtonAction.run(this::openProxyListEditScreen))
-                        .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))));
+                        .withTooltips(TooltipHandler.of(Constants.openListEditTooltips()))));
     }
 
     public void openProxyListEditScreen() {
@@ -106,8 +108,8 @@ public class ConnectionProxy extends BaseModule {
                 30,
                 220);
         ListModifyWidget listSelect = new ListModifyWidget(controller, 0, 0, 320, 260);
-        ConfirmingWidgetScreen confirmScreen =
-                new ConfirmingWidgetScreen(Text.literal("编辑代理列表"), listSelect, () -> true, () -> {
+        ConfirmingWidgetScreen confirmScreen = new ConfirmingWidgetScreen(
+                Text.translatable("widget.connection-proxy.proxy-list-editor.title"), listSelect, () -> true, () -> {
                     List<ProxyEntry> newProxies = currentList.stream()
                             .map(s -> s.toRecord(ProxyEntry.class))
                             .toList();
@@ -118,7 +120,7 @@ public class ConnectionProxy extends BaseModule {
 
     public DrawableWidget createEditRenderHandler(
             MutableRecord argsMap, List<MutableRecord> argsMapList, MutableInt index) {
-        SubScreenWidget subScreen = new SubScreenWidget(0, 5, 220, 20);
+        SubScreenWidget subScreen = new SubScreenWidget(0, 0, 220, 20);
         ExecutableWidget.instance(2, 2, 16, 16)
                 .setElementHandler(IconElement.statedGuiPredicate(
                         ButtonElement.BUTTON,
@@ -151,7 +153,7 @@ public class ConnectionProxy extends BaseModule {
                 .setElementHandler(new MultiLineTextElement(
                         (el) -> {
                             ProxyEntry entry = argsMap.toRecord(ProxyEntry.class);
-                            return Text.literal("代理: %s\n(%s:%s:%d)"
+                            return Text.literal("%s\n(%s:%s:%d)"
                                     .formatted(entry.name(), entry.type().name(), entry.address(), entry.port()));
                         },
                         ClickGui.INSTANCE.configColor.get().withAlpha(255),
@@ -159,16 +161,18 @@ public class ConnectionProxy extends BaseModule {
                 .addToSub(subScreen);
 
         ExecutableWidget.instance(155, 0, 60, 20)
-                .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("点击编辑")), ButtonAction.run(() -> {
-                    var re = WidgetUtils.createMutableRecordEditScreen(
-                            Text.literal("编辑代理设置"),
-                            List::of,
-                            argsMap,
-                            s -> "widget.connection-proxy." + s,
-                            WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
-                            ClickGui.CONFIG_PALETTE);
-                    new CenterScreen(re).access().openFromCurrent();
-                })))
+                .setElementHandler(new ButtonElement(
+                        TextProvider.of(Text.translatable("widget.connection-proxy.open-editor")),
+                        ButtonAction.run(() -> {
+                            var re = WidgetUtils.createMutableRecordEditScreen(
+                                    Text.translatable("widget.connection-proxy.open-editor.title"),
+                                    List::of,
+                                    argsMap,
+                                    s -> "widget.connection-proxy." + s,
+                                    WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
+                                    ClickGui.CONFIG_PALETTE);
+                            new CenterScreen(re).access().openFromCurrent();
+                        })))
                 .addToSub(subScreen);
         return subScreen;
     }

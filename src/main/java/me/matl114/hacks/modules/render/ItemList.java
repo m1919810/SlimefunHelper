@@ -29,6 +29,9 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 
 public class ItemList extends IRender2DColoredModule {
+    public ItemList() {
+        super("ItemList");
+    }
 
     @Override
     protected ModulePath createRoot() {
@@ -132,15 +135,15 @@ public class ItemList extends IRender2DColoredModule {
     public void render2D(VDrawContext vdraw, float partialTicks) {
         if (enable.get()) {
             if (!importantItems.isEmpty() && renderImportant.get()) {
-                drawText(vdraw, Text.literal("重要物品:").asOrderedText());
+                drawText(vdraw, "重要物品:");
                 for (var spec : importantItems) {
-                    drawText(vdraw, spec.asOrderedText());
+                    drawText(vdraw, spec);
                 }
             }
-            if (!importantItems.isEmpty() && renderSimple.get()) {
-                drawText(vdraw, Text.literal("物品").asOrderedText());
+            if (!simpleItems.isEmpty() && renderSimple.get()) {
+                drawText(vdraw, "物品");
                 for (var spec : simpleItems) {
-                    drawText(vdraw, spec.asOrderedText());
+                    drawText(vdraw, spec);
                 }
             }
         }

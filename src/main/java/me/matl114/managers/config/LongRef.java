@@ -1,7 +1,7 @@
 package me.matl114.managers.config;
 
 import lombok.AllArgsConstructor;
-import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.kv.AttrKeyValues;
 
 @AllArgsConstructor
@@ -59,7 +59,7 @@ public class LongRef extends Ref<Long> {
     }
 
     @Override
-    public AttrKeyValue<Long> _createKeyValue0(String key) {
+    public BaseAttrKeyValue<Long> _createKeyValue0(String key) {
         return new me.matl114.utils.config.BaseAttrKeyValue<>(key, this.value, AttrKeyValues.LONG_FACTORY);
     }
 

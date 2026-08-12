@@ -3,6 +3,7 @@ package me.matl114.managers.config;
 import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 @AllArgsConstructor
 public class FlagRef extends Ref<Boolean> {
@@ -66,7 +67,7 @@ public class FlagRef extends Ref<Boolean> {
     }
 
     @Override
-    public AttrKeyValue<Boolean> _createKeyValue0(String key) {
+    public BaseAttrKeyValue<Boolean> _createKeyValue0(String key) {
         return AttrKeyValue.bool(key, this.flag);
     }
 

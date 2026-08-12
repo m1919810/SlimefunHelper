@@ -35,7 +35,7 @@ public abstract class BoundedPrimitiveMap<W, T> {
     }
 
     public static <S, T, W extends BoundedPrimitiveMap<S, T>> NBTType<W> create(
-            Class<W> what,
+            String what,
             TriFunction<List<S>, Map<S, T>, NBTType<T>, W> creator,
             List<S> baseLookup,
             Codec<S> keyCodec,
@@ -48,7 +48,7 @@ public abstract class BoundedPrimitiveMap<W, T> {
                 WrapperFactory.of(map -> creator.apply(baseLookup, map, ptype), BoundedPrimitiveMap::toMap);
         WrapperFactory<String, S> keyWrapper = WrapperFactory.fromCodec(keyCodec, JavaOps.INSTANCE);
         return new NBTType<>(
-                NBTType.<W>parameter(what),
+                what,
                 CodecUtils.arrayMapCodec(Codec.STRING, ptype.typeCodec())
                         .xmap(
                                 map -> {

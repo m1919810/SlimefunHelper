@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 import lombok.Getter;
 import lombok.val;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 public class ListRef extends ObjectRef<List<String>> {
     public static final Class<List<String>> TYPE = (Class<List<String>>) (Class) List.class;
@@ -59,7 +60,7 @@ public class ListRef extends ObjectRef<List<String>> {
     }
 
     @Override
-    public AttrKeyValue<List<String>> _createKeyValue0(String key) {
+    public BaseAttrKeyValue<List<String>> _createKeyValue0(String key) {
         return AttrKeyValue.list(key, this.get());
     }
 

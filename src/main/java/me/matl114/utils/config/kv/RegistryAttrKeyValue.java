@@ -108,7 +108,7 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                 .setElementHandler(IconElement.fixedGui(
                                 Constants.SEARCH_TEXTURE_SPRITE,
                                 ButtonAction.run(() -> openRegistrySearch(registry, widget)))
-                        .withTooltips(TooltipHandler.of(Constants.SEARCH_REGISTRY_TOOLTIPS)));
+                        .withTooltips(TooltipHandler.of(Constants.searchRegistryTooltips())));
         return new SubScreenWidget(x, y, inputDx, dy)
                 .addDrawableChild(show)
                 .addDrawableChild(interactPlace)

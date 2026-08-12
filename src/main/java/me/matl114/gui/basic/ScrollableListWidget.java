@@ -175,7 +175,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
 
     @Override
     public DrawableWidget getSelected() {
-        return null;
+        return selectedElement;
     }
 
     @Override

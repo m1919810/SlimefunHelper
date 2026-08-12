@@ -2,7 +2,7 @@ package me.matl114.hacks.modules.combat;
 
 import java.util.ArrayList;
 import java.util.List;
-import me.matl114.accessors.access.ItemStackAccess;
+import me.matl114.accessors.access.PlayerInteractItemC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.CombatTasks;
@@ -37,6 +37,7 @@ public class ProjectileEnhance extends BaseModule {
     public final ModulePath projectile = makePath(Configs.COMBAT_CONFIG, "projectile");
 
     public ProjectileEnhance() {
+        super("ProjectileEnhance");
         bindFlag(enable);
     }
 
@@ -128,14 +129,11 @@ public class ProjectileEnhance extends BaseModule {
         if (enable.get()) {
             PlayerInteractItemC2SPacket packet = packetMutableObject.context();
             Hand hand = packet.getHand();
-            ItemStack stack = mc.player.getStackInHand(hand);
-            Item itemType = ItemStackAccess.of(stack).getRealItem();
+            ItemStack stack = PlayerInteractItemC2SPacketAccess.of(packetMutableObject.context)
+                    .getItemStack();
             // access to the item before it is used up to 0 count
-            if (itemType != Items.AIR && itemType != null) {
-                ItemStack stackOrigin = stack;
+            if (stack != null && !stack.isEmpty()) {
                 // make a stackCopy of origin item with 1 count
-                stack = new ItemStack(itemType);
-                stack.applyChanges(stackOrigin.components.getChanges());
                 if (enableAim.get()) {
                     // pass check, autoaim
                     boolean makeReaim = false;

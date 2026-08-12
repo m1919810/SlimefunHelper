@@ -16,6 +16,7 @@ public class PostManager extends BaseModule {
     public static PostManager INSTANCE;
 
     public PostManager() {
+        super("PostManager");
         INSTANCE = this;
     }
 

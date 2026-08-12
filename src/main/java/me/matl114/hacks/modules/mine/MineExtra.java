@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.mine;
 import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.*;
-import java.util.List;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.*;
@@ -28,7 +27,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -36,63 +34,14 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
-import org.joml.Vector2i;
 import org.spongepowered.asm.mixin.Unique;
 
 public class MineExtra extends BaseModule {
     public static MineExtra INSTANCE;
 
     public MineExtra() {
+        super("MineExtra");
         INSTANCE = this;
-    }
-
-    public List<Vec3i> blocksAround = new ArrayList<>();
-
-    public List<Vector2i> platesAround = new ArrayList<>();
-
-    public double lastRange;
-
-    public List<Vec3i> getBlocksAround() {
-        if (mc.player != null) {
-            refreshInteractionRange(getReachDistance());
-        }
-        return Collections.unmodifiableList(blocksAround);
-    }
-
-    public List<Vector2i> getPlatesAround() {
-        if (mc.player != null) {
-            refreshInteractionRange(getReachDistance());
-        }
-        return Collections.unmodifiableList(platesAround);
-    }
-
-    public void refreshInteractionRange(double val) {
-        if (mc.player != null) {
-            if (lastRange != val) {
-                // update interaction range lazily
-                lastRange = val;
-                List<Vec3i> points = new ArrayList<>();
-                int range = (int) lastRange;
-                for (int x = -range; x <= range; x++) {
-                    for (int y = -range; y <= range; y++) {
-                        for (int z = -range; z <= range; z++) {
-                            points.add(new Vec3i(x, y, z));
-                        }
-                    }
-                }
-                points.sort(Comparator.comparingDouble(
-                        v -> v.getX() * v.getX() + v.getY() * v.getY() + v.getZ() * v.getZ()));
-                blocksAround = points;
-                List<Vector2i> plates = new ArrayList<>();
-                for (int x = -range; x <= range; x++) {
-                    for (int y = -range; y <= range; y++) {
-                        plates.add(new Vector2i(x, y));
-                    }
-                }
-                plates.sort(Comparator.comparingDouble(v -> v.x * v.x + v.y * v.y));
-                platesAround = plates;
-            }
-        }
     }
 
     public final ModulePath fastbreak = makePath(Configs.MINE_CONFIG, "fast-break");
@@ -125,15 +74,15 @@ public class MineExtra extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
+    public final FlagRef fasterVanillaBreak = builder(fastbreak.add("vanilla-break"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     //    public final FlagRef enableReach = toggle(REACH_TOGGLE).showConfig().build();
     //
     //    public final KeyBindRef reachKeybind = toggleHotkey(
     //                    REACH_TOGGLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_R))
     //            .build();
-
-    public final DoubleRef reachDistance = builder(fastbreak.add("reach-distance"), Double.class)
-            .defaultValue(0.0)
-            .build();
 
     public final FlagRef doubleBreak =
             flagBuilder(fastbreak.add("double-break")).build();
@@ -160,44 +109,49 @@ public class MineExtra extends BaseModule {
             flagBuilder(fastbreak.add("render-current-break-pos")).build();
 
     public final NBTRef<WrapColor> frameColor = builder(fastbreak.add("render-frame-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.BLUE)))
+            .defaultValue(new WrapColor((Color.BLUE)))
             .build();
 
     public final NBTRef<WrapColor> progressColor = builder(fastbreak.add("render-progress-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.YELLOW)))
+            .defaultValue(new WrapColor((Color.YELLOW)))
             .build();
 
     public final NBTRef<WrapColor> doubleBreakColor = builder(fastbreak.add("double-break-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.MAGENTA)))
+            .defaultValue(new WrapColor((Color.MAGENTA)))
             .build();
 
     public final FlagRef renderOnlyWhenMine =
             flagBuilder(fastbreak.add("render-only-when-mine")).build();
 
     public IndexEntry<ItemStack> getGhostHandMiningTool(BlockState currentState) {
+        IndexEntry<ItemStack> defaultEntry = InventoryUtils.getSelectedItem();
         if (!ghostHandMine.get()) {
-            return InventoryUtils.getSelectedItem();
+            return defaultEntry;
         }
         BlockState calculatingState =
-                currentState.isAir() || currentState.isLiquid() ? Blocks.OBSIDIAN.getDefaultState() : currentState;
+                (currentState.isAir() || currentState.isLiquid()) ? Blocks.OBSIDIAN.getDefaultState() : currentState;
+        double defaultSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                mc.player, calculatingState, defaultEntry.val());
+        // only select speed > handItem, in the case that player holding a low dur tool
         IndexEntry<ItemStack> result = InventoryUtils.findBestPlayerItem(
                 item -> {
                     if (item.isEmpty()
                             || item.getMaxDamage() < 10
                             || item.contains(DataComponentTypes.UNBREAKABLE)
                             || item.getDamage() < item.getMaxDamage() - 10) {
-                        return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                        double speed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
                                 mc.player, calculatingState, item);
+                        if (speed >= defaultSpeed) {
+                            return speed;
+                        } else {
+                            return null;
+                        }
                     }
                     return null;
                 },
                 true,
                 true);
-        return result != null ? result : InventoryUtils.getSelectedItem();
-    }
-
-    public double getReachDistance() {
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE) + reachDistance.get();
+        return result != null ? result : defaultEntry;
     }
 
     @Override
@@ -262,6 +216,7 @@ public class MineExtra extends BaseModule {
                 lastGrimACWrongBreakCheck = null;
                 // FastBreak cooldown tryBypass
                 lastFinishBreakingTick = Tasks.getTick();
+                lastFinishBreakingCooldownTill = Tasks.getTick() + cooldownManaging();
             }
             case ABORT_DESTROY_BLOCK -> {
                 if (!Objects.equals(lastGrimACWrongBreakCheck, packet.getPos())) {
@@ -275,8 +230,9 @@ public class MineExtra extends BaseModule {
             }
         }
         // statistic update
+        PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
+
         if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) {
-            PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
             // filter bad packets/ instant break
             if (Objects.equals(access.getCurrentMiningPos(), packet.getPos())) {
                 lastStartMineBreakingProgressResetTick = Tasks.getTick();
@@ -285,7 +241,8 @@ public class MineExtra extends BaseModule {
         // swing packet fix
         if (swingFix.get()
                 && packet.getAction() == PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK
-                && Tasks.getTick() != lastSwingPacket) {
+                && Tasks.getTick() != lastSwingPacket
+                && Objects.equals(access.getCurrentMiningPos(), packet.getPos())) {
             // will set lastSwingPacket in the listener above
             mc.player.swingHand(Hand.MAIN_HAND);
         }
@@ -408,6 +365,7 @@ public class MineExtra extends BaseModule {
     }
 
     public int lastFinishBreakingTick;
+    public int lastFinishBreakingCooldownTill;
 
     public int gainedAdvantageCooldown;
 
@@ -422,6 +380,7 @@ public class MineExtra extends BaseModule {
 
     public void resetStatistics() {
         lastFinishBreakingTick = 0;
+        lastFinishBreakingCooldownTill = 0;
         gainedAdvantageCooldown = 0;
         lastStartingMineIsInstantBreak = false;
         gainedAdvantageMining = 0;
@@ -434,6 +393,10 @@ public class MineExtra extends BaseModule {
 
     public boolean isVanillaMineCooldownComplete(int extra) {
         return Tasks.getTick() - lastFinishBreakingTick >= 5 + extra;
+    }
+
+    public int getMiningPacketCooldown() {
+        return Math.max(0, lastFinishBreakingCooldownTill - Tasks.getTick());
     }
 
     @Unique

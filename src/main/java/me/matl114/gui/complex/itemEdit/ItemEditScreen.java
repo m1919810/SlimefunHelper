@@ -32,6 +32,7 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.RegistryUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.kv.NbtAttrKeyValue;
 import me.matl114.versioned.api.VItem;
@@ -50,7 +51,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -65,6 +65,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     protected ItemStack itemStack;
     protected State state = null;
     protected Consumer<ItemStack> callback;
+    protected static int CONTENT_START_X = 20;
 
     public ItemEditScreen(Text title, ItemStack itemStack, Consumer<ItemStack> callback) {
         super(title);
@@ -111,7 +112,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         if (canConfirm()) {
             InvTasks.getSaveItem().addSaveItem(itemStack.copy());
         } else {
-            Debug.chat(Text.literal("当前的编辑参数存在问题,不能保存为物品"));
+            Debug.chat(Text.translatable("widget.gui.item-edit-screen.save.error"));
         }
     }
 
@@ -120,7 +121,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         if (canConfirm()) {
             InvTasks.copyGiveCommand(itemStack.copy());
         } else {
-            Debug.chat(Text.literal("当前的编辑参数存在问题,不能保存为物品"));
+            Debug.chat(Text.translatable("widget.gui.item-edit-screen.save.error"));
         }
     }
 
@@ -128,14 +129,17 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         if (mc.player != null) {
             if (mc.interactionManager != null
                     && mc.interactionManager.getCurrentGameMode().isCreative()) {
+                Debug.chat(Text.translatable("widget.gui.item-edit-screen.save.apply-changes.creative")
+                        .formatted(Formatting.GREEN));
                 int slot = InventoryUtils.getSelectedSlot();
                 InvTasks.setCreativeInventory(this.itemStack, slot);
             } else {
-                Debug.chat(Text.literal("并非创造模式,无法实施物品改变;正在尝试使用give指令").formatted(Formatting.YELLOW));
+                Debug.chat(Text.translatable("widget.gui.item-edit-screen.save.apply-changes.command")
+                        .formatted(Formatting.YELLOW));
                 String command = InvTasks.createGiveCommand(itemStack.copy());
                 if (command.length() >= 256) {
-                    Debug.chat(Text.literal("指令过长,请手动执行以避免被踢出服务器!").formatted(Formatting.RED));
-                    Debug.chat(Text.literal("指令已经被拷贝到了剪切板中!").formatted(Formatting.RED));
+                    Debug.chat(Text.translatable("widget.gui.item-edit-screen.save.apply-changes.command.too-long")
+                            .formatted(Formatting.RED));
                     mc.keyboard.setClipboard(command);
                 } else {
                     ChatTasks.sayMessage(command, true);
@@ -151,15 +155,11 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     ExecutableWidget guide;
 
     protected static final Identifier SAVE_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/save");
-    protected static final List<Text> SAVE_TOOLTIPS = List.of(Text.literal("点击保存当前状态到保存物品中"));
 
     protected static final Identifier COPYCMD_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/copy_command");
-    protected static final List<Text> GIVE_TOOLTIPS = List.of(Text.literal("点击拷贝该物品的/give指令"));
     protected static final Identifier EDITOR_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/editor");
-    protected static final List<Text> EDITOR_TOOLTIPS = List.of(Text.literal("点击打开NBT编辑器"));
-    protected static final List<Text> SNBT_TOOLTIPS = List.of(Text.literal("点击打开SNBT编辑器"));
+
     protected static final Identifier SNBT_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/snbt_editor");
-    protected static final List<Text> GUIDE_TOOLTIPS = List.of(Text.literal("点击打开 物品配方记录书"));
     protected static final Identifier GUIDE_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/list_tag");
     protected ItemProcessingSubScreen currentSubScreen;
 
@@ -171,7 +171,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             this.currentSubScreen.saveChanges();
         }
         if (state == null) {
-            setTitleLabel(Text.literal("错误! 你是怎么打开这个界面的!").formatted(Formatting.RED));
+            setTitleLabel(Text.translatable("widget.gui.item-edit-screen.state.error-title")
+                    .formatted(Formatting.RED));
             this.state = null;
             this.currentSubScreen = null;
         } else {
@@ -202,7 +203,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         } catch (Throwable e) {
             this.close();
             Debug.chat(
-                    Text.literal("An Error occured while opening item editor: ").formatted(Formatting.RED),
+                    Text.translatable("widget.gui.item-edit-screen.open.error").formatted(Formatting.RED),
                     e.getMessage());
             Debug.info(e);
         }
@@ -226,31 +227,36 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         // 生成切换按钮
         this.saveItem = ExecutableWidget.instance(this.x + CONTENT_START_X + 1, this.y + CONTENT_START_Y + 1, 18, 18)
                 .setElementHandler(IconElement.fixedGui(SAVE_TEXTURE_SPRITE, ButtonAction.run(this::executeSave))
-                        .withTooltips(TooltipHandler.of(SAVE_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.item-edit-screen.operate.save-item.tooltips", ""))))
                 .addTo(this);
         this.copyCommand = ExecutableWidget.instance(
                         this.x + CONTENT_START_X + 21, this.y + CONTENT_START_Y + 1, 18, 18)
                 .setElementHandler(IconElement.fixedGui(COPYCMD_TEXTURE_SPRITE, ButtonAction.run(this::executeCmdCopy))
-                        .withTooltips(TooltipHandler.of(GIVE_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.item-edit-screen.operate.copy-give-command.tooltips", ""))))
                 .addTo(this);
         this.editor = ExecutableWidget.instance(this.x + CONTENT_START_X + 41, this.y + CONTENT_START_Y + 1, 18, 18)
                 .setElementHandler(
                         IconElement.fixedGui(EDITOR_TEXTURE_SPRITE, ButtonAction.run(() -> this.setState(State.EDITOR)))
-                                .withTooltips(TooltipHandler.of(EDITOR_TOOLTIPS)))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.item-edit-screen.operate.switch-to-nbt-editor.tooltips", ""))))
                 .addTo(this);
         this.snbt = ExecutableWidget.instance(this.x + CONTENT_START_X + 61, this.y + CONTENT_START_Y + 1, 18, 18)
                 .setElementHandler(
                         IconElement.fixedGui(SNBT_TEXTURE_SPRITE, ButtonAction.run(() -> this.setState(State.SNBT)))
-                                .withTooltips(TooltipHandler.of(SNBT_TOOLTIPS)))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.item-edit-screen.operate.switch-to-snbt-editor.tooltips", ""))))
                 .addTo(this);
         this.guide = ExecutableWidget.instance(this.x + CONTENT_START_X + 81, this.y + CONTENT_START_Y + 1, 18, 18)
                 .setElementHandler(IconElement.fixedGui(
                                 GUIDE_TEXTURE_SPRITE,
                                 ButtonAction.run(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu))
-                        .withTooltips(TooltipHandler.of(GUIDE_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.item-edit-screen.operate.open-slimefun-guide.tooltips", ""))))
                 .addTo(this);
 
-        setState(this.state == null ? State.SNBT : this.state);
+        setState(this.state == null ? State.EDITOR : this.state);
     }
 
     protected abstract class ItemProcessingSubScreen extends SubScreenWidget {
@@ -270,7 +276,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
         public SnbtItemProcessingSubScreen() {
             super();
-            ItemEditScreen.this.setTitleLabel(Text.literal("Snbt 编辑器").formatted(Formatting.GREEN));
+            ItemEditScreen.this.setTitleLabel(
+                    Text.translatable("widget.gui.item-edit-screen.snbt-editor").formatted(Formatting.GREEN));
             init();
         }
 
@@ -279,7 +286,6 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         ExecutableWidget formatButton;
         EditBoxWidget widget;
         protected static final Identifier FORMAT_TEXTURE_SPRITE = Constants.FORMATTING_TEXTURE_SPRITE;
-        protected static final List<Text> FORMAT = List.of(Text.literal("格式化NBT字符串"));
 
         protected ItemStack validateItemStack(NbtElement element) {
             // may throw
@@ -314,7 +320,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                     if (this.widget != null) widget.setText(str);
                                 });
                             }))
-                            .withTooltips(TooltipHandler.of(FORMAT))
+                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                    "widget.gui.item-edit-screen.formatter.tooltips", "")))
                             .withActiveActionCondition((icon) -> {
                                 if (icon instanceof IconElement) {
                                     if (this.itemAttrValue.isValidate()) {
@@ -360,7 +367,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         public ItemAttributeProcessingSubScreen() {
             super();
             this.stackTemplate = itemStack.copy();
-            ItemEditScreen.this.setTitleLabel(Text.literal("Nbt 编辑器").formatted(Formatting.GREEN));
+            ItemEditScreen.this.setTitleLabel(
+                    Text.translatable("widget.gui.item-edit-screen.nbt-editor").formatted(Formatting.GREEN));
             init();
         }
 
@@ -368,7 +376,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         ItemAttrSubSubScreen currentSubSubScreen;
         ContentDelegateWidget<ItemAttrSubSubScreen> delegateWidget;
         ItemAttr currentAttr = null;
-        protected static final Text REFRESH_DISPLAY_LABEL = Text.literal("点击下方刷新");
+
         protected static final int SELECT_WIDTH = 120;
 
         protected void setCurrentAttr(ItemAttr attr) {
@@ -424,8 +432,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         protected void refreshScreen() {
             this.clearChildren();
             for (var attr : ItemAttr.values()) {
-                Text selectedText = Text.literal(attr.display).formatted(Formatting.YELLOW);
-                Text unselectedText = Text.literal(attr.display);
+                Text selectedText = Text.translatable(attr.display).formatted(Formatting.YELLOW);
+                Text unselectedText = Text.translatable(attr.display);
                 ExecutableWidget.instance(20, attr.ordinal() * 30, 80, 30)
                         .setElementHandler(new ButtonElement(
                                 (el) -> {
@@ -435,7 +443,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         .addToSub(this);
             }
             DisplayWidget.instance(30, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 90, 60, 20)
-                    .setRenderHandler(LabelElement.instance(REFRESH_DISPLAY_LABEL))
+                    .setRenderHandler(LabelElement.instance(
+                            Text.translatable("widget.gui.item-edit-screen.nbt-editor.refresh-item")))
                     .addToSub(this);
             ExecutableWidget.instance(30, ItemEditScreen.this.processingSubScreen.getTextureHeight() - 70, 60, 60)
                     .setElementHandler(new SlotElement(
@@ -487,7 +496,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 public DrawableWidget factory(int x, int y) {
                     SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, 0, 0);
                     subScreenWidget.addDrawableChild(DisplayWidget.instance(1, 1, 50 - 1, 20 - 1)
-                            .setRenderHandler(LabelElement.instance(Text.literal("是否隐藏"))));
+                            .setRenderHandler(LabelElement.instance(
+                                    Text.translatable("widget.gui.item-edit-screen.nbt-editor.generic.hide-flag"))));
                     var flags = ItemStackUtils.getHideFlags();
                     for (int index = 0; index < flags.length; ++index) {
                         var sec = flags[index];
@@ -512,12 +522,20 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             }
 
             protected void init() {
-                this.item = AttrKeyValue.registry("物品ID", Registries.ITEM, stackTemplate.getItem());
-                this.count = AttrKeyValue.integer("数量", stackTemplate.getCount());
-                this.damage = AttrKeyValue.integer("耐久损耗", stackTemplate.getDamage());
+                this.item = AttrKeyValue.registry(
+                        "widget.gui.item-edit-screen.nbt-editor.generic.item-id",
+                        Registries.ITEM,
+                        stackTemplate.getItem());
+                this.count = AttrKeyValue.integer(
+                        "widget.gui.item-edit-screen.nbt-editor.generic.count", stackTemplate.getCount());
+                this.damage = AttrKeyValue.integer(
+                        "widget.gui.item-edit-screen.nbt-editor.generic.durability", stackTemplate.getDamage());
                 String sfid = ItemStackUtils.getSfId(stackTemplate);
-                this.sfid = AttrKeyValue.str("粘液id", sfid == null ? "" : sfid);
-                this.unbreakable = AttrKeyValue.bool("无法破坏", ItemStackUtils.getIsUnbreakable(stackTemplate));
+                this.sfid = AttrKeyValue.str(
+                        "widget.gui.item-edit-screen.nbt-editor.generic.sf-id", sfid == null ? "" : sfid);
+                this.unbreakable = AttrKeyValue.bool(
+                        "widget.gui.item-edit-screen.nbt-editor.generic.unbreakable-flag",
+                        ItemStackUtils.getIsUnbreakable(stackTemplate));
                 this.flags = new ItemHideFlags(stackTemplate);
                 ProfileComponent component = ItemStackUtils.getInPatch(stackTemplate, PROFILE);
                 this.lastComponent = component;
@@ -527,7 +545,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     hash = BukkitItemStackUtils.getHashFromProfile(component);
                 }
                 if (hash == null) hash = "";
-                this.skullHashProfile = AttrKeyValue.str("CSCoreLib", hash);
+                this.skullHashProfile =
+                        AttrKeyValue.str("widget.gui.item-edit-screen.nbt-editor.generic.skull-hash", hash);
 
                 new KeyValueInputWidget<>(30, 0, 240, 20, 50, this.item)
                         .addToSub((ItemBasicAttributeSubSubScreen) this);
@@ -593,17 +612,20 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             protected void init() {
                 Text text = ItemStackUtils.getCustomName(stackTemplate);
                 String textCode = text == null ? "" : ChatUtils.textToString(text);
-                displayName = AttrKeyValue.str("自定义名称", textCode);
+                displayName = AttrKeyValue.str("widget.gui.item-edit-screen.nbt-editor.display.custom-name", textCode);
                 lores = new ArrayList<>();
                 List<Text> loreComp = ItemStackUtils.getLore(stackTemplate);
                 for (var txt : loreComp) {
-                    lores.add(AttrKeyValue.str("--", txt == null ? "" : ChatUtils.textToString(txt)));
+                    lores.add(AttrKeyValue.str(
+                            "widget.gui.item-edit-screen.nbt-editor.display.lore",
+                            txt == null ? "" : ChatUtils.textToString(txt)));
                 }
                 new KeyValueInputWidget<>(10, 0, 260, 20, 50, this.displayName).addToSub(this);
                 new ListModifyWidget(
                                 ListEntryWidgetController.mutable(
                                         this.lores,
-                                        () -> AttrKeyValue.str("--", ""),
+                                        () -> AttrKeyValue.str(
+                                                "widget.gui.item-edit-screen.nbt-editor.display.lore", ""),
                                         (str) -> new KeyValueInputWidget<>(0, 0, 180, 20, 30, str),
                                         20,
                                         180),
@@ -641,12 +663,12 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             protected static class ItemEnchantAttrGroup {
                 public ItemEnchantAttrGroup(String enchantment, int level) {
                     id = AttrKeyValue.openRegistry(
-                            "附魔",
+                            "widget.gui.item-edit-screen.nbt-editor.enchantment.id",
                             ItemStackUtils.registry()
                                     .getOptional(RegistryKeys.ENCHANTMENT)
                                     .orElseThrow(),
                             enchantment);
-                    lvl = AttrKeyValue.integer("等级", level);
+                    lvl = AttrKeyValue.integer("widget.gui.item-edit.screen.nbt-editor.enchantment.lvl", level);
                 }
 
                 AttrKeyValue<Enchantment> id;
@@ -665,10 +687,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 public Pair<RegistryEntry<Enchantment>, Integer> entryValue() {
                     try {
                         Enchantment enchantment = this.id.getOriginValue();
-                        Registry<Enchantment> enchantmentRegistry = ItemStackUtils.registry()
-                                .getOptional(RegistryKeys.ENCHANTMENT)
-                                .orElseThrow();
-                        RegistryEntry<Enchantment> ench = enchantmentRegistry.getEntry(enchantment);
+                        RegistryEntry<Enchantment> ench = RegistryUtils.getRegistryEntry(
+                                ItemStackUtils.registry(), RegistryKeys.ENCHANTMENT, enchantment);
                         return new Pair<>(ench, lvl.getOriginValue());
                     } catch (Throwable e) {
                         return new Pair<>(null, 0);
@@ -728,11 +748,16 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             protected class ItemAttributeModifierEntry {
                 public ItemAttributeModifierEntry(
                         String attribute, EntityAttributeModifier modifier, AttributeModifierSlot slot) {
-                    attr = AttrKeyValue.openRegistry("属性名", Registries.ATTRIBUTE, attribute);
-                    identifier = AttrKeyValue.identifier("属性修饰符名称", modifier.id());
-                    modifierValue = AttrKeyValue.doub("值", modifier.value());
-                    modifierOperation = AttrKeyValue.enumMap("操作", modifier.operation(), NAME_TO_OPER);
-                    optionalSlot = AttrKeyValue.enumMap("槽位", slot, NAME_TO_OP);
+                    attr = AttrKeyValue.openRegistry(
+                            "widget.gui.item-edit-screen.nbt-editor.attribute.name", Registries.ATTRIBUTE, attribute);
+                    identifier = AttrKeyValue.identifier(
+                            "widget.gui.item-edit-screen.nbt-editor.attribute.uid", modifier.id());
+                    modifierValue = AttrKeyValue.doubleVal(
+                            "widget.gui.item-edit-screen.nbt-editor.attribute.value", modifier.value());
+                    modifierOperation = AttrKeyValue.enumMap(
+                            "widget.gui.item-edit-screen.nbt-editor.attribute.op", modifier.operation(), NAME_TO_OPER);
+                    optionalSlot = AttrKeyValue.enumMap(
+                            "widget.gui.item-edit-screen.nbt-editor.attribute.slot", slot, NAME_TO_OP);
                 }
 
                 AttrKeyValue<Identifier> identifier;
@@ -748,9 +773,15 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     for (var re : AttributeModifierSlot.values()) {
                         NAME_TO_OP.put(re.asString(), re);
                     }
-                    NAME_TO_OPER.put("加法", EntityAttributeModifier.Operation.ADD_VALUE);
-                    NAME_TO_OPER.put("乘基数", EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE);
-                    NAME_TO_OPER.put("乘法", EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+                    NAME_TO_OPER.put(
+                            "widget.gui.item-edit-screen.nbt-editor.attribute.op.add",
+                            EntityAttributeModifier.Operation.ADD_VALUE);
+                    NAME_TO_OPER.put(
+                            "widget.gui.item-edit-screen.nbt-editor.attribute.op.multiply-base",
+                            EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+                    NAME_TO_OPER.put(
+                            "widget.gui.item-edit-screen.nbt-editor.attribute.op.multiply-total",
+                            EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
                 }
 
                 public ItemAttributeModifierEntry() {
@@ -842,11 +873,11 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         }
 
         protected static enum ItemAttr {
-            BASIC("基础信息"),
-            DISPLAY("物品样式"),
-            ENCHANTMENT("物品附魔"),
-            ATTRIBUTE("物品属性"),
-            COMPONENTS("堆叠组件");
+            BASIC("widget.gui.item-edit-screen.nbt-editor.generic"),
+            DISPLAY("widget.gui.item-edit-screen.nbt-editor.display"),
+            ENCHANTMENT("widget.gui.item-edit-screen.nbt-editor.enchantment"),
+            ATTRIBUTE("widget.gui.item-edit-screen.nbt-editor.attribute"),
+            COMPONENTS("widget.gui.item-edit-screen.nbt-editor.component");
             String display;
 
             ItemAttr(String displayName) {
@@ -876,7 +907,9 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                             })
                             .setEnableNull(true);
                     this.callback = callback;
-                    setTitleLabel(Text.literal("编辑组件 " + Registries.DATA_COMPONENT_TYPE.getId(type))
+                    setTitleLabel(Text.translatable(
+                                    "widget.gui.item-edit-screen.nbt-editor.component.component-edit-screen.title")
+                            .append(Text.literal(String.valueOf(Registries.DATA_COMPONENT_TYPE.getId(type))))
                             .formatted(Formatting.GREEN));
                 }
 
@@ -894,7 +927,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     } catch (Throwable e) {
                     }
                     URI urlll = uri;
-                    Text wikiLink = Text.literal("点我打开 mc wiki 界面");
+                    Text wikiLink = Text.translatable(
+                            "widget.gui.item-edit-screen.nbt-editor.component.component-edit-screen.open-wiki");
                     this.wikiWidget = ExecutableWidget.instance(this.x + 5, this.y + 22, this.backgroundWidth - 10, 12)
                             .setElementHandler(LabelElement.instance(wikiLink)
                                     .withInputHandler(InputHandler.run(() -> {
@@ -902,8 +936,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                             Util.getOperatingSystem().open(urlll);
                                         }
                                     }))
-                                    .withTooltips(TooltipHandler.of(() ->
-                                            List.of(Text.literal(urlll == null ? "网页解析失败" : ("打开网页: " + urlll))))))
+                                    .withTooltips(TooltipHandler.of(
+                                            () -> List.of(Text.literal(urlll == null ? "" : ("" + urlll))))))
                             .addTo(this);
                     this.widget = this.element
                             .generateEditBox(
@@ -925,7 +959,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                                     if (this.widget != null) widget.setText(str);
                                                 });
                                             }))
-                                    .withTooltips(TooltipHandler.of(SnbtItemProcessingSubScreen.FORMAT))
+                                    .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                            "widget.gui.item-edit-screen.formatter.tooltips", "")))
                                     .withActiveActionCondition((icon) -> {
                                         if (icon instanceof IconElement) {
                                             if (this.element.isValidate()) {
@@ -961,7 +996,10 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 NbtElement optionalComponentData;
 
                 public <T> ItemComponent(ComponentType<T> type, Optional<T> data) {
-                    this.typeId = AttrKeyValue.registry("组件类型", Registries.DATA_COMPONENT_TYPE, type);
+                    this.typeId = AttrKeyValue.registry(
+                            "widget.gui.item-edit-screen.nbt-editor.component.type",
+                            Registries.DATA_COMPONENT_TYPE,
+                            type);
                     optionalComponentData = data.isPresent()
                             ? type.getCodec()
                                     .encodeStart(RegistryOps.of(NbtOps.INSTANCE, ItemStackUtils.registry()), data.get())
@@ -970,7 +1008,10 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 }
 
                 public ItemComponent(String newId) {
-                    this.typeId = AttrKeyValue.openRegistry("组件类型", Registries.DATA_COMPONENT_TYPE, newId);
+                    this.typeId = AttrKeyValue.openRegistry(
+                            "widget.gui.item-edit-screen.nbt-editor.component.type",
+                            Registries.DATA_COMPONENT_TYPE,
+                            newId);
                     optionalComponentData = null;
                 }
 
@@ -985,24 +1026,29 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                     }
                 }
 
-                private static final List<Text> OPEN_EDIT_TOOLTIPS =
-                        List.of(Text.literal("你需要保证组件类型"), Text.literal("填写无误"), Text.literal("才可以打开编辑界面"));
-
                 public DrawableWidget factory() {
                     return new SubScreenWidget(0, 0, 0, 0)
                             .addDrawableChild(new KeyValueInputWidget<>(0, 0, 120, 20, 30, this.typeId))
                             .addDrawableChild(DisplayWidget.instance(120, 0, 30, 20)
                                     .setRenderHandler(new LabelElement(
                                             (el) -> this.optionalComponentData != null
-                                                    ? Text.literal("组件非空").formatted(Formatting.GREEN)
-                                                    : Text.literal("组件空").formatted(Formatting.YELLOW),
+                                                    ? Text.translatable(
+                                                                    "widget.gui.item-edit-screen.nbt-editor.component.component-not-empty")
+                                                            .formatted(Formatting.GREEN)
+                                                    : Text.translatable(
+                                                                    "widget.gui.item-edit-screen.nbt-editor.component.component-empty")
+                                                            .formatted(Formatting.YELLOW),
                                             Colors.WHITE,
                                             0)))
                             .addDrawableChild(ExecutableWidget.instance(150, 0, 30, 20)
                                     .setElementHandler(new ButtonElement(
-                                                    TextProvider.of(Text.literal("点击编辑")),
+                                                    TextProvider.of(
+                                                            Text.translatable(
+                                                                    "widget.gui.item-edit-screen.nbt-editor.component.open-component-edit")),
                                                     ButtonAction.run(this::openThisEditScreen))
-                                            .withTooltips(TooltipHandler.of(OPEN_EDIT_TOOLTIPS))
+                                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                    "widget.gui.item-edit-screen.nbt-editor.component.open-component-edit.tooltips",
+                                                    "")))
                                             .withActiveActionCondition((e) -> this.typeId.isValidate())));
                 }
 

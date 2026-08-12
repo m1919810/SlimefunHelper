@@ -46,6 +46,7 @@ import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
@@ -675,12 +676,6 @@ public class Listener {
     @ExtraArgs({ChunkPos.class})
     private static final EventChannel<Map<BlockPos, BlockState>> worldScannChunkResult = new EventChannel<>();
 
-    @Getter
-    @Cancelable
-    @ExtraArgs({ParticleEffect.class})
-    private static final EventChannelDispatcher<Particle> particleCreateListener =
-            new EventChannelDispatcher<>(eve -> eve.<ParticleEffect>getArgs(0).getType(), true);
-
     // client interactions and attacks
     @Getter // handle player uses and attacks
     @Cancelable
@@ -816,6 +811,25 @@ public class Listener {
     @Broadcast
     @ExtraArgs({NetworkSide.class, PacketListener.class})
     private static final EventChannel<ClientConnection> connectionEstablish = new EventChannel<>();
+
+    // misc
+
+    @Getter
+    @Cancelable
+    @ExtraArgs({ParticleEffect.class})
+    private static final EventChannelDispatcher<Particle> particleCreateListener =
+            new EventChannelDispatcher<>(eve -> eve.<ParticleEffect>getArgs(0).getType(), true);
+
+    @Getter
+    @Cancelable
+    @Modifiable
+    private static final EventChannelDispatcher<SoundInstance> soundPlayEvent =
+            new EventChannelDispatcher<>(SoundInstance::getId);
+
+    @Getter
+    @Cancelable
+    private static final EventChannelDispatcher<SoundInstance> soundAddToHudEvent =
+            new EventChannelDispatcher<>(SoundInstance::getId);
 
     private static final Set<Class<?>> asyncPackets = ImmutableSet.<Class<?>>builder()
             .add(CustomPayloadS2CPacket.class)

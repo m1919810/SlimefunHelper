@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.interact;
 
 import com.mojang.datafixers.util.Pair;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -10,11 +11,13 @@ import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -81,6 +84,7 @@ public class InteractManager extends BaseModule {
     public final ModulePath module = makePath(Configs.INTERACT_CONFIG, "interaction-tweaks.interact-manager");
 
     public InteractManager() {
+        super("InteractManager");
         INSTANCE = this;
     }
 
@@ -129,6 +133,13 @@ public class InteractManager extends BaseModule {
     public void onDisableModule() {
         super.onDisableModule();
         clearRunningRequests(null);
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        acceptor.accept(createTitleLabel("widget.interact-manager.command", 0, dblank, dx, dy));
+        acceptor.accept(createTitleLabel("widget.attack.attack.use-argument", 0, dblank, dx, dy));
     }
 
     public void onServerLeave(Event<Void> event) {
@@ -204,7 +215,7 @@ public class InteractManager extends BaseModule {
         TreeSubCommand interact = mainCommand.mainBuilder().name("interact").build();
         interact.subBuilder(SubCommand.taskBuilder())
                 .name("useitem")
-                .helper(USEITEM_HELP)
+                .helper("message.command.interact.useitem.help")
                 .arg(optionalHand("hand"))
                 .arg(optionalTask("task"))
                 .arg(optionalDelay("delay"))
@@ -214,10 +225,10 @@ public class InteractManager extends BaseModule {
                 .complete();
         interact.subBuilder(SubCommand.treeBuilder())
                 .name("attack")
-                .helper(ATTACK_HELP)
+                .helper("message.command.interact.attack.help")
                 .post(tree -> tree.subBuilder(SubCommand.taskBuilder())
                         .name("entity")
-                        .helper(ATTACK_ENTITY_HELP)
+                        .helper("message.command.interact.attack.entity.help")
                         .arg(optionalHand("hand"))
                         .arg(optionalTask("task"))
                         .arg(optionalDelay("delay"))
@@ -226,7 +237,7 @@ public class InteractManager extends BaseModule {
                         .complete()
                         .subBuilder(SubCommand.taskBuilder())
                         .name("block")
-                        .helper(ATTACK_BLOCK_HELP)
+                        .helper("message.command.interact.attack.block.help")
                         .arg(optionalHand("hand"))
                         .arg(optionalTask("task"))
                         .arg(optionalDelay("delay"))
@@ -236,7 +247,7 @@ public class InteractManager extends BaseModule {
                 .complete();
         interact.subBuilder(SubCommand.taskBuilder())
                 .name("holduseitem")
-                .helper(HOLD_USEITEM_HELP)
+                .helper("message.command.interact.holduseitem.help")
                 .arg(optionalHand("hand"))
                 .arg(optionalTask("task"))
                 .arg(optionalDelay("delay"))
@@ -253,13 +264,13 @@ public class InteractManager extends BaseModule {
         interactMan
                 .subBuilder(SubCommand.taskBuilder())
                 .name("list")
-                .helper(LIST_HELP)
+                .helper("message.command." + name + ".list.help")
                 .post(cmd -> cmd.executor((this::onListRequests)))
                 .complete();
         interactMan
                 .subBuilder(SubCommand.taskBuilder())
                 .name("cancel")
-                .helper(CANCEL_HELP)
+                .helper("message.command." + name + ".cancel.help")
                 .arg(SimpleCommandArgs.argumentBuilder()
                         .name("id")
                         .tabSupplier(() -> Stream.concat(Stream.of("all"), runningRequests.keySet().stream()))
@@ -269,13 +280,13 @@ public class InteractManager extends BaseModule {
         interactMan
                 .subBuilder(SubCommand.taskBuilder())
                 .name("clear")
-                .helper(CLEAR_HELP)
+                .helper("message.command." + name + ".clear.help")
                 .post(cmd -> cmd.executor((this::onClearRequests)))
                 .complete();
         interactMan
                 .subBuilder(SubCommand.taskBuilder())
                 .name("help")
-                .helper(HELP_HELP)
+                .helper("message.command." + name + ".help.help")
                 .arg(new OptionalArgumentType<>(
                         "dispatch",
                         SimpleCommandArgs.argumentBuilder()
@@ -492,27 +503,31 @@ public class InteractManager extends BaseModule {
         context.sendMessage("&c[Interact] &ftarget 可填 look(转头视角)、pos(看向的位置)、entity(目标实体)");
         context.sendMessage("&c[Interact] &f使用示例&e(可以点击直接拷贝):");
         context.sendMessage(ChatUtils.builder()
-                .withColorString("1. 向上90度使用二级神龟喷溅药水: &e/!!useitem splash_potion[strong_turtle_master] look -90 ~")
-                .withGlobal(Style.EMPTY.withClickEvent(
-                        ChatUtils.getClickCopyText("/!!useitem splash_potion[strong_turtle_master] look -90 ~")))
+                .withColorString("1. 向上90度使用二级神龟喷溅药水: &e" + MainCommand.getMainCommandPrefix()
+                        + "useitem splash_potion[strong_turtle_master] look -90 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        MainCommand.getMainCommandPrefix() + "useitem splash_potion[strong_turtle_master] look -90 ~")))
                 .end()
                 .build());
         context.sendMessage(ChatUtils.builder()
-                .withColorString("2. 向上90度使用延时神龟喷溅药水: &e/!!useitem splash_potion[long_turtle_master] look -90 ~")
-                .withGlobal(Style.EMPTY.withClickEvent(
-                        ChatUtils.getClickCopyText("/!!useitem splash_potion[long_turtle_master] look -90 ~")))
+                .withColorString("2. 向上90度使用延时神龟喷溅药水: &e" + MainCommand.getMainCommandPrefix()
+                        + "useitem splash_potion[long_turtle_master] look -90 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        MainCommand.getMainCommandPrefix() + "useitem splash_potion[long_turtle_master] look -90 ~")))
                 .end()
                 .build());
         context.sendMessage(ChatUtils.builder()
-                .withColorString("3. 向下90度使用9个经验瓶,一次使用行完: &e/!!useitem experience_bottle 9 0 look 90 ~")
-                .withGlobal(Style.EMPTY.withClickEvent(
-                        ChatUtils.getClickCopyText("/!!useitem experience_bottle 9 0 look 90 ~")))
+                .withColorString("3. 向下90度使用9个经验瓶,一次使用行完: &e" + MainCommand.getMainCommandPrefix()
+                        + "useitem experience_bottle 9 0 look 90 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        MainCommand.getMainCommandPrefix() + "useitem experience_bottle 9 0 look 90 ~")))
                 .end()
                 .build());
         context.sendMessage(ChatUtils.builder()
-                .withColorString("4. 向下90度使用9个经验瓶,一gt使用一次: &e/!!useitem experience_bottle 9 1 look 90 ~")
-                .withGlobal(Style.EMPTY.withClickEvent(
-                        ChatUtils.getClickCopyText("/!!useitem experience_bottle 9 1 look 90 ~")))
+                .withColorString("4. 向下90度使用9个经验瓶,一gt使用一次: &e" + MainCommand.getMainCommandPrefix()
+                        + "useitem experience_bottle 9 1 look 90 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        MainCommand.getMainCommandPrefix() + "useitem experience_bottle 9 1 look 90 ~")))
                 .end()
                 .build());
         context.sendMessage("&c[Interact] &f指令建议配合BindCmd模块一起使用,通过快捷键自动发送");
@@ -528,27 +543,31 @@ public class InteractManager extends BaseModule {
         context.sendMessage("&c[Interact] &fdelay 填非负整数,代表执行的间隔.若为0,则一次性执行至多9次");
         context.sendMessage("&c[Interact] &f使用示例&e(可以点击直接拷贝):");
         context.sendMessage(ChatUtils.builder()
-                .withColorString(
-                        "1. 攻击距离玩家超过0.01的最近实体一次: &e/!!attack entity mainhand once 1 @e[distance=0.1..,limit=1,sort=nearest]")
-                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
-                        "/!!attack entity mainhand once 1 @e[distance=0.1..,limit=1,sort=nearest]")))
+                .withColorString("1. 攻击距离玩家超过0.01的最近实体一次: &e" + MainCommand.getMainCommandPrefix()
+                        + "attack entity mainhand once 1 @e[distance=0.1..,limit=1,sort=nearest]")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(MainCommand.getMainCommandPrefix()
+                        + "attack entity mainhand once 1 @e[distance=0.1..,limit=1,sort=nearest]")))
+                .end()
+                .build());
+        context.sendMessage(ChatUtils.builder()
+                .withColorString("2. 攻击距离玩家超过0.01的最近实体16次,间隔10gt: &e" + MainCommand.getMainCommandPrefix()
+                        + "attack entity mainhand 16 10 @e[distance=1..,limit=1,sort=nearest]")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(MainCommand.getMainCommandPrefix()
+                        + "attack entity mainhand 16 10 @e[distance=1..,limit=1,sort=nearest]")))
                 .end()
                 .build());
         context.sendMessage(ChatUtils.builder()
                 .withColorString(
-                        "2. 攻击距离玩家超过0.01的最近实体16次,间隔10gt: &e/!!attack entity mainhand 16 10 @e[distance=1..,limit=1,sort=nearest]")
-                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
-                        "/!!attack entity mainhand 16 10 @e[distance=1..,limit=1,sort=nearest]")))
+                        "3. 攻击脚下方块30次,1gt攻击一次: &e" + MainCommand.getMainCommandPrefix() + "attack block 30 1 ~ ~-1 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText(MainCommand.getMainCommandPrefix() + "attack block 30 1 ~ ~-1 ~")))
                 .end()
                 .build());
         context.sendMessage(ChatUtils.builder()
-                .withColorString("3. 攻击脚下方块30次,1gt攻击一次: &e/!!attack block 30 1 ~ ~-1 ~")
-                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText("/!!attack block 30 1 ~ ~-1 ~")))
-                .end()
-                .build());
-        context.sendMessage(ChatUtils.builder()
-                .withColorString("2. 攻击脚下方块2次,100gt攻击一次(?): &e/!!attack block 2 200 ~ ~-1 ~")
-                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText("/!!attack block 2 200 ~ ~-1 ~")))
+                .withColorString("2. 攻击脚下方块2次,100gt攻击一次(?): &e" + MainCommand.getMainCommandPrefix()
+                        + "attack block 2 200 ~ ~-1 ~")
+                .withGlobal(Style.EMPTY.withClickEvent(
+                        ChatUtils.getClickCopyText(MainCommand.getMainCommandPrefix() + "attack block 2 200 ~ ~-1 ~")))
                 .end()
                 .build());
         context.sendMessage("&c[Interact] &f指令建议配合BindCmd模块一起使用,通过快捷键自动发送");
@@ -564,21 +583,24 @@ public class InteractManager extends BaseModule {
         context.sendMessage("&c[Interact] &f注:该模式中,使用物品将直接把物品长时间换到主手或副手,直到使用完毕");
         context.sendMessage("&c[Interact] &f使用示例&e(可以点击直接拷贝):");
         context.sendMessage(ChatUtils.builder()
-                .withColorString("1. 使用下界合金矛3次,一次30gt,40gt使用一次: &e/!!holduseitem netherite_spear 3 40 30")
-                .withGlobal(Style.EMPTY.withClickEvent(
-                        ChatUtils.getClickCopyText("/!!holduseitem netherite_spear 3 40 30")))
+                .withColorString("1. 使用下界合金矛3次,一次30gt,40gt使用一次: &e" + MainCommand.getMainCommandPrefix()
+                        + "holduseitem netherite_spear 3 40 30")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        MainCommand.getMainCommandPrefix() + "holduseitem netherite_spear 3 40 30")))
                 .end()
                 .build());
         context.sendMessage(ChatUtils.builder()
-                .withColorString("2. 使用下界合金矛3次,一次3gt,40gt使用一次: &e/!!holduseitem netherite_spear 3 40 3")
-                .withGlobal(Style.EMPTY.withClickEvent(
-                        ChatUtils.getClickCopyText("/!!holduseitem netherite_spear 3 40 32")))
+                .withColorString("2. 使用下界合金矛3次,一次3gt,40gt使用一次: &e" + MainCommand.getMainCommandPrefix()
+                        + "holduseitem netherite_spear 3 40 3")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        MainCommand.getMainCommandPrefix() + "holduseitem netherite_spear 3 40 32")))
                 .end()
                 .build());
         context.sendMessage(ChatUtils.builder()
-                .withColorString("3. 喝延时神龟药水3次,40gt喝一次: &e/!!holduseitem potion[long_turtle_master] 3 40 32")
-                .withGlobal(Style.EMPTY.withClickEvent(
-                        ChatUtils.getClickCopyText("/!!holduseitem potion[long_turtle_master] 3 40 32")))
+                .withColorString("3. 喝延时神龟药水3次,40gt喝一次: &e" + MainCommand.getMainCommandPrefix()
+                        + "holduseitem potion[long_turtle_master] 3 40 32")
+                .withGlobal(Style.EMPTY.withClickEvent(ChatUtils.getClickCopyText(
+                        MainCommand.getMainCommandPrefix() + "holduseitem potion[long_turtle_master] 3 40 32")))
                 .end()
                 .build());
     }
@@ -759,11 +781,6 @@ public class InteractManager extends BaseModule {
         }
     }
 
-    private static CommandExecution currentExecution() {
-        PlayerEntity player = mc.player;
-        return player == null ? CommandExecution.EMPTY : CommandExecution.sender(player);
-    }
-
     // Interaction request model
     public record InteractRequest(String id, Countdown countdown, InteractContext context) {}
 
@@ -876,7 +893,7 @@ public class InteractManager extends BaseModule {
 
         @Override
         public void execute(InteractManager manager, PlayerEntity player) {
-            Entity entitySelect = entity.first(CommandExecution.sender(player));
+            Entity entitySelect = entity.first(PlayerStateManager.createServer());
             if (entitySelect == null) return;
             var entry = hand.getUseContext();
             if (entry != null) {
@@ -885,13 +902,13 @@ public class InteractManager extends BaseModule {
                     CombatTasks.getAttack().attackEntity(entitySelect);
                     if (InteractManager.INSTANCE.logA.get()) {
                         Text text = EntityUtils.getEntityDisplayable(entitySelect);
-                        Debug.chat(ChatUtils.stringToText("&c[Interact] &f攻击了").append(text));
+                        manager.logI18NSub("Interact", "message.module.interact-manager.interact.attack", text);
                     }
                     runnable.run();
                 }
             } else {
                 if (InteractManager.INSTANCE.logA.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[Interact] &f找不到物品: " + hand.toString()));
+                    manager.logI18NSub("Interact", "message.module.interact-manager.interact.no-item", hand.toString());
                 }
             }
         }
@@ -905,7 +922,7 @@ public class InteractManager extends BaseModule {
 
         @Override
         public void execute(InteractManager manager, PlayerEntity player) {
-            Vector3d vector3d = target.getPosition(CommandExecution.sender(player));
+            Vector3d vector3d = target.getPosition(PlayerStateManager.createServer());
             BlockPos blockPos = new BlockPos((int) vector3d.x, (int) vector3d.y, (int) vector3d.z);
             var entry = hand.getUseContext();
             if (entry != null) {
@@ -914,14 +931,16 @@ public class InteractManager extends BaseModule {
                     mc.interactionManager.attackBlock(
                             blockPos, Direction.getFacing(mc.player.getEyePos().subtract(blockPos.toCenterPos())));
                     if (InteractManager.INSTANCE.logA.get()) {
-                        Debug.chat(ChatUtils.stringToText("&c[Interact] &f挖掘了")
-                                .append(ChatUtils.getDisplayedLocation(Vec3d.of(blockPos))));
+                        manager.logI18NSub(
+                                "Interact",
+                                "message.module.interact-manager.interact.mine",
+                                ChatUtils.getDisplayedLocation(Vec3d.of(blockPos)));
                     }
                     runnable.run();
                 }
             } else {
                 if (InteractManager.INSTANCE.logA.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[Interact] &f找不到物品: " + hand.toString()));
+                    manager.logI18NSub("Interact", "message.module.interact-manager.interact.no-item", hand.toString());
                 }
             }
         }
@@ -951,8 +970,7 @@ public class InteractManager extends BaseModule {
                         var result = mc.interactionManager.interactItem(player, hand);
                         if (InteractManager.INSTANCE.logA.get()) {
                             Text text = VItem.getInstance().getFormattedName(entry.val());
-                            Debug.chat(
-                                    ChatUtils.stringToText("&c[Interact] &f使用了").append(text));
+                            manager.logI18NSub("Interact", "message.module.interact-manager.interact.use", text);
                         }
                         if (shouldSwingHandAfterUse()) {
                             InteractUtils.swingHandIfSuccess(result, hand);
@@ -963,7 +981,8 @@ public class InteractManager extends BaseModule {
                     }
                 } else {
                     if (InteractManager.INSTANCE.logA.get()) {
-                        Debug.chat(ChatUtils.stringToText("&c[Interact] &f找不到物品: " + hand.toString()));
+                        manager.logI18NSub(
+                                "Interact", "message.module.interact-manager.interact.no-item", hand.toString());
                     }
                 }
             }
@@ -998,7 +1017,7 @@ public class InteractManager extends BaseModule {
                     var result = mc.interactionManager.interactItem(player, hand);
                     if (InteractManager.INSTANCE.logA.get()) {
                         Text text = VItem.getInstance().getFormattedName(entry.val());
-                        Debug.chat(ChatUtils.stringToText("&c[Interact] &f使用了").append(text));
+                        manager.logI18NSub("Interact", "message.module.interact-manager.interact.use", text);
                     }
                     manager.holdUseTick = releaseTicks;
                     if (shouldSwingHandAfterUse()) {
@@ -1008,7 +1027,7 @@ public class InteractManager extends BaseModule {
                 }
             } else {
                 if (InteractManager.INSTANCE.logA.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[Interact] &f找不到物品: " + hand.toString()));
+                    manager.logI18NSub("Interact", "message.module.interact-manager.interact.no-item", hand.toString());
                 }
             }
         }
@@ -1103,27 +1122,30 @@ public class InteractManager extends BaseModule {
             if (inputArgument instanceof PosArgumentResult pos) {
                 ExecutePos pos2 = pos.nonnullResult();
                 return (pl) -> {
-                    CommandExecution execution = CommandExecution.sender(pl);
+                    CommandExecution execution = PlayerStateManager.createServer();
                     Vector3d vector3d = pos2.getPosition(execution);
-                    return EntityUtils.rotationToPitchYaw(
-                            new Vec3d(vector3d.x(), vector3d.y(), vector3d.z()).subtract(pl.getEyePos()));
+                    vector3d = vector3d.sub(execution.getExecuteEyePos());
+                    return EntityUtils.rotationToPitchYaw(new Vec3d(vector3d.x(), vector3d.y(), vector3d.z()));
                 };
             } else if (inputArgument instanceof RotationArgumentResult rot) {
                 ExecuteRotation executeRotation = rot.nonnullResult();
                 return (pl) -> {
-                    CommandExecution execution = CommandExecution.sender(pl);
+                    CommandExecution execution = PlayerStateManager.createServer();
                     Vector2f vector2f = executeRotation.getRotation(execution);
                     return new Vec2f(vector2f.x(), vector2f.y());
                 };
             } else if (inputArgument instanceof EntityArgumentResult result) {
                 EntitySelector selector = result.nonnullResult();
                 return (pl) -> {
-                    Entity entity = selector.first(CommandExecution.sender(pl));
+                    CommandExecution execution = PlayerStateManager.createServer();
+                    Entity entity = selector.first(execution);
                     if (entity != null) {
+                        Vector3d vec3d = execution.getExecuteEyePos();
                         return EntityUtils.rotationToPitchYaw(
-                                entity.getBoundingBox().getCenter().subtract(mc.player.getEyePos()));
+                                entity.getBoundingBox().getCenter().subtract(vec3d.x, vec3d.y, vec3d.z));
                     } else {
-                        return new Vec2f(pl.getPitch(), pl.getYaw());
+                        Vector2f rot = execution.getExecuteRot();
+                        return new Vec2f(rot.x, rot.y);
                     }
                 };
             } else return null;

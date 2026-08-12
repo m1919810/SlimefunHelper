@@ -14,6 +14,8 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
@@ -25,6 +27,7 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EntityType;
@@ -41,6 +44,7 @@ import net.minecraft.world.SpawnHelper;
 
 public class AutoSlab extends BaseModule {
     public AutoSlab() {
+        super("AutoSlab");
         bindFlag(enable);
     }
 
@@ -73,16 +77,28 @@ public class AutoSlab extends BaseModule {
 
     public final FlagRef slabOnly = flagBuilder(autoPlate.add("slab-only")).build();
 
+    public final FlagRef useBlockEntities =
+            flagBuilder(autoPlate.add("use-block-entities")).build();
+
+    public final NBTRef<RegistryRegex<Block>> blackList = builder(
+                    autoPlate.add("black-list-item"), RegistryRegex.<Block>parameter())
+            .defaultValue(new RegistryRegex<>(new Regex("^(ender_chest|chest)$"), Registries.BLOCK))
+            .build();
+
     public final FlagRef useBlockRotate =
             flagBuilder(autoPlate.add("use-block-rotate")).build();
 
     public final FlagRef returnBlock =
             flagBuilder(autoPlate.add("ghost-hand-swap-back")).build();
 
+    public final FlagRef swingHand = builder(autoPlate.add("swing-hand"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef render = flagBuilder(autoPlate.add("render")).build();
 
     public final NBTRef<WrapColor> color = builder(autoPlate.add("render-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.GREEN)))
+            .defaultValue(new WrapColor((Color.GREEN)))
             .build();
 
     public final Set<Item> availableSlabs = new HashSet<>();
@@ -146,7 +162,18 @@ public class AutoSlab extends BaseModule {
         } else {
             if (item instanceof BlockItem bl) {
                 initializeMap();
-                return availableBlocks.contains(bl.getBlock());
+                Block block = bl.getBlock();
+                if (availableBlocks.contains(block)) {
+                    if (!useBlockEntities.get() && block instanceof BlockWithEntity be) {
+                        return false;
+                    }
+                    if (blackList.get().test(block)) {
+                        return false;
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
             } else {
                 return false;
             }
@@ -217,7 +244,7 @@ public class AutoSlab extends BaseModule {
                     if (useBlockRotate.get()) {
                         BlockRotate.INSTANCE.addTempStateSchematic(testPos, targetState);
                     }
-                    InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND);
+                    InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND, swingHand.get());
                     cnt += 1;
                     if (cnt >= multiply) {
                         break;

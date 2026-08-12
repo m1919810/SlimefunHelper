@@ -1,6 +1,7 @@
 package me.matl114.gui.presets.lists;
 
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.util.Colors;
 
 @Getter
@@ -19,13 +21,15 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
     int entryHeight;
     List<W> filterList;
     Function<W, RenderHandler> renderFactory;
-    Predicate<W> filter;
+    BiPredicate<W, String> filter;
     boolean modifiable = true;
+    ValueAccessor<String> filterInput;
 
     public ListSelectWidget(
             List<W> lst,
             Function<W, RenderHandler> renderFactory,
-            Predicate<W> filter,
+            ValueAccessor<String> filterInput,
+            BiPredicate<W, String> filter,
             int x,
             int y,
             int dx,
@@ -36,10 +40,15 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
         this.entryHeight = height;
         this.filter = filter;
         this.renderFactory = renderFactory;
+        this.filterInput = filterInput;
         init();
     }
 
     public ListSelectWidget<W> filter(Predicate<W> fil) {
+        return filter((s, b) -> fil.test(s));
+    }
+
+    public ListSelectWidget<W> filter(BiPredicate<W, String> fil) {
         if (this.filter != fil) {
             this.filter = fil;
             updateFilterList();
@@ -75,35 +84,20 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
                 this.selected = triplet;
             }
         });
-        shitWidget.setMouseHandler(mouseHandler).setRenderHandler(renderHandler);
+        shitWidget.setInputHandler(mouseHandler).setRenderHandler(renderHandler);
         return shitWidget;
     }
-    //    protected void applyFilter(String filter){
-    //        if(!Objects.equals(FilterService.currentUserInput, filter)){
-    //            FilterService.currentUserInput = filter;
-    //            updateFilterList();
-    //        }
-    //    }
+
     public void updateFilterList() {
-        filterList = list.stream().filter(filter).toList();
+        String currentInput = this.filterInput.getValue();
+        filterList = list.stream().filter((v) -> filter.test(v, currentInput)).toList();
         refreshList();
-        //        if (FilterService.currentUserInput == null || FilterService.currentUserInput.isEmpty()) {
-        //            if (filterList != list) {
-        //                filterList = list;
-        //                refreshList();
-        //            }
-        //        } else {
-        //
-        //        }
     }
 
     protected void init() {
         int textHeight = Math.min(20, this.entryHeight);
-        this.scrollableBorder.addDrawableChild(
-                FilterService.createFilter(this::updateFilterList, 1, -textHeight + 1, dx - 2, textHeight - 2)
-                //   McWidgetHelpers.createTextFieldEditBox( PropertyTracker.event(this::applyFilter),
-                // FilterService.currentUserInput)
-                );
+        this.scrollableBorder.addDrawableChild(FilterService.createFilter(
+                this.filterInput, this::updateFilterList, 1, -textHeight + 1, dx - 2, textHeight - 2));
         this.updateFilterList();
     }
 }

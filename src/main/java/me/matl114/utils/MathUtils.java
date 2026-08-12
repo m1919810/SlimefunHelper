@@ -2,11 +2,13 @@ package me.matl114.utils;
 
 import com.mojang.datafixers.util.Pair;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.IntSupplier;
 import lombok.AllArgsConstructor;
 import net.minecraft.util.math.*;
+import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
 
@@ -25,6 +27,31 @@ public class MathUtils {
             sum += y * y;
         }
         return sum;
+    }
+
+    /**
+     * 将两个 int 打包成一个 long
+     * @param high 存入高32位的 int（可以为负）
+     * @param low  存入低32位的 int（可以为负）
+     * @return 打包后的 long
+     */
+    public static long packInt(int high, int low) {
+        // 先将 high 提升为 long，左移32位，然后与低32位（取无符号）按位或
+        return ((long) high << 32) | (low & 0xFFFFFFFFL);
+    }
+
+    /**
+     * 从打包的 long 中提取高32位 int
+     */
+    public static int unpackFirst(long packed) {
+        return (int) (packed >> 32);
+    }
+
+    /**
+     * 从打包的 long 中提取低32位 int
+     */
+    public static int unpackSecond(long packed) {
+        return (int) packed;
     }
 
     public static double squaredMagnitude(Box thi, Box other) {
@@ -60,6 +87,12 @@ public class MathUtils {
 
     public static boolean isInXZRange(Vec3d a, double range) {
         return Math.abs(a.x) < range && Math.abs(a.z) < range;
+    }
+
+    public static int getManhattanDistance(BlockPos pos1, BlockPos pos2) {
+        return Math.abs(pos1.getX() - pos2.getX())
+                + Math.abs(pos1.getY() - pos2.getY())
+                + Math.abs(pos1.getZ() - pos2.getZ());
     }
 
     public static Box getBlockBox(BlockPos pos) {
@@ -100,6 +133,22 @@ public class MathUtils {
             }
         }
         return positions;
+    }
+
+    public static final Direction[] HORIZONTALS = Arrays.stream(Direction.values())
+            .filter((direction) -> {
+                return direction.getAxis().isHorizontal();
+            })
+            .sorted(Comparator.comparingInt(Direction::getHorizontalQuarterTurns))
+            .toArray(Direction[]::new);
+
+    public static Direction getHorizontalFacing(Vec3d vec3d) {
+        float yaw = EntityUtils.rotationToYaw(vec3d.normalize());
+        return Direction.fromHorizontalDegrees(yaw);
+    }
+
+    public static ChunkPos toChunkPos(Vec3d vec3d) {
+        return new ChunkPos(BlockPos.ofFloored(vec3d));
     }
 
     /**
@@ -199,6 +248,10 @@ public class MathUtils {
 
         list.sort(Comparator.comparingDouble(s -> s.getX() * s.getX() + s.getZ() * s.getZ() + s.getY() * s.getY()));
         return list;
+    }
+
+    public static double getBoxDistance(double x, double minX, double maxX) {
+        return Math.max(Math.max(minX - x, x - maxX), 0.0);
     }
 
     public static Vec3d linearInterpolation(Vec3d[] vec3ds, int ticksLater) {
@@ -493,6 +546,113 @@ public class MathUtils {
             }
 
             return result;
+        }
+    }
+
+    @ApiStatus.Experimental
+    public static class RotationalPredictor {
+        private static final double MAX_TURN_ANGLE = Math.toRadians(60.0D);
+
+        private final Vec3d[] historyStack;
+        private final IntSupplier currentIndex;
+
+        public RotationalPredictor(Vec3d[] historyStack, IntSupplier currentIndex) {
+            this.historyStack = historyStack;
+            this.currentIndex = currentIndex;
+        }
+
+        public Vec3d compute(int ticksLater) {
+            List<Vec3d> points = collectPoints();
+            if (points.isEmpty()) return null;
+
+            Vec3d current = points.get(points.size() - 1);
+            if (ticksLater <= 0) return current;
+            if (points.size() < 2) return current;
+
+            Vec3d lastVel = current.subtract(points.get(points.size() - 2));
+            if (points.size() < 3) {
+                return current.add(lastVel.multiply(ticksLater));
+            }
+
+            List<Double> horizontalLengths = new ArrayList<>();
+            List<Double> verticalDisplacements = new ArrayList<>();
+            List<Double> horizontalAngles = new ArrayList<>();
+            for (int i = 1; i < points.size(); i++) {
+                Vec3d delta = points.get(i).subtract(points.get(i - 1));
+                horizontalLengths.add(Math.hypot(delta.x, delta.z));
+                verticalDisplacements.add(delta.y);
+                horizontalAngles.add(Math.atan2(delta.z, delta.x));
+            }
+
+            double avgDeltaAngle = 0.0D;
+            int anglePairs = 0;
+            for (int i = 1; i < horizontalAngles.size(); i++) {
+                double delta = horizontalAngles.get(i) - horizontalAngles.get(i - 1);
+                while (delta > Math.PI) delta -= 2 * Math.PI;
+                while (delta < -Math.PI) delta += 2 * Math.PI;
+                if (Math.abs(delta) <= MAX_TURN_ANGLE) {
+                    avgDeltaAngle += delta;
+                }
+                anglePairs++;
+            }
+            if (anglePairs > 0) {
+                avgDeltaAngle /= anglePairs;
+            }
+
+            double predictedHorizontalLength = predictScalar(horizontalLengths, ticksLater);
+            double predictedVerticalDisplacement = predictScalar(verticalDisplacements, ticksLater);
+
+            if (predictedHorizontalLength < 0.0D) {
+                predictedHorizontalLength = 0.0D;
+            }
+
+            double lastAngle = horizontalAngles.get(horizontalAngles.size() - 1);
+            double finalAngle = lastAngle + avgDeltaAngle;
+
+            double dx = Math.cos(finalAngle) * predictedHorizontalLength;
+            double dz = Math.sin(finalAngle) * predictedHorizontalLength;
+
+            return current.add(dx, predictedVerticalDisplacement, dz);
+        }
+
+        private double predictScalar(List<Double> samples, int ticksLater) {
+            if (samples.isEmpty()) return 0.0D;
+            double last = samples.get(samples.size() - 1);
+            if (ticksLater <= 0 || samples.size() < 2) return last;
+
+            List<Double> diff = new ArrayList<>();
+            for (int i = 1; i < samples.size(); i++) {
+                diff.add(samples.get(i) - samples.get(i - 1));
+            }
+            if (diff.isEmpty()) return last;
+            if (diff.size() == 1) {
+                return last + diff.get(0) * ticksLater;
+            }
+
+            double d = 0.0D;
+            for (double v : diff) {
+                d = (d + v) * 0.5D;
+            }
+            return last + d * ticksLater;
+        }
+
+        private List<Vec3d> collectPoints() {
+            int idx = currentIndex.getAsInt();
+            Vec3d currentPos = historyStack[idx];
+            if (currentPos == null) return List.of();
+
+            List<Vec3d> points = new ArrayList<>();
+            points.add(currentPos);
+            int len = historyStack.length;
+            for (int i = 1; i < len; i++) {
+                Vec3d v = historyStack[(idx - i + len) % len];
+                if (v != null) {
+                    points.add(0, v);
+                } else {
+                    break;
+                }
+            }
+            return points;
         }
     }
 }

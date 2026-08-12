@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.RenderHandler;
@@ -30,6 +31,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -37,19 +39,20 @@ public class RegistryDisplays {
 
     public static ItemStack createEnchantmentIcon(Enchantment enchantment) {
         ItemStack itemStack = new ItemStack(Items.ENCHANTED_BOOK);
+        RegistryEntry<Enchantment> entry =
+                RegistryUtils.getRegistryEntry(ItemStackUtils.registry(), RegistryKeys.ENCHANTMENT, enchantment);
+
+        if (entry == null) {
+            return itemStack;
+        }
         var builder = new ItemEnchantmentsComponent.Builder(ItemEnchantmentsComponent.DEFAULT);
-        builder.add(
-                ItemStackUtils.registry()
-                        .getOptional(RegistryKeys.ENCHANTMENT)
-                        .orElseThrow()
-                        .getEntry(enchantment),
-                1);
+        builder.add(entry, 1);
         ItemEnchantmentsComponent component = builder.build();
         itemStack.set(DataComponentTypes.STORED_ENCHANTMENTS, component);
         return itemStack;
     }
 
-    public static <T> Text getDisplay(T val) {
+    public static <T> Text getDisplay(Registry<T> registry, @Nonnull T val) {
         if (val instanceof StatusEffect effect) {
             return effect.getName();
         } else if (val instanceof EntityAttribute attribute) {
@@ -65,6 +68,42 @@ public class RegistryDisplays {
             return itemConvertible.getName();
         } else if (val instanceof Block itemStack) {
             return itemStack.getName();
+        }
+        Identifier id = registry.getId(val);
+        if (id != null) {
+            return Text.translatable(registry.getKey().getValue().getPath() + ".minecraft." + id.getPath());
+        }
+        return Text.literal(val.toString());
+    }
+
+    public static <T> Text getDisplay(@Nonnull T val) {
+        if (val instanceof StatusEffect effect) {
+            return effect.getName();
+        } else if (val instanceof EntityAttribute attribute) {
+            return Text.translatable(attribute.getTranslationKey());
+        } else if (val instanceof Enchantment enchantment) {
+            return enchantment.description();
+        } else if (val instanceof BlockEntityType<?> blockEntityType) {
+            return Text.literal(
+                    Registries.BLOCK_ENTITY_TYPE.getId(blockEntityType).getPath());
+        } else if (val instanceof EntityType<?> entityType) {
+            return Text.translatable(entityType.getTranslationKey());
+        } else if (val instanceof Item itemConvertible) {
+            return itemConvertible.getName();
+        } else if (val instanceof Block itemStack) {
+            return itemStack.getName();
+        } else if (val instanceof SoundEvent soundEvent) {
+            return Text.translatable("subtitles." + soundEvent.id().getPath());
+        }
+        RegistryKey<? extends Registry<T>> registry = RegistryUtils.getRegistryTypeKey(val);
+        if (registry != null) {
+            Registry<T> re = Registries.REGISTRIES.get((RegistryKey) registry);
+            if (re != null) {
+                Identifier id = re.getId(val);
+                if (id != null) {
+                    return Text.translatable(registry.getValue().getPath() + ".minecraft." + id.getPath());
+                }
+            }
         }
         return Text.literal(val.toString());
     }
@@ -107,8 +146,10 @@ public class RegistryDisplays {
     }
 
     public static interface IIcon<T> {
-        public static IIcon<?> EMPTY = ((x, y, context, registerValue) -> {});
         public static ItemStack DEFAULT_NULL_ICON = new ItemStack(Items.BARRIER);
+        public static IIcon<?> EMPTY = ((x, y, context, registerValue) -> {
+            context.drawItem(DEFAULT_NULL_ICON, x, y, 999, 0);
+        });
 
         default void render(int startIndexX, int startIndexY, VDrawContext context, T registerValue) {
             if (registerValue == null) {

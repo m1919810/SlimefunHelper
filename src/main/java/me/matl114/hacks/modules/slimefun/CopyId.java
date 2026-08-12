@@ -26,7 +26,9 @@ import net.minecraft.util.Hand;
 public class CopyId extends BaseModule {
     public final ModulePath slimefunSettings = makePath(Configs.SLIMEFUN_CONFIG, "slimefun-settings");
 
-    public CopyId() {}
+    public CopyId() {
+        super("CopyId");
+    }
 
     public KeyBindRef keyBind = hotkey(
                     Configs.SLIMEFUN_CONFIG,

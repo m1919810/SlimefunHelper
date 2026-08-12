@@ -18,7 +18,10 @@ import net.minecraft.util.Identifier;
 public class CustomTextures extends BaseModule {
     public final ModulePath textureConfig = makePath(Configs.MODEL_CONFIG, "texture-config");
 
-    public CustomTextures() {}
+    public CustomTextures() {
+        super("CustomTextures");
+        bindFlag(enable);
+    }
 
     @Override
     public void registerAll() {

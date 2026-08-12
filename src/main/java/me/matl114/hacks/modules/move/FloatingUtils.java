@@ -5,11 +5,11 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 
@@ -21,6 +21,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     public static FloatingUtils INSTANCE;
 
     public FloatingUtils() {
+        super("FloatingUtils");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
